@@ -11,8 +11,6 @@ from swarms.structs.auto_agent_builder import (
     AutoAgentBuilder,
 )
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
-from swarms.structs.base_structure import BaseStructure
-from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
@@ -64,7 +62,6 @@ from swarms.structs.planner_generator_evaluator import (
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.structs.skill_orchestra import SkillOrchestra
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.swarm_rearrange import SwarmRearrange
@@ -85,8 +82,6 @@ from swarms.structs.swarming_architectures import (
 __all__ = [
     "AdvisorSwarm",
     "Agent",
-    "BaseStructure",
-    "BaseSwarm",
     "ConcurrentWorkflow",
     "SocialAlgorithms",
     "Conversation",
@@ -139,7 +134,6 @@ __all__ = [
     "AgentLoader",
     "BatchedGridWorkflow",
     "SelfMoASeq",
-    "SkillOrchestra",
     "DebateWithJudge",
     "PlannerGeneratorEvaluator",
     "StepContract",

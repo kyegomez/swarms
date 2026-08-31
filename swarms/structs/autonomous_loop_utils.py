@@ -36,9 +36,7 @@ from loguru import logger
 
 from swarms.structs.async_subagent import SubagentRegistry, TaskStatus
 
-# ============================================================================
-# CONSTANTS
-# ============================================================================
+# Constants.
 
 
 # Maximum iterations to prevent infinite loops
@@ -48,9 +46,7 @@ MAX_SUBTASK_LOOPS = 20
 MAX_CONSECUTIVE_THINKS = 2
 
 
-# ============================================================================
-# PROMPTS
-# ============================================================================
+# Prompts.
 
 
 def get_planning_prompt(task: str) -> str:
@@ -129,9 +125,7 @@ def get_summary_prompt() -> str:
     )
 
 
-# ============================================================================
-# TOOL SCHEMAS
-# ============================================================================
+# Tool schemas.
 
 
 def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
@@ -146,7 +140,17 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "create_plan",
-                "description": "Create a detailed plan for completing a task",
+                "description": (
+                    "Create or revise the plan for completing a task. Call it "
+                    "once up front, and again at any point during execution "
+                    "when what you have learned changes the plan - to add work "
+                    "you discovered, split a step that turned out to be "
+                    "several, drop a step that is no longer needed, or fix a "
+                    "dependency. Revising is cheap and expected: pass the full "
+                    "step list you now believe in. Steps are merged by "
+                    "step_id, and steps you already finished keep their "
+                    "results, so a revision never discards completed work."
+                ),
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -598,9 +602,7 @@ def get_autonomous_loop_tool_names() -> List[str]:
     ]
 
 
-# ============================================================================
-# TOOL HANDLERS
-# ============================================================================
+# Tool handlers.
 
 
 def respond_to_user_tool(
@@ -1308,9 +1310,7 @@ def assign_task_tool(
         str: Results from all sub-agents or error message
     """
     try:
-        # Use the SubagentRegistry managed for this agent, so task execution,
-        # tracking, retries, cancellation, and result gathering are consistent
-        # across the codebase.
+        # The managed SubagentRegistry, so retries, cancellation and result gathering stay consistent.
         registry = _find_registry(agent)
 
         # Check if sub_agents exist

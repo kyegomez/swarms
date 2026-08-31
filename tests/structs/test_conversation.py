@@ -1,3 +1,4 @@
+import json
 import concurrent.futures
 import shutil
 from datetime import datetime
@@ -1006,6 +1007,154 @@ def generate_markdown_report(results):
         )
 
     return report
+
+
+# ============================================================================
+# Context isolation: an unnamed conversation must not resume someone else's
+# ============================================================================
+
+
+class TestDefaultConversationDoesNotResumeFromDisk:
+    """
+    Regression for cross-contamination between unrelated conversations.
+
+    ``name`` defaults to "conversation-test", so every anonymous
+    ``Conversation()`` resolved to the same file under the conversations
+    directory and silently loaded whatever a previous, unrelated run had left
+    there. Every swarm in the process started with someone else's messages and
+    re-sent them on every agent call.
+    """
+
+    def test_anonymous_conversation_starts_empty(self, tmp_path):
+        stale = tmp_path / "conversation_conversation-test.json"
+        stale.write_text(
+            json.dumps(
+                [
+                    {
+                        "role": "user",
+                        "content": "left over from another run",
+                    }
+                ]
+            )
+        )
+
+        conversation = Conversation(conversations_dir=str(tmp_path))
+
+        assert (
+            conversation.conversation_history == []
+        ), "an unnamed conversation resumed from an unrelated file"
+
+    def test_two_anonymous_conversations_do_not_share_state(
+        self, tmp_path
+    ):
+        first = Conversation(
+            conversations_dir=str(tmp_path), autosave=True
+        )
+        first.add("user", "private to the first conversation")
+        first.save_as_json(
+            str(tmp_path / "conversation_conversation-test.json")
+        )
+
+        second = Conversation(conversations_dir=str(tmp_path))
+
+        contents = [m["content"] for m in second.conversation_history]
+        assert "private to the first conversation" not in contents
+
+    def test_a_named_conversation_still_resumes(self, tmp_path):
+        """Resume-by-name is deliberate and must keep working."""
+        first = Conversation(
+            name="my-project", conversations_dir=str(tmp_path)
+        )
+        first.add("user", "remember this")
+        first.save_as_json(
+            str(tmp_path / "conversation_my-project.json")
+        )
+
+        second = Conversation(
+            name="my-project", conversations_dir=str(tmp_path)
+        )
+
+        contents = [m["content"] for m in second.conversation_history]
+        assert "remember this" in contents
+
+    def test_an_explicit_filepath_still_resumes(self, tmp_path):
+        path = tmp_path / "explicit.json"
+        first = Conversation(save_filepath=str(path))
+        first.add("user", "explicit save")
+        first.save_as_json(str(path))
+
+        second = Conversation(save_filepath=str(path))
+
+        contents = [m["content"] for m in second.conversation_history]
+        assert "explicit save" in contents
+
+
+# ============================================================================
+# MESSAGE ACCESSORS: STRINGS VS REAL MESSAGE DICTS
+# ============================================================================
+
+
+def _two_turn_conversation():
+    conv = Conversation()
+    conv.add("user", "Hello, world!")
+    conv.add("assistant", "Hello, user!")
+    return conv
+
+
+def test_return_messages_as_strings_formats_role_colon_content():
+    """The flattener returns renderings, not messages."""
+    conv = _two_turn_conversation()
+
+    strings = conv.return_messages_as_strings()
+
+    assert isinstance(strings, list)
+    assert all(isinstance(s, str) for s in strings)
+    assert strings == [
+        "user: Hello, world!",
+        "assistant: Hello, user!",
+    ]
+
+
+def test_return_messages_as_list_returns_message_dicts():
+    """The name promises a message list, so it returns dicts, not strings."""
+    conversation = Conversation()
+    conversation.add("user", "Hello, world!")
+    conversation.add("assistant", "Hello, user!")
+
+    messages = conversation.return_messages_as_list()
+
+    assert all(isinstance(message, dict) for message in messages)
+    assert [m["role"] for m in messages] == ["user", "assistant"]
+    assert [m["content"] for m in messages] == [
+        "Hello, world!",
+        "Hello, user!",
+    ]
+    # The string rendering lives under its own name.
+    assert conversation.return_messages_as_strings() == [
+        "user: Hello, world!",
+        "assistant: Hello, user!",
+    ]
+
+
+def test_return_messages_as_dictionary_preserves_roles():
+    """The real message-list accessor: dicts with exactly role and content.
+
+    Asserting the type and the role keeps a future rename from silently
+    swapping this with the "role: content" flattener.
+    """
+    conv = _two_turn_conversation()
+
+    messages = conv.return_messages_as_dictionary()
+
+    assert isinstance(messages, list)
+    for message in messages:
+        assert isinstance(message, dict)
+        assert set(message.keys()) == {"role", "content"}
+
+    assert messages[0]["role"] == "user"
+    assert messages[0]["content"] == "Hello, world!"
+    assert messages[1]["role"] == "assistant"
+    assert messages[1]["content"] == "Hello, user!"
 
 
 if __name__ == "__main__":

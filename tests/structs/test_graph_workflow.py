@@ -1081,8 +1081,12 @@ def test_subgraph_executes_and_output_reaches_downstream():
     inner_agent.run.assert_called_once()
     # Downstream agent must have been called with the inner graph's output
     downstream.run.assert_called_once()
-    call_prompt = downstream.run.call_args[0][0]
-    assert "inner result" in call_prompt
+    # The subgraph's output arrives as its own turn, not joined into the prompt.
+    call_kwargs = downstream.run.call_args.kwargs
+    delivered = [
+        m["content"] for m in call_kwargs.get("messages") or []
+    ] + [str(call_kwargs.get("task"))]
+    assert any("inner result" in c for c in delivered), delivered
 
 
 def test_subgraph_result_in_outer_output():
@@ -1335,6 +1339,217 @@ def test_visualize_sanitizes_the_workflow_name_into_the_output_path():
     )
     assert "/" not in safe
     assert safe == "team_alpha"
+
+
+# ---------------------------------------------------------------------------
+# Persistence round-trips
+#
+# to_json / from_json / save_to_file / load_from_file / save_spec had no
+# coverage. These pin the observable contract of each so the shared
+# to_dict / _write_json core cannot change it silently.
+# ---------------------------------------------------------------------------
+
+
+def _two_node_workflow(name="Persist-WF"):
+    a = create_test_agent("Alpha")
+    b = create_test_agent("Beta")
+    wf = GraphWorkflow(
+        name=name, description="round-trip", max_loops=2
+    )
+    wf.add_nodes([a, b])
+    wf.add_edge("Alpha", "Beta")
+    wf.set_entry_points(["Alpha"])
+    wf.set_end_points(["Beta"])
+    return wf
+
+
+def test_to_json_emits_the_documented_envelope():
+    """to_json returns an indented JSON string carrying schema + metrics."""
+    import json
+
+    wf = _two_node_workflow()
+    data = json.loads(wf.to_json())
+
+    assert data["schema_version"] == "1.0.0"
+    assert data["name"] == "Persist-WF"
+    assert data["max_loops"] == 2
+    assert {n["id"] for n in data["nodes"]} == {"Alpha", "Beta"}
+    assert data["edges"] == [
+        {"source": "Alpha", "target": "Beta", "metadata": {}}
+    ]
+    assert data["entry_points"] == ["Alpha"]
+    assert data["end_points"] == ["Beta"]
+    assert data["metrics"]["node_count"] == 2
+    assert data["metrics"]["edge_count"] == 1
+    # Every node carries a serialized agent, not a bare name.
+    assert all("agent" in n for n in data["nodes"])
+
+
+def test_to_json_optional_sections_are_off_by_default():
+    import json
+
+    wf = _two_node_workflow()
+    assert "runtime_state" not in json.loads(wf.to_json())
+    assert "runtime_state" in json.loads(
+        wf.to_json(include_runtime_state=True)
+    )
+
+
+def test_from_json_round_trip_preserves_topology():
+    wf = _two_node_workflow()
+    rebuilt = GraphWorkflow.from_json(wf.to_json())
+
+    assert rebuilt.name == wf.name
+    assert rebuilt.max_loops == wf.max_loops
+    assert set(rebuilt.nodes) == set(wf.nodes)
+    assert {(e.source, e.target) for e in rebuilt.edges} == {
+        (e.source, e.target) for e in wf.edges
+    }
+
+
+def test_from_json_rejects_malformed_json():
+    with pytest.raises(ValueError):
+        GraphWorkflow.from_json("{not json")
+
+
+def test_save_to_file_and_load_from_file_round_trip(tmp_path):
+    wf = _two_node_workflow()
+    target = tmp_path / "wf.json"
+
+    returned = wf.save_to_file(str(target))
+    assert returned == str(target)
+    assert target.exists()
+
+    rebuilt = GraphWorkflow.load_from_file(str(target))
+    assert set(rebuilt.nodes) == set(wf.nodes)
+    assert rebuilt.name == wf.name
+
+
+def test_save_to_file_appends_the_json_extension(tmp_path):
+    wf = _two_node_workflow()
+    returned = wf.save_to_file(str(tmp_path / "noext"))
+    assert returned.endswith(".json")
+    assert (tmp_path / "noext.json").exists()
+
+
+def test_save_to_file_refuses_to_clobber_without_overwrite(tmp_path):
+    wf = _two_node_workflow()
+    target = tmp_path / "wf.json"
+    wf.save_to_file(str(target))
+
+    with pytest.raises(FileExistsError):
+        wf.save_to_file(str(target))
+
+    # Explicit opt-in succeeds.
+    assert wf.save_to_file(str(target), overwrite=True) == str(target)
+
+
+def test_load_from_file_missing_path_raises_filenotfound(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        GraphWorkflow.load_from_file(str(tmp_path / "nope.json"))
+
+
+def test_save_spec_writes_the_shallow_topology(tmp_path):
+    import json
+
+    wf = _two_node_workflow()
+    target = tmp_path / "nested" / "spec.json"
+    wf.save_spec(str(target))
+
+    assert target.exists()
+    spec = json.loads(target.read_text())
+    # Shallow: agent identified by name, no serialized agent body.
+    assert spec == wf.to_spec()
+    assert all("agent_name" in n for n in spec["nodes"])
+    assert all("agent" not in n for n in spec["nodes"])
+
+
+def test_save_spec_round_trips_through_from_topology_spec(tmp_path):
+    import json
+
+    wf = _two_node_workflow()
+    target = tmp_path / "spec.json"
+    wf.save_spec(str(target))
+
+    registry = {
+        node.agent.agent_name: node.agent
+        for node in wf.nodes.values()
+    }
+    rebuilt = GraphWorkflow.from_topology_spec(
+        json.loads(target.read_text()), registry
+    )
+    assert set(rebuilt.nodes) == set(wf.nodes)
+    assert rebuilt.max_loops == wf.max_loops
+
+
+# ============================================================================
+# Fan-in attribution — each predecessor's output must carry its own name
+# ============================================================================
+
+
+def test_fan_in_attributes_outputs_to_the_correct_predecessor():
+    """A missing predecessor must not shift every remaining label.
+
+    ``pred_outputs`` is filtered by presence in ``prev_outputs``; zipping it
+    against the unfiltered predecessor list used to pair B's output with A's
+    name and drop the last output entirely.
+    """
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C", "D"]:
+        wf.add_node(create_test_agent(name))
+    for parent in ["A", "B", "C"]:
+        wf.add_edge(parent, "D")
+
+    # A produced nothing this run - failed, skipped, or behind a false branch.
+    prev_outputs = {"B": "OUT_B", "C": "OUT_C"}
+    _, messages = wf._build_prompt(
+        "D", "the task", prev_outputs, layer_idx=1
+    )
+
+    contents = [m["content"] for m in messages]
+    assert "B: OUT_B" in contents
+    assert "C: OUT_C" in contents
+    assert not any(c.startswith("A: ") for c in contents)
+
+
+def test_fan_in_with_all_predecessors_present_is_unaffected():
+    """The all-present case keeps working."""
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C"]:
+        wf.add_node(create_test_agent(name))
+    for parent in ["A", "B"]:
+        wf.add_edge(parent, "C")
+
+    _, messages = wf._build_prompt(
+        "C", "the task", {"A": "OUT_A", "B": "OUT_B"}, layer_idx=1
+    )
+
+    contents = [m["content"] for m in messages]
+    assert "A: OUT_A" in contents
+    assert "B: OUT_B" in contents
+
+
+def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
+    """Each predecessor is its own labelled turn, not joined into the prompt."""
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C"]:
+        wf.add_node(create_test_agent(name))
+    for parent in ["A", "B"]:
+        wf.add_edge(parent, "C")
+
+    prompt, messages = wf._build_prompt(
+        "C", "the task", {"A": "OUT_A", "B": "OUT_B"}, layer_idx=1
+    )
+
+    assert all(
+        isinstance(m, dict) and m["role"] == "user" for m in messages
+    )
+    assert [m["content"] for m in messages] == [
+        "the task",
+        "A: OUT_A",
+        "B: OUT_B",
+    ]
+    assert "OUT_A" not in prompt and "OUT_B" not in prompt
 
 
 if __name__ == "__main__":

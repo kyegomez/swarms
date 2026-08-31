@@ -73,7 +73,6 @@ Tests for utility functions and helpers:
 - `test_auto_check_download.py` - Automatic download checking
 - `test_display_markdown_message.py` - Markdown message display
 - `test_docstring_parser.py` - Docstring parsing utilities
-- `test_extract_code_from_markdown.py` - Code extraction from markdown
 - `test_formatter.py` - Text formatting utilities
 - `test_litellm_wrapper.py` - LiteLLM wrapper functionality
 - `test_math_eval.py` - Mathematical expression evaluation
@@ -92,14 +91,6 @@ Tests for artifact management and versioning:
 Tests for communication and conversation management:
 
 - `test_conversation.py` - Conversation handling and persistence
-
-#### 📊 AOP (Aspect-Oriented Programming) Tests (`/aop/`)
-Advanced testing with benchmarking and performance analysis:
-
-- `aop_benchmark.py` - Comprehensive AOP benchmarking suite
-- `test_data/` - Benchmark data and results
-  - `aop_benchmark_data/` - Benchmark results and visualizations
-  - `image1.jpg`, `image2.png` - Test images
 
 #### 📈 Telemetry Tests (`/telemetry/`)
 Tests for telemetry and monitoring:
@@ -154,7 +145,6 @@ pytest --cov=swarms --cov-report=html
 - **Agent Functionality**: Complete testing of agent creation, execution, and management
 - **Workflow Testing**: Various workflow patterns including sequential, concurrent, and recursive
 - **Tool Integration**: Testing of tool parsing, execution, and MCP support
-- **Performance Benchmarking**: AOP benchmarking with multiple LLM providers
 - **Error Handling**: Comprehensive error handling and recovery testing
 
 ### Test Data
@@ -162,13 +152,6 @@ pytest --cov=swarms --cov-report=html
 - Performance visualizations (PNG charts)
 - Test images for multimodal testing
 - Conversation cache files for persistence testing
-
-### Supported LLM Providers
-The AOP benchmark tests support multiple LLM providers:
-- OpenAI (GPT-4o, GPT-4o-mini, GPT-4-turbo)
-- Anthropic (Claude 3.5 Sonnet, Claude 3 Haiku, Claude 3 Sonnet)
-- Google (Gemini 1.5 Pro, Gemini 1.5 Flash)
-- Meta (Llama 3.1 8B, Llama 3.1 70B)
 
 ## 🔧 Configuration
 
@@ -178,19 +161,9 @@ Tests require the following environment variables:
 - Additional API keys for other providers (optional)
 
 ### Test Configuration
-- Maximum agents: 20 (configurable in AOP benchmark)
 - Requests per test: 20
 - Concurrent requests: 5
 - Timeout settings: Configurable per test type
-
-## 📊 Benchmarking
-
-The AOP benchmark suite provides:
-- Performance metrics across multiple LLM providers
-- Memory usage tracking
-- Response time analysis
-- Throughput measurements
-- Visual performance reports
 
 ## 🐛 Debugging
 

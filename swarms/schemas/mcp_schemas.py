@@ -183,12 +183,3 @@ class MCPConnection(BaseModel):
     class Config:
         arbitrary_types_allowed = True
         extra = "allow"
-
-
-class MultipleMCPConnections(BaseModel):
-    connections: List[MCPConnection] = Field(
-        description="List of MCP connections"
-    )
-
-    class Config:
-        arbitrary_types_allowed = True

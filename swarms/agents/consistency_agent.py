@@ -26,6 +26,7 @@ from typing import List, Optional, Union, Dict, Any
 
 from loguru import logger
 
+from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.output_types import OutputType
@@ -382,8 +383,4 @@ class SelfConsistencyAgent:
             >>> results = agent.batched_run(tasks)
             >>> print(len(results))  # 3
         """
-        responses = []
-        for task in tasks:
-            response = self.run(task, *args, **kwargs)
-            responses.append(response)
-        return responses
+        return batched_run(self.run, tasks, *args, **kwargs)
