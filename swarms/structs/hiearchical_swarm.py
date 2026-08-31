@@ -27,7 +27,6 @@ from swarms.structs.context_utils import (
     split_last_turn,
 )
 from swarms.structs.conversation import Conversation
-from swarms.utils.any_to_str import any_to_str
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.omni_agent_types import AgentListType
@@ -686,15 +685,21 @@ class HierarchicalSwarm:
                 img=img,
             )
 
-            # A tool-call list stored raw renders as a Python repr in the
-            # history that every later agent reads. Keep it readable.
+            if isinstance(function_call, str):
+                director_record = function_call
+            else:
+                plan, orders = self.parse_orders(function_call)
+                director_record = "\n\n".join(
+                    [plan]
+                    + [
+                        f"{order.agent_name}: {order.task}"
+                        for order in orders
+                    ]
+                )
+
             self.conversation.add(
                 role="Director",
-                content=(
-                    function_call
-                    if isinstance(function_call, str)
-                    else any_to_str(function_call)
-                ),
+                content=director_record,
             )
 
             return function_call

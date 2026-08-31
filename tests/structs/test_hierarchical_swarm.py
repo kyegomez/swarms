@@ -1158,5 +1158,62 @@ class TestHierarchicalContextManagement:
         ), f"stale messages loaded from disk: {roles}"
 
 
+def test_director_plan_is_recorded_as_prose_not_a_tool_call():
+    """Workers read the shared history, so the plan must not be a tool-call repr."""
+    import json
+    from unittest.mock import patch
+
+    tool_call = [
+        {
+            "role": "assistant",
+            "content": [
+                {
+                    "function": {
+                        "name": "create_plan",
+                        "arguments": json.dumps(
+                            {
+                                "plan": "Explain the rate hikes.",
+                                "orders": [
+                                    {
+                                        "agent_name": "Markets",
+                                        "task": "Compile an overview.",
+                                    }
+                                ],
+                            }
+                        ),
+                    }
+                }
+            ],
+        }
+    ]
+
+    swarm = HierarchicalSwarm(
+        name="s",
+        description="d",
+        agents=[
+            Agent(
+                agent_name="Markets",
+                model_name="gpt-4o-mini",
+                max_loops=1,
+            )
+        ],
+        max_loops=1,
+    )
+
+    with patch.object(swarm.director, "run", return_value=tool_call):
+        swarm.run_director(task="explain the rate hikes")
+
+    recorded = [
+        m["content"]
+        for m in swarm.conversation.conversation_history
+        if m.get("role") == "Director"
+    ][-1]
+
+    assert "Explain the rate hikes." in recorded
+    assert "Markets: Compile an overview." in recorded
+    assert "arguments" not in recorded
+    assert "create_plan" not in recorded
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
