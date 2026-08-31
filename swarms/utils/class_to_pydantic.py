@@ -51,9 +51,7 @@ class ArbitraryTypesModel(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
-# Mutable defaults must go through default_factory — sharing one instance
-# across every model instance is the classic Python footgun, and Pydantic
-# rejects them outright.
+# Mutable defaults must go through default_factory; Pydantic rejects them outright.
 _MUTABLE_TYPES = (list, dict, set, bytearray)
 
 

@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from loguru import logger
 from pydantic import BaseModel, Field, ValidationError
 
+from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
@@ -20,10 +21,7 @@ swarm_types = [
     "return-agents-objects",
 ]
 
-# swarm_type values that are valid for SwarmRouter in general but make no
-# sense as something the boss agent generates for a *sub*-swarm spec:
-# "AutoSwarmBuilder" would recurse into itself, and "auto" defers the choice
-# rather than making one.
+# "AutoSwarmBuilder" would recurse into itself and "auto" defers the choice rather than making one.
 _EXCLUDED_GENERATED_SWARM_TYPES = {"AutoSwarmBuilder", "auto"}
 
 BOSS_SYSTEM_PROMPT = """
@@ -621,11 +619,7 @@ class AutoSwarmBuilder:
             f"{[a.agent_name for a in agents]}"
         )
 
-        # Note: SwarmRouterConfig.multi_agent_collab_prompt is a free-form
-        # str (guidance text for the boss agent), while SwarmRouter's own
-        # multi_agent_collab_prompt kwarg is a bool (enable/disable a
-        # built-in prompt). The two are not interchangeable, so it is
-        # intentionally not forwarded here.
+        # Not forwarded: the config field is free-form guidance text, SwarmRouter's kwarg is a bool.
         swarm_router = SwarmRouter(
             name=config.name,
             description=config.description,
@@ -730,7 +724,7 @@ class AutoSwarmBuilder:
         Returns:
             List[Any]: List of results from each task execution.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)
 
     def create_agents_from_specs(
         self, agents_dictionary: Any

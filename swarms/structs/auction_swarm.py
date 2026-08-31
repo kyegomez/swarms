@@ -51,6 +51,7 @@ import ast
 import json
 from typing import Any, Callable, List, Optional, Tuple, Union
 
+from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
@@ -95,9 +96,7 @@ BID_TOOL = {
 # zero-cost bid can never produce a divide-by-zero or an infinite score.
 MIN_ESTIMATED_COST = 1e-6
 
-# Tool-call output above this length is rejected by _extract_bid without
-# attempting ast.literal_eval, as a guard against pathological model
-# output causing excessive parse time.
+# Guards _extract_bid against pathological model output causing excessive parse time.
 MAX_TOOL_OUTPUT_LEN = 10_000
 
 BID_PROMPT = """You are {agent_name}, one of several agents bidding to handle a task.
@@ -392,11 +391,7 @@ class AuctionSwarm(SerializableMixin):
             if self.auto_equip:
                 self._remove_bid_tool()
 
-        # Every agent's run() call during bidding left the bid prompt and
-        # the forced bid tool call in its short_memory. With
-        # output_type="str-all-except-first" (the default), that would leak
-        # into a later execution run's output as extra text ahead of the
-        # real response, so reset short_memory for every bidder now.
+        # Bidding leaves the bid prompt in short_memory, which would leak ahead of a later run's real response.
         for agent in self.agents:
             agent.short_memory = agent.short_memory_init()
 
@@ -477,4 +472,4 @@ class AuctionSwarm(SerializableMixin):
         Returns:
             List of formatted conversation outputs from :meth:`run`.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)
