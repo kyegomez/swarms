@@ -15,6 +15,7 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -31,6 +32,8 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        # The tests import swarms, so the package under test has to be installed.
+        python -m pip install -e . --no-deps
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

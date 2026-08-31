@@ -48,13 +48,16 @@ agent = Agent(
     model_name=MODEL,
     # Exa authenticates via the exaApiKey query parameter.
     mcp_url=f"https://mcp.exa.ai/mcp?exaApiKey={EXA_API_KEY}",
-    max_loops=1,
+    # Deferred tools need three turns: search, call, then answer.
+    max_loops=2,
     reasoning_effort=None,
+    dynamic_tools=True,
+    output_type="json",
 )
 
 if __name__ == "__main__":
     result = agent.run(
-        "Use Exa web search to find the three most recent notable "
+        "Use Exa web search tool to find the three most recent notable "
         "developments in open-source multi-agent AI frameworks, with links."
     )
     print(result)

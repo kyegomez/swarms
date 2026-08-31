@@ -1,4 +1,3 @@
-# System Role Definition
 PAPER_IDEA_AGENT_SYSTEM_PROMPT = """
 You are an experienced AI researcher tasked with proposing high-impact research ideas. Your ideas should:
 

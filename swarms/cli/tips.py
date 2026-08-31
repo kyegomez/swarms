@@ -20,9 +20,7 @@ from typing import Dict, Iterable, List, Optional
 from rich.text import Text
 
 
-# ---------------------------------------------------------------------------
-# Tip pools — CLI-focused only
-# ---------------------------------------------------------------------------
+# Tip pools, CLI-focused only.
 
 COMMAND_TIPS: List[str] = [
     "Scaffold a new project with [bold]swarms init[/bold] — drops a .env and workspace dir for you",
@@ -132,9 +130,7 @@ COMMUNITY_TIPS: List[str] = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Category registry
-# ---------------------------------------------------------------------------
+# Category registry.
 
 TIP_CATEGORIES: Dict[str, List[str]] = {
     "commands": COMMAND_TIPS,
@@ -148,9 +144,7 @@ TIP_CATEGORIES: Dict[str, List[str]] = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Random labels — Claude-Code-style variety
-# ---------------------------------------------------------------------------
+# Random labels.
 
 # (emoji, label, accent style). Sampling these gives the startup banner the
 # "feels fresh every time" quality.
@@ -166,9 +160,7 @@ TIP_LABELS: List[tuple[str, str, str]] = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
+# Public API.
 
 
 def _all_tips(category: Optional[str] = None) -> List[str]:

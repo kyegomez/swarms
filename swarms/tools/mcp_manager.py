@@ -52,9 +52,7 @@ _SSE_URL_HINTS = ("/sse", "/sse/")
 _ENV_PATTERN = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$")
 
 
-########################################################
-# Helpers
-########################################################
+# Helpers.
 
 
 def _resolve_secret(value: Optional[str]) -> Optional[str]:
@@ -134,6 +132,49 @@ def _server_origin(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
+def _mcp_is_v2() -> bool:
+    """
+    True when the installed mcp is 2.x.
+
+    Detected by the factory rename rather than a version string, so it tracks
+    the actual API rather than packaging. 2.x also changed timeout types from
+    ``timedelta`` to plain seconds.
+    """
+    try:
+        from mcp.client.streamable_http import (  # noqa: F401
+            streamablehttp_client,
+        )
+
+        return False
+    except ImportError:
+        return True
+
+
+MCP_IS_V2 = _mcp_is_v2()
+
+
+def _read_timeout(seconds: float):
+    """Session read timeout in the type the installed mcp expects."""
+    return seconds if MCP_IS_V2 else timedelta(seconds=seconds)
+
+
+def _http_timeout(connect: float, read: float):
+    """
+    Build a timeout object for mcp 2.x's ``create_mcp_http_client``.
+
+    It expects the httpx flavour that the installed mcp bundles, which is
+    ``httpx2`` on 2.x and ``httpx`` on 1.x. Falling back to ``None`` simply
+    accepts the library defaults rather than failing the connection.
+    """
+    for module_name in ("httpx2", "httpx"):
+        try:
+            module = __import__(module_name)
+            return module.Timeout(connect, read=read)
+        except Exception:
+            continue
+    return None
+
+
 def run_async(coro: Any) -> Any:
     """
     Run a coroutine from sync code, whether or not a loop is already running.
@@ -152,9 +193,7 @@ def run_async(coro: Any) -> Any:
         return executor.submit(asyncio.run, coro).result()
 
 
-########################################################
-# OAuth support
-########################################################
+# OAuth support.
 
 
 class MCPFileTokenStorage:
@@ -196,10 +235,7 @@ class MCPFileTokenStorage:
                 self.path.parent.mkdir(
                     parents=True, exist_ok=True, mode=0o700
                 )
-                # Create the file 0600 from the start. write_text() creates it
-                # honoring the umask (typically 0644), leaving a window in which
-                # another local user could read the OAuth token before a later
-                # chmod lands. os.open with an explicit mode closes that window.
+                # 0600 from the start: write_text() honours the umask, leaving the token readable until a later chmod.
                 fd = os.open(
                     self.path,
                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
@@ -518,9 +554,7 @@ class _ClientCredentialsToken:
             return token
 
 
-########################################################
-# Manager
-########################################################
+# Manager.
 
 
 class MCPManager:
@@ -599,9 +633,7 @@ class MCPManager:
             str, _ClientCredentialsToken
         ] = {}
 
-    ####################################################
-    # Config normalization
-    ####################################################
+    # Config normalization.
 
     @staticmethod
     def _coerce_oauth(
@@ -711,9 +743,7 @@ class MCPManager:
             or "mcp-server"
         )
 
-    ####################################################
-    # Public surface
-    ####################################################
+    # Public surface.
 
     @property
     def enabled(self) -> bool:
@@ -768,9 +798,7 @@ class MCPManager:
         self._oauth_providers = {}
         self._client_credentials = {}
 
-    ####################################################
-    # Tool discovery
-    ####################################################
+    # Tool discovery.
 
     def get_tools(
         self,
@@ -901,10 +929,15 @@ class MCPManager:
     @staticmethod
     def _mcp_tool_to_openai(tool: MCPTool) -> Dict[str, Any]:
         """Convert an MCP tool definition into an OpenAI tool schema."""
-        parameters = tool.inputSchema or {
-            "type": "object",
-            "properties": {},
-        }
+        # mcp 2.x renamed `inputSchema` to `input_schema`.
+        parameters = (
+            getattr(tool, "inputSchema", None)
+            or getattr(tool, "input_schema", None)
+            or {
+                "type": "object",
+                "properties": {},
+            }
+        )
         return {
             "type": "function",
             "function": {
@@ -915,9 +948,7 @@ class MCPManager:
             },
         }
 
-    ####################################################
-    # Tool execution
-    ####################################################
+    # Tool execution.
 
     def execute_tool_calls(
         self,
@@ -1216,9 +1247,7 @@ class MCPManager:
 
         return calls
 
-    ####################################################
-    # Transport + auth
-    ####################################################
+    # Transport and auth.
 
     def _resolve_transport(self, connection: MCPConnection) -> str:
         transport = (connection.transport or "auto").replace("-", "_")
@@ -1453,7 +1482,26 @@ class MCPManager:
                 auth=auth,
             )
 
-        from mcp.client.streamable_http import streamablehttp_client
+        try:
+            # mcp 1.x
+            from mcp.client.streamable_http import (
+                streamablehttp_client,
+            )
+        except ImportError:
+            # mcp 2.x moved headers, timeout and auth onto an http client passed to the factory.
+            from mcp.client.streamable_http import (
+                create_mcp_http_client,
+                streamable_http_client,
+            )
+
+            return streamable_http_client(
+                url=connection.url,
+                http_client=create_mcp_http_client(
+                    headers=headers or None,
+                    timeout=_http_timeout(timeout, sse_read_timeout),
+                    auth=auth,
+                ),
+            )
 
         return streamablehttp_client(
             url=connection.url,
@@ -1498,8 +1546,8 @@ class MCPManager:
                 async with ClientSession(
                     read,
                     write,
-                    read_timeout_seconds=timedelta(
-                        seconds=float(
+                    read_timeout_seconds=_read_timeout(
+                        float(
                             connection.tool_timeout
                             or connection.timeout
                             or 120
@@ -1520,9 +1568,7 @@ class MCPManager:
                 f"{_describe_exception(e)}"
             ) from e
 
-    ####################################################
-    # Retries
-    ####################################################
+    # Retries.
 
     async def _with_retries(self, op, description: str = "") -> Any:
         last_error: Optional[BaseException] = None
