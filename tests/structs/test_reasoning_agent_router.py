@@ -1,5 +1,3 @@
-"""Pytest tests for ReasoningAgentRouter and related exceptions."""
-
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -8,11 +6,6 @@ from swarms.agents.reasoning_agent_router import (
     ReasoningAgentInitializationError,
     ReasoningAgentRouter,
 )
-
-
-# ---------------------------------------------------------------------------
-# __init__ and reliability_check (via init)
-# ---------------------------------------------------------------------------
 
 
 def test_router_init_default():

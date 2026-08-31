@@ -68,9 +68,7 @@ class LLMManager:
     def __init__(self, agent: Any):
         self.agent = agent
 
-    ########################################################
-    # Model selection & fallback rotation
-    ########################################################
+    # Model selection and fallback rotation.
 
     def get_available_models(self) -> List[str]:
         """
@@ -173,9 +171,7 @@ class LLMManager:
         """
         return len(self.get_available_models()) > 1
 
-    ########################################################
-    # Construction & configuration
-    ########################################################
+    # Construction and configuration.
 
     def build(self, *args, **kwargs) -> Optional[LiteLLM]:
         """
@@ -228,18 +224,12 @@ class LLMManager:
                 "agent_name": agent.agent_name,
                 "prompt_caching": agent.prompt_caching,
                 "cache_config": agent.cache_config,
-                # Omitting these sends custom-endpoint traffic to the default
-                # provider instead. temp_llm_instance_for_tool_summary
-                # already forwards both.
+                # Omitting these sends custom-endpoint traffic to the default provider instead.
                 "base_url": agent.llm_base_url,
                 "api_key": agent.llm_api_key,
             }
 
-            # With dynamic tools, MCP schemas go into the searchable catalog
-            # instead of being appended to every request. This runs before the
-            # tool list is read, because deferring updates
-            # `tools_list_dictionary` in place. It is a no-op without a loader,
-            # and it fetches only once per agent.
+            # Runs before the tool list is read, because deferring updates tools_list_dictionary in place.
             deferred_mcp = False
             if (
                 agent.mcp_enabled
@@ -292,9 +282,6 @@ class LLMManager:
                 if kwargs:
                     additional_args.update(kwargs)
 
-                # Handle positional arguments (args)
-                # These could be additional configuration parameters
-                # that should be merged into the additional_args
                 if args:
                     # If args contains a dictionary, merge it directly
                     if len(args) == 1 and isinstance(args[0], dict):
@@ -389,9 +376,7 @@ class LLMManager:
                 f"Error dynamically changing temperature: {error}"
             )
 
-    ########################################################
-    # Stream plumbing
-    ########################################################
+    # Stream plumbing.
 
     def stream_with_tool_collection(
         self, stream, tool_calls_out: list
@@ -489,9 +474,7 @@ class LLMManager:
             else "Thinking"
         )
 
-    ########################################################
-    # Invocation
-    ########################################################
+    # Invocation.
 
     def call(
         self,
@@ -744,9 +727,7 @@ class LLMManager:
 
         # Check if streaming_callback is provided (for ConcurrentWorkflow dashboard integration)
         if streaming_callback is not None:
-            # Real-time callback streaming — thinking panel is printed as a
-            # side effect inside extract_thinking_from_stream; no Live context
-            # is active so there is no interleaving risk.
+            # No Live context is active here, so the thinking panel cannot interleave.
             complete_response = self._collect_stream(
                 self.stream_with_tool_collection(
                     self.extract_thinking_from_stream(
@@ -853,9 +834,7 @@ class LLMManager:
             collect_chunks=True,
         )
 
-    ########################################################
-    # Fallback execution
-    ########################################################
+    # Fallback execution.
 
     def handle_fallback_execution(
         self,

@@ -169,11 +169,7 @@ def run_agents_concurrently(
                     output_dict[name] = result
                 return output_dict
             else:
-                # Input order, not completion order: every caller pairs
-                # this list positionally with `agents`, so yielding it by
-                # finish time filed each answer under another agent's name.
-                # future.result() blocks, but all the work was submitted
-                # above, so this waits no longer than as_completed did.
+                # Input order, not completion order: callers pair this list positionally with `agents`.
                 results = []
                 for future in futures:
                     try:

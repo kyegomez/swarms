@@ -465,11 +465,7 @@ class SwarmTelemetry:
                     )
                 )
             )
-            # Keep telemetry invisible: a failed export must never spam the
-            # caller's logs with tracebacks (matches CrewAI's silent behavior).
-            # These are OpenTelemetry's OWN loggers, which are stdlib logging
-            # objects — loguru cannot mute them, so this one call has to stay
-            # on stdlib. Swarms' own logging below uses loguru as usual.
+            # OpenTelemetry's own stdlib loggers, which loguru cannot mute, so this one call stays on stdlib.
             for _name in (
                 "opentelemetry.sdk.trace.export",
                 "opentelemetry.exporter.otlp.proto.http.trace_exporter",
@@ -482,9 +478,7 @@ class SwarmTelemetry:
             )
             self.ready = True
         except Exception as e:
-            # Any setup failure leaves telemetry inert — swarms still runs.
-            # Logged at debug so it is discoverable when someone wonders why no
-            # spans arrive, without ever intruding on a normal run.
+            # Debug, not warning: discoverable when spans are missing without intruding on a normal run.
             logger.debug(f"Telemetry disabled — setup failed: {e}")
             self.ready = False
 
@@ -599,11 +593,7 @@ class SwarmTelemetry:
 
         handle = _SpanHandle(span)
         try:
-            # Make the span CURRENT for the duration of the block, so anything
-            # traced inside it (an Agent.run within a SwarmRouter.run, say)
-            # attaches as a child instead of starting its own root trace.
-            # end_on_exit=False because the finally block below owns ending it;
-            # error recording is left to the handle so it happens exactly once.
+            # end_on_exit=False because the finally block owns ending it and recording the error exactly once.
             with _current_span(span):
                 yield handle
         except BaseException as exc:
@@ -686,9 +676,7 @@ def swarm_telemetry() -> SwarmTelemetry:
     return SwarmTelemetry()
 
 
-# --------------------------------------------------------------------------- #
-# Module-level convenience API — what most callers use.
-# --------------------------------------------------------------------------- #
+# Module-level convenience API.
 def capture_init(obj: Any, **extra_attributes: Any) -> None:
     """Capture ``obj``'s ``__init__`` configuration if telemetry is enabled.
 

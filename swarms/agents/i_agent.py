@@ -283,18 +283,3 @@ class IterativeReflectiveExpansion:
         return history_output_formatter(
             self.conversation, self.output_type
         )
-
-
-# def main() -> None:
-#     """
-#     Main function to execute the Iterative Reflective Expansion algorithm on a sample problem.
-#     """
-#     problem_statement = "What is the 40th prime number?"
-#     reasoning_engine = IterativeReflectiveExpansion(max_loops=1)
-#     final_solution = reasoning_engine.run(problem_statement)
-#     print("Final Solution:")
-#     print(final_solution)
-
-
-# if __name__ == "__main__":
-#     main()

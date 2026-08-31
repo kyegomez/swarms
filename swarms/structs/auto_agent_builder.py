@@ -5,6 +5,7 @@ from swarms.prompts.auto_agent_builder_prompt import (
     AUTO_AGENT_BUILDER_SYSTEM_PROMPT,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.execution_utils import batched_run
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -75,6 +76,15 @@ BUILD_AGENTS_TOOL = {
 REQUIRED_FIELDS = (
     "name",
     "description",
+    "system_prompt",
+    "model_name",
+)
+
+# Agent keyword arguments the builder fills in from the generated roster.
+# Passing any of these in agent_kwargs would collide with the generated value.
+GENERATED_AGENT_FIELDS = (
+    "agent_name",
+    "agent_description",
     "system_prompt",
     "model_name",
 )
@@ -258,7 +268,17 @@ class AutoAgentBuilder:
         self.max_agents = max_agents
         self.num_agents = num_agents
         self.system_prompt = system_prompt
-        self.agent_kwargs = agent_kwargs or {}
+        self.agent_kwargs = {
+            k: v
+            for k, v in (agent_kwargs or {}).items()
+            if k not in GENERATED_AGENT_FIELDS
+        }
+        for k in sorted(
+            set(agent_kwargs or {}) & set(GENERATED_AGENT_FIELDS)
+        ):
+            logger.warning(
+                f"Ignoring agent_kwargs[{k!r}]: it is generated per agent."
+            )
         self.return_dict = return_dict
         self.verbose = verbose
 
@@ -284,7 +304,6 @@ class AutoAgentBuilder:
             top_p=None,
             print_on=False,
             tools_list_dictionary=[BUILD_AGENTS_TOOL],
-            **self.agent_kwargs,
         )
 
     @trace_run("AutoAgentBuilder.build_configs")
@@ -430,3 +449,14 @@ class AutoAgentBuilder:
             returns for this builder's ``return_dict`` setting.
         """
         return self.run(task)
+
+    def batch_run(self, tasks: List[str]) -> Any:
+        """Generate the roster for each task in sequence.
+
+        Args:
+            tasks (List[str]): The tasks the generated team should be able to handle.
+
+        Returns:
+            List[Union[List[Agent], List[Dict[str, str]]]]: The rosters for each task.
+        """
+        return batched_run(self.run, tasks)

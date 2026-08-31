@@ -12,16 +12,17 @@ def function_to_str(function: dict[str, Any]) -> str:
         str: The string representation of the function.
 
     """
-    function_str = f"Function: {function['name']}\n"
-    function_str += f"Description: {function['description']}\n"
-    function_str += "Parameters:\n"
-
-    for param, details in function["parameters"][
-        "properties"
-    ].items():
-        function_str += f"  {param} ({details['type']}): {details.get('description', '')}\n"
-
-    return function_str
+    lines = [
+        f"Function: {function['name']}",
+        f"Description: {function['description']}",
+        "Parameters:",
+    ]
+    parameters = function["parameters"]["properties"]
+    for param, details in parameters.items():
+        lines.append(
+            f"  {param} ({details['type']}): {details.get('description', '')}"
+        )
+    return "\n".join(lines) + "\n"
 
 
 def functions_to_str(functions: list[dict[str, Any]]) -> str:
@@ -35,8 +36,6 @@ def functions_to_str(functions: list[dict[str, Any]]) -> str:
         str: The string representation of the functions.
 
     """
-    functions_str = ""
-    for function in functions:
-        functions_str += function_to_str(function) + "\n"
-
-    return functions_str
+    return "\n".join(
+        function_to_str(function) for function in functions
+    ) + ("\n" if functions else "")

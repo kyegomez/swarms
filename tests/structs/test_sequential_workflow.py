@@ -4,6 +4,9 @@ from unittest.mock import patch
 import pytest
 
 from swarms import Agent, SequentialWorkflow
+from swarms.prompts.agent_acknowledgement_prompt import (
+    AGENT_COLLAB_PROMPT,
+)
 from swarms.structs.sequential_workflow import DRIFT_DETECTION_PROMPT
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -639,3 +642,97 @@ def test_run_omits_imgs_when_not_supplied():
         wf.run("plain task")
 
     assert "imgs" not in pipeline.call_args.kwargs
+
+
+# ============================================================================
+# MULTI-AGENT COLLAB PROMPT: DELIVERED, NOT WELDED ONTO THE AGENTS
+# ============================================================================
+
+
+def _recording_agents(names):
+    """Agents whose run() records the context it was handed."""
+    calls = []
+    agents = []
+    for name in names:
+        agent = Agent(
+            agent_name=name,
+            system_prompt=f"You are {name}.",
+            model_name="gpt-4o",
+            max_loops=1,
+        )
+
+        def _make(agent_obj, agent_name):
+            def _run(task=None, messages=None, **kwargs):
+                calls.append(
+                    {
+                        "agent": agent_name,
+                        "task": task,
+                        "messages": list(messages or []),
+                    }
+                )
+                answer = f"{agent_name}-answer"
+                agent_obj.short_memory.add(
+                    role=agent_name, content=answer
+                )
+                return answer
+
+            return _run
+
+        agent.run = _make(agent, name)
+        agents.append(agent)
+    return agents, calls
+
+
+def test_collab_prompt_never_mutates_the_callers_agents():
+    """Construction used to do `agent.system_prompt += AGENT_COLLAB_PROMPT`.
+
+    It was never restored and it was cumulative, so building two workflows
+    over the same agents appended 13,433 chars twice.
+    """
+    agents, _ = _recording_agents(["A1", "A2"])
+    originals = [agent.system_prompt for agent in agents]
+
+    SequentialWorkflow(
+        agents=agents,
+        max_loops=1,
+        autosave=False,
+        multi_agent_collab_prompt=True,
+    )
+    SequentialWorkflow(
+        agents=agents,
+        max_loops=1,
+        autosave=False,
+        multi_agent_collab_prompt=True,
+    )
+
+    for agent, original in zip(agents, originals):
+        assert agent.system_prompt == original
+
+
+def test_collab_prompt_is_delivered_as_a_system_turn_at_run_time():
+    """Not mutating the agents must not mean losing the guidance."""
+    agents, calls = _recording_agents(["A1", "A2"])
+    originals = [agent.system_prompt for agent in agents]
+
+    workflow = SequentialWorkflow(
+        agents=agents,
+        max_loops=1,
+        autosave=False,
+        multi_agent_collab_prompt=True,
+    )
+    workflow.run("the task")
+
+    assert calls, "no agent was run"
+    system_turns = [
+        message["content"]
+        for call in calls
+        for message in call["messages"]
+        if message["role"] == "system"
+    ]
+    assert any(
+        AGENT_COLLAB_PROMPT in content for content in system_turns
+    )
+
+    # ...and the caller's agents are still untouched afterwards.
+    for agent, original in zip(agents, originals):
+        assert agent.system_prompt == original
