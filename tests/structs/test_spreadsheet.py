@@ -590,7 +590,9 @@ def test_max_loops_never_runs_one_agent_concurrently(temp_workspace):
             return "done"
 
     agents = [TrackingAgent("A"), TrackingAgent("B")]
-    swarm = SpreadSheetSwarm(agents=agents, max_loops=4, autosave=False)
+    swarm = SpreadSheetSwarm(
+        agents=agents, max_loops=4, autosave=False
+    )
 
     swarm.run("task")
 
