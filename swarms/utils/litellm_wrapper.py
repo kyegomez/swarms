@@ -539,9 +539,7 @@ class LiteLLM:
             and message.thinking_blocks
         )
 
-        # Prefer thinking_blocks for Anthropic; fall back to reasoning_content
-        # for all other providers. Both fields carry the same text on Anthropic,
-        # so only collect one to avoid duplicates.
+        # Anthropic carries the same text in both fields, so collect only one.
         if has_thinking_blocks:
             for block in message.thinking_blocks:
                 thinking = block.get("thinking", "")
@@ -573,6 +571,7 @@ class LiteLLM:
         task: Optional[str] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        messages: Optional[List[dict]] = None,
     ):
         """
         Prepare the messages list for the LLM API call.
@@ -587,6 +586,13 @@ class LiteLLM:
             img (Optional[str]): Image input (file path, URL, data URI, or base64 string).
                 If provided, the task and image are combined into a vision message.
                 Defaults to None.
+            messages (Optional[List[dict]]): A prebuilt conversation body in
+                OpenAI chat format - user/assistant turns, ``tool_calls`` on
+                assistant messages, and ``{"role": "tool", "tool_call_id": ...}``
+                results. When given, it is appended after the system prompt and
+                ``task`` is ignored. This is the path an agentic loop uses to
+                preserve real tool-call structure instead of flattening the
+                conversation into a single user string.
 
         Returns:
             list: A list of messages formatted for the LLM API. Includes the system
@@ -609,9 +615,7 @@ class LiteLLM:
             - The method creates a copy of the existing messages to avoid modifying
               the original message history.
         """
-        # Normalize orchestrator-style "System:/Human:" prompts where the System
-        # section is effectively empty (e.g. "System: \\n\\nHuman: Say hi").
-        # This prevents Anthropic API errors about empty system text blocks.
+        # An empty System section ("System: \n\nHuman: hi") makes Anthropic reject the system block.
         if isinstance(task, str) and "Human:" in task:
             stripped = task.lstrip()
             if stripped.startswith("System:"):
@@ -630,21 +634,29 @@ class LiteLLM:
                     # If splitting fails for any reason, fall back to original task
                     pass
 
-        # Start with a fresh copy of messages to avoid duplication.
-        # Also drop any empty system blocks to satisfy Anthropic validation.
-        messages = []
+        # Named `base` so it cannot shadow the `messages` parameter below.
+        base = []
         for m in self.messages:
             if not isinstance(m, dict):
                 continue
             if m.get("role") != "system":
-                messages.append(m)
+                base.append(m)
                 continue
             content = m.get("content")
             if content is None:
                 continue
             if isinstance(content, str) and not content.strip():
                 continue
-            messages.append(m)
+            base.append(m)
+
+        # A prebuilt body is already structured, so only this instance's system prompt is added.
+        if messages is not None:
+            prepared = base + list(messages)
+            if self.prompt_caching and prepared:
+                self._apply_prompt_caching(prepared)
+            return prepared
+
+        messages = base
 
         # Check if model supports vision if any image is provided
         images = [
@@ -1124,6 +1136,7 @@ class LiteLLM:
         imgs: Optional[List[str]] = None,
         runtime_args: tuple = (),
         runtime_kwargs: Optional[dict] = None,
+        messages: Optional[List[dict]] = None,
     ) -> dict:
         """
         Assemble the full parameter dict for a litellm completion call.
@@ -1141,7 +1154,7 @@ class LiteLLM:
         completion_params = {
             "model": self.model_name,
             "messages": self._prepare_messages(
-                task=task, img=img, imgs=imgs
+                task=task, img=img, imgs=imgs, messages=messages
             ),
             "stream": self.stream,
             "max_tokens": self.max_tokens,
@@ -1200,9 +1213,7 @@ class LiteLLM:
             completion_params["reasoning_effort"] = (
                 self.reasoning_effort
             )
-            # litellm maps reasoning_effort to thinking budget_tokens
-            # (low=5000, medium=10000, high=15000) and max_tokens must
-            # exceed that budget.
+            # litellm maps reasoning_effort to a thinking budget that max_tokens must exceed.
             self._apply_anthropic_thinking_constraints(
                 completion_params, threshold=16000, target=16000
             )
@@ -1259,9 +1270,7 @@ class LiteLLM:
         if self.stream:
             return response
 
-        # Tool calls are checked before the reasoning branch: reasoning
-        # models still emit tool_calls, and routing them to
-        # output_for_reasoning would drop the call.
+        # Before the reasoning branch: reasoning models still emit tool_calls, which would be dropped.
         if self.tools_list_dictionary is not None and getattr(
             response.choices[0].message, "tool_calls", None
         ):
@@ -1313,10 +1322,11 @@ class LiteLLM:
 
     def run(
         self,
-        task: str,
+        task: Optional[str] = None,
         audio: Optional[str] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        messages: Optional[List[dict]] = None,
         *args,
         **kwargs,
     ):
@@ -1360,6 +1370,7 @@ class LiteLLM:
                 imgs=imgs,
                 runtime_args=args,
                 runtime_kwargs=kwargs,
+                messages=messages,
             )
             response = completion(**completion_params)
             return self._process_response(response)
@@ -1378,10 +1389,11 @@ class LiteLLM:
 
     async def arun(
         self,
-        task: str,
+        task: Optional[str] = None,
         audio: Optional[str] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
+        messages: Optional[List[dict]] = None,
         *args,
         **kwargs,
     ):
@@ -1398,6 +1410,7 @@ class LiteLLM:
                 imgs=imgs,
                 runtime_args=args,
                 runtime_kwargs=kwargs,
+                messages=messages,
             )
             response = await acompletion(**completion_params)
             return self._process_response(response)
@@ -1457,23 +1470,10 @@ class LiteLLM:
             responses = llm.batched_run(["Task 1", "Task 2", "Task 3"], batch_size=2)
             ```
         """
-        import concurrent.futures
+        # Imported here, not at module scope: swarms.structs pulls this
+        # module back in, and a top-level import would be circular.
+        from swarms.structs.execution_utils import run_concurrently
 
-        results = []
-        for i in range(0, len(tasks), batch_size):
-            batch = tasks[i : i + batch_size]
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=batch_size
-            ) as executor:
-                futures = [
-                    executor.submit(self.run, t) for t in batch
-                ]
-                for future in concurrent.futures.as_completed(
-                    futures
-                ):
-                    # as_completed does not guarantee original order, so collect all and reorder
-                    pass
-                # Ensure order in results matches the order of tasks
-                batch_results = [f.result() for f in futures]
-                results.extend(batch_results)
-        return results
+        return run_concurrently(
+            self.run, tasks, max_workers=batch_size
+        )

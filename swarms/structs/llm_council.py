@@ -13,6 +13,7 @@ often selecting responses from other models as superior to their own.
 import random
 from typing import Dict, List, Optional
 
+from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
@@ -535,4 +536,4 @@ class LLMCouncil:
         Returns:
             List of formatted outputs based on output_type
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)

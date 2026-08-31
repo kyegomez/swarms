@@ -10,7 +10,7 @@ class SerializableMixin:
     representation via the `to_dict()` method.
 
     Designed for use with structures/classes (e.g., `Agent`, `AgentRearrange`,
-    `SwarmRouter`, `BaseStructure`, etc.) that require best-effort object state
+    `SwarmRouter`, etc.) that require best-effort object state
     introspection for purposes such as telemetry, logging, caching, debugging,
     or persistence.
 

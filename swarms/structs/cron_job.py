@@ -118,11 +118,7 @@ class CronJob:
         self.execution_count = 0
         self.start_time = None
 
-        # Failure accounting. A task that raises must not take the schedule
-        # down with it, but the failures still have to be visible: the loop
-        # used to set is_running=False and re-raise, which killed the
-        # scheduler thread on the first error while run() returned normally,
-        # so a dead job was indistinguishable from a healthy one.
+        # Failures stay visible without taking the schedule down.
         self.error_count = 0
         self.consecutive_errors = 0
         self.last_error = None
@@ -139,10 +135,7 @@ class CronJob:
                 "Agent must be provided during initialization"
             )
 
-        # An empty string is not "no interval given", it is a bad interval.
-        # It used to fall through this guard and only surface much later, from
-        # _run(), as "Interval must be provided during initialization" -- which
-        # is confusing, because it was provided.
+        # An empty string is a bad interval, not a missing one: fail here, not in _run().
         if (
             self.interval is not None
             and not str(self.interval).strip()
@@ -395,10 +388,7 @@ class CronJob:
         try:
             logger.debug(f"Executing task for job {self.job_id}")
 
-            # Execute the agent. Discriminate on having a run() method, not
-            # on isinstance(Callable): a plain function is Callable too, so
-            # that test sent every function down the .run() path and left the
-            # branch below unreachable.
+            # Dispatch on having run(), not on Callable: a plain function is Callable too.
             runner = getattr(self.agent, "run", None)
             if callable(runner):
                 original_output = runner(task=task, **kwargs)
@@ -548,12 +538,7 @@ class CronJob:
                 self.schedule.run_pending()
                 self.consecutive_errors = 0
             except Exception as e:
-                # Log and keep going. Setting is_running=False and re-raising
-                # here killed the scheduler thread on the first failed
-                # execution, so a single transient error (a rate limit, a
-                # dropped connection) permanently stopped the job -- and
-                # because _block_forever also loops on is_running, run()
-                # returned normally and the caller was never told.
+                # Log and keep going: one failed execution must not kill the scheduler.
                 self.error_count += 1
                 self.consecutive_errors += 1
                 self.last_error = e
@@ -710,9 +695,7 @@ class CronJob:
             return jobs
 
         try:
-            # Hold here while the per-job threads do the work. Exit as soon as
-            # every job has stopped, so a fleet that has given up does not
-            # leave the caller parked forever.
+            # Wait while the per-job threads work; exit once every job has stopped.
             while any(job.is_running for job in jobs):
                 time.sleep(1)
         except KeyboardInterrupt:
@@ -750,55 +733,3 @@ class CronJob:
             except Exception as e:
                 # One job refusing to stop must not strand the rest.
                 logger.error(f"Failed to stop job {job.job_id}: {e}")
-
-
-# # Example usage
-# if __name__ == "__main__":
-#     # Initialize the agent
-#     agent = Agent(
-#         agent_name="Quantitative-Trading-Agent",
-#         agent_description="Advanced quantitative trading and algorithmic analysis agent",
-#         system_prompt="""You are an expert quantitative trading agent with deep expertise in:
-#         - Algorithmic trading strategies and implementation
-#         - Statistical arbitrage and market making
-#         - Risk management and portfolio optimization
-#         - High-frequency trading systems
-#         - Market microstructure analysis
-#         - Quantitative research methodologies
-#         - Financial mathematics and stochastic processes
-#         - Machine learning applications in trading
-
-#         Your core responsibilities include:
-#         1. Developing and backtesting trading strategies
-#         2. Analyzing market data and identifying alpha opportunities
-#         3. Implementing risk management frameworks
-#         4. Optimizing portfolio allocations
-#         5. Conducting quantitative research
-#         6. Monitoring market microstructure
-#         7. Evaluating trading system performance
-
-#         You maintain strict adherence to:
-#         - Mathematical rigor in all analyses
-#         - Statistical significance in strategy development
-#         - Risk-adjusted return optimization
-#         - Market impact minimization
-#         - Regulatory compliance
-#         - Transaction cost analysis
-#         - Performance attribution
-
-#         You communicate in precise, technical terms while maintaining clarity for stakeholders.""",
-#         max_loops=1,
-#         model_name="gpt-5.4",
-#         dynamic_temperature_enabled=True,
-#         output_type="str-all-except-first",
-#         streaming_on=True,
-#         print_on=True,
-#         telemetry_enable=False,
-#     )
-
-#     # Example 1: Basic usage with just a task
-#     logger.info("Starting example cron job")
-#     cron_job = CronJob(agent=agent, interval="10seconds")
-#     cron_job.run(
-#         task="What are the best top 3 etfs for gold coverage?"
-#     )

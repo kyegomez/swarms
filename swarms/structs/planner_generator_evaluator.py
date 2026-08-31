@@ -31,6 +31,7 @@ import traceback
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from swarms.structs.execution_utils import batched_run
 from swarms.prompts.planner_generator_evaluator_prompts import (
     EVALUATOR_EVALUATE_STEP_PROMPT,
     EVALUATOR_SYSTEM_PROMPT,
@@ -972,7 +973,7 @@ class PlannerGeneratorEvaluator:
         Returns:
             List of results, one per task.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)
 
     def get_harness_result(self) -> Dict[str, Any]:
         """Get the current state of the harness as a dictionary.
