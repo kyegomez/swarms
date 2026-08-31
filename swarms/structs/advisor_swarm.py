@@ -24,7 +24,7 @@ Reference: "The advisor strategy: Give agents an intelligence
 boost" (Anthropic, April 2026)
 """
 
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from swarms.structs.execution_utils import batched_run
 from swarms.prompts.advisor_swarm_prompts import (
@@ -253,14 +253,17 @@ class AdvisorSwarm:
             type=self.output_type,
         )
 
-    def batched_run(self, tasks: List[str], **kwargs) -> List[Any]:
+    def batched_run(
+        self, tasks: List[str], **kwargs
+    ) -> Union[List[Any], Dict[Any, Any]]:
         """Run multiple tasks sequentially.
 
         Args:
             tasks: List of task strings.
 
         Returns:
-            List of results, one per task.
+            One result per task, as a list, or as a ``{task: result}`` dict
+            when ``return_agent_output_dict=True`` is passed through.
         """
         return batched_run(self.run, tasks, **kwargs)
 
