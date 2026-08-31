@@ -264,3 +264,223 @@ def test_mixture_of_agents_real_world_scenario():
     )
 
     assert result is not None
+
+
+# ============================================================================
+# Context management: what each worker contributes to the shared conversation
+# ============================================================================
+
+
+def _scripted_agent(name):
+    """A real Agent whose LLM call is stubbed, so short_memory is real."""
+    from swarms import Agent
+
+    agent = Agent(
+        agent_name=name,
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        persistent_memory=False,
+        print_on=False,
+        autosave=False,
+    )
+    agent.call_llm = lambda task=None, *a, **k: f"[{name}-out]"
+    return agent
+
+
+class TestWorkerContributions:
+    """
+    Workers must contribute their answer, not their whole transcript.
+
+    ``agent.run`` honours each agent's output_type, which defaults to
+    "str-all-except-first" - the agent's entire conversation. Recording that
+    re-injected the task and the previous layer's synthesis into the shared
+    history, so later layers and the aggregator read the same text repeatedly.
+    """
+
+    def test_workers_record_only_their_answer(self):
+        from swarms import MixtureOfAgents
+
+        moa = MixtureOfAgents(
+            agents=[_scripted_agent("W1"), _scripted_agent("W2")],
+            aggregator_agent=_scripted_agent("Agg"),
+            layers=2,
+        )
+        moa.run("Question?")
+
+        worker_messages = [
+            m["content"]
+            for m in moa.conversation.conversation_history
+            if m["role"].startswith(("W1", "W2"))
+        ]
+        assert worker_messages == [
+            "[W1-out]",
+            "[W2-out]",
+            "[W1-out]",
+            "[W2-out]",
+        ], f"workers recorded more than their answers: {worker_messages}"
+
+    def test_the_task_is_not_re_injected_by_workers(self):
+        from swarms import MixtureOfAgents
+
+        moa = MixtureOfAgents(
+            agents=[_scripted_agent("W1")],
+            aggregator_agent=_scripted_agent("Agg"),
+            layers=2,
+        )
+        moa.run("a very distinctive question")
+
+        worker_messages = [
+            str(m["content"])
+            for m in moa.conversation.conversation_history
+            if m["role"] == "W1"
+        ]
+        assert not any(
+            "a very distinctive question" in c
+            for c in worker_messages
+        ), "a worker echoed the task back into the shared conversation"
+
+    def test_the_conversation_starts_clean(self):
+        """
+        Conversation used to auto-load a default-named file from disk, so
+        every swarm began with messages left by an unrelated run.
+        """
+        from swarms import MixtureOfAgents
+
+        moa = MixtureOfAgents(
+            agents=[_scripted_agent("W1")],
+            aggregator_agent=_scripted_agent("Agg"),
+            layers=1,
+        )
+        roles = [
+            m["role"] for m in moa.conversation.conversation_history
+        ]
+        assert (
+            "user" not in roles
+        ), f"stale messages loaded from disk: {roles}"
+
+
+# ============================================================================
+# Context shape — the aggregator receives typed chat turns, not one blob
+# ============================================================================
+
+
+def _recording_agents(names):
+    """Real agents whose run() records the context it was handed."""
+    calls = []
+    agents = []
+    for name in names:
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+            autosave=False,
+        )
+
+        def _make(agent_obj, agent_name):
+            turns = [0]
+
+            def _run(task=None, messages=None, **kwargs):
+                turns[0] += 1
+                answer = f"{agent_name}-answer-{turns[0]}"
+                calls.append(
+                    {
+                        "agent": agent_name,
+                        "task": task,
+                        "messages": list(messages or []),
+                        "answer": answer,
+                    }
+                )
+                # The mixture reads the answer back through short_memory,
+                # not the return value, so the stub writes it there too.
+                agent_obj.short_memory.add(
+                    role=agent_name, content=answer
+                )
+                return answer
+
+            return _run
+
+        agent.run = _make(agent, name)
+        agents.append(agent)
+    return agents, calls
+
+
+def _aggregator_call(calls, name="Aggregator"):
+    """The single call handed to the aggregator, plus its turns as one list."""
+    aggregator_calls = [c for c in calls if c["agent"] == name]
+    assert (
+        len(aggregator_calls) == 1
+    ), f"the aggregator ran {len(aggregator_calls)} times"
+    call = aggregator_calls[0]
+    # split_last_turn hands the newest turn over as the task instead of
+    # repeating it at the end of messages.
+    turns = call["messages"] + [
+        {"role": "user", "content": str(call["task"])}
+    ]
+    return call, turns
+
+
+def test_aggregator_receives_typed_turns_per_worker():
+    """Each worker contribution reaches the aggregator as its own labelled turn.
+
+    The flattened form collapsed every worker into one user string, so the
+    aggregator could not tell one contributor from another.
+    """
+    agents, calls = _recording_agents(["W1", "W2"])
+    aggregator, agg_calls = _recording_agents(["Agg"])
+
+    MixtureOfAgents(
+        agents=agents,
+        aggregator_agent=aggregator[0],
+        layers=2,
+    ).run("Question?")
+
+    assert len(agg_calls) == 1
+    turns = agg_calls[0]["messages"] + [
+        {"role": "user", "content": agg_calls[0]["task"]}
+    ]
+
+    for message in turns:
+        assert isinstance(message, dict)
+        assert message["role"] in ("user", "assistant", "system")
+        assert isinstance(message["content"], str)
+
+    contents = [m["content"] for m in turns]
+    for worker in ("W1", "W2"):
+        assert any(
+            text.startswith(f"{worker}: ") for text in contents
+        ), f"no turn attributed to {worker}: {contents}"
+
+    # Four worker outputs across two layers, plus the task - not one blob.
+    assert len(turns) == 5
+
+
+def test_team_roster_does_not_reach_aggregator_as_user_prose():
+    """The roster is structure bookkeeping and belongs in a system prompt."""
+    agents, calls = _recording_agents(["W1", "W2", "Aggregator"])
+    moa = MixtureOfAgents(
+        name="Team Name",
+        agents=agents[:2],
+        aggregator_agent=agents[2],
+        layers=1,
+    )
+    moa.run("Question?")
+
+    roster = [
+        m
+        for m in moa.conversation.conversation_history
+        if str(m["role"]).lower() == "system"
+    ]
+    assert roster, "expected list_all_agents to add a System row"
+
+    _, turns = _aggregator_call(calls)
+    for message in turns:
+        if message["role"] != "user":
+            continue
+        assert not message["content"].startswith("System: Team Name")
+        assert "System: Team Name" not in message["content"]
+        assert (
+            "These are the agents in your team"
+            not in message["content"]
+        )

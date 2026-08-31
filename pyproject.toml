@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "14.0.0"
+version = "14.0.2"
 description = "Swarms - TGSC"
 license = "Apache-2.0"
 authors = ["Kye Gomez <kye@swarms.world>"]
@@ -71,7 +71,7 @@ rich = "*"
 litellm = "1.76.1"
 httpx = "*"
 requests = "*"
-mcp = ">=1.28.1,<2.0.0"
+mcp = "*"
 schedule = "*"
 opentelemetry-sdk = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
@@ -99,6 +99,9 @@ pytest = "*"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Without this, pytest-asyncio's strict default silently skips every bare
+# `async def test_`, reporting it as a failure that never ran.
+asyncio_mode = "auto"
 markers = [
     "remote: tests that hit a real remote MCP server over the network",
 ]

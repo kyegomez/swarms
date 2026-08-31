@@ -1,13 +1,3 @@
-"""
-Exception hierarchy for :class:`swarms.structs.agent.Agent`.
-
-These live here rather than in ``agent.py`` so that agent collaborators
-(``LLMManager``, ``SkillsManager``, ``MCPManager``, …) can raise and catch them
-without importing ``Agent`` itself, which would be circular. They remain
-importable from ``swarms.structs.agent`` for backwards compatibility.
-"""
-
-
 class AgentError(Exception):
     """Base class for all agent-related exceptions."""
 
@@ -28,18 +18,6 @@ class AgentRunError(AgentError):
 
 class AgentLLMError(AgentError):
     """Exception raised when there is an issue with the language model (LLM). Verify the model's availability and compatibility."""
-
-    pass
-
-
-class AgentToolError(AgentError):
-    """Exception raised when the agent fails to utilize a tool. Check the tool's configuration and availability."""
-
-    pass
-
-
-class AgentMemoryError(AgentError):
-    """Exception raised when the agent encounters a memory-related issue. Ensure that memory resources are properly allocated and accessible."""
 
     pass
 

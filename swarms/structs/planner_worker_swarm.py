@@ -23,6 +23,7 @@ from swarms.schemas.planner_worker_schemas import (
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.tools.base_tool import BaseTool
+from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -571,6 +572,13 @@ class PlannerWorkerSwarm:
         self.max_workers = max_workers
         self.output_type = output_type
         self.autosave = autosave
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "planner-worker-swarm",
+            verbose=verbose,
+            enabled=autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
         self.verbose = verbose
 
         # Internal state
@@ -927,6 +935,8 @@ class PlannerWorkerSwarm:
                     f"[PlannerWorkerSwarm] Goal achieved in cycle {cycle + 1}"
                 )
                 break
+
+        self.workspace.save_conversation()
 
         return history_output_formatter(
             conversation=self.conversation,
