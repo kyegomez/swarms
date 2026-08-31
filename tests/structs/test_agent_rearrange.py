@@ -576,11 +576,23 @@ def test_missing_agent_raises():
         r.run("test")
 
 
-def test_broken_conversation_raises():
-    """run() must raise when conversation is corrupted."""
+def test_broken_conversation_raises(monkeypatch):
+    """run() must raise when the conversation it uses is corrupted.
+
+    Corrupting the conversation before ``run()`` no longer works: each task
+    starts from a fresh conversation, so the damage is discarded. Corrupt the
+    one the run actually builds instead.
+    """
     agents = create_sample_agents()
     r = _make_rearrange(agents, "ResearchAgent -> WriterAgent")
-    r.conversation.conversation_history = None
+
+    original_reset = r._reset_conversation
+
+    def reset_then_corrupt():
+        original_reset()
+        r.conversation.conversation_history = None
+
+    monkeypatch.setattr(r, "_reset_conversation", reset_then_corrupt)
 
     with pytest.raises((TypeError, AttributeError)):
         r.run("test")
@@ -712,9 +724,8 @@ def test_repeated_agent_awareness_position_0():
         flow="Writer -> Reviewer -> Writer",
     )
 
-    tasks = agent_rearrange.flow.split("->")
     awareness = agent_rearrange._get_sequential_awareness(
-        "Writer", tasks, task_idx=0
+        "Writer", agent_rearrange.steps, task_idx=0
     )
 
     assert "Agent behind" in awareness
@@ -731,9 +742,8 @@ def test_repeated_agent_awareness_position_2():
         flow="Writer -> Reviewer -> Writer",
     )
 
-    tasks = agent_rearrange.flow.split("->")
     awareness = agent_rearrange._get_sequential_awareness(
-        "Writer", tasks, task_idx=2
+        "Writer", agent_rearrange.steps, task_idx=2
     )
 
     assert "Agent ahead" in awareness
@@ -770,9 +780,8 @@ def test_repeated_agent_awareness_fallback_without_idx():
         flow="Writer -> Reviewer -> Writer",
     )
 
-    tasks = agent_rearrange.flow.split("->")
     awareness = agent_rearrange._get_sequential_awareness(
-        "Writer", tasks
+        "Writer", agent_rearrange.steps
     )
 
     assert awareness is not None
@@ -862,27 +871,29 @@ def test_awareness_not_in_shared_conversation():
     ), f"Sequential awareness leaked into the shared conversation: {leaked}"
 
 
-def test_awareness_delivered_per_agent_via_system_prompt():
-    """Each repeated occurrence of an agent should observe a DIFFERENT
-    system_prompt during its run() call (because awareness is injected
-    there), and the original system_prompt must be restored after."""
+def test_awareness_delivered_per_agent_as_system_message():
+    """Awareness rides in the message list, not the agent's system_prompt.
+
+    The prompt is baked into the LLM when it is built, so assigning to
+    ``agent.system_prompt`` mid-run never reaches the request. Each repeated
+    occurrence of an agent should receive its own awareness system turn, and
+    the caller's agents must be left unmutated.
+    """
     agents = create_repeated_flow_agents()
-    observed_system_prompts: List = []
+    observed_messages: List = []
     originals = {a.agent_name: a.system_prompt for a in agents}
 
     for agent in agents:
         name = agent.agent_name
 
-        def _make_tracker(agent_obj, agent_name):
-            def _track(task=None, *a, **kw):
-                observed_system_prompts.append(
-                    (agent_name, agent_obj.system_prompt)
-                )
+        def _make_tracker(agent_name):
+            def _track(task=None, messages=None, *a, **kw):
+                observed_messages.append((agent_name, messages or []))
                 return f"{agent_name} acknowledged"
 
             return _track
 
-        agent.run = _make_tracker(agent, name)
+        agent.run = _make_tracker(name)
 
     rearrange = AgentRearrange(
         agents=agents,
@@ -891,19 +902,27 @@ def test_awareness_delivered_per_agent_via_system_prompt():
     )
     rearrange.run("Write about thunder.")
 
-    writer_prompts = [
-        sp for name, sp in observed_system_prompts if name == "Writer"
+    writer_awareness = [
+        "\n".join(
+            m["content"]
+            for m in messages
+            if m.get("role") == "system"
+        )
+        for name, messages in observed_messages
+        if name == "Writer"
     ]
-    assert len(writer_prompts) == 2
-    assert all("Sequential awareness" in sp for sp in writer_prompts)
+    assert len(writer_awareness) == 2
+    assert all(
+        "Sequential awareness" in text for text in writer_awareness
+    )
     assert (
-        writer_prompts[0] != writer_prompts[1]
+        writer_awareness[0] != writer_awareness[1]
     ), "Repeated Writer invocations received identical awareness"
-    # System prompt must be restored after the run completes
+    # Awareness is per-run context, never a mutation of the caller's agent.
     for agent in agents:
         assert (
             agent.system_prompt == originals[agent.agent_name]
-        ), f"system_prompt for {agent.agent_name} was not restored"
+        ), f"system_prompt for {agent.agent_name} was mutated"
 
 
 # ============================================================================
@@ -1371,5 +1390,215 @@ class TestAgentContextManagement:
         ), f"the second task never reached the agent: {messages}"
 
 
+# ============================================================================
+# concurrent_run — per-task isolation
+# ============================================================================
+
+
+class TestConcurrentRunIsolation:
+    def test_each_task_gets_own_clone_conversation(self):
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = ["alpha", "beta", "gamma"]
+        seen_conversations = []
+        parent_conversation = pipeline.conversation
+        parent_message_count = len(
+            parent_conversation.conversation_history
+        )
+
+        def _mock_run(self_inner, task=None, img=None, *a, **kw):
+            seen_conversations.append(self_inner.conversation)
+            self_inner.conversation.add("user", task)
+            return f"result:{task}"
+
+        with patch.object(AgentRearrange, "_run", _mock_run):
+            results = pipeline.concurrent_run(
+                tasks=tasks, max_workers=1
+            )
+
+        assert results == [f"result:{task}" for task in tasks]
+        assert len(seen_conversations) == len(tasks)
+        assert all(
+            conversation is not parent_conversation
+            for conversation in seen_conversations
+        )
+        assert len({id(c) for c in seen_conversations}) == len(tasks)
+        assert (
+            len(parent_conversation.conversation_history)
+            == parent_message_count
+        )
+
+    def test_img_pairing_survives_isolated_closure(self):
+        pipeline = _make_pipeline("AgentA", "AgentB")
+        tasks = ["t1", "t2", "t3"]
+        images = ["img1.png", "img2.png", "img3.png"]
+        received = []
+        parent_conversation = pipeline.conversation
+
+        def _mock_run(self_inner, task=None, img=None, *a, **kw):
+            received.append((task, img, self_inner.conversation))
+            return f"{task}:{img}"
+
+        with patch.object(AgentRearrange, "_run", _mock_run):
+            results = pipeline.concurrent_run(
+                tasks=tasks, img=images, max_workers=1
+            )
+
+        assert results == [
+            f"{task}:{img}" for task, img in zip(tasks, images)
+        ]
+        assert [(task, img) for task, img, _ in received] == list(
+            zip(tasks, images)
+        )
+        assert all(
+            conversation is not parent_conversation
+            for _, _, conversation in received
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# ============================================================================
+# Context shape — agents receive typed chat turns, not one flattened blob
+# ============================================================================
+
+
+def _recording_agents(names):
+    """Agents whose run() records the context it was handed."""
+    calls = []
+    agents = []
+    for name in names:
+        agent = Agent(
+            agent_name=name,
+            system_prompt=f"You are {name}.",
+            model_name="gpt-5.4",
+            max_loops=1,
+            verbose=False,
+        )
+
+        def _make(agent_obj, agent_name):
+            def _run(task=None, messages=None, **kwargs):
+                calls.append(
+                    {
+                        "agent": agent_name,
+                        "task": task,
+                        "messages": list(messages or []),
+                    }
+                )
+                answer = f"{agent_name}-answer"
+                agent_obj.short_memory.add(
+                    role=agent_name, content=answer
+                )
+                return answer
+
+            return _run
+
+        agent.run = _make(agent, name)
+        agents.append(agent)
+    return agents, calls
+
+
+def test_agents_receive_typed_turns_not_one_user_blob():
+    """Peers arrive as separate messages, not concatenated into the task."""
+    agents, calls = _recording_agents(["A", "B", "C"])
+    AgentRearrange(
+        agents=agents, flow="A -> B -> C", max_loops=1
+    ).run("the original task")
+
+    first, last = calls[0], calls[-1]
+
+    # The first agent gets the raw task, not a "User: ..." rendering of it.
+    assert first["task"] == "the original task"
+    assert not [m for m in first["messages"] if m["role"] != "system"]
+
+    # The last agent sees each prior speaker as its own message.
+    assert last["agent"] == "C"
+    contents = [m["content"] for m in last["messages"]] + [
+        last["task"]
+    ]
+    assert "the original task" in contents
+    assert any("A-answer" in c for c in contents)
+    assert any("B-answer" in c for c in contents)
+
+    # None of it is crammed into a single string.
+    assert len(last["messages"]) >= 2
+
+
+def test_agent_sees_its_own_output_as_assistant():
+    """An agent's own prior turn must not come back labelled as the user's."""
+    agents, calls = _recording_agents(["A", "B"])
+    AgentRearrange(agents=agents, flow="A -> B", max_loops=2).run(
+        "go"
+    )
+
+    second_a = [c for c in calls if c["agent"] == "A"][1]
+    assistant = [
+        m["content"]
+        for m in second_a["messages"]
+        if m["role"] == "assistant"
+    ]
+    assert "A-answer" in assistant
+
+    # B's contribution reaches A as a user turn, attributed to B.
+    user_text = " ".join(
+        m["content"]
+        for m in second_a["messages"]
+        if m["role"] == "user"
+    )
+    assert "B-answer" in user_text or "B-answer" in second_a["task"]
+
+
+def test_team_awareness_is_a_system_turn_not_user_prose():
+    """Flow structure must not be rendered as 'system: ...' inside a user turn."""
+    agents, calls = _recording_agents(["A", "B"])
+    AgentRearrange(
+        agents=agents, flow="A -> B", max_loops=1, team_awareness=True
+    ).run("go")
+
+    first = calls[0]
+    user_text = " ".join(
+        m["content"] for m in first["messages"] if m["role"] == "user"
+    ) + str(first["task"])
+    assert "system:" not in user_text.lower()
+
+    system_text = " ".join(
+        m["content"]
+        for m in first["messages"]
+        if m["role"] == "system"
+    )
+    assert "Sequential" in system_text
+
+
+def test_conversation_does_not_leak_between_runs():
+    """A reused instance must not serve the previous task's transcript."""
+    agents, calls = _recording_agents(["A", "B"])
+    rearrange = AgentRearrange(
+        agents=agents, flow="A -> B", max_loops=1
+    )
+    rearrange.run("first task")
+    calls.clear()
+    rearrange.run("second task")
+
+    everything = " ".join(
+        [str(c["task"]) for c in calls]
+        + [m["content"] for c in calls for m in c["messages"]]
+    )
+    assert "second task" in everything
+    assert "first task" not in everything
+
+
+def test_concurrent_step_records_answers_not_transcripts():
+    """A parallel step must contribute each agent's answer to the transcript."""
+    agents, _ = _recording_agents(["A", "B", "C"])
+    rearrange = AgentRearrange(
+        agents=agents, flow="A -> B, C", max_loops=1
+    )
+    rearrange.run("go")
+
+    recorded = {
+        m["role"]: m["content"]
+        for m in rearrange.conversation.conversation_history
+    }
+    assert recorded["B"] == "B-answer"
+    assert recorded["C"] == "C-answer"

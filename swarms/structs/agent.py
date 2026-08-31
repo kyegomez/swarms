@@ -473,9 +473,7 @@ class Agent:
         self.load_state_path = load_state_path
         self.role = role
         self.print_on = print_on
-        # Own list per agent. The default used to be a literal [], so every
-        # agent that skipped this argument shared one object and inherited
-        # the tool schemas any other agent appended to it.
+        # Own list per agent: a literal [] default made every agent share one object.
         self.tools_list_dictionary = (
             tools_list_dictionary
             if tools_list_dictionary is not None
@@ -505,22 +503,11 @@ class Agent:
         self.reasoning_effort = reasoning_effort
         self.thinking_tokens = thinking_tokens
 
-        # Defer tool schemas and let the agent search for what it needs.
         self.dynamic_tools = dynamic_tools
         self.tool_loader: Optional[DynamicToolLoader] = None
-        # MCP schemas are fetched over the network, so they are folded into
-        # the catalog once rather than on every LLM rebuild.
         self._mcp_tools_deferred = False
-        # Fetched MCP schemas, kept so a rebuilt loader can be repopulated
-        # without another network call. The autonomous loop constructs a fresh
-        # loader per run, so a boolean "already deferred" flag is not enough.
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
-        # Whether the autonomous loop offers the `think` tool. Off by default:
-        # a think call costs a full round-trip to produce reasoning the model
-        # could have emitted alongside its actions in the same response. Turn
-        # it on for models that do not reason natively, or when an explicit
-        # analysis step is worth the extra turn.
         self.think_tool = think_tool
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
@@ -530,9 +517,6 @@ class Agent:
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
 
-        # All MCP (Model Context Protocol) behaviour — connection handling,
-        # API key / bearer token / OAuth authentication, transport selection,
-        # tool discovery and tool execution — lives in MCPManager.
         self.mcp_manager = MCPManager(
             mcp_url=self.mcp_url,
             mcp_urls=self.mcp_urls,
@@ -628,9 +612,7 @@ class Agent:
         # self.init_handling()
         self.setup_config()
 
-        # Initialize the short memory. The Conversation manages the
-        # persistent MEMORY.md file at
-        # $WORKSPACE_DIR/agents/{agent_name}-{id}/MEMORY.md.
+        # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
         self.short_memory = self.short_memory_init()
 
         # Initialize the tools
@@ -998,13 +980,7 @@ class Agent:
             prompt += "\n\n"
             prompt += SAFETY_PROMPT
 
-        # Compute the persistent MEMORY.md path under the workspace dir.
-        # Only resolved when persistent_memory=True (the default). When False
-        # the Conversation receives no path and operates as a pure in-process
-        # store with no on-disk read or write across sessions.
-        # Key on agent_name only (not self.id) so memory is stable across
-        # process restarts — self.id defaults to a fresh uuid every run,
-        # which would otherwise create a new empty MEMORY.md each time.
+        # Keyed on agent_name, not self.id, which is a fresh uuid per run and would orphan MEMORY.md.
         memory_md_path = None
         if self.persistent_memory:
             try:
@@ -1250,6 +1226,7 @@ class Agent:
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -1432,12 +1409,6 @@ class Agent:
                     self.dynamic_temperature()
 
                 # Task prompt with optional transforms.
-                #
-                # `transforms` rewrites the whole history into a single string
-                # by design, so that path keeps the legacy flattened prompt.
-                # Everything else sends a real message list, which preserves
-                # assistant `tool_calls` turns and `tool` results instead of
-                # collapsing them into prose.
                 task_prompt = None
                 use_transcript = self.transforms is None
 
@@ -1448,7 +1419,9 @@ class Agent:
                         model_name=self.model_name,
                     )
                 elif transcript is None:
-                    transcript = self._transcript_from_memory()
+                    transcript = self._transcript_from_messages(
+                        messages, task
+                    )
 
                 # Parameters
                 attempt = 0
@@ -1511,9 +1484,7 @@ class Agent:
                             content=response,
                         )
 
-                        # Record the model's turn. Any tool calls it made must
-                        # each receive a matching tool result before the next
-                        # request, which `flush_tool_results` guarantees below.
+                        # Every tool call in this turn needs a matching result before the next request.
                         if use_transcript:
                             turn_calls = transcript.record_assistant(
                                 response
@@ -1535,9 +1506,7 @@ class Agent:
                                     response, loop_count
                                 )
 
-                        # Handle tool_search calls. It is dispatched here
-                        # rather than through tool_struct because it is an
-                        # agent method, not one of the user's callables.
+                        # Dispatched here rather than through tool_struct: it is an agent method, not a user callable.
                         if (
                             isinstance(response, list)
                             and self.tool_loader
@@ -1582,10 +1551,7 @@ class Agent:
                                         result, title="Tool Search"
                                     )
 
-                            # Anything left goes on to normal execution. If
-                            # tool_search was the whole response there is
-                            # nothing to execute, and falling through would log
-                            # misleading "no function calls found" warnings.
+                            # Falling through with nothing left would log a misleading "no function calls found".
                             response = remaining
                             if not remaining:
                                 if use_transcript and turn_calls:
@@ -1673,9 +1639,7 @@ class Agent:
                                     f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
                                 )
 
-                        # Answer every tool call in the assistant turn just
-                        # recorded. A gap here makes the *next* request invalid,
-                        # so this runs on every path that reached this point.
+                        # Answer every tool call just recorded; a gap makes the next request invalid.
                         if use_transcript and turn_calls:
                             transcript.flush_tool_results(
                                 turn_calls, turn_results
@@ -2018,19 +1982,14 @@ class Agent:
         Returns:
             The loader, also stored on ``self.tool_loader``.
         """
-        # Anything already registered - handoff tools, MCP tools - was
-        # configured explicitly and must survive. Assigning schemas() straight
-        # over tools_list_dictionary would silently drop it, which is how
-        # handoffs stopped working when dynamic_tools was first added.
+        # Keep already-registered handoff and MCP tools: overwriting here is what broke handoffs.
         user_tool_names = {
             schema.get("function", {}).get("name")
             for schema in convert_multiple_functions_to_openai_function_schema(
                 list(self.tools or [])
             )
         }
-        # The search tool is excluded: schemas() re-adds it, and setup runs
-        # twice for an autonomous agent (once in __init__, once in the loop),
-        # so keeping it here would list it twice in the tool array.
+        # Excluded because schemas() re-adds it, and setup runs twice for an autonomous agent.
         preserved = [
             schema
             for schema in (self.tools_list_dictionary or [])
@@ -2086,10 +2045,7 @@ class Agent:
         if self.tool_loader is None or not self.mcp_enabled:
             return 0
 
-        # Already registered in the *current* loader - nothing to do. Keyed on
-        # the loader's contents rather than a boolean, because the autonomous
-        # loop builds a fresh loader per run and a flag would stop the rebuilt
-        # one from ever being repopulated.
+        # Keyed on loader contents, not a flag: the autonomous loop builds a fresh loader per run.
         cached = self._mcp_schemas_cache
         if cached is not None and all(
             schema.get("function", {}).get("name") in self.tool_loader
@@ -2341,11 +2297,7 @@ Subtask Breakdown:
             Exception: If an error occurs during the asynchronous operation.
         """
         try:
-            # Forward positionally, in run()'s own parameter order. Passing
-            # task/img as keywords while also splatting *args made every
-            # extra positional collide with `task`:
-            #   TypeError: run() got multiple values for argument 'task'
-            # so arun(task, img, extra) raised instead of running.
+            # Positional, in run()'s order: keywords plus *args made every extra positional collide with task.
             return await asyncio.to_thread(
                 self.run,
                 task,
@@ -2354,10 +2306,7 @@ Subtask Breakdown:
                 **kwargs,
             )
         except Exception as error:
-            # _handle_run_error is sync and re-raises; the other seven call
-            # sites do not await it. The await was only harmless because the
-            # method always raises before returning — the day it stops, this
-            # becomes `await None`.
+            # Not awaited: _handle_run_error is sync and always raises, as the other seven call sites assume.
             self._handle_run_error(error)
 
     def __call__(
@@ -2545,10 +2494,7 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
-        # get_model_info raises for an unmapped model id rather than
-        # returning an empty mapping, so an unknown, custom or self-hosted
-        # model would otherwise take down Agent.__init__. The sibling
-        # _default_context_length guards the same call the same way.
+        # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
         try:
             return (
                 get_model_info(self.model_name).get(
@@ -2595,9 +2541,7 @@ Subtask Breakdown:
                 "Context length is not provided. Please set a valid context length."
             )
 
-        # Truthiness, not "is not None": the attribute is normalised to an
-        # empty list for every agent built without tools, so the None check
-        # warned about function calling for agents that never use it.
+        # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
         if self.tools_list_dictionary:
             if not supports_function_calling(self.model_name):
                 logger.warning(
@@ -3385,10 +3329,6 @@ Subtask Breakdown:
         if not isinstance(task, str):
             task = format_data_structure(task)
 
-        # Use instance streaming_callback if not provided in method call
-        # Priority: local callback (method parameter) > instance callback (__init__)
-        # Check both: use local if provided, otherwise fall back to instance callback
-        # If both are None, streaming_callback remains None
         if streaming_callback is None:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
@@ -3816,11 +3756,7 @@ Subtask Breakdown:
                         "content"
                     ]
 
-                # A lone tool call. With MCP enabled the wrapper returns a
-                # bare dict for one call and a list for several, so callers
-                # that test `isinstance(response, list)` silently ignored
-                # single calls - which broke planning outright whenever MCP
-                # was configured. Normalise to the list form.
+                # MCP returns a bare dict for one call and a list for several; normalise so isinstance(list) holds.
                 if "function" in response:
                     return [response]
 
@@ -4351,9 +4287,7 @@ Summary: {summary}
                         title="Tool Execution",
                     )
 
-        # Now run the LLM again without tools - create a temporary LLM instance
-        # instead of modifying the cached one
-        # Create a temporary LLM instance without tools for the follow-up call
+        # A temporary LLM instead of mutating the cached one.
         if self.tool_call_summary is True:
             temp_llm = self.temp_llm_instance_for_tool_summary()
 
@@ -4474,3 +4408,29 @@ Summary: {summary}
             f"Agent '{self.agent_name}' failed to execute tools in loop "
             f"{loop_count} after {attempts} attempt(s): {last_error}"
         ) from last_error
+
+    def _transcript_from_messages(
+        self,
+        messages: Optional[List[Dict[str, Any]]],
+        task: Optional[Any],
+    ) -> Transcript:
+        """
+        Build this run's transcript, preferring caller-supplied turns.
+
+        Args:
+            messages: Prior conversation as typed chat messages. When given,
+                these replace the memory-derived prefix and ``task`` is
+                appended as the new user turn. ``None`` falls back to
+                :meth:`_transcript_from_memory`.
+            task: The instruction for this turn.
+
+        Returns:
+            The transcript to send with the next request.
+        """
+        if messages is None:
+            return self._transcript_from_memory()
+
+        transcript = Transcript(list(messages))
+        if task is not None:
+            transcript.append_user(task)
+        return transcript

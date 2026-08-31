@@ -577,30 +577,3 @@ class GKPAgent:
             str: The final answer
         """
         return self.run(task)
-
-
-# # Example usage
-# if __name__ == "__main__":
-#     # Initialize the GKP Agent
-#     agent = GKPAgent(
-#         agent_name="gkp-agent",
-#         model_name="gpt-5.4",  # Using OpenAI's model
-#         num_knowledge_items=10,  # Generate 2 knowledge items per query
-#     )
-
-#     # Example queries
-#     queries = [
-#         "Create an entirely new construct of mathematics unifying physics and traditional physics never seen",
-#     ]
-
-#     # Run the agent
-#     results = agent.run(queries)
-
-#     print(results)
-
-#     # Print results
-#     for i, result in enumerate(results):
-#         print(f"\n\nQUERY {i+1}:")
-#         print(f"{queries[i]}\n")
-#         print("FINAL ANSWER:")
-#         print(f"{result}")

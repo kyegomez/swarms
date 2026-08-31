@@ -133,10 +133,8 @@ class Conversation:
         self.output_metadata = output_metadata
         self.memory_md_path = memory_md_path
         self._memory_md_lock = threading.Lock()
-        # Suppress disk writes during initial setup so the static
-        # system_prompt and rules aren't re-appended to MEMORY.md on every
-        # construction. Only user tasks and agent responses added via
-        # later add() calls should be persisted.
+
+        # Suppressed so the static system_prompt and rules are not re-appended to MEMORY.md every construction.
         self._suppress_memory_md = True
 
         if self.name is None:
@@ -198,12 +196,7 @@ class Conversation:
             "%Y-%m-%d_%H-%M-%S"
         )
 
-        # Only resume from disk when the caller actually asked for a named,
-        # persistent conversation. `name` defaults to "conversation-test", so
-        # every anonymous Conversation() resolved to the SAME file and silently
-        # loaded whatever a previous, unrelated run had left there - every
-        # swarm in the process started with someone else's messages, and
-        # re-sent them on every agent call.
+        # Named conversations only: `name` defaults to "conversation-test", so every anonymous one shared a file.
         wants_persistence = (
             self._explicit_save_filepath
             or self.load_filepath is not None
@@ -1314,8 +1307,11 @@ class Conversation:
             return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
         return ""
 
-    def return_messages_as_list(self):
+    def return_messages_as_strings(self):
         """Return the conversation messages as a list of formatted strings.
+
+        This is a rendering, not a message list. To build a request body use
+        :meth:`return_messages_as_dictionary`, which preserves roles.
 
         Returns:
             list: List of messages formatted as 'role: content'.
@@ -1325,11 +1321,14 @@ class Conversation:
             for message in self.conversation_history
         ]
 
-    def return_messages_as_dictionary(self):
-        """Return the conversation messages as a list of dictionaries.
+    def return_messages_as_list(self):
+        """Return the conversation as a list of message dictionaries.
+
+        For the ``'role: content'`` string rendering use
+        :meth:`return_messages_as_strings`.
 
         Returns:
-            list: List of dictionaries containing role and content of each message.
+            list: One ``{"role", "content"}`` dict per message.
         """
         return [
             {
@@ -1338,6 +1337,14 @@ class Conversation:
             }
             for message in self.conversation_history
         ]
+
+    def return_messages_as_dictionary(self):
+        """Return the conversation messages as a list of dictionaries.
+
+        Returns:
+            list: List of dictionaries containing role and content of each message.
+        """
+        return self.return_messages_as_list()
 
     def add_tool_output_to_agent(self, role: str, tool_output: dict):
         """
@@ -1386,7 +1393,7 @@ class Conversation:
         Returns:
             list: List of messages except the first one.
         """
-        return self.conversation_history[2:]
+        return self.conversation_history[1:]
 
     def return_all_except_first_string(self):
         """Return all messages except the first one as a string.
@@ -1612,23 +1619,3 @@ class Conversation:
         except Exception as e:
             logger.error(f"Dynamic auto chunking failed: {e}")
             return self._return_history_as_string_worker()
-
-
-# Example usage
-# conversation = Conversation()
-# conversation = Conversation(token_count=True, context_length=14)
-# conversation.add("user", "Hello, how are you?")
-# conversation.add("assistant", "I am doing well, thanks.")
-# conversation.add("user", "What is the weather in Tokyo?")
-# print(conversation.dynamic_auto_chunking())
-# # conversation.add(
-# #     "assistant", {"name": "tool_1", "output": "Hello, how are you?"}
-# )
-# print(conversation.return_json())
-
-# # print(conversation.get_last_message_as_string())
-# print(conversation.return_json())
-# # conversation.add("assistant", "I am doing well, thanks.")
-# # # print(conversation.to_json())
-# print(type(conversation.to_dict()))
-# print(conversation.to_yaml())

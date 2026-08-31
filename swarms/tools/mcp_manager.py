@@ -52,9 +52,7 @@ _SSE_URL_HINTS = ("/sse", "/sse/")
 _ENV_PATTERN = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$")
 
 
-########################################################
-# Helpers
-########################################################
+# Helpers.
 
 
 def _resolve_secret(value: Optional[str]) -> Optional[str]:
@@ -195,9 +193,7 @@ def run_async(coro: Any) -> Any:
         return executor.submit(asyncio.run, coro).result()
 
 
-########################################################
-# OAuth support
-########################################################
+# OAuth support.
 
 
 class MCPFileTokenStorage:
@@ -239,10 +235,7 @@ class MCPFileTokenStorage:
                 self.path.parent.mkdir(
                     parents=True, exist_ok=True, mode=0o700
                 )
-                # Create the file 0600 from the start. write_text() creates it
-                # honoring the umask (typically 0644), leaving a window in which
-                # another local user could read the OAuth token before a later
-                # chmod lands. os.open with an explicit mode closes that window.
+                # 0600 from the start: write_text() honours the umask, leaving the token readable until a later chmod.
                 fd = os.open(
                     self.path,
                     os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
@@ -561,9 +554,7 @@ class _ClientCredentialsToken:
             return token
 
 
-########################################################
-# Manager
-########################################################
+# Manager.
 
 
 class MCPManager:
@@ -642,9 +633,7 @@ class MCPManager:
             str, _ClientCredentialsToken
         ] = {}
 
-    ####################################################
-    # Config normalization
-    ####################################################
+    # Config normalization.
 
     @staticmethod
     def _coerce_oauth(
@@ -754,9 +743,7 @@ class MCPManager:
             or "mcp-server"
         )
 
-    ####################################################
-    # Public surface
-    ####################################################
+    # Public surface.
 
     @property
     def enabled(self) -> bool:
@@ -811,9 +798,7 @@ class MCPManager:
         self._oauth_providers = {}
         self._client_credentials = {}
 
-    ####################################################
-    # Tool discovery
-    ####################################################
+    # Tool discovery.
 
     def get_tools(
         self,
@@ -963,9 +948,7 @@ class MCPManager:
             },
         }
 
-    ####################################################
-    # Tool execution
-    ####################################################
+    # Tool execution.
 
     def execute_tool_calls(
         self,
@@ -1264,9 +1247,7 @@ class MCPManager:
 
         return calls
 
-    ####################################################
-    # Transport + auth
-    ####################################################
+    # Transport and auth.
 
     def _resolve_transport(self, connection: MCPConnection) -> str:
         transport = (connection.transport or "auto").replace("-", "_")
@@ -1507,9 +1488,7 @@ class MCPManager:
                 streamablehttp_client,
             )
         except ImportError:
-            # mcp 2.x renamed the factory and changed its signature: headers,
-            # timeout and auth now go into an http client that is passed in,
-            # rather than being arguments of the transport itself.
+            # mcp 2.x moved headers, timeout and auth onto an http client passed to the factory.
             from mcp.client.streamable_http import (
                 create_mcp_http_client,
                 streamable_http_client,
@@ -1589,9 +1568,7 @@ class MCPManager:
                 f"{_describe_exception(e)}"
             ) from e
 
-    ####################################################
-    # Retries
-    ####################################################
+    # Retries.
 
     async def _with_retries(self, op, description: str = "") -> Any:
         last_error: Optional[BaseException] = None
