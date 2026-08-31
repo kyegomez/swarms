@@ -9,7 +9,11 @@ Based on the paper: "SkillOrchestra: Learning to Route Agents via Skill Transfer
 https://arxiv.org/abs/2602.19672
 """
 
-from swarms import Agent, SkillOrchestra
+from swarms import Agent
+
+# SkillOrchestra ships alongside this example rather than in swarms.structs,
+# so import it from the module in this folder.
+from skill_orchestra import SkillOrchestra
 
 code_agent = Agent(
     agent_name="CodeExpert",

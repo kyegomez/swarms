@@ -1,24 +1,3 @@
-"""
-Regression tests for per-instance component IDs.
-
-Every ``Agent`` and swarm used to share a single ``id`` for the lifetime of the
-process. The constructors declared ``id: str = agent_id()`` / ``swarm_id()``,
-and Python evaluates a default argument **once, at import time** — so the
-generated string was baked into the function signature and handed to every
-instance that did not pass one explicitly.
-
-The consequence reached well past cosmetics: telemetry spans carry ``swarms.id``,
-so an agent's ``init`` span (which holds its system prompt and full config) could
-not be joined to its ``run`` spans, and two agents in the same trace were
-indistinguishable. Anything else keyed on ID — registries, dedup, per-agent
-caches, persisted state — was equally unsafe.
-
-The fix defaults ``id`` to ``None`` and generates inside ``__init__``.
-
-Run:
-    pytest tests/structs/test_component_ids.py -v
-"""
-
 import inspect
 
 import pytest

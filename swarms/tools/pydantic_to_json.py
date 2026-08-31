@@ -43,9 +43,7 @@ def base_model_to_openai_function(
     """
     schema = pydantic_type.model_json_schema()
 
-    # The model's own name. `type(pydantic_type).__name__` read the
-    # metaclass instead, because pydantic_type is the class, not an
-    # instance — every schema through this path was named "ModelMetaclass".
+    # type(pydantic_type).__name__ reads the metaclass, naming every schema "ModelMetaclass".
     name = pydantic_type.__name__
 
     docstring = parse(pydantic_type.__doc__ or "")

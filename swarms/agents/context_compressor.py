@@ -137,10 +137,7 @@ class ContextCompressor:
 
         summary = self._summarize(agent, history)
 
-        # Delegate to Conversation.compact() so the system_prompt/rules are
-        # preserved in-memory AND MEMORY.md is wiped + re-seeded with the
-        # summary block (otherwise the on-disk log would grow unbounded
-        # across compressions and re-inflate on the next run's preload).
+        # Conversation.compact() also wipes and re-seeds MEMORY.md, which would otherwise grow unbounded.
         summary_content = (
             "[Compressed Memory Summary]\n"
             "The following is a compressed summary of earlier "

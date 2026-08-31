@@ -352,30 +352,3 @@ class AgentRegistry:
         )
 
         self.agent_registry.agents.append(schema)
-
-
-# if __name__ == "__main__":
-#     from swarms import Agent
-
-#     agent1 = Agent(agent_name="test_agent_1")
-#     agent2 = Agent(agent_name="test_agent_2")
-#     agent3 = Agent(agent_name="test_agent_3")
-#     print(f"Created agents: {agent1}, {agent2}, {agent3}")
-
-#     registry = AgentRegistry()
-#     print(f"Created agent registry: {registry}")
-
-#     registry.add(agent1)
-#     registry.add(agent2)
-#     registry.add(agent3)
-#     print(f"Added agents to registry: {agent1}, {agent2}, {agent3}")
-
-#     all_agents = registry.return_all_agents()
-#     print(f"All agents in registry: {all_agents}")
-
-#     found_agent1 = registry.find_agent_by_name("test_agent_1")
-#     found_agent2 = registry.find_agent_by_name("test_agent_2")
-#     found_agent3 = registry.find_agent_by_name("test_agent_3")
-#     print(f"Found agents by name: {found_agent1}, {found_agent2}, {found_agent3}")
-
-#     print(registry.agents_to_json())

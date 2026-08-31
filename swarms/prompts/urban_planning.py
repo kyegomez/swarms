@@ -1,5 +1,3 @@
-# urban_planning_prompts.py
-
 # Architecture Analysis Prompt
 ARCHITECTURE_ANALYSIS_PROMPT = """
 Analyze the architectural styles, building designs, and construction materials visible in the urban area image provided. Provide insights on the historical influences, modern trends, and architectural diversity observed.
