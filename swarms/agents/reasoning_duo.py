@@ -6,6 +6,11 @@ from swarms.structs.execution_utils import batched_run
 from swarms.prompts.reasoning_prompt import REASONING_PROMPT
 from swarms.structs.agent import Agent
 from swarms.utils.output_types import OutputType
+from swarms.structs.context_utils import (
+    agent_answer,
+    messages_for,
+    split_last_turn,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -55,8 +60,9 @@ class ReasoningDuo:
 
         self.conversation = Conversation()
 
+        # Distinct names: a shared one made both agents the same speaker.
         self.reasoning_agent = Agent(
-            agent_name=self.agent_name,
+            agent_name=f"{self.agent_name}-reasoning",
             description=self.agent_description,
             system_prompt=REASONING_PROMPT,
             max_loops=1,
@@ -67,7 +73,7 @@ class ReasoningDuo:
         )
 
         self.main_agent = Agent(
-            agent_name=self.agent_name,
+            agent_name=f"{self.agent_name}-main",
             description=self.agent_description,
             system_prompt=system_prompt,
             max_loops=1,
@@ -77,6 +83,39 @@ class ReasoningDuo:
             **kwargs,
         )
 
+    def _run_agent(
+        self,
+        agent,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+    ) -> str:
+        """Run one agent on the shared conversation and record its answer.
+
+        The conversation is delivered as typed chat turns, so each agent reads
+        its own prior output as ``assistant`` and its partner's as a labelled
+        ``user`` turn instead of one flattened block.
+
+        Args:
+            agent: The agent to run.
+            task (Optional[str]): A new instruction to append as this turn.
+                When None, the newest turn already in the conversation is used.
+            img (Optional[str]): Optional image input.
+
+        Returns:
+            str: The agent's answer.
+        """
+        if task is not None:
+            self.conversation.add(role="user", content=task)
+
+        prior, step_task = split_last_turn(
+            messages_for(agent.agent_name, self.conversation)
+        )
+        response = agent.run(task=step_task, messages=prior, img=img)
+
+        answer = agent_answer(agent, fallback=response)
+        self.conversation.add(role=agent.agent_name, content=answer)
+        return answer
+
     def step(self, task: str, img: Optional[str] = None):
         """
         Executes one step of reasoning and main agent processing.
@@ -85,22 +124,8 @@ class ReasoningDuo:
             task (str): The task to be processed.
             img (Optional[str]): Optional image input.
         """
-        # For reasoning agent, use the current task (which may include conversation context)
-        output_reasoner = self.reasoning_agent.run(task, img=img)
-
-        self.conversation.add(
-            role=self.reasoning_agent.agent_name,
-            content=output_reasoner,
-        )
-
-        # For main agent, always use the full conversation context
-        output_main = self.main_agent.run(
-            task=self.conversation.get_str(), img=img
-        )
-
-        self.conversation.add(
-            role=self.main_agent.agent_name, content=output_main
-        )
+        self._run_agent(self.reasoning_agent, task, img=img)
+        self._run_agent(self.main_agent, img=img)
 
     def run(self, task: str, img: Optional[str] = None):
         """
@@ -116,19 +141,18 @@ class ReasoningDuo:
         logger.info(
             f"Running task: {task} with max_loops: {self.max_loops}"
         )
-        self.conversation.add(role="user", content=task)
-
+        # _run_agent appends the task on the first iteration; adding it here would duplicate it.
         for loop_iteration in range(self.max_loops):
             logger.info(
                 f"Loop iteration {loop_iteration + 1}/{self.max_loops}"
             )
 
-            if loop_iteration == 0:
-                # First iteration: use original task
-                current_task = task
-            else:
-                # Subsequent iterations: use task with context of previous reasoning
-                current_task = f"Continue reasoning and refining your analysis. Original task: {task}\n\nPrevious conversation context:\n{self.conversation.get_str()}"
+            # Prior turns arrive as messages, so later loops need only the new instruction.
+            current_task = (
+                task
+                if loop_iteration == 0
+                else "Continue reasoning and refining your analysis."
+            )
 
             self.step(task=current_task, img=img)
 

@@ -1,7 +1,9 @@
 import pytest
 from loguru import logger
-from swarms.structs.deep_discussion import one_on_one_debate
+
 from swarms.structs.agent import Agent
+from swarms.structs.deep_discussion import one_on_one_debate
+from swarms.structs.multi_agent_debates import OneOnOneDebate
 
 
 def create_function_agent(name: str, system_prompt: str = None):
@@ -37,6 +39,30 @@ def sample_agents():
 @pytest.fixture
 def sample_task():
     return "Should artificial intelligence be regulated?"
+
+
+@pytest.fixture
+def sample_two_agents():
+    agent1 = create_function_agent(
+        "Agent1", "You are Agent1. Provide concise responses."
+    )
+    agent2 = create_function_agent(
+        "Agent2", "You are Agent2. Provide concise responses."
+    )
+    return [agent1, agent2]
+
+
+@pytest.fixture
+def sample_three_agents():
+    agent1 = create_function_agent("Agent1")
+    agent2 = create_function_agent("Agent2")
+    agent3 = create_function_agent("Agent3")
+    return [agent1, agent2, agent3]
+
+
+########################################################
+# Function API: deep_discussion.one_on_one_debate()
+########################################################
 
 
 def test_one_on_one_debate_basic(sample_agents, sample_task):
@@ -462,4 +488,148 @@ def test_one_on_one_debate_both_agents_participate(
         logger.info("Both agents participate test passed")
     except Exception as e:
         logger.error(f"Failed to test both agents participate: {e}")
+        raise
+
+
+########################################################
+# Class API: multi_agent_debates.OneOnOneDebate
+########################################################
+
+
+def test_one_on_one_debate_initialization(sample_two_agents):
+    try:
+        assert sample_two_agents is not None
+        debate = OneOnOneDebate(
+            max_loops=2,
+            agents=sample_two_agents,
+            output_type="str-all-except-first",
+        )
+        assert debate is not None
+        assert debate.max_loops == 2
+        assert len(debate.agents) == 2
+        assert debate.output_type == "str-all-except-first"
+        logger.info("OneOnOneDebate initialization test passed")
+    except Exception as e:
+        logger.error(
+            f"Failed to test OneOnOneDebate initialization: {e}"
+        )
+        raise
+
+
+def test_one_on_one_debate_run(sample_two_agents, sample_task):
+    try:
+        assert sample_two_agents is not None
+        assert sample_task is not None
+        debate = OneOnOneDebate(
+            max_loops=2,
+            agents=sample_two_agents,
+            output_type="str-all-except-first",
+        )
+        assert debate is not None
+        result = debate.run(sample_task)
+        assert result is not None
+        assert isinstance(result, str)
+        assert len(result) >= 0
+        logger.info("OneOnOneDebate run test passed")
+    except Exception as e:
+        logger.error(f"Failed to test OneOnOneDebate run: {e}")
+        raise
+
+
+def test_one_on_one_debate_wrong_number_of_agents(
+    sample_three_agents, sample_task
+):
+    try:
+        debate = OneOnOneDebate(
+            max_loops=2,
+            agents=sample_three_agents,
+            output_type="str-all-except-first",
+        )
+        with pytest.raises(ValueError, match="exactly two agents"):
+            debate.run(sample_task)
+        logger.info(
+            "OneOnOneDebate wrong number of agents test passed"
+        )
+    except Exception as e:
+        logger.error(
+            f"Failed to test OneOnOneDebate wrong number of agents: {e}"
+        )
+        raise
+
+
+def test_one_on_one_debate_output_types(
+    sample_two_agents, sample_task
+):
+    try:
+        assert sample_two_agents is not None
+        assert sample_task is not None
+        output_types = ["str-all-except-first", "list", "dict", "str"]
+        assert output_types is not None
+        for output_type in output_types:
+            debate = OneOnOneDebate(
+                max_loops=2,
+                agents=sample_two_agents,
+                output_type=output_type,
+            )
+            assert debate is not None
+            result = debate.run(sample_task)
+            assert result is not None
+            if output_type == "list":
+                assert isinstance(result, list)
+            elif output_type == "dict":
+                assert isinstance(result, (dict, list))
+            else:
+                assert isinstance(result, str)
+        logger.info("OneOnOneDebate output types test passed")
+    except Exception as e:
+        logger.error(
+            f"Failed to test OneOnOneDebate output types: {e}"
+        )
+        raise
+
+
+def test_one_on_one_debate_class_with_image(sample_two_agents):
+    try:
+        assert sample_two_agents is not None
+        task = "Analyze this image"
+        assert task is not None
+        img = "test_image.jpg"
+        assert img is not None
+        debate = OneOnOneDebate(
+            max_loops=2,
+            agents=sample_two_agents,
+            img=img,
+            output_type="str-all-except-first",
+        )
+        assert debate is not None
+        result = debate.run(task)
+        assert result is not None
+        assert isinstance(result, str)
+        assert len(result) >= 0
+        logger.info("OneOnOneDebate with image test passed")
+    except Exception as e:
+        logger.error(f"Failed to test OneOnOneDebate with image: {e}")
+        raise
+
+
+def test_one_on_one_debate_class_multiple_loops(
+    sample_two_agents, sample_task
+):
+    try:
+        assert sample_two_agents is not None
+        debate = OneOnOneDebate(
+            max_loops=5,
+            agents=sample_two_agents,
+            output_type="str-all-except-first",
+        )
+        assert debate is not None
+        result = debate.run(sample_task)
+        assert result is not None
+        assert isinstance(result, str)
+        assert len(result) >= 0
+        logger.info("OneOnOneDebate multiple loops test passed")
+    except Exception as e:
+        logger.error(
+            f"Failed to test OneOnOneDebate multiple loops: {e}"
+        )
         raise

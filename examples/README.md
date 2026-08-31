@@ -84,7 +84,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [base_tool_examples/](tools/base_tool_examples/) | Base tool implementation examples |
 | [base_tool_examples.py](tools/base_tool_examples/base_tool_examples.py) | Base tool examples |
 | [conver_funcs_to_schema.py](tools/base_tool_examples/conver_funcs_to_schema.py) | Convert functions to schema |
-| [convert_basemodels.py](tools/base_tool_examples/convert_basemodels.py) | Convert base models |
 | [exa_search_test.py](tools/base_tool_examples/exa_search_test.py) | Exa search test |
 | [example_usage.py](tools/base_tool_examples/example_usage.py) | Base tool usage example |
 | [schema_validation_example.py](tools/base_tool_examples/schema_validation_example.py) | Schema validation example |
@@ -152,35 +151,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [05_auth_and_config.py](mcp/client/05_auth_and_config.py) | API keys, bearer tokens, headers, env secrets, OAuth |
 | [06_remote_agents.py](mcp/client/06_remote_agents.py) | Spawn and run agents on a remote MCP server |
 
-#### Agents over Protocol (AOP)
-
-| Example | Description |
-|---------|-------------|
-| [aop_examples/](aop_examples/) | Agents over Protocol (AOP) examples demonstrating MCP server setup, agent discovery, client interactions, queue-based task submission, medical AOP implementations, and utility functions |
-| [README.md](aop_examples/README.md) | AOP examples documentation |
-| [server.py](aop_examples/server.py) | AOP server implementation |
-| [client/](aop_examples/client/) | AOP client examples and agent discovery including cluster, queue, raw client, and task examples |
-| [aop_cluster_example.py](aop_examples/client/aop_cluster_example.py) | AOP cluster example |
-| [aop_queue_example.py](aop_examples/client/aop_queue_example.py) | AOP queue-based task submission |
-| [aop_raw_client_code.py](aop_examples/client/aop_raw_client_code.py) | Raw AOP client implementation |
-| [aop_raw_task_example.py](aop_examples/client/aop_raw_task_example.py) | Raw AOP task example |
-| [example_new_agent_tools.py](aop_examples/client/example_new_agent_tools.py) | New agent tools example |
-| [get_all_agents.py](aop_examples/client/get_all_agents.py) | Get all available agents |
-| [list_agents_and_call_them.py](aop_examples/client/list_agents_and_call_them.py) | List and call agents example |
-| [discovery/](aop_examples/discovery/) | Agent discovery examples including communication and discovery testing |
-| [example_agent_communication.py](aop_examples/discovery/example_agent_communication.py) | Agent communication example |
-| [simple_discovery_example.py](aop_examples/discovery/simple_discovery_example.py) | Simple discovery example |
-| [example_aop_discovery.py](aop_examples/discovery/example_aop_discovery.py) | AOP discovery example |
-| [medical_aop/](aop_examples/medical_aop/) | Medical AOP implementations |
-| [server.py](aop_examples/medical_aop/server.py) | Medical AOP server |
-| [client.py](aop_examples/medical_aop/client.py) | Medical AOP client |
-| [utils/](aop_examples/utils/) | AOP utility functions |
-| [network_management_example.py](aop_examples/utils/network_management_example.py) | Network management example |
-| [comprehensive_aop_example.py](aop_examples/utils/comprehensive_aop_example.py) | Comprehensive AOP example |
-| [persistence_management_example.py](aop_examples/utils/persistence_management_example.py) | Persistence management example |
-| [network_error_example.py](aop_examples/utils/network_error_example.py) | Network error handling example |
-| [persistence_example.py](aop_examples/utils/persistence_example.py) | Persistence example |
-
 ### Advanced Capabilities
 
 | Example | Description |
@@ -226,7 +196,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [README.md](guides/README.md) | Guides documentation |
 | [hiearchical_marketing_team.py](guides/hiearchical_marketing_team.py) | Hierarchical marketing team example |
 | [840_update/](guides/840_update/) | Update examples from version 8.4.0 including agent rearrange, auto swarm builder, and fallback examples |
-| [850_workshop/](guides/850_workshop/) | Workshop examples from version 8.5.0 including AOP, MOA, peer review, and concurrent examples |
+| [850_workshop/](guides/850_workshop/) | Workshop examples from version 8.5.0 including MOA, peer review, and concurrent examples |
 | [880_update_changelog_examples/](guides/880_update_changelog_examples/) | Changelog examples showcasing new features including marketplace integration, multi-agent structures, workflow orchestration, voice agents, evaluation & debate, routing, and autosaving |
 | [changelog_890/](guides/changelog_890/) | Changelog examples from January 2026 release including dynamic skills loader, autonomous agent loop, agent handoffs, API key validation, max loops parameter, multi-tool agent tutorial, hierarchical voice agent, and agent rearrange patterns |
 | [mem0/](guides/mem0/) | Mem0 integration examples for memory management with Swarms |
@@ -266,7 +236,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [fetch_prompt.py](utils/fetch_prompt.py) | Prompt fetching utilities |
 | [litellm_connect_issue.py](utils/litellm_connect_issue.py) | LiteLLM connection issue examples |
 | [litellm_network_error_handling.py](utils/litellm_network_error_handling.py) | LiteLLM network error handling |
-| [misc/](utils/misc/) | Miscellaneous utility functions including AOP, conversation, CSV agents, and visualization |
+| [misc/](utils/misc/) | Miscellaneous utility functions including conversation, CSV agents, and visualization |
 | [agent_map_test.py](utils/misc/agent_map_test.py) | Agent map test |
 | [conversation_simple.py](utils/misc/conversation_simple.py) | Simple conversation example |
 | [conversation_test_truncate.py](utils/misc/conversation_test_truncate.py) | Conversation truncate test |
@@ -276,8 +246,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [swarm_matcher_example.py](utils/misc/swarm_matcher_example.py) | Swarm matcher example |
 | [test_load_conversation.py](utils/misc/test_load_conversation.py) | Load conversation test |
 | [visualizer_test.py](utils/misc/visualizer_test.py) | Visualizer test |
-| [aop/](utils/misc/aop/) | AOP utility examples |
-| [client.py](utils/misc/aop/client.py) | AOP client utility |
 | [telemetry/](utils/telemetry/) | Telemetry and monitoring utilities |
 
 ### User Interface
@@ -318,7 +286,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | Want to use the CLI? | Check out [cli/](cli/) for all CLI command examples |
 | Want multi-agent workflows? | Check out [multi_agent/duo_agent.py](multi_agent/duo_agent.py) |
 | Need tool integration? | Explore [tools/agent_as_tools.py](tools/agent_as_tools.py) |
-| Interested in AOP? | Try [aop_examples/client/example_new_agent_tools.py](aop_examples/client/example_new_agent_tools.py) for agent discovery |
 | Want to see social algorithms? | Check out [multi_agent/social_algorithms_examples/](multi_agent/social_algorithms_examples/) |
 | Looking for guides? | Visit [guides/](guides/) for comprehensive tutorials |
 | Need RAG? | Try [single_agent/rag/](single_agent/capabilities/rag/) for RAG examples |
@@ -477,11 +444,9 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | **Multi-Agent Architecture** | Agents as Tools | Using agents as tools in workflows | [Agents as Tools](https://docs.swarms.world/architectures/overview) |
 | **Multi-Agent Architecture** | Aggregate Responses | Combining multiple agent outputs | [Aggregate Examples](https://docs.swarms.world/architectures/mixture-of-agents) |
 | **Multi-Agent Architecture** | Interactive GroupChat | Real-time agent interactions | [Interactive GroupChat](https://docs.swarms.world/examples/group-chat-example) |
-| **Deployment Solutions** | Agent Orchestration Protocol (AOP) | Deploy agents as distributed services with discovery and management | [AOP Reference](https://docs.swarms.world/api/aop) |
 | **Applications** | Advanced Research System | Multi-agent research system inspired by Anthropic's research methodology | [AdvancedResearch](https://github.com/The-Swarm-Corporation/AdvancedResearch) |
 | **Applications** | Hospital Simulation | Healthcare simulation system using multi-agent architecture | [HospitalSim](https://github.com/The-Swarm-Corporation/HospitalSim) |
 | **Applications** | Browser Agents | Web automation with agents | [Browser Agents](https://docs.swarms.world/examples/integrations/browser-use) |
-| **Applications** | Medical Analysis | Healthcare applications | [Medical Examples](https://docs.swarms.world/examples/multi-agent/aop-medical) |
 | **Applications** | Finance Analysis | Financial applications | [Finance Examples](https://docs.swarms.world/examples/use-cases/financial-analysis) |
 | **Cookbook & Templates** | Examples Overview | Complete examples directory | [Examples Index](https://docs.swarms.world/examples/) |
 | **Cookbook & Templates** | Cookbook Index | Curated example collection | [Cookbook](https://docs.swarms.world/examples/overviews/cookbook) |

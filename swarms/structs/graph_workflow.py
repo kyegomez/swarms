@@ -449,9 +449,7 @@ class RustworkxBackend(GraphBackend):
                 )
             ]
         except Exception as e:
-            # Raised when the graph contains a cycle. Fall back to Kahn's
-            # algorithm so the cyclic remainder is still surfaced as a final
-            # layer, matching the previous behaviour.
+            # Cycle: fall back to Kahn's so the cyclic remainder still surfaces as a final layer.
             logger.warning(
                 f"rustworkx topological_generations failed ({e}); "
                 "falling back to Kahn's algorithm"
@@ -996,10 +994,7 @@ class GraphWorkflow:
                 for node_id, parents in pred.items()
             }
 
-            # Structural validation, surfaced at build time rather than
-            # mid-execution.  We never raise here so that compile() stays
-            # backward-compatible; callers that want strict enforcement
-            # should call validate(raise_on_error=True) explicitly.
+            # Never raises, so compile() stays compatible; use validate(raise_on_error=True) for strict.
             if self.nodes:
                 errors, warnings = self._fast_validate(succ, pred)
                 if errors:
@@ -1656,11 +1651,7 @@ class GraphWorkflow:
                             f"Added Edge object {i+1}/{len(edges)}: {e.source} -> {e.target}"
                         )
                 elif isinstance(e, (tuple, list)) and len(e) >= 2:
-                    # Support various edge formats:
-                    # - (source, target) - single edge
-                    # - (source, [target1, target2]) - fan-out from source
-                    # - ([source1, source2], target) - fan-in to target
-                    # - ([source1, source2], [target1, target2]) - parallel chain
+                    # Accepts (src, tgt), (src, [tgts]), ([srcs], tgt) and ([srcs], [tgts]).
                     source, target = e[0], e[1]
 
                     if isinstance(
@@ -1792,9 +1783,7 @@ class GraphWorkflow:
         Returns:
             Tuple[str, ...]: Tuple of predecessor node IDs.
         """
-        # Instance-level caching instead of @lru_cache to avoid hashing issues.
-        # compile() populates this map wholesale from a single adjacency pass;
-        # this path only fills gaps for nodes queried before compilation.
+        # Instance-level rather than @lru_cache, which cannot hash self; compile() fills it wholesale.
         cache = self._predecessors_cache
         preds = cache.get(node_id)
         if preds is None:
@@ -1809,9 +1798,9 @@ class GraphWorkflow:
         prev_outputs: Dict[str, Any],
         layer_idx: int,
         loop_idx: int = 0,
-    ) -> str:
+    ) -> tuple:
         """
-        Optimized prompt building with minimal string operations.
+        Build this node's instruction and the prior turns that precede it.
 
         Args:
             node_id (str): The node ID to build a prompt for.
@@ -1823,7 +1812,8 @@ class GraphWorkflow:
             loop_idx (int): The current loop iteration (0-based).
 
         Returns:
-            str: The built prompt.
+            tuple: ``(prompt, messages)`` - this turn's instruction, and the
+            predecessor outputs as typed chat turns to send alongside it.
         """
         if self.verbose:
             logger.debug(
@@ -1832,49 +1822,48 @@ class GraphWorkflow:
 
         try:
             preds = self._get_predecessors(node_id)
+            # Pair each name with its own output: zipping a filtered list shifts every label.
             pred_outputs = [
-                prev_outputs.get(pred)
+                (pred, prev_outputs[pred])
                 for pred in preds
                 if pred in prev_outputs
             ]
 
+            messages = [{"role": "user", "content": str(task)}]
+
             if pred_outputs and layer_idx > 0:
-                # Use list comprehension and join for faster string building
-                predecessor_parts = [
-                    f"Output from {pred}:\n{out}"
-                    for pred, out in zip(preds, pred_outputs)
+                # One turn per predecessor rather than every output joined into one block.
+                messages += [
+                    {"role": "user", "content": f"{pred}: {out}"}
+                    for pred, out in pred_outputs
                     if out is not None
                 ]
-                predecessor_context = "\n\n".join(predecessor_parts)
-
                 prompt = (
-                    f"Original Task: {task}\n\n"
-                    f"Previous Agent Outputs:\n{predecessor_context}\n\n"
-                    f"Instructions: Please carefully review the work done by your predecessor agents above. "
-                    f"Acknowledge their contributions, verify their findings, and build upon their work. "
-                    f"If you agree with their analysis, say so and expand on it. "
-                    f"If you disagree or find gaps, explain why and provide corrections or improvements. "
-                    f"Your goal is to collaborate and create a comprehensive response that builds on all previous work."
+                    "Instructions: Please carefully review the work done by your predecessor agents above. "
+                    "Acknowledge their contributions, verify their findings, and build upon their work. "
+                    "If you agree with their analysis, say so and expand on it. "
+                    "If you disagree or find gaps, explain why and provide corrections or improvements. "
+                    "Your goal is to collaborate and create a comprehensive response that builds on all previous work."
                 )
             elif loop_idx > 0 and layer_idx == 0 and prev_outputs:
                 # Entry-point nodes in subsequent loops receive end-point
                 # outputs from the previous loop as refinement context.
-                prior_parts = [
-                    f"Output from {nid} (previous iteration):\n{out}"
+                messages += [
+                    {
+                        "role": "user",
+                        "content": f"{nid} (previous iteration): {out}",
+                    }
                     for nid, out in prev_outputs.items()
                     if out is not None
                 ]
-                prior_context = "\n\n".join(prior_parts)
-
                 prompt = (
-                    f"Original Task: {task}\n\n"
-                    f"Previous Iteration Outputs:\n{prior_context}\n\n"
                     f"Instructions: This is iteration {loop_idx + 1} of the workflow. "
-                    f"Review the outputs from the previous iteration above. "
-                    f"Refine, correct, or expand upon the previous results. "
-                    f"Focus on improving accuracy, filling gaps, and strengthening the analysis."
+                    "Review the outputs from the previous iteration above. "
+                    "Refine, correct, or expand upon the previous results. "
+                    "Focus on improving accuracy, filling gaps, and strengthening the analysis."
                 )
             else:
+                messages = []
                 prompt = (
                     f"{task}\n\n"
                     f"You are starting the workflow analysis. Please provide your best comprehensive response to this task."
@@ -1882,10 +1871,10 @@ class GraphWorkflow:
 
             if self.verbose:
                 logger.debug(
-                    f"Built prompt for node {node_id} ({len(prompt)} characters)"
+                    f"Built {len(messages)} prior turns for node {node_id}"
                 )
 
-            return prompt
+            return prompt, messages
 
         except Exception as e:
             logger.exception(
@@ -2036,10 +2025,7 @@ class GraphWorkflow:
                 f"Using cached compilation for {self.max_loops} loops (compiled at {getattr(self, '_compilation_timestamp', 'unknown time')})"
             )
 
-        # One executor for the whole run instead of one per layer per loop.
-        # Thread creation and pool shutdown dominated execution time on graphs
-        # with many layers.  Sized to the widest layer, capped at _max_workers,
-        # and created lazily so purely sequential graphs spawn no threads.
+        # One executor for the whole run; per-layer pools dominated runtime on deep graphs.
         widest_layer = max(
             (len(layer) for layer in self._execution_plan), default=1
         )
@@ -2084,9 +2070,7 @@ class GraphWorkflow:
                 execution_results = {}
                 prev_outputs = {}
 
-                # Derive a deterministic key for this task so checkpoints
-                # survive process restarts (Python's hash() is salted and
-                # is NOT stable across runs).  Only needed when checkpointing.
+                # Deterministic key, not hash(): Python salts hashes, so they differ across runs.
                 task_key = (
                     self._task_key(task)
                     if self.checkpoint_dir
@@ -2103,10 +2087,7 @@ class GraphWorkflow:
                 ):
                     layer_start_time = time.time()
 
-                    # ----------------------------------------------------------
-                    # Checkpoint resume: if this layer already has a saved result
-                    # for the current task, load it and skip re-execution.
-                    # ----------------------------------------------------------
+                    # Resume: skip any layer already checkpointed for this task.
                     if self.checkpoint_dir:
                         checkpoint_path = self._checkpoint_path(
                             task_key, layer_idx
@@ -2165,12 +2146,14 @@ class GraphWorkflow:
                         agent_name,
                     ) in layer:
                         try:
-                            prompt = self._build_prompt(
-                                node_id,
-                                task,
-                                prev_outputs,
-                                layer_idx,
-                                loop,
+                            prompt, prior_messages = (
+                                self._build_prompt(
+                                    node_id,
+                                    task,
+                                    prev_outputs,
+                                    layer_idx,
+                                    loop,
+                                )
                             )
                         except Exception as e:
                             logger.exception(
@@ -2178,6 +2161,7 @@ class GraphWorkflow:
                             )
                             # Continue with an error prompt as fallback
                             prompt = f"Error building prompt: {e}"
+                            prior_messages = []
                         layer_data.append(
                             (
                                 node_id,
@@ -2185,15 +2169,21 @@ class GraphWorkflow:
                                 node_type,
                                 agent_name,
                                 prompt,
+                                prior_messages,
                             )
                         )
 
-                    def _make_call(node_id, agent, node_type, prompt):
+                    def _make_call(
+                        node_id,
+                        agent,
+                        node_type,
+                        prompt,
+                        messages=None,
+                    ):
                         """Bind one node's invocation into a zero-arg callable."""
+                        messages = messages or []
                         if node_type == NodeType.SUBGRAPH:
-                            # Subgraphs receive the prompt as their task and
-                            # run in isolation.  Checkpoint state is stored
-                            # under a sub-directory keyed by the parent node.
+                            # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
                             inner: GraphWorkflow = agent
                             _prev_cp = inner.checkpoint_dir
                             if (
@@ -2205,9 +2195,14 @@ class GraphWorkflow:
                                     / node_id
                                 )
 
+                            flattened = "\n\n".join(
+                                [m["content"] for m in messages]
+                                + [prompt]
+                            )
+
                             def _run_inner(
                                 _inner=inner,
-                                _prompt=prompt,
+                                _prompt=flattened,
                                 _prev=_prev_cp,
                             ):
                                 try:
@@ -2225,10 +2220,16 @@ class GraphWorkflow:
                         if _streaming_callback is None:
                             # Common path: no per-node kwargs copy needed.
                             def _run_agent(
-                                _agent=agent, _prompt=prompt
+                                _agent=agent,
+                                _prompt=prompt,
+                                _messages=messages,
                             ):
                                 return _agent.run(
-                                    _prompt, img, *args, **kwargs
+                                    task=_prompt,
+                                    img=img,
+                                    messages=_messages,
+                                    *args,
+                                    **kwargs,
                                 )
 
                             return _run_agent
@@ -2237,6 +2238,7 @@ class GraphWorkflow:
                             _agent=agent,
                             _prompt=prompt,
                             _nid=node_id,
+                            _messages=messages,
                         ):
                             call_kwargs = dict(kwargs)
                             call_kwargs["streaming_callback"] = (
@@ -2245,7 +2247,11 @@ class GraphWorkflow:
                                 )
                             )
                             return _agent.run(
-                                _prompt, img, *args, **call_kwargs
+                                task=_prompt,
+                                img=img,
+                                messages=_messages,
+                                *args,
+                                **call_kwargs,
                             )
 
                         return _run_agent_streaming
@@ -2254,10 +2260,7 @@ class GraphWorkflow:
                         node_id, agent_name, node_type, output
                     ):
                         """Persist one node's output into the run's state."""
-                        # Subgraph nodes return a dict; flatten to a readable
-                        # string for downstream agents.  Only applied to
-                        # SUBGRAPH nodes so that agent nodes returning
-                        # structured dicts are not silently coerced.
+                        # SUBGRAPH nodes only, so an agent returning a dict is not silently flattened.
                         if (
                             node_type == NodeType.SUBGRAPH
                             and isinstance(output, dict)
@@ -2297,11 +2300,16 @@ class GraphWorkflow:
                             node_type,
                             agent_name,
                             prompt,
+                            prior_messages,
                         ) = layer_data[0]
                         _, output = self._safe_output(
                             agent_name,
                             _make_call(
-                                node_id, agent, node_type, prompt
+                                node_id,
+                                agent,
+                                node_type,
+                                prompt,
+                                prior_messages,
                             ),
                         )
                         _record(
@@ -2318,6 +2326,7 @@ class GraphWorkflow:
                             node_type,
                             agent_name,
                             prompt,
+                            prior_messages,
                         ) in layer_data:
                             try:
                                 future = pool.submit(
@@ -2326,6 +2335,7 @@ class GraphWorkflow:
                                         agent,
                                         node_type,
                                         prompt,
+                                        prior_messages,
                                     )
                                 )
                                 future_to_data[future] = (
@@ -2371,10 +2381,7 @@ class GraphWorkflow:
                         time.time() - layer_start_time
                     )
 
-                    # ----------------------------------------------------------
-                    # Checkpoint save: persist this layer's outputs so a crash
-                    # on a later layer doesn't force re-running this one.
-                    # ----------------------------------------------------------
+                    # Save now so a crash on a later layer does not force re-running this one.
                     if self.checkpoint_dir:
                         try:
                             Path(self.checkpoint_dir).mkdir(
@@ -2444,9 +2451,7 @@ class GraphWorkflow:
                     f"Final execution results: {list(execution_results.keys())}"
                 )
 
-            # For single-loop (the common case), return results directly.
-            # For multi-loop, merge the per-loop history with the final
-            # loop's results so callers can access both.
+            # Multi-loop merges per-loop history with the final results; single-loop returns them directly.
             if self.max_loops > 1:
                 all_loop_results.update(execution_results)
                 return all_loop_results
@@ -2506,10 +2511,7 @@ class GraphWorkflow:
             ImportError: If graphviz is not installed.
             Exception: If visualization generation fails.
         """
-        # Sanitize here, in the path that is actually used. graphviz treats
-        # the argument as a filesystem path, so a name containing "/" (or
-        # any other separator) renders into a directory that does not exist
-        # instead of producing a file.
+        # graphviz reads this as a path, so a "/" in the name renders into a directory that does not exist.
         safe_name = "".join(
             c if c.isalnum() or c in "-_" else "_"
             for c in (self.name or "GraphWorkflow")
@@ -2875,9 +2877,7 @@ class GraphWorkflow:
             )
         return deleted
 
-    # Persistence. Two shapes: shallow (topology only, each node names its
-    # agent) and deep (agents embedded). Everything public picks one and
-    # delegates to to_dict / _write_json / from_*.
+    # Persistence comes in two shapes: shallow (topology only) and deep (agents embedded).
 
     @staticmethod
     def _edge_payload(edge: "Edge") -> Dict[str, Any]:
@@ -3184,10 +3184,6 @@ class GraphWorkflow:
         """Write :meth:`to_spec` to ``path`` — the form to commit. Rebuild with
         :meth:`from_topology_spec`."""
         self.save(path, shallow=True)
-
-    # ------------------------------------------------------------------
-    # Reconstruction
-    # ------------------------------------------------------------------
 
     @staticmethod
     def _parse_node_type(raw: Any) -> "NodeType":
@@ -3634,9 +3630,7 @@ class GraphWorkflow:
                 result["is_valid"] = False
                 return result
 
-            # Missing entry/end points are repaired before the reachability
-            # checks run, so auto_fix does not report nodes as unreachable
-            # from a set of entry points it is about to populate.
+            # Repair entry/end points before the reachability checks, which would otherwise flag nodes it is about to fix.
             if not self.entry_points:
                 result["warnings"].append("No entry points defined")
                 if auto_fix:
