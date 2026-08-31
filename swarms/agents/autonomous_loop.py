@@ -74,15 +74,13 @@ def _format_tool_error(function_name: str, error: Exception) -> str:
     )
 
 
-# Tools the loop itself depends on. These are never deferred - an agent that
-# has to search for its own `subtask_done` cannot finish a subtask.
-# How many tools a plan may pre-load in one go. Enough to cover a typical plan
-# without pulling in the whole catalog and undoing the saving.
+# Enough for a typical plan without pulling in the whole catalog.
 PREWARM_TOOL_LIMIT = 8
 
 # Pre-warm matches must score at least this fraction of the best match.
 PREWARM_MIN_SCORE_RATIO = 0.6
 
+# Never deferred: searching for subtask_done would stall the loop.
 ALWAYS_LOADED_TOOLS = frozenset(
     {
         "create_plan",
@@ -110,11 +108,10 @@ class AutonomousAgentLoop:
 
     def __init__(self, agent: Any):
         self.agent = agent
-        # The real conversation body sent to the model: user turns, assistant
-        # turns carrying `tool_calls`, and `{"role": "tool", ...}` results.
-        # `short_memory` is kept in sync alongside it because persistence,
-        # output formatting and the final summary all read from there.
+        # The real body sent to the model; short_memory mirrors it.
         self._transcript = Transcript()
+        # Removed before the next append, so runs do not stack copies.
+        self._applied_handoff_block: Optional[str] = None
 
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
@@ -221,8 +218,7 @@ class AutonomousAgentLoop:
         """
         try:
 
-            # Reset autonomous loop state. The transcript is cleared before
-            # the task is seeded, or the opening turn would be discarded.
+            # Cleared before seeding, or the opening turn is lost.
             self._transcript = Transcript()
             self.agent.autonomous_subtasks = []
             self.agent.current_subtask_index = 0
@@ -255,14 +251,7 @@ class AutonomousAgentLoop:
                     f"Filtered to {len(planning_tools)} tools: {[t.get('function', {}).get('name', '') for t in planning_tools]}"
                 )
 
-            # The `think` tool is opt-in via Agent(think_tool=True). It costs a
-            # full round-trip to produce reasoning the model could emit inline
-            # alongside its actions, so it is off unless asked for.
-            #
-            # This replaces an earlier `thinking_tokens is not None` check.
-            # `thinking_tokens` defaults to 1024 rather than None, so that test
-            # was always true and silently stripped `think` for every agent -
-            # the intent was to drop it only when extended thinking was on.
+            # Opt-in; the old thinking_tokens check was always true.
             if not getattr(self.agent, "think_tool", False):
                 planning_tools = [
                     t
@@ -280,9 +269,7 @@ class AutonomousAgentLoop:
             if self.agent.tools_list_dictionary is None:
                 self.agent.tools_list_dictionary = []
 
-            # With dynamic_tools, only the control tools are always present.
-            # The rest of the loop's tools - file, shell, grep, sub-agents -
-            # go into the catalog and are loaded on demand via tool_search.
+            # Only control tools stay; the rest load via tool_search.
             if self.agent.dynamic_tools:
                 control = [
                     t
@@ -324,15 +311,30 @@ class AutonomousAgentLoop:
                         self.agent.tools_list_dictionary.append(tool)
                         existing_tool_names.add(tool_name)
 
-                # Add handoff prompt to system prompt
+                # Removed first, so a changed roster cannot go stale.
                 agent_registry = self.agent._get_agent_registry()
                 if agent_registry:
                     handoff_prompt = get_handoffs_prompt(
                         list(agent_registry.values())
                     )
-                    self.agent.system_prompt += (
-                        "\n\n" + handoff_prompt
-                    )
+                    handoff_block = "\n\n" + handoff_prompt
+
+                    previous_block = self._applied_handoff_block
+                    if (
+                        previous_block
+                        and previous_block in self.agent.system_prompt
+                    ):
+                        self.agent.system_prompt = (
+                            self.agent.system_prompt.replace(
+                                previous_block, "", 1
+                            )
+                        )
+
+                    # Left alone if present for another reason.
+                    if handoff_block not in self.agent.system_prompt:
+                        self.agent.system_prompt += handoff_block
+
+                    self._applied_handoff_block = handoff_block
 
             # Reinitialize LLM with planning tools (and handoff tool if configured)
             if self.agent.llm is not None:
@@ -530,8 +532,7 @@ class AutonomousAgentLoop:
                                 plan_created = True
                                 break
 
-                    # Every tool_call in the assistant turn must be answered
-                    # before the next request, whether or not the plan landed.
+                    # Answer every tool_call before the next request.
                     self._flush_tool_results(
                         planning_calls, planning_results
                     )
@@ -554,8 +555,7 @@ class AutonomousAgentLoop:
                     "Failed to create plan after maximum attempts"
                 )
 
-            # Integrate user tools after planning phase. With dynamic_tools
-            # they are already in the catalog, reachable through tool_search.
+            # Already in the catalog when dynamic_tools is on.
             if (
                 exists(self.agent.tools)
                 and not self.agent.dynamic_tools
@@ -657,15 +657,10 @@ class AutonomousAgentLoop:
                 max_subtask_loops = MAX_SUBTASK_LOOPS
                 subtask_done = False
 
-                # Counts CONSECUTIVE think calls across this subtask's
-                # iterations. It is reset here, once per subtask, and again by
-                # any non-think tool call below - not once per iteration, which
-                # would only ever catch repeats inside a single response.
+                # Consecutive across the subtask, not one response.
                 self.agent.think_call_count = 0
 
-                # Add the execution prompt ONCE before the inner loop so the model
-                # doesn't see duplicate copies of it on subsequent iterations and
-                # mistakenly conclude "this task has been run before."
+                # Once only, or the model reads duplicates as a rerun.
                 execution_prompt = get_execution_prompt(
                     subtask_id,
                     subtask_desc,
@@ -698,17 +693,14 @@ class AutonomousAgentLoop:
                             content=response,
                         )
 
-                        # Record the model's turn, then answer every tool call
-                        # it made before the next request goes out.
+                        # Answer every call before the next request.
                         turn_calls = self._record_assistant(response)
                         turn_results: Dict[str, Any] = {}
 
                         # Handle tool calls
                         if isinstance(response, list):
                             regular_tool_calls = []
-                            # complete_task sets this instead of returning
-                            # mid-loop, so tool calls batched after it are not
-                            # dropped.
+                            # Set, not returned, so later calls run.
                             task_complete = False
 
                             for tool_call in response:
@@ -732,9 +724,7 @@ class AutonomousAgentLoop:
                                         json.JSONDecodeError,
                                         TypeError,
                                     ) as parse_error:
-                                        # Report the malformed payload back to
-                                        # the model instead of aborting the
-                                        # whole iteration on one bad call.
+                                        # Report back, do not abort.
                                         self.agent.short_memory.add(
                                             role="Tool Executor",
                                             content=_format_tool_error(
@@ -753,9 +743,7 @@ class AutonomousAgentLoop:
                                         function_name
                                         in planning_tool_handlers
                                     ):
-                                        # Set when the handler raises, so a
-                                        # failed call is not mistaken for a
-                                        # completed subtask or a finished task.
+                                        # A raise is not a completion.
                                         tool_failed = False
 
                                         # Special handling for handoff_task tool
@@ -788,9 +776,7 @@ class AutonomousAgentLoop:
                                                     tool_error,
                                                 )
                                         else:
-                                            # Only pre-visualize tools that won't be shown again
-                                            # with their result (subtask_done / complete_task are
-                                            # visualized post-execution so skip the pre call).
+                                            # Shown post-execution.
                                             if function_name not in (
                                                 "subtask_done",
                                                 "complete_task",
@@ -824,9 +810,7 @@ class AutonomousAgentLoop:
                                             tool_call.get("id", "")
                                         ] = result
 
-                                        # Any tool that is not `think` breaks
-                                        # the streak, which is what makes the
-                                        # limit a *consecutive* one.
+                                        # Non-think breaks the streak.
                                         if function_name != "think":
                                             self.agent.think_call_count = (
                                                 0
@@ -852,8 +836,7 @@ class AutonomousAgentLoop:
                                                 result,
                                             )
 
-                                        # Check if subtask is done. A failed
-                                        # handler does not complete anything.
+                                        # A failure completes nothing.
                                         if (
                                             function_name
                                             == "subtask_done"
@@ -882,9 +865,7 @@ class AutonomousAgentLoop:
                                                         title=f"Subtask {status.title()}: {subtask_id}",
                                                     )
 
-                                        # Check if main task is complete. The
-                                        # return is deferred until every tool
-                                        # call in this response has run.
+                                        # Deferred until calls finish.
                                         if (
                                             function_name
                                             == "complete_task"
@@ -897,11 +878,7 @@ class AutonomousAgentLoop:
                                             tool_call
                                         )
 
-                            # Handle all regular tools together
-                            # MCP tools are served by the MCP manager, not by
-                            # tool_struct, which resolves against self.tools
-                            # only. Split them out first or every MCP call
-                            # raises ToolNotFoundError.
+                            # MCP resolves elsewhere; split first.
                             if regular_tool_calls:
                                 (
                                     mcp_calls,
@@ -1150,9 +1127,7 @@ class AutonomousAgentLoop:
                                 logger.warning(
                                     f"Too many consecutive think calls ({self.agent.think_call_count}). Forcing action."
                                 )
-                            # Force action. The nudge goes into the real
-                            # transcript, not just short_memory, or the model
-                            # never sees it on the next request.
+                            # Into the transcript, or it is unseen.
                             nudge = (
                                 "You have called `think` "
                                 f"{self.agent.think_call_count} times in a row "
@@ -1165,8 +1140,7 @@ class AutonomousAgentLoop:
                             )
                             self._transcript.append_user(nudge)
 
-                            # Reset so the nudge gets a fair chance to work
-                            # before firing again on the very next iteration.
+                            # Give the nudge a chance before refiring.
                             self.agent.think_call_count = 0
 
                     except Exception as e:
@@ -1174,9 +1148,7 @@ class AutonomousAgentLoop:
                             logger.error(
                                 f"Error in subtask execution loop: {e}"
                             )
-                        # Record the failure in the conversation. Without this
-                        # the next iteration rebuilds an identical prompt and
-                        # the model repeats whatever just failed.
+                        # Without this the next prompt is identical.
                         self.agent.short_memory.add(
                             role="Tool Executor",
                             content=(
@@ -1187,13 +1159,7 @@ class AutonomousAgentLoop:
                         )
 
                 if not subtask_done:
-                    # A subtask that burned its whole iteration budget without
-                    # finishing is recorded as failed, not left pending. Left
-                    # pending it stays eligible, so the outer loop re-selects it
-                    # and re-runs the same doomed budget up to
-                    # MAX_SUBTASK_ITERATIONS times - 100 x 20 = 2000 LLM calls
-                    # for one stuck subtask. Failing it terminates the run,
-                    # cascades `skipped` to its dependents, and reports honestly.
+                    # Failed, not pending; pending would re-run it.
                     reason = (
                         f"Exhausted its {max_subtask_loops}-iteration budget "
                         "without completing."
@@ -1317,17 +1283,13 @@ class AutonomousAgentLoop:
         incoming: Dict[str, Dict[str, Any]] = {}
         incoming_order: List[str] = []
         known_step_ids = {step.get("step_id", "") for step in steps}
-        # A revision may reference work that already finished but is not being
-        # restated, so those ids stay valid dependency targets.
+        # Finished work stays a valid dependency target.
         known_step_ids |= set(existing)
 
         for step in steps:
             step_id = step.get("step_id", "")
 
-            # step_id values in `dependencies` are model-generated free text.
-            # A typo or hallucinated id used to satisfy the dependency check
-            # silently; now it is dropped, with a warning, so the plan stays
-            # runnable instead of deadlocking on a reference to nothing.
+            # Model-generated ids; drop bad ones, do not deadlock.
             declared = step.get("dependencies", []) or []
             dependencies = [
                 dep
@@ -1353,8 +1315,7 @@ class AutonomousAgentLoop:
             }
             incoming_order.append(step_id)
 
-        # Merge, preserving the order the plan already had and appending
-        # genuinely new work at the end.
+        # Keep existing order, append new work at the end.
         merged: List[Dict[str, Any]] = []
         added, updated, removed, retained = [], [], [], []
 
@@ -1418,8 +1379,7 @@ class AutonomousAgentLoop:
                 )
             return message
 
-        # A revision reports what changed, not the whole plan, so the model
-        # can see the effect of its edit.
+        # Reports the change, not the whole plan.
         diff_parts = []
         if added:
             diff_parts.append(f"added {added}")
@@ -1456,8 +1416,7 @@ class AutonomousAgentLoop:
         if not getattr(agent, "mcp_enabled", False):
             return set()
 
-        # Prefer the cache the dynamic loader already populated, so this does
-        # not add a network call per turn.
+        # Use the loader's cache to avoid a call per turn.
         schemas = getattr(agent, "_mcp_schemas_cache", None)
         if schemas is None:
             try:
@@ -1554,10 +1513,7 @@ class AutonomousAgentLoop:
         agent._tool_search_tool(
             query=query,
             max_results=PREWARM_TOOL_LIMIT,
-            # Speculative, so it demands stronger relevance than an explicit
-            # search. A whole plan as the query contains enough common words
-            # ("task", "data", "current") to give unrelated tools a nonzero
-            # score, which would load the catalog and undo the saving.
+            # Speculative, so relevance must beat an explicit search.
             min_score_ratio=PREWARM_MIN_SCORE_RATIO,
         )
         return [
@@ -1763,17 +1719,11 @@ class AutonomousAgentLoop:
                 for dep in dependencies
             ]
 
-            # Only an actually completed dependency satisfies. A failed one
-            # cannot produce the output its dependents were planned around,
-            # and an unknown id (None) means the reference is unresolvable --
-            # neither should unblock execution.
+            # Only completed unblocks; failed and unknown do not.
             if all(status == "completed" for status in statuses):
                 return subtask
 
-            # Dependencies that failed or were skipped can never complete, so
-            # this subtask is unreachable. Mark it skipped rather than leaving
-            # it pending forever, so the run terminates and the final summary
-            # can report what was not attempted.
+            # Unreachable: skip so the run can terminate.
             blockers = [
                 dep
                 for dep, status in zip(dependencies, statuses)

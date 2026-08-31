@@ -21,7 +21,11 @@ from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
 )
 from swarms.structs.agent import Agent
-from swarms.structs.context_utils import new_context_for
+from swarms.structs.context_utils import (
+    messages_for,
+    new_context_for,
+    split_last_turn,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.any_to_str import any_to_str
 from swarms.structs.ma_blocks import find_agent_by_name
@@ -35,9 +39,6 @@ from swarms.telemetry.otel import (
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.formatter import formatter
 from swarms.utils.get_cpu_cores import max_workers_95_percent
-from swarms.utils.hierarchical_swarm_dashboard import (
-    HierarchicalSwarmDashboard,
-)
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -214,7 +215,7 @@ class HierarchicalSwarm:
         director_top_p (float): Nucleus sampling value for the director agent.
         add_collaboration_prompt (bool): Whether to add collaboration prompts to agents.
         director_feedback_on (bool): Whether director feedback is enabled.
-        interactive (bool): Whether to run with the live dashboard enabled.
+        interactive (bool): Prompt for the task on stdin when none is given.
         multi_agent_prompt_improvements (bool): Whether to enrich worker system
                                                prompts and context before a run.
         planning_enabled (bool): Whether the director produces a plan before
@@ -249,7 +250,7 @@ class HierarchicalSwarm:
         director_name: str = "Director",
         director_model_name: str = "gpt-5.4",
         add_collaboration_prompt: bool = True,
-        director_feedback_on: bool = True,
+        director_feedback_on: bool = False,
         interactive: bool = False,
         director_system_prompt: str = HIEARCHICAL_SWARM_SYSTEM_PROMPT,
         multi_agent_prompt_improvements: bool = False,
@@ -290,7 +291,7 @@ class HierarchicalSwarm:
             director_model_name (str): Model name for the main director agent.
             add_collaboration_prompt (bool): Whether to add collaboration prompts.
             director_feedback_on (bool): Whether director feedback is enabled.
-            interactive (bool): Whether to run with the live dashboard enabled.
+            interactive (bool): Prompt for the task on stdin when none is given.
                 When True, worker/director progress is rendered interactively.
             director_system_prompt (str): System prompt for the director agent.
                 Defaults to ``HIEARCHICAL_SWARM_SYSTEM_PROMPT``.
@@ -395,21 +396,6 @@ class HierarchicalSwarm:
         if self.interactive:
             self.agents_no_print()
 
-        # Initialize dashboard if interactive mode is enabled
-        self.dashboard = None
-        if self.interactive:
-            self.dashboard = HierarchicalSwarmDashboard(self.name)
-            # Enable detailed view for better output visibility
-            self.dashboard.detailed_view = True
-            # Pass additional swarm information to dashboard
-            self.dashboard.update_swarm_info(
-                name=self.name,
-                description=self.description,
-                max_loops=self.max_loops,
-                director_name=self.director_name,
-                director_model_name=self.director_model_name,
-            )
-
         self.init_swarm()
 
     def list_worker_agents(self) -> str:
@@ -473,19 +459,6 @@ class HierarchicalSwarm:
 
         # Add agent context to the director
         self.add_context_to_director()
-
-        # Initialize agent statuses in dashboard if interactive mode
-        if self.interactive and self.dashboard:
-            for agent in self.agents:
-                if hasattr(agent, "agent_name"):
-                    self.dashboard.update_agent_status(
-                        agent.agent_name,
-                        "PENDING",
-                        "Awaiting task assignment",
-                        "Ready for deployment",
-                    )
-            # Force refresh to ensure agents are displayed
-            self.dashboard.force_refresh()
 
         if self.multi_agent_prompt_improvements:
             self.prepare_worker_agents()
@@ -661,6 +634,21 @@ class HierarchicalSwarm:
             empty_message="(no new messages)",
         )
 
+    def _messages_for(self, agent_name: str) -> tuple:
+        """
+        The shared conversation as typed turns for one agent.
+
+        Args:
+            agent_name: The agent about to run.
+
+        Returns:
+            ``(prior_messages, task)``.
+        """
+        return split_last_turn(
+            messages_for(agent_name, self.conversation),
+            fallback="(no new messages)",
+        )
+
     def run_director(
         self,
         task: str,
@@ -753,9 +741,6 @@ class HierarchicalSwarm:
             Exception: If step execution fails.
         """
         try:
-            # Update dashboard for director execution
-            if self.interactive and self.dashboard:
-                self.dashboard.update_director_status("PLANNING")
 
             output = self.run_director(task=task, img=img)
 
@@ -768,20 +753,6 @@ class HierarchicalSwarm:
                     orders=orders,
                 )
 
-            # Update dashboard with plan and orders information
-            if self.interactive and self.dashboard:
-                self.dashboard.update_director_plan(plan)
-                # Convert orders to list of dicts for dashboard
-                orders_list = [
-                    {
-                        "agent_name": order.agent_name,
-                        "task": order.task,
-                    }
-                    for order in orders
-                ]
-                self.dashboard.update_director_orders(orders_list)
-                self.dashboard.update_director_status("EXECUTING")
-
             # Execute the orders
             outputs = self.execute_orders(
                 orders, streaming_callback=streaming_callback
@@ -789,7 +760,10 @@ class HierarchicalSwarm:
 
             if self.agent_as_judge:
                 feedback = self.run_judge_agent(outputs)
-            elif self.director_feedback_on is True:
+            elif (
+                self.director_feedback_on is True
+                and self.max_loops > 1
+            ):
                 feedback = self.feedback_director(outputs)
             else:
                 feedback = outputs
@@ -848,21 +822,13 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
+            if task is not None:
+                self.conversation.add(role="User", content=task)
+
             current_loop = 0
             last_output = None
 
-            # Start dashboard if in interactive mode
-            if self.interactive and self.dashboard:
-                self.dashboard.start(self.max_loops)
-                self.dashboard.update_director_status("ACTIVE")
-
             while current_loop < self.max_loops:
-                # Update dashboard loop counter
-                if self.interactive and self.dashboard:
-                    self.dashboard.update_loop(current_loop + 1)
-                    self.dashboard.update_director_status(
-                        "PROCESSING"
-                    )
 
                 # For the first loop, use the original task.
                 # For subsequent loops, use the feedback from the previous loop as context.
@@ -902,11 +868,6 @@ class HierarchicalSwarm:
                     content=f"--- Loop {current_loop}/{self.max_loops} completed ---",
                 )
 
-            # Stop dashboard if in interactive mode
-            if self.interactive and self.dashboard:
-                self.dashboard.update_director_status("COMPLETED")
-                self.dashboard.stop()
-
             result = history_output_formatter(
                 conversation=self.conversation, type=self.output_type
             )
@@ -916,10 +877,6 @@ class HierarchicalSwarm:
             return result
 
         except Exception as e:
-            # Stop dashboard on error
-            if self.interactive and self.dashboard:
-                self.dashboard.update_director_status("ERROR")
-                self.dashboard.stop()
 
             self.workspace.save_conversation()
 
@@ -936,14 +893,7 @@ class HierarchicalSwarm:
         Returns:
             str: The task input from the user
         """
-        if self.dashboard:
-            self.dashboard.console.print(
-                "\n[bold red]SWARMS CORPORATION[/bold red] - [bold white]TASK INPUT REQUIRED[/bold white]"
-            )
-            self.dashboard.console.print(
-                "[bold cyan]Enter your task for the hierarchical swarm:[/bold cyan]"
-            )
-
+        print("\nEnter your task for the hierarchical swarm:")
         task = input("> ")
         return task.strip()
 
@@ -1003,7 +953,9 @@ class HierarchicalSwarm:
         Create a one-shot judge agent that scores each worker agent's output.
 
         Args:
-            outputs (list): List of agent outputs to evaluate.
+            outputs (list): Accepted for call-site compatibility. The outputs
+                scored are read from the shared conversation, where they carry
+                their author's name.
 
         Returns:
             str: The structured JudgeReport as a string, also added to conversation.
@@ -1025,12 +977,9 @@ class HierarchicalSwarm:
                 output_type="final",
             )
 
-            task = (
-                f"Conversation history:\n{self.conversation.get_str()}\n\n"
-                f"Agent outputs to evaluate:\n{outputs}"
-            )
-
-            result = judge.run(task=task)
+            # Interpolating the raw list dropped the author names and handed the judge a Python repr.
+            prior, judge_task = self._messages_for(judge.agent_name)
+            result = judge.run(task=judge_task, messages=prior)
             self.conversation.add(role="JudgeAgent", content=result)
             logger.info(f"Judge agent completed scoring:\n{result}")
             return result
@@ -1083,19 +1032,17 @@ class HierarchicalSwarm:
         try:
             agent = find_agent_by_name(self.agents, agent_name)
 
-            # Update dashboard for agent execution
-            if self.interactive and self.dashboard:
-                self.dashboard.update_agent_status(
-                    agent_name, "RUNNING", task, "Executing task..."
+            # A nested orchestrator has no messages parameter, so it keeps the flattened form.
+            worker_task = task
+            worker_extra = {}
+            if self._agent_supports_messages(agent):
+                worker_extra["messages"] = messages_for(
+                    agent_name, self.conversation
                 )
+            else:
+                worker_task = f"History: {self._context_for(agent_name)} \n\n Task: {task}"
 
-            worker_task = f"History: {self._context_for(agent_name)} \n\n Task: {task}"
-
-            # Handle streaming callback if provided and the worker's run()
-            # actually supports it. A worker may be a leaf Agent or a nested
-            # orchestrator (another HierarchicalSwarm, ConcurrentWorkflow,
-            # MixtureOfAgents, etc.), and not all of them accept a
-            # streaming_callback kwarg.
+            # A worker may be a nested orchestrator, which need not accept streaming_callback.
             if (
                 streaming_callback is not None
                 and self._agent_supports_streaming_callback(agent)
@@ -1129,9 +1076,7 @@ class HierarchicalSwarm:
                             f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
                         )
 
-                # Temporarily enable streaming so call_llm honours the
-                # callback. Nested orchestrators without a streaming_on
-                # toggle already stream purely via the callback param.
+                # Temporarily enable streaming so call_llm honours the callback.
                 has_streaming_toggle = hasattr(agent, "streaming_on")
                 original_streaming_on = getattr(
                     agent, "streaming_on", None
@@ -1140,9 +1085,10 @@ class HierarchicalSwarm:
                     agent.streaming_on = True
                 try:
                     output = agent.run(
+                        *args,
                         task=worker_task,
                         streaming_callback=agent_streaming_callback,
-                        *args,
+                        **worker_extra,
                         **kwargs,
                     )
                 finally:
@@ -1159,14 +1105,13 @@ class HierarchicalSwarm:
                     )
             else:
                 output = agent.run(
-                    task=worker_task,
                     *args,
+                    task=worker_task,
+                    **worker_extra,
                     **kwargs,
                 )
                 if streaming_callback is not None:
-                    # Worker doesn't support incremental streaming — still
-                    # surface its final output through the callback so
-                    # callers see a consistent stream of completions.
+                    # No incremental streaming: surface the final output so callers still see a completion.
                     try:
                         streaming_callback(
                             agent_name, str(output), True
@@ -1182,11 +1127,6 @@ class HierarchicalSwarm:
             return output
 
         except Exception as e:
-            # Update dashboard with error status
-            if self.interactive and self.dashboard:
-                self.dashboard.update_agent_status(
-                    agent_name, "ERROR", task, f"Error: {str(e)}"
-                )
 
             error_msg = (
                 f"[ERROR] Failed to call agent {agent_name}: {str(e)}"
@@ -1280,6 +1220,27 @@ class HierarchicalSwarm:
         )
 
     @staticmethod
+    def _agent_supports_messages(agent: Any) -> bool:
+        """Check whether ``agent.run`` accepts a ``messages`` kwarg.
+
+        Leaf agents take typed turns; nested orchestrators do not, and
+        passing the kwarg to one would raise ``TypeError``.
+        """
+        run_method = getattr(agent, "run", None)
+        if run_method is None:
+            return False
+        try:
+            signature = inspect.signature(run_method)
+        except (TypeError, ValueError):
+            return False
+        for parameter in signature.parameters.values():
+            if parameter.name == "messages":
+                return True
+            if parameter.kind is inspect.Parameter.VAR_KEYWORD:
+                return True
+        return False
+
+    @staticmethod
     def _agent_supports_streaming_callback(agent: Any) -> bool:
         """Check whether ``agent.run`` accepts a ``streaming_callback`` kwarg.
 
@@ -1294,9 +1255,7 @@ class HierarchicalSwarm:
         try:
             signature = inspect.signature(run_method)
         except (TypeError, ValueError):
-            # Signature introspection isn't always possible (e.g. some
-            # C-extension callables); fail open rather than silently
-            # dropping streaming support.
+            # Some C-extension callables cannot be introspected; fail open rather than drop streaming.
             return True
         for parameter in signature.parameters.values():
             if parameter.name == "streaming_callback":
@@ -1322,13 +1281,6 @@ class HierarchicalSwarm:
                 max_workers=self.max_workers
             ) as executor:
                 for index, order in enumerate(orders):
-                    if self.interactive and self.dashboard:
-                        self.dashboard.update_agent_status(
-                            order.agent_name,
-                            "RUNNING",
-                            order.task,
-                            "Processing...",
-                        )
                     future = executor.submit(
                         self._execute_order_with_retries,
                         order,
@@ -1343,18 +1295,6 @@ class HierarchicalSwarm:
                     results[index] = output
                     if failure is not None:
                         failures.append(failure)
-                    if self.interactive and self.dashboard:
-                        status = (
-                            "ERROR"
-                            if failure is not None
-                            else "COMPLETED"
-                        )
-                        self.dashboard.update_agent_status(
-                            order.agent_name,
-                            status,
-                            order.task,
-                            str(output),
-                        )
 
             for index, order in enumerate(orders):
                 if results[index] is not None and not (
@@ -1367,13 +1307,6 @@ class HierarchicalSwarm:
                     )
         else:
             for index, order in enumerate(orders):
-                if self.interactive and self.dashboard:
-                    self.dashboard.update_agent_status(
-                        order.agent_name,
-                        "RUNNING",
-                        order.task,
-                        "Processing...",
-                    )
                 output, failure = self._execute_order_with_retries(
                     order,
                     streaming_callback=streaming_callback,
@@ -1381,18 +1314,6 @@ class HierarchicalSwarm:
                 results[index] = output
                 if failure is not None:
                     failures.append(failure)
-                if self.interactive and self.dashboard:
-                    status = (
-                        "ERROR"
-                        if failure is not None
-                        else "COMPLETED"
-                    )
-                    self.dashboard.update_agent_status(
-                        order.agent_name,
-                        status,
-                        order.task,
-                        str(output),
-                    )
 
         return results, failures
 
@@ -1778,9 +1699,7 @@ class HierarchicalSwarm:
             **kwargs,
         )
 
-    # ------------------------------------------------------------------
-    # Streaming helpers
-    # ------------------------------------------------------------------
+    # Streaming helpers.
 
     async def _stream_agent_in_thread(
         self,
@@ -1886,6 +1805,9 @@ class HierarchicalSwarm:
                 "loop": 0,
             }
 
+        if task is not None:
+            self.conversation.add(role="User", content=task)
+
         current_loop = 0
         last_output = None
 
@@ -1903,11 +1825,9 @@ class HierarchicalSwarm:
                     "of the analysis."
                 )
 
-            # =============================================================
-            # DIRECTOR PHASE
-            # =============================================================
+            # Director phase.
             director_task_str = (
-                f"History: {self.conversation.get_str()} "
+                f"History: {self._context_for(self.director.agent_name)} "
                 f"\n\n Task: {loop_task}"
             )
 
@@ -1924,7 +1844,7 @@ class HierarchicalSwarm:
                 )
                 # Refresh context after planning output was added
                 director_task_str = (
-                    f"History: {self.conversation.get_str()} "
+                    f"History: {self._context_for(self.director.agent_name)} "
                     f"\n\n Task: {loop_task}"
                 )
 
@@ -1969,9 +1889,7 @@ class HierarchicalSwarm:
             # Parse orders from director output
             plan, orders = self.parse_orders(director_output)
 
-            # =============================================================
-            # WORKER PHASE
-            # =============================================================
+            # Worker phase.
             if self.parallel_execution and len(orders) > 1:
                 # --- Parallel workers with interleaving ---
                 worker_q: asyncio.Queue = asyncio.Queue()
@@ -1994,7 +1912,7 @@ class HierarchicalSwarm:
                         self.agents, order.agent_name
                     )
                     w_task = (
-                        f"History: {self.conversation.get_str()} "
+                        f"History: {self._context_for(order.agent_name)} "
                         f"\n\n Task: {order.task}"
                     )
                     w_chunks: List[str] = []
@@ -2088,7 +2006,7 @@ class HierarchicalSwarm:
                         self.agents, order.agent_name
                     )
                     w_task = (
-                        f"History: {self.conversation.get_str()} "
+                        f"History: {self._context_for(order.agent_name)} "
                         f"\n\n Task: {order.task}"
                     )
 
@@ -2130,9 +2048,7 @@ class HierarchicalSwarm:
                             "loop": current_loop,
                         }
 
-            # =============================================================
-            # AGGREGATION PHASE (feedback director or judge)
-            # =============================================================
+            # Aggregation phase: feedback director or judge.
             if self.agent_as_judge:
                 agg_name = "JudgeAgent"
                 if with_events:
