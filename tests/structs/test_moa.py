@@ -489,7 +489,6 @@ def test_team_roster_does_not_reach_aggregator_as_user_prose():
 
 
 def test_aggregator_can_tell_which_layer_produced_each_answer():
-    """With layers > 1 each contribution carries the round that produced it."""
     agents, _ = _recording_agents(["W1", "W2"])
     aggregator, agg_calls = _recording_agents(["Agg"])
 
