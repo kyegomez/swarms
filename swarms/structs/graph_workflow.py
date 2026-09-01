@@ -1132,9 +1132,6 @@ class GraphWorkflow:
                 f"Found {len(isolated)} isolated nodes: {isolated}"
             )
 
-        # An error, not a warning: execution does not run cycles as loops. It
-        # flattens them into one parallel layer, runs each node once, and
-        # ignores the declared edge ordering inside the cycle.
         _CYCLE_CONSEQUENCE = (
             "Cycles are not executed as loops: these nodes are flattened "
             "into a single parallel layer, run once concurrently, and the "
@@ -1150,9 +1147,6 @@ class GraphWorkflow:
                         f"{cycles}. {_CYCLE_CONSEQUENCE}"
                     )
             else:
-                # Kahn peel doubles as the acyclicity test and names the
-                # offending nodes, without enumerating every simple cycle,
-                # which is exponential in the number of cycles.
                 cyclic_nodes = self._nodes_on_cycles(succ, pred)
                 if cyclic_nodes:
                     errors.append(
@@ -3672,8 +3666,6 @@ class GraphWorkflow:
                     f"to exit points"
                 )
 
-            # Cycles are reported as errors above, so only reachability
-            # remains warning-severity here.
             has_serious_warnings = any(
                 "unreachable" in warning.lower()
                 for warning in result["warnings"]
