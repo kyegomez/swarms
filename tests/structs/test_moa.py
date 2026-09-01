@@ -1,3 +1,4 @@
+import re
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.agent import Agent
 
@@ -449,7 +450,7 @@ def test_aggregator_receives_typed_turns_per_worker():
     contents = [m["content"] for m in turns]
     for worker in ("W1", "W2"):
         assert any(
-            text.startswith(worker) and ": " in text
+            re.match(rf"^{worker}(?: \(layer \d+/\d+\))?: ", text)
             for text in contents
         ), f"no turn attributed to {worker}: {contents}"
 
@@ -498,6 +499,7 @@ def test_aggregator_can_tell_which_layer_produced_each_answer():
         layers=3,
     ).run("Question?")
 
+    assert agg_calls, "aggregator was never invoked"
     turns = agg_calls[0]["messages"] + [
         {"role": "user", "content": agg_calls[0]["task"]}
     ]
