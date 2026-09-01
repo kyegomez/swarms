@@ -786,7 +786,9 @@ def test_run_from_config_skips_agents_with_no_configured_task(
     ] == [("b", "task b"), ("b", "task b")]
 
 
-def test_track_output_timestamps_generated_at_call_time(temp_workspace):
+def test_track_output_timestamps_generated_at_call_time(
+    temp_workspace,
+):
     """Test A: Output timestamps are generated dynamically at call time."""
     agent = Agent(
         agent_name="test_agent",
@@ -930,8 +932,12 @@ def test_multiple_outputs_have_independent_timestamps(temp_workspace):
         "swarms.structs.spreadsheet_swarm._now", side_effect=stamps
     ):
         for i in range(3):
-            swarm._track_output("test_agent", f"Task {i}", f"Result {i}")
+            swarm._track_output(
+                "test_agent", f"Task {i}", f"Result {i}"
+            )
 
-    recorded_stamps = [output["timestamp"] for output in swarm.outputs]
+    recorded_stamps = [
+        output["timestamp"] for output in swarm.outputs
+    ]
     assert recorded_stamps == stamps
     assert len(set(recorded_stamps)) == 3
