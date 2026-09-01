@@ -74,14 +74,19 @@ class RoundRobinSwarm(SerializableMixin):
     """
     A swarm implementation that executes tasks in a true round-robin fashion.
 
-    Agents are visited in their declared insertion order, cycling through the
-    full roster once per loop. Over K loops with N agents the schedule is:
+    Agents are visited in roster order, cycling through the full list once
+    per loop. Over K loops with N agents the within-run schedule is:
 
-        turn t -> agents[t % N]    for t in range(K * N)
+        turn t -> agents[(start + t) % N]    for t in range(K * N)
 
-    The order is deterministic and identical on every loop, so each agent
-    receives exactly `max_loops` turns and every agent reads the full
-    conversation history accumulated by the agents that spoke before it.
+    ``start`` is ``self.index`` when ``persist_rotation`` is True, otherwise
+    0. By default ``persist_rotation`` is False so each ``run()`` replays
+    the same visit order turn-for-turn; set it to True to resume rotation
+    across ``run()`` / ``run_batch()`` calls.
+
+    The order is deterministic within a run: each agent receives exactly
+    `max_loops` turns and every agent reads the full conversation history
+    accumulated by the agents that spoke before it.
 
     Args:
         name (str): Name of the swarm. Defaults to "RoundRobinSwarm".
@@ -90,6 +95,10 @@ class RoundRobinSwarm(SerializableMixin):
         verbose (bool, optional): Flag to enable verbose mode. Defaults to False.
         max_loops (int, optional): Maximum number of loops to run. Defaults to 1.
         output_type (OutputType, optional): Type of output format. Defaults to "final".
+        persist_rotation (bool, optional): When True, resume the round-robin
+            pointer across ``run()`` calls so ``run_batch`` gives each agent
+            the opening turn equally often. Defaults to False to preserve
+            current turn-for-turn reproducibility.
 
     Attributes:
         name (str): Name of the swarm.
@@ -97,7 +106,9 @@ class RoundRobinSwarm(SerializableMixin):
         agents (List[Agent]): List of agents in the swarm.
         verbose (bool): Flag to enable verbose mode.
         max_loops (int): Maximum number of loops to run.
-        index (int): Current index of the agent being executed.
+        index (int): Roster offset for the next run's opening turn when
+            ``persist_rotation`` is True.
+        persist_rotation (bool): Whether rotation carries across ``run()`` calls.
         output_type (OutputType): Type of output format.
         conversation (Conversation): Conversation history for the swarm.
 
@@ -120,6 +131,7 @@ class RoundRobinSwarm(SerializableMixin):
         verbose: bool = False,
         max_loops: int = 1,
         output_type: OutputType = "final",
+        persist_rotation: bool = False,
     ):
 
         self.name = name
@@ -129,6 +141,7 @@ class RoundRobinSwarm(SerializableMixin):
         self.max_loops = max_loops
         self.index = 0
         self.output_type = output_type
+        self.persist_rotation = persist_rotation
 
         # Initialize conversation for tracking agent interactions
         self.conversation = Conversation(
@@ -193,11 +206,13 @@ class RoundRobinSwarm(SerializableMixin):
         """
         Execute the task across the agents in true round-robin order.
 
-        The schedule is deterministic: for N agents and `max_loops` loops the
-        visit order is `agents[t % N]` for `t` in `range(max_loops * N)`. The
-        order is identical on every loop, every agent reads the full
-        conversation transcript accumulated so far, and every agent receives
-        exactly `max_loops` turns.
+        The schedule is deterministic within a run: for N agents and
+        ``max_loops`` loops the visit order is
+        ``agents[(start + t) % N]`` for ``t`` in ``range(max_loops * N)``,
+        where ``start`` is ``self.index`` when ``persist_rotation`` is True.
+        Every agent receives exactly ``max_loops`` turns. When rotation
+        persists, the opening turn advances by one after each run so
+        ``run_batch`` does not always seat ``agents[0]`` first.
 
         Args:
             task (str): The task to be executed.
@@ -221,67 +236,73 @@ class RoundRobinSwarm(SerializableMixin):
                 f"Starting round-robin execution with task on {n} agents: {agent_names}",
             )
 
-            for loop in range(self.max_loops):
-                self._log(
-                    "debug",
-                    f"Starting loop {loop + 1}/{self.max_loops}",
+            start = self.index % n if self.persist_rotation else 0
+            total_turns = self.max_loops * n
+
+            for turn in range(total_turns):
+                loop = turn // n + 1
+                roster_i = (start + turn) % n
+                current_agent = self.agents[roster_i]
+
+                if turn % n == 0:
+                    self._log(
+                        "debug",
+                        f"Starting loop {loop}/{self.max_loops}",
+                    )
+
+                prev_name = (
+                    None
+                    if turn == 0
+                    else self.agents[
+                        (start + turn - 1) % n
+                    ].agent_name
+                )
+                next_name = (
+                    None
+                    if turn == total_turns - 1
+                    else self.agents[
+                        (start + turn + 1) % n
+                    ].agent_name
                 )
 
-                for i, current_agent in enumerate(self.agents):
-                    self.index = (loop * n) + i
+                conversation_context = (
+                    self.conversation.return_history_as_string()
+                )
 
-                    prev_name = (
-                        self.agents[i - 1].agent_name
-                        if i > 0
-                        else (
-                            self.agents[-1].agent_name
-                            if loop > 0
-                            else None
-                        )
-                    )
-                    next_name = (
-                        self.agents[i + 1].agent_name
-                        if i + 1 < n
-                        else (
-                            self.agents[0].agent_name
-                            if loop + 1 < self.max_loops
-                            else None
-                        )
-                    )
+                turn_header = build_turn_header(
+                    agent_name=current_agent.agent_name,
+                    position=turn % n + 1,
+                    total=n,
+                    loop=loop,
+                    max_loops=self.max_loops,
+                    prev_name=prev_name,
+                    next_name=next_name,
+                    agent_names=agent_names,
+                )
 
-                    conversation_context = (
-                        self.conversation.return_history_as_string()
-                    )
+                collaborative_task = build_collaborative_task(
+                    conversation_context=conversation_context,
+                    turn_header=turn_header,
+                )
 
-                    turn_header = build_turn_header(
-                        agent_name=current_agent.agent_name,
-                        position=i + 1,
-                        total=n,
-                        loop=loop + 1,
-                        max_loops=self.max_loops,
-                        prev_name=prev_name,
-                        next_name=next_name,
-                        agent_names=agent_names,
+                try:
+                    self._execute_agent(
+                        current_agent,
+                        collaborative_task,
+                        *args,
+                        **kwargs,
                     )
-
-                    collaborative_task = build_collaborative_task(
-                        conversation_context=conversation_context,
-                        turn_header=turn_header,
+                except Exception as e:
+                    self._log(
+                        "error",
+                        f"Agent {current_agent.agent_name} failed: {str(e)}",
                     )
+                    raise
 
-                    try:
-                        self._execute_agent(
-                            current_agent,
-                            collaborative_task,
-                            *args,
-                            **kwargs,
-                        )
-                    except Exception as e:
-                        self._log(
-                            "error",
-                            f"Agent {current_agent.agent_name} failed: {str(e)}",
-                        )
-                        raise
+            # max_loops * n turns is a whole number of cycles, so it returns
+            # the offset to where it started — advancing the opener needs +1.
+            if self.persist_rotation:
+                self.index = (start + 1) % n
 
             self._log(
                 "success",
