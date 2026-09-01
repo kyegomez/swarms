@@ -41,7 +41,6 @@ def test_every_file_tool_refuses_to_escape(workspace):
     agent, ws, secret = workspace
     relative_escape = os.path.relpath(secret, ws)
 
-    # signatures differ (grep takes the pattern first), so call each one
     for label, call in (
         (
             "read_file relative",
@@ -64,7 +63,6 @@ def test_every_file_tool_refuses_to_escape(workspace):
         ), f"{label} did not refuse the escape: {result[:120]}"
         assert "SECRET-OUTSIDE" not in result
 
-    # writes must not land outside either, by relative or absolute path
     create_file_tool(agent, relative_escape, "overwritten")
     update_file_tool(agent, str(secret), "overwritten")
     assert secret.read_text() == "SECRET-OUTSIDE\n"
@@ -74,8 +72,6 @@ def test_legitimate_workspace_access_still_works(workspace):
     agent, ws, _ = workspace
 
     assert "INSIDE-OK" in str(read_file_tool(agent, "inside.txt"))
-    # an absolute path inside the workspace is still fine: the check is
-    # containment, not "relative paths only"
     assert "INSIDE-OK" in str(
         read_file_tool(agent, str(ws / "inside.txt"))
     )
