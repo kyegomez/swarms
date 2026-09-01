@@ -449,7 +449,8 @@ def test_aggregator_receives_typed_turns_per_worker():
     contents = [m["content"] for m in turns]
     for worker in ("W1", "W2"):
         assert any(
-            text.startswith(f"{worker}: ") for text in contents
+            text.startswith(worker) and ": " in text
+            for text in contents
         ), f"no turn attributed to {worker}: {contents}"
 
     # Four worker outputs across two layers, plus the task - not one blob.
@@ -484,3 +485,25 @@ def test_team_roster_does_not_reach_aggregator_as_user_prose():
             "These are the agents in your team"
             not in message["content"]
         )
+
+
+def test_aggregator_can_tell_which_layer_produced_each_answer():
+    """With layers > 1 each contribution carries the round that produced it."""
+    agents, _ = _recording_agents(["W1", "W2"])
+    aggregator, agg_calls = _recording_agents(["Agg"])
+
+    MixtureOfAgents(
+        agents=agents,
+        aggregator_agent=aggregator[0],
+        layers=3,
+    ).run("Question?")
+
+    turns = agg_calls[0]["messages"] + [
+        {"role": "user", "content": agg_calls[0]["task"]}
+    ]
+    contents = " ".join(m["content"] for m in turns)
+
+    for layer in (1, 2, 3):
+        assert (
+            f"layer {layer}/3" in contents
+        ), f"layer {layer} not attributed: {contents}"
