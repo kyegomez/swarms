@@ -53,7 +53,9 @@ def test_prior_turns_are_typed_not_flattened_into_the_task():
         "original task"
     )
 
+    assert second.calls, "second agent never ran"
     last = second.calls[-1]
+
     assert (
         "A-out" not in last["task"]
     ), f"transcript flattened into the task: {last['task']}"
@@ -62,3 +64,11 @@ def test_prior_turns_are_typed_not_flattened_into_the_task():
         "user",
         "assistant",
     }
+
+    contents = [m["content"] for m in last["messages"]]
+    assert any(
+        "A-out" in text for text in contents
+    ), f"prior speaker's output missing from the turns: {contents}"
+    assert any(
+        "original task" in text for text in contents
+    ), f"original task missing from the turns: {contents}"

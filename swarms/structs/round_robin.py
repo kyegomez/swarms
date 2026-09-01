@@ -2,10 +2,7 @@ from typing import List, Union
 
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
-from swarms.structs.context_utils import (
-    messages_for,
-    split_last_turn,
-)
+from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -256,11 +253,9 @@ class RoundRobinSwarm(SerializableMixin):
                         )
                     )
 
-                    prior_turns, _ = split_last_turn(
-                        messages_for(
-                            current_agent.agent_name,
-                            self.conversation,
-                        )
+                    prior_turns = messages_for(
+                        current_agent.agent_name or "",
+                        self.conversation,
                     )
 
                     turn_header = build_turn_header(
