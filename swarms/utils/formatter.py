@@ -17,6 +17,8 @@ from rich.tree import Tree
 
 from rich.markdown import Markdown
 
+DEFAULT_CONTENT_STYLE = "grey85"
+
 
 # Global Live display for the dashboard
 dashboard_live = None
@@ -174,12 +176,16 @@ class MarkdownOutputHandler:
             if part_type == "markdown":
                 # Render markdown
                 try:
-                    md = Markdown(content, code_theme="monokai")
+                    md = Markdown(
+                        content,
+                        code_theme="monokai",
+                        style=DEFAULT_CONTENT_STYLE,
+                    )
                     rendered_parts.append(md)
                 except Exception:
                     # Fallback to plain text with error indication
                     rendered_parts.append(
-                        Text(content, style="white")
+                        Text(content, style=DEFAULT_CONTENT_STYLE)
                     )
 
             elif part_type == "code":
@@ -201,7 +207,7 @@ class MarkdownOutputHandler:
                     rendered_parts.append(
                         Text(
                             f"```{lang}\n{code}\n```",
-                            style="white on grey23",
+                            style=DEFAULT_CONTENT_STYLE,
                         )
                     )
 
@@ -247,6 +253,7 @@ class MarkdownOutputHandler:
                         content_group,
                         title=title,
                         border_style=border_style,
+                        style=DEFAULT_CONTENT_STYLE,
                         padding=(1, 2),
                         expand=False,
                     )
@@ -257,7 +264,7 @@ class MarkdownOutputHandler:
                     Panel(
                         Text(
                             "No content to display",
-                            style="dim italic",
+                            style=f"{DEFAULT_CONTENT_STYLE} italic",
                         ),
                         title=title,
                         border_style="yellow",
@@ -275,6 +282,7 @@ class MarkdownOutputHandler:
                         else "Content (fallback mode)"
                     ),
                     border_style="yellow",
+                    style=DEFAULT_CONTENT_STYLE,
                     subtitle=error_msg,
                     subtitle_align="left",
                 )
@@ -404,7 +412,9 @@ class Formatter:
         random_color = choose_random_color()
 
         panel = Panel(
-            content, title=title, style=f"bold {random_color}"
+            Text(content, style=DEFAULT_CONTENT_STYLE),
+            title=title,
+            border_style=f"bold {random_color}",
         )
         self.console.print(panel)
 
@@ -526,11 +536,11 @@ class Formatter:
         Args:
             tokens (str): The string to display in real-time.
             title (str): Title of the panel.
-            style (str): Style for the text inside the panel.
+            style (str): Style for the panel border.
             delay (float): Delay in seconds between displaying each token.
             by_word (bool): If True, display by words; otherwise, display by characters.
         """
-        text = Text(style=style)
+        text = Text(style=DEFAULT_CONTENT_STYLE)
 
         # Split tokens into characters or words
         token_list = tokens.split() if by_word else tokens
@@ -574,13 +584,11 @@ class Formatter:
         panel_style = (
             f"bold {random_color}" if style is None else style
         )
-        text_style = (
-            "white"  # Make text white instead of random color
-        )
+        text_style = DEFAULT_CONTENT_STYLE
 
         def create_streaming_panel(text_obj, is_complete=False):
             """Create panel with proper text wrapping using Rich's built-in capabilities"""
-            panel_title = f"[white]{title}[/white]"
+            panel_title = f"[{DEFAULT_CONTENT_STYLE}]{title}[/]"
             if is_complete:
                 panel_title += " [bold green]✅[/bold green]"
 
