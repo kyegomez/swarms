@@ -2139,6 +2139,7 @@ class Agent:
         self,
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[dict]] = None,
+        unfinished_subtasks: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         """
         Generate a comprehensive final summary of the autonomous task execution.
@@ -2149,11 +2150,17 @@ class Agent:
                 the summary is requested against the real conversation - with
                 its tool calls and tool results intact - rather than against a
                 flattened string rendering of it.
+            unfinished_subtasks: Subtasks that never reached ``"completed"``.
+                When any are given, the summary prompt names them and requires
+                ``complete_task`` to be called with ``success=false``, so a
+                partial run is not reported to the user as a success.
 
         Returns:
             str: Comprehensive summary
         """
-        summary_prompt = get_summary_prompt()
+        summary_prompt = get_summary_prompt(
+            unfinished_subtasks=unfinished_subtasks
+        )
         self.short_memory.add(
             role=self.user_name, content=summary_prompt
         )

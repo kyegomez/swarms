@@ -30,7 +30,10 @@ import pytest
 
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.structs.autonomous_loop_utils import MAX_SUBTASK_LOOPS
+from swarms.structs.autonomous_loop_utils import (
+    MAX_SUBTASK_LOOPS,
+    get_summary_prompt,
+)
 
 
 # --------------------------------------------------------------------------
@@ -950,6 +953,130 @@ class TestHandoffPromptIsNotReappended:
         self._run_setup_only(agent, monkeypatch)
 
         assert agent.system_prompt == before
+
+
+# --------------------------------------------------------------------------
+# #1974 — abandoned subtasks reported as a complete success
+# --------------------------------------------------------------------------
+
+
+class TestUnfinishedSubtasksReachTheSummary:
+    """A partial run must not be summarised as a success."""
+
+    def test_pending_failed_and_skipped_are_all_collected(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t",
+            [
+                {"step_id": "a"},
+                {"step_id": "b"},
+                {"step_id": "c"},
+                {"step_id": "d"},
+            ],
+        )
+
+        agent.autonomous_subtasks[0]["status"] = "completed"
+        agent.autonomous_subtasks[1]["status"] = "failed"
+        agent.autonomous_subtasks[2]["status"] = "skipped"
+        # 'd' stays pending — the loop hit its cap before reaching it.
+
+        unfinished = loop._unfinished_subtasks()
+
+        assert [s["step_id"] for s in unfinished] == ["b", "c", "d"]
+
+    def test_fully_completed_plan_has_nothing_unfinished(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t", [{"step_id": "a"}, {"step_id": "b"}]
+        )
+
+        for subtask in agent.autonomous_subtasks:
+            subtask["status"] = "completed"
+
+        assert loop._unfinished_subtasks() == []
+
+    def test_summary_prompt_claims_completion_only_when_earned(self):
+        done = get_summary_prompt()
+        assert done.startswith("All subtasks are complete.")
+
+        partial = get_summary_prompt(
+            unfinished_subtasks=[
+                {
+                    "step_id": "step2",
+                    "status": "failed",
+                    "summary": "Exhausted its budget.",
+                }
+            ]
+        )
+
+        assert "All subtasks are complete." not in partial
+        assert "NOT fully completed" in partial
+        assert "step2" in partial
+        assert "Exhausted its budget." in partial
+        assert "success=false" in partial
+
+    def test_empty_unfinished_list_is_the_completed_prompt(self):
+        assert (
+            get_summary_prompt(unfinished_subtasks=[])
+            == get_summary_prompt()
+        )
+
+    def test_abandoned_subtask_reaches_the_summary_call(
+        self, monkeypatch
+    ):
+        """
+        End to end: a subtask that burns its iteration budget must arrive at
+        ``_generate_final_summary`` as unfinished, and the prompt the model
+        actually receives must say so.
+        """
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+
+        captured = {}
+
+        def fake_summary(
+            streaming_callback=None,
+            messages=None,
+            unfinished_subtasks=None,
+        ):
+            captured["unfinished"] = unfinished_subtasks
+            captured["prompt"] = get_summary_prompt(
+                unfinished_subtasks=unfinished_subtasks
+            )
+            return "summary"
+
+        monkeypatch.setattr(
+            agent, "_generate_final_summary", fake_summary
+        )
+
+        # Plan two steps; 'a' completes, 'b' never calls subtask_done and so
+        # exhausts MAX_SUBTASK_LOOPS.
+        script_llm(
+            agent,
+            monkeypatch,
+            [plan(("a", []), ("b", []))]
+            + [
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="a",
+                        summary="done",
+                        success=True,
+                    )
+                ]
+            ]
+            + ["thinking, no tool call"] * (MAX_SUBTASK_LOOPS + 2),
+        )
+
+        result = loop._run_autonomous_loop("t")
+
+        assert result == "summary"
+        assert captured["unfinished"], "abandoned subtask never reported"
+        assert [s["step_id"] for s in captured["unfinished"]] == ["b"]
+        assert "NOT fully completed" in captured["prompt"]
+        assert "success=false" in captured["prompt"]
 
 
 if __name__ == "__main__":
