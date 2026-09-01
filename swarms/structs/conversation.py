@@ -469,6 +469,7 @@ class Conversation:
         self,
         role: str,
         content: Union[str, dict, list, Any],
+        metadata: Optional[dict] = None,
         category: Optional[str] = None,
     ):
         """Add a message to the conversation history.
@@ -476,6 +477,7 @@ class Conversation:
         Args:
             role (str): The role of the speaker (e.g., 'User', 'System').
             content (Union[str, dict, list]): The content of the message to be added.
+            metadata (Optional[dict]): Optional metadata for the message.
             category (Optional[str]): Optional category for the message.
         """
         # Base message with role and timestamp
@@ -492,6 +494,9 @@ class Conversation:
 
         if category:
             message["category"] = category
+
+        if metadata:
+            message["metadata"] = metadata
 
         # Add message to conversation history
         self.conversation_history.append(message)
@@ -604,7 +609,10 @@ class Conversation:
             category (Optional[str]): Optional category for the message.
         """
         result = self.add_in_memory(
-            role=role, content=content, category=category
+            role=role,
+            content=content,
+            metadata=metadata,
+            category=category,
         )
 
         # Ensure autosave happens after the message is added
