@@ -14,7 +14,6 @@ ReasoningEffort = Literal[
     "None",
 ]
 
-# Fallback set, unioned with installed litellm's values so supported efforts are never reduced.
 REASONING_EFFORTS: Tuple[str, ...] = get_args(ReasoningEffort)
 
 
