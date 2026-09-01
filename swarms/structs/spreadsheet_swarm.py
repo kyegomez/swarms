@@ -15,13 +15,16 @@ from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
-time = datetime.datetime.now().isoformat()
 uuid_hex = uuid.uuid4().hex
 
 # --------------- NEW CHANGE START ---------------
 # Format time variable to be compatible across operating systems
 formatted_time = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 # --------------- NEW CHANGE END ---------------
+
+
+def _now() -> str:
+    return datetime.datetime.now().isoformat()
 
 
 class SpreadSheetSwarm:
@@ -197,7 +200,7 @@ class SpreadSheetSwarm:
         if not self.agents and self.load_path:
             self.load_from_csv()
 
-        start_time = time
+        start_time = _now()
 
         agent_task_pairs = [
             (agent, self.agent_tasks[agent.agent_name])
@@ -218,7 +221,7 @@ class SpreadSheetSwarm:
             ):
                 self._track_output(agent.agent_name, task, result)
 
-        end_time = time
+        end_time = _now()
 
         # Save outputs
         logger.info("Saving outputs to CSV...")
@@ -258,9 +261,9 @@ class SpreadSheetSwarm:
         if task is None and self.agent_tasks:
             return self.run_from_config()
         else:
-            start_time = time
+            start_time = _now()
             self._run_tasks(task, *args, **kwargs)
-            end_time = time
+            end_time = _now()
             self._save_metadata()
 
             if self.autosave:
@@ -336,7 +339,7 @@ class SpreadSheetSwarm:
                 "agent_name": agent_name,
                 "task": task,
                 "result": result,
-                "timestamp": time,
+                "timestamp": _now(),
             }
         )
 
