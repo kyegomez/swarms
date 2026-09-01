@@ -9,13 +9,6 @@ from loguru import logger
 # Use consistent default model
 DEFAULT_MODEL = "gpt-5.4"
 
-# count_tokens is called on the full, growing transcript on every turn from 22
-# sites, so the same prefix is re-encoded continuously — the engine behind the
-# O(n^2) conversation cost (#1735).
-#
-# Keyed by digest rather than by the text itself: an lru_cache over the raw
-# string would pin a few hundred full transcripts in memory, which for long
-# runs is worse than the work it saves. Only the 32-byte digest is retained.
 _TOKEN_COUNT_CACHE: "OrderedDict[tuple, int]" = OrderedDict()
 _TOKEN_COUNT_CACHE_MAX = 512
 
@@ -67,9 +60,6 @@ def count_tokens(
     # Set fallback encoder
     fallback_model = default_encoder or DEFAULT_MODEL
 
-    # litellm's encode is deterministic for a given model, so a hit is exact.
-    # Only successful counts are cached; the fallback path below stays uncached
-    # so a transient failure is never remembered as an answer.
     key = _cache_key(text, model)
     cached = _cache_get(key)
     if cached is not None:
