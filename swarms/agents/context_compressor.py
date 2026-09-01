@@ -1,15 +1,5 @@
-"""
-Context window compression for autonomous (``max_loops="auto"``) agent runs.
-
-When an agent's conversation history approaches its context window limit,
-this module summarizes the accumulated history and replaces it with a dense
-summary, preserving the system prompt and keeping the agent within its token
-budget for an unbounded run.
-"""
-
 from typing import Any, Optional
 
-from litellm import completion
 from loguru import logger
 
 from swarms.utils.litellm_tokenizer import count_tokens
@@ -91,6 +81,8 @@ class ContextCompressor:
         return self.usage_ratio(agent) >= self.threshold
 
     def _summarize(self, agent: Any, history: str) -> str:
+        from litellm import completion
+
         model = self.summarizer_model or getattr(
             agent, "model_name", None
         )

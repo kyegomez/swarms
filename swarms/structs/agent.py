@@ -18,17 +18,6 @@ from typing import (
 
 import toml
 import yaml
-from litellm import model_list
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    get_max_tokens,
-    get_model_info,
-    supports_function_calling,
-)
 from loguru import logger
 from pydantic import BaseModel
 
@@ -93,7 +82,6 @@ from swarms.telemetry.otel import (
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.handoffs_tool import handoff_task
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
-from swarms.tools.mcp_manager import MCPManager
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
@@ -101,7 +89,7 @@ from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.generate_id import generate_id
 from swarms.utils.generate_keys import generate_api_key
-from swarms.utils.get_reasoning_efforts import get_reasoning_efforts
+from swarms.utils.get_reasoning_efforts import REASONING_EFFORTS
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -391,7 +379,7 @@ class Agent:
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
-        reasoning_effort: Literal[get_reasoning_efforts()] = None,
+        reasoning_effort: Literal[REASONING_EFFORTS] = None,
         thinking_tokens: int = 1024,
         think_tool: bool = False,
         dynamic_tools: bool = True,
@@ -516,6 +504,10 @@ class Agent:
         self.mode = mode
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
+
+        # Imported here rather than at module scope: mcp_manager pulls in the
+        # mcp package, which is a few hundred ms of `import swarms`.
+        from swarms.tools.mcp_manager import MCPManager
 
         self.mcp_manager = MCPManager(
             mcp_url=self.mcp_url,
@@ -1341,6 +1333,12 @@ class Agent:
             ...     streaming_callback=on_token
             ... )
         """
+        from litellm.exceptions import (
+            AuthenticationError,
+            BadRequestError,
+            InternalServerError,
+        )
+
         try:
             self.check_if_no_prompt_then_autogenerate(task)
 
@@ -2460,6 +2458,8 @@ Subtask Breakdown:
               which may not correspond to available context for input (e.g., 32768 for gpt-4.1 output, but
               over a million for certain input windows).
         """
+        from litellm.utils import get_model_info
+
         try:
             return (
                 get_model_info(self.model_name).get(
@@ -2481,6 +2481,8 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
+        from litellm.utils import get_model_info
+
         # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
         try:
             return (
@@ -2493,6 +2495,11 @@ Subtask Breakdown:
             return 16000
 
     def reliability_check(self):
+        from litellm import model_list
+        from litellm.utils import (
+            get_max_tokens,
+            supports_function_calling,
+        )
 
         if self.system_prompt is None:
             logger.warning(
@@ -3274,6 +3281,11 @@ Subtask Breakdown:
             ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
             >>> agent.run("Describe this image", img=img_base64)
         """
+        from litellm.exceptions import (
+            AuthenticationError,
+            BadRequestError,
+            InternalServerError,
+        )
 
         # If no task is provided, prompt for one only in interactive mode.
         # Outside interactive mode, fail fast instead of blocking on stdin.

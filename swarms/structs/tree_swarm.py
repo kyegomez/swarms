@@ -3,7 +3,6 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-from litellm import embedding
 from pydantic import BaseModel, Field
 
 from swarms.structs.execution_utils import batched_run
@@ -194,14 +193,15 @@ class TreeAgent(Agent):
         Returns:
             List[float]: Embedding vector
         """
+        from litellm import embedding
+
         try:
             response = embedding(
                 model=self.embedding_model_name, input=[text]
             )
             if self.verbose:
                 logger.info(f"Embedding type: {type(response)}")
-            # print(response)
-            # Handle different response structures from litellm
+
             if hasattr(response, "data") and response.data:
                 if hasattr(response.data[0], "embedding"):
                     return response.data[0].embedding
@@ -225,8 +225,6 @@ class TreeAgent(Agent):
         except Exception as e:
             if self.verbose:
                 logger.error(f"Error getting embedding: {e}")
-            # Return a zero vector as fallback
-            return [0.0] * 1536  # Default OpenAI embedding dimension
 
     def calculate_distance(self, other_agent: "TreeAgent") -> float:
         """

@@ -1,8 +1,4 @@
 from swarms.tools.base_tool import BaseTool
-from swarms.tools.mcp_manager import (
-    MCPFileTokenStorage,
-    MCPManager,
-)
 from swarms.tools.py_func_to_openai_func_str import (
     Function,
     ToolFunction,
@@ -39,6 +35,24 @@ __all__ = [
     "BaseTool",
     "ToolStorage",
     "tool_registry",
-    "MCPManager",
-    "MCPFileTokenStorage",
 ]
+
+
+# Lazy-load MCP-related classes to avoid unnecessary import overhead.
+_MCP_EXPORTS = frozenset({"MCPManager", "MCPFileTokenStorage"})
+
+
+def __getattr__(name: str):
+    if name in _MCP_EXPORTS:
+        from swarms.tools import mcp_manager
+
+        return getattr(mcp_manager, name)
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}"
+    )
+
+
+def __dir__():
+    # Kept out of __all__ so a star-import does not resolve them, but still
+    # advertised here for dir() and autocomplete.
+    return sorted(set(__all__) | _MCP_EXPORTS)

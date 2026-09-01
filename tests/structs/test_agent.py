@@ -662,9 +662,9 @@ class TestLLMArgsAndHandling:
             captured.update(kwargs)
             return response
 
-        with patch.object(
-            litellm_wrapper, "completion", side_effect=fake_completion
-        ):
+        # litellm.completion, not the wrapper module: the wrapper imports it
+        # inside run() so the name is resolved on litellm at call time.
+        with patch("litellm.completion", side_effect=fake_completion):
             llm.run("hello")
 
         return captured
@@ -814,7 +814,7 @@ class TestFunctionCallingWarning:
     @staticmethod
     def _warnings_for(**kwargs):
         with patch(
-            "swarms.structs.agent.supports_function_calling",
+            "litellm.utils.supports_function_calling",
             return_value=False,
         ), patch("swarms.structs.agent.logger") as log:
             _patched_agent(
