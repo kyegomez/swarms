@@ -1427,10 +1427,6 @@ class Agent:
                 attempt = 0
                 success = False
 
-                # The block below writes the assistant response (and any tool
-                # results) to memory before it finishes. If a later step raises,
-                # the retry re-runs the whole block, so roll those writes back
-                # first or the history ends up with duplicate assistant turns.
                 memory_checkpoint = self.short_memory.checkpoint()
 
                 while attempt < self.retry_attempts and not success:
@@ -1667,10 +1663,6 @@ class Agent:
                                 turn_calls, turn_results
                             )
 
-                        # The transcript above and short_memory are separate
-                        # stores; the retry re-runs the whole block, so the
-                        # assistant turn it already wrote has to come back out
-                        # or the history gains a duplicate.
                         self.short_memory.rollback(memory_checkpoint)
 
                         # Track the LLM/generation error via telemetry — the

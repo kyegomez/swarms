@@ -1423,8 +1423,6 @@ class TestRetryMemoryRollback:
             agent.run("task")
 
         assert self._assistant_turns(agent) == ["final answer"]
-        # also pins the cache invalidation: a stale _str_cache would still
-        # feed the dropped turn into the next prompt
         assert "not valid json" not in (
             agent.short_memory.return_history_as_string()
         )
@@ -1462,10 +1460,8 @@ class TestRetryMemoryRollback:
 
 
 # ============================================================================
-# MAIN TEST RUNNER
 # ============================================================================
 
 
 # ============================================================================
-# arun forwarding and error path (#1853 item 3)
 # ============================================================================

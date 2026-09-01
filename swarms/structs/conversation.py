@@ -654,8 +654,6 @@ class Conversation:
         Returns:
             Tuple[int, int]: An opaque token for :meth:`rollback`.
         """
-        # Bound to a local so the None check narrows the type for the
-        # os.path calls below.
         path = self.memory_md_path
 
         memory_md_size = 0
