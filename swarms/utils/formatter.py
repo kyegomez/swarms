@@ -924,7 +924,7 @@ class Formatter:
             plan (Optional[str]): The director's plan, rendered above the
                 assignments when present.
             title (Optional[str]): Panel title. Defaults to the director's
-                own name, so a run with several directors is readable.
+                own name, so a swarm with several directors is readable.
         """
         title = title or f"Director Name: {director_name}"
         tree = Tree(
