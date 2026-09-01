@@ -701,5 +701,105 @@ def test_large_configuration():
     assert seq.retry_max_delay == 300.0
 
 
+class _TranscriptAgent:
+    def __init__(self, name):
+        self.agent_name = name
+        self.short_memory = []
+        self.calls = 0
+        self.inits = 0
+
+    def short_memory_init(self):
+        self.inits += 1
+        return []
+
+    def run(self, task, *args, **kwargs):
+        self.calls += 1
+        self.short_memory.append(f"{self.agent_name}#{self.calls}")
+        return " | ".join(self.short_memory)
+
+
+def _bare_seq(num_samples=3):
+    seq = SelfMoASeq.__new__(SelfMoASeq)
+    seq.verbose = False
+    seq.proposer = _TranscriptAgent("proposer")
+    seq.aggregator = _TranscriptAgent("aggregator")
+    seq.metrics = {
+        "total_samples_generated": 0,
+        "total_aggregations": 0,
+    }
+    seq.num_samples = num_samples
+    return seq
+
+
+def test_each_sample_starts_from_a_fresh_proposer_memory():
+    seq = _bare_seq()
+
+    seq._generate_samples("write a haiku", 3)
+
+    assert seq.proposer.inits == 3
+
+
+def test_a_sample_never_contains_an_earlier_sample():
+    seq = _bare_seq()
+
+    samples = seq._generate_samples("write a haiku", 3)
+
+    assert samples == ["proposer#1", "proposer#2", "proposer#3"]
+    for index, sample in enumerate(samples):
+        for earlier in samples[:index]:
+            assert earlier not in sample
+
+
+def test_sample_count_metric_still_increments():
+    seq = _bare_seq()
+
+    samples = seq._generate_samples("write a haiku", 4)
+
+    assert len(samples) == 4
+    assert seq.metrics["total_samples_generated"] == 4
+
+
+def test_the_unreset_agent_would_accumulate():
+    agent = _TranscriptAgent("proposer")
+
+    agent.run("t")
+    second = agent.run("t")
+
+    assert second == "proposer#1 | proposer#2"
+
+
+def test_each_window_starts_from_a_fresh_aggregator_memory():
+    seq = _bare_seq()
+
+    seq._aggregate_window("task", ["a", "b"])
+    seq._aggregate_window("task", ["c", "d"], best_so_far="a")
+
+    assert seq.aggregator.inits == 2
+
+
+def test_a_window_aggregation_never_carries_the_previous_window():
+    seq = _bare_seq()
+
+    first = seq._aggregate_window("task", ["a"])
+    second = seq._aggregate_window("task", ["b"], best_so_far=first)
+
+    assert first == "aggregator#1"
+    assert second == "aggregator#2"
+    assert first not in second
+    assert seq.metrics["total_aggregations"] == 2
+
+
+def test_both_agents_are_built_to_return_an_answer_not_a_transcript():
+    with patch("swarms.structs.self_moa_seq.Agent") as agent_cls:
+        SelfMoASeq(num_samples=2, window_size=4, reserved_slots=2)
+
+    output_types = [
+        call.kwargs.get("output_type")
+        for call in agent_cls.call_args_list
+    ]
+
+    assert output_types == ["final", "final"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

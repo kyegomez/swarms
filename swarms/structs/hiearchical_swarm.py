@@ -1,24 +1,28 @@
-import asyncio
 import inspect
 import json
-import queue as _queue
-import threading
 import traceback
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
-from pydantic import BaseModel, Field
 
-from swarms.prompts.agent_judge_prompt import (
-    HIERARCHICAL_SWARM_JUDGE_PROMPT,
-)
-from swarms.prompts.hiearchical_system_prompt import (
+from swarms.prompts.hierarchical_swarm_prompts import (
+    AGENT_TASK_TEMPLATE,
+    DIRECTOR_FEEDBACK_PROMPT,
     DIRECTOR_PLANNING_PROMPT,
     HIEARCHICAL_SWARM_SYSTEM_PROMPT,
+    HIERARCHICAL_SWARM_JUDGE_PROMPT,
+    LOOP_CONTINUATION_PROMPT,
+    WORKER_RECOVERY_PROMPT,
 )
 from swarms.prompts.multi_agent_collab_prompt import (
     MULTI_AGENT_COLLAB_PROMPT_TWO,
+)
+from swarms.schemas.hs_schemas import (
+    HierarchicalOrder,
+    JudgeReport,
+    OrderBatch,
+    SwarmSpec as SwarmSpec,
 )
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import (
@@ -27,7 +31,10 @@ from swarms.structs.context_utils import (
     split_last_turn,
 )
 from swarms.structs.conversation import Conversation
-from swarms.structs.ma_blocks import find_agent_by_name
+from swarms.structs.execution_utils import batched_run
+from swarms.structs.hierarchical_order_parser import (
+    parse_orders as _parse_orders,
+)
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.omni_agent_types import AgentListType
 from swarms.telemetry.otel import (
@@ -36,6 +43,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.tools.base_tool import BaseTool
+from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.history_output_formatter import (
@@ -44,198 +52,12 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 
-
-class HierarchicalOrder(BaseModel):
-    """
-    Represents a single task assignment within the hierarchical swarm.
-
-    This class defines the structure for individual task orders that the director
-    distributes to worker agents. Each order specifies which agent should execute
-    what specific task.
-
-    Attributes:
-        agent_name (str): The name of the agent assigned to execute the task. Must match an existing agent in the swarm.
-        task (str): The specific task description to be executed by the assigned agent. Should be clear and actionable.
-    """
-
-    agent_name: str = Field(
-        ...,
-        description="Specifies the name of the agent to which the task is assigned. This is a crucial element in the hierarchical structure of the swarm, as it determines the specific agent responsible for the task execution.",
-    )
-    task: str = Field(
-        ...,
-        description="Defines the specific task to be executed by the assigned agent. This task is a key component of the swarm's plan and is essential for achieving the swarm's goals.",
-    )
-
-
-class HierarchicalOrderRearrange(BaseModel):
-    """
-    Represents a rearrangement specification for task assignments within the hierarchical swarm.
-
-    This class defines the structure for rearranging how tasks are assigned and managed through the initial task and flow of communication between agents.
-
-    Attributes:
-        initial_task (str): The initial task that the director has to execute.
-        flow_of_communication (str): How the agents will communicate with each other to accomplish the task. Can use arrows (->) and commas to denote sequential and parallel communication.
-    """
-
-    initial_task: str = Field(
-        ...,
-        description="The initial task that the director has to execute.",
-    )
-    flow_of_communication: str = Field(
-        ...,
-        description="How the agents will communicate with each other to accomplish the task. \
-                      Example: agent_one -> agent_two -> agent_three -> agent_four -> agent_one, \
-                      can use arrows (->) for sequential communication and commas for parallel communication. \
-                      For example: agent_one -> agent_two, agent_three -> agent_four means agent_one passes to agent_two and agent_three passes to agent_four in parallel.",
-    )
-
-
-class SwarmSpec(BaseModel):
-    """
-    Defines the complete specification for a hierarchical swarm execution.
-
-    This class contains the overall plan and all individual orders that the director
-    creates to coordinate the swarm's activities. It serves as the structured output
-    format for the director agent.
-
-    Attributes:
-        plan (str): A comprehensive plan outlining the sequence of actions and strategy for the entire swarm to accomplish the given task.
-        orders (List[HierarchicalOrder]): A list of specific task assignments to individual agents within the swarm.
-    """
-
-    plan: str = Field(
-        ...,
-        description="A comprehensive plan generated by the director agent for the swarm to accomplish the given task. The director autonomously reasons through the problem, devises its own strategy, and determines the sequence of actions. \
-This plan reflects the director's independent thought process, outlining the rationale, priorities, and steps it deems necessary for successful execution. \
-It serves as a blueprint for the swarm, enabling agents to follow the director's self-derived guidance and adapt as needed throughout the process.",
-    )
-
-    orders: List[HierarchicalOrder] = Field(
-        ...,
-        description="A collection of task assignments to specific agents within the swarm. These orders are the specific instructions that guide the agents in their task execution and are a key element in the swarm's plan.",
-    )
-
-
-class AgentScore(BaseModel):
-    """
-    Holds the score and feedback for an agent's performance as judged in the swarm process.
-
-    Attributes:
-        agent_name (str): The name of the agent being scored.
-        score (int): The numerical score (0-10) given to the agent for its performance.
-        reasoning (str): The reasoning or justification for the score assigned.
-        suggestions (str): Suggestions or feedback for improvement for the agent.
-    """
-
-    agent_name: str = Field(
-        ..., description="The name of the agent being evaluated."
-    )
-    score: int = Field(
-        ...,
-        ge=0,
-        le=10,
-        description="The score for the agent's performance, from 0 (worst) to 10 (best).",
-    )
-    reasoning: str = Field(
-        ...,
-        description="The reasoning or justification for the assigned score.",
-    )
-    suggestions: str = Field(
-        ...,
-        description="Suggestions or feedback for improvement for the agent.",
-    )
-
-
-class JudgeReport(BaseModel):
-    """
-    Summarizes the overall results of the judging/evaluation process within the hierarchical swarm.
-
-    Attributes:
-        overall_quality (int): Overall quality score (0-10) for the swarm's collective performance.
-        scores (List[AgentScore]): List of individual agent scores and feedback.
-        summary (str): A summary of the evaluation findings and key points.
-    """
-
-    overall_quality: int = Field(
-        ...,
-        ge=0,
-        le=10,
-        description="Overall quality score (0-10) for the swarm's collective output or performance.",
-    )
-    scores: List[AgentScore] = Field(
-        ...,
-        description="A list of AgentScore items, each holding detailed feedback and scores for individual agents.",
-    )
-    summary: str = Field(
-        ...,
-        description="A narrative summary of the evaluation findings and key points.",
-    )
+_ORDER_BATCH_SCHEMA = BaseTool().base_model_to_dict(OrderBatch)
+_JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
 
 
 class HierarchicalSwarm:
-    """
-    A hierarchical swarm orchestrator that coordinates multiple agents through a director.
-
-    This class implements a hierarchical architecture where a director agent creates
-    plans and distributes tasks to worker agents. The director can provide feedback
-    and iterate on results through multiple loops to achieve the desired outcome.
-
-    The swarm maintains conversation history throughout the process, allowing for
-    context-aware decision making and iterative refinement of results.
-
-    Attributes:
-        name (str): The name identifier for this swarm instance.
-        description (str): A description of the swarm's purpose and capabilities.
-        director (Optional[Union[Agent, Callable, Any]]): The director agent that
-                                                         coordinates the swarm.
-        agents (List[Union[Agent, Callable, Any]]): List of worker agents available
-                                                   for task execution. A worker may be
-                                                   a leaf ``Agent`` or a nested
-                                                   orchestrator (e.g. another
-                                                   ``HierarchicalSwarm``,
-                                                   ``ConcurrentWorkflow``, or
-                                                   ``MixtureOfAgents``) exposing
-                                                   ``run(task=...)``, letting the
-                                                   director delegate to sub-teams
-                                                   instead of only individual agents.
-        max_loops (int): Maximum number of feedback loops the swarm can perform.
-        output_type (OutputType): Format for the final output of the swarm.
-        feedback_director_model_name (str): Model name for the feedback director.
-        director_name (str): Name identifier for the director agent.
-        director_model_name (str): Model name for the main director agent.
-        director_settings (dict): Additional ``Agent`` keyword arguments for the
-                                auto-created director; overrides director_name,
-                                director_model_name, director_system_prompt,
-                                director_temperature, and director_top_p when set.
-        director_system_prompt (str): System prompt used by the director agent.
-        director_temperature (float): Sampling temperature for the director agent.
-        director_top_p (float): Nucleus sampling value for the director agent.
-        add_collaboration_prompt (bool): Whether to add collaboration prompts to agents.
-        director_feedback_on (bool): Whether director feedback is enabled.
-        interactive (bool): Prompt for the task on stdin when none is given.
-        multi_agent_prompt_improvements (bool): Whether to enrich worker system
-                                               prompts and context before a run.
-        planning_enabled (bool): Whether the director produces a plan before
-                                delegating tasks to workers.
-        autosave (bool): Whether to persist conversation history to the swarm
-                        workspace directory after each run.
-        verbose (bool): Whether to emit debug-level logging for workspace and
-                       autosave operations.
-        parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
-        max_workers (Optional[int]): Thread pool size used when
-                                    parallel_execution is True. Worker calls are
-                                    I/O-bound (LLM API calls), so this is exposed
-                                    independently of CPU count; defaults to
-                                    ``0.95 * cpu_count()`` when unset.
-        max_agent_retries (int): Number of retries for a failed worker before it
-                                is reported as unavailable.
-        max_reassignment_attempts (int): Number of times the director may
-                                        reassign work away from unavailable workers.
-        agent_as_judge (bool): Whether a judge agent scores worker outputs.
-        judge_agent_model_name (str): Model name for the judge agent, when enabled.
-    """
+    """Coordinate a director and workers across iterative task loops."""
 
     def __init__(
         self,
@@ -258,6 +80,7 @@ class HierarchicalSwarm:
         planning_enabled: bool = False,
         autosave: bool = False,
         verbose: bool = False,
+        print_on: bool = True,
         parallel_execution: bool = True,
         max_workers: Optional[int] = None,
         agent_as_judge: bool = False,
@@ -268,66 +91,41 @@ class HierarchicalSwarm:
         *args,
         **kwargs,
     ):
-        """
-        Initialize a new HierarchicalSwarm instance.
+        """Initialize the swarm.
 
         Args:
-            name (str): The name identifier for this swarm instance.
-            description (str): A description of the swarm's purpose.
-            director (Optional[Union[Agent, Callable, Any]]): The director agent.
-                                                             If None, a default director will be created.
-            agents (List[Union[Agent, Callable, Any]]): List of worker agents.
-                                                       Must not be empty. Workers may
-                                                       be leaf ``Agent`` instances or
-                                                       nested orchestrators (another
-                                                       ``HierarchicalSwarm``,
-                                                       ``ConcurrentWorkflow``, etc.)
-                                                       exposing ``run(task=...)``.
-            max_loops (int): Maximum number of feedback loops (must be > 0).
-            output_type (OutputType): Format for the final output.
-            feedback_director_model_name (str): Model name for feedback director.
-            director_name (str): Name identifier for the director agent.
-            director_model_name (str): Model name for the main director agent.
-            add_collaboration_prompt (bool): Whether to add collaboration prompts.
-            director_feedback_on (bool): Whether director feedback is enabled.
-            interactive (bool): Prompt for the task on stdin when none is given.
-                When True, worker/director progress is rendered interactively.
-            director_system_prompt (str): System prompt for the director agent.
-                Defaults to ``HIEARCHICAL_SWARM_SYSTEM_PROMPT``.
-            multi_agent_prompt_improvements (bool): Whether to enrich worker
-                system prompts and inject swarm context before a run.
-            director_temperature (float): Sampling temperature for the director
-                agent when it is auto-created.
-            director_top_p (float): Nucleus sampling value for the director
-                agent when it is auto-created.
-            planning_enabled (bool): Whether the director drafts a plan (via
-                ``setup_director_with_planning``) before delegating tasks.
-            autosave (bool): Whether to enable autosaving of conversation history.
-            verbose (bool): Whether to enable verbose logging.
-            parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
-            max_workers (int, optional): Thread pool size for parallel worker
-                execution. Worker calls are I/O-bound (LLM API calls), so this
-                is exposed independently of CPU count rather than always
-                deriving from ``os.cpu_count()``. Defaults to
-                ``0.95 * cpu_count()`` when omitted.
-            agent_as_judge (bool): Whether to score worker outputs with a judge
-                agent.
-            judge_agent_model_name (str): Model name for the judge agent, used
-                only when ``agent_as_judge=True``.
-            director_settings (dict, optional): Additional ``Agent`` keyword
-                arguments for the automatically created director. These values
-                override the legacy director configuration parameters
-                (director_name, director_model_name, director_system_prompt,
-                director_temperature, director_top_p).
-            max_agent_retries (int): Number of times to retry a failed worker
-                before reporting it as unavailable.
-            max_reassignment_attempts (int): Number of times the director may
-                reassign work from unavailable agents.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            name: Swarm name.
+            description: Swarm purpose.
+            director: Director agent; created when omitted.
+            agents: Worker agents or nested orchestrators.
+            max_loops: Maximum orchestration loops.
+            output_type: Result format.
+            feedback_director_model_name: Feedback model.
+            director_name: Director name.
+            director_model_name: Director model.
+            add_collaboration_prompt: Add worker collaboration context.
+            director_feedback_on: Enable feedback loops.
+            interactive: Prompt for a missing task.
+            director_system_prompt: Director instructions.
+            multi_agent_prompt_improvements: Enrich worker prompts.
+            director_temperature: Director temperature.
+            director_top_p: Director nucleus sampling.
+            planning_enabled: Run a planning pass.
+            autosave: Save conversation history.
+            verbose: Enable verbose output.
+            print_on: Print the director's plan and orders each step.
+            parallel_execution: Execute orders concurrently.
+            max_workers: Worker thread limit.
+            agent_as_judge: Evaluate worker outputs.
+            judge_agent_model_name: Judge model.
+            director_settings: Additional director settings.
+            max_agent_retries: Retries per failed order.
+            max_reassignment_attempts: Recovery attempts.
+            *args: Reserved positional arguments.
+            **kwargs: Reserved keyword arguments.
 
         Raises:
-            ValueError: If no agents are provided or max_loops is invalid.
+            ValueError: If configuration is invalid.
         """
         self.name = name
         self.description = description
@@ -370,6 +168,7 @@ class HierarchicalSwarm:
         self.planning_enabled = planning_enabled
         self.autosave = autosave
         self.verbose = verbose
+        self.print_on = print_on
         self.parallel_execution = parallel_execution
         self.max_workers = (
             max_workers
@@ -378,6 +177,9 @@ class HierarchicalSwarm:
         )
         self.agent_as_judge = agent_as_judge
         self.judge_agent_model_name = judge_agent_model_name
+        self._feedback_director = None
+        self._judge_agent = None
+        self._planning_director = None
         self.workspace = WorkspaceManager(
             self,
             name=self.name or "hierarchical-swarm",
@@ -388,7 +190,6 @@ class HierarchicalSwarm:
 
         self.initialize_swarm()
 
-        # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
 
     def initialize_swarm(self):
@@ -404,16 +205,7 @@ class HierarchicalSwarm:
         )
 
     def display_hierarchy(self) -> None:
-        """
-        Display the hierarchical structure of the swarm using Rich Tree.
-
-        This method creates a visual tree representation showing the Director
-        at the top level and all worker agents as children branches. The tree
-        is printed to the console with rich formatting.
-
-        The hierarchy visualization helps understand the organizational structure
-        of the swarm, with the Director coordinating all worker agents.
-        """
+        """Print the director-worker hierarchy."""
         formatter.display_hierarchy(
             director_name=self.director_name,
             director_model_name=self.director_model_name,
@@ -433,20 +225,9 @@ class HierarchicalSwarm:
                 agent.system_prompt = prompt
 
     def init_swarm(self):
-        """
-        Initialize the swarm with proper configuration and validation.
-
-        This method performs the following initialization steps:
-        1. Sets up logging if verbose mode is enabled
-        2. Creates a conversation instance for history tracking
-        3. Performs reliability checks on the configuration
-        4. Adds agent context to the director
-
-        Raises:
-            ValueError: If the swarm configuration is invalid.
-        """
+        """Initialize conversation state and validate the swarm."""
         # How much of the shared conversation each agent has already seen.
-        self._delivered: Dict[str, int] = {}
+        self._delivered = {}
 
         self.conversation = Conversation(time_enabled=False)
 
@@ -470,17 +251,7 @@ class HierarchicalSwarm:
                 agent.output_type = "final"
 
     def add_context_to_director(self):
-        """
-        Add agent context and collaboration information to the director's conversation.
-
-        This method ensures that the director has complete information about all
-        available agents, their capabilities, and how they can collaborate. This
-        context is essential for the director to make informed decisions about
-        task distribution.
-
-        Raises:
-            Exception: If adding context fails due to agent configuration issues.
-        """
+        """Add the worker roster to shared context."""
         try:
             list_all_agents(
                 agents=self.agents,
@@ -490,29 +261,20 @@ class HierarchicalSwarm:
             )
 
         except Exception as e:
-            error_msg = (
-                f"[ERROR] Failed to add context to director: {str(e)}"
-            )
             logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
+                f"[ERROR] Failed to add context to director: {e} | Traceback: {traceback.format_exc()}"
             )
 
     def setup_director(self):
-        """
-        Set up the director agent with proper configuration and tools.
-
-        Creates a new director agent with the SwarmSpec schema for structured
-        output, enabling it to create plans and distribute orders effectively.
+        """Create the structured-output director.
 
         Returns:
-            Agent: A configured director agent ready to coordinate the swarm.
+            Configured director agent.
 
         Raises:
-            Exception: If director setup fails due to configuration issues.
+            Exception: If director creation fails.
         """
         try:
-            schema = BaseTool().base_model_to_dict(SwarmSpec)
-
             settings = {
                 "agent_name": self.director_name,
                 "agent_description": "A director agent that can create a plan and distribute orders to agents",
@@ -521,8 +283,8 @@ class HierarchicalSwarm:
                 "temperature": self.director_temperature,
                 "top_p": self.director_top_p,
                 "max_loops": 1,
-                "base_model": SwarmSpec,
-                "tools_list_dictionary": [schema],
+                "base_model": OrderBatch,
+                "tools_list_dictionary": [_ORDER_BATCH_SCHEMA],
                 "output_type": "final",
             }
             settings.update(
@@ -536,17 +298,14 @@ class HierarchicalSwarm:
             return Agent(**settings)
 
         except Exception as e:
-            error_msg = f"[ERROR] Failed to setup director: {str(e)}"
             logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+                f"[ERROR] Failed to setup director: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
             raise
 
-    def setup_director_with_planning(
-        self, task: str = None, img: Optional[str] = None
-    ):
-        try:
-
+    def _get_planning_director(self) -> Agent:
+        """Cached planning director; built once per swarm instance."""
+        if self._planning_director is None:
             settings = {
                 "agent_name": self.director_name,
                 "agent_description": "A director agent that can create a plan and distribute orders to agents",
@@ -572,53 +331,42 @@ class HierarchicalSwarm:
                 "planning_system_prompt", DIRECTOR_PLANNING_PROMPT
             )
             settings["output_type"] = "final"
-            agent = Agent(**settings)
+            self._planning_director = Agent(**settings)
+        return self._planning_director
 
-            return agent.run(task=task, img=img)
-
-        except Exception as e:
-            error_msg = f"[ERROR] Failed to setup director with planning: {str(e)}"
-            logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
-            )
-            raise
+    def setup_director_with_planning(
+        self, task: str = None, img: Optional[str] = None
+    ):
+        return self._get_planning_director().run(task=task, img=img)
 
     def reliability_checks(self):
-        try:
-            if not self.agents or len(self.agents) == 0:
-                raise ValueError(
-                    "No agents found in the swarm. At least one agent must be provided to create a hierarchical swarm."
-                )
-
-            if self.max_loops <= 0:
-                raise ValueError(
-                    "Max loops must be greater than 0. Please set a valid number of loops."
-                )
-
-            if self.max_agent_retries < 0:
-                raise ValueError(
-                    "max_agent_retries must be greater than or equal to 0."
-                )
-
-            if self.max_reassignment_attempts < 0:
-                raise ValueError(
-                    "max_reassignment_attempts must be greater than or equal to 0."
-                )
-
-            if self.max_workers <= 0:
-                raise ValueError(
-                    "max_workers must be greater than 0 when provided."
-                )
-
-            if self.director is None:
-                self.director = self.setup_director()
-
-        except Exception as e:
-            error_msg = f"[ERROR] Reliability checks failed: {str(e)}"
-            logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+        if not self.agents or len(self.agents) == 0:
+            raise ValueError(
+                "No agents found in the swarm. At least one agent must be provided to create a hierarchical swarm."
             )
-            raise e
+
+        if self.max_loops <= 0:
+            raise ValueError(
+                "Max loops must be greater than 0. Please set a valid number of loops."
+            )
+
+        if self.max_agent_retries < 0:
+            raise ValueError(
+                "max_agent_retries must be greater than or equal to 0."
+            )
+
+        if self.max_reassignment_attempts < 0:
+            raise ValueError(
+                "max_reassignment_attempts must be greater than or equal to 0."
+            )
+
+        if self.max_workers <= 0:
+            raise ValueError(
+                "max_workers must be greater than 0 when provided."
+            )
+
+        if self.director is None:
+            self.director = self.setup_director()
 
     def agents_no_print(self):
         for agent in self.agents:
@@ -634,37 +382,85 @@ class HierarchicalSwarm:
         )
 
     def _messages_for(self, agent_name: str) -> tuple:
-        """
-        The shared conversation as typed turns for one agent.
-
-        Args:
-            agent_name: The agent about to run.
-
-        Returns:
-            ``(prior_messages, task)``.
-        """
+        """Return typed prior messages and the latest task for an agent."""
         return split_last_turn(
             messages_for(agent_name, self.conversation),
             fallback="(no new messages)",
         )
 
+    def _worker_run_payload(
+        self, agent: Any, agent_name: str, task: str
+    ) -> tuple:
+        """Build a worker payload without duplicating conversation history."""
+        if not self._agent_run_accepts(agent, "messages"):
+            return task, {}
+        return task, {
+            "messages": messages_for(agent_name, self.conversation)
+        }
+
+    def _format_worker_responses(self, outputs: list) -> str:
+        """Current-step worker results, not the full conversation log."""
+        names = {
+            self._agent_display_name(agent)
+            for agent in (self.agents or [])
+        }
+        named = [
+            f"{message.get('role')}: {message.get('content')}"
+            for message in (
+                self.conversation.conversation_history or []
+            )
+            if message.get("role") in names
+        ]
+        if named:
+            if outputs:
+                named = named[-len(outputs) :]
+            return "\n\n".join(named)
+        if not outputs:
+            return "(no worker outputs)"
+        return any_to_str(outputs)
+
+    def _get_feedback_director(self) -> Agent:
+        """Cached feedback director; built once per swarm instance."""
+        if self._feedback_director is None:
+            self._feedback_director = Agent(
+                agent_name="Director",
+                agent_description="Director module that provides feedback to the worker agents",
+                model_name=self.feedback_director_model_name,
+                max_loops=1,
+                system_prompt=HIEARCHICAL_SWARM_SYSTEM_PROMPT,
+                output_type="final",
+            )
+        return self._feedback_director
+
+    def _get_judge_agent(self) -> Agent:
+        """Cached judge agent; built once per swarm instance."""
+        if self._judge_agent is None:
+            self._judge_agent = Agent(
+                agent_name="JudgeAgent",
+                agent_description="Evaluates and scores the quality of worker agent outputs",
+                system_prompt=HIERARCHICAL_SWARM_JUDGE_PROMPT,
+                model_name=self.judge_agent_model_name,
+                max_loops=1,
+                base_model=JudgeReport,
+                tools_list_dictionary=[_JUDGE_REPORT_SCHEMA],
+                output_type="final",
+            )
+        return self._judge_agent
+
     def run_director(
         self,
         task: str,
         img: str = None,
-    ) -> SwarmSpec:
+    ) -> OrderBatch:
         """
-        Execute the director agent with the given task and conversation context.
-
-        This method runs the director agent to create a plan and distribute orders
-        based on the current task and conversation history.
+        Run the director and record its orders.
 
         Args:
-            task (str): The task to be executed by the director.
-            img (str, optional): Optional image input for the task.
+            task: Task to delegate.
+            img: Optional image input.
 
         Returns:
-            SwarmSpec: The director's output containing the plan and orders.
+            Director output containing worker orders.
 
         Raises:
             Exception: If director execution fails.
@@ -672,7 +468,12 @@ class HierarchicalSwarm:
         try:
             if self.planning_enabled is True:
                 out = self.setup_director_with_planning(
-                    task=f"History: {self._context_for(self.director.agent_name)} \n\n Task: {task}",
+                    task=AGENT_TASK_TEMPLATE.format(
+                        history=self._context_for(
+                            self.director.agent_name
+                        ),
+                        task=task,
+                    ),
                     img=img,
                 )
                 self.conversation.add(
@@ -681,7 +482,12 @@ class HierarchicalSwarm:
 
             # Run the director with the context
             function_call = self.director.run(
-                task=f"History: {self._context_for(self.director.agent_name)} \n\n Task: {task}",
+                task=AGENT_TASK_TEMPLATE.format(
+                    history=self._context_for(
+                        self.director.agent_name
+                    ),
+                    task=task,
+                ),
                 img=img,
             )
 
@@ -705,81 +511,60 @@ class HierarchicalSwarm:
             return function_call
 
         except Exception as e:
-            error_msg = f"[ERROR] Failed to run director: {str(e)}"
             logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+                f"Hiearchical Swarm: Failed to run director: {e}"
             )
-            raise e
+            raise
 
     def step(
         self,
         task: str,
         img: str = None,
-        streaming_callback: Optional[
-            Callable[[str, str, bool], None]
-        ] = None,
         *args,
+        is_final_loop: bool = False,
         **kwargs,
     ):
-        """
-        Execute a single step of the hierarchical swarm workflow.
-
-        This method performs one complete iteration of the swarm's workflow:
-        1. Run the director to create a plan and orders
-        2. Parse the director's output to extract plan and orders
-        3. Execute all orders by calling the appropriate agents
-        4. Optionally generate director feedback on the results
+        """Run one director-worker-feedback cycle.
 
         Args:
-            task (str): The task to be processed in this step.
-            img (str, optional): Optional image input for the task.
-            streaming_callback (Callable[[str, str, bool], None], optional):
-                Callback function for streaming agent outputs. Parameters are
-                (agent_name, chunk, is_final) where is_final indicates completion.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            task: Task to process.
+            img: Optional image input.
+            *args: Worker positional arguments.
+            is_final_loop: Skip feedback that cannot inform another loop.
+            **kwargs: Worker keyword arguments.
 
         Returns:
-            Any: The results from this step, either agent outputs or director feedback.
+            Worker outputs or director feedback.
 
         Raises:
             Exception: If step execution fails.
         """
-        try:
+        director_output = self.run_director(task=task, img=img)
+        plan, orders = self.parse_orders(director_output)
 
-            output = self.run_director(task=task, img=img)
-
-            # Parse the orders
-            plan, orders = self.parse_orders(output)
-
-            if self.verbose:
-                formatter.print_director_task_distribution(
-                    director_name=self.director_name,
-                    orders=orders,
-                )
-
-            # Execute the orders
-            outputs = self.execute_orders(
-                orders, streaming_callback=streaming_callback
+        if self.print_on:
+            formatter.print_director_task_distribution(
+                director_name=self.director_name,
+                orders=orders,
+                plan=plan,
             )
 
-            if self.agent_as_judge:
-                feedback = self.run_judge_agent(outputs)
-            elif (
-                self.director_feedback_on is True
-                and self.max_loops > 1
-            ):
-                feedback = self.feedback_director(outputs)
-            else:
-                feedback = outputs
+        if not orders:
+            return []
 
-            return feedback
+        outputs = self.execute_orders(orders)
 
-        except Exception as e:
-            error_msg = f"[ERROR] Step execution failed: {str(e)}"
-            logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
-            )
+        if self.agent_as_judge:
+            return self.run_judge_agent(outputs)
+
+        if (
+            self.director_feedback_on
+            and self.max_loops > 1
+            and not is_final_loop
+        ):
+            return self.feedback_director(outputs)
+
+        return outputs
 
     @trace_run(
         "HierarchicalSwarm.run",
@@ -789,35 +574,19 @@ class HierarchicalSwarm:
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        streaming_callback: Optional[
-            Callable[[str, str, bool], None]
-        ] = None,
         *args,
         **kwargs,
     ):
-        """
-        Execute the hierarchical swarm for the specified number of feedback loops.
-
-        This method orchestrates the complete swarm execution, performing multiple
-        iterations based on the max_loops configuration. Each iteration builds upon
-        the previous results, allowing for iterative refinement and improvement.
-
-        The method maintains conversation history throughout all loops and provides
-        context from previous iterations to subsequent ones.
+        """Run the configured orchestration loops.
 
         Args:
-            task (str, optional): The initial task to be processed by the swarm.
-                                 If None and interactive mode is enabled, will prompt for input.
-            img (str, optional): Optional image input for the agents.
-            streaming_callback (Callable[[str, str, bool], None], optional):
-                Callback function for streaming agent outputs. Parameters are
-                (agent_name, chunk, is_final) where is_final indicates completion.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            task: Initial task.
+            img: Optional image input.
+            *args: Worker positional arguments.
+            **kwargs: Worker keyword arguments.
 
         Returns:
-            Any: The formatted conversation history as output, formatted according
-                 to the output_type configuration.
+            Formatted conversation output.
 
         Raises:
             Exception: If swarm execution fails.
@@ -834,17 +603,11 @@ class HierarchicalSwarm:
             last_output = None
 
             while current_loop < self.max_loops:
-
-                # For the first loop, use the original task.
-                # For subsequent loops, use the feedback from the previous loop as context.
                 if current_loop == 0:
                     loop_task = task
                 else:
-                    loop_task = (
-                        f"Previous loop results: {last_output}\n\n"
-                        f"Original task: {task}\n\n"
-                        "Based on the previous results and any feedback, continue with the next iteration of the task. "
-                        "Refine, improve, or complete any remaining aspects of the analysis."
+                    loop_task = LOOP_CONTINUATION_PROMPT.format(
+                        last_output=last_output, task=task
                     )
 
                 # Execute one step of the swarm
@@ -852,17 +615,16 @@ class HierarchicalSwarm:
                     last_output = self.step(
                         task=loop_task,
                         img=img,
-                        streaming_callback=streaming_callback,
                         *args,
+                        is_final_loop=(
+                            current_loop == self.max_loops - 1
+                        ),
                         **kwargs,
                     )
 
                 except Exception as e:
-                    error_msg = (
-                        f"[ERROR] Loop execution failed: {str(e)}"
-                    )
                     logger.error(
-                        f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+                        f"[ERROR] Loop execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
                     )
 
                 current_loop += 1
@@ -884,61 +646,34 @@ class HierarchicalSwarm:
         except Exception as e:
 
             self.workspace.save_conversation()
-
-            error_msg = f"[ERROR] Swarm run failed: {str(e)}"
-            logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
-            )
+            logger.error(f"Hiearchical Swarm: Swarm run failed: {e}")
             raise
 
     def _get_interactive_task(self) -> str:
-        """
-        Get task input from user in interactive mode.
-
-        Returns:
-            str: The task input from the user
-        """
+        """Read and return an interactive task."""
         print("\nEnter your task for the hierarchical swarm:")
         task = input("> ")
         return task.strip()
 
     def feedback_director(self, outputs: list):
         """
-        Generate feedback from the director based on agent outputs.
-
-        This method creates a feedback director agent that analyzes the results
-        from worker agents and provides specific, actionable feedback for improvement.
-        The feedback is added to the conversation history and can be used in
-        subsequent iterations.
+        Generate feedback for current worker outputs.
 
         Args:
-            outputs (list): List of outputs from worker agents that need feedback.
+            outputs: Worker outputs.
 
         Returns:
-            str: The director's feedback on the agent outputs.
+            Director feedback.
 
         Raises:
             Exception: If feedback generation fails.
         """
         try:
-            task = f"History: {self.conversation.get_str()} \n\n"
-
-            feedback_director = Agent(
-                agent_name="Director",
-                agent_description="Director module that provides feedback to the worker agents",
-                model_name=self.feedback_director_model_name,
-                max_loops=1,
-                system_prompt=HIEARCHICAL_SWARM_SYSTEM_PROMPT,
-                output_type="final",
-            )
-
-            output = feedback_director.run(
-                task=(
-                    "You are the Director. Carefully review the outputs generated by all the worker agents in the previous step. "
-                    "Provide specific, actionable feedback for each agent, highlighting strengths, weaknesses, and concrete suggestions for improvement. "
-                    "If any outputs are unclear, incomplete, or could be enhanced, explain exactly how. "
-                    f"Your feedback should help the agents refine their work in the next iteration. "
-                    f"Worker Agent Responses: {task}"
+            output = self._get_feedback_director().run(
+                task=DIRECTOR_FEEDBACK_PROMPT.format(
+                    worker_responses=self._format_worker_responses(
+                        outputs
+                    )
                 )
             )
             self.conversation.add(
@@ -948,50 +683,34 @@ class HierarchicalSwarm:
             return output
 
         except Exception as e:
-            error_msg = f"[ERROR] Feedback director failed: {str(e)}"
             logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+                f"Hiearchical Swarm: Feedback director failed: {e}"
             )
 
     def run_judge_agent(self, outputs: list) -> str:
-        """
-        Create a one-shot judge agent that scores each worker agent's output.
+        """Score worker outputs with the cached judge.
 
         Args:
-            outputs (list): Accepted for call-site compatibility. The outputs
-                scored are read from the shared conversation, where they carry
-                their author's name.
+            outputs: Worker outputs used as an error fallback.
 
         Returns:
-            str: The structured JudgeReport as a string, also added to conversation.
+            Structured judge report.
         """
         try:
             logger.info(
                 "Running judge agent to score worker outputs..."
             )
-            schema = BaseTool().base_model_to_dict(JudgeReport)
+            judge = self._get_judge_agent()
 
-            judge = Agent(
-                agent_name="JudgeAgent",
-                agent_description="Evaluates and scores the quality of worker agent outputs",
-                system_prompt=HIERARCHICAL_SWARM_JUDGE_PROMPT,
-                model_name=self.judge_agent_model_name,
-                max_loops=1,
-                base_model=JudgeReport,
-                tools_list_dictionary=[schema],
-                output_type="final",
-            )
-
-            # Interpolating the raw list dropped the author names and handed the judge a Python repr.
             prior, judge_task = self._messages_for(judge.agent_name)
             result = judge.run(task=judge_task, messages=prior)
             self.conversation.add(role="JudgeAgent", content=result)
-            logger.info(f"Judge agent completed scoring:\n{result}")
+            logger.info(f"Judge agent completed scoring: {result}")
             return result
 
         except Exception as e:
             logger.error(
-                f"[ERROR] run_judge_agent failed: {str(e)}\n[TRACE] {traceback.format_exc()}"
+                f"[ERROR] run_judge_agent failed: {e} | Traceback: {traceback.format_exc()}"
             )
             return str(outputs)
 
@@ -999,133 +718,38 @@ class HierarchicalSwarm:
         self,
         agent_name: str,
         task: str,
-        streaming_callback: Optional[
-            Callable[[str, str, bool], None]
-        ] = None,
         _add_to_conversation: bool = True,
         _raise_on_failure: bool = False,
         *args,
         **kwargs,
     ):
-        """
-        Call a single agent by name to execute a specific task.
-
-        This method locates an agent by name and executes the given task with
-        the current conversation context. The agent's output is added to the
-        conversation history for future reference. The agent may be a leaf
-        ``Agent`` or a nested orchestrator (another ``HierarchicalSwarm``,
-        ``ConcurrentWorkflow``, ``MixtureOfAgents``, etc.) exposing
-        ``run(task=...)``; streaming is only attempted if the worker's
-        ``run`` method actually accepts a ``streaming_callback`` kwarg.
+        """Run one worker by name.
 
         Args:
-            agent_name (str): The name of the agent to call.
-            task (str): The task to be executed by the agent.
-            streaming_callback (Callable[[str, str, bool], None], optional):
-                Callback function for streaming agent outputs. Parameters are
-                (agent_name, chunk, is_final) where is_final indicates completion.
-            *args: Additional positional arguments for the agent.
-            **kwargs: Additional keyword arguments for the agent.
+            agent_name: Worker name.
+            task: Assigned task.
+            *args: Worker positional arguments.
+            **kwargs: Worker keyword arguments.
 
         Returns:
-            Any: The output from the agent's execution.
+            Worker output.
 
         Raises:
-            ValueError: If the specified agent is not found in the swarm.
+            ValueError: If the worker is not found.
             Exception: If agent execution fails.
         """
         try:
-            agent = find_agent_by_name(self.agents, agent_name)
+            agent = self._find_worker(agent_name)
+            worker_task, worker_extra = self._worker_run_payload(
+                agent, agent_name, task
+            )
 
-            # A nested orchestrator has no messages parameter, so it keeps the flattened form.
-            worker_task = task
-            worker_extra = {}
-            if self._agent_supports_messages(agent):
-                worker_extra["messages"] = messages_for(
-                    agent_name, self.conversation
-                )
-            else:
-                worker_task = f"History: {self._context_for(agent_name)} \n\n Task: {task}"
-
-            # A worker may be a nested orchestrator, which need not accept streaming_callback.
-            if (
-                streaming_callback is not None
-                and self._agent_supports_streaming_callback(agent)
-            ):
-
-                def agent_streaming_callback(*inner_args):
-                    """Wrapper that normalizes both streaming conventions
-                    used across the framework: a leaf Agent streams a single
-                    ``chunk`` per call, while a nested orchestrator streams
-                    ``(sub_agent_name, chunk, is_final)``.
-                    """
-                    if not inner_args:
-                        return
-                    if len(inner_args) == 1:
-                        chunk = inner_args[0]
-                    else:
-                        sub_agent_name, chunk = (
-                            inner_args[0],
-                            inner_args[1],
-                        )
-                        if chunk:
-                            chunk = f"[{sub_agent_name}] {chunk}"
-                    try:
-                        if chunk is not None and str(chunk).strip():
-                            streaming_callback(
-                                agent_name, chunk, False
-                            )
-                    except Exception as e:
-                        error_msg = f"[ERROR] Streaming callback failed for agent {agent_name}: {str(e)}"
-                        logger.error(
-                            f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
-                        )
-
-                # Temporarily enable streaming so call_llm honours the callback.
-                has_streaming_toggle = hasattr(agent, "streaming_on")
-                original_streaming_on = getattr(
-                    agent, "streaming_on", None
-                )
-                if has_streaming_toggle:
-                    agent.streaming_on = True
-                try:
-                    output = agent.run(
-                        *args,
-                        task=worker_task,
-                        streaming_callback=agent_streaming_callback,
-                        **worker_extra,
-                        **kwargs,
-                    )
-                finally:
-                    if has_streaming_toggle:
-                        agent.streaming_on = original_streaming_on
-
-                # Call completion callback
-                try:
-                    streaming_callback(agent_name, "", True)
-                except Exception as e:
-                    error_msg = f"[ERROR] Completion callback failed for agent {agent_name}: {str(e)}"
-                    logger.error(
-                        f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
-                    )
-            else:
-                output = agent.run(
-                    *args,
-                    task=worker_task,
-                    **worker_extra,
-                    **kwargs,
-                )
-                if streaming_callback is not None:
-                    # No incremental streaming: surface the final output so callers still see a completion.
-                    try:
-                        streaming_callback(
-                            agent_name, str(output), True
-                        )
-                    except Exception as e:
-                        error_msg = f"[ERROR] Completion callback failed for agent {agent_name}: {str(e)}"
-                        logger.error(
-                            f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}"
-                        )
+            output = agent.run(
+                *args,
+                task=worker_task,
+                **worker_extra,
+                **kwargs,
+            )
             if _add_to_conversation:
                 self.conversation.add(role=agent_name, content=output)
 
@@ -1133,11 +757,8 @@ class HierarchicalSwarm:
 
         except Exception as e:
 
-            error_msg = (
-                f"[ERROR] Failed to call agent {agent_name}: {str(e)}"
-            )
             logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+                f"Hiearchical Swarm: Failed to call agent {agent_name}: {e}"
             )
             if _raise_on_failure:
                 raise
@@ -1174,9 +795,6 @@ class HierarchicalSwarm:
     def _execute_order_with_retries(
         self,
         order: HierarchicalOrder,
-        streaming_callback: Optional[
-            Callable[[str, str, bool], None]
-        ] = None,
         add_to_conversation: bool = True,
     ):
         """Execute one order and return an explicit failure if retries expire."""
@@ -1188,7 +806,6 @@ class HierarchicalSwarm:
                 output = self.call_single_agent(
                     order.agent_name,
                     order.task,
-                    streaming_callback=streaming_callback,
                     _add_to_conversation=add_to_conversation,
                     _raise_on_failure=True,
                 )
@@ -1210,14 +827,7 @@ class HierarchicalSwarm:
 
     @staticmethod
     def _agent_display_name(agent: Any) -> str:
-        """Resolve a human-readable name for a worker.
-
-        Workers may be leaf ``Agent`` instances (``agent_name``) or nested
-        orchestrators such as another ``HierarchicalSwarm``,
-        ``ConcurrentWorkflow``, or ``MixtureOfAgents`` (``name``). Mirrors the
-        fallback order used by ``find_agent_by_name`` so reassignment logic
-        stays consistent with lookup.
-        """
+        """Leaf agents carry ``agent_name``; nested swarms carry ``name``."""
         return (
             getattr(agent, "agent_name", None)
             or getattr(agent, "name", None)
@@ -1225,56 +835,33 @@ class HierarchicalSwarm:
         )
 
     @staticmethod
-    def _agent_supports_messages(agent: Any) -> bool:
-        """Check whether ``agent.run`` accepts a ``messages`` kwarg.
-
-        Leaf agents take typed turns; nested orchestrators do not, and
-        passing the kwarg to one would raise ``TypeError``.
-        """
+    def _agent_run_accepts(agent: Any, parameter_name: str) -> bool:
+        """Report whether ``agent.run`` accepts ``parameter_name``."""
         run_method = getattr(agent, "run", None)
         if run_method is None:
             return False
         try:
             signature = inspect.signature(run_method)
         except (TypeError, ValueError):
-            return False
-        for parameter in signature.parameters.values():
-            if parameter.name == "messages":
-                return True
-            if parameter.kind is inspect.Parameter.VAR_KEYWORD:
-                return True
-        return False
-
-    @staticmethod
-    def _agent_supports_streaming_callback(agent: Any) -> bool:
-        """Check whether ``agent.run`` accepts a ``streaming_callback`` kwarg.
-
-        Workers can be leaf agents or nested orchestrators, and not all of
-        them expose this parameter (e.g. ``MixtureOfAgents.run`` does not).
-        Passing an unsupported kwarg would raise a ``TypeError``, so this is
-        checked up front rather than caught reactively.
-        """
-        run_method = getattr(agent, "run", None)
-        if run_method is None:
-            return False
-        try:
-            signature = inspect.signature(run_method)
-        except (TypeError, ValueError):
-            # Some C-extension callables cannot be introspected; fail open rather than drop streaming.
+            # Uninspectable callables fail open rather than lose the kwarg.
             return True
         for parameter in signature.parameters.values():
-            if parameter.name == "streaming_callback":
+            if parameter.name == parameter_name:
                 return True
             if parameter.kind is inspect.Parameter.VAR_KEYWORD:
                 return True
         return False
+
+    def _find_worker(self, agent_name: str) -> Any:
+        """Find a worker by display name, leaf agent or nested swarm."""
+        for agent in self.agents or []:
+            if self._agent_display_name(agent) == agent_name:
+                return agent
+        raise ValueError(f"Agent with name '{agent_name}' not found")
 
     def _execute_orders_once(
         self,
         orders: List[HierarchicalOrder],
-        streaming_callback: Optional[
-            Callable[[str, str, bool], None]
-        ] = None,
     ):
         """Execute a set of orders without triggering reassignment."""
         results = [None] * len(orders)
@@ -1289,7 +876,6 @@ class HierarchicalSwarm:
                     future = executor.submit(
                         self._execute_order_with_retries,
                         order,
-                        streaming_callback,
                         False,
                     )
                     futures_map[future] = (index, order)
@@ -1314,7 +900,6 @@ class HierarchicalSwarm:
             for index, order in enumerate(orders):
                 output, failure = self._execute_order_with_retries(
                     order,
-                    streaming_callback=streaming_callback,
                 )
                 results[index] = output
                 if failure is not None:
@@ -1344,22 +929,23 @@ class HierarchicalSwarm:
             )
             return []
 
-        recovery_task = (
-            "Recover from worker failures without stopping the swarm. "
-            "Reassign only the failed tasks below to healthy agents. Never "
-            "assign work to an unavailable agent.\n\n"
-            f"Failed tasks: {json.dumps(failures, default=str)}\n"
-            f"Unavailable agents: {sorted(unavailable_agents)}\n"
-            f"Healthy agents: {available_agents}\n\n"
-            "Return a SwarmSpec with a recovery plan and replacement orders."
+        recovery_task = WORKER_RECOVERY_PROMPT.format(
+            failures=json.dumps(failures, default=str),
+            unavailable_agents=sorted(unavailable_agents),
+            available_agents=available_agents,
         )
         try:
-            output = self.director.run(
-                task=(
-                    f"History: {self.conversation.get_str()}\n\n"
-                    f"Task: {recovery_task}"
-                )
+            director_name = getattr(
+                self.director, "agent_name", self.director_name
             )
+
+            output = self.director.run(
+                task=recovery_task,
+                messages=messages_for(
+                    director_name, self.conversation
+                ),
+            )
+
             self.conversation.add(
                 role="Director",
                 content=output,
@@ -1393,156 +979,43 @@ class HierarchicalSwarm:
         return valid_orders
 
     def parse_orders(self, output):
-        """
-        Parse the director's output to extract plan and orders.
-
-        This method handles various output formats from the director agent and
-        extracts the plan and hierarchical orders. It supports both direct
-        dictionary formats and function call formats with JSON arguments.
+        """Parse a director response into a plan and orders.
 
         Args:
-            output: The raw output from the director agent.
+            output: Raw director output.
 
         Returns:
-            tuple: A tuple containing (plan, orders) where plan is a string
-                   and orders is a list of HierarchicalOrder objects.
+            Plan and validated orders.
 
         Raises:
-            ValueError: If the output format is unexpected or cannot be parsed.
-            Exception: If parsing fails due to other errors.
+            ValueError: If parsing fails.
         """
         try:
-            import json
-
-            # Handle different output formats from the director
-            if isinstance(output, list):
-                # If output is a list, look for function call data
-                for item in output:
-                    if isinstance(item, dict):
-                        # Check if it's a conversation format with role/content
-                        if "content" in item and isinstance(
-                            item["content"], list
-                        ):
-                            for content_item in item["content"]:
-                                if (
-                                    isinstance(content_item, dict)
-                                    and "function" in content_item
-                                ):
-                                    function_data = content_item[
-                                        "function"
-                                    ]
-                                    if "arguments" in function_data:
-                                        try:
-                                            args = json.loads(
-                                                function_data[
-                                                    "arguments"
-                                                ]
-                                            )
-                                            if (
-                                                "plan" in args
-                                                and "orders" in args
-                                            ):
-                                                plan = args["plan"]
-                                                orders = [
-                                                    HierarchicalOrder(
-                                                        **order
-                                                    )
-                                                    for order in args[
-                                                        "orders"
-                                                    ]
-                                                ]
-
-                                                return plan, orders
-                                        except json.JSONDecodeError:
-                                            pass
-                        # Check if it's a direct function call format
-                        elif "function" in item:
-                            function_data = item["function"]
-                            if "arguments" in function_data:
-                                try:
-                                    args = json.loads(
-                                        function_data["arguments"]
-                                    )
-                                    if (
-                                        "plan" in args
-                                        and "orders" in args
-                                    ):
-                                        plan = args["plan"]
-                                        orders = [
-                                            HierarchicalOrder(**order)
-                                            for order in args[
-                                                "orders"
-                                            ]
-                                        ]
-
-                                        return plan, orders
-                                except json.JSONDecodeError:
-                                    pass
-                # If no function call found, raise error
-                raise ValueError(
-                    f"Unable to parse orders from director output: {output}"
-                )
-            elif isinstance(output, dict):
-                # Handle direct dictionary format
-                if "plan" in output and "orders" in output:
-                    plan = output["plan"]
-                    orders = [
-                        HierarchicalOrder(**order)
-                        for order in output["orders"]
-                    ]
-
-                    return plan, orders
-                else:
-                    raise ValueError(
-                        f"Missing 'plan' or 'orders' in director output: {output}"
-                    )
-            elif isinstance(output, str):
-                parsed_output = json.loads(output)
-                return self.parse_orders(parsed_output)
-            elif isinstance(output, SwarmSpec):
-                return output.plan, output.orders
-            else:
-                raise ValueError(
-                    f"Unexpected output format from director: {type(output)}"
-                )
-
+            return _parse_orders(output)
         except Exception as e:
-            error_msg = f"[ERROR] Failed to parse orders: {str(e)}"
             logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+                f"[ERROR] Failed to parse orders: {e} | Traceback: {traceback.format_exc()} | Report at: https://github.com/kyegomez/swarms/issues"
             )
-            raise e
+            raise
 
     def execute_orders(
         self,
         orders: list,
-        streaming_callback: Optional[
-            Callable[[str, str, bool], None]
-        ] = None,
     ):
-        """
-        Execute all orders from the director's output.
-
-        This method iterates through all hierarchical orders and calls the
-        appropriate agents to execute their assigned tasks. Each agent's
-        output is collected and returned as a list.
+        """Execute orders and recover failed assignments.
 
         Args:
-            orders (list): List of HierarchicalOrder objects to execute.
-            streaming_callback (Callable[[str, str, bool], None], optional):
-                Callback function for streaming agent outputs. Parameters are
-                (agent_name, chunk, is_final) where is_final indicates completion.
+            orders: Orders to execute.
 
         Returns:
-            list: List of outputs from all executed orders.
+            Order outputs.
 
         Raises:
             Exception: If order execution fails.
         """
         try:
             outputs, failures = self._execute_orders_once(
-                orders=orders,
-                streaming_callback=streaming_callback,
+                orders=orders
             )
             unavailable_agents = {
                 failure["agent_name"] for failure in failures
@@ -1574,7 +1047,6 @@ class HierarchicalSwarm:
                 replacement_outputs, failures = (
                     self._execute_orders_once(
                         orders=replacement_orders,
-                        streaming_callback=streaming_callback,
                     )
                 )
                 outputs.extend(replacement_outputs)
@@ -1594,19 +1066,9 @@ class HierarchicalSwarm:
             return outputs
 
         except Exception as e:
-            error_msg = (
-                "\n"
-                + "=" * 60
-                + "\n[SWARMS ERROR] Order Execution Failure\n"
-                + "-" * 60
-                + f"\nError   : {str(e)}"
-                f"\nTrace   :\n{traceback.format_exc()}"
-                + "-" * 60
-                + "\nIf this issue persists, please report it:"
-                "\n  https://github.com/kyegomez/swarms/issues"
-                "\n" + "=" * 60 + "\n"
+            logger.error(
+                f"[ERROR] Order execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
             )
-            logger.error(error_msg)
             self.conversation.add(
                 role="System",
                 content=(
@@ -1619,622 +1081,41 @@ class HierarchicalSwarm:
     def batched_run(
         self,
         tasks: List[str],
-        img: str = None,
-        streaming_callback: Optional[
-            Callable[[str, str, bool], None]
-        ] = None,
         *args,
+        img: Optional[Union[str, List[Optional[str]]]] = None,
+        imgs: Optional[List[Optional[str]]] = None,
+        max_workers: Optional[int] = None,
+        return_agent_output_dict: bool = False,
+        return_exceptions: bool = False,
         **kwargs,
     ):
-        """
-        Execute the hierarchical swarm for multiple tasks in sequence.
-
-        This method processes a list of tasks sequentially, running the complete
-        swarm workflow for each task. Each task is processed independently with
-        its own conversation context and results.
+        """Run multiple tasks through the shared batch utility.
 
         Args:
-            tasks (List[str]): List of tasks to be processed by the swarm.
-            img (str, optional): Optional image input for the tasks.
-            streaming_callback (Callable[[str, str, bool], None], optional):
-                Callback function for streaming agent outputs. Parameters are
-                (agent_name, chunk, is_final) where is_final indicates completion.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            tasks: Tasks to execute.
+            *args: Positional arguments forwarded to ``run``.
+            img: One image for all tasks or one image per task.
+            imgs: Images paired with tasks.
+            max_workers: Concurrent task limit; ``None`` is sequential.
+            return_agent_output_dict: Return results keyed by task.
+            return_exceptions: Return exceptions instead of raising them.
+            **kwargs: Keyword arguments forwarded to ``run``.
 
         Returns:
-            list: List of results for each processed task.
+            Results in task order or keyed by task.
 
         Raises:
-            Exception: If batched execution fails.
+            ValueError: If batch utility arguments are invalid.
+            Exception: If a task fails and exceptions are not returned.
         """
-        try:
-            # Initialize a list to store the results
-            results = []
-
-            # Process each task in parallel
-            for task in tasks:
-                result = self.run(
-                    task,
-                    img,
-                    streaming_callback=streaming_callback,
-                    *args,
-                    **kwargs,
-                )
-                results.append(result)
-
-            return results
-
-        except Exception as e:
-            error_msg = f"[ERROR] Batched hierarchical swarm run failed: {str(e)}"
-            logger.error(
-                f"{error_msg}\n[TRACE] Traceback: {traceback.format_exc()}\n[BUG] If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
-            )
-
-    async def arun(
-        self,
-        task: Optional[str] = None,
-        img: Optional[str] = None,
-        streaming_callback: Optional[
-            Callable[[str, str, bool], None]
-        ] = None,
-        *args,
-        **kwargs,
-    ) -> Any:
-        """
-        Async entry point that wraps the synchronous run() in asyncio.to_thread().
-
-        Args:
-            task (str, optional): The task to be processed by the swarm.
-            img (str, optional): Optional image input for the agents.
-            streaming_callback (Callable[[str, str, bool], None], optional):
-                Callback for streaming agent outputs.
-            *args: Additional positional arguments passed to run().
-            **kwargs: Additional keyword arguments passed to run().
-
-        Returns:
-            Any: The same result as run().
-        """
-        return await asyncio.to_thread(
+        return batched_run(
             self.run,
-            task=task,
-            img=img,
-            streaming_callback=streaming_callback,
+            tasks,
             *args,
+            img=img,
+            imgs=imgs,
+            max_workers=max_workers,
+            return_agent_output_dict=return_agent_output_dict,
+            return_exceptions=return_exceptions,
             **kwargs,
         )
-
-    # Streaming helpers.
-
-    async def _stream_agent_in_thread(
-        self,
-        agent: "Agent",
-        task_str: str,
-        img: Optional[str] = None,
-    ) -> tuple:
-        """Run *agent.run()* in a thread, streaming tokens via a queue.
-
-        Returns ``(output, chunks)`` where *output* is the value returned
-        by ``agent.run()`` and *chunks* is the list of streamed token
-        strings.
-
-        Yields are performed by the **caller** who drains the queue
-        stored on ``self._stream_q`` between the call to this coroutine
-        and its completion.
-        """
-        q = self._stream_q
-        ev_loop = asyncio.get_running_loop()
-        chunks: List[str] = []
-        PHASE_DONE = self._PHASE_DONE
-
-        def cb(chunk: str):
-            if chunk is not None and chunk.strip():
-                chunks.append(chunk)
-                ev_loop.call_soon_threadsafe(q.put_nowait, chunk)
-
-        original_streaming_on = getattr(agent, "streaming_on", False)
-        agent.streaming_on = True
-        try:
-            output = await asyncio.to_thread(
-                agent.run,
-                task=task_str,
-                img=img,
-                streaming_callback=cb,
-            )
-        finally:
-            agent.streaming_on = original_streaming_on
-
-        # Signal this phase is done so the consumer stops draining
-        ev_loop.call_soon_threadsafe(q.put_nowait, PHASE_DONE)
-        return output, chunks
-
-    async def _drain_queue_tokens(
-        self,
-        role: str,
-        agent_name: str,
-        loop_idx: int,
-        with_events: bool,
-    ):
-        """Drain ``self._stream_q`` until ``_PHASE_DONE``, yielding events."""
-        q = self._stream_q
-        PHASE_DONE = self._PHASE_DONE
-
-        while True:
-            item = await q.get()
-            if item is PHASE_DONE:
-                break
-            if with_events:
-                yield {
-                    "type": "token",
-                    "role": role,
-                    "agent": agent_name,
-                    "token": item,
-                    "loop": loop_idx,
-                }
-            else:
-                yield (agent_name, item)
-
-    async def arun_stream(
-        self,
-        task: Optional[str] = None,
-        img: Optional[str] = None,
-        with_events: bool = False,
-        **kwargs,
-    ):
-        """Async generator that streams tokens from every phase of the
-        hierarchical swarm: director planning, worker execution, and
-        feedback / judge aggregation.
-
-        Args:
-            task: The task to be processed by the swarm.
-            img: Optional image input for the agents.
-            with_events: When False (default), yield ``(agent_name, token)``
-                tuples.  When True, yield structured event dicts tagged
-                with ``role`` (``director`` / ``worker`` / ``aggregator``)
-                and ``loop`` index.  Event types:
-                ``swarm_start``, ``director_start``, ``token``,
-                ``director_end``, ``worker_start``, ``worker_end``,
-                ``aggregator_start``, ``aggregator_end``, ``swarm_end``.
-
-        Yields:
-            tuple | dict: Per-token streaming items.
-        """
-        # Shared queue used by _stream_agent_in_thread / _drain_queue_tokens
-        self._stream_q: asyncio.Queue = asyncio.Queue()
-        self._PHASE_DONE = object()
-
-        if with_events:
-            yield {
-                "type": "swarm_start",
-                "role": "swarm",
-                "loop": 0,
-            }
-
-        if task is not None:
-            self.conversation.add(role="User", content=task)
-
-        current_loop = 0
-        last_output = None
-
-        while current_loop < self.max_loops:
-            # Build loop task
-            if current_loop == 0:
-                loop_task = task
-            else:
-                loop_task = (
-                    f"Previous loop results: {last_output}\n\n"
-                    f"Original task: {task}\n\n"
-                    "Based on the previous results and any feedback, "
-                    "continue with the next iteration of the task. "
-                    "Refine, improve, or complete any remaining aspects "
-                    "of the analysis."
-                )
-
-            # Director phase.
-            director_task_str = (
-                f"History: {self._context_for(self.director.agent_name)} "
-                f"\n\n Task: {loop_task}"
-            )
-
-            # Optional planning sub-step (non-streaming — creates a
-            # throwaway agent with modified tools)
-            if self.planning_enabled:
-                plan_out = await asyncio.to_thread(
-                    self.setup_director_with_planning,
-                    task=director_task_str,
-                    img=img,
-                )
-                self.conversation.add(
-                    role=self.director.agent_name, content=plan_out
-                )
-                # Refresh context after planning output was added
-                director_task_str = (
-                    f"History: {self._context_for(self.director.agent_name)} "
-                    f"\n\n Task: {loop_task}"
-                )
-
-            if with_events:
-                yield {
-                    "type": "director_start",
-                    "role": "director",
-                    "agent": self.director_name,
-                    "loop": current_loop,
-                }
-
-            # Stream director in background, drain tokens here
-            director_coro = self._stream_agent_in_thread(
-                self.director,
-                director_task_str,
-                img=img,
-            )
-            director_task_obj = asyncio.ensure_future(director_coro)
-
-            async for evt in self._drain_queue_tokens(
-                "director",
-                self.director_name,
-                current_loop,
-                with_events,
-            ):
-                yield evt
-
-            director_output, director_chunks = await director_task_obj
-            self.conversation.add(
-                role="Director", content=director_output
-            )
-
-            if with_events:
-                yield {
-                    "type": "director_end",
-                    "role": "director",
-                    "agent": self.director_name,
-                    "output": str(director_output),
-                    "loop": current_loop,
-                }
-
-            # Parse orders from director output
-            plan, orders = self.parse_orders(director_output)
-
-            # Worker phase.
-            if self.parallel_execution and len(orders) > 1:
-                # --- Parallel workers with interleaving ---
-                worker_q: asyncio.Queue = asyncio.Queue()
-                W_DONE = object()
-                ev_loop = asyncio.get_running_loop()
-                worker_results: Dict[str, Any] = {}
-                worker_chunks: Dict[str, List[str]] = {}
-
-                if with_events:
-                    for order in orders:
-                        yield {
-                            "type": "worker_start",
-                            "role": "worker",
-                            "agent": order.agent_name,
-                            "loop": current_loop,
-                        }
-
-                async def _worker_producer(order):
-                    agent = find_agent_by_name(
-                        self.agents, order.agent_name
-                    )
-                    w_task = (
-                        f"History: {self._context_for(order.agent_name)} "
-                        f"\n\n Task: {order.task}"
-                    )
-                    w_chunks: List[str] = []
-
-                    def w_cb(chunk: str):
-                        if chunk is not None and chunk.strip():
-                            w_chunks.append(chunk)
-                            ev_loop.call_soon_threadsafe(
-                                worker_q.put_nowait,
-                                (order.agent_name, chunk),
-                            )
-
-                    orig = getattr(agent, "streaming_on", False)
-                    agent.streaming_on = True
-                    try:
-                        out = await asyncio.to_thread(
-                            agent.run,
-                            task=w_task,
-                            img=img,
-                            streaming_callback=w_cb,
-                        )
-                    finally:
-                        agent.streaming_on = orig
-
-                    worker_results[order.agent_name] = out
-                    worker_chunks[order.agent_name] = w_chunks
-
-                producer_tasks = [
-                    asyncio.create_task(_worker_producer(order))
-                    for order in orders
-                ]
-
-                # Monitor completion
-                async def _signal_when_done():
-                    await asyncio.gather(
-                        *producer_tasks, return_exceptions=True
-                    )
-                    ev_loop.call_soon_threadsafe(
-                        worker_q.put_nowait, (W_DONE, None)
-                    )
-
-                asyncio.create_task(_signal_when_done())
-
-                # Drain interleaved worker tokens
-                while True:
-                    item = await worker_q.get()
-                    name, token = item
-                    if name is W_DONE:
-                        break
-                    if with_events:
-                        yield {
-                            "type": "token",
-                            "role": "worker",
-                            "agent": name,
-                            "token": token,
-                            "loop": current_loop,
-                        }
-                    else:
-                        yield (name, token)
-                    await asyncio.sleep(0)
-
-                # Write to conversation in order and emit worker_end
-                for order in orders:
-                    out = worker_results.get(order.agent_name)
-                    if out is not None:
-                        self.conversation.add(
-                            role=order.agent_name, content=out
-                        )
-                    if with_events:
-                        yield {
-                            "type": "worker_end",
-                            "role": "worker",
-                            "agent": order.agent_name,
-                            "output": "".join(
-                                worker_chunks.get(
-                                    order.agent_name, []
-                                )
-                            ),
-                            "loop": current_loop,
-                        }
-
-                worker_outputs = [
-                    worker_results.get(o.agent_name) for o in orders
-                ]
-
-            else:
-                # --- Sequential workers ---
-                worker_outputs = []
-                for order in orders:
-                    agent = find_agent_by_name(
-                        self.agents, order.agent_name
-                    )
-                    w_task = (
-                        f"History: {self._context_for(order.agent_name)} "
-                        f"\n\n Task: {order.task}"
-                    )
-
-                    if with_events:
-                        yield {
-                            "type": "worker_start",
-                            "role": "worker",
-                            "agent": order.agent_name,
-                            "loop": current_loop,
-                        }
-
-                    w_coro = self._stream_agent_in_thread(
-                        agent,
-                        w_task,
-                        img=img,
-                    )
-                    w_task_obj = asyncio.ensure_future(w_coro)
-
-                    async for evt in self._drain_queue_tokens(
-                        "worker",
-                        order.agent_name,
-                        current_loop,
-                        with_events,
-                    ):
-                        yield evt
-
-                    w_output, w_chunks = await w_task_obj
-                    self.conversation.add(
-                        role=order.agent_name, content=w_output
-                    )
-                    worker_outputs.append(w_output)
-
-                    if with_events:
-                        yield {
-                            "type": "worker_end",
-                            "role": "worker",
-                            "agent": order.agent_name,
-                            "output": "".join(w_chunks),
-                            "loop": current_loop,
-                        }
-
-            # Aggregation phase: feedback director or judge.
-            if self.agent_as_judge:
-                agg_name = "JudgeAgent"
-                if with_events:
-                    yield {
-                        "type": "aggregator_start",
-                        "role": "aggregator",
-                        "agent": agg_name,
-                        "loop": current_loop,
-                    }
-
-                # Judge uses tool calling / structured output — run in
-                # thread with streaming callback
-                judge_task_str = (
-                    f"Conversation history:\n"
-                    f"{self.conversation.get_str()}\n\n"
-                    f"Agent outputs to evaluate:\n{worker_outputs}"
-                )
-
-                schema = BaseTool().base_model_to_dict(JudgeReport)
-                judge = Agent(
-                    agent_name=agg_name,
-                    agent_description="Evaluates and scores the quality of worker agent outputs",
-                    system_prompt=HIERARCHICAL_SWARM_JUDGE_PROMPT,
-                    model_name=self.judge_agent_model_name,
-                    max_loops=1,
-                    base_model=JudgeReport,
-                    tools_list_dictionary=[schema],
-                    output_type="final",
-                )
-
-                j_coro = self._stream_agent_in_thread(
-                    judge, judge_task_str
-                )
-                j_task_obj = asyncio.ensure_future(j_coro)
-
-                async for evt in self._drain_queue_tokens(
-                    "aggregator",
-                    agg_name,
-                    current_loop,
-                    with_events,
-                ):
-                    yield evt
-
-                j_output, j_chunks = await j_task_obj
-                self.conversation.add(role=agg_name, content=j_output)
-                last_output = j_output
-
-                if with_events:
-                    yield {
-                        "type": "aggregator_end",
-                        "role": "aggregator",
-                        "agent": agg_name,
-                        "output": "".join(j_chunks),
-                        "loop": current_loop,
-                    }
-
-            elif self.director_feedback_on:
-                agg_name = "Director"
-                if with_events:
-                    yield {
-                        "type": "aggregator_start",
-                        "role": "aggregator",
-                        "agent": agg_name,
-                        "loop": current_loop,
-                    }
-
-                fb_agent = Agent(
-                    agent_name="Director",
-                    agent_description="Director module that provides feedback to the worker agents",
-                    model_name=self.feedback_director_model_name,
-                    max_loops=1,
-                    system_prompt=HIEARCHICAL_SWARM_SYSTEM_PROMPT,
-                    output_type="final",
-                )
-                fb_task_str = (
-                    "You are the Director. Carefully review the outputs "
-                    "generated by all the worker agents in the previous "
-                    "step. Provide specific, actionable feedback for "
-                    "each agent, highlighting strengths, weaknesses, "
-                    "and concrete suggestions for improvement. "
-                    f"Worker Agent Responses: History: "
-                    f"{self.conversation.get_str()}"
-                )
-
-                fb_coro = self._stream_agent_in_thread(
-                    fb_agent, fb_task_str
-                )
-                fb_task_obj = asyncio.ensure_future(fb_coro)
-
-                async for evt in self._drain_queue_tokens(
-                    "aggregator",
-                    agg_name,
-                    current_loop,
-                    with_events,
-                ):
-                    yield evt
-
-                fb_output, fb_chunks = await fb_task_obj
-                self.conversation.add(
-                    role=self.director.agent_name, content=fb_output
-                )
-                last_output = fb_output
-
-                if with_events:
-                    yield {
-                        "type": "aggregator_end",
-                        "role": "aggregator",
-                        "agent": agg_name,
-                        "output": "".join(fb_chunks),
-                        "loop": current_loop,
-                    }
-            else:
-                last_output = worker_outputs
-
-            current_loop += 1
-            self.conversation.add(
-                role="System",
-                content=f"--- Loop {current_loop}/{self.max_loops} completed ---",
-            )
-
-        if with_events:
-            yield {
-                "type": "swarm_end",
-                "role": "swarm",
-                "loop": current_loop - 1,
-            }
-
-    def run_stream(
-        self,
-        task: Optional[str] = None,
-        img: Optional[str] = None,
-        with_events: bool = False,
-        **kwargs,
-    ):
-        """Sync generator version of ``arun_stream``.
-
-        Bridges the async generator to a sync iterator using a thread
-        and a ``queue.Queue``.  Use ``arun_stream`` directly when you
-        already have a running event loop (e.g. inside a FastAPI handler).
-
-        Args:
-            task: The task to be processed by the swarm.
-            img: Optional image input for the agents.
-            with_events: When False (default), yield ``(agent_name, token)``
-                tuples.  When True, yield structured event dicts.
-
-        Yields:
-            tuple | dict: Per-token streaming items.
-        """
-        sync_q: _queue.Queue = _queue.Queue()
-        DONE = object()
-        exc_holder: List[Optional[Exception]] = [None]
-
-        def _runner():
-            async def _consume():
-                async for evt in self.arun_stream(
-                    task=task,
-                    img=img,
-                    with_events=with_events,
-                    **kwargs,
-                ):
-                    sync_q.put(evt)
-
-            try:
-                asyncio.run(_consume())
-            except Exception as e:
-                exc_holder[0] = e
-            finally:
-                sync_q.put(DONE)
-
-        t = threading.Thread(target=_runner, daemon=True)
-        t.start()
-
-        try:
-            while True:
-                item = sync_q.get()
-                if item is DONE:
-                    break
-                yield item
-        finally:
-            t.join(timeout=5)
-
-        if exc_holder[0] is not None:
-            raise exc_holder[0]

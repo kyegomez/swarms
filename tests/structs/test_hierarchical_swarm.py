@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 
 from swarms import Agent
+from swarms.schemas.hs_schemas import OrderBatch
 from swarms.structs.hiearchical_swarm import (
     HierarchicalOrder,
     HierarchicalSwarm,
@@ -449,224 +450,6 @@ def test_hierarchical_swarm_autosave_saves_conversation_after_run(
 
 
 ##############################################################################
-# Streaming tests
-##############################################################################
-
-
-@pytest.fixture
-def streaming_swarm():
-    """Create a lightweight HierarchicalSwarm for streaming tests."""
-    return HierarchicalSwarm(
-        name="Streaming-Test-Swarm",
-        agents=[
-            Agent(
-                agent_name="Researcher",
-                system_prompt="List 2 short bullets on the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-            Agent(
-                agent_name="Writer",
-                system_prompt="Combine into one short paragraph.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-        ],
-        max_loops=1,
-        output_type="dict",
-        autosave=False,
-        director_feedback_on=False,
-        planning_enabled=False,
-    )
-
-
-@pytest.mark.asyncio
-async def test_arun_stream_plain(streaming_swarm):
-    """arun_stream without events yields (agent_name, token) tuples."""
-    agent_names = set()
-    token_count = 0
-    async for agent_name, token in streaming_swarm.arun_stream(
-        "solid-state batteries"
-    ):
-        assert isinstance(agent_name, str)
-        assert isinstance(token, str)
-        agent_names.add(agent_name)
-        token_count += 1
-
-    assert token_count > 5, f"Too few tokens: {token_count}"
-    # Director + at least one worker
-    assert (
-        len(agent_names) >= 2
-    ), f"Expected >=2 agents, got {agent_names}"
-
-
-@pytest.mark.asyncio
-async def test_arun_stream_event_types(streaming_swarm):
-    """with_events=True emits all required event types with role and loop."""
-    event_types = set()
-    roles = set()
-    end_events = []
-
-    async for evt in streaming_swarm.arun_stream(
-        "solid-state batteries", with_events=True
-    ):
-        assert "type" in evt
-        event_types.add(evt["type"])
-        if "role" in evt:
-            roles.add(evt["role"])
-        if evt["type"].endswith("_end"):
-            end_events.append(evt)
-
-    # All required event types
-    assert "swarm_start" in event_types
-    assert "swarm_end" in event_types
-    assert "director_start" in event_types
-    assert "director_end" in event_types
-    assert "worker_start" in event_types
-    assert "worker_end" in event_types
-    assert "token" in event_types
-
-    # Roles tagged correctly
-    assert "director" in roles
-    assert "worker" in roles
-    assert "swarm" in roles
-
-    # End events (except swarm_end) carry output and loop
-    for e in end_events:
-        if e["type"] == "swarm_end":
-            continue
-        assert "loop" in e, f"Missing loop in {e}"
-        assert (
-            "output" in e and len(str(e["output"])) > 0
-        ), f"Missing output in {e}"
-
-
-@pytest.mark.asyncio
-async def test_arun_stream_parallel_interleaving():
-    """Parallel workers interleave tokens (>= 3 agent-name flips)."""
-    swarm = HierarchicalSwarm(
-        name="Parallel-Interleave-Test",
-        agents=[
-            Agent(
-                agent_name="Optimist",
-                system_prompt="Write 4-6 upbeat sentences about the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-            Agent(
-                agent_name="Pessimist",
-                system_prompt="Write 4-6 cautious sentences about the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-        ],
-        max_loops=1,
-        output_type="dict",
-        autosave=False,
-        director_feedback_on=False,
-        planning_enabled=False,
-        parallel_execution=True,
-    )
-
-    worker_sequence = []
-    async for evt in swarm.arun_stream(
-        "AI in healthcare", with_events=True
-    ):
-        if evt["type"] == "token" and evt["role"] == "worker":
-            worker_sequence.append(evt["agent"])
-
-    flips = sum(
-        1
-        for i in range(1, len(worker_sequence))
-        if worker_sequence[i] != worker_sequence[i - 1]
-    )
-    assert (
-        len(worker_sequence) > 10
-    ), f"Too few worker tokens: {len(worker_sequence)}"
-    assert flips >= 3, f"Expected >=3 flips, got {flips}"
-
-
-@pytest.mark.asyncio
-async def test_arun_stream_aggregator_feedback():
-    """Aggregator phase streams when director_feedback_on=True."""
-    swarm = HierarchicalSwarm(
-        name="Aggregator-Test",
-        agents=[
-            Agent(
-                agent_name="Researcher",
-                system_prompt="List 2 short bullets on the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-        ],
-        max_loops=1,
-        output_type="dict",
-        autosave=False,
-        director_feedback_on=True,
-        planning_enabled=False,
-    )
-
-    event_types = set()
-    roles = set()
-    async for evt in swarm.arun_stream(
-        "solid-state batteries", with_events=True
-    ):
-        event_types.add(evt["type"])
-        if "role" in evt:
-            roles.add(evt["role"])
-
-    assert "aggregator_start" in event_types
-    assert "aggregator_end" in event_types
-    assert "aggregator" in roles
-
-
-@pytest.mark.asyncio
-async def test_arun_stream_token_events_have_role_and_loop():
-    """Every token event carries role, agent, and loop fields."""
-    swarm = HierarchicalSwarm(
-        name="Token-Metadata-Test",
-        agents=[
-            Agent(
-                agent_name="Researcher",
-                system_prompt="List 2 short bullets on the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-        ],
-        max_loops=1,
-        output_type="dict",
-        autosave=False,
-        director_feedback_on=False,
-        planning_enabled=False,
-    )
-
-    token_count = 0
-    async for evt in swarm.arun_stream(
-        "solid-state batteries", with_events=True
-    ):
-        if evt["type"] == "token":
-            token_count += 1
-            assert "role" in evt, f"Token missing role: {evt}"
-            assert "agent" in evt, f"Token missing agent: {evt}"
-            assert "loop" in evt, f"Token missing loop: {evt}"
-            assert "token" in evt, f"Token missing token: {evt}"
-
-    assert token_count > 0
-
-
-##############################################################################
 # Director settings and worker recovery tests
 ##############################################################################
 
@@ -739,6 +522,7 @@ def test_director_settings_are_forwarded(monkeypatch):
     assert captured["max_loops"] == 3
     assert captured["reasoning_effort"] == "high"
     assert captured["output_type"] == "final"
+    assert captured["base_model"] is OrderBatch
     assert worker.output_type == "final"
     assert swarm.director.output_type == "final"
 
@@ -758,6 +542,123 @@ def test_custom_director_and_workers_are_forced_to_final_output():
     )
     assert plan == "Use the worker"
     assert orders[0].agent_name == "Worker"
+
+
+def test_step_skips_feedback_on_final_loop(monkeypatch):
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", [])],
+        max_loops=2,
+    )
+    swarm.director_feedback_on = True
+    feedback_calls = []
+    director_output = {
+        "orders": [{"agent_name": "Worker", "task": "Do the work"}],
+    }
+
+    monkeypatch.setattr(
+        swarm, "run_director", lambda task, img=None: director_output
+    )
+    monkeypatch.setattr(
+        swarm,
+        "execute_orders",
+        lambda orders: ["done"],
+    )
+    monkeypatch.setattr(
+        swarm,
+        "feedback_director",
+        lambda outputs: feedback_calls.append(outputs) or "feedback",
+    )
+
+    assert swarm.step("task") == "feedback"
+    assert swarm.step("task", is_final_loop=True) == ["done"]
+    assert feedback_calls == [["done"]]
+
+
+def test_step_returns_immediately_when_director_has_no_orders(
+    monkeypatch,
+):
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", [])],
+    )
+    monkeypatch.setattr(
+        swarm,
+        "run_director",
+        lambda task, img=None: {
+            "plan": "Nothing needed",
+            "orders": [],
+        },
+    )
+
+    def unexpected_execution(*args, **kwargs):
+        raise AssertionError("empty plans must not execute workers")
+
+    monkeypatch.setattr(swarm, "execute_orders", unexpected_execution)
+
+    assert swarm.step("task") == []
+
+
+def test_run_marks_only_the_last_step_as_final(monkeypatch):
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", [])],
+        max_loops=2,
+    )
+    final_flags = []
+
+    def capture_step(*args, is_final_loop=False, **kwargs):
+        final_flags.append(is_final_loop)
+        return []
+
+    monkeypatch.setattr(swarm, "step", capture_step)
+
+    swarm.run("task")
+
+    assert final_flags == [False, True]
+
+
+def test_batched_run_forwards_utility_options(monkeypatch):
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", [])],
+    )
+    captured = {}
+
+    def fake_batched_run(func, tasks, *args, **kwargs):
+        captured.update(
+            func=func,
+            tasks=tasks,
+            args=args,
+            kwargs=kwargs,
+        )
+        return ["first", "second"]
+
+    monkeypatch.setattr(
+        "swarms.structs.hiearchical_swarm.batched_run",
+        fake_batched_run,
+    )
+
+    result = swarm.batched_run(
+        ["task-1", "task-2"],
+        "positional",
+        imgs=["one.png", "two.png"],
+        max_workers=2,
+        return_agent_output_dict=True,
+        return_exceptions=True,
+    )
+
+    assert result == ["first", "second"]
+    assert captured["func"] == swarm.run
+    assert captured["tasks"] == ["task-1", "task-2"]
+    assert captured["args"] == ("positional",)
+    assert captured["kwargs"] == {
+        "img": None,
+        "imgs": ["one.png", "two.png"],
+        "max_workers": 2,
+        "return_agent_output_dict": True,
+        "return_exceptions": True,
+    }
 
 
 def test_failed_worker_is_retried_and_reassigned():
@@ -844,11 +745,7 @@ def test_one_failed_worker_does_not_stop_other_orders():
 
 
 class StubNestedSwarm:
-    """Mimics a nested orchestrator (e.g. another HierarchicalSwarm): it is
-    identified by ``name`` (no ``agent_name``) and accepts a
-    ``streaming_callback`` kwarg that it calls with the orchestrator's own
-    ``(sub_agent_name, chunk, is_final)`` convention.
-    """
+    """Mimic a nested orchestrator identified by ``name``."""
 
     def __init__(self, name: str, outputs: list):
         self.name = name
@@ -857,10 +754,8 @@ class StubNestedSwarm:
         self.calls = 0
         self.output_type = "dict-all-except-first"
 
-    def run(self, task, streaming_callback=None, *args, **kwargs):
+    def run(self, task, *args, **kwargs):
         self.calls += 1
-        if streaming_callback is not None:
-            streaming_callback(self.name, "partial", False)
         output = next(self.outputs)
         if isinstance(output, Exception):
             raise output
@@ -868,8 +763,7 @@ class StubNestedSwarm:
 
 
 class StubFlatOrchestrator:
-    """Mimics an orchestrator whose ``run`` has no ``streaming_callback``
-    parameter at all (e.g. MixtureOfAgents)."""
+    """Mimic an orchestrator with a strict ``run`` signature."""
 
     def __init__(self, name: str, outputs: list):
         self.name = name
@@ -911,7 +805,7 @@ def test_max_workers_must_be_positive():
         )
 
 
-def test_nested_swarm_worker_is_called_and_streamed():
+def test_nested_swarm_worker_is_called():
     sub_team = StubNestedSwarm("SubTeam", ["sub-team result"])
     director = StubAgent("Director", [])
     swarm = make_recovery_swarm(
@@ -920,24 +814,16 @@ def test_nested_swarm_worker_is_called_and_streamed():
         parallel_execution=False,
     )
 
-    events = []
     output = swarm.call_single_agent(
         "SubTeam",
         "handle part A",
-        streaming_callback=lambda name, chunk, is_final: events.append(
-            (name, chunk, is_final)
-        ),
     )
 
     assert output == "sub-team result"
     assert sub_team.calls == 1
-    # nested (sub_agent_name, chunk, is_final=False) convention is normalized
-    # and re-emitted under the outer worker's own agent_name
-    assert ("SubTeam", "[SubTeam] partial", False) in events
-    assert ("SubTeam", "", True) in events
 
 
-def test_orchestrator_without_streaming_param_still_completes():
+def test_orchestrator_with_strict_run_signature_completes():
     flat = StubFlatOrchestrator("FlatOrchestrator", ["moa result"])
     director = StubAgent("Director", [])
     swarm = make_recovery_swarm(
@@ -946,19 +832,13 @@ def test_orchestrator_without_streaming_param_still_completes():
         parallel_execution=False,
     )
 
-    events = []
     output = swarm.call_single_agent(
         "FlatOrchestrator",
         "handle part B",
-        streaming_callback=lambda name, chunk, is_final: events.append(
-            (name, chunk, is_final)
-        ),
     )
 
     assert output == "moa result"
     assert flat.calls == 1
-    # no incremental chunks possible; a single final completion is emitted
-    assert events == [("FlatOrchestrator", "moa result", True)]
 
 
 def test_reassignment_targets_nested_swarm_worker_by_name():
@@ -1213,6 +1093,47 @@ def test_director_plan_is_recorded_as_prose_not_a_tool_call():
     assert "Markets: Compile an overview." in recorded
     assert "arguments" not in recorded
     assert "create_plan" not in recorded
+
+
+def _swarm_with_one_order(print_on):
+    """A swarm whose director always issues a single order."""
+    seen = []
+    return HierarchicalSwarm(
+        director=_scripted_hs_agent("Director", seen, director=True),
+        agents=[_scripted_hs_agent("W1", seen)],
+        max_loops=1,
+        print_on=print_on,
+    )
+
+
+def test_the_director_panel_prints_without_verbose(capsys):
+    swarm = _swarm_with_one_order(print_on=True)
+    assert swarm.verbose is False
+
+    swarm.step("Build something.")
+
+    printed = capsys.readouterr().out
+    assert "Director Name: Director" in printed
+    assert "W1" in printed
+
+
+def test_print_on_false_silences_the_director_panel(capsys):
+    swarm = _swarm_with_one_order(print_on=False)
+
+    swarm.step("Build something.")
+
+    assert "Director Name" not in capsys.readouterr().out
+
+
+def test_the_director_panel_carries_the_plan(capsys):
+    swarm = _swarm_with_one_order(print_on=True)
+
+    swarm.step("Build something.")
+
+    printed = capsys.readouterr().out
+    assert "Plan" in printed
+    # the scripted director's plan, from _scripted_hs_agent
+    assert "do it" in printed
 
 
 if __name__ == "__main__":

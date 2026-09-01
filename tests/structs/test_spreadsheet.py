@@ -1,6 +1,8 @@
 import os
 import json
 import csv
+import threading
+import time
 
 import pytest
 
@@ -567,3 +569,216 @@ def test_reliability_check_verbose(temp_workspace):
     )
 
     assert swarm.verbose is True
+
+
+class RecordingAgent(Agent):
+    def __init__(self, name, registry):
+        self.agent_name = name
+        self.registry = registry
+        self.short_memory = []
+        self.concurrent_peak = 0
+        self._live = 0
+        self._lock = threading.Lock()
+
+    def short_memory_init(self):
+        return []
+
+    def run(self, task=None, *args, **kwargs):
+        with self._lock:
+            self._live += 1
+            self.concurrent_peak = max(
+                self.concurrent_peak, self._live
+            )
+        self.short_memory.append(task)
+        time.sleep(0.02)
+        self.registry.append(
+            (self.agent_name, list(self.short_memory))
+        )
+        with self._lock:
+            self._live -= 1
+        return f"{self.agent_name}:{task}"
+
+
+def _recording_swarm(names, max_loops, temp_workspace):
+    registry = []
+    agents = [RecordingAgent(name, registry) for name in names]
+    swarm = SpreadSheetSwarm(
+        agents=agents,
+        max_loops=max_loops,
+        autosave_on=False,
+    )
+    return swarm, agents, registry
+
+
+def test_no_agent_is_run_by_two_threads_at_once(temp_workspace):
+    swarm, agents, _ = _recording_swarm(
+        ["a", "b", "c"], 3, temp_workspace
+    )
+
+    swarm._run_tasks("shared task")
+
+    assert [agent.concurrent_peak for agent in agents] == [1, 1, 1]
+
+
+def test_each_loop_starts_from_a_fresh_memory(temp_workspace):
+    swarm, agents, registry = _recording_swarm(
+        ["a"], 3, temp_workspace
+    )
+
+    swarm._run_tasks("shared task")
+
+    assert [memory for _, memory in registry] == [
+        ["shared task"],
+        ["shared task"],
+        ["shared task"],
+    ]
+
+
+def test_every_agent_runs_once_per_loop(temp_workspace):
+    swarm, agents, registry = _recording_swarm(
+        ["a", "b", "c"], 2, temp_workspace
+    )
+
+    swarm._run_tasks("shared task")
+
+    names = sorted(name for name, _ in registry)
+    assert names == ["a", "a", "b", "b", "c", "c"]
+    assert swarm.tasks_completed == 6
+
+
+def test_each_output_is_tracked_against_its_own_agent(temp_workspace):
+    swarm, agents, _ = _recording_swarm(["a", "b"], 2, temp_workspace)
+
+    swarm._run_tasks("shared task")
+
+    pairs = sorted(
+        (output["agent_name"], output["result"])
+        for output in swarm.outputs
+    )
+    assert pairs == [
+        ("a", "a:shared task"),
+        ("a", "a:shared task"),
+        ("b", "b:shared task"),
+        ("b", "b:shared task"),
+    ]
+
+
+def test_a_single_loop_still_runs_every_agent_concurrently(
+    temp_workspace,
+):
+    swarm, agents, registry = _recording_swarm(
+        ["a", "b", "c"], 1, temp_workspace
+    )
+
+    swarm._run_tasks("shared task")
+
+    assert sorted(name for name, _ in registry) == ["a", "b", "c"]
+    assert swarm.tasks_completed == 3
+
+
+def _recording_config_swarm(agent_tasks, max_loops, temp_workspace):
+    registry = []
+    agents = [RecordingAgent(name, registry) for name in agent_tasks]
+    swarm = SpreadSheetSwarm(
+        agents=agents,
+        max_loops=max_loops,
+        autosave=False,
+    )
+    swarm.agent_tasks = dict(agent_tasks)
+    return swarm, agents, registry
+
+
+def test_run_from_config_never_runs_an_agent_in_two_threads(
+    temp_workspace,
+):
+    swarm, agents, _ = _recording_config_swarm(
+        {"a": "task a", "b": "task b", "c": "task c"},
+        3,
+        temp_workspace,
+    )
+
+    swarm.run_from_config()
+
+    assert [agent.concurrent_peak for agent in agents] == [1, 1, 1]
+
+
+def test_run_from_config_starts_each_loop_from_a_fresh_memory(
+    temp_workspace,
+):
+    swarm, _, registry = _recording_config_swarm(
+        {"a": "task a"}, 3, temp_workspace
+    )
+
+    swarm.run_from_config()
+
+    assert [memory for _, memory in registry] == [
+        ["task a"],
+        ["task a"],
+        ["task a"],
+    ]
+
+
+def test_run_from_config_runs_every_agent_once_per_loop(
+    temp_workspace,
+):
+    swarm, _, registry = _recording_config_swarm(
+        {"a": "task a", "b": "task b", "c": "task c"},
+        2,
+        temp_workspace,
+    )
+
+    swarm.run_from_config()
+
+    assert sorted(name for name, _ in registry) == [
+        "a",
+        "a",
+        "b",
+        "b",
+        "c",
+        "c",
+    ]
+    assert swarm.tasks_completed == 6
+
+
+def test_run_from_config_tracks_each_result_against_its_own_task(
+    temp_workspace,
+):
+    swarm, _, _ = _recording_config_swarm(
+        {"a": "task a", "b": "task b"}, 2, temp_workspace
+    )
+
+    swarm.run_from_config()
+
+    triples = sorted(
+        (output["agent_name"], output["task"], output["result"])
+        for output in swarm.outputs
+    )
+    assert triples == [
+        ("a", "task a", "a:task a"),
+        ("a", "task a", "a:task a"),
+        ("b", "task b", "b:task b"),
+        ("b", "task b", "b:task b"),
+    ]
+
+
+def test_run_from_config_skips_agents_with_no_configured_task(
+    temp_workspace,
+):
+    registry = []
+    agents = [RecordingAgent(name, registry) for name in ("a", "b")]
+    swarm = SpreadSheetSwarm(
+        agents=agents,
+        max_loops=2,
+        autosave=False,
+    )
+    swarm.agent_tasks = {"b": "task b"}
+
+    swarm.run_from_config()
+
+    assert [name for name, _ in registry] == ["b", "b"]
+    assert swarm.tasks_completed == 2
+    assert {output["agent_name"] for output in swarm.outputs} == {"b"}
+    assert [
+        (output["agent_name"], output["task"])
+        for output in swarm.outputs
+    ] == [("b", "task b"), ("b", "task b")]
