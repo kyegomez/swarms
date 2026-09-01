@@ -30,7 +30,7 @@ import os
 import re as _re
 import subprocess
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -103,18 +103,45 @@ Instructions:
 """
 
 
-def get_summary_prompt() -> str:
+def get_summary_prompt(
+    unfinished_subtasks: Optional[List[Dict[str, Any]]] = None,
+) -> str:
     """
     Get the final summary phase prompt.
+
+    Args:
+        unfinished_subtasks: Subtasks that never reached ``"completed"`` -
+            those left ``"pending"`` when the loop hit its iteration cap, those
+            marked ``"failed"`` after exhausting their own budget, and those
+            ``"skipped"`` because a dependency did not complete. When any are
+            given the prompt stops asserting completion, names them, and
+            requires ``complete_task`` to be called with ``success=false``.
 
     Returns:
         str: Summary prompt
     """
-    return (
-        "All subtasks are complete.\n"
+    if unfinished_subtasks:
+        lines = []
+        for subtask in unfinished_subtasks:
+            step_id = subtask.get("step_id", "<unknown>")
+            status = subtask.get("status", "pending")
+            summary = subtask.get("summary", "")
+            entry = f"- {step_id} ({status})"
+            if summary:
+                entry += f": {summary}"
+            lines.append(entry)
+        opening = (
+            f"Execution stopped with {len(unfinished_subtasks)} subtask(s) "
+            "unfinished. The task was NOT fully completed.\n"
+            "Unfinished subtasks:\n" + "\n".join(lines) + "\n"
+        )
+    else:
+        opening = "All subtasks are complete.\n"
+
+    body = (
         "Generate a clear, comprehensive final summary using the `complete_task` tool.\n"
         "Your summary should:\n"
-        "- Restate the original task and confirm completion.\n"
+        "- Restate the original task and state whether it was completed.\n"
         "- Outline major accomplishments and deliverables.\n"
         "- Present key results and findings (including important data or insights).\n"
         "- Briefly summarize each subtask's status (including any failures).\n"
@@ -123,6 +150,15 @@ def get_summary_prompt() -> str:
         "Use the `complete_task` tool with: task_id, summary, success (true/false), results (optional), and lessons_learned (optional).\n"
         "Be concise, well-organized, and thorough—this is the user's final deliverable."
     )
+
+    if unfinished_subtasks:
+        body += (
+            "\nBecause work was left unfinished, call `complete_task` with "
+            "success=false and name the unfinished subtasks above in the "
+            "summary. Do not report this task as a success."
+        )
+
+    return opening + body
 
 
 # Tool schemas.

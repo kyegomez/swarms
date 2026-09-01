@@ -1184,14 +1184,28 @@ class AutonomousAgentLoop:
                         )
 
             # Phase 3: Final Summary
+            unfinished = self._unfinished_subtasks()
+
             if self.agent.print_on:
-                formatter.print_panel(
-                    "All subtasks completed. Generating final summary...",
-                    title="Autonomous Loop: Summary Phase",
-                )
+                if unfinished:
+                    names = ", ".join(
+                        s.get("step_id", "<unknown>")
+                        for s in unfinished
+                    )
+                    formatter.print_panel(
+                        f"{len(unfinished)} subtask(s) did not complete "
+                        f"({names}). Generating final summary...",
+                        title="Autonomous Loop: Summary Phase",
+                    )
+                else:
+                    formatter.print_panel(
+                        "All subtasks completed. Generating final summary...",
+                        title="Autonomous Loop: Summary Phase",
+                    )
 
             return self.agent._generate_final_summary(
-                streaming_callback=streaming_callback
+                streaming_callback=streaming_callback,
+                unfinished_subtasks=unfinished,
             )
 
         except Exception as error:
@@ -1760,6 +1774,26 @@ class AutonomousAgentLoop:
             )
         if self.agent.verbose:
             logger.warning(f"Subtask {step_id} skipped. {reason}")
+
+    def _unfinished_subtasks(self) -> List[Dict[str, Any]]:
+        """
+        Collect subtasks that never reached ``"completed"``.
+
+        This covers all three ways the execution loop can exit with work
+        outstanding: a subtask left ``"pending"`` when the loop hit the global
+        iteration cap or found nothing executable, one marked ``"failed"``
+        after exhausting its own iteration budget, and one ``"skipped"``
+        because a dependency did not complete successfully.
+
+        Returns:
+            List[Dict[str, Any]]: The unfinished subtasks, in plan order. Empty
+            when every subtask completed.
+        """
+        return [
+            subtask
+            for subtask in (self.agent.autonomous_subtasks or [])
+            if subtask.get("status") != "completed"
+        ]
 
     def _all_subtasks_complete(self) -> bool:
         """
