@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 import traceback
-from typing import Any, Callable, List, Union
+from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
 
@@ -58,13 +58,19 @@ def batch_agent_execution(
                 "Number of agents must match number of tasks"
             )
 
-        if imgs is None:
-            imgs = [None] * len(agents)
-        elif len(imgs) != len(agents):
+        if imgs is not None and len(imgs) != len(agents):
             raise ValueError(
                 "Number of imgs must match number of agents"
             )
 
+        img_list: List[Optional[str]] = [
+            imgs[index] if imgs is not None else None
+            for index in range(len(agents))
+        ]
+        names = [
+            getattr(agent, "agent_name", repr(agent))
+            for agent in agents
+        ]
         results: List[Any] = [None] * len(agents)
 
         formatter.print_panel(
@@ -77,7 +83,7 @@ def batch_agent_execution(
             future_to_index = {
                 executor.submit(agent.run, task, img): index
                 for index, (agent, task, img) in enumerate(
-                    zip(agents, tasks, imgs)
+                    zip(agents, tasks, img_list)
                 )
             }
 
@@ -89,7 +95,7 @@ def batch_agent_execution(
                     results[index] = future.result()
                 except Exception as e:
                     logger.error(
-                        f"Task failed for agent {agents[index].agent_name}: {e}"
+                        f"Task failed for agent {names[index]}: {e}"
                     )
 
         return results
