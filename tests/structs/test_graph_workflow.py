@@ -1790,11 +1790,6 @@ def test_conditions_are_flagged_when_serialized():
     assert len(conditional) == 2
 
 
-# ---------------------------------------------------------------------------
-# Per-node retry policy and failure semantics (#1758)
-# ---------------------------------------------------------------------------
-
-
 class _FlakyAgent:
     """Fails the first ``failures`` calls, then succeeds."""
 
@@ -1836,7 +1831,6 @@ def test_retry_policy_backoff_schedule():
     from swarms.structs.graph_workflow import RetryPolicy
 
     exponential = RetryPolicy(base_delay=1.0, max_delay=10.0)
-    # attempt 2 is the first retry
     assert exponential.delay_for(2) == 1.0
     assert exponential.delay_for(3) == 2.0
     assert exponential.delay_for(4) == 4.0
@@ -1888,11 +1882,9 @@ def test_exhausted_retries_skip_downstream_by_default():
     results = wf.run(task="go")
 
     assert agent.calls == 2
-    # The poisoned "[ERROR] ..." string never reaches the next agent.
     assert downstream.calls == 0
     assert "flaky" not in results
     assert "downstream" not in results
-    # ...and the failure is inspectable without substring matching.
     assert "flaky" in wf.failed_nodes
     assert "transient" in wf.failed_nodes["flaky"]
 
@@ -1934,7 +1926,6 @@ def test_retry_on_filters_which_exceptions_retry():
 
     wf.run(task="go")
 
-    # ValueError is not in retry_on, so it is raised on the first attempt.
     assert agent.calls == 1
     assert "flaky" in wf.failed_nodes
 
