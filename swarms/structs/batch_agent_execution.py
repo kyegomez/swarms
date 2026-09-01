@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 import traceback
-from typing import Callable, List, Union
+from typing import Any, Callable, List, Union
 
 from loguru import logger
 
@@ -22,15 +22,30 @@ def batch_agent_execution(
     """
     Execute a batch of agents on a list of tasks concurrently.
 
+    Each agent is paired with the task at the same index: ``agents[i]``
+    runs ``tasks[i]`` with ``imgs[i]``.
+
     Args:
-        agents (List[Agent]): List of agents to execute
-        tasks (list[str]): List of tasks to execute
+        agents (List[Union[Agent, Callable]]): Agents to execute, one per task.
+        tasks (List[str]): Tasks to execute, one per agent.
+        imgs (List[str], optional): Image passed to each agent alongside its
+            task, one per agent. Defaults to None, meaning no images.
+        max_workers (int): Cap on threads used to run the batch.
 
     Returns:
-        List[str]: List of results from each agent execution
+        List[Any]: One result per agent, in the order the agents were given.
+            An agent that raised leaves ``None`` in its own slot.
 
     Raises:
-        ValueError: If number of agents doesn't match number of tasks
+        BatchAgentExecutionError: Wrapping any failure to set up or run the
+            batch, including the length mismatches below.
+        ValueError: If the number of agents, tasks or imgs disagree.
+
+    Notes:
+        Results are placed by index rather than appended on completion, so
+        the returned list is aligned with ``agents`` no matter what order
+        the threads finish in. Callers pair results with agents positionally
+        and have nothing else to key on.
     """
     try:
 
@@ -43,7 +58,14 @@ def batch_agent_execution(
                 "Number of agents must match number of tasks"
             )
 
-        results = []
+        if imgs is None:
+            imgs = [None] * len(agents)
+        elif len(imgs) != len(agents):
+            raise ValueError(
+                "Number of imgs must match number of agents"
+            )
+
+        results: List[Any] = [None] * len(agents)
 
         formatter.print_panel(
             f"Executing {len(agents)} agents on {len(tasks)} tasks using {max_workers} workers"
@@ -52,32 +74,23 @@ def batch_agent_execution(
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=max_workers
         ) as executor:
-            # Submit all tasks to the executor
-            future_to_task = {
-                executor.submit(agent.run, task, imgs): (
-                    agent,
-                    task,
-                    imgs,
+            future_to_index = {
+                executor.submit(agent.run, task, img): index
+                for index, (agent, task, img) in enumerate(
+                    zip(agents, tasks, imgs)
                 )
-                for agent, task, imgs in zip(agents, tasks, imgs)
             }
 
-            # Collect results as they complete
             for future in concurrent.futures.as_completed(
-                future_to_task
+                future_to_index
             ):
-                agent, task = future_to_task[future]
+                index = future_to_index[future]
                 try:
-                    result = future.result()
-                    results.append(result)
+                    results[index] = future.result()
                 except Exception as e:
-                    print(
-                        f"Task failed for agent {agent.agent_name}: {str(e)}"
+                    logger.error(
+                        f"Task failed for agent {agents[index].agent_name}: {e}"
                     )
-                    results.append(None)
-
-            # Wait for all futures to complete before returning
-            concurrent.futures.wait(future_to_task.keys())
 
         return results
     except Exception as e:
