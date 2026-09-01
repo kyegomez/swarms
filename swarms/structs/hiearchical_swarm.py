@@ -224,6 +224,8 @@ class HierarchicalSwarm:
                         workspace directory after each run.
         verbose (bool): Whether to emit debug-level logging for workspace and
                        autosave operations.
+        print_on (bool): Whether to print the director's plan and orders to the
+                        console at each step.
         parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
         max_workers (Optional[int]): Thread pool size used when
                                     parallel_execution is True. Worker calls are
@@ -259,6 +261,7 @@ class HierarchicalSwarm:
         planning_enabled: bool = False,
         autosave: bool = False,
         verbose: bool = False,
+        print_on: bool = True,
         parallel_execution: bool = True,
         max_workers: Optional[int] = None,
         agent_as_judge: bool = False,
@@ -305,6 +308,8 @@ class HierarchicalSwarm:
                 ``setup_director_with_planning``) before delegating tasks.
             autosave (bool): Whether to enable autosaving of conversation history.
             verbose (bool): Whether to enable verbose logging.
+            print_on (bool): Whether to print the director's plan and orders to
+                the console at each step.
             parallel_execution (bool): Whether to execute agent tasks in parallel (default: True).
             max_workers (int, optional): Thread pool size for parallel worker
                 execution. Worker calls are I/O-bound (LLM API calls), so this
@@ -371,6 +376,7 @@ class HierarchicalSwarm:
         self.planning_enabled = planning_enabled
         self.autosave = autosave
         self.verbose = verbose
+        self.print_on = print_on
         self.parallel_execution = parallel_execution
         self.max_workers = (
             max_workers
@@ -747,10 +753,11 @@ class HierarchicalSwarm:
             # Parse the orders
             plan, orders = self.parse_orders(output)
 
-            if self.verbose:
+            if self.print_on:
                 formatter.print_director_task_distribution(
                     director_name=self.director_name,
                     orders=orders,
+                    plan=plan,
                 )
 
             # Execute the orders

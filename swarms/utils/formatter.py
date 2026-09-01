@@ -2,7 +2,7 @@ import time
 import re
 from typing import Any, Callable, Dict, List, Optional
 
-from rich.console import Console
+from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
@@ -911,17 +911,22 @@ class Formatter:
         self,
         director_name: str,
         orders: List[Any],
-        title: str = "Director Task Distribution",
+        plan: Optional[str] = None,
+        title: Optional[str] = None,
     ) -> None:
         """
-        Display the director's task assignments in a rich panel.
+        Display the director's plan and task assignments in a rich panel.
 
         Args:
             director_name (str): Name of the director assigning the tasks.
             orders (List[Any]): Order objects or dictionaries containing
                 ``agent_name`` and ``task`` fields.
-            title (str): Panel title.
+            plan (Optional[str]): The director's plan, rendered above the
+                assignments when present.
+            title (Optional[str]): Panel title. Defaults to the director's
+                own name, so a run with several directors is readable.
         """
+        title = title or f"Director Name: {director_name}"
         tree = Tree(
             f"[bold red]🎯 {director_name}[/bold red]",
             guide_style="bold red",
@@ -942,16 +947,27 @@ class Formatter:
                     )
                     task = getattr(order, "task", "No task provided")
 
-                task_preview = str(task).replace("\n", " ").strip()
-                if len(task_preview) > 160:
-                    task_preview = f"{task_preview[:160].rstrip()}..."
-
+                # Text.assemble, not markup: task text is model-generated
+                # and any "[...]" in it would parse as a style tag.
                 tree.add(
-                    f"[bold cyan]{agent_name}[/bold cyan] [dim]- {task_preview}[/dim]"
+                    Text.assemble(
+                        (str(agent_name), "bold cyan"),
+                        (" - ", "dim"),
+                        (str(task).strip(), "dim"),
+                    )
                 )
 
+        body: Any = tree
+        if plan and str(plan).strip():
+            body = Group(
+                Text("Plan", style="bold white"),
+                Text(str(plan).strip(), style="dim"),
+                Text(""),
+                tree,
+            )
+
         panel = Panel(
-            tree,
+            body,
             title=f"[bold white]{title}[/bold white]",
             border_style="red",
             padding=(0, 1),

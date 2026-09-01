@@ -1158,5 +1158,46 @@ class TestHierarchicalContextManagement:
         ), f"stale messages loaded from disk: {roles}"
 
 
+def _swarm_with_one_order(print_on):
+    """A swarm whose director always issues a single order."""
+    seen = []
+    return HierarchicalSwarm(
+        director=_scripted_hs_agent("Director", seen, director=True),
+        agents=[_scripted_hs_agent("W1", seen)],
+        max_loops=1,
+        print_on=print_on,
+    )
+
+
+def test_the_director_panel_prints_without_verbose(capsys):
+    swarm = _swarm_with_one_order(print_on=True)
+    assert swarm.verbose is False
+
+    swarm.step("Build something.")
+
+    printed = capsys.readouterr().out
+    assert "Director Name: Director" in printed
+    assert "W1" in printed
+
+
+def test_print_on_false_silences_the_director_panel(capsys):
+    swarm = _swarm_with_one_order(print_on=False)
+
+    swarm.step("Build something.")
+
+    assert "Director Name" not in capsys.readouterr().out
+
+
+def test_the_director_panel_carries_the_plan(capsys):
+    swarm = _swarm_with_one_order(print_on=True)
+
+    swarm.step("Build something.")
+
+    printed = capsys.readouterr().out
+    assert "Plan" in printed
+    # the scripted director's plan, from _scripted_hs_agent
+    assert "do it" in printed
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
