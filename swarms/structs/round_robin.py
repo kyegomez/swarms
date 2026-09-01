@@ -2,6 +2,10 @@ from typing import List, Union
 
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import (
+    messages_for,
+    split_last_turn,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -61,8 +65,11 @@ def build_collaborative_task(
     Concatenates the running transcript with the per-turn role header and
     the standing collaboration instruction.
     """
+    prefix = (
+        f"{conversation_context}\n\n" if conversation_context else ""
+    )
     return (
-        f"{conversation_context}\n\n"
+        f"{prefix}"
         f"{turn_header}\n\n"
         "Review the transcript above and build on the prior speaker's contribution. "
         "Add your own perspective concisely; if you are the opening speaker, address the original task directly.\n\n"
@@ -249,8 +256,11 @@ class RoundRobinSwarm(SerializableMixin):
                         )
                     )
 
-                    conversation_context = (
-                        self.conversation.return_history_as_string()
+                    prior_turns, _ = split_last_turn(
+                        messages_for(
+                            current_agent.agent_name,
+                            self.conversation,
+                        )
                     )
 
                     turn_header = build_turn_header(
@@ -265,7 +275,7 @@ class RoundRobinSwarm(SerializableMixin):
                     )
 
                     collaborative_task = build_collaborative_task(
-                        conversation_context=conversation_context,
+                        conversation_context="",
                         turn_header=turn_header,
                     )
 
@@ -274,6 +284,7 @@ class RoundRobinSwarm(SerializableMixin):
                             current_agent,
                             collaborative_task,
                             *args,
+                            messages=prior_turns,
                             **kwargs,
                         )
                     except Exception as e:
