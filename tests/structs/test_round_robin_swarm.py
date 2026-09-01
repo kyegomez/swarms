@@ -132,7 +132,6 @@ def test_the_rotation_wraps_and_stays_a_full_cycle():
             "every agent must still get exactly one turn per loop, "
             f"got {log}"
         )
-    # Four runs over three agents: back to the start, one further along.
     assert swarm.index == 1
     assert log[0] == "Agent0"
 

@@ -226,9 +226,6 @@ class RoundRobinSwarm(SerializableMixin):
             n = len(self.agents)
             agent_names = return_all_agent_names(self.agents)
 
-            # Where this run starts in the roster. max_loops * n turns is a
-            # whole number of rotations, so the offset only moves via the
-            # single step taken at the end of this method.
             start = self.index % n
 
             self._log(
@@ -300,10 +297,6 @@ class RoundRobinSwarm(SerializableMixin):
                         )
                         raise
 
-            # Hand the opening turn to the next agent. The opener frames the
-            # task and every later agent is told to build on the prior
-            # speaker, so leaving the offset where it started gave agents[0]
-            # that influence on every task in a run_batch and agents[-1] none.
             self.index = (start + 1) % n
 
             self._log(
