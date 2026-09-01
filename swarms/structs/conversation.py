@@ -26,7 +26,6 @@ from loguru import logger
 from swarms.utils.generate_id import generate_id
 
 
-# Truncation measures each message with this separator, so keep them in sync.
 MESSAGE_SEPARATOR = "\n\n"
 
 
@@ -1579,9 +1578,6 @@ class Conversation:
         if not messages:
             return ""
 
-        # Whole messages, newest first. Each is measured with the separator
-        # that follows it, so the running total is an upper bound on the join
-        # and the result cannot exceed context_length.
         budget = self.context_length
         kept = 0
 
@@ -1600,7 +1596,6 @@ class Conversation:
             kept += 1
 
         if kept == 0:
-            # The newest message alone overflows: no boundary to cut on.
             return self._truncate_to_context_length(messages[-1])
 
         return MESSAGE_SEPARATOR.join(

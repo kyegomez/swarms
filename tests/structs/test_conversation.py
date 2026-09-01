@@ -957,7 +957,6 @@ def test_dynamic_chunking_keeps_whole_messages(tmp_path):
     conv = _overflowing_conversation(tmp_path, messages=60)
     result = conv.return_history_as_string()
 
-    # Every complete message starts with its [timestamp] under time_enabled.
     for line in result.split("\n\n"):
         assert line.startswith("[")
 
@@ -992,7 +991,6 @@ def test_dynamic_chunking_work_is_bounded_by_the_window(
     ).return_history_as_string()
     large = sum(tokenized)
 
-    # 8x the transcript, same window: tokenized characters should stay flat.
     assert large < small * 2
 
 
