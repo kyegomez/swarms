@@ -199,22 +199,24 @@ class SpreadSheetSwarm:
 
         start_time = time
 
-        # Prepare agent-task pairs for concurrent execution
-        agent_task_pairs = []
+        agent_task_pairs = [
+            (agent, self.agent_tasks[agent.agent_name])
+            for agent in self.agents
+            if self.agent_tasks.get(agent.agent_name)
+        ]
 
-        for agent in self.agents:
-            task = self.agent_tasks.get(agent.agent_name)
-            if task:
-                for _ in range(self.max_loops):
-                    agent_task_pairs.append((agent, task))
+        for _ in range(self.max_loops):
+            for agent, _task in agent_task_pairs:
+                agent.short_memory = agent.short_memory_init()
 
-        # Run all tasks concurrently using the multi_agent_exec function
-        results = run_agents_with_different_tasks(agent_task_pairs)
+            results = run_agents_with_different_tasks(
+                agent_task_pairs
+            )
 
-        # Process the results
-        for i, result in enumerate(results):
-            agent, task = agent_task_pairs[i]
-            self._track_output(agent.agent_name, task, result)
+            for (agent, task), result in zip(
+                agent_task_pairs, results
+            ):
+                self._track_output(agent.agent_name, task, result)
 
         end_time = time
 
