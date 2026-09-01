@@ -3,6 +3,8 @@ import json
 import csv
 import threading
 import time
+from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -782,3 +784,154 @@ def test_run_from_config_skips_agents_with_no_configured_task(
         (output["agent_name"], output["task"])
         for output in swarm.outputs
     ] == [("b", "task b"), ("b", "task b")]
+
+
+def test_track_output_timestamps_generated_at_call_time(temp_workspace):
+    """Test A: Output timestamps are generated dynamically at call time."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent])
+
+    times = [
+        "2026-09-01T12:00:00.000000",
+        "2026-09-01T12:00:05.000000",
+    ]
+    with patch(
+        "swarms.structs.spreadsheet_swarm._now", side_effect=times
+    ):
+        swarm._track_output("test_agent", "Task 1", "Result 1")
+        swarm._track_output("test_agent", "Task 2", "Result 2")
+
+    t1 = swarm.outputs[0]["timestamp"]
+    t2 = swarm.outputs[1]["timestamp"]
+
+    assert t1 == "2026-09-01T12:00:00.000000"
+    assert t2 == "2026-09-01T12:00:05.000000"
+    assert t1 != t2
+    assert datetime.fromisoformat(t1) < datetime.fromisoformat(t2)
+
+
+def test_separate_runs_get_separate_start_times(temp_workspace):
+    """Test B: Separate swarm runs receive distinct start times."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent], autosave=False)
+
+    times = [
+        # Run 1: start, output, end
+        "2026-09-01T10:00:00.000000",
+        "2026-09-01T10:00:01.000000",
+        "2026-09-01T10:00:02.000000",
+        # Run 2: start, output, end
+        "2026-09-01T11:00:00.000000",
+        "2026-09-01T11:00:01.000000",
+        "2026-09-01T11:00:02.000000",
+    ]
+
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["ok"],
+    ):
+        with patch(
+            "swarms.structs.spreadsheet_swarm._now", side_effect=times
+        ):
+            run1 = swarm.run("task 1")
+            run2 = swarm.run("task 2")
+
+    assert run1["start_time"] == "2026-09-01T10:00:00.000000"
+    assert run2["start_time"] == "2026-09-01T11:00:00.000000"
+    assert run1["start_time"] != run2["start_time"]
+
+
+def test_end_time_occurs_after_start_time(temp_workspace):
+    """Test C: Swarm run end_time is greater than start_time when work completes."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent], autosave=False)
+
+    times = [
+        "2026-09-01T12:00:00.000000",  # start_time
+        "2026-09-01T12:00:02.000000",  # output timestamp
+        "2026-09-01T12:00:05.000000",  # end_time
+    ]
+
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["done"],
+    ):
+        with patch(
+            "swarms.structs.spreadsheet_swarm._now", side_effect=times
+        ):
+            summary = swarm.run("test task")
+
+    start_dt = datetime.fromisoformat(summary["start_time"])
+    end_dt = datetime.fromisoformat(summary["end_time"])
+
+    assert end_dt > start_dt
+    assert (end_dt - start_dt).total_seconds() == 5.0
+
+
+def test_output_timestamp_persisted_to_csv(temp_workspace):
+    """Test D: Output timestamp is correctly saved to CSV and matches tracked output."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent])
+
+    expected_timestamp = "2026-09-01T15:30:45.123456"
+    with patch(
+        "swarms.structs.spreadsheet_swarm._now",
+        return_value=expected_timestamp,
+    ):
+        swarm._track_output("test_agent", "CSV task", "CSV result")
+        swarm._save_to_csv()
+
+    assert swarm.outputs[0]["timestamp"] == expected_timestamp
+
+    with open(swarm.save_file_path, "r", newline="") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    assert len(rows) == 1
+    assert rows[0]["Timestamp"] == expected_timestamp
+
+
+def test_multiple_outputs_have_independent_timestamps(temp_workspace):
+    """Test E: Multiple outputs tracked over time do not share an import-time timestamp."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent])
+
+    stamps = [
+        "2026-09-01T10:00:00",
+        "2026-09-01T10:05:00",
+        "2026-09-01T10:10:00",
+    ]
+    with patch(
+        "swarms.structs.spreadsheet_swarm._now", side_effect=stamps
+    ):
+        for i in range(3):
+            swarm._track_output("test_agent", f"Task {i}", f"Result {i}")
+
+    recorded_stamps = [output["timestamp"] for output in swarm.outputs]
+    assert recorded_stamps == stamps
+    assert len(set(recorded_stamps)) == 3
