@@ -2621,7 +2621,7 @@ Subtask Breakdown:
             self._get_agent_workspace_dir(), candidate
         )
 
-    def save(self, file_path: str = None) -> None:
+    def save(self, file_path: Optional[str] = None) -> None:
         try:
             full_path = self._resolve_state_file(
                 file_path
@@ -2712,7 +2712,7 @@ Subtask Breakdown:
         except Exception as e:
             logger.warning(f"Error saving additional components: {e}")
 
-    def load(self, file_path: str = None) -> None:
+    def load(self, file_path: Optional[str] = None) -> None:
         try:
             resolved_path = self._resolve_state_file(
                 file_path
