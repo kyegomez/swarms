@@ -15,13 +15,16 @@ from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
-time = datetime.datetime.now().isoformat()
 uuid_hex = uuid.uuid4().hex
 
 # --------------- NEW CHANGE START ---------------
 # Format time variable to be compatible across operating systems
 formatted_time = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 # --------------- NEW CHANGE END ---------------
+
+
+def _now() -> str:
+    return datetime.datetime.now().isoformat()
 
 
 class SpreadSheetSwarm:
@@ -197,26 +200,28 @@ class SpreadSheetSwarm:
         if not self.agents and self.load_path:
             self.load_from_csv()
 
-        start_time = time
+        start_time = _now()
 
-        # Prepare agent-task pairs for concurrent execution
-        agent_task_pairs = []
+        agent_task_pairs = [
+            (agent, self.agent_tasks[agent.agent_name])
+            for agent in self.agents
+            if self.agent_tasks.get(agent.agent_name)
+        ]
 
-        for agent in self.agents:
-            task = self.agent_tasks.get(agent.agent_name)
-            if task:
-                for _ in range(self.max_loops):
-                    agent_task_pairs.append((agent, task))
+        for _ in range(self.max_loops):
+            for agent, _task in agent_task_pairs:
+                agent.short_memory = agent.short_memory_init()
 
-        # Run all tasks concurrently using the multi_agent_exec function
-        results = run_agents_with_different_tasks(agent_task_pairs)
+            results = run_agents_with_different_tasks(
+                agent_task_pairs
+            )
 
-        # Process the results
-        for i, result in enumerate(results):
-            agent, task = agent_task_pairs[i]
-            self._track_output(agent.agent_name, task, result)
+            for (agent, task), result in zip(
+                agent_task_pairs, results
+            ):
+                self._track_output(agent.agent_name, task, result)
 
-        end_time = time
+        end_time = _now()
 
         # Save outputs
         logger.info("Saving outputs to CSV...")
@@ -256,9 +261,9 @@ class SpreadSheetSwarm:
         if task is None and self.agent_tasks:
             return self.run_from_config()
         else:
-            start_time = time
+            start_time = _now()
             self._run_tasks(task, *args, **kwargs)
-            end_time = time
+            end_time = _now()
             self._save_metadata()
 
             if self.autosave:
@@ -308,25 +313,16 @@ class SpreadSheetSwarm:
         if not self.agents and self.load_path:
             self.load_from_csv()
 
-        # Prepare agents and tasks for concurrent execution
-        agents_to_run = []
-        tasks_to_run = []
-
         for _ in range(self.max_loops):
             for agent in self.agents:
-                agents_to_run.append(agent)
-                tasks_to_run.append(task)
+                agent.short_memory = agent.short_memory_init()
 
-        # Run all tasks concurrently using the multi_agent_exec function
-        results = run_agents_with_different_tasks(
-            list(zip(agents_to_run, tasks_to_run))
-        )
+            results = run_agents_with_different_tasks(
+                [(agent, task) for agent in self.agents]
+            )
 
-        # Process the results
-        for i, result in enumerate(results):
-            agent = agents_to_run[i]
-            task_str = tasks_to_run[i]
-            self._track_output(agent.agent_name, task_str, result)
+            for agent, result in zip(self.agents, results):
+                self._track_output(agent.agent_name, task, result)
 
     def _track_output(self, agent_name: str, task: str, result: str):
         """
@@ -343,7 +339,7 @@ class SpreadSheetSwarm:
                 "agent_name": agent_name,
                 "task": task,
                 "result": result,
-                "timestamp": time,
+                "timestamp": _now(),
             }
         )
 

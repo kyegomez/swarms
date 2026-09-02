@@ -16,15 +16,32 @@ Profiles:
 
 import sys
 
-from mcp.server.fastmcp import FastMCP
 from starlette.responses import JSONResponse
+
+try:
+    # mcp 1.x
+    from mcp.server.fastmcp import FastMCP
+
+    def _build_server(port: int):
+        return FastMCP(
+            "swarms-test-server", host="127.0.0.1", port=port
+        )
+
+except ImportError:
+    # 2.x renamed FastMCP to MCPServer and moved the transport settings
+    # off the constructor; uvicorn binds the port here either way.
+    from mcp.server.mcpserver import MCPServer
+
+    def _build_server(port: int):
+        return MCPServer("swarms-test-server")
+
 
 API_KEY = "test-key-123"
 BEARER_TOKEN = "test-token-abc"
 
 
 def build_app(profile: str, port: int):
-    mcp = FastMCP("swarms-test-server", host="127.0.0.1", port=port)
+    mcp = _build_server(port)
 
     @mcp.tool()
     def add(a: int, b: int) -> int:
