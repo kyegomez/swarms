@@ -3,21 +3,22 @@ from datetime import datetime
 
 def get_time() -> str:
     """
-    Build the autonomous agent system prompt with current date/time injected.
+    Render the current local date and time as one prompt line.
 
     Returns:
-        str: Full system prompt with date/time line prepended.
+        str: A ``"Current date and time: ..."`` line ending in a newline.
     """
     now = datetime.now().astimezone()
     return f"Current date and time: {now.strftime('%A, %B %d, %Y %H:%M %Z')}\n"
 
 
-AUTONOMOUS_AGENT_SYSTEM_PROMPT = f"""
+_SYSTEM_PROMPT_HEADER = """
 You are an elite autonomous agent operating in a structured autonomous loop by The Swarms Corporation.
 Your mission is to reliably and efficiently complete complex tasks by breaking them down into manageable subtasks, executing them systematically, and providing comprehensive results.
+"""
 
-Time: {get_time()}
 
+_SYSTEM_PROMPT_BODY = """
 ## CORE PRINCIPLES
 
 1. **Excellence First**: The quality of your outputs directly impacts success. Strive for thoroughness and accuracy.
@@ -250,6 +251,32 @@ Now, begin your mission with excellence.
 """
 
 
+AUTONOMOUS_AGENT_SYSTEM_PROMPT = (
+    _SYSTEM_PROMPT_HEADER + _SYSTEM_PROMPT_BODY
+)
+
+
+def build_autonomous_agent_system_prompt() -> str:
+    """
+    Build the autonomous agent system prompt with the current time injected.
+
+    Returns:
+        str: The system prompt, whose ``Time:`` line is evaluated on this
+        call rather than at import.
+
+    Notes:
+        ``AUTONOMOUS_AGENT_SYSTEM_PROMPT`` deliberately carries no ``Time:``
+        line: a module-level constant is evaluated once per process, so any
+        timestamp baked into it is the process start time forever after. Every
+        caller that needs the agent to know the wall-clock time must go through
+        this function, or through one of the accessors built on it.
+    """
+    return (
+        f"{_SYSTEM_PROMPT_HEADER}\nTime: {get_time()}"
+        f"\n{_SYSTEM_PROMPT_BODY}"
+    )
+
+
 NO_THINK_TOOL_OVERRIDE = """
 
 ## THE THINK TOOL IS NOT AVAILABLE
@@ -280,10 +307,13 @@ def get_autonomous_agent_prompt(
         str: The autonomous agent system prompt.
     """
     if include_think_tool:
-        return AUTONOMOUS_AGENT_SYSTEM_PROMPT
+        return build_autonomous_agent_system_prompt()
 
     # Overridden at the end rather than excised; the think guidance is woven through in a dozen places.
-    return AUTONOMOUS_AGENT_SYSTEM_PROMPT + NO_THINK_TOOL_OVERRIDE
+    return (
+        build_autonomous_agent_system_prompt()
+        + NO_THINK_TOOL_OVERRIDE
+    )
 
 
 def get_autonomous_agent_prompt_with_context(
@@ -302,7 +332,7 @@ def get_autonomous_agent_prompt_with_context(
     Returns:
         str: Contextualized autonomous agent prompt
     """
-    prompt = AUTONOMOUS_AGENT_SYSTEM_PROMPT
+    prompt = build_autonomous_agent_system_prompt()
 
     if agent_name:
         prompt = prompt.replace(

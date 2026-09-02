@@ -10,7 +10,7 @@ to a provider — ``Agent.call_llm`` — is monkeypatched per-test with a script
 sequence of canned responses, so the loop's real control flow, real tool
 dispatch, and real state transitions are exercised end to end.
 
-Covers four fixed defects:
+Covers five fixed defects:
 
 * #1963 — tool errors were logged and discarded, so the model never learned a
   call had failed and re-emitted it until the iteration budget was gone.
@@ -21,6 +21,9 @@ Covers four fixed defects:
 * #1962 — ``ContextCompressor.maybe_compress`` was never called on the
   ``max_loops="auto"`` path, so history grew unbounded in exactly the mode
   that needs compression most.
+* #1975 — the prompt's ``Time:`` line was interpolated into a module-level
+  f-string, so every agent in a long-lived process was told the process start
+  time instead of the current one.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -28,18 +31,23 @@ Run:
 """
 
 import json
+import re
 
 import pytest
 
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.prompts import autonomous_agent_prompt as prompt_module
+from swarms.prompts.autonomous_agent_prompt import (
+    get_autonomous_agent_prompt,
+    get_autonomous_agent_prompt_with_context,
+)
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
-
 
 # --------------------------------------------------------------------------
 # helpers
@@ -1142,6 +1150,112 @@ class TestContextCompression:
 
         assert loop._maybe_compress_context() is False
         assert len(loop._transcript) == 1
+
+
+class TestPromptTimestampIsNotFrozen:
+    """#1975 - the ``Time:`` line must be evaluated per call, not per import."""
+
+    STAMP = re.compile(r"Current date and time: ([^\n]*)")
+
+    def _freeze(self, monkeypatch, value):
+        monkeypatch.setattr(
+            prompt_module,
+            "get_time",
+            lambda: f"Current date and time: {value}\n",
+        )
+
+    def test_builder_reflects_the_clock_at_call_time(
+        self, monkeypatch
+    ):
+        self._freeze(monkeypatch, "FIRST")
+        first = prompt_module.build_autonomous_agent_system_prompt()
+        self._freeze(monkeypatch, "SECOND")
+        second = prompt_module.build_autonomous_agent_system_prompt()
+
+        assert self.STAMP.search(first).group(1) == "FIRST"
+        assert self.STAMP.search(second).group(1) == "SECOND"
+
+    @pytest.mark.parametrize("include_think_tool", [True, False])
+    def test_accessor_reflects_the_clock_at_call_time(
+        self, monkeypatch, include_think_tool
+    ):
+        self._freeze(monkeypatch, "FIRST")
+        first = get_autonomous_agent_prompt(
+            include_think_tool=include_think_tool
+        )
+        self._freeze(monkeypatch, "SECOND")
+        second = get_autonomous_agent_prompt(
+            include_think_tool=include_think_tool
+        )
+
+        assert self.STAMP.search(first).group(1) == "FIRST"
+        assert self.STAMP.search(second).group(1) == "SECOND"
+
+    def test_context_accessor_reflects_the_clock_at_call_time(
+        self, monkeypatch
+    ):
+        self._freeze(monkeypatch, "FIRST")
+        first = get_autonomous_agent_prompt_with_context(
+            agent_name="Scout"
+        )
+        self._freeze(monkeypatch, "SECOND")
+        second = get_autonomous_agent_prompt_with_context(
+            agent_name="Scout"
+        )
+
+        assert self.STAMP.search(first).group(1) == "FIRST"
+        assert self.STAMP.search(second).group(1) == "SECOND"
+        assert "You are Scout, an elite autonomous agent" in second
+
+    def test_agent_system_prompt_carries_the_current_time(
+        self, monkeypatch
+    ):
+        """
+        The defect as a user meets it: an agent built now, told now.
+
+        ``agent.system_prompt`` carries two ``Time:`` lines, because
+        ``AGENT_SYSTEM_PROMPT_3`` interpolates ``get_time()`` into its own
+        module-level f-string at ``agent_system_prompts.py:134`` and is
+        prepended to every agent's prompt. That second site is the same
+        defect in a different module and is deliberately out of scope here —
+        the assertion below is on the autonomous half this issue covers.
+        """
+        self._freeze(monkeypatch, "AT_AGENT_BUILD")
+        agent = build_agent()
+
+        stamps = self.STAMP.findall(agent.system_prompt)
+        assert "AT_AGENT_BUILD" in stamps
+
+    def test_exported_constant_carries_no_timestamp(self):
+        """
+        Structural guard. A module-level constant is evaluated once per
+        process, so any timestamp baked into it is the process start time
+        forever after — the exact shape this issue is about. The constant is
+        therefore timeless by construction and cannot regress into a stale
+        one.
+        """
+        assert (
+            "Current date and time"
+            not in prompt_module.AUTONOMOUS_AGENT_SYSTEM_PROMPT
+        )
+        assert (
+            "Time:"
+            not in prompt_module.AUTONOMOUS_AGENT_SYSTEM_PROMPT
+        )
+
+    def test_only_the_time_line_differs_from_the_constant(
+        self, monkeypatch
+    ):
+        """The split into header/body changed no other prompt text."""
+        self._freeze(monkeypatch, "NOW")
+        built = prompt_module.build_autonomous_agent_system_prompt()
+
+        assert (
+            built.replace(
+                "Time: Current date and time: NOW\n\n\n", ""
+            )
+            == prompt_module.AUTONOMOUS_AGENT_SYSTEM_PROMPT
+        )
 
 
 if __name__ == "__main__":
