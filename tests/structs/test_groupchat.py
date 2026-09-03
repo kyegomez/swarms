@@ -1,307 +1,397 @@
-from swarms.structs.agent import Agent
-from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
-from datetime import datetime
-import time
+"""
+Offline pytest suite for the turn-based, self-selecting GroupChat.
+
+The previous file was a live-LLM script converted to ``test_*.py``
+naming: every test took a ``report`` parameter that exists nowhere as a
+fixture, so all five errored at collection and GroupChat had zero
+working coverage (#2059). These tests drive the real GroupChat
+scheduling loop with scripted agents instead — no model, no API key, no
+network.
+
+A scripted agent returns a canned ``respond(score, message)`` tool call
+in either shape the provider path produces: the tool-call list, or its
+repr — the string form an agent with the default ``output_type`` hands
+back, which is exactly the case that previously went silent.
+"""
+
+import json
+
+import pytest
+
+from swarms.structs.groupchat import (
+    GroupChat,
+    RESPOND_TOOL,
+    _extract_args,
+)
 
 
-class TestReport:
-    def __init__(self):
-        self.results = []
-        self.start_time = None
-        self.end_time = None
+# --------------------------------------------------------------------------
+# helpers
+# --------------------------------------------------------------------------
 
-    def add_result(self, test_name, passed, message="", duration=0):
-        self.results.append(
-            {
-                "test_name": test_name,
-                "passed": passed,
-                "message": message,
-                "duration": duration,
+
+def respond_call(score, message):
+    """A ``respond()`` tool call shaped like parsed provider output."""
+    return [
+        {
+            "function": {
+                "name": "respond",
+                "arguments": json.dumps(
+                    {"score": score, "message": message}
+                ),
             }
-        )
-
-    def start(self):
-        self.start_time = datetime.now()
-
-    def end(self):
-        self.end_time = datetime.now()
-
-    def generate_report(self):
-        total_tests = len(self.results)
-        passed_tests = sum(1 for r in self.results if r["passed"])
-        failed_tests = total_tests - passed_tests
-        duration = (self.end_time - self.start_time).total_seconds()
-
-        report = "\n" + "=" * 50 + "\n"
-        report += "GROUP CHAT TEST SUITE REPORT\n"
-        report += "=" * 50 + "\n\n"
-        report += f"Test Run: {self.start_time.strftime('%Y-%m-%d %H:%M:%S')}\n"
-        report += f"Duration: {duration:.2f} seconds\n"
-        report += f"Total Tests: {total_tests}\n"
-        report += f"Passed: {passed_tests}\n"
-        report += f"Failed: {failed_tests}\n"
-        report += (
-            f"Success Rate: {(passed_tests/total_tests)*100:.1f}%\n\n"
-        )
-
-        report += "Detailed Test Results:\n"
-        report += "-" * 50 + "\n"
-
-        for result in self.results:
-            status = "✓" if result["passed"] else "✗"
-            report += f"{status} {result['test_name']} ({result['duration']:.2f}s)\n"
-            if result["message"]:
-                report += f"   {result['message']}\n"
-
-        return report
-
-
-def create_test_agents(num_agents, diverse_prompts=False):
-    """Helper function to create test agents with diverse prompts.
-
-    Each agent is configured for the new dynamic GroupChat:
-    - ``tools_list_dictionary=[RESPOND_TOOL]`` so the agent emits a structured
-      ``respond(score, message)`` decision per inbound message.
-    - ``max_loops=1`` because GroupChat itself orchestrates iterations.
-    - ``persistent_memory=False`` so test runs do not pollute on-disk memory.
-    """
-    agents = []
-    specialties = [
-        (
-            "Finance",
-            "You are a financial expert focusing on investment strategies and market analysis. Be concise and data-driven in your responses.",
-        ),
-        (
-            "Tech",
-            "You are a technology expert specializing in AI and cybersecurity. Use technical terms and provide practical examples.",
-        ),
-        (
-            "Healthcare",
-            "You are a healthcare professional with expertise in public health. Focus on evidence-based information and patient care.",
-        ),
-        (
-            "Marketing",
-            "You are a marketing strategist focusing on digital trends. Be creative and audience-focused in your responses.",
-        ),
-        (
-            "Legal",
-            "You are a legal expert specializing in corporate law. Be precise and reference relevant regulations.",
-        ),
+        }
     ]
 
-    for i in range(num_agents):
-        specialty, base_prompt = specialties[i % len(specialties)]
-        if diverse_prompts:
-            traits = [
-                "Be analytical and data-focused",
-                "Use analogies and examples",
-                "Be concise and direct",
-                "Ask thought-provoking questions",
-                "Provide practical applications",
-            ]
-            prompt = f"{base_prompt} {traits[i % len(traits)]}"
+
+class ScriptedAgent:
+    """Stands in for ``Agent``: bids are canned, not model-driven.
+
+    Carries ``RESPOND_TOOL`` so ``auto_equip`` leaves it untouched, and
+    accepts the ``run(task=..., messages=...)`` contract the chat uses.
+    Once its scripted bids run out it bids ``(0.0, "")`` — a silent
+    agent — so every test ends on a natural lull instead of hanging.
+    """
+
+    def __init__(self, name, bids=(), as_string=False):
+        self.agent_name = name
+        self.tools_list_dictionary = [RESPOND_TOOL]
+        self._bids = list(bids)
+        self._as_string = as_string
+        self.calls = 0
+
+    def run(self, task=None, *args, **kwargs):
+        self.calls += 1
+        if self._bids:
+            score, message = self._bids.pop(0)
         else:
-            prompt = base_prompt
-
-        agents.append(
-            Agent(
-                agent_name=f"{specialty}-Agent-{i+1}",
-                system_prompt=prompt,
-                model_name="gpt-4",
-                max_loops=1,
-                temperature=0.7,
-                persistent_memory=False,
-                tools_list_dictionary=[RESPOND_TOOL],
-            )
-        )
-    return agents
+            score, message = 0.0, ""
+        output = respond_call(score, message)
+        return repr(output) if self._as_string else output
 
 
-def test_basic_groupchat(report):
-    """Test basic GroupChat initialization and a single conversation run."""
-    start_time = time.time()
+class BareAgent(ScriptedAgent):
+    """A scripted agent that does NOT yet carry the respond tool."""
 
-    try:
-        agents = create_test_agents(2)
-        chat = GroupChat(
-            name="Test Chat",
-            description="A test group chat",
-            agents=agents,
-            max_loops=2,
+    def __init__(self, name, bids=()):
+        super().__init__(name, bids)
+        self.tools_list_dictionary = []
+        self.llm = None
+
+    def llm_handling(self):
+        return self.llm
+
+
+def make_chat(agents, **kwargs):
+    kwargs.setdefault("max_loops", 10)
+    return GroupChat(agents=agents, **kwargs)
+
+
+def roles(chat):
+    return [
+        message["role"]
+        for message in chat.conversation.conversation_history
+    ]
+
+
+def contents(chat):
+    return [
+        message["content"]
+        for message in chat.conversation.conversation_history
+    ]
+
+
+# --------------------------------------------------------------------------
+# _extract_args — the bid-parsing path that silently ended chats when
+# it could not handle a provider's output shape
+# --------------------------------------------------------------------------
+
+
+class TestExtractArgs:
+    def test_parses_the_tool_call_list_form(self):
+        score, message = _extract_args(respond_call(0.8, "hello"))
+        assert score == pytest.approx(0.8)
+        assert message == "hello"
+
+    def test_parses_a_single_dict(self):
+        score, message = _extract_args(respond_call(0.6, "hi")[0])
+        assert score == pytest.approx(0.6)
+        assert message == "hi"
+
+    def test_parses_the_string_repr_form(self):
+        """An agent with the default output_type hands back the repr of
+        the tool-call list. Treating it as unparseable made every bid
+        (0.0, "") and ended the chat on turn one.
+        """
+        raw = repr(respond_call(0.84, "a real message"))
+        score, message = _extract_args(raw)
+        assert score == pytest.approx(0.84)
+        assert message == "a real message"
+
+    def test_arguments_already_a_dict(self):
+        call = {
+            "function": {
+                "name": "respond",
+                "arguments": {"score": 0.5, "message": "m"},
+            }
+        }
+        assert _extract_args([call]) == (0.5, "m")
+
+    @pytest.mark.parametrize(
+        "bad",
+        [
+            None,
+            [],
+            {},
+            "not a tool call",
+            "[unbalanced",
+            {"function": {}},
+            {"no_function": True},
+            [{"function": {"name": "respond", "arguments": "{bad"}}],
+        ],
+    )
+    def test_invalid_output_is_a_silent_decision(self, bad):
+        assert _extract_args(bad) == (0.0, "")
+
+    def test_score_is_clamped_into_range(self):
+        assert _extract_args(respond_call(1.7, "m"))[0] == 1.0
+        assert _extract_args(respond_call(-0.5, "m"))[0] == 0.0
+
+    def test_non_numeric_score_defaults_to_zero(self):
+        call = {
+            "function": {
+                "name": "respond",
+                "arguments": json.dumps(
+                    {"score": "loud", "message": "m"}
+                ),
+            }
+        }
+        assert _extract_args([call])[0] == 0.0
+
+    def test_message_is_stripped(self):
+        _, message = _extract_args(respond_call(0.5, "  padded  "))
+        assert message == "padded"
+
+
+# --------------------------------------------------------------------------
+# constructor validation
+# --------------------------------------------------------------------------
+
+
+class TestConstructorValidation:
+    def test_empty_agent_list_is_rejected(self):
+        with pytest.raises(ValueError, match="at least 2"):
+            GroupChat(agents=[])
+
+    def test_a_single_agent_is_rejected(self):
+        with pytest.raises(ValueError, match="at least 2"):
+            GroupChat(agents=[ScriptedAgent("Solo")])
+
+    def test_none_agents_raise_value_error_not_type_error(self):
+        """`agents` defaults to None; the documented contract is
+        ValueError, not a TypeError from len(None)."""
+        with pytest.raises(ValueError, match="at least 2"):
+            GroupChat(agents=None)
+
+    def test_deprecated_idle_timeout_is_still_accepted(self):
+        chat = make_chat(
+            [ScriptedAgent("A"), ScriptedAgent("B")],
             idle_timeout=4.0,
         )
+        assert chat.idle_timeout == 4.0
 
-        result = chat.run("Say hello!")
-        assert result is not None
-        report.add_result(
-            "Basic GroupChat Test",
-            True,
-            duration=time.time() - start_time,
+    def test_auto_equip_injects_the_respond_tool(self):
+        bare_a, bare_b = BareAgent("A"), BareAgent("B")
+        make_chat([bare_a, bare_b])
+
+        for agent in (bare_a, bare_b):
+            names = [
+                tool["function"]["name"]
+                for tool in agent.tools_list_dictionary
+            ]
+            assert "respond" in names
+
+    def test_auto_equip_false_leaves_agents_alone(self):
+        bare_a, bare_b = BareAgent("A"), BareAgent("B")
+        make_chat([bare_a, bare_b], auto_equip=False)
+
+        assert bare_a.tools_list_dictionary == []
+        assert bare_b.tools_list_dictionary == []
+
+    def test_agents_already_equipped_are_not_double_equipped(self):
+        agent_a = ScriptedAgent("A")
+        make_chat([agent_a, ScriptedAgent("B")])
+
+        assert agent_a.tools_list_dictionary == [RESPOND_TOOL]
+
+
+# --------------------------------------------------------------------------
+# scheduling — one speaker per turn, lull, cap, recency
+# --------------------------------------------------------------------------
+
+
+class TestScheduling:
+    def test_the_highest_bidder_takes_the_floor(self):
+        eager = ScriptedAgent("Eager", [(0.9, "eager speaks")])
+        shy = ScriptedAgent("Shy", [(0.6, "shy speaks")])
+
+        make_chat_ = make_chat([eager, shy])
+        make_chat_.run("topic")
+
+        assert roles(make_chat_)[:2] == ["User", "Eager"]
+        assert "eager speaks" in contents(make_chat_)
+        assert "shy speaks" not in contents(make_chat_)
+
+    def test_every_agent_is_asked_each_turn(self):
+        agents = [
+            ScriptedAgent("A", [(0.9, "a")]),
+            ScriptedAgent("B", [(0.6, "b")]),
+            ScriptedAgent("C", [(0.6, "c")]),
+        ]
+        make_chat(agents).run("topic")
+
+        # Turn 1: everyone bids. Turn 2: everyone bids again and the
+        # exhausted scripts fall silent, ending the chat on a lull.
+        assert all(agent.calls >= 1 for agent in agents)
+
+    def test_a_lull_ends_the_chat(self):
+        quiet = [
+            ScriptedAgent("A", [(0.2, "murmur")]),
+            ScriptedAgent("B", [(0.1, "whisper")]),
+        ]
+        chat = make_chat(quiet, threshold=0.5)
+        chat.run("anything to add?")
+
+        assert roles(chat) == ["User"]
+
+    def test_an_empty_message_never_posts(self):
+        chat = make_chat(
+            [
+                ScriptedAgent("A", [(0.99, "")]),
+                ScriptedAgent("B", [(0.98, "")]),
+            ]
         )
+        chat.run("topic")
 
-    except Exception as e:
-        report.add_result(
-            "Basic GroupChat Test",
-            False,
-            message=str(e),
-            duration=time.time() - start_time,
+        assert roles(chat) == ["User"]
+
+    def test_max_loops_caps_total_messages(self):
+        chatty = [
+            ScriptedAgent("A", [(0.9, f"a{i}") for i in range(9)]),
+            ScriptedAgent("B", [(0.6, f"b{i}") for i in range(9)]),
+        ]
+        chat = make_chat(chatty, max_loops=4, recency_penalty=0.0)
+        chat.run("go")
+
+        # The user task counts as the first message.
+        assert len(roles(chat)) == 4
+
+    def test_recency_penalty_passes_the_floor_around(self):
+        agent_a = ScriptedAgent(
+            "A", [(0.8, f"a{i}") for i in range(3)]
         )
-
-
-def test_varying_agent_counts(report):
-    """Test GroupChat with different numbers of agents.
-
-    GroupChat now requires at least 2 agents, so we test 2, 3, and 5.
-    """
-    agent_counts = [2, 3, 5]
-
-    for count in agent_counts:
-        start_time = time.time()
-        try:
-            agents = create_test_agents(count)
-            chat = GroupChat(
-                name=f"{count}-Agent Test",
-                agents=agents,
-                max_loops=2,
-                idle_timeout=4.0,
-            )
-
-            chat.run("Introduce yourselves briefly.")
-            report.add_result(
-                f"Agent Count Test - {count} agents",
-                True,
-                duration=time.time() - start_time,
-            )
-
-        except Exception as e:
-            report.add_result(
-                f"Agent Count Test - {count} agents",
-                False,
-                message=str(e),
-                duration=time.time() - start_time,
-            )
-
-
-def test_threshold_behavior(report):
-    """Test GroupChat with high and low publish thresholds.
-
-    A high ``threshold`` (0.9) makes agents very selective; a low threshold
-    (0.1) makes them eager to publish. Both must run without error.
-    """
-    for label, threshold in (("high", 0.9), ("low", 0.1)):
-        start_time = time.time()
-        try:
-            agents = create_test_agents(2)
-            chat = GroupChat(
-                name=f"Threshold-{label}",
-                agents=agents,
-                max_loops=2,
-                threshold=threshold,
-                idle_timeout=4.0,
-            )
-            chat.run("Briefly comment on the future of remote work.")
-            report.add_result(
-                f"Threshold Behavior - {label} ({threshold})",
-                True,
-                duration=time.time() - start_time,
-            )
-        except Exception as e:
-            report.add_result(
-                f"Threshold Behavior - {label} ({threshold})",
-                False,
-                message=str(e),
-                duration=time.time() - start_time,
-            )
-
-
-def test_idle_timeout(report):
-    """Test GroupChat early termination via a small ``idle_timeout``.
-
-    With a 1-second idle timeout, the chat should stop quickly once no new
-    messages are produced. We verify completion within a generous wall-clock
-    budget that still confirms early termination.
-    """
-    start_time = time.time()
-    try:
-        agents = create_test_agents(2)
-        chat = GroupChat(
-            name="Idle Timeout Test",
-            agents=agents,
-            max_loops=50,  # high cap so termination must come from idle
-            idle_timeout=1.0,
-            threshold=0.99,  # extremely selective → silence is likely
+        agent_b = ScriptedAgent(
+            "B", [(0.7, f"b{i}") for i in range(3)]
         )
-        chat.run("Hello there.")
-        elapsed = time.time() - start_time
-
-        # If idle_timeout works, total runtime should not blow past max_loops.
-        # We assert it finished in a reasonable window (well under 60s).
-        assert (
-            elapsed < 60
-        ), f"Idle timeout did not fire in time: {elapsed:.1f}s"
-
-        report.add_result(
-            "Idle Timeout Test",
-            True,
-            message=f"Completed in {elapsed:.2f}s",
-            duration=elapsed,
+        chat = make_chat(
+            [agent_a, agent_b],
+            max_loops=4,
+            threshold=0.5,
+            recency_penalty=0.3,
+            recency_window=1,
         )
-    except Exception as e:
-        report.add_result(
-            "Idle Timeout Test",
-            False,
-            message=str(e),
-            duration=time.time() - start_time,
+        chat.run("debate")
+
+        # A wins turn 1; penalized to 0.5 on turn 2 so B's 0.7 takes
+        # the floor; on turn 3 the penalty has moved to B and A wins.
+        assert roles(chat) == ["User", "A", "B", "A"]
+
+    def test_string_form_bids_still_speak(self):
+        """End to end over the repr path: the exact configuration that
+        used to leave every agent silent must post a message."""
+        eager = ScriptedAgent(
+            "Eager", [(0.9, "parsed from repr")], as_string=True
         )
+        shy = ScriptedAgent("Shy", as_string=True)
+
+        chat = make_chat([eager, shy])
+        chat.run("topic")
+
+        assert "parsed from repr" in contents(chat)
+
+    def test_a_failing_agent_is_treated_as_silent(self):
+        class ExplodingAgent(ScriptedAgent):
+            def run(self, task=None, *args, **kwargs):
+                raise RuntimeError("provider outage")
+
+        eager = ScriptedAgent("Eager", [(0.9, "still works")])
+        chat = make_chat([ExplodingAgent("Broken"), eager])
+        chat.run("topic")
+
+        assert "still works" in contents(chat)
 
 
-def test_error_cases(report):
-    """Test error handling for the new GroupChat constructor."""
-    test_cases = [
-        ("Empty Agents List", lambda: GroupChat(agents=[])),
-        (
-            "Single Agent",
-            lambda: GroupChat(agents=create_test_agents(1)),
-        ),
-        ("None Agents", lambda: GroupChat(agents=None)),
-    ]
+# --------------------------------------------------------------------------
+# run() surface — return value, batching, streaming
+# --------------------------------------------------------------------------
 
-    for name, test_func in test_cases:
-        start_time = time.time()
-        try:
-            test_func()
-            report.add_result(
-                f"Error Case - {name}",
-                False,
-                message="Expected ValueError not raised",
-                duration=time.time() - start_time,
-            )
-        except ValueError:
-            report.add_result(
-                f"Error Case - {name}",
-                True,
-                duration=time.time() - start_time,
-            )
-        except Exception as e:
-            report.add_result(
-                f"Error Case - {name}",
-                False,
-                message=f"Unexpected error: {type(e).__name__}: {e}",
-                duration=time.time() - start_time,
-            )
+
+class TestRunSurface:
+    def test_run_returns_formatted_history(self):
+        chat = make_chat(
+            [
+                ScriptedAgent(
+                    "A", [(0.9, "hello"), (0.8, "hello again")]
+                ),
+                ScriptedAgent("B"),
+            ],
+            recency_penalty=0.0,
+        )
+        result = chat.run("topic")
+
+        # Default output_type renders the history to a string. The
+        # second reply is asserted because the string formatter's
+        # "all except first" currently drops one more message than its
+        # dict twin (conversation.py slices [2:] vs [1:]); this holds
+        # under either slicing.
+        assert isinstance(result, str)
+        assert "hello again" in result
+        assert "hello" in contents(chat)
+
+    def test_run_batch_returns_one_result_per_task(self):
+        chat = make_chat([ScriptedAgent("A"), ScriptedAgent("B")])
+        results = chat.run_batch(["first", "second"])
+
+        assert len(results) == 2
+
+    def test_streaming_callback_replays_each_posted_message(self):
+        events = []
+
+        def on_chunk(sender, chunk, is_final):
+            events.append((sender, chunk, is_final))
+
+        chat = make_chat(
+            [
+                ScriptedAgent("A", [(0.9, "two words")]),
+                ScriptedAgent("B"),
+            ]
+        )
+        chat.run("hello there", streaming_callback=on_chunk)
+
+        senders = {sender for sender, _, _ in events}
+        assert senders == {"User", "A"}
+        # Every message ends with the is_final sentinel.
+        assert ("User", "", True) in events
+        assert ("A", "", True) in events
+        # The speaker's reply is chunked over time, not sent whole.
+        a_chunks = [
+            chunk
+            for sender, chunk, final in events
+            if sender == "A" and not final
+        ]
+        assert "".join(a_chunks) == "two words"
+        assert len(a_chunks) == 2
 
 
 if __name__ == "__main__":
-    report = TestReport()
-    report.start()
-
-    print("Starting GroupChat Test Suite...\n")
-
-    test_basic_groupchat(report)
-    test_varying_agent_counts(report)
-    test_threshold_behavior(report)
-    test_idle_timeout(report)
-    test_error_cases(report)
-
-    report.end()
-    print(report.generate_report())
+    pytest.main([__file__, "-q"])
