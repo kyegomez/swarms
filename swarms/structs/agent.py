@@ -897,7 +897,6 @@ class Agent:
         2. Initializes tools_list_dictionary if None
         3. Tracks existing tool names to prevent duplicates
         4. Adds new tools that don't already exist
-        5. Adds tools to conversation memory for LLM context
 
         **Tool Schema Format:**
         Tools are converted to OpenAI function calling format:
@@ -923,16 +922,16 @@ class Agent:
             None: Uses self.tools and self.tools_list_dictionary from instance.
 
         Returns:
-            None: Modifies self.tools_list_dictionary and self.short_memory.
+            None: Modifies self.tools_list_dictionary.
 
         Note:
             - This method is called automatically during agent initialization if tools are provided
-            - Tools are added to conversation memory so the LLM knows what tools are available
+            - Schemas reach the model through the API's `tools` parameter, not the conversation
             - The method preserves existing tools in tools_list_dictionary (e.g., handoff tools)
             - Tool names are case-sensitive for duplicate detection
 
         Raises:
-            Exception: If tool conversion fails or tools cannot be added to memory.
+            Exception: If tool conversion fails.
 
         Examples:
             >>> def my_tool(query: str) -> str:
@@ -966,11 +965,6 @@ class Agent:
             if tool_name not in existing_tool_names:
                 self.tools_list_dictionary.append(tool)
                 existing_tool_names.add(tool_name)
-
-        self.short_memory.add(
-            role=self.agent_name,
-            content=self.tools_list_dictionary,
-        )
 
     def short_memory_init(self):
         # Compactly assemble initial prompt as a string with available fields
