@@ -512,6 +512,27 @@ def test_selected_agents_run_concurrently():
     ), f"three 0.35s agents took {elapsed:.2f}s, so they ran in series"
 
 
+def test_every_selected_agent_answer_reaches_the_conversation():
+    """Only agent_responses[0] was recorded; the rest ran, billed, and were dropped."""
+    router, ran = _local_router(agents=["A1", "A2", "A3"])
+
+    router.handle_multiple_handoffs(
+        {
+            "handoffs": [
+                {"agent_name": n, "task": "t"}
+                for n in ("A1", "A2", "A3")
+            ]
+        },
+        "x",
+    )
+
+    assert len(ran) == 3
+    assert [
+        (m["role"], m["content"])
+        for m in router.conversation.conversation_history
+    ] == [("A1", "A1-out"), ("A2", "A2-out"), ("A3", "A3-out")]
+
+
 def test_an_unknown_agent_raises_before_any_agent_runs():
     router, ran = _local_router()
 

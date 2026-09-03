@@ -292,14 +292,14 @@ class MultiAgentRouter:
         self, boss_response_str: dict, task: str
     ) -> None:
         """
-        Execute every agent selected by the boss and record the first response.
+        Execute every agent selected by the boss and record every response.
 
         Validates that every ``agent_name`` referenced in ``boss_response_str``
         exists before running anything. Each agent is run with its boss-supplied
         task (or the original ``task`` when the boss did not rewrite it). When
         ``skip_null_tasks`` is True, agents whose resolved task is empty or
-        ``None`` are skipped. After execution, the first selected agent's
-        response is appended to ``self.conversation``.
+        ``None`` are skipped. After execution, each selected agent's response
+        is appended to ``self.conversation``.
 
         Args:
             boss_response_str (dict): Parsed boss decision containing a
@@ -366,12 +366,13 @@ class MultiAgentRouter:
                     )
                 )
 
-            self.conversation.add(
-                role=selected_agents[0].agent_name,
-                content=agent_responses[0],
-            )
-
-        # return agent_responses
+            # executor.map preserves input order, so the zip stays aligned.
+            for agent, response in zip(
+                selected_agents, agent_responses
+            ):
+                self.conversation.add(
+                    role=agent.agent_name, content=response
+                )
 
     def route_task(self, task: str) -> dict:
         """
