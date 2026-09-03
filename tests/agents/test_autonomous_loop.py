@@ -10,7 +10,7 @@ to a provider — ``Agent.call_llm`` — is monkeypatched per-test with a script
 sequence of canned responses, so the loop's real control flow, real tool
 dispatch, and real state transitions are exercised end to end.
 
-Covers three fixed defects:
+Covers four fixed defects:
 
 * #1963 — tool errors were logged and discarded, so the model never learned a
   call had failed and re-emitted it until the iteration budget was gone.
@@ -18,6 +18,9 @@ Covers three fixed defects:
   every call the model batched after it, while still marking the subtask done.
 * #1966 — a *failed* dependency satisfied its dependents, and an unknown
   ``step_id`` defaulted to satisfied.
+* #1962 — ``ContextCompressor.maybe_compress`` was never called on the
+  ``max_loops="auto"`` path, so history grew unbounded in exactly the mode
+  that needs compression most.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -950,6 +953,159 @@ class TestHandoffPromptIsNotReappended:
         self._run_setup_only(agent, monkeypatch)
 
         assert agent.system_prompt == before
+
+
+# --------------------------------------------------------------------------
+# #1962 — context compression in the auto loop
+# --------------------------------------------------------------------------
+
+
+class TestContextCompression:
+    """#1962 — ``maybe_compress`` was never called on the auto path.
+
+    The compressor measures and compacts ``short_memory``, but the body
+    sent to the model is the loop's ``Transcript`` — so the fix both
+    triggers the compressor between subtask iterations and rebuilds the
+    transcript from the summary it returns. Compressing only the mirror
+    would leave the request payload growing unbounded.
+    """
+
+    class _StubCompressor:
+        """Always compresses, returning a fixed summary."""
+
+        def __init__(self, summary):
+            self.summary = summary
+            self.calls = 0
+
+        def maybe_compress(self, agent):
+            self.calls += 1
+            return self.summary
+
+    def test_no_compressor_is_a_no_op(self):
+        agent = build_agent()  # context_compression=False
+        loop = AutonomousAgentLoop(agent)
+        loop._say_user("seed")
+
+        assert loop._maybe_compress_context() is False
+        assert len(loop._transcript) == 1
+
+    def test_below_threshold_leaves_the_transcript_alone(self):
+        agent = build_agent(
+            context_compression=True, context_length=1_000_000
+        )
+        loop = AutonomousAgentLoop(agent)
+        loop._say_user("seed")
+
+        assert loop._maybe_compress_context() is False
+        assert len(loop._transcript) == 1
+
+    def test_compression_rebuilds_the_transcript(self):
+        agent = build_agent()
+        stub = self._StubCompressor("CANNED SUMMARY")
+        agent._context_compressor = stub
+        loop = AutonomousAgentLoop(agent)
+        for i in range(6):
+            loop._say_user(f"turn {i}")
+        memory_before = history(agent)
+
+        assert loop._maybe_compress_context() is True
+        assert stub.calls == 1
+
+        # The request body is now a single user turn holding the
+        # summary, not the six accumulated turns.
+        assert len(loop._transcript) == 1
+        seeded = loop._transcript[0]
+        assert seeded["role"] == "user"
+        assert "[Compressed Memory Summary]" in seeded["content"]
+        assert "CANNED SUMMARY" in seeded["content"]
+
+        # The compressor owns the short_memory compaction; the
+        # transcript re-seed must not mirror the summary there a
+        # second time.
+        assert history(agent) == memory_before
+
+    def test_compression_fires_during_a_run(self, monkeypatch):
+        """End to end: a run over a tiny context budget compresses
+        between subtask iterations, and the next request body is the
+        summary plus the re-issued subtask prompt — not the
+        accumulated planning transcript.
+        """
+        agent = build_agent(
+            context_compression=True, context_length=120
+        )
+        monkeypatch.setattr(
+            agent._context_compressor,
+            "_summarize",
+            lambda agent, history: "CANNED SUMMARY",
+        )
+
+        bodies = []
+        queue = [
+            plan(("step1", [])),
+            [
+                tool_call(
+                    "subtask_done",
+                    task_id="step1",
+                    summary="done",
+                    success=True,
+                )
+            ],
+            [
+                tool_call(
+                    "complete_task",
+                    task_id="main",
+                    summary="all done",
+                    success=True,
+                )
+            ],
+        ]
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            bodies.append(list(kwargs.get("messages") or []))
+            if queue:
+                return queue.pop(0)
+            return "no further action"
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        agent.run("test task")
+
+        # bodies[0] is the planning request; bodies[1] is the first
+        # subtask iteration, which crossed the 90% threshold and was
+        # compressed down to [summary, execution prompt].
+        assert len(bodies) >= 2
+        first_exec = bodies[1]
+        assert len(first_exec) == 2
+        assert (
+            "[Compressed Memory Summary]" in first_exec[0]["content"]
+        )
+        assert "CANNED SUMMARY" in first_exec[0]["content"]
+        assert "step1" in first_exec[1]["content"]
+
+    def test_compression_failure_does_not_break_the_loop(
+        self, monkeypatch
+    ):
+        """maybe_compress swallows summarizer errors and returns None;
+        the loop must treat that as "no compression" and carry on.
+        """
+        agent = build_agent(
+            context_compression=True, context_length=10
+        )
+
+        def boom(agent, history):
+            raise RuntimeError("summarizer unavailable")
+
+        monkeypatch.setattr(
+            agent._context_compressor, "_summarize", boom
+        )
+
+        loop = AutonomousAgentLoop(agent)
+        loop._say_user(
+            "a turn long enough to cross a 10-token budget"
+        )
+
+        assert loop._maybe_compress_context() is False
+        assert len(loop._transcript) == 1
 
 
 if __name__ == "__main__":

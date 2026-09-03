@@ -248,7 +248,9 @@ class GroupChat(SerializableMixin):
 
         self.conversation = Conversation(time_enabled=False)
 
-        if len(self.agents) < 2:
+        # `agents` defaults to None, so guard before len(): the documented
+        # contract is ValueError, not a TypeError from len(None).
+        if self.agents is None or len(self.agents) < 2:
             raise ValueError("GroupChat requires at least 2 agents.")
 
         if self.auto_equip:
