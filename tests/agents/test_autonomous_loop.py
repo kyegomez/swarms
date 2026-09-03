@@ -28,12 +28,23 @@ Run:
 """
 
 import json
+import os
+from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.structs.autonomous_loop_utils import MAX_SUBTASK_LOOPS
+from swarms.structs.autonomous_loop_utils import (
+    MAX_SUBTASK_LOOPS,
+    create_file_tool,
+    delete_file_tool,
+    grep_tool,
+    list_directory_tool,
+    read_file_tool,
+    update_file_tool,
+)
 
 
 # --------------------------------------------------------------------------
@@ -228,10 +239,13 @@ class TestBatchedToolCalls:
     """Every tool call in a response runs, whatever its position."""
 
     def test_call_after_subtask_done_still_executes(
-        self, monkeypatch, tmp_path
+        self, monkeypatch
     ):
         agent = build_agent()
-        target = tmp_path / "written.txt"
+        # Inside the agent's workspace: the file tools refuse paths outside it.
+        target = (
+            Path(agent._get_agent_workspace_dir()) / "written.txt"
+        )
 
         script_llm(
             agent,
@@ -273,10 +287,11 @@ class TestBatchedToolCalls:
         assert status_of(agent, "step1") == "completed"
 
     def test_call_after_complete_task_still_executes(
-        self, monkeypatch, tmp_path
+        self, monkeypatch
     ):
         agent = build_agent()
-        target = tmp_path / "late.txt"
+        # Inside the agent's workspace: the file tools refuse paths outside it.
+        target = Path(agent._get_agent_workspace_dir()) / "late.txt"
 
         script_llm(
             agent,
@@ -365,10 +380,14 @@ class TestToolErrorFeedback:
         assert "RuntimeError" in text
 
     def test_malformed_arguments_do_not_abort_the_iteration(
-        self, monkeypatch, tmp_path
+        self, monkeypatch
     ):
         agent = build_agent()
-        target = tmp_path / "after_bad_json.txt"
+        # Inside the agent's workspace: the file tools refuse paths outside it.
+        target = (
+            Path(agent._get_agent_workspace_dir())
+            / "after_bad_json.txt"
+        )
 
         bad = {
             "type": "function",
@@ -1106,6 +1125,78 @@ class TestContextCompression:
 
         assert loop._maybe_compress_context() is False
         assert len(loop._transcript) == 1
+
+
+class TestFileToolsStayInTheWorkspace:
+    """The model picks file_path itself, so any prompt injection reaching the
+    loop otherwise becomes arbitrary local file read, overwrite or deletion
+    under the host process's privileges.
+    """
+
+    @pytest.fixture
+    def workspace(self, tmp_path):
+        """A workspace with a secret sitting just outside it."""
+        ws = tmp_path / "agent_workspace" / "agents" / "worker-1"
+        ws.mkdir(parents=True)
+        (ws / "inside.txt").write_text("INSIDE-OK\n")
+        (tmp_path / "outside_secret.txt").write_text(
+            "SECRET-OUTSIDE\n"
+        )
+
+        agent = MagicMock()
+        agent._get_agent_workspace_dir.return_value = str(ws)
+        return agent, ws, tmp_path / "outside_secret.txt"
+
+    def test_every_file_tool_refuses_to_escape(self, workspace):
+        agent, ws, secret = workspace
+        relative_escape = os.path.relpath(secret, ws)
+
+        for label, call in (
+            (
+                "read_file relative",
+                lambda: read_file_tool(agent, relative_escape),
+            ),
+            (
+                "read_file absolute",
+                lambda: read_file_tool(agent, str(secret)),
+            ),
+            (
+                "grep",
+                lambda: grep_tool(agent, "SECRET", relative_escape),
+            ),
+            (
+                "list_directory",
+                lambda: list_directory_tool(
+                    agent, str(secret.parent)
+                ),
+            ),
+            (
+                "delete_file",
+                lambda: delete_file_tool(agent, str(secret)),
+            ),
+        ):
+            result = str(call())
+            assert (
+                "outside the agent workspace" in result
+            ), f"{label} did not refuse the escape: {result[:120]}"
+            assert "SECRET-OUTSIDE" not in result
+
+        create_file_tool(agent, relative_escape, "overwritten")
+        update_file_tool(agent, str(secret), "overwritten")
+        assert secret.read_text() == "SECRET-OUTSIDE\n"
+
+    def test_legitimate_workspace_access_still_works(self, workspace):
+        agent, ws, _ = workspace
+
+        assert "INSIDE-OK" in str(read_file_tool(agent, "inside.txt"))
+        assert "INSIDE-OK" in str(
+            read_file_tool(agent, str(ws / "inside.txt"))
+        )
+        assert "inside.txt" in str(list_directory_tool(agent, ""))
+        assert "Error" not in str(
+            create_file_tool(agent, "new.txt", "x")
+        )
+        assert (ws / "new.txt").exists()
 
 
 if __name__ == "__main__":
