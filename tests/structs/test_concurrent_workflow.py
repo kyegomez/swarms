@@ -490,5 +490,57 @@ def test_concurrent_workflow_autosave_saves_conversation_after_run(
     get_workspace_dir.cache_clear()
 
 
+class _EchoAgent:
+    """Minimal stand-in for Agent: names itself and echoes the task it was given."""
+
+    def __init__(self, agent_name: str):
+        self.agent_name = agent_name
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        return f"{self.agent_name} answered: {task}"
+
+
+def test_concurrent_workflow_batch_run_scopes_each_task():
+    """batch_run must not carry an earlier task's messages into a later result (#2041)."""
+    workflow = ConcurrentWorkflow(
+        name="Batch-Scope-Workflow",
+        agents=[_EchoAgent("Alpha"), _EchoAgent("Beta")],
+        output_type="dict",
+    )
+
+    results = workflow.batch_run(
+        ["summarise the first filing", "summarise the second filing"]
+    )
+
+    assert len(results) == 2
+    for result, task in zip(
+        results,
+        ["summarise the first filing", "summarise the second filing"],
+    ):
+        assert len(result) == 3
+        assert result[0] == {"role": "User", "content": task}
+        assert {m["role"] for m in result[1:]} == {"Alpha", "Beta"}
+
+    assert all(
+        "first filing" not in message["content"]
+        for message in results[1]
+    )
+
+
+def test_concurrent_workflow_batch_run_leaves_the_instance_conversation_alone():
+    """The per-task scopes are temporary: batch_run restores the workflow's own conversation (#2041)."""
+    workflow = ConcurrentWorkflow(
+        name="Batch-Restore-Workflow",
+        agents=[_EchoAgent("Alpha"), _EchoAgent("Beta")],
+        output_type="dict",
+    )
+    conversation = workflow.conversation
+
+    workflow.batch_run(["one", "two"])
+
+    assert workflow.conversation is conversation
+    assert conversation.conversation_history == []
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
