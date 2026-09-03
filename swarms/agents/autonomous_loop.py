@@ -75,6 +75,14 @@ def _format_tool_error(function_name: str, error: Exception) -> str:
 
 
 # Enough for a typical plan without pulling in the whole catalog.
+# Ranking for the plan schema's priority enum; lower sorts first.
+SUBTASK_PRIORITY_ORDER = {
+    "critical": 0,
+    "high": 1,
+    "medium": 2,
+    "low": 3,
+}
+
 PREWARM_TOOL_LIMIT = 8
 
 # Pre-warm matches must score at least this fraction of the best match.
@@ -1743,7 +1751,7 @@ class AutonomousAgentLoop:
         self,
     ) -> Optional[Dict[str, Any]]:
         """
-        Get the next executable subtask based on dependencies and status.
+        Get the next executable subtask by dependencies, then priority.
 
         Returns:
             Dictionary of the next subtask or None if all are done
@@ -1752,13 +1760,15 @@ class AutonomousAgentLoop:
             return None
 
         # Find subtasks that are pending and have all dependencies completed
+        eligible = []
         for subtask in self.agent.autonomous_subtasks:
             if subtask["status"] != "pending":
                 continue
 
             dependencies = subtask.get("dependencies", [])
             if not dependencies:
-                return subtask
+                eligible.append(subtask)
+                continue
 
             statuses = [
                 self.agent.subtask_status.get(dep)
@@ -1767,7 +1777,8 @@ class AutonomousAgentLoop:
 
             # Only completed unblocks; failed and unknown do not.
             if all(status == "completed" for status in statuses):
-                return subtask
+                eligible.append(subtask)
+                continue
 
             # Unreachable: skip so the run can terminate.
             blockers = [
@@ -1778,7 +1789,19 @@ class AutonomousAgentLoop:
             if blockers:
                 self._skip_subtask(subtask, blockers)
 
-        return None
+        if not eligible:
+            return None
+
+        # min() is stable, so creation order remains the tiebreaker.
+        return min(eligible, key=self._priority_rank)
+
+    @staticmethod
+    def _priority_rank(subtask: Dict[str, Any]) -> int:
+        """Rank a subtask's priority, defaulting unknown values to medium."""
+        priority = str(subtask.get("priority") or "medium").lower()
+        return SUBTASK_PRIORITY_ORDER.get(
+            priority, SUBTASK_PRIORITY_ORDER["medium"]
+        )
 
     def _skip_subtask(
         self, subtask: Dict[str, Any], blockers: List[str]
