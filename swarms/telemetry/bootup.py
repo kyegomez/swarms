@@ -10,9 +10,7 @@ def _prepare_workspace() -> None:
     Resolve ``WORKSPACE_DIR`` and make sure that directory exists.
 
     Defers to :func:`ensure_workspace_env` rather than defaulting the variable
-    here as well, so bootup and ``WorkspaceManager`` cannot drift apart — and
-    so ``get_workspace_dir``'s ``lru_cache`` is invalidated when a default has
-    to be invented.
+    here as well, so bootup and ``WorkspaceManager`` cannot drift apart.
 
     A caller-supplied path that cannot be created falls back to the default
     instead of raising: an unusable workspace should not stop ``import
@@ -20,7 +18,6 @@ def _prepare_workspace() -> None:
     """
     # Imported here, not at module scope, which would run initialize_logger before WORKSPACE_DIR settles.
     from swarms.utils.workspace_manager import ensure_workspace_env
-    from swarms.utils.workspace_utils import get_workspace_dir
 
     fallback = Path.cwd() / "agent_workspace"
     workspace = ensure_workspace_env() or str(fallback)
@@ -37,7 +34,6 @@ def _prepare_workspace() -> None:
         )
 
     os.environ["WORKSPACE_DIR"] = str(fallback)
-    get_workspace_dir.cache_clear()
     try:
         fallback.mkdir(parents=True, exist_ok=True)
     except OSError as e:

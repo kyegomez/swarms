@@ -3,7 +3,6 @@ import pytest
 
 from swarms import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
-from swarms.utils.workspace_utils import get_workspace_dir
 
 
 def test_concurrent_workflow_basic_execution():
@@ -406,7 +405,6 @@ def test_concurrent_workflow_autosave_creates_workspace_dir(
     monkeypatch, tmp_path
 ):
     """Test that ConcurrentWorkflow with autosave=True creates a workspace directory."""
-    get_workspace_dir.cache_clear()
     monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
 
     agent1 = Agent(
@@ -442,14 +440,11 @@ def test_concurrent_workflow_autosave_creates_workspace_dir(
         "Autosave-Concurrent-Workflow" in workflow.swarm_workspace_dir
     )
 
-    get_workspace_dir.cache_clear()
-
 
 def test_concurrent_workflow_autosave_saves_conversation_after_run(
     monkeypatch, tmp_path
 ):
     """Test that ConcurrentWorkflow saves conversation_history.json after run when autosave=True."""
-    get_workspace_dir.cache_clear()
     monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
 
     agent1 = Agent(
@@ -486,8 +481,6 @@ def test_concurrent_workflow_autosave_saves_conversation_after_run(
     assert os.path.isfile(
         conversation_path
     ), f"Expected conversation_history.json at {conversation_path}"
-
-    get_workspace_dir.cache_clear()
 
 
 if __name__ == "__main__":
