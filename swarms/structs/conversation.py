@@ -1364,7 +1364,7 @@ class Conversation:
         return "\n".join(
             [
                 f"{msg['content']}"
-                for msg in self.conversation_history[2:]
+                for msg in self.conversation_history[1:]
             ]
         )
 
