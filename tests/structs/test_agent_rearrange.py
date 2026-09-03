@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from swarms import Agent, AgentRearrange
+from swarms.telemetry.otel import ContextThreadPoolExecutor
 
 
 def create_sample_agents():
@@ -1020,29 +1021,25 @@ class TestBatchRunConcurrency:
         ), "Expected at least two batch_run tasks to overlap in execution"
 
     def test_threadpoolexecutor_is_used(self):
-        """Patch ThreadPoolExecutor to confirm it is invoked for each batch."""
+        """Patch the executor to confirm it is invoked for each batch."""
         pipeline = _make_pipeline("AgentA", "AgentB")
         tasks = ["t1", "t2", "t3"]
 
         with patch(
-            "swarms.structs.agent_rearrange.ThreadPoolExecutor",
-            wraps=__import__(
-                "concurrent.futures", fromlist=["ThreadPoolExecutor"]
-            ).ThreadPoolExecutor,
+            "swarms.structs.agent_rearrange.ContextThreadPoolExecutor",
+            wraps=ContextThreadPoolExecutor,
         ) as mock_tpe:
             pipeline.batch_run(tasks=tasks, batch_size=10)
             assert mock_tpe.call_count == 1
 
     def test_multiple_batches_uses_executor_per_batch(self):
-        """One ThreadPoolExecutor context-manager per batch."""
+        """One executor context-manager per batch."""
         pipeline = _make_pipeline("AgentA", "AgentB")
         tasks = [f"t{i}" for i in range(6)]
 
         with patch(
-            "swarms.structs.agent_rearrange.ThreadPoolExecutor",
-            wraps=__import__(
-                "concurrent.futures", fromlist=["ThreadPoolExecutor"]
-            ).ThreadPoolExecutor,
+            "swarms.structs.agent_rearrange.ContextThreadPoolExecutor",
+            wraps=ContextThreadPoolExecutor,
         ) as mock_tpe:
             pipeline.batch_run(tasks=tasks, batch_size=2)
             # 6 tasks / batch_size=2 -> 3 batches -> 3 executor instances
@@ -1206,13 +1203,11 @@ class TestBatchSizeBoundaries:
         assert len(results) == len(tasks)
 
     def test_batch_size_one_still_uses_executor(self):
-        """Even batch_size=1 should go through ThreadPoolExecutor."""
+        """Even batch_size=1 should go through the executor."""
         pipeline = _make_pipeline("AgentA", "AgentB")
         with patch(
-            "swarms.structs.agent_rearrange.ThreadPoolExecutor",
-            wraps=__import__(
-                "concurrent.futures", fromlist=["ThreadPoolExecutor"]
-            ).ThreadPoolExecutor,
+            "swarms.structs.agent_rearrange.ContextThreadPoolExecutor",
+            wraps=ContextThreadPoolExecutor,
         ) as mock_tpe:
             pipeline.batch_run(tasks=["only"], batch_size=1)
             assert mock_tpe.call_count == 1
