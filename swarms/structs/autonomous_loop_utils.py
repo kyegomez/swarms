@@ -1244,14 +1244,6 @@ def create_sub_agent_tool(
             # strictly less capable than the parent asking the question itself.
             parent_tools = list(getattr(agent, "tools", None) or [])
 
-            # Omitted rather than passed as [], which is not the same thing:
-            # exists([]) is true, so an empty list sends every response
-            # through tool execution. Agent.tools is annotated List[Callable],
-            # so None is not passable either.
-            tool_kwargs = (
-                {"tools": parent_tools} if parent_tools else {}
-            )
-
             # Create sub-agent with the same LLM and tools as parent
             sub_agent = Agent(
                 id=agent_id,
@@ -1259,12 +1251,12 @@ def create_sub_agent_tool(
                 agent_description=agent_description,
                 system_prompt=system_prompt,  # Use custom system prompt if provided
                 model_name=agent.model_name,
+                tools=parent_tools,
                 # Tools need a call-then-read turn. Finite whatever the parent
                 # is, so a max_loops="auto" parent cannot recurse into sub-agents.
                 max_loops=5 if parent_tools else 1,
                 print_on=getattr(agent, "print_on", False),
                 verbose=agent.verbose,
-                **tool_kwargs,
             )
 
             # Cache the sub-agent
