@@ -33,7 +33,11 @@ import pytest
 
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.structs.autonomous_loop_utils import MAX_SUBTASK_LOOPS
+from swarms.structs.autonomous_loop_utils import (
+    MAX_SUBTASK_LOOPS,
+    MAX_TOOL_OUTPUT_CHARS,
+    read_file_tool,
+)
 
 
 # --------------------------------------------------------------------------
@@ -222,6 +226,20 @@ class TestDependencyResolution:
 # --------------------------------------------------------------------------
 # #1964 — tool calls batched after subtask_done
 # --------------------------------------------------------------------------
+
+
+class TestToolOutputIsCapped:
+    """One oversized read is re-sent on every later call of the run."""
+
+    def test_read_file_truncates_a_large_file(self, tmp_path):
+        agent = build_agent()
+        big = tmp_path / "big.txt"
+        big.write_text("x" * (MAX_TOOL_OUTPUT_CHARS + 5000))
+
+        output = read_file_tool(agent, str(big))
+
+        assert len(output) < MAX_TOOL_OUTPUT_CHARS + 200
+        assert "output truncated" in output
 
 
 class TestBatchedToolCalls:

@@ -45,6 +45,21 @@ MAX_SUBTASK_ITERATIONS = 100
 MAX_SUBTASK_LOOPS = 20
 MAX_CONSECUTIVE_THINKS = 2
 
+# The loop re-serializes its history into every later prompt, so one oversized
+# tool result is paid for on every remaining call of the run.
+MAX_TOOL_OUTPUT_CHARS = 65536
+
+
+def truncate_tool_output(text: str) -> str:
+    """Cap a tool result, telling the model how much it is not seeing."""
+    if len(text) <= MAX_TOOL_OUTPUT_CHARS:
+        return text
+    return (
+        text[:MAX_TOOL_OUTPUT_CHARS]
+        + "\n... (output truncated: showing the first "
+        + f"{MAX_TOOL_OUTPUT_CHARS} of {len(text)} characters)"
+    )
+
 
 # Prompts.
 
@@ -784,12 +799,13 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
 
         # Read file
         with open(full_path, "r", encoding="utf-8") as f:
-            content = f.read()
+            raw = f.read()
+        content = truncate_tool_output(raw)
 
         # Add to memory
         agent.short_memory.add(
             role="File Operations",
-            content=f"Read file: {full_path} ({len(content)} characters)",
+            content=f"Read file: {full_path} ({len(raw)} characters)",
         )
 
         if agent.verbose:
@@ -1080,7 +1096,7 @@ def run_bash_tool(
         if agent.verbose:
             logger.info(f"Executed bash command: {command[:80]}...")
 
-        return result_msg.strip()
+        return truncate_tool_output(result_msg.strip())
     except subprocess.TimeoutExpired:
         error_msg = f"Error: Command timed out after {timeout_seconds} seconds"
         logger.error(error_msg)
@@ -1097,9 +1113,6 @@ def run_bash_tool(
             content=f"Error: {error_msg}",
         )
         return error_msg
-
-
-_GREP_MAX_BYTES = 65536  # cap output at 64 KB
 
 
 def grep_tool(
@@ -1174,10 +1187,7 @@ def grep_tool(
         stderr = result.stderr or ""
 
         # Truncate oversized output
-        if len(stdout) > _GREP_MAX_BYTES:
-            stdout = (
-                stdout[:_GREP_MAX_BYTES] + "\n... (output truncated)"
-            )
+        stdout = truncate_tool_output(stdout)
 
         if result.returncode == 0:
             output = stdout.strip() or "(no matches)"
