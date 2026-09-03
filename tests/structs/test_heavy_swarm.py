@@ -470,6 +470,58 @@ class TestGrokHeavyPrompts:
 # ============================================================================
 
 
+class TestQuestionDecomposerSeesTheImage:
+    """#1903: the decomposer writes the questions every worker answers, but it
+    took only `task`, so a visual run decomposed the sentence and guessed at
+    the image.
+    """
+
+    def _capture(self, monkeypatch):
+        seen = {}
+
+        class FakeLiteLLM:
+            def __init__(self, **kwargs):
+                seen["prompt"] = kwargs.get("system_prompt", "")
+
+            def run(self, task, *args, **kwargs):
+                seen["task"] = task
+                seen["img"] = kwargs.get("img")
+                return ""
+
+        monkeypatch.setattr(
+            "swarms.structs.heavy_swarm.LiteLLM", FakeLiteLLM
+        )
+        return seen
+
+    def test_img_reaches_the_question_agent(self, monkeypatch):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+
+        swarm.execute_question_generation(
+            "What does this chart imply?", img="revenue.png"
+        )
+
+        assert seen["img"] == "revenue.png"
+        assert "An image accompanies this task" in seen["prompt"]
+
+    def test_text_only_runs_are_unchanged(self, monkeypatch):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+
+        swarm.execute_question_generation("A text-only task")
+
+        assert seen["img"] is None
+        assert "An image accompanies this task" not in seen["prompt"]
+
+
 class TestSwarmRouterGrokIntegration:
     """Verify SwarmRouter passes through grok flag."""
 
