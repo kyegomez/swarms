@@ -52,10 +52,8 @@ from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
-    AgentError,
     AgentInitializationError,
     AgentLLMError,
-    AgentLLMInitializationError,
     AgentRunError,
     AgentToolExecutionError,
 )
