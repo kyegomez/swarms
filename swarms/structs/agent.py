@@ -40,7 +40,9 @@ from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.agents.llm_manager import LLMManager
 from swarms.agents.skills_manager import SkillsManager
-from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
+from swarms.prompts.agent_system_prompts import (
+    build_agent_system_prompt,
+)
 from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
@@ -313,7 +315,7 @@ class Agent:
         agent_description: Optional[
             str
         ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
-        system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
+        system_prompt: Optional[str] = None,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -429,6 +431,8 @@ class Agent:
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
+        if system_prompt is None:
+            system_prompt = build_agent_system_prompt()
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
