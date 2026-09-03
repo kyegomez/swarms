@@ -611,7 +611,9 @@ def test_agent_error_raises():
         raise TypeError("unexpected error in agent")
 
     next(
-        agent for agent in r.agents if agent.agent_name == "WriterAgent"
+        agent
+        for agent in r.agents
+        if agent.agent_name == "WriterAgent"
     ).run = bad_run
 
     with pytest.raises(TypeError, match="unexpected error in agent"):
