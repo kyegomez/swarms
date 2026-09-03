@@ -210,8 +210,12 @@ def test_add_agents():
     ]
 
     agent_rearrange.add_agents(new_agents)
-    assert "Agent4" in agent_rearrange.agents
-    assert "Agent5" in agent_rearrange.agents
+    assert "Agent4" in [
+        agent.agent_name for agent in agent_rearrange.agents
+    ]
+    assert "Agent5" in [
+        agent.agent_name for agent in agent_rearrange.agents
+    ]
     assert len(agent_rearrange.agents) == 3
 
 
@@ -570,7 +574,7 @@ def test_missing_agent_raises():
     """run() must raise when flow references a removed agent."""
     agents = create_sample_agents()
     r = _make_rearrange(agents, "ResearchAgent -> WriterAgent")
-    del r.agents["WriterAgent"]
+    r.remove_agent("WriterAgent")
 
     with pytest.raises(ValueError, match="not registered"):
         r.run("test")
@@ -606,7 +610,9 @@ def test_agent_error_raises():
     def bad_run(*args, **kwargs):
         raise TypeError("unexpected error in agent")
 
-    r.agents["WriterAgent"].run = bad_run
+    next(
+        agent for agent in r.agents if agent.agent_name == "WriterAgent"
+    ).run = bad_run
 
     with pytest.raises(TypeError, match="unexpected error in agent"):
         r.run("test")
@@ -616,7 +622,7 @@ def test_callable_propagates():
     """__call__ must raise, not return the exception object."""
     agents = create_sample_agents()
     r = _make_rearrange(agents, "ResearchAgent -> WriterAgent")
-    del r.agents["WriterAgent"]
+    r.remove_agent("WriterAgent")
 
     with pytest.raises(ValueError, match="not registered"):
         r("test")
@@ -626,7 +632,7 @@ def test_batch_run_propagates():
     """batch_run must raise, not return None."""
     agents = create_sample_agents()
     r = _make_rearrange(agents, "ResearchAgent -> WriterAgent")
-    del r.agents["WriterAgent"]
+    r.remove_agent("WriterAgent")
 
     with pytest.raises(ValueError, match="not registered"):
         r.batch_run(["test1", "test2"])
@@ -636,7 +642,7 @@ def test_error_logged_once():
     """_catch_error should fire exactly once per failure."""
     agents = create_sample_agents()
     r = _make_rearrange(agents, "ResearchAgent -> WriterAgent")
-    del r.agents["WriterAgent"]
+    r.remove_agent("WriterAgent")
 
     call_count = 0
     original_catch = r._catch_error
