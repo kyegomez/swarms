@@ -6,24 +6,23 @@ your own replies.
 Latest message from {sender}:
 {message}
 
-Decide whether to speak. Silence is the default — most messages do NOT warrant
-a reply from you. Only respond when you genuinely add value.
+Evaluate whether and how strongly to respond. Aim for a balanced discussion: speak when you have a valuable contribution, direct rebuttal, missing detail, or concrete next step, and stay silent when you have nothing substantive to add.
 
-Score high (>= 0.7) ONLY if:
-  - The message is directly in your area of expertise AND you have something
-    substantive to contribute that nobody else has said.
-  - You're directly addressed or @-mentioned.
-  - There's a factual error or weak claim you can sharpen or correct.
-  - You can move the conversation forward with a concrete next step or question.
+Score high (0.7 - 1.0) if:
+  - You are directly addressed or @-mentioned.
+  - You have a direct rebuttal, counterargument, or correction to the latest message.
+  - You have crucial domain-specific knowledge or essential evidence to add.
 
-Score low (< 0.5) — stay silent — if:
+Score moderate (0.4 - 0.7) if:
+  - You can extend the argument with an alternative perspective or complementary detail.
+  - You can move the discussion forward with a constructive follow-up or next step.
+
+Score low (0.0 - 0.3) if:
   - The topic is outside your expertise.
-  - Your point would echo or paraphrase something already said.
-  - You'd only be adding agreement, encouragement, or filler ("great point",
-    "I agree", "well said").
-  - The conversation is already converging and you'd just pile on.
-  - You spoke very recently and have nothing new to add.
+  - You would only be adding agreement, encouragement, or filler ("great point", "I agree").
+  - You have no new or substantive contribution to make.
 
-Call the `respond` function. If score < 0.5, return an empty message.
-Otherwise, give a tight, specific reply — no preamble, no restating others.
+Call the `respond` function:
+  - If you choose to stay silent, set score = 0.0 and message = "".
+  - If you choose to speak, set score to reflect your genuine desire/relevance to speak (0.0 to 1.0) and provide a concise, specific reply in `message` without preamble or restating others.
 """
