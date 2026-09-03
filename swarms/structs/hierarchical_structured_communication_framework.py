@@ -20,6 +20,7 @@ Key Features:
 - Flexible model support (OpenAI and Ollama)
 """
 
+import re
 import traceback
 from typing import Any, Callable, Dict, List, Optional, Union
 from dataclasses import dataclass
@@ -99,6 +100,31 @@ class HierarchicalOrder(BaseModel):
     )
     intermediate_output: str = Field(
         default="", description="Intermediate output to pass along"
+    )
+
+
+def _parse_evaluation(response: str) -> tuple:
+    text = response if isinstance(response, str) else str(response)
+    text = re.sub(
+        r"\(\s*\d+(?:\.\d+)?\s*-\s*\d+(?:\.\d+)?\s*\)", " ", text
+    )
+
+    def _last_in_range(label, low, high, default):
+        for found in reversed(
+            re.findall(
+                rf"{label}\D{{0,20}}?(\d+(?:\.\d+)?)",
+                text,
+                re.IGNORECASE,
+            )
+        ):
+            value = float(found)
+            if low <= value <= high:
+                return value
+        return default
+
+    return (
+        _last_in_range("score", 0.0, 10.0, 7.5),
+        _last_in_range("confidence", 0.0, 1.0, 0.8),
     )
 
 
@@ -1559,7 +1585,9 @@ Always explain your refinements and how they address the evaluation feedback.
                         f"Evaluate this content for {criterion}:\n{content}\n\nProvide: 1) Score (0-10), 2) Detailed feedback, 3) Confidence (0-1)"
                     )
 
-                    # Parse evaluation result (simplified parsing)
+                    score, confidence = _parse_evaluation(
+                        eval_response
+                    )
                     result = EvaluationResult(
                         evaluator_name=(
                             evaluator.agent_name
@@ -1567,9 +1595,9 @@ Always explain your refinements and how they address the evaluation feedback.
                             else f"Evaluator_{i}"
                         ),
                         criterion=criterion,
-                        score=7.5,  # Default score, would need proper parsing
+                        score=score,
                         feedback=eval_response,
-                        confidence=0.8,  # Default confidence
+                        confidence=confidence,
                     )
                     results.append(result)
 

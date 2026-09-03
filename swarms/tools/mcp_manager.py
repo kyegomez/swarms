@@ -1084,7 +1084,12 @@ class MCPManager:
             "tool": name,
             "server": self.label(connection),
             "arguments": arguments,
-            "is_error": bool(getattr(result, "isError", False)),
+            # mcp 2.x renamed `isError` to `is_error`; reading only the
+            # old name reports every failed call as a success.
+            "is_error": bool(
+                getattr(result, "isError", None)
+                or getattr(result, "is_error", None)
+            ),
             "result": self._extract_result(result),
         }
 
@@ -1144,7 +1149,10 @@ class MCPManager:
         if texts or others:
             return {"text": "\n".join(texts), "content": others}
 
-        structured = getattr(result, "structuredContent", None)
+        # mcp 2.x renamed `structuredContent` to `structured_content`.
+        structured = getattr(
+            result, "structuredContent", None
+        ) or getattr(result, "structured_content", None)
         if structured:
             return structured
 
@@ -1408,14 +1416,18 @@ class MCPManager:
                 callback_server.wait, float(oauth.callback_timeout)
             )
 
-        provider = OAuthClientProvider(
-            server_url=_server_origin(connection.url or ""),
-            client_metadata=client_metadata,
-            storage=storage,
-            redirect_handler=redirect_handler,
-            callback_handler=callback_handler,
-            timeout=float(oauth.callback_timeout),
-        )
+        provider_kwargs: Dict[str, Any] = {
+            "server_url": _server_origin(connection.url or ""),
+            "client_metadata": client_metadata,
+            "storage": storage,
+            "redirect_handler": redirect_handler,
+            "callback_handler": callback_handler,
+        }
+        # 2.x dropped the kwarg; callback_handler already bounds the wait.
+        if not MCP_IS_V2:
+            provider_kwargs["timeout"] = float(oauth.callback_timeout)
+
+        provider = OAuthClientProvider(**provider_kwargs)
 
         self._oauth_providers[key] = provider
         return provider

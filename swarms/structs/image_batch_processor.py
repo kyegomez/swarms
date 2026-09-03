@@ -1,3 +1,4 @@
+import copy
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -106,6 +107,14 @@ class ImageAgentBatchProcessor:
                 f"Unsupported image format {path.suffix}. Supported formats: {self.supported_formats}"
             )
         return path
+
+    def _isolate(self, agent: Agent) -> Agent:
+        try:
+            isolated = copy.deepcopy(agent)
+        except Exception:
+            return agent
+        isolated.short_memory = isolated.short_memory_init()
+        return isolated
 
     def _process_single_image(
         self,
@@ -217,7 +226,10 @@ class ImageAgentBatchProcessor:
             for path in validated_paths:
                 for agent in self.agents:
                     future = executor.submit(
-                        self._process_single_image, path, tasks, agent
+                        self._process_single_image,
+                        path,
+                        tasks,
+                        self._isolate(agent),
                     )
                     future_to_path[future] = (path, agent)
 

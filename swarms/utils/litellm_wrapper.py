@@ -1206,10 +1206,10 @@ class LiteLLM:
         if self.modalities and len(self.modalities) >= 2:
             completion_params["modalities"] = self.modalities
 
-        if (
-            self.reasoning_effort is not None
-            and _model_supports_reasoning(self.model_name)
-        ):
+        # Forward an explicitly requested effort level even when LiteLLM's
+        # local capability registry does not yet recognize a newly released
+        # model. `drop_params` handles providers that do not accept it.
+        if self.reasoning_effort is not None:
             completion_params["reasoning_effort"] = (
                 self.reasoning_effort
             )
