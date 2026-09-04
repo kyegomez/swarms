@@ -23,6 +23,8 @@ Still uncovered by any assertion, from the dropped script: streaming via
 image handling, and image message preparation.
 """
 
+import warnings
+
 import pytest
 from dotenv import load_dotenv
 
@@ -578,3 +580,57 @@ class TestGeminiProvider:
         )
         result = agent.run(SIMPLE_TASK)
         assert result is not None
+
+
+class TestSerializerWarnings:
+    """
+    litellm must not emit Pydantic serializer warnings on a non-streaming
+    response (#2126).
+
+    ``ModelResponse.choices`` is typed ``List[Union[Choices,
+    StreamingChoices]]``. On a non-streaming response the member is
+    ``Choices``; a serializer that tries the streaming arm first warns and then
+    serializes correctly anyway. litellm calls ``model_dump()`` inside its own
+    logging path, so the warning fired on essentially every completion and
+    buried real output.
+
+    Offline: this builds the response object directly and never calls a
+    provider.
+    """
+
+    def test_non_streaming_response_dumps_without_warnings(self):
+        from litellm.types.utils import (
+            Choices,
+            Message,
+            ModelResponse,
+        )
+
+        response = ModelResponse(
+            id="chatcmpl-1",
+            created=0,
+            model="gpt-4o-mini",
+            object="chat.completion",
+            choices=[
+                Choices(
+                    finish_reason="stop",
+                    index=0,
+                    message=Message(content="hi", role="assistant"),
+                )
+            ],
+        )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            response.model_dump()
+
+        serializer_warnings = [
+            str(w.message)
+            for w in caught
+            if issubclass(w.category, UserWarning)
+            and "Pydantic serializer warnings" in str(w.message)
+        ]
+
+        assert serializer_warnings == [], (
+            "litellm emitted Pydantic serializer warnings on a non-streaming "
+            f"response: {serializer_warnings}"
+        )
