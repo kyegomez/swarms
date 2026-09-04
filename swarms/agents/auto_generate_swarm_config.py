@@ -343,12 +343,21 @@ def write_autoswarm_file(
             router_lines.append(
                 f"    swarm_type={_format_value(swarm_arch['swarm_type'])},"
             )
-        if swarm_arch.get("max_loops"):
+        if "max_loops" in swarm_arch:
+            raw = swarm_arch["max_loops"]
+            # bool is a subclass of int, so int(True) == 1 never raises —
+            # reject explicitly before coercing.
+            if isinstance(raw, bool):
+                raise ValueError(
+                    "swarm_architecture.max_loops must be an integer, got bool: "
+                    f"{raw!r}"
+                )
             try:
-                max_loops_val = int(swarm_arch["max_loops"])
+                max_loops_val = int(raw)
             except (ValueError, TypeError):
                 raise ValueError(
-                    f"swarm_architecture.max_loops must be an integer, got {type(swarm_arch['max_loops']).__name__}: {swarm_arch['max_loops']!r}"
+                    "swarm_architecture.max_loops must be an integer, got "
+                    f"{type(raw).__name__}: {raw!r}"
                 )
             router_lines.append(f"    max_loops={max_loops_val},")
         router_lines.append(")")
