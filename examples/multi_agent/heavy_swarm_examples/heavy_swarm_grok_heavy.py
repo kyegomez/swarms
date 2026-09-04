@@ -6,7 +6,7 @@ swarm = HeavySwarm(
     worker_model_name="grok-4",
     question_agent_model_name="grok-4",
     show_dashboard=True,
-    loops_per_agent=1,
+    max_loops=1,
     agent_prints_on=False,
     variant="heavy",
 )
