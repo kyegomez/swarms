@@ -1,5 +1,7 @@
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
@@ -320,25 +322,30 @@ class SocialAlgorithms:
 
         Raises:
             TimeoutError: If the function execution exceeds max_execution_time.
-        """
-        import signal
 
-        def timeout_handler(signum, frame):
+        Note:
+            The deadline is enforced by joining a worker thread rather than
+            with ``signal.SIGALRM``, which only worked on the main thread of
+            Unix platforms (``AttributeError`` on Windows, ``ValueError``
+            from any worker thread) and truncated sub-second budgets to
+            ``alarm(0)``, which cancels the timeout entirely. On timeout the
+            algorithm cannot be safely interrupted — it is arbitrary user
+            code — so its thread is left to finish in the background while
+            the caller receives the ``TimeoutError`` immediately.
+        """
+        executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix=f"{self.name}-timeout",
+        )
+        future = executor.submit(func, *args, **kwargs)
+        try:
+            return future.result(timeout=self.max_execution_time)
+        except FuturesTimeoutError:
             raise TimeoutError(
                 f"Algorithm execution exceeded {self.max_execution_time} seconds"
-            )
-
-        # Set up timeout
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(int(self.max_execution_time))
-
-        try:
-            result = func(*args, **kwargs)
-            return result
+            ) from None
         finally:
-            # Restore original handler
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def _format_output(self, result: Any) -> Any:
         """
