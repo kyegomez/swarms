@@ -26,6 +26,9 @@ from loguru import logger
 from swarms.utils.generate_id import generate_id
 
 
+MESSAGE_SEPARATOR = "\n\n"
+
+
 def generate_conversation_id() -> str:
     """Deprecated: use ``generate_id()``."""
     return generate_id()
@@ -778,7 +781,8 @@ class Conversation:
             return self.dynamic_auto_chunking()
         return self._return_history_as_string_worker()
 
-    def _return_history_as_string_worker(self):
+    def _formatted_messages(self) -> List[str]:
+        """Render each message to its history line, oldest first."""
         formatted_messages = []
 
         for message in self.conversation_history:
@@ -792,7 +796,10 @@ class Conversation:
                     f"{message['role']}: {message['content']}"
                 )
 
-        return "\n\n".join(formatted_messages)
+        return formatted_messages
+
+    def _return_history_as_string_worker(self):
+        return MESSAGE_SEPARATOR.join(self._formatted_messages())
 
     def get_str(self) -> str:
         """Alias for :meth:`return_history_as_string` (kept for compatibility).
@@ -1522,50 +1529,78 @@ class Conversation:
                 names.append(name)
         return sorted(names)
 
+    def _truncate_to_context_length(self, text: str) -> str:
+        """Trim characters off the front of ``text`` until it fits the window.
+
+        Only used when one message is itself larger than ``context_length``,
+        so there is no message boundary to cut on.
+
+        Args:
+            text (str): The text to trim.
+
+        Returns:
+            str: The longest suffix of ``text`` within ``context_length`` tokens.
+        """
+        left, right = 0, len(text)
+        trimmed = ""
+
+        while left < right:
+            mid = (left + right) // 2
+            candidate = text[mid:]
+
+            if (
+                count_tokens(candidate, self.tokenizer_model_name)
+                <= self.context_length
+            ):
+                right = mid
+                trimmed = candidate
+            else:
+                left = mid + 1
+
+        return trimmed
+
     def _dynamic_auto_chunking_worker(self):
         """
         Dynamically chunk the conversation history to fit within the context length.
 
+        Drops whole messages off the front rather than binary-searching for a
+        character offset. The offset search tokenized a near-full transcript
+        ~log2(len) times on every read and cut the oldest surviving message
+        mid-word; this walks back from the newest message and stops as soon as
+        the window is full, so the work is bounded by ``context_length``
+        instead of by the length of the history.
+
         Returns:
             str: The chunked conversation history as a string that fits within context_length tokens.
         """
-        all_tokens = self._return_history_as_string_worker()
+        messages = self._formatted_messages()
 
-        total_tokens = count_tokens(
-            all_tokens, self.tokenizer_model_name
-        )
+        if not messages:
+            return ""
 
-        if total_tokens <= self.context_length:
-            return all_tokens
+        budget = self.context_length
+        kept = 0
 
-        # We need to remove characters from the beginning until we're under the limit
-        # Start by removing a percentage of characters and adjust iteratively
-        target_tokens = self.context_length
-        current_string = all_tokens
+        for position, message in enumerate(reversed(messages)):
+            chunk = (
+                message
+                if position == 0
+                else message + MESSAGE_SEPARATOR
+            )
+            cost = count_tokens(chunk, self.tokenizer_model_name)
 
-        # Binary search approach to find the right cutoff point
-        left, right = 0, len(all_tokens)
-
-        while left < right:
-            mid = (left + right) // 2
-            test_string = all_tokens[mid:]
-
-            if not test_string:
+            if cost > budget:
                 break
 
-            test_tokens = count_tokens(
-                test_string, self.tokenizer_model_name
-            )
+            budget -= cost
+            kept += 1
 
-            if test_tokens <= target_tokens:
-                # We can remove more from the beginning
-                right = mid
-                current_string = test_string
-            else:
-                # We need to keep more from the beginning
-                left = mid + 1
+        if kept == 0:
+            return self._truncate_to_context_length(messages[-1])
 
-        return current_string
+        return MESSAGE_SEPARATOR.join(
+            messages[len(messages) - kept :]
+        )
 
     def dynamic_auto_chunking(self):
         """
