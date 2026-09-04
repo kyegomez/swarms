@@ -35,9 +35,10 @@ from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
-    MAX_TOOL_OUTPUT_CHARS,
+    TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
 )
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 # --------------------------------------------------------------------------
@@ -232,14 +233,31 @@ class TestToolOutputIsCapped:
     """One oversized read is re-sent on every later call of the run."""
 
     def test_read_file_truncates_a_large_file(self, tmp_path):
-        agent = build_agent()
+        agent = build_agent(context_length=16000)
+        budget = int(agent.context_length * TOOL_OUTPUT_CONTEXT_SHARE)
         big = tmp_path / "big.txt"
-        big.write_text("x" * (MAX_TOOL_OUTPUT_CHARS + 5000))
+        big.write_text("word " * (budget * 2))
 
         output = read_file_tool(agent, str(big))
 
-        assert len(output) < MAX_TOOL_OUTPUT_CHARS + 200
         assert "output truncated" in output
+        assert (
+            count_tokens(output, model=agent.model_name)
+            <= budget + 50
+        )
+
+    def test_budget_follows_the_agent_context_window(self, tmp_path):
+        big = tmp_path / "big.txt"
+        big.write_text("word " * 20000)
+
+        small = read_file_tool(
+            build_agent(context_length=16000), str(big)
+        )
+        large = read_file_tool(
+            build_agent(context_length=128000), str(big)
+        )
+
+        assert len(large) > len(small)
 
 
 class TestBatchedToolCalls:

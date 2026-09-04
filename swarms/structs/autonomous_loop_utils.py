@@ -35,9 +35,7 @@ from typing import Any, Dict, List
 from loguru import logger
 
 from swarms.structs.async_subagent import SubagentRegistry, TaskStatus
-
-# Constants.
-
+from swarms.utils.litellm_tokenizer import DEFAULT_MODEL, count_tokens
 
 # Maximum iterations to prevent infinite loops
 MAX_PLANNING_ATTEMPTS = 5
@@ -45,23 +43,44 @@ MAX_SUBTASK_ITERATIONS = 100
 MAX_SUBTASK_LOOPS = 20
 MAX_CONSECUTIVE_THINKS = 2
 
-# The loop re-serializes its history into every later prompt, so one oversized
-# tool result is paid for on every remaining call of the run.
-MAX_TOOL_OUTPUT_CHARS = 65536
+# The loop re-serializes its history into every later prompt, so one oversized tool result is paid for on every remaining call of the run.
+TOOL_OUTPUT_CONTEXT_SHARE = 0.25
+
+# Used when the caller has no context window to share, e.g. a tool called outside an agent.
+DEFAULT_TOOL_OUTPUT_TOKENS = 4096
 
 
-def truncate_tool_output(text: str) -> str:
-    """Cap a tool result, telling the model how much it is not seeing."""
-    if len(text) <= MAX_TOOL_OUTPUT_CHARS:
+def truncate_tool_output(
+    text: str,
+    context_window: int = None,
+    model_name: str = DEFAULT_MODEL,
+) -> str:
+    """Cap a tool result at a share of the context window, telling the model how much it is not seeing."""
+    if not text:
         return text
-    return (
-        text[:MAX_TOOL_OUTPUT_CHARS]
-        + "\n... (output truncated: showing the first "
-        + f"{MAX_TOOL_OUTPUT_CHARS} of {len(text)} characters)"
+
+    budget = (
+        int(context_window * TOOL_OUTPUT_CONTEXT_SHARE)
+        if context_window
+        else DEFAULT_TOOL_OUTPUT_TOKENS
     )
 
+    total_tokens = count_tokens(text, model=model_name)
+    if total_tokens <= budget:
+        return text
 
-# Prompts.
+    # count_tokens has no decode counterpart, so cut by the text's own token density, then shrink until it fits.
+    kept = text[: max(1, int(len(text) * budget / total_tokens))]
+    kept_tokens = count_tokens(kept, model=model_name)
+    while kept_tokens > budget and len(kept) > 1:
+        kept = kept[: int(len(kept) * 0.9)]
+        kept_tokens = count_tokens(kept, model=model_name)
+
+    return (
+        kept
+        + "\n... (output truncated: showing the first "
+        + f"{kept_tokens} of {total_tokens} tokens)"
+    )
 
 
 def get_planning_prompt(task: str) -> str:
@@ -800,7 +819,11 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         # Read file
         with open(full_path, "r", encoding="utf-8") as f:
             raw = f.read()
-        content = truncate_tool_output(raw)
+        content = truncate_tool_output(
+            raw,
+            context_window=agent.context_length,
+            model_name=agent.model_name,
+        )
 
         # Add to memory
         agent.short_memory.add(
@@ -1096,7 +1119,11 @@ def run_bash_tool(
         if agent.verbose:
             logger.info(f"Executed bash command: {command[:80]}...")
 
-        return truncate_tool_output(result_msg.strip())
+        return truncate_tool_output(
+            result_msg.strip(),
+            context_window=agent.context_length,
+            model_name=agent.model_name,
+        )
     except subprocess.TimeoutExpired:
         error_msg = f"Error: Command timed out after {timeout_seconds} seconds"
         logger.error(error_msg)
@@ -1187,7 +1214,11 @@ def grep_tool(
         stderr = result.stderr or ""
 
         # Truncate oversized output
-        stdout = truncate_tool_output(stdout)
+        stdout = truncate_tool_output(
+            stdout,
+            context_window=agent.context_length,
+            model_name=agent.model_name,
+        )
 
         if result.returncode == 0:
             output = stdout.strip() or "(no matches)"
