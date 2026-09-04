@@ -20,20 +20,57 @@ decides what to do with it. That keeps prompt mutation in one visible place in
 """
 
 import os
-from typing import Dict, List, Optional
+from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
+from typing import Dict, List, Optional, Sequence
 
+import requests
 import yaml
 from loguru import logger
 
 from swarms.structs.dynamic_skills_loader import DynamicSkillsLoader
+from swarms.utils.url_guard import is_safe_url
 
 SKILL_FILENAME = "SKILL.md"
+
+SKILL_FETCH_TIMEOUT = 30
+
+MAX_SKILL_FETCH_WORKERS = 8
 
 SKILLS_PROMPT_HEADER = (
     "\n\n# Available Skills\n\n"
     "You have access to the following specialized skills. "
     "Follow their instructions when relevant:\n\n"
 )
+
+
+@lru_cache(maxsize=64)
+def _fetch_skill_markdown(url: str) -> str:
+    """
+    Fetch one skill's markdown, once per process.
+
+    Args:
+        url: Marketplace ``.md`` URL.
+
+    Returns:
+        The response body.
+
+    Raises:
+        ValueError: If the URL targets a private or link-local address.
+
+    Notes:
+        The guard sits inside the cache on purpose - a hit issues no request,
+        and ``lru_cache`` does not memoize the raise, so a blocked URL is
+        rejected on every call. Same shape as ``_fetch_image_url``.
+    """
+    if not is_safe_url(url):
+        raise ValueError(
+            f"Blocked skill URL '{url}': only external HTTP/HTTPS URLs are permitted."
+        )
+
+    response = requests.get(url, timeout=SKILL_FETCH_TIMEOUT)
+    response.raise_for_status()
+    return response.text
 
 
 class SkillsManager:
@@ -47,13 +84,17 @@ class SkillsManager:
 
     Args:
         skills_dir: Directory containing skill folders. Each folder should hold
-            a ``SKILL.md`` file with YAML frontmatter. ``None`` disables skills
-            entirely.
+            a ``SKILL.md`` file with YAML frontmatter. ``None`` disables local
+            skills.
+        skill_urls: Marketplace ``.md`` URLs, each serving one skill in the
+            same frontmatter format. Fetched concurrently and rendered in the
+            order given. Composes with ``skills_dir``.
         similarity_threshold: Minimum task/skill similarity for a skill to be
             selected during dynamic loading.
 
     Attributes:
         skills_dir (Optional[str]): The configured skills directory.
+        skill_urls (List[str]): The configured remote skill URLs.
         metadata (List[Dict[str, str]]): Metadata for the skills loaded so far.
 
     Example:
@@ -65,9 +106,11 @@ class SkillsManager:
     def __init__(
         self,
         skills_dir: Optional[str] = None,
+        skill_urls: Optional[Sequence[str]] = None,
         similarity_threshold: float = 0.3,
     ):
         self.skills_dir = skills_dir
+        self.skill_urls: List[str] = list(skill_urls or [])
         self.similarity_threshold = similarity_threshold
         self.metadata: List[Dict[str, str]] = []
         self.dynamic_loader: Optional[DynamicSkillsLoader] = None
@@ -82,9 +125,22 @@ class SkillsManager:
         self.dynamic_loader = None
         self.metadata = []
 
+    def set_skill_urls(
+        self, skill_urls: Optional[Sequence[str]]
+    ) -> None:
+        """
+        Replace the remote skill URLs.
+
+        Discards anything cached for the previous list.
+        """
+        self.skill_urls = list(skill_urls or [])
+        self.metadata = []
+
     @property
     def enabled(self) -> bool:
-        """True when a usable skills directory is configured."""
+        """True when a usable skill source is configured, local or remote."""
+        if self.skill_urls:
+            return True
         return bool(self.skills_dir) and os.path.exists(
             self.skills_dir
         )
@@ -100,7 +156,7 @@ class SkillsManager:
         Returns:
             Formatted prompt section, or ``""`` when nothing was loaded.
         """
-        if not self.skills_dir:
+        if not self.skills_dir and not self.skill_urls:
             return ""
 
         if task is not None:
@@ -109,45 +165,127 @@ class SkillsManager:
         return self._static_prompt()
 
     def _static_prompt(self) -> str:
-        """Load every skill in ``skills_dir`` and render it."""
-        self.metadata = self.load_metadata()
+        """Load every configured skill and render it."""
+        self.metadata = self._static_skills()
 
         if not self.metadata:
             return ""
 
-        logger.info(
-            f"Loaded {len(self.metadata)} skills from {self.skills_dir}"
-        )
         return self.build_prompt(self.metadata)
 
     def _dynamic_prompt(self, task: str) -> str:
         """Load only the skills relevant to ``task`` and render them."""
-        if self.dynamic_loader is None:
-            self.dynamic_loader = DynamicSkillsLoader(
-                self.skills_dir,
-                similarity_threshold=self.similarity_threshold,
-            )
+        self.metadata = self._dynamic_skills(task)
+
+        if not self.metadata:
+            return ""
+
+        return self.build_prompt(self.metadata)
+
+    def _static_skills(self) -> List[Dict[str, str]]:
+        """Every local skill, then every remote one, in the order configured."""
+        skills = self.load_metadata() if self.skills_dir else []
+
+        if self.skill_urls:
+            skills = skills + self.load_remote_metadata()
+
+        logger.info(
+            f"Loaded {len(skills)} skills "
+            f"({self.skills_dir or 'no directory'}, "
+            f"{len(self.skill_urls)} urls)"
+        )
+        return skills
+
+    def _dynamic_skills(self, task: str) -> List[Dict[str, str]]:
+        """Only the skills whose description is similar to ``task``."""
+        loader = self._loader()
 
         logger.info(
             f"Loading dynamic skills for task: {task[:100]}..."
         )
 
-        relevant_skills = self.dynamic_loader.load_relevant_skills(
-            task
+        skills = (
+            loader.load_relevant_skills(task)
+            if self.skills_dir
+            else []
         )
 
-        if not relevant_skills:
+        if self.skill_urls:
+            skills = skills + loader.select_relevant(
+                task, self.load_remote_metadata()
+            )
+
+        if not skills:
             logger.info(
                 f"No relevant skills found for task: {task[:100]}..."
             )
-            return ""
+            return []
 
-        self.metadata = relevant_skills
         logger.info(
-            f"Dynamically loaded {len(relevant_skills)} relevant skills "
+            f"Dynamically loaded {len(skills)} relevant skills "
             f"for task: {task[:100]}..."
         )
-        return self.build_prompt(relevant_skills)
+        return skills
+
+    def _loader(self) -> DynamicSkillsLoader:
+        """The similarity loader, built once and reused."""
+        if self.dynamic_loader is None:
+            self.dynamic_loader = DynamicSkillsLoader(
+                self.skills_dir or "",
+                similarity_threshold=self.similarity_threshold,
+            )
+        return self.dynamic_loader
+
+    def load_remote_metadata(self) -> List[Dict[str, str]]:
+        """
+        Load skill metadata from ``skill_urls`` (Tier 1 loading, remote).
+
+        Returns:
+            List of dicts with the same keys :meth:`load_metadata` returns,
+            in the order the URLs were configured. A URL that cannot be
+            fetched, or whose body carries no frontmatter, is skipped with a
+            warning - one dead link does not stop the run.
+
+        Notes:
+            Order is preserved because the marketplace list is the caller's
+            stated priority and skills render into the prompt in that order.
+            Only approved marketplace prompts are served, so a valid, listed
+            URL returning 404 is an ordinary case rather than an edge one.
+        """
+        if not self.skill_urls:
+            return []
+
+        workers = min(len(self.skill_urls), MAX_SKILL_FETCH_WORKERS)
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            bodies = list(
+                executor.map(self._fetch_skill, self.skill_urls)
+            )
+
+        skills: List[Dict[str, str]] = []
+        for url, content in zip(self.skill_urls, bodies):
+            if content is None:
+                continue
+
+            skill = self._parse_skill_markdown(content, url, url)
+
+            if skill is None:
+                logger.warning(
+                    f"Skipping skill from {url}: no YAML frontmatter"
+                )
+                continue
+
+            skills.append(skill)
+
+        return skills
+
+    def _fetch_skill(self, url: str) -> Optional[str]:
+        """Fetch one skill URL, returning ``None`` when it cannot be read."""
+        try:
+            return _fetch_skill_markdown(url)
+        except Exception as e:
+            logger.warning(f"Failed to load skill from {url}: {e}")
+            return None
 
     def load_metadata(
         self, skills_dir: Optional[str] = None
@@ -202,7 +340,43 @@ class SkillsManager:
         try:
             with open(skill_file, "r", encoding="utf-8") as f:
                 content = f.read()
+        except Exception as e:
+            logger.warning(
+                f"Failed to load skill from {skill_file}: {e}"
+            )
+            return None
 
+        return self._parse_skill_markdown(
+            content, fallback_name, skill_file
+        )
+
+    def _parse_skill_markdown(
+        self, content: str, fallback_name: str, source: str
+    ) -> Optional[Dict[str, str]]:
+        """
+        Parse skill markdown into a metadata dict.
+
+        Shared by the file and URL sources so both produce the same shape.
+
+        Args:
+            content: The full ``SKILL.md`` text, frontmatter included.
+            fallback_name: Used when the frontmatter carries no ``name``.
+            source: Where the text came from — a file path or a URL. Stored
+                as ``path``, which is what Tier 2 loading looks up.
+
+        Returns:
+            A metadata dict, or ``None`` when there is no YAML frontmatter.
+
+        Notes:
+            ``split("---", 2)`` stops after the frontmatter, so horizontal
+            rules in the body survive intact.
+
+            Marketplace frontmatter also carries ``id``, ``source`` and
+            ``created_at``. They are kept rather than dropped: ``id`` is a
+            stable identity for dedup, ``source`` is provenance, and
+            ``created_at`` is the hook for version pinning.
+        """
+        try:
             if not content.startswith("---"):
                 return None
 
@@ -216,15 +390,21 @@ class SkillsManager:
 
             logger.info(f"Loaded skill: {name}")
 
-            return {
+            skill = {
                 "name": name,
                 "description": frontmatter.get("description", ""),
-                "path": skill_file,
+                "path": source,
                 "content": parts[2].strip(),
             }
+
+            for extra in ("id", "source", "created_at"):
+                if extra in frontmatter:
+                    skill[extra] = str(frontmatter[extra])
+
+            return skill
         except Exception as e:
             logger.warning(
-                f"Failed to load skill from {skill_file}: {e}"
+                f"Failed to parse skill from {source}: {e}"
             )
             return None
 
@@ -261,10 +441,18 @@ class SkillsManager:
         Returns:
             The markdown below the frontmatter, or ``None`` when the skill is
             unknown or unreadable.
+
+        Notes:
+            A remote skill's ``path`` is a URL, not a file. Its body is
+            already in memory from the Tier 1 fetch, so it is returned from
+            there rather than fetched a second time.
         """
         for skill in self.metadata:
             if skill["name"] != skill_name:
                 continue
+
+            if skill["path"] in self.skill_urls:
+                return skill["content"]
 
             try:
                 with open(skill["path"], "r", encoding="utf-8") as f:
