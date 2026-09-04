@@ -38,6 +38,7 @@ from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
+    MAX_TOOL_OUTPUT_CHARS,
     create_file_tool,
     delete_file_tool,
     grep_tool,
@@ -233,6 +234,21 @@ class TestDependencyResolution:
 # --------------------------------------------------------------------------
 # #1964 — tool calls batched after subtask_done
 # --------------------------------------------------------------------------
+
+
+class TestToolOutputIsCapped:
+    """One oversized read is re-sent on every later call of the run."""
+
+    def test_read_file_truncates_a_large_file(self):
+        agent = build_agent()
+        # Inside the workspace: the file tools refuse paths outside it.
+        big = Path(agent._get_agent_workspace_dir()) / "big.txt"
+        big.write_text("x" * (MAX_TOOL_OUTPUT_CHARS + 5000))
+
+        output = read_file_tool(agent, str(big))
+
+        assert len(output) < MAX_TOOL_OUTPUT_CHARS + 200
+        assert "output truncated" in output
 
 
 class TestBatchedToolCalls:

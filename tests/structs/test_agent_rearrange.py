@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from swarms import Agent, AgentRearrange
+from swarms.telemetry.otel import ContextThreadPoolExecutor
 
 
 def create_sample_agents():
@@ -210,8 +211,12 @@ def test_add_agents():
     ]
 
     agent_rearrange.add_agents(new_agents)
-    assert "Agent4" in agent_rearrange.agents
-    assert "Agent5" in agent_rearrange.agents
+    assert "Agent4" in [
+        agent.agent_name for agent in agent_rearrange.agents
+    ]
+    assert "Agent5" in [
+        agent.agent_name for agent in agent_rearrange.agents
+    ]
     assert len(agent_rearrange.agents) == 3
 
 
@@ -570,7 +575,7 @@ def test_missing_agent_raises():
     """run() must raise when flow references a removed agent."""
     agents = create_sample_agents()
     r = _make_rearrange(agents, "ResearchAgent -> WriterAgent")
-    del r.agents["WriterAgent"]
+    r.remove_agent("WriterAgent")
 
     with pytest.raises(ValueError, match="not registered"):
         r.run("test")
@@ -606,7 +611,11 @@ def test_agent_error_raises():
     def bad_run(*args, **kwargs):
         raise TypeError("unexpected error in agent")
 
-    r.agents["WriterAgent"].run = bad_run
+    next(
+        agent
+        for agent in r.agents
+        if agent.agent_name == "WriterAgent"
+    ).run = bad_run
 
     with pytest.raises(TypeError, match="unexpected error in agent"):
         r.run("test")
@@ -616,7 +625,7 @@ def test_callable_propagates():
     """__call__ must raise, not return the exception object."""
     agents = create_sample_agents()
     r = _make_rearrange(agents, "ResearchAgent -> WriterAgent")
-    del r.agents["WriterAgent"]
+    r.remove_agent("WriterAgent")
 
     with pytest.raises(ValueError, match="not registered"):
         r("test")
@@ -626,7 +635,7 @@ def test_batch_run_propagates():
     """batch_run must raise, not return None."""
     agents = create_sample_agents()
     r = _make_rearrange(agents, "ResearchAgent -> WriterAgent")
-    del r.agents["WriterAgent"]
+    r.remove_agent("WriterAgent")
 
     with pytest.raises(ValueError, match="not registered"):
         r.batch_run(["test1", "test2"])
@@ -636,7 +645,7 @@ def test_error_logged_once():
     """_catch_error should fire exactly once per failure."""
     agents = create_sample_agents()
     r = _make_rearrange(agents, "ResearchAgent -> WriterAgent")
-    del r.agents["WriterAgent"]
+    r.remove_agent("WriterAgent")
 
     call_count = 0
     original_catch = r._catch_error
@@ -1012,29 +1021,25 @@ class TestBatchRunConcurrency:
         ), "Expected at least two batch_run tasks to overlap in execution"
 
     def test_threadpoolexecutor_is_used(self):
-        """Patch ThreadPoolExecutor to confirm it is invoked for each batch."""
+        """Patch the executor to confirm it is invoked for each batch."""
         pipeline = _make_pipeline("AgentA", "AgentB")
         tasks = ["t1", "t2", "t3"]
 
         with patch(
-            "swarms.structs.agent_rearrange.ThreadPoolExecutor",
-            wraps=__import__(
-                "concurrent.futures", fromlist=["ThreadPoolExecutor"]
-            ).ThreadPoolExecutor,
+            "swarms.structs.agent_rearrange.ContextThreadPoolExecutor",
+            wraps=ContextThreadPoolExecutor,
         ) as mock_tpe:
             pipeline.batch_run(tasks=tasks, batch_size=10)
             assert mock_tpe.call_count == 1
 
     def test_multiple_batches_uses_executor_per_batch(self):
-        """One ThreadPoolExecutor context-manager per batch."""
+        """One executor context-manager per batch."""
         pipeline = _make_pipeline("AgentA", "AgentB")
         tasks = [f"t{i}" for i in range(6)]
 
         with patch(
-            "swarms.structs.agent_rearrange.ThreadPoolExecutor",
-            wraps=__import__(
-                "concurrent.futures", fromlist=["ThreadPoolExecutor"]
-            ).ThreadPoolExecutor,
+            "swarms.structs.agent_rearrange.ContextThreadPoolExecutor",
+            wraps=ContextThreadPoolExecutor,
         ) as mock_tpe:
             pipeline.batch_run(tasks=tasks, batch_size=2)
             # 6 tasks / batch_size=2 -> 3 batches -> 3 executor instances
@@ -1198,13 +1203,11 @@ class TestBatchSizeBoundaries:
         assert len(results) == len(tasks)
 
     def test_batch_size_one_still_uses_executor(self):
-        """Even batch_size=1 should go through ThreadPoolExecutor."""
+        """Even batch_size=1 should go through the executor."""
         pipeline = _make_pipeline("AgentA", "AgentB")
         with patch(
-            "swarms.structs.agent_rearrange.ThreadPoolExecutor",
-            wraps=__import__(
-                "concurrent.futures", fromlist=["ThreadPoolExecutor"]
-            ).ThreadPoolExecutor,
+            "swarms.structs.agent_rearrange.ContextThreadPoolExecutor",
+            wraps=ContextThreadPoolExecutor,
         ) as mock_tpe:
             pipeline.batch_run(tasks=["only"], batch_size=1)
             assert mock_tpe.call_count == 1
