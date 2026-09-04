@@ -592,6 +592,8 @@ class HierarchicalSwarm:
 
             current_loop = 0
             last_output = None
+            last_error = None
+            any_loop_succeeded = False
 
             while current_loop < self.max_loops:
                 if current_loop == 0:
@@ -612,8 +614,11 @@ class HierarchicalSwarm:
                         ),
                         **kwargs,
                     )
+                    any_loop_succeeded = True
 
                 except Exception as e:
+                    last_error = e
+                    last_output = None
                     logger.error(
                         f"[ERROR] Loop execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
                     )
@@ -623,8 +628,16 @@ class HierarchicalSwarm:
                 # Add loop completion marker to conversation
                 self.conversation.add(
                     role="System",
-                    content=f"--- Loop {current_loop}/{self.max_loops} completed ---",
+                    content=(
+                        f"--- Loop {current_loop}/{self.max_loops} failed: {last_error} ---"
+                        if last_output is None
+                        and last_error is not None
+                        else f"--- Loop {current_loop}/{self.max_loops} completed ---"
+                    ),
                 )
+
+            if not any_loop_succeeded and last_error is not None:
+                raise last_error
 
             result = history_output_formatter(
                 conversation=self.conversation, type=self.output_type
