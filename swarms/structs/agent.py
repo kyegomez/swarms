@@ -1430,6 +1430,9 @@ class Agent:
                 # Parameters
                 attempt = 0
                 success = False
+
+                memory_checkpoint = self.short_memory.checkpoint()
+
                 while attempt < self.retry_attempts and not success:
                     # Outside the try: except must answer tool calls.
                     turn_calls = []
@@ -1663,6 +1666,8 @@ class Agent:
                             transcript.flush_tool_results(
                                 turn_calls, turn_results
                             )
+
+                        self.short_memory.rollback(memory_checkpoint)
 
                         # Track the LLM/generation error via telemetry — the
                         # retry loop swallows it, so capture_run never sees it.
