@@ -9,7 +9,6 @@ from swarms.structs.hiearchical_swarm import (
     HierarchicalOrder,
     HierarchicalSwarm,
 )
-from swarms.utils.workspace_utils import get_workspace_dir
 
 
 def test_hierarchical_swarm_basic_initialization():
@@ -365,7 +364,6 @@ def test_hierarchical_swarm_autosave_creates_workspace_dir(
     monkeypatch, tmp_path
 ):
     """Test that HierarchicalSwarm with autosave=True creates a workspace directory."""
-    get_workspace_dir.cache_clear()
     monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
 
     agent1 = Agent(
@@ -400,14 +398,11 @@ def test_hierarchical_swarm_autosave_creates_workspace_dir(
     assert "HierarchicalSwarm" in swarm.swarm_workspace_dir
     assert "Autosave-Test-Swarm" in swarm.swarm_workspace_dir
 
-    get_workspace_dir.cache_clear()
-
 
 def test_hierarchical_swarm_autosave_saves_conversation_after_run(
     monkeypatch, tmp_path
 ):
     """Test that HierarchicalSwarm saves conversation_history.json after run when autosave=True."""
-    get_workspace_dir.cache_clear()
     monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
 
     agent1 = Agent(
@@ -445,8 +440,6 @@ def test_hierarchical_swarm_autosave_saves_conversation_after_run(
     assert os.path.isfile(
         conversation_path
     ), f"Expected conversation_history.json at {conversation_path}"
-
-    get_workspace_dir.cache_clear()
 
 
 ##############################################################################
