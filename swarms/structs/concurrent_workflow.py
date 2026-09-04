@@ -166,9 +166,7 @@ class ConcurrentWorkflow:
             self.agent_statuses = {}
 
         self.reliability_check()
-        self.conversation = Conversation(
-            name=f"concurrent_workflow_name_{name}_id_{self.id}_conversation"
-        )
+        self.conversation = self._new_conversation()
 
         if self.show_dashboard is True:
             self.agents = self.fix_agents()
@@ -183,6 +181,19 @@ class ConcurrentWorkflow:
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
+
+    def _new_conversation(self) -> Conversation:
+        """
+        Build an empty conversation for one task.
+
+        Returns:
+            Conversation: A fresh conversation named after this workflow, used
+                both for the instance's own conversation and for the per-task
+                scopes :meth:`batch_run` runs each task in.
+        """
+        return Conversation(
+            name=f"concurrent_workflow_name_{self.name}_id_{self.id}_conversation"
+        )
 
     def fix_agents(self):
         """
@@ -651,6 +662,10 @@ class ConcurrentWorkflow:
         Each task is executed with all agents running concurrently, but the tasks
         themselves are processed sequentially.
 
+        Every task runs against its own conversation, so a result holds that
+        task's messages and nothing from the tasks before it. The workflow's own
+        conversation is restored afterwards and is left untouched by the batch.
+
         Args:
             tasks (List[str]): List of tasks to be executed.
             imgs (Optional[List[str]]): List of image paths corresponding to each task.
@@ -664,15 +679,20 @@ class ConcurrentWorkflow:
             >>> results = workflow.batch_run(["Task 1", "Task 2", "Task 3"])
         """
         results = []
-        for idx, task in enumerate(tasks):
-            img = None
-            if imgs is not None and idx < len(imgs):
-                img = imgs[idx]
-            results.append(
-                self.run(
-                    task=task,
-                    img=img,
-                    streaming_callback=streaming_callback,
+        workflow_conversation = self.conversation
+        try:
+            for idx, task in enumerate(tasks):
+                img = None
+                if imgs is not None and idx < len(imgs):
+                    img = imgs[idx]
+                self.conversation = self._new_conversation()
+                results.append(
+                    self.run(
+                        task=task,
+                        img=img,
+                        streaming_callback=streaming_callback,
+                    )
                 )
-            )
+        finally:
+            self.conversation = workflow_conversation
         return results
