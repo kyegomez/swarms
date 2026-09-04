@@ -1347,16 +1347,33 @@ class Conversation:
             return output
         return ""
 
+    def _index_after_first_message(self) -> int:
+        """Index of the first message after the system prompt and the input.
+
+        Neither fixed offset is right for both shapes. ``Agent.short_memory``
+        begins ``[System, User, ...]``, so a slice of 1 echoes the task back
+        in the agent's own output. Swarms like ``ConcurrentWorkflow`` begin
+        ``[User, agent, agent, ...]`` with no system row, so a slice of 2
+        drops the first agent's answer. Read the history instead of guessing.
+        """
+        history = self.conversation_history
+        start = (
+            1 if history and history[0].get("role") == "System" else 0
+        )
+        return start + 1
+
     def return_all_except_first(self):
-        """Return all messages except the first one.
+        """Return all messages except the system prompt and the first input.
 
         Returns:
             list: List of messages except the first one.
         """
-        return self.conversation_history[1:]
+        return self.conversation_history[
+            self._index_after_first_message() :
+        ]
 
     def return_all_except_first_string(self):
-        """Return all messages except the first one as a string.
+        """Return all messages except the system prompt and the first input.
 
         Returns:
             str: All messages except the first one as a string.
@@ -1364,7 +1381,9 @@ class Conversation:
         return "\n".join(
             [
                 f"{msg['content']}"
-                for msg in self.conversation_history[1:]
+                for msg in self.conversation_history[
+                    self._index_after_first_message() :
+                ]
             ]
         )
 

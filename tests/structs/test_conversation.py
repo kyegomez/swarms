@@ -1258,3 +1258,37 @@ if __name__ == "__main__":
     logger.success(
         "Test execution completed. Results saved to test_results.md"
     )
+
+
+def test_return_all_except_first_without_a_system_prompt():
+    conv = Conversation()
+    conv.add("User", "Task")
+    conv.add("Agent-1", "First answer")
+    conv.add("Agent-2", "Second answer")
+
+    assert [m["role"] for m in conv.return_all_except_first()] == [
+        "Agent-1",
+        "Agent-2",
+    ]
+
+    text = conv.return_all_except_first_string()
+    assert "First answer" in text
+    assert "Second answer" in text
+    assert "Task" not in text
+
+
+def test_return_all_except_first_with_a_system_prompt():
+    conv = Conversation(system_prompt="You are helpful.")
+    conv.add("User", "Task")
+    conv.add("Agent-1", "First answer")
+    conv.add("Agent-2", "Second answer")
+
+    assert [m["role"] for m in conv.return_all_except_first()] == [
+        "Agent-1",
+        "Agent-2",
+    ]
+
+    text = conv.return_all_except_first_string()
+    assert "You are helpful." not in text
+    assert "Task" not in text
+    assert "First answer" in text
