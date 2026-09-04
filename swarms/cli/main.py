@@ -854,11 +854,11 @@ class CustomHelpAction(argparse.Action):
             ),
             (
                 "--question-agent-model-name MODEL",
-                "Model for question generation agent (default: gpt-4o-mini)",
+                "Model for question generation agent (default: gpt-5.4)",
             ),
             (
                 "--worker-model-name MODEL",
-                "Model for worker agents (default: gpt-4o-mini)",
+                "Model for worker agents (default: gpt-5.4)",
             ),
             ("--context-length N", "Context length for the agent"),
             ("--retry-attempts N", "Number of retry attempts"),
@@ -877,7 +877,7 @@ class CustomHelpAction(argparse.Action):
                 "Fetch system prompt from Swarms marketplace",
             ),
             ("--verbose", "Enable verbose output"),
-            ("--interactive", "Enable interactive mode (default)"),
+            ("--interactive", "Enable interactive mode"),
             ("--no-interactive", "Disable interactive mode"),
             ("--streaming-on", "Enable streaming mode"),
             (
@@ -1015,7 +1015,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         "--model-name",
         type=str,
         default=None,
-        help="Model name to use (e.g. gpt-5.4, gpt-4o, claude-opus-4-6). Defaults to gpt-5.4 for chat, gpt-4 for agent.",
+        help="Model name to use (e.g. gpt-5.4, gpt-4o, claude-opus-4-6). Defaults to gpt-5.1 for chat, gpt-5.4 for agent.",
     )
     parser.add_argument(
         "--task",
@@ -1025,7 +1025,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--interactive",
         action="store_true",
-        help="Enable interactive mode for the agent (default: True)",
+        help="Enable interactive mode for the agent (default: False)",
     )
     parser.add_argument(
         "--no-interactive",
@@ -1129,13 +1129,13 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         "--question-agent-model-name",
         type=str,
         default="gpt-5.4",
-        help="Model name for question generation agent (default: gpt-4o-mini)",
+        help="Model name for question generation agent (default: gpt-5.4)",
     )
     parser.add_argument(
         "--worker-model-name",
         type=str,
         default="gpt-5.4",
-        help="Model name for specialized worker agents (default: gpt-4o-mini)",
+        help="Model name for specialized worker agents (default: gpt-5.4)",
     )
     parser.add_argument(
         "--random-loops-per-agent",
@@ -1172,7 +1172,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         "--dir",
         type=str,
         default=None,
-        help="Directory for 'swarms init' (default: prompted interactively)",
+        help="Directory for 'swarms init' (prompted interactively if omitted)",
     )
     # Tips command arguments
     parser.add_argument(
@@ -1420,8 +1420,8 @@ def handle_agent(args: argparse.Namespace) -> None:
             - system_prompt: Required unless marketplace_prompt_id is provided
             - marketplace_prompt_id: Optional prompt ID from Swarms marketplace
             - task: Optional task to execute immediately
-            - model_name: Model to use (default: "gpt-4")
-            - interactive: Enable interactive mode (default: True)
+            - model_name: Model to use (default: "gpt-5.4")
+            - interactive: Enable interactive mode (default: False)
             - temperature: Temperature setting (0.0-2.0)
             - max_loops: Maximum loops (integer or "auto")
             - And other optional agent configuration parameters

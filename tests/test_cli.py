@@ -76,6 +76,61 @@ class TestSetupArgumentParser:
         parser = self.setup_argument_parser()
         assert isinstance(parser, argparse.ArgumentParser)
 
+    def test_help_text_matches_actual_defaults(self):
+        """Every '(default: X)' in a flag's help must be the real default.
+
+        Help text is the only place a user learns what a flag does when they
+        do not pass it, so a stale value there is actively misleading -- the
+        model flags in particular differ in cost. Walking the parser rather
+        than asserting on a fixed list means new flags are covered too.
+        """
+        import re
+
+        stated_default = re.compile(
+            r"\(default:\s*([^)]+)\)", re.IGNORECASE
+        )
+
+        parser = self.setup_argument_parser()
+        subparsers = [
+            action
+            for action in parser._actions
+            if isinstance(action, argparse._SubParsersAction)
+        ]
+        parsers = [parser] + [
+            sub
+            for action in subparsers
+            for sub in action.choices.values()
+        ]
+
+        mismatches = []
+        for parsed in parsers:
+            for action in parsed._actions:
+                if not action.help or not action.option_strings:
+                    continue
+                match = stated_default.search(action.help)
+                if not match:
+                    continue
+                claimed = match.group(1).strip().strip("\"'")
+                actual = action.default
+                if str(actual) != claimed:
+                    mismatches.append(
+                        f"{action.option_strings[0]}: help says "
+                        f"{claimed!r} but default is {actual!r}"
+                    )
+
+        assert (
+            not mismatches
+        ), "CLI help text disagrees with defaults: " + "; ".join(
+            mismatches
+        )
+
+    def test_heavy_swarm_model_defaults(self):
+        """The two HeavySwarm model flags resolve to the documented model."""
+        parser = self.setup_argument_parser()
+        args = parser.parse_args(["heavy-swarm", "--task", "t"])
+        assert args.question_agent_model_name == "gpt-5.4"
+        assert args.worker_model_name == "gpt-5.4"
+
     def test_valid_commands_parse(self):
         valid_commands = [
             "init",
