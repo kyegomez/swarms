@@ -28,6 +28,7 @@ Run:
 """
 
 import json
+import os
 
 import pytest
 
@@ -36,7 +37,9 @@ from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
     TOOL_OUTPUT_CONTEXT_SHARE,
+    create_file_tool,
     read_file_tool,
+    run_bash_tool,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
 
@@ -258,6 +261,34 @@ class TestToolOutputIsCapped:
         )
 
         assert len(large) > len(small)
+
+
+class TestBashSharesTheFileToolsRoot:
+    """#1970: run_bash ran in the process cwd while every file tool resolved
+    against the agent workspace, so the two halves of the toolset disagreed
+    about what the filesystem looked like.
+    """
+
+    def test_bash_sees_a_file_the_file_tools_just_wrote(self):
+        agent = build_agent()
+        create_file_tool(agent, "notes.md", "written by create_file")
+
+        listing = run_bash_tool(agent, "ls")
+
+        assert (
+            "notes.md" in listing
+        ), f"run_bash cannot see what create_file wrote: {listing[:200]}"
+
+    def test_bash_pwd_is_the_agent_workspace(self):
+        agent = build_agent()
+        workspace = os.path.realpath(agent._get_agent_workspace_dir())
+
+        out = run_bash_tool(agent, "pwd")
+
+        assert (
+            os.path.realpath(out.strip().splitlines()[-1])
+            == workspace
+        )
 
 
 class TestBatchedToolCalls:

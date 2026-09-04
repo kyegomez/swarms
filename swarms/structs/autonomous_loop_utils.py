@@ -1081,15 +1081,21 @@ def run_bash_tool(
     # -------------------------------------------------------------------------
 
     try:
-        # Run in process cwd (where the user started the script) so commands like
-        # ls -la and python script.py see the project directory, not the agent workspace.
+        workspace_dir = agent._get_agent_workspace_dir()
+        os.makedirs(workspace_dir, exist_ok=True)
+
         result = subprocess.run(
             command,
             shell=True,
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
-            cwd=None,  # use process current working directory
+            # The agent workspace, not the process cwd. Every file tool
+            # resolves relative paths against the workspace, so leaving bash
+            # in the launch directory gave the two halves of the toolset
+            # different views: create_file("notes.md") then run_bash("ls")
+            # would not show the file it had just written.
+            cwd=workspace_dir,
             encoding="utf-8",
             errors="replace",
         )
