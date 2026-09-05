@@ -59,6 +59,9 @@ _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
 class HierarchicalSwarm:
     """Coordinate a director and workers across iterative task loops."""
 
+    conversation: Conversation
+    _delivered: Dict[str, int]
+
     def __init__(
         self,
         name: str = "HierarchicalAgentSwarm",
