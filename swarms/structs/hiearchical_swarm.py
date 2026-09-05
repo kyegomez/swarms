@@ -59,9 +59,6 @@ _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
 class HierarchicalSwarm:
     """Coordinate a director and workers across iterative task loops."""
 
-    conversation: Conversation
-    _delivered: Dict[str, int]
-
     def __init__(
         self,
         name: str = "HierarchicalAgentSwarm",
@@ -191,6 +188,11 @@ class HierarchicalSwarm:
         )
         self.swarm_workspace_dir = self.workspace.dir
 
+        # How much of the shared conversation each agent has already seen.
+        self._delivered: Dict[str, int] = {}
+
+        self.conversation = Conversation(time_enabled=False)
+
         self.initialize_swarm()
 
         capture_init(self)
@@ -229,11 +231,6 @@ class HierarchicalSwarm:
 
     def init_swarm(self):
         """Initialize conversation state and validate the swarm."""
-        # How much of the shared conversation each agent has already seen.
-        self._delivered = {}
-
-        self.conversation = Conversation(time_enabled=False)
-
         # Reliability checks
         self.reliability_checks()
 
