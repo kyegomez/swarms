@@ -11,6 +11,7 @@ This directory contains examples demonstrating swarm routing patterns for direct
 - [swarm_router_benchmark.py](swarm_router_benchmark.py) - Router performance benchmarking
 - [swarm_router_example.py](swarm_router_example.py) - Basic swarm router example
 - [swarm_router_fallback_example.py](swarm_router_fallback_example.py) - `fallback_swarms`: try the next swarm type when the first one fails
+- [swarm_router_usage.py](swarm_router_usage.py) - `router.usage`: token usage summed over the swarm's agents
 - [swarm_router_test.py](swarm_router_test.py) - Router testing suite
 - [swarm_router.py](swarm_router.py) - Core swarm router implementation
 
