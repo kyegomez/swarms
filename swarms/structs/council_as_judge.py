@@ -239,7 +239,7 @@ class CouncilAsAJudge:
         judge_agents (Dict[str, Agent]): Dictionary of dimension-specific judge agents
         aggregator_agent (Agent): Agent responsible for aggregating evaluations
         conversation (Conversation): Conversation history tracker
-        max_workers (int): Maximum number of worker threads for parallel execution
+        max_workers (int): Maximum number of worker threads for parallel execution, derived from the CPU count
     """
 
     def __init__(
@@ -265,7 +265,6 @@ class CouncilAsAJudge:
             model_name (str): Name of the model to use for evaluations
             output_type (str): Type of output to return
             cache_size (int): Size of the LRU cache for prompts
-            max_workers (int): Maximum number of worker threads for parallel execution
             random_model_name (bool): Whether to use random model names
             max_loops (int): Maximum number of loops for agents
             aggregation_model_name (str): Model name for the aggregator agent
