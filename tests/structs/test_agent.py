@@ -1468,3 +1468,54 @@ class TestAgentUsage:
             agent.run("x")
 
         assert agent.usage["total_tokens"] == 8
+
+    def test_every_call_in_a_multi_loop_tool_run_is_counted(self):
+        """Each loop makes two provider calls — the tool call and the tool
+        summary — and all of them land in the total."""
+        import json
+
+        def add(a: int, b: int) -> int:
+            """Add two numbers.
+
+            Args:
+                a: first
+                b: second
+            """
+            return a + b
+
+        calls = []
+
+        def fake_completion(**kwargs):
+            calls.append(kwargs)
+            n = len(calls)
+            if kwargs.get("tools"):
+                tool_call = {
+                    "id": f"call_{n}",
+                    "type": "function",
+                    "function": {
+                        "name": "add",
+                        "arguments": json.dumps({"a": 1, "b": 2}),
+                    },
+                }
+                response = self._response(100 * n, n)
+                response.choices[0].message.content = None
+                response.choices[0].message.tool_calls = [tool_call]
+                return response
+            return self._response(100 * n, n)
+
+        agent = self._agent(tools=[add], dynamic_tools=False)
+        agent.max_loops = 3
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            side_effect=fake_completion,
+        ):
+            agent.run("Add 1 and 2.")
+
+        # 3 loops x (tool call + summary call), with no call skipped.
+        assert len(calls) == 6
+        assert agent.usage == {
+            "input_tokens": sum(100 * i for i in range(1, 7)),
+            "output_tokens": sum(range(1, 7)),
+            "cached_tokens": 0,
+            "total_tokens": sum(100 * i + i for i in range(1, 7)),
+        }
