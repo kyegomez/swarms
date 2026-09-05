@@ -15,7 +15,7 @@ Set the matching API key as an environment variable before running any example (
 
 ### Azure OpenAI
 - [azure_agent.py](azure/azure_agent.py) — Azure OpenAI integration
-- [azure_agent_api_verison.py](azure/azure_agent_api_verison.py) — Azure API version handling
+- [azure_agent_api_version.py](azure/azure_agent_api_version.py) — Azure API version handling
 - [azure_model_support.py](azure/azure_model_support.py) — Azure model support
 
 ### Cerebras
