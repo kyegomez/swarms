@@ -224,6 +224,8 @@ class LLMManager:
                 "agent_name": agent.agent_name,
                 "prompt_caching": agent.prompt_caching,
                 "cache_config": agent.cache_config,
+                # The agent keeps the running total, so a rebuilt LLM does not reset it.
+                "usage_hook": agent._add_usage,
                 # Omitting these sends custom-endpoint traffic to the default provider instead.
                 "base_url": agent.llm_base_url,
                 "api_key": agent.llm_api_key,

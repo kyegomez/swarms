@@ -1375,3 +1375,147 @@ class TestEmptyToolsList:
         agent = self._agent(tools=[sample])
         assert agent.tools_list_dictionary
         assert "tool_search" in agent.system_prompt
+
+
+class TestAgentUsage:
+    """``agent.usage`` is the provider's token count, summed over the agent's calls."""
+
+    @staticmethod
+    def _response(prompt, completion, cached=0):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content="answer", tool_calls=None
+                    )
+                )
+            ],
+            usage=SimpleNamespace(
+                prompt_tokens=prompt,
+                completion_tokens=completion,
+                total_tokens=prompt + completion,
+                prompt_tokens_details=(
+                    SimpleNamespace(cached_tokens=cached)
+                    if cached
+                    else None
+                ),
+            ),
+        )
+
+    @staticmethod
+    def _agent(**kwargs):
+        return Agent(
+            agent_name="UsageAgent",
+            model_name="gpt-5.4",
+            max_loops=1,
+            print_on=False,
+            verbose=False,
+            persistent_memory=False,
+            autosave=False,
+            **kwargs,
+        )
+
+    def test_starts_at_zero_and_returns_a_copy(self):
+        agent = _patched_agent("UsageAgent")
+        usage = agent.usage
+        assert usage == {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_tokens": 0,
+            "total_tokens": 0,
+        }
+        usage["input_tokens"] = 999
+        assert agent.usage["input_tokens"] == 0
+
+    def test_a_run_reports_what_the_provider_returned(self):
+        agent = self._agent()
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=self._response(120, 30, cached=100),
+        ):
+            agent.run("Say hi.")
+
+        assert agent.usage == {
+            "input_tokens": 120,
+            "output_tokens": 30,
+            "cached_tokens": 100,
+            "total_tokens": 150,
+        }
+
+    def test_totals_survive_an_llm_rebuild(self):
+        agent = self._agent()
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=self._response(10, 5),
+        ):
+            agent.run("one")
+            # tool_search and fallback models rebuild the client mid-run.
+            agent.llm = agent.llm_handling()
+            agent.run("two")
+
+        assert agent.usage["total_tokens"] == 30
+
+    def test_a_caller_supplied_llm_reports_into_the_agent(self):
+        from swarms.utils.litellm_wrapper import LiteLLM
+
+        agent = self._agent(llm=LiteLLM(model_name="gpt-5.4"))
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=self._response(4, 4),
+        ):
+            agent.run("x")
+
+        assert agent.usage["total_tokens"] == 8
+
+    def test_every_call_in_a_multi_loop_tool_run_is_counted(self):
+        """Each loop makes two provider calls — the tool call and the tool
+        summary — and all of them land in the total."""
+        import json
+
+        def add(a: int, b: int) -> int:
+            """Add two numbers.
+
+            Args:
+                a: first
+                b: second
+            """
+            return a + b
+
+        calls = []
+
+        def fake_completion(**kwargs):
+            calls.append(kwargs)
+            n = len(calls)
+            if kwargs.get("tools"):
+                tool_call = {
+                    "id": f"call_{n}",
+                    "type": "function",
+                    "function": {
+                        "name": "add",
+                        "arguments": json.dumps({"a": 1, "b": 2}),
+                    },
+                }
+                response = self._response(100 * n, n)
+                response.choices[0].message.content = None
+                response.choices[0].message.tool_calls = [tool_call]
+                return response
+            return self._response(100 * n, n)
+
+        agent = self._agent(tools=[add], dynamic_tools=False)
+        agent.max_loops = 3
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            side_effect=fake_completion,
+        ):
+            agent.run("Add 1 and 2.")
+
+        # 3 loops x (tool call + summary call), with no call skipped.
+        assert len(calls) == 6
+        assert agent.usage == {
+            "input_tokens": sum(100 * i for i in range(1, 7)),
+            "output_tokens": sum(range(1, 7)),
+            "cached_tokens": 0,
+            "total_tokens": sum(100 * i + i for i in range(1, 7)),
+        }
