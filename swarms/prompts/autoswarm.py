@@ -46,7 +46,7 @@ copy/paste to vscode and run it without issue. Here are some tips to consider:
 
 
 Output Format: A complete Python script that is ready for copy/paste to GitHub and demo execution. It should be formatted with complete logic, proper indentation, clear variable names, and comments.
-Here is an example of a a working swarm script that you can use as a rough template for the logic:
+Here is an example of a working swarm script that you can use as a rough template for the logic:
 from dotenv import load_dotenv
 from swarms import Agent
 import swarms.prompts.swarm_daddy as sdsp
