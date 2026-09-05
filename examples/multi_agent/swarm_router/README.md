@@ -10,6 +10,7 @@ This directory contains examples demonstrating swarm routing patterns for direct
 - [sr_moa_example.py](sr_moa_example.py) - Swarm router with MOA
 - [swarm_router_benchmark.py](swarm_router_benchmark.py) - Router performance benchmarking
 - [swarm_router_example.py](swarm_router_example.py) - Basic swarm router example
+- [swarm_router_fallback_example.py](swarm_router_fallback_example.py) - `fallback_swarms`: try the next swarm type when the first one fails
 - [swarm_router_test.py](swarm_router_test.py) - Router testing suite
 - [swarm_router.py](swarm_router.py) - Core swarm router implementation
 

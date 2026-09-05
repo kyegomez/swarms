@@ -831,3 +831,237 @@ def test_conversation_points_at_the_live_swarm_conversation_after_run():
         m["role"] for m in router.conversation.conversation_history
     ]
     assert "A" in roles and "B" in roles
+
+
+# ============================================================================
+# fallback_swarms
+# ============================================================================
+
+
+class _FakeSwarm:
+    """Stands in for any swarm the factory would build."""
+
+    def __init__(self, name, error=None):
+        self.name = name
+        self.error = error
+        self.calls = []
+        self.conversation = None
+        # SequentialWorkflow exposes its conversation via agent_rearrange.
+        self.agent_rearrange = self
+
+    def run(self, **kwargs):
+        self.calls.append(kwargs)
+        if self.error is not None:
+            raise self.error
+        return f"{self.name}-result"
+
+
+def _fallback_router(primary_error=None, fallbacks=None, **outcomes):
+    """A router whose factory builds ``_FakeSwarm``s instead of real swarms.
+
+    ``outcomes`` maps swarm type -> exception to raise from ``run()`` (or
+    ``None`` to succeed). Types not named succeed.
+    """
+    with patch("swarms.structs.agent.LiteLLM"):
+        agent = Agent(
+            agent_name="A",
+            model_name="gpt-5.4",
+            max_loops=1,
+            autosave=False,
+            print_on=False,
+        )
+        router = SwarmRouter(
+            name="fallback-router",
+            agents=[agent],
+            swarm_type="SequentialWorkflow",
+            fallback_swarms=fallbacks,
+            autosave=False,
+        )
+    outcomes.setdefault("SequentialWorkflow", primary_error)
+    built = {}
+
+    def _factory_for(swarm_type):
+        def _build(*args, **kwargs):
+            built[swarm_type] = _FakeSwarm(
+                swarm_type, outcomes.get(swarm_type)
+            )
+            return built[swarm_type]
+
+        return _build
+
+    router._swarm_factory = {
+        swarm_type: _factory_for(swarm_type)
+        for swarm_type in router._swarm_factory
+    }
+    return router, built
+
+
+def test_fallback_is_not_touched_when_the_primary_succeeds():
+    router, built = _fallback_router(
+        fallbacks=["ConcurrentWorkflow", "GroupChat"]
+    )
+
+    assert router.run("go") == "SequentialWorkflow-result"
+    assert list(built) == ["SequentialWorkflow"]
+    assert router.active_swarm_type == "SequentialWorkflow"
+    assert router.fallback_attempts == []
+
+
+def test_primary_failure_runs_the_first_fallback():
+    boom = RuntimeError("primary down")
+    router, built = _fallback_router(
+        primary_error=boom,
+        fallbacks=["ConcurrentWorkflow", "GroupChat"],
+    )
+
+    assert router.run("go") == "ConcurrentWorkflow-result"
+    assert list(built) == ["SequentialWorkflow", "ConcurrentWorkflow"]
+    assert router.active_swarm_type == "ConcurrentWorkflow"
+    assert router.swarm is built["ConcurrentWorkflow"]
+    assert router.fallback_attempts == [
+        {"swarm_type": "SequentialWorkflow", "error": boom}
+    ]
+
+
+def test_fallbacks_are_tried_in_list_order():
+    router, built = _fallback_router(
+        primary_error=RuntimeError("1"),
+        fallbacks=[
+            "ConcurrentWorkflow",
+            "GroupChat",
+            "MajorityVoting",
+        ],
+        ConcurrentWorkflow=RuntimeError("2"),
+        GroupChat=RuntimeError("3"),
+    )
+
+    assert router.run("go") == "MajorityVoting-result"
+    assert [a["swarm_type"] for a in router.fallback_attempts] == [
+        "SequentialWorkflow",
+        "ConcurrentWorkflow",
+        "GroupChat",
+    ]
+    assert "MajorityVoting" in built
+
+
+def test_every_swarm_failing_raises_with_the_whole_chain():
+    last = ValueError("last one")
+    router, _ = _fallback_router(
+        primary_error=RuntimeError("first"),
+        fallbacks=["ConcurrentWorkflow"],
+        ConcurrentWorkflow=last,
+    )
+
+    with pytest.raises(SwarmRouterRunError) as excinfo:
+        router.run("go")
+
+    message = str(excinfo.value)
+    assert "SequentialWorkflow: RuntimeError: first" in message
+    assert "ConcurrentWorkflow: ValueError: last one" in message
+    assert excinfo.value.__cause__ is last
+    assert len(router.fallback_attempts) == 2
+
+
+def test_without_fallbacks_the_original_error_propagates_unchanged():
+    boom = KeyError("unchanged")
+    router, _ = _fallback_router(primary_error=boom)
+
+    with pytest.raises(KeyError) as excinfo:
+        router.run("go")
+
+    assert excinfo.value is boom
+    assert router.fallback_attempts == []
+
+
+def test_a_swarm_that_fails_to_construct_also_falls_back():
+    router, built = _fallback_router(fallbacks=["ConcurrentWorkflow"])
+
+    def _broken_factory(*args, **kwargs):
+        raise TypeError("cannot build")
+
+    router._swarm_factory["SequentialWorkflow"] = _broken_factory
+
+    assert router.run("go") == "ConcurrentWorkflow-result"
+    assert router.fallback_attempts[0]["swarm_type"] == (
+        "SequentialWorkflow"
+    )
+    assert isinstance(
+        router.fallback_attempts[0]["error"], RuntimeError
+    )
+
+
+def test_the_run_payload_reaches_the_fallback_swarm():
+    router, built = _fallback_router(
+        primary_error=RuntimeError("x"),
+        fallbacks=["ConcurrentWorkflow"],
+    )
+
+    router.run("go", img="chart.png")
+
+    assert built["ConcurrentWorkflow"].calls == [
+        {"task": "go", "img": "chart.png"}
+    ]
+
+
+def test_each_swarm_type_is_cached_under_its_own_key():
+    router, built = _fallback_router(
+        primary_error=RuntimeError("x"),
+        fallbacks=["ConcurrentWorkflow"],
+    )
+
+    router.run("one")
+    router.run("two")
+
+    # Built once each; the second run reused both cached swarms.
+    assert list(built) == ["SequentialWorkflow", "ConcurrentWorkflow"]
+    assert len(built["ConcurrentWorkflow"].calls) == 2
+    assert {key[0] for key in router._swarm_cache} == {
+        "SequentialWorkflow",
+        "ConcurrentWorkflow",
+    }
+
+
+def test_fallback_swarms_must_be_a_list():
+    with pytest.raises(
+        SwarmRouterConfigError, match="must be a list"
+    ):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="SequentialWorkflow",
+            fallback_swarms="ConcurrentWorkflow",
+        )
+
+
+def test_fallback_swarms_entries_must_be_valid_swarm_types():
+    with pytest.raises(
+        SwarmRouterConfigError, match="not a valid swarm type"
+    ):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="SequentialWorkflow",
+            fallback_swarms=["ConcurrentWorkflow", "NoSuchSwarm"],
+        )
+
+
+def test_agent_rearrange_fallback_requires_a_flow():
+    with pytest.raises(
+        SwarmRouterConfigError, match="requires rearrange_flow"
+    ):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="SequentialWorkflow",
+            fallback_swarms=["AgentRearrange"],
+        )
+
+
+def test_config_model_accepts_fallback_swarms():
+    config = SwarmRouterConfig(
+        name="r",
+        description="d",
+        swarm_type="SequentialWorkflow",
+        rearrange_flow=None,
+        multi_agent_collab_prompt=False,
+        fallback_swarms=["ConcurrentWorkflow"],
+        task="t",
+    )
+    assert config.fallback_swarms == ["ConcurrentWorkflow"]
