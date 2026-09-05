@@ -23,6 +23,8 @@ a structure can reset it per task without this module tracking anything.
 
 from typing import Any, Dict, List, Optional
 
+from swarms.structs.conversation import render_message
+
 NO_NEW_MESSAGES = (
     "No new messages since your last turn. Continue from your own "
     "previous response."
@@ -75,18 +77,57 @@ def messages_for(
     )
 
     messages: List[Dict[str, str]] = []
+    # Open call ids, and the slot directly after the call their results go in
+    open_calls: set = set()
+    result_slot = 0
     for message in history:
         if not isinstance(message, dict):
             continue
 
         role = message.get("role")
         content = message.get("content")
+
+        # Only the caller may answer its own calls, so a peer's tool use is prose
+        tool_calls = message.get("tool_calls")
+        if tool_calls and role == agent_name:
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": content,
+                    "tool_calls": tool_calls,
+                }
+            )
+            open_calls = {call.get("id") for call in tool_calls}
+            result_slot = len(messages)
+            continue
+
+        tool_call_id = message.get("tool_call_id")
+        if tool_call_id and tool_call_id in open_calls:
+            messages.insert(
+                result_slot,
+                {
+                    "role": "tool",
+                    "tool_call_id": tool_call_id,
+                    "content": str(content),
+                },
+            )
+            result_slot += 1
+            open_calls.discard(tool_call_id)
+            continue
+
+        if tool_calls or tool_call_id:
+            messages.append(
+                {"role": "user", "content": render_message(message)}
+            )
+            continue
+
         if content is None:
             continue
         content = str(content)
 
         if role == agent_name:
             messages.append({"role": "assistant", "content": content})
+            open_calls = set()
             continue
 
         role_key = str(role).lower()

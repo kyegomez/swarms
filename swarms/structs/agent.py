@@ -1482,15 +1482,15 @@ class Agent:
                         # Parse the response from the agent with the output type
                         response = self.parse_llm_output(response)
 
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=response,
-                        )
-
                         # Every tool call in this turn needs a matching result before the next request.
                         if use_transcript:
                             turn_calls = transcript.record_assistant(
                                 response
+                            )
+                        else:
+                            self.short_memory.add(
+                                role=self.agent_name,
+                                content=response,
                             )
 
                         # Print
@@ -2121,16 +2121,50 @@ class Agent:
         added *during* a run are appended structurally on top of this prefix,
         which is what preserves tool-call fidelity where it matters most.
         """
-        transcript = Transcript()
+        transcript = Transcript(
+            conversation=self.short_memory, agent_name=self.agent_name
+        )
+        open_calls: set = set()
+        # A tool result goes directly after its call, ahead of any log rows
+        result_slot = 0
         for message in self.short_memory.conversation_history:
             if not isinstance(message, dict):
                 continue
             role = message.get("role")
             content = message.get("content")
+
+            # Rows an earlier run's Transcript wrote come back typed
+            tool_calls = message.get("tool_calls")
+            if tool_calls and role == self.agent_name:
+                transcript.append_message(
+                    {
+                        "role": "assistant",
+                        "content": content,
+                        "tool_calls": tool_calls,
+                    }
+                )
+                open_calls = {call.get("id") for call in tool_calls}
+                result_slot = len(transcript)
+                continue
+            tool_call_id = message.get("tool_call_id")
+            if tool_call_id and tool_call_id in open_calls:
+                transcript.insert_message(
+                    result_slot,
+                    {
+                        "role": "tool",
+                        "tool_call_id": tool_call_id,
+                        "content": str(content),
+                    },
+                )
+                result_slot += 1
+                open_calls.discard(tool_call_id)
+                continue
+
             if content is None or str(role).lower() == "system":
                 continue
             if role == self.agent_name:
                 transcript.append_assistant_text(content)
+                open_calls = set()
             else:
                 transcript.append_user(content)
         return transcript
@@ -4443,7 +4477,11 @@ Summary: {summary}
         if messages is None:
             return self._transcript_from_memory()
 
-        transcript = Transcript(list(messages))
+        transcript = Transcript(
+            list(messages),
+            conversation=self.short_memory,
+            agent_name=self.agent_name,
+        )
         if task is not None:
             transcript.append_user(task)
         return transcript
