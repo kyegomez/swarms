@@ -132,6 +132,47 @@ def _msg_batch_run_error(err: Exception, tb: str) -> str:
     return f"SwarmRouter: Error executing batch task on swarm: {err} Traceback: {tb}"
 
 
+def _msg_fallback_swarms_not_list(actual_type: str) -> str:
+    return (
+        f"SwarmRouter fallback_swarms must be a list of swarm type "
+        f"strings, got {actual_type}."
+    )
+
+
+def _msg_invalid_fallback_swarm_type(swarm_type, valid_types) -> str:
+    return (
+        f"SwarmRouter fallback_swarms entry {swarm_type!r} is not a "
+        f"valid swarm type. Valid types: {', '.join(valid_types)}"
+    )
+
+
+def _msg_fallback_rearrange_flow_required() -> str:
+    return (
+        "SwarmRouter fallback_swarms includes 'AgentRearrange', which "
+        "requires rearrange_flow to be set."
+    )
+
+
+def _msg_swarm_failed_trying_next(
+    swarm_type: str, next_type: str, err: Exception
+) -> str:
+    return (
+        f"SwarmRouter swarm '{swarm_type}' failed: {err}. "
+        f"Falling back to '{next_type}'."
+    )
+
+
+def _msg_all_swarms_failed(attempts) -> str:
+    tried = "; ".join(
+        f"{a['swarm_type']}: {type(a['error']).__name__}: {a['error']}"
+        for a in attempts
+    )
+    return (
+        f"SwarmRouter exhausted every swarm type without a successful "
+        f"run. Attempts: {tried}"
+    )
+
+
 def _msg_collab_prompt_ignored(swarm_type: str) -> str:
     return (
         f"multi_agent_collab_prompt is ignored for swarm_type={swarm_type!r}; "
@@ -181,6 +222,10 @@ class SwarmRouterConfig(BaseModel):
     )
     multi_agent_collab_prompt: bool = Field(
         description="Whether to enable multi-agent collaboration prompts",
+    )
+    fallback_swarms: Optional[List[SwarmType]] = Field(
+        default=None,
+        description="Swarm types to try, in order, if the primary swarm fails",
     )
     task: str = Field(
         description="The task to be executed by the swarm",
@@ -243,6 +288,13 @@ class SwarmRouter(SerializableMixin):
         rearrange_flow (str, optional): Required when
             ``swarm_type="AgentRearrange"``. Flow-DSL string like
             ``"A -> B, C -> D"``.
+        fallback_swarms (List[SwarmType], optional): Swarm types to try, in
+            order, when the primary ``swarm_type`` raises during a run. Each
+            fallback is built from the same agents and configuration. The
+            first swarm to complete wins; if every one fails,
+            :class:`SwarmRouterRunError` is raised carrying every attempt.
+            Defaults to ``None`` (no fallback: the primary swarm's error
+            propagates unchanged).
         output_type (OutputType, optional): How the final swarm output is
             formatted. Defaults to ``"dict-all-except-first"``.
         multi_agent_collab_prompt (bool, optional): Append the multi-agent
@@ -287,6 +339,10 @@ class SwarmRouter(SerializableMixin):
         agents (List[Union[Agent, Callable]]): The configured agent roster.
         swarm: The lazily-constructed underlying swarm instance (populated on
             first ``run()``).
+        active_swarm_type (str): The swarm type that served the most recent
+            run — the primary ``swarm_type`` unless a fallback was used.
+        fallback_attempts (List[dict]): One ``{"swarm_type", "error"}`` entry
+            per swarm that failed during the most recent run.
         swarm_workspace_dir (str | None): Autosave workspace, set when
             ``autosave=True``.
         logs (list): Per-instance log buffer.
@@ -321,6 +377,7 @@ class SwarmRouter(SerializableMixin):
         swarm_type: SwarmType = "SequentialWorkflow",
         autosave: bool = False,
         rearrange_flow: str = None,
+        fallback_swarms: Optional[List[SwarmType]] = None,
         output_type: OutputType = "dict",
         multi_agent_collab_prompt: bool = False,
         list_all_agents: bool = False,
@@ -366,6 +423,7 @@ class SwarmRouter(SerializableMixin):
         self.swarm_type = swarm_type
         self.autosave = autosave
         self.rearrange_flow = rearrange_flow
+        self.fallback_swarms = fallback_swarms
         self.output_type = output_type
         self.logs = []
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
@@ -398,6 +456,8 @@ class SwarmRouter(SerializableMixin):
         self._swarm_cache = {}  # Cache for created swarms
         # Built lazily on the first run.
         self.swarm = None
+        self.active_swarm_type = swarm_type
+        self.fallback_attempts = []
 
         # Always built: a disabled manager no-ops, an absent one raises.
         self._setup_autosave()
@@ -434,6 +494,8 @@ class SwarmRouter(SerializableMixin):
               members.
             * ``rearrange_flow`` is provided when ``swarm_type="AgentRearrange"``.
             * ``max_loops != 0``.
+            * ``fallback_swarms``, if given, is a list of valid swarm types,
+              and ``rearrange_flow`` is set if it includes ``AgentRearrange``.
 
         On success, calls :meth:`setup` to apply collaboration prompts and
         agent listing.
@@ -479,6 +541,28 @@ class SwarmRouter(SerializableMixin):
             # Validate max_loops
             if self.max_loops == 0:
                 raise SwarmRouterConfigError(_msg_max_loops_zero())
+
+            if self.fallback_swarms is not None:
+                if not isinstance(self.fallback_swarms, list):
+                    raise SwarmRouterConfigError(
+                        _msg_fallback_swarms_not_list(
+                            type(self.fallback_swarms).__name__
+                        )
+                    )
+                for fallback in self.fallback_swarms:
+                    if fallback not in valid_swarm_types:
+                        raise SwarmRouterConfigError(
+                            _msg_invalid_fallback_swarm_type(
+                                fallback, valid_swarm_types
+                            )
+                        )
+                if (
+                    "AgentRearrange" in self.fallback_swarms
+                    and self.rearrange_flow is None
+                ):
+                    raise SwarmRouterConfigError(
+                        _msg_fallback_rearrange_flow_required()
+                    )
 
             self.setup()
 
@@ -738,13 +822,20 @@ class SwarmRouter(SerializableMixin):
             **kwargs,
         )
 
-    def _compute_swarm_cache_key(self):
+    def _compute_swarm_cache_key(
+        self, swarm_type: Optional[str] = None
+    ):
         """Build a stable cache key for the underlying swarm instance.
 
         Keyed on swarm_type, agent identities, and construction-time config.
         Per-call task/img/tasks args are intentionally excluded — those are
         passed to ``swarm.run()`` and must not invalidate the cached swarm.
+
+        Args:
+            swarm_type (str, optional): The swarm type being keyed. Defaults
+                to ``self.swarm_type``; fallbacks pass their own.
         """
+        swarm_type = swarm_type or self.swarm_type
         agent_ids = tuple(
             getattr(a, "agent_name", None)
             or getattr(a, "__name__", None)
@@ -771,10 +862,16 @@ class SwarmRouter(SerializableMixin):
             config_hash = hash(config)
         except TypeError:
             config_hash = hash(repr(config))
-        return (self.swarm_type, agent_ids, config_hash)
+        return (swarm_type, agent_ids, config_hash)
 
-    def _create_swarm(self, task: str = None, *args, **kwargs):
-        """Create or return the cached swarm selected by ``self.swarm_type``.
+    def _create_swarm(
+        self,
+        task: str = None,
+        swarm_type: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
+        """Create or return the cached swarm for ``swarm_type``.
 
         The task is accepted for call-site compatibility but is not part of the
         cache key and is not passed to the factory. Runtime inputs such as
@@ -783,6 +880,8 @@ class SwarmRouter(SerializableMixin):
         Args:
             task (str, optional): Runtime task associated with the creation
                 request. Defaults to ``None``.
+            swarm_type (str, optional): Which swarm to build. Defaults to
+                ``self.swarm_type``; :meth:`_run` passes each fallback here.
             *args: Positional arguments forwarded to the selected factory.
             **kwargs: Keyword arguments forwarded to the selected factory.
 
@@ -794,18 +893,20 @@ class SwarmRouter(SerializableMixin):
             RuntimeError: If the selected factory fails.
         """
 
-        cache_key = self._compute_swarm_cache_key()
+        swarm_type = swarm_type or self.swarm_type
+
+        cache_key = self._compute_swarm_cache_key(swarm_type)
         cached = self._swarm_cache.get(cache_key)
         if cached is not None:
-            self._log("debug", _msg_swarm_cached(self.swarm_type))
+            self._log("debug", _msg_swarm_cached(swarm_type))
             return cached
 
         # Use factory pattern for O(1) lookup
-        factory_func = self._swarm_factory.get(self.swarm_type)
+        factory_func = self._swarm_factory.get(swarm_type)
         if factory_func is None:
             raise ValueError(
                 _msg_invalid_factory_type(
-                    self.swarm_type, list(self._swarm_factory.keys())
+                    swarm_type, list(self._swarm_factory.keys())
                 )
             )
 
@@ -816,15 +917,13 @@ class SwarmRouter(SerializableMixin):
             # Cache the created swarm for future use
             self._swarm_cache[cache_key] = swarm
 
-            self._log("info", _msg_swarm_created(self.swarm_type))
+            self._log("info", _msg_swarm_created(swarm_type))
             return swarm
 
         except Exception as e:
-            self._log(
-                "error", _msg_factory_failed(self.swarm_type, e)
-            )
+            self._log("error", _msg_factory_failed(swarm_type, e))
             raise RuntimeError(
-                _msg_factory_failed(self.swarm_type, e)
+                _msg_factory_failed(swarm_type, e)
             ) from e
 
     def list_agents_to_eachother(self):
@@ -836,7 +935,7 @@ class SwarmRouter(SerializableMixin):
         if self.swarm is None:
             return
 
-        if self.swarm_type == "SequentialWorkflow":
+        if self.active_swarm_type == "SequentialWorkflow":
             self.conversation = getattr(
                 self.swarm.agent_rearrange, "conversation", None
             )
@@ -867,20 +966,50 @@ class SwarmRouter(SerializableMixin):
 
         Returns:
             Any: Result returned by the underlying swarm.
-        """
-        self.swarm = self._create_swarm(task, *args, **kwargs)
 
-        args = {}
+        Raises:
+            SwarmRouterRunError: If ``fallback_swarms`` is set and every swarm
+                type, primary and fallbacks alike, fails.
+            Exception: Without fallbacks, whatever the swarm raised.
+        """
+        run_kwargs = {}
 
         if tasks is not None:
-            args["tasks"] = tasks
+            run_kwargs["tasks"] = tasks
         else:
-            args["task"] = task
+            run_kwargs["task"] = task
 
         if img is not None:
-            args["img"] = img
+            run_kwargs["img"] = img
 
-        result = self.swarm.run(**args, **kwargs)
+        chain = [self.swarm_type] + list(self.fallback_swarms or [])
+        self.fallback_attempts = []
+
+        for position, swarm_type in enumerate(chain):
+            try:
+                self.swarm = self._create_swarm(
+                    task, swarm_type, *args, **kwargs
+                )
+                self.active_swarm_type = swarm_type
+                result = self.swarm.run(**run_kwargs, **kwargs)
+                break
+            except Exception as e:
+                # No fallbacks configured: the caller sees the original error.
+                if len(chain) == 1:
+                    raise
+                self.fallback_attempts.append(
+                    {"swarm_type": swarm_type, "error": e}
+                )
+                if position + 1 < len(chain):
+                    logger.warning(
+                        _msg_swarm_failed_trying_next(
+                            swarm_type, chain[position + 1], e
+                        )
+                    )
+        else:
+            raise SwarmRouterRunError(
+                _msg_all_swarms_failed(self.fallback_attempts)
+            ) from self.fallback_attempts[-1]["error"]
 
         self.list_agents_to_eachother()
 
@@ -892,6 +1021,14 @@ class SwarmRouter(SerializableMixin):
                 "task": task if task else None,
                 "tasks": tasks if tasks else None,
                 "status": "completed",
+                "swarm_type": self.active_swarm_type,
+                "fallback_attempts": [
+                    {
+                        "swarm_type": a["swarm_type"],
+                        "error": str(a["error"]),
+                    }
+                    for a in self.fallback_attempts
+                ],
             },
         )
 
