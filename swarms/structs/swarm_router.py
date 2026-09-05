@@ -40,6 +40,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 
@@ -341,6 +342,8 @@ class SwarmRouter(SerializableMixin):
             first ``run()``).
         active_swarm_type (str): The swarm type that served the most recent
             run — the primary ``swarm_type`` unless a fallback was used.
+        usage (dict): Provider token usage summed over every agent the
+            router's swarms have run. See :attr:`usage`.
         fallback_attempts (List[dict]): One ``{"swarm_type", "error"}`` entry
             per swarm that failed during the most recent run.
         swarm_workspace_dir (str | None): Autosave workspace, set when
@@ -591,6 +594,40 @@ class SwarmRouter(SerializableMixin):
             logger.warning(
                 _msg_collab_prompt_ignored(self.swarm_type)
             )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every agent this router has run.
+
+        Adds up :attr:`Agent.usage` for the configured ``agents`` plus any
+        agent a built swarm holds on its own — a ``HierarchicalSwarm``
+        director, a ``MixtureOfAgents`` aggregator, a judge. Keys:
+        ``input_tokens``, ``output_tokens``, ``cached_tokens``,
+        ``total_tokens``. Agent totals are lifetime totals, so an agent
+        shared with another router contributes what it spent there too.
+        Streaming calls are not counted.
+        """
+        total = empty_usage()
+        for agent in self._usage_agents():
+            for key, value in agent.usage.items():
+                total[key] += value
+        return total
+
+    def _usage_agents(self) -> List[Agent]:
+        """Every distinct Agent the router or its built swarms hold."""
+        candidates = list(self.agents or [])
+        for swarm in self._swarm_cache.values():
+            for value in vars(swarm).values():
+                if isinstance(value, (list, tuple)):
+                    candidates.extend(value)
+                else:
+                    candidates.append(value)
+
+        seen = {}
+        for candidate in candidates:
+            if isinstance(candidate, Agent):
+                seen.setdefault(id(candidate), candidate)
+        return list(seen.values())
 
     def fetch_message_history_as_string(self):
         """Return the underlying swarm's conversation history as a string.

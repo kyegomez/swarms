@@ -1065,3 +1065,86 @@ def test_config_model_accepts_fallback_swarms():
         task="t",
     )
     assert config.fallback_swarms == ["ConcurrentWorkflow"]
+
+
+# ============================================================================
+# usage
+# ============================================================================
+
+
+def _agent_with_usage(name, input_tokens, output_tokens):
+    """An offline agent whose lifetime usage is set directly."""
+    with patch("swarms.structs.agent.LiteLLM"):
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-5.4",
+            max_loops=1,
+            autosave=False,
+            print_on=False,
+        )
+    agent._usage = {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "cached_tokens": 0,
+        "total_tokens": input_tokens + output_tokens,
+    }
+    return agent
+
+
+def _usage_router(agents):
+    with patch("swarms.structs.agent.LiteLLM"):
+        return SwarmRouter(
+            name="usage-router",
+            agents=agents,
+            swarm_type="SequentialWorkflow",
+            autosave=False,
+        )
+
+
+def test_usage_starts_at_zero():
+    router = _usage_router([_agent_with_usage("A", 0, 0)])
+    assert router.usage == {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_tokens": 0,
+        "total_tokens": 0,
+    }
+
+
+def test_usage_sums_the_configured_agents():
+    router = _usage_router(
+        [
+            _agent_with_usage("A", 100, 10),
+            _agent_with_usage("B", 50, 5),
+        ]
+    )
+    assert router.usage == {
+        "input_tokens": 150,
+        "output_tokens": 15,
+        "cached_tokens": 0,
+        "total_tokens": 165,
+    }
+
+
+def test_usage_includes_agents_a_swarm_holds_on_its_own():
+    """A HierarchicalSwarm director or an MoA aggregator is not in
+    ``router.agents`` but its spend is part of the run."""
+    from types import SimpleNamespace
+
+    worker = _agent_with_usage("Worker", 100, 10)
+    director = _agent_with_usage("Director", 30, 3)
+    router = _usage_router([worker])
+    router._swarm_cache["fake"] = SimpleNamespace(
+        director=director, agents=[worker], conversation=None
+    )
+
+    assert router.usage["input_tokens"] == 130
+    assert router.usage["output_tokens"] == 13
+
+
+def test_usage_counts_a_shared_agent_once():
+    agent = _agent_with_usage("A", 100, 10)
+    router = _usage_router([agent])
+    router._swarm_cache["fake"] = type("S", (), {"agents": [agent]})()
+
+    assert router.usage["input_tokens"] == 100
