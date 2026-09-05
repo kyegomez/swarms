@@ -127,6 +127,7 @@ Configuration, output formats, and misc helpers.
 - [async_agent.py](utils/async_agent.py) — Async agent
 - [custom_agent_base_url.py](utils/custom_agent_base_url.py) — Custom base URL
 - [dynamic_context_window.py](utils/dynamic_context_window.py) — Dynamic context window
+- [agent_usage.py](utils/agent_usage.py) — Token usage and cost
 - [fallback_test.py](utils/fallback_test.py) — Model fallback
 - [grok_4_agent.py](utils/grok_4_agent.py) — Grok 4 agent
 - [list_agent_output_types.py](utils/list_agent_output_types.py) — Output types
