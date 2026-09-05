@@ -4,8 +4,7 @@ This directory contains examples demonstrating swarm arrangement utilities for o
 
 ## Examples
 
-- [swarm_arange_demo.py](swarm_arange_demo.py) - Swarm arrangement demonstration
-- [swarm_arange_demo 2.py](swarm_arange_demo 2.py) - Alternative swarm arrangement demo
+- [swarm_rearrange_demo.py](swarm_rearrange_demo.py) - Swarm arrangement demonstration
 
 ## Overview
 
