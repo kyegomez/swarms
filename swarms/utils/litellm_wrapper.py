@@ -1209,6 +1209,11 @@ class LiteLLM:
             "temperature": self.temperature,
         }
 
+        if self.stream:
+            completion_params["stream_options"] = {
+                "include_usage": True
+            }
+
         # Only include top_p if explicitly set (not None)
         if self.top_p is not None:
             completion_params["top_p"] = self.top_p
@@ -1302,21 +1307,39 @@ class LiteLLM:
         if completion_params.get("max_tokens", 0) < threshold:
             completion_params["max_tokens"] = target
 
-    def _record_usage(self, response: any) -> None:
-        """Add the provider-reported token counts of one response to ``self.usage``.
-
-        Streaming responses are generators with no usage attached, so they
-        are skipped; a response without a ``usage`` block is skipped too.
-        """
-        if self.stream or response is None:
-            return
-        call_usage = usage_from_response(response)
+    def _accumulate_usage(self, call_usage: Optional[dict]) -> None:
+        """Fold one call's normalised token counts into ``self.usage``."""
         if call_usage is None:
             return
         for key in self.usage:
             self.usage[key] += call_usage[key]
         if self.usage_hook is not None:
             self.usage_hook(call_usage)
+
+    def _record_usage(self, response: any) -> None:
+        """Add the provider-reported token counts of one response to ``self.usage``.
+
+        Streaming responses are generators whose usage arrives in a trailing
+        chunk; they are handled by ``_track_streaming_usage`` instead. A
+        response without a ``usage`` block is skipped too.
+        """
+        if self.stream or response is None:
+            return
+        self._accumulate_usage(usage_from_response(response))
+
+    def _track_streaming_usage(self, stream: any):
+        """Yield content chunks while folding a trailing usage chunk into ``self.usage``.
+
+        With ``stream_options={"include_usage": True}`` the provider emits a
+        final chunk carrying ``usage`` and no ``choices``; it is consumed for
+        accounting and not forwarded, so callbacks never see an empty token.
+        """
+        for chunk in stream:
+            if _field(chunk, "usage"):
+                self._accumulate_usage(usage_from_response(chunk))
+                if not _field(chunk, "choices"):
+                    continue
+            yield chunk
 
     def _process_response(self, response: any):
         """
@@ -1331,7 +1354,7 @@ class LiteLLM:
 
         # Streaming: return the generator directly.
         if self.stream:
-            return response
+            return self._track_streaming_usage(response)
 
         # Before the reasoning branch: reasoning models still emit tool_calls, which would be dropped.
         if self.tools_list_dictionary is not None and getattr(
