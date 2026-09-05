@@ -877,7 +877,6 @@ class PlannerWorkerSwarm:
             raise ValueError("A task is required")
 
         self._original_task = task
-        self.conversation.clear()
         self.conversation.add(role="User", content=task)
 
         verdict = None

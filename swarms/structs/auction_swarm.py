@@ -381,7 +381,6 @@ class AuctionSwarm(SerializableMixin):
         """
         self._log("info", f"[{self.name}] auctioning task: {task}")
 
-        self.conversation.clear()
         self.conversation.add(role="User", content=task)
 
         if self.auto_equip:

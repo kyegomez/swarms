@@ -415,8 +415,6 @@ class LLMCouncil:
             print("=" * 80)
             print(f"\n📝 Query: {query}\n")
 
-        self.conversation.clear()
-
         # Add user query to conversation
         self.conversation.add(role="User", content=query)
 

@@ -199,7 +199,6 @@ class AdvisorSwarm:
         if not task:
             raise ValueError("A task is required")
 
-        self.conversation.clear()
         self.conversation.add(role="User", content=task)
         advisor_uses = 0
 

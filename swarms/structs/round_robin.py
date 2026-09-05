@@ -216,7 +216,6 @@ class RoundRobinSwarm(SerializableMixin):
             Exception: If an exception occurs during task execution.
         """
         try:
-            self.conversation.clear()
             self.conversation.add(role="User", content=task)
             n = len(self.agents)
             agent_names = return_all_agent_names(self.agents)
