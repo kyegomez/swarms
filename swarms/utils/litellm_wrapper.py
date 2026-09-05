@@ -20,7 +20,7 @@ for various input modalities and output formats.
 import socket
 import traceback
 from functools import lru_cache
-from typing import List, Optional, Union
+from typing import Callable, List, Optional, Union
 
 import litellm
 import requests
@@ -105,6 +105,45 @@ def gemini_output_img_handler(response: any):
         return response_content
 
 
+def empty_usage() -> dict:
+    """A zeroed usage dict, the shape ``Agent.usage`` returns."""
+    return {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_tokens": 0,
+        "total_tokens": 0,
+    }
+
+
+def _field(obj: any, name: str, default: any = None) -> any:
+    if isinstance(obj, dict):
+        return obj.get(name, default)
+    return getattr(obj, name, default)
+
+
+def usage_from_response(response: any) -> Optional[dict]:
+    """Normalise a completion response's ``usage`` block, or None if absent.
+
+    LiteLLM reports every provider in the OpenAI shape: ``prompt_tokens``,
+    ``completion_tokens``, ``total_tokens``, with cache reads under
+    ``prompt_tokens_details.cached_tokens``.
+    """
+    usage = _field(response, "usage")
+    if not usage:
+        return None
+    details = _field(usage, "prompt_tokens_details")
+    cached = _field(details, "cached_tokens", 0) if details else 0
+    input_tokens = _field(usage, "prompt_tokens", 0) or 0
+    output_tokens = _field(usage, "completion_tokens", 0) or 0
+    return {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "cached_tokens": cached or 0,
+        "total_tokens": _field(usage, "total_tokens", 0)
+        or input_tokens + output_tokens,
+    }
+
+
 class LiteLLM:
     """
     A comprehensive wrapper for LiteLLM that provides a unified interface for interacting
@@ -187,6 +226,7 @@ class LiteLLM:
         reasoning_enabled: bool = False,
         response_format: any = None,
         agent_name: str = None,
+        usage_hook: Optional[Callable[[dict], None]] = None,
         *args,
         **kwargs,
     ):
@@ -271,6 +311,11 @@ class LiteLLM:
                 Defaults to False.
             response_format (any, optional): Response format specification (e.g., JSON mode).
                 Format depends on the model provider. Defaults to None.
+            usage_hook (Callable[[dict], None], optional): Called after every
+                non-streaming completion with that call's token usage
+                (``input_tokens``, ``output_tokens``, ``cached_tokens``,
+                ``total_tokens``). The running total is also kept on
+                ``self.usage``. Defaults to None.
             *args: Additional positional arguments that will be stored and used in run method.
                 If a single dictionary is passed, it will be merged into completion parameters.
             **kwargs: Additional keyword arguments that will be stored and used in run method.
@@ -312,6 +357,8 @@ class LiteLLM:
         self.verbose = verbose
         self.response_format = response_format
         self.agent_name = agent_name
+        self.usage_hook = usage_hook
+        self.usage = empty_usage()
         self.modalities = []
         self.messages = []  # Initialize messages list
 
@@ -1255,6 +1302,22 @@ class LiteLLM:
         if completion_params.get("max_tokens", 0) < threshold:
             completion_params["max_tokens"] = target
 
+    def _record_usage(self, response: any) -> None:
+        """Add the provider-reported token counts of one response to ``self.usage``.
+
+        Streaming responses are generators with no usage attached, so they
+        are skipped; a response without a ``usage`` block is skipped too.
+        """
+        if self.stream or response is None:
+            return
+        call_usage = usage_from_response(response)
+        if call_usage is None:
+            return
+        for key in self.usage:
+            self.usage[key] += call_usage[key]
+        if self.usage_hook is not None:
+            self.usage_hook(call_usage)
+
     def _process_response(self, response: any):
         """
         Route a completion response to the right output handler based on
@@ -1373,6 +1436,7 @@ class LiteLLM:
                 messages=messages,
             )
             response = completion(**completion_params)
+            self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
             self._raise_network_error(network_error)
@@ -1413,6 +1477,7 @@ class LiteLLM:
                 messages=messages,
             )
             response = await acompletion(**completion_params)
+            self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
             self._raise_network_error(network_error)
