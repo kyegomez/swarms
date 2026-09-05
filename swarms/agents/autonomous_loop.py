@@ -108,7 +108,7 @@ class AutonomousAgentLoop:
 
     def __init__(self, agent: Any):
         self.agent = agent
-        # The real body sent to the model; short_memory mirrors it.
+        # Placeholder: short_memory does not exist yet, each run rebuilds this
         self._transcript = Transcript()
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
@@ -171,7 +171,10 @@ class AutonomousAgentLoop:
         # compact() already re-seeded short_memory with the summary,
         # so the transcript copy must not be mirrored back a second
         # time.
-        self._transcript = Transcript()
+        self._transcript = Transcript(
+            conversation=self.agent.short_memory,
+            agent_name=self.agent.agent_name,
+        )
         self._say_user(
             "[Compressed Memory Summary]\n"
             "Earlier turns were compressed to stay within the "
@@ -255,7 +258,10 @@ class AutonomousAgentLoop:
         try:
 
             # Cleared before seeding, or the opening turn is lost.
-            self._transcript = Transcript()
+            self._transcript = Transcript(
+                conversation=self.agent.short_memory,
+                agent_name=self.agent.agent_name,
+            )
             self.agent.autonomous_subtasks = []
             self.agent.current_subtask_index = 0
             self.agent.subtask_status = {}
@@ -471,9 +477,6 @@ class AutonomousAgentLoop:
                     )
 
                     response = self.agent.parse_llm_output(response)
-                    self.agent.short_memory.add(
-                        role=self.agent.agent_name, content=response
-                    )
                     planning_calls = self._record_assistant(response)
                     planning_results: Dict[str, Any] = {}
 
@@ -733,10 +736,6 @@ class AutonomousAgentLoop:
 
                         response = self.agent.parse_llm_output(
                             response
-                        )
-                        self.agent.short_memory.add(
-                            role=self.agent.agent_name,
-                            content=response,
                         )
 
                         # Answer every call before the next request.

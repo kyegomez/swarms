@@ -14,9 +14,11 @@ results arrive as prose, and the stable prefix needed for prompt caching is
 rebuilt on every turn.
 
 This module owns that structure so the agent loops do not each reimplement it.
-``short_memory`` is still maintained alongside a ``Transcript`` by its callers,
-because persistence, output formatting and the final summary all read from
-there; see :class:`~swarms.structs.conversation.Conversation`.
+Given a ``conversation``, a ``Transcript`` also records the assistant's turns
+and the tool results into it as typed rows, so ``short_memory`` carries the
+same tool calls the model saw and persistence, rendering and other agents
+reading it (:func:`~swarms.structs.context_utils.messages_for`) see them.
+User turns are still recorded by the callers, which own their role names.
 """
 
 from typing import Any, Dict, List, Optional
@@ -42,9 +44,21 @@ class Transcript:
     """
 
     def __init__(
-        self, messages: Optional[List[Dict[str, Any]]] = None
+        self,
+        messages: Optional[List[Dict[str, Any]]] = None,
+        conversation: Any = None,
+        agent_name: Optional[str] = None,
     ):
+        """
+        Args:
+            messages: Turns to start from.
+            conversation: A :class:`~swarms.structs.conversation.Conversation`
+                that assistant turns and tool results are also written to.
+            agent_name: The role those assistant turns carry there.
+        """
         self._messages: List[Dict[str, Any]] = list(messages or [])
+        self._conversation = conversation
+        self._agent_name = agent_name
 
     # Reading.
 
@@ -69,6 +83,16 @@ class Transcript:
         self._messages.clear()
 
     # Writing.
+
+    def append_message(self, message: Dict[str, Any]) -> None:
+        """Add an already-typed turn, e.g. one read back from a Conversation."""
+        self._messages.append(dict(message))
+
+    def insert_message(
+        self, index: int, message: Dict[str, Any]
+    ) -> None:
+        """Insert a typed turn at ``index``; tool results must directly follow their call."""
+        self._messages.insert(index, dict(message))
 
     def append_user(self, content: Any) -> None:
         """Add a user turn."""
@@ -139,9 +163,19 @@ class Transcript:
                         "tool_calls": tool_calls,
                     }
                 )
+                if self._conversation is not None:
+                    self._conversation.add(
+                        role=self._agent_name,
+                        content=None,
+                        tool_calls=tool_calls,
+                    )
                 return calls
 
         self.append_assistant_text(parsed)
+        if self._conversation is not None:
+            self._conversation.add(
+                role=self._agent_name, content=parsed
+            )
         return calls
 
     def flush_tool_results(
@@ -159,6 +193,7 @@ class Transcript:
                 next request invalid.
         """
         for call in calls:
+            recorded = call["id"] in results
             result = results.get(
                 call["id"],
                 f"(no result recorded for {call['name']})",
@@ -170,6 +205,14 @@ class Transcript:
                     "content": str(result),
                 }
             )
+            # The placeholder only keeps the request valid, nothing happened
+            if self._conversation is not None and recorded:
+                self._conversation.add(
+                    role="tool",
+                    content=str(result),
+                    tool_call_id=call["id"],
+                    metadata={"name": call["name"]},
+                )
 
     def map_batch_results(
         self,
