@@ -145,6 +145,42 @@ class AutonomousAgentLoop:
             formatter=format_data_structure,
         )
 
+    def _maybe_compress_context(self) -> bool:
+        """Compress the conversation when it nears the context limit.
+
+        ``ContextCompressor`` measures and compacts
+        ``agent.short_memory``, but the request body actually sent to
+        the model is ``self._transcript`` — so after a compaction the
+        transcript is rebuilt around the summary. Compressing only the
+        mirror would leave the payload growing unbounded, which is the
+        failure the compressor exists to prevent.
+
+        Returns:
+            bool: True when a compression ran and the transcript was
+            re-seeded. The caller must then restore whatever immediate
+            instruction the model needs (e.g. the prompt for the
+            subtask in flight).
+        """
+        compressor = getattr(self.agent, "_context_compressor", None)
+        if compressor is None:
+            return False
+        summary = compressor.maybe_compress(self.agent)
+        if summary is None:
+            return False
+
+        # compact() already re-seeded short_memory with the summary,
+        # so the transcript copy must not be mirrored back a second
+        # time.
+        self._transcript = Transcript()
+        self._say_user(
+            "[Compressed Memory Summary]\n"
+            "Earlier turns were compressed to stay within the "
+            "context window. Progress so far:\n\n"
+            f"{summary}",
+            mirror=False,
+        )
+        return True
+
     def _run_autonomous_loop(
         self,
         task: Optional[Union[str, Any]] = None,
@@ -673,6 +709,16 @@ class AutonomousAgentLoop:
                     and subtask_iterations < max_subtask_loops
                 ):
                     subtask_iterations += 1
+
+                    # Between iterations every recorded tool call has
+                    # been answered, so this is the one point the
+                    # transcript can be replaced without orphaning a
+                    # tool_call id.
+                    if self._maybe_compress_context():
+                        # The rebuilt transcript holds only the
+                        # summary; restore the instruction for the
+                        # subtask in flight.
+                        self._say_user(execution_prompt)
 
                     try:
                         response = self.agent.call_llm(

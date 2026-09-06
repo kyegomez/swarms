@@ -71,7 +71,7 @@ result = agent.run("Summarize the state of the semiconductor market.")
 | `print_on` | `bool` | `True` | Print the final output |
 | `autosave` | `bool` | `False` | Persist agent state after each run |
 | `retry_attempts` | `int` | `3` | LLM call retries |
-| `reasoning_effort` | `str` | `"medium"` | `minimal`/`low`/`medium`/`high`/`xhigh`/`ultra`/`max`/`none` |
+| `reasoning_effort` | `str` | `None` | `minimal`/`low`/`medium`/`high`/`xhigh`/`ultra`/`max`/`none` |
 | `thinking_tokens` | `int` | `1024` | Extended thinking budget (Claude) |
 | `mcp_url` / `mcp_urls` | `str` / `list[str]` | `None` | MCP servers to load tools from |
 | `handoffs` | `list[Agent]` | `None` | Agents this one may delegate to |

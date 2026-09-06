@@ -860,6 +860,7 @@ def test_timestamp_format_in_history_string(tmp_path):
     conv = Conversation(
         time_enabled=True,
         dynamic_context_window=False,
+        save_filepath=str(tmp_path / "timestamp_1.json"),
         conversations_dir=str(tmp_path / "convs"),
     )
     conv.add("user", "Hello")
@@ -873,6 +874,7 @@ def test_no_timestamp_fallback(tmp_path):
     conv = Conversation(
         time_enabled=False,
         dynamic_context_window=False,
+        save_filepath=str(tmp_path / "timestamp_2.json"),
         conversations_dir=str(tmp_path / "convs"),
     )
     conv.add("user", "Hello")
@@ -885,6 +887,7 @@ def test_time_enabled_end_to_end(tmp_path):
     conv = Conversation(
         time_enabled=True,
         dynamic_context_window=False,
+        save_filepath=str(tmp_path / "timestamp_3.json"),
         conversations_dir=str(tmp_path / "convs"),
     )
     conv.add("user", "First")
@@ -899,6 +902,88 @@ def test_time_enabled_end_to_end(tmp_path):
         datetime.fromisoformat(ts)
 
 
+# ── Message Metadata Tests (Issue #1926) ──
+
+
+def test_add_message_with_metadata(tmp_path):
+    """Test that Conversation.add preserves message metadata."""
+    conv = Conversation(
+        name="test_add_metadata",
+        save_filepath=str(tmp_path / "metadata_1.json"),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+    metadata = {"trace_id": "abc123", "cost": 0.01}
+    msg = conv.add("user", "Hello with metadata", metadata=metadata)
+    assert len(conv.conversation_history) == 1
+    assert conv.conversation_history[0]["metadata"] == metadata
+    assert msg["metadata"] == metadata
+    return True
+
+
+def test_add_message_with_metadata_and_category(tmp_path):
+    """Test that metadata and category coexist on stored message."""
+    conv = Conversation(
+        name="test_add_metadata_cat",
+        save_filepath=str(tmp_path / "metadata_2.json"),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+    metadata = {"trace_id": "xyz789"}
+    msg = conv.add(
+        "user",
+        "Hello",
+        category="input",
+        metadata=metadata,
+    )
+    assert conv.conversation_history[0]["category"] == "input"
+    assert conv.conversation_history[0]["metadata"] == metadata
+    assert msg["category"] == "input"
+    assert msg["metadata"] == metadata
+    return True
+
+
+def test_add_message_metadata_serialization(tmp_path):
+    """Test that metadata is preserved across to_dict, to_json, and to_yaml."""
+    conv = Conversation(
+        name="test_add_metadata_ser",
+        save_filepath=str(tmp_path / "metadata_3.json"),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+    metadata = {"source": "unit_test", "run_id": 42}
+    conv.add("user", "Test metadata serialization", metadata=metadata)
+
+    # to_dict
+    dict_res = conv.to_dict()
+    assert dict_res[0]["metadata"] == metadata
+
+    # to_json
+    json_res = conv.to_json()
+    assert '"metadata":' in json_res
+    assert '"source": "unit_test"' in json_res
+
+    # to_yaml
+    yaml_res = conv.to_yaml()
+    assert "metadata:" in yaml_res
+    assert "source: unit_test" in yaml_res
+    return True
+
+
+def test_add_message_empty_and_none_metadata(tmp_path):
+    """Test that empty or None metadata does not pollute message dict."""
+    conv = Conversation(
+        name="test_add_metadata_empty",
+        save_filepath=str(tmp_path / "metadata_4.json"),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+    msg_none = conv.add("user", "None metadata", metadata=None)
+    assert "metadata" not in conv.conversation_history[0]
+    assert "metadata" not in msg_none
+
+    msg_empty = conv.add("user", "Empty metadata", metadata={})
+    assert "metadata" not in conv.conversation_history[1]
+    assert "metadata" not in msg_empty
+    return True
+
+
 def run_all_tests():
     """Run all test functions and return results."""
     logger.info("Starting test suite execution")
@@ -906,6 +991,10 @@ def run_all_tests():
     test_functions = [
         test_add_message,
         test_add_message_with_time,
+        test_add_message_with_metadata,
+        test_add_message_with_metadata_and_category,
+        test_add_message_metadata_serialization,
+        test_add_message_empty_and_none_metadata,
         test_delete_message,
         test_delete_message_out_of_bounds,
         test_update_message,

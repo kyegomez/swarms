@@ -2,7 +2,7 @@ import time
 import re
 from typing import Any, Callable, Dict, List, Optional
 
-from rich.console import Console
+from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
@@ -16,6 +16,8 @@ from rich.spinner import Spinner
 from rich.tree import Tree
 
 from rich.markdown import Markdown
+
+DEFAULT_CONTENT_STYLE = "grey85"
 
 
 # Global Live display for the dashboard
@@ -174,12 +176,16 @@ class MarkdownOutputHandler:
             if part_type == "markdown":
                 # Render markdown
                 try:
-                    md = Markdown(content, code_theme="monokai")
+                    md = Markdown(
+                        content,
+                        code_theme="monokai",
+                        style=DEFAULT_CONTENT_STYLE,
+                    )
                     rendered_parts.append(md)
                 except Exception:
                     # Fallback to plain text with error indication
                     rendered_parts.append(
-                        Text(content, style="white")
+                        Text(content, style=DEFAULT_CONTENT_STYLE)
                     )
 
             elif part_type == "code":
@@ -201,7 +207,7 @@ class MarkdownOutputHandler:
                     rendered_parts.append(
                         Text(
                             f"```{lang}\n{code}\n```",
-                            style="white on grey23",
+                            style=DEFAULT_CONTENT_STYLE,
                         )
                     )
 
@@ -247,6 +253,7 @@ class MarkdownOutputHandler:
                         content_group,
                         title=title,
                         border_style=border_style,
+                        style=DEFAULT_CONTENT_STYLE,
                         padding=(1, 2),
                         expand=False,
                     )
@@ -257,7 +264,7 @@ class MarkdownOutputHandler:
                     Panel(
                         Text(
                             "No content to display",
-                            style="dim italic",
+                            style=f"{DEFAULT_CONTENT_STYLE} italic",
                         ),
                         title=title,
                         border_style="yellow",
@@ -275,6 +282,7 @@ class MarkdownOutputHandler:
                         else "Content (fallback mode)"
                     ),
                     border_style="yellow",
+                    style=DEFAULT_CONTENT_STYLE,
                     subtitle=error_msg,
                     subtitle_align="left",
                 )
@@ -404,7 +412,9 @@ class Formatter:
         random_color = choose_random_color()
 
         panel = Panel(
-            content, title=title, style=f"bold {random_color}"
+            Text(content, style=DEFAULT_CONTENT_STYLE),
+            title=title,
+            border_style=f"bold {random_color}",
         )
         self.console.print(panel)
 
@@ -526,11 +536,11 @@ class Formatter:
         Args:
             tokens (str): The string to display in real-time.
             title (str): Title of the panel.
-            style (str): Style for the text inside the panel.
+            style (str): Style for the panel border.
             delay (float): Delay in seconds between displaying each token.
             by_word (bool): If True, display by words; otherwise, display by characters.
         """
-        text = Text(style=style)
+        text = Text(style=DEFAULT_CONTENT_STYLE)
 
         # Split tokens into characters or words
         token_list = tokens.split() if by_word else tokens
@@ -574,13 +584,11 @@ class Formatter:
         panel_style = (
             f"bold {random_color}" if style is None else style
         )
-        text_style = (
-            "white"  # Make text white instead of random color
-        )
+        text_style = DEFAULT_CONTENT_STYLE
 
         def create_streaming_panel(text_obj, is_complete=False):
             """Create panel with proper text wrapping using Rich's built-in capabilities"""
-            panel_title = f"[white]{title}[/white]"
+            panel_title = f"[{DEFAULT_CONTENT_STYLE}]{title}[/]"
             if is_complete:
                 panel_title += " [bold green]✅[/bold green]"
 
@@ -911,17 +919,22 @@ class Formatter:
         self,
         director_name: str,
         orders: List[Any],
-        title: str = "Director Task Distribution",
+        plan: Optional[str] = None,
+        title: Optional[str] = None,
     ) -> None:
         """
-        Display the director's task assignments in a rich panel.
+        Display the director's plan and task assignments in a rich panel.
 
         Args:
             director_name (str): Name of the director assigning the tasks.
             orders (List[Any]): Order objects or dictionaries containing
                 ``agent_name`` and ``task`` fields.
-            title (str): Panel title.
+            plan (Optional[str]): The director's plan, rendered above the
+                assignments when present.
+            title (Optional[str]): Panel title. Defaults to the director's
+                own name, so a swarm with several directors is readable.
         """
+        title = title or f"Director Name: {director_name}"
         tree = Tree(
             f"[bold red]🎯 {director_name}[/bold red]",
             guide_style="bold red",
@@ -942,16 +955,27 @@ class Formatter:
                     )
                     task = getattr(order, "task", "No task provided")
 
-                task_preview = str(task).replace("\n", " ").strip()
-                if len(task_preview) > 160:
-                    task_preview = f"{task_preview[:160].rstrip()}..."
-
+                # Text.assemble, not markup: task text is model-generated
+                # and any "[...]" in it would parse as a style tag.
                 tree.add(
-                    f"[bold cyan]{agent_name}[/bold cyan] [dim]- {task_preview}[/dim]"
+                    Text.assemble(
+                        (str(agent_name), "bold cyan"),
+                        (" - ", "dim"),
+                        (str(task).strip(), "dim"),
+                    )
                 )
 
+        body: Any = tree
+        if plan and str(plan).strip():
+            body = Group(
+                Text("Plan", style="bold white"),
+                Text(str(plan).strip(), style="dim"),
+                Text(""),
+                tree,
+            )
+
         panel = Panel(
-            tree,
+            body,
             title=f"[bold white]{title}[/bold white]",
             border_style="red",
             padding=(0, 1),
