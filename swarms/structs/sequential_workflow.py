@@ -478,11 +478,7 @@ class SequentialWorkflow:
             )
 
         try:
-            # One clone per task. `run` appends to a conversation that is
-            # built once in __init__ and never reset, then formats the whole
-            # history — so reusing the instance made every result carry the
-            # transcripts of the tasks before it. `AgentRearrange.batch_run`
-            # already isolates this way for the same reason.
+            # One clone per task, a reused instance carries every earlier transcript
             return [
                 self.agent_rearrange._clone_for_task().run(task)
                 for task in tasks

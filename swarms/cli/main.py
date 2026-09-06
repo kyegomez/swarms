@@ -2292,8 +2292,7 @@ def main() -> None:
     try:
         show_ascii_art()
 
-        # Typo correction: catch mistyped command name before argparse
-        # rejects it with a generic "invalid choice" error.
+        # Catch a mistyped command before argparse's generic "invalid choice"
         if (
             len(sys.argv) > 1
             and not sys.argv[1].startswith("-")

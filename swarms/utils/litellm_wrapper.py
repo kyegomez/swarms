@@ -20,7 +20,7 @@ for various input modalities and output formats.
 import socket
 import traceback
 from functools import lru_cache
-from typing import List, Optional, Union
+from typing import Callable, List, Optional, Union
 
 import litellm
 import requests
@@ -105,6 +105,45 @@ def gemini_output_img_handler(response: any):
         return response_content
 
 
+def empty_usage() -> dict:
+    """A zeroed usage dict, the shape ``Agent.usage`` returns."""
+    return {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_tokens": 0,
+        "total_tokens": 0,
+    }
+
+
+def _field(obj: any, name: str, default: any = None) -> any:
+    if isinstance(obj, dict):
+        return obj.get(name, default)
+    return getattr(obj, name, default)
+
+
+def usage_from_response(response: any) -> Optional[dict]:
+    """Normalise a completion response's ``usage`` block, or None if absent.
+
+    LiteLLM reports every provider in the OpenAI shape: ``prompt_tokens``,
+    ``completion_tokens``, ``total_tokens``, with cache reads under
+    ``prompt_tokens_details.cached_tokens``.
+    """
+    usage = _field(response, "usage")
+    if not usage:
+        return None
+    details = _field(usage, "prompt_tokens_details")
+    cached = _field(details, "cached_tokens", 0) if details else 0
+    input_tokens = _field(usage, "prompt_tokens", 0) or 0
+    output_tokens = _field(usage, "completion_tokens", 0) or 0
+    return {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "cached_tokens": cached or 0,
+        "total_tokens": _field(usage, "total_tokens", 0)
+        or input_tokens + output_tokens,
+    }
+
+
 class LiteLLM:
     """
     A comprehensive wrapper for LiteLLM that provides a unified interface for interacting
@@ -187,6 +226,7 @@ class LiteLLM:
         reasoning_enabled: bool = False,
         response_format: any = None,
         agent_name: str = None,
+        usage_hook: Optional[Callable[[dict], None]] = None,
         *args,
         **kwargs,
     ):
@@ -271,6 +311,11 @@ class LiteLLM:
                 Defaults to False.
             response_format (any, optional): Response format specification (e.g., JSON mode).
                 Format depends on the model provider. Defaults to None.
+            usage_hook (Callable[[dict], None], optional): Called after every
+                non-streaming completion with that call's token usage
+                (``input_tokens``, ``output_tokens``, ``cached_tokens``,
+                ``total_tokens``). The running total is also kept on
+                ``self.usage``. Defaults to None.
             *args: Additional positional arguments that will be stored and used in run method.
                 If a single dictionary is passed, it will be merged into completion parameters.
             **kwargs: Additional keyword arguments that will be stored and used in run method.
@@ -312,6 +357,8 @@ class LiteLLM:
         self.verbose = verbose
         self.response_format = response_format
         self.agent_name = agent_name
+        self.usage_hook = usage_hook
+        self.usage = empty_usage()
         self.modalities = []
         self.messages = []  # Initialize messages list
 
@@ -342,9 +389,6 @@ class LiteLLM:
         # Store additional args and kwargs for use in run method
         self.init_args = args
         self.init_kwargs = kwargs
-
-        # if self.reasoning_enabled is True:
-        #     self.reasoning_check()
 
     def reasoning_check(self):
         """
@@ -842,8 +886,7 @@ class LiteLLM:
         if not self.prompt_caching:
             return
 
-        # OpenAI-style controls (harmless/ignored on providers that don't use
-        # them; LiteLLM routes them for OpenAI-compatible backends).
+        # OpenAI-style controls, ignored by providers that lack them
         key = self._cache_opt("prompt_cache_key", None)
         if key is not None:
             completion_params["prompt_cache_key"] = key
@@ -881,8 +924,7 @@ class LiteLLM:
                 "image_url": {"url": image},
             }
         else:
-            # get_image_base64 always returns a data URI, so the MIME type
-            # can be extracted from it directly.
+            # get_image_base64 returns a data URI, the MIME type is in it
             image_url = get_image_base64(image)
             mime_type = "image/jpeg"
             if "data:" in image_url and ";base64," in image_url:
@@ -1166,8 +1208,7 @@ class LiteLLM:
         if self.top_p is not None:
             completion_params["top_p"] = self.top_p
 
-        # Merge initialization kwargs first (lower priority), then runtime
-        # kwargs (higher priority).
+        # Runtime kwargs override init kwargs
         if self.init_kwargs:
             completion_params.update(self.init_kwargs)
         if runtime_kwargs:
@@ -1193,8 +1234,7 @@ class LiteLLM:
         if self.base_url is not None:
             completion_params["base_url"] = self.base_url
 
-        # Only when present: litellm falls back to the provider env var
-        # on absence, and an explicit None would override that.
+        # An explicit None would override litellm's env-var fallback
         if self.api_key is not None:
             completion_params["api_key"] = self.api_key
 
@@ -1206,9 +1246,7 @@ class LiteLLM:
         if self.modalities and len(self.modalities) >= 2:
             completion_params["modalities"] = self.modalities
 
-        # Forward an explicitly requested effort level even when LiteLLM's
-        # local capability registry does not yet recognize a newly released
-        # model. `drop_params` handles providers that do not accept it.
+        # Forwarded even for models LiteLLM's registry lacks, drop_params covers the rest
         if self.reasoning_effort is not None:
             completion_params["reasoning_effort"] = (
                 self.reasoning_effort
@@ -1254,6 +1292,22 @@ class LiteLLM:
         completion_params.pop("top_p", None)
         if completion_params.get("max_tokens", 0) < threshold:
             completion_params["max_tokens"] = target
+
+    def _record_usage(self, response: any) -> None:
+        """Add the provider-reported token counts of one response to ``self.usage``.
+
+        Streaming responses are generators with no usage attached, so they
+        are skipped; a response without a ``usage`` block is skipped too.
+        """
+        if self.stream or response is None:
+            return
+        call_usage = usage_from_response(response)
+        if call_usage is None:
+            return
+        for key in self.usage:
+            self.usage[key] += call_usage[key]
+        if self.usage_hook is not None:
+            self.usage_hook(call_usage)
 
     def _process_response(self, response: any):
         """
@@ -1373,6 +1427,7 @@ class LiteLLM:
                 messages=messages,
             )
             response = completion(**completion_params)
+            self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
             self._raise_network_error(network_error)
@@ -1413,6 +1468,7 @@ class LiteLLM:
                 messages=messages,
             )
             response = await acompletion(**completion_params)
+            self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
             self._raise_network_error(network_error)
@@ -1470,8 +1526,7 @@ class LiteLLM:
             responses = llm.batched_run(["Task 1", "Task 2", "Task 3"], batch_size=2)
             ```
         """
-        # Imported here, not at module scope: swarms.structs pulls this
-        # module back in, and a top-level import would be circular.
+        # Local import, a module-level one is circular via swarms.structs
         from swarms.structs.execution_utils import run_concurrently
 
         return run_concurrently(

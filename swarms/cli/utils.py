@@ -119,8 +119,7 @@ def show_ascii_art():
     header.add_column(vertical="top")
     header.add_row(icon, info)
 
-    # Two rotating tips: a quick command hint inside the panel + a longer
-    # contextual tip below it. Both pull from swarms.cli.tips for variety.
+    # A command hint inside the panel and a longer tip below it
     panel_tip = render_tip(category="commands")
     startup_tip = render_tip()
 

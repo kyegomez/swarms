@@ -50,8 +50,7 @@ def get_conversation_dir():
     return conversation_dir
 
 
-# Conversations built without a name share this one, so they must not resume
-# from each other's files. See setup_file_path.
+# Unnamed conversations share this name, so they must not resume from disk
 DEFAULT_CONVERSATION_NAME = "conversation-test"
 
 
@@ -109,8 +108,7 @@ class Conversation:
         self.id = id or generate_id()
         self.name = name
         self.save_filepath = save_filepath
-        # Whether the caller chose the file, as opposed to it being derived
-        # from the default name. Only an explicit choice resumes from disk.
+        # Only an explicitly chosen file resumes from disk
         self._explicit_save_filepath = save_filepath is not None
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
@@ -148,8 +146,7 @@ class Conversation:
         self.setup_file_path()
         self.setup()
 
-        # Re-enable MEMORY.md writes and preload any prior interaction log
-        # as a single System preamble message.
+        # Prior MEMORY.md content becomes one System preamble message
         self._suppress_memory_md = False
         if self.memory_md_path:
             self._init_memory_md()
@@ -262,9 +259,6 @@ class Conversation:
 
         if self.custom_rules_prompt is not None:
             self.add(self.user or "User", self.custom_rules_prompt)
-
-        # if self.tokenizer is not None:
-        #     self.truncate_memory_with_tokenizer()
 
     def _autosave(self):
         """Automatically save the conversation if autosave is enabled."""
@@ -1118,8 +1112,7 @@ class Conversation:
                 if remaining_tokens <= 0:
                     break
 
-                # If we have space left, we need to truncate this message
-                # Use binary search to find content length that fits remaining token space
+                # Binary-search a prefix of this message that fits the remaining budget
                 truncated_content = self._binary_search_truncate(
                     content,
                     remaining_tokens,
@@ -1538,8 +1531,7 @@ class Conversation:
         if total_tokens <= self.context_length:
             return all_tokens
 
-        # We need to remove characters from the beginning until we're under the limit
-        # Start by removing a percentage of characters and adjust iteratively
+        # Drop characters from the front until the string fits
         target_tokens = self.context_length
         current_string = all_tokens
 
