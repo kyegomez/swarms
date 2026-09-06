@@ -72,8 +72,11 @@ def aggregate(
     # return: the default is the agent's whole conversation, which would put
     # every worker's full transcript into the shared one.
     for result, agent in zip(results, workers):
+        # agent_name is Optional on Agent; a null role would be carried
+        # straight into the turns the aggregator reads.
         conversation.add(
-            content=agent_answer(agent, result), role=agent.agent_name
+            content=agent_answer(agent, result),
+            role=agent.agent_name or "Worker",
         )
 
     final_result = aggregator_agent.run(
