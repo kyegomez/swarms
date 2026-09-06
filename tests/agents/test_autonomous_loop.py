@@ -38,7 +38,7 @@ from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
-    MAX_TOOL_OUTPUT_CHARS,
+    TOOL_OUTPUT_CONTEXT_SHARE,
     create_file_tool,
     delete_file_tool,
     grep_tool,
@@ -46,6 +46,7 @@ from swarms.structs.autonomous_loop_utils import (
     read_file_tool,
     update_file_tool,
 )
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 # --------------------------------------------------------------------------
@@ -240,15 +241,35 @@ class TestToolOutputIsCapped:
     """One oversized read is re-sent on every later call of the run."""
 
     def test_read_file_truncates_a_large_file(self):
-        agent = build_agent()
-        # Inside the workspace: the file tools refuse paths outside it.
+        agent = build_agent(context_length=16000)
+        budget = int(agent.context_length * TOOL_OUTPUT_CONTEXT_SHARE)
+        # Inside the workspace: this PR makes the file tools refuse a path
+        # outside it, so tmp_path would be rejected before the cap is reached.
         big = Path(agent._get_agent_workspace_dir()) / "big.txt"
-        big.write_text("x" * (MAX_TOOL_OUTPUT_CHARS + 5000))
+        big.write_text("word " * (budget * 2))
 
         output = read_file_tool(agent, str(big))
 
-        assert len(output) < MAX_TOOL_OUTPUT_CHARS + 200
         assert "output truncated" in output
+        assert (
+            count_tokens(output, model=agent.model_name)
+            <= budget + 50
+        )
+
+    def test_budget_follows_the_agent_context_window(self):
+        # Each agent gets its own workspace, and this PR makes the file tools
+        # refuse anything outside it, so the file is written per agent rather
+        # than shared from tmp_path.
+        def read_with(context_length):
+            agent = build_agent(context_length=context_length)
+            big = Path(agent._get_agent_workspace_dir()) / "big.txt"
+            big.write_text("word " * 20000)
+            return read_file_tool(agent, str(big))
+
+        small = read_with(16000)
+        large = read_with(128000)
+
+        assert len(large) > len(small)
 
 
 class TestBatchedToolCalls:
@@ -1161,6 +1182,10 @@ class TestFileToolsStayInTheWorkspace:
 
         agent = MagicMock()
         agent._get_agent_workspace_dir.return_value = str(ws)
+        # read_file_tool now sizes its output cap from the agent's context
+        # window; a bare MagicMock yields a 1-token budget and truncates
+        # everything to nothing.
+        agent.context_length = 128000
         return agent, ws, tmp_path / "outside_secret.txt"
 
     def test_every_file_tool_refuses_to_escape(self, workspace):

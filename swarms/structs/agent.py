@@ -112,7 +112,7 @@ from swarms.utils.index import (
     format_data_structure,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -510,6 +510,7 @@ class Agent:
         self.dynamic_tools = dynamic_tools
         self.tool_loader: Optional[DynamicToolLoader] = None
         self._mcp_tools_deferred = False
+        self._usage = empty_usage()
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
         self.think_tool = think_tool
@@ -676,6 +677,11 @@ class Agent:
 
         if self.llm is None:
             self.llm = self.llm_handling()
+        elif getattr(
+            self.llm, "usage_hook", None
+        ) is None and hasattr(self.llm, "usage_hook"):
+            # A caller-supplied LiteLLM reports into this agent too.
+            self.llm.usage_hook = self._add_usage
 
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
@@ -4003,6 +4009,21 @@ Summary: {summary}
             )
             raise e
 
+    @property
+    def usage(self) -> dict:
+        """Token usage reported by the provider, summed over every LLM call this agent has made.
+
+        Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens`` (the
+        part of ``input_tokens`` served from the provider's prompt cache),
+        ``total_tokens``. Streaming calls are not counted.
+        """
+        return dict(self._usage)
+
+    def _add_usage(self, call_usage: dict) -> None:
+        """Fold one completion's usage into the running total."""
+        for key in self._usage:
+            self._usage[key] += call_usage.get(key, 0)
+
     def temp_llm_instance_for_tool_summary(self):
         return LiteLLM(
             model_name=self.model_name,
@@ -4015,6 +4036,7 @@ Summary: {summary}
             parallel_tool_calls=False,
             base_url=self.llm_base_url,
             api_key=self.llm_api_key,
+            usage_hook=self._add_usage,
         )
 
     def get_available_models(self) -> List[str]:
