@@ -442,6 +442,7 @@ class CouncilAsAJudge:
 
         try:
 
+            self.conversation.clear()
             self.conversation.add(
                 role="User",
                 content=task,

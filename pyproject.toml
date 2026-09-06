@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "14.0.2"
+version = "15.0.0"
 description = "Swarms - TGSC"
 license = "Apache-2.0"
 authors = ["Kye Gomez <kye@swarms.world>"]
@@ -99,8 +99,6 @@ pytest = "*"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# Without this, pytest-asyncio's strict default silently skips every bare
-# `async def test_`, reporting it as a failure that never ran.
 asyncio_mode = "auto"
 markers = [
     "remote: tests that hit a real remote MCP server over the network",
@@ -109,12 +107,6 @@ markers = [
 [tool.ruff]
 line-length = 70
 
-# Library code under swarms/ is held to the full rule set. Example scripts,
-# test helpers and one-off scripts are not: an availability probe imports a
-# package to see whether it is installed (F401), a demo loads dotenv before
-# importing (E402), and a teaching example catches everything so it can print
-# a friendly message (E722). Enforcing those there produces churn without
-# making the library safer.
 [tool.ruff.lint.per-file-ignores]
 "examples/**" = ["E402", "E721", "E722", "F401", "F402"]
 "tests/**" = ["E402", "E721", "E722", "F401", "F402"]

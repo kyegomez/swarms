@@ -21,90 +21,90 @@ bash 01_setup_check.sh
 
 ### Setup & Configuration
 
-- **[01_setup_check.sh](examples/cli/01_setup_check.sh)** - Environment setup verification
+- **[01_setup_check.sh](01_setup_check.sh)** - Environment setup verification
   ```bash
   swarms setup-check
   ```
 
-- **[02_onboarding.sh](examples/cli/02_onboarding.sh)** - Interactive onboarding process
+- **[02_onboarding.sh](02_onboarding.sh)** - Interactive onboarding process
   ```bash
   swarms onboarding
   ```
 
-- **[03_get_api_key.sh](examples/cli/03_get_api_key.sh)** - Retrieve API keys
+- **[03_get_api_key.sh](03_get_api_key.sh)** - Retrieve API keys
   ```bash
   swarms get-api-key
   ```
 
-- **[04_check_login.sh](examples/cli/04_check_login.sh)** - Verify authentication
+- **[04_check_login.sh](04_check_login.sh)** - Verify authentication
   ```bash
   swarms check-login
   ```
 
 ### Agent Management
 
-- **[05_create_agent.sh](examples/cli/05_create_agent.sh)** - Create and run custom agents
+- **[05_create_agent.sh](05_create_agent.sh)** - Create and run custom agents
   ```bash
   swarms agent --name "Agent" --description "Description" --system-prompt "Prompt" --task "Task"
   ```
 
-- **[06_run_agents_yaml.sh](examples/cli/06_run_agents_yaml.sh)** - Execute agents from YAML
+- **[06_run_agents_yaml.sh](06_run_agents_yaml.sh)** - Execute agents from YAML
   ```bash
   swarms run-agents --yaml-file agents.yaml
   ```
 
-- **[07_load_markdown.sh](examples/cli/07_load_markdown.sh)** - Load agents from markdown files
+- **[07_load_markdown.sh](07_load_markdown.sh)** - Load agents from markdown files
   ```bash
   swarms load-markdown --markdown-path ./agents/
   ```
 
 ### Multi-Agent Architectures
 
-- **[08_llm_council.sh](examples/cli/08_llm_council.sh)** - Run LLM Council collaboration
+- **[08_llm_council.sh](08_llm_council.sh)** - Run LLM Council collaboration
   ```bash
   swarms llm-council --task "Your question here"
   ```
 
-- **[09_heavy_swarm.sh](examples/cli/09_heavy_swarm.sh)** - Run HeavySwarm for complex tasks
+- **[09_heavy_swarm.sh](09_heavy_swarm.sh)** - Run HeavySwarm for complex tasks
   ```bash
   swarms heavy-swarm --task "Your complex task here"
   ```
 
-- **[10_autoswarm.sh](examples/cli/10_autoswarm.sh)** - Auto-generate swarm configurations
+- **[10_autoswarm.sh](10_autoswarm.sh)** - Auto-generate swarm configurations
   ```bash
   swarms autoswarm --task "Task description" --model "gpt-4"
   ```
 
 ### Utilities
 
-- **[11_features.sh](examples/cli/11_features.sh)** - Display all available features
+- **[11_features.sh](11_features.sh)** - Display all available features
   ```bash
   swarms features
   ```
 
-- **[12_help.sh](examples/cli/12_help.sh)** - Display help documentation
+- **[12_help.sh](12_help.sh)** - Display help documentation
   ```bash
   swarms help
   ```
 
-- **[13_auto_upgrade.sh](examples/cli/13_auto_upgrade.sh)** - Update Swarms package
+- **[13_auto_upgrade.sh](13_auto_upgrade.sh)** - Update Swarms package
   ```bash
   swarms auto-upgrade
   ```
 
-- **[14_book_call.sh](examples/cli/14_book_call.sh)** - Schedule strategy session
+- **[14_book_call.sh](14_book_call.sh)** - Schedule strategy session
   ```bash
   swarms book-call
   ```
 
-- **[research_agent_example.sh](examples/cli/research_agent_example.sh)** - Research agent example
+- **[research_agent_example.sh](research_agent_example.sh)** - Research agent example
   ```bash
   swarms research-agent --task "Research task"
   ```
 
 ### Run All Examples
 
-- **[run_all_examples.sh](examples/cli/run_all_examples.sh)** - Run multiple examples in sequence
+- **[run_all_examples.sh](run_all_examples.sh)** - Run multiple examples in sequence
   ```bash
   bash run_all_examples.sh
   ```

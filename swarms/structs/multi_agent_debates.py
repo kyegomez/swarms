@@ -167,7 +167,16 @@ class ExpertPanelDiscussion:
                 conversation.add(expert.agent_name, expert_response)
 
             # Moderator synthesizes and asks follow-up
-            synthesis_prompt = f"Synthesize the expert responses and ask a follow-up question: {[msg['content'] for msg in conversation.conversation_history[-len(self.agents):]]}"
+            panel = conversation.conversation_history[
+                -len(self.agents) :
+            ]
+            transcript = "\n\n".join(
+                f"{msg['role']}: {msg['content']}" for msg in panel
+            )
+            synthesis_prompt = (
+                "Synthesize the expert responses below and ask a "
+                f"follow-up question.\n\n{transcript}"
+            )
             synthesis = self.moderator.run(task=synthesis_prompt)
             conversation.add(self.moderator.agent_name, synthesis)
 

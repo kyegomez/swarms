@@ -28,8 +28,7 @@ NO_NEW_MESSAGES = (
     "previous response."
 )
 
-# Roles a structure writes for its own bookkeeping - rosters, flow diagrams,
-# loop markers. They are not turns any agent took, so they are not rendered.
+# Structure bookkeeping rows, not turns any agent took, so never rendered
 _STRUCTURE_ROLES = frozenset({"system"})
 
 _USER_ROLES = frozenset({"user", "human"})
@@ -122,8 +121,7 @@ def split_last_turn(
     """
     if not messages:
         return [], fallback
-    # A blank newest turn would reach Agent.run as an empty task, which it
-    # rejects; the flattened form used to smuggle one through as "User: ".
+    # A blank newest turn would reach Agent.run as an empty task, which it rejects
     task = messages[-1]["content"]
     if not str(task).strip():
         return messages[:-1], fallback

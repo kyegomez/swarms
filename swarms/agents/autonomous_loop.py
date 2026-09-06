@@ -42,6 +42,7 @@ from swarms.structs.autonomous_loop_utils import (
     get_planning_prompt,
     grep_tool,
     list_directory_tool,
+    glob_tool,
     read_file_tool,
     respond_to_user_tool,
     run_bash_tool,
@@ -144,6 +145,40 @@ class AutonomousAgentLoop:
             results,
             formatter=format_data_structure,
         )
+
+    def _maybe_compress_context(self) -> bool:
+        """Compress the conversation when it nears the context limit.
+
+        ``ContextCompressor`` measures and compacts
+        ``agent.short_memory``, but the request body actually sent to
+        the model is ``self._transcript`` — so after a compaction the
+        transcript is rebuilt around the summary. Compressing only the
+        mirror would leave the payload growing unbounded, which is the
+        failure the compressor exists to prevent.
+
+        Returns:
+            bool: True when a compression ran and the transcript was
+            re-seeded. The caller must then restore whatever immediate
+            instruction the model needs (e.g. the prompt for the
+            subtask in flight).
+        """
+        compressor = getattr(self.agent, "_context_compressor", None)
+        if compressor is None:
+            return False
+        summary = compressor.maybe_compress(self.agent)
+        if summary is None:
+            return False
+
+        # compact() already re-seeded short_memory, do not mirror the summary twice
+        self._transcript = Transcript()
+        self._say_user(
+            "[Compressed Memory Summary]\n"
+            "Earlier turns were compressed to stay within the "
+            "context window. Progress so far:\n\n"
+            f"{summary}",
+            mirror=False,
+        )
+        return True
 
     def _run_autonomous_loop(
         self,
@@ -369,6 +404,9 @@ class AutonomousAgentLoop:
                     self.agent, **kwargs
                 ),
                 "grep": lambda **kwargs: grep_tool(
+                    self.agent, **kwargs
+                ),
+                "glob": lambda **kwargs: glob_tool(
                     self.agent, **kwargs
                 ),
                 "create_sub_agent": lambda **kwargs: create_sub_agent_tool(
@@ -673,6 +711,11 @@ class AutonomousAgentLoop:
                     and subtask_iterations < max_subtask_loops
                 ):
                     subtask_iterations += 1
+
+                    # Every tool call is answered here, so replacing the transcript orphans nothing
+                    if self._maybe_compress_context():
+                        # The rebuilt transcript holds only the summary, restore the subtask
+                        self._say_user(execution_prompt)
 
                     try:
                         response = self.agent.call_llm(

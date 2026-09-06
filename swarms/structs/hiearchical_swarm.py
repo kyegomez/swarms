@@ -188,6 +188,11 @@ class HierarchicalSwarm:
         )
         self.swarm_workspace_dir = self.workspace.dir
 
+        # How much of the shared conversation each agent has already seen.
+        self._delivered: Dict[str, int] = {}
+
+        self.conversation = Conversation(time_enabled=False)
+
         self.initialize_swarm()
 
         capture_init(self)
@@ -226,11 +231,6 @@ class HierarchicalSwarm:
 
     def init_swarm(self):
         """Initialize conversation state and validate the swarm."""
-        # How much of the shared conversation each agent has already seen.
-        self._delivered = {}
-
-        self.conversation = Conversation(time_enabled=False)
-
         # Reliability checks
         self.reliability_checks()
 
@@ -586,6 +586,10 @@ class HierarchicalSwarm:
             # Handle interactive mode task input
             if task is None and self.interactive:
                 task = self._get_interactive_task()
+
+            self.conversation.clear()
+            self._delivered = {}
+            self.add_context_to_director()
 
             if task is not None:
                 self.conversation.add(role="User", content=task)

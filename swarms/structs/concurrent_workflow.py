@@ -20,8 +20,7 @@ from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
-# Upper bound on concurrent agent calls when max_workers is not set. Agent
-# calls are network-bound; this guards provider rate limits, not CPU.
+# Default cap on concurrent agent calls, guards provider rate limits not CPU
 MAX_CONCURRENT_AGENTS = 32
 
 

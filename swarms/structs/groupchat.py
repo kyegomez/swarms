@@ -79,8 +79,7 @@ from swarms.telemetry.otel import capture_init, trace_run
 logger = initialize_logger(log_folder="groupchat")
 
 RESPOND_TOOL = {
-    # The LLM is forced to call this function for every decision. This keeps
-    # speaking decisions machine-readable and avoids parsing natural language.
+    # Forced tool call, so every speaking decision is machine-readable
     "type": "function",
     "function": {
         "name": "respond",
@@ -248,7 +247,8 @@ class GroupChat(SerializableMixin):
 
         self.conversation = Conversation(time_enabled=False)
 
-        if len(self.agents) < 2:
+        # agents may be None, the documented error is ValueError not TypeError
+        if self.agents is None or len(self.agents) < 2:
             raise ValueError("GroupChat requires at least 2 agents.")
 
         if self.auto_equip:

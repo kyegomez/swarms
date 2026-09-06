@@ -30,14 +30,13 @@ import os
 import re as _re
 import subprocess
 import uuid
+from pathlib import Path
 from typing import Any, Dict, List
 
 from loguru import logger
 
 from swarms.structs.async_subagent import SubagentRegistry, TaskStatus
-
-# Constants.
-
+from swarms.utils.litellm_tokenizer import DEFAULT_MODEL, count_tokens
 
 # Maximum iterations to prevent infinite loops
 MAX_PLANNING_ATTEMPTS = 5
@@ -45,8 +44,44 @@ MAX_SUBTASK_ITERATIONS = 100
 MAX_SUBTASK_LOOPS = 20
 MAX_CONSECUTIVE_THINKS = 2
 
+# The loop re-serializes its history into every later prompt, so one oversized tool result is paid for on every remaining call of the run.
+TOOL_OUTPUT_CONTEXT_SHARE = 0.25
 
-# Prompts.
+# Used when the caller has no context window to share, e.g. a tool called outside an agent.
+DEFAULT_TOOL_OUTPUT_TOKENS = 4096
+
+
+def truncate_tool_output(
+    text: str,
+    context_window: int = None,
+    model_name: str = DEFAULT_MODEL,
+) -> str:
+    """Cap a tool result at a share of the context window, telling the model how much it is not seeing."""
+    if not text:
+        return text
+
+    budget = (
+        int(context_window * TOOL_OUTPUT_CONTEXT_SHARE)
+        if context_window
+        else DEFAULT_TOOL_OUTPUT_TOKENS
+    )
+
+    total_tokens = count_tokens(text, model=model_name)
+    if total_tokens <= budget:
+        return text
+
+    # count_tokens has no decode counterpart, so cut by the text's own token density, then shrink until it fits.
+    kept = text[: max(1, int(len(text) * budget / total_tokens))]
+    kept_tokens = count_tokens(kept, model=model_name)
+    while kept_tokens > budget and len(kept) > 1:
+        kept = kept[: int(len(kept) * 0.9)]
+        kept_tokens = count_tokens(kept, model=model_name)
+
+    return (
+        kept
+        + "\n... (output truncated: showing the first "
+        + f"{kept_tokens} of {total_tokens} tokens)"
+    )
 
 
 def get_planning_prompt(task: str) -> str:
@@ -123,9 +158,6 @@ def get_summary_prompt() -> str:
         "Use the `complete_task` tool with: task_id, summary, success (true/false), results (optional), and lessons_learned (optional).\n"
         "Be concise, well-organized, and thorough—this is the user's final deliverable."
     )
-
-
-# Tool schemas.
 
 
 def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
@@ -477,6 +509,27 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
         {
             "type": "function",
             "function": {
+                "name": "glob",
+                "description": "Find files by name pattern, newest first. Returns paths relative to the search root. Prefer this over run_bash find for locating files.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "pattern": {
+                            "type": "string",
+                            "description": "Glob pattern matched recursively against every path under the root, e.g. '*.py' or 'test_*.json'",
+                        },
+                        "path": {
+                            "type": "string",
+                            "description": "Directory to search in (relative to workspace or absolute). Defaults to workspace root.",
+                        },
+                    },
+                    "required": ["pattern"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "create_sub_agent",
                 "description": "Create one or more sub-agents that can work on specialized tasks. Sub-agents are cached and can be reused across different task assignments.",
                 "parameters": {
@@ -784,12 +837,17 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
 
         # Read file
         with open(full_path, "r", encoding="utf-8") as f:
-            content = f.read()
+            raw = f.read()
+        content = truncate_tool_output(
+            raw,
+            context_window=agent.context_length,
+            model_name=agent.model_name,
+        )
 
         # Add to memory
         agent.short_memory.add(
             role="File Operations",
-            content=f"Read file: {full_path} ({len(content)} characters)",
+            content=f"Read file: {full_path} ({len(raw)} characters)",
         )
 
         if agent.verbose:
@@ -1039,11 +1097,8 @@ def run_bash_tool(
             content=f"Blocked (security): {command[:100]}{'...' if len(command) > 100 else ''}",
         )
         return f"Error: {rejection}"
-    # -------------------------------------------------------------------------
-
     try:
-        # Run in process cwd (where the user started the script) so commands like
-        # ls -la and python script.py see the project directory, not the agent workspace.
+        # Runs in the process cwd, not the agent workspace
         result = subprocess.run(
             command,
             shell=True,
@@ -1080,7 +1135,11 @@ def run_bash_tool(
         if agent.verbose:
             logger.info(f"Executed bash command: {command[:80]}...")
 
-        return result_msg.strip()
+        return truncate_tool_output(
+            result_msg.strip(),
+            context_window=agent.context_length,
+            model_name=agent.model_name,
+        )
     except subprocess.TimeoutExpired:
         error_msg = f"Error: Command timed out after {timeout_seconds} seconds"
         logger.error(error_msg)
@@ -1097,9 +1156,6 @@ def run_bash_tool(
             content=f"Error: {error_msg}",
         )
         return error_msg
-
-
-_GREP_MAX_BYTES = 65536  # cap output at 64 KB
 
 
 def grep_tool(
@@ -1174,10 +1230,11 @@ def grep_tool(
         stderr = result.stderr or ""
 
         # Truncate oversized output
-        if len(stdout) > _GREP_MAX_BYTES:
-            stdout = (
-                stdout[:_GREP_MAX_BYTES] + "\n... (output truncated)"
-            )
+        stdout = truncate_tool_output(
+            stdout,
+            context_window=agent.context_length,
+            model_name=agent.model_name,
+        )
 
         if result.returncode == 0:
             output = stdout.strip() or "(no matches)"
@@ -1201,6 +1258,92 @@ def grep_tool(
         return "Error: grep timed out after 30 seconds"
     except Exception as e:
         error_msg = f"Error running grep: {str(e)}"
+        logger.error(error_msg)
+        return error_msg
+
+
+def glob_tool(
+    agent: Any,
+    pattern: str,
+    path: str = "",
+    **kwargs,
+) -> str:
+    """
+    Find files by name pattern, newest first.
+
+    Args:
+        agent: The agent instance
+        pattern: Glob pattern matched against each path under the root,
+            e.g. ``*.py`` or ``test_*.json``. Matched recursively.
+        path: Directory to search (relative to workspace or absolute).
+            Defaults to the workspace root.
+        **kwargs: Additional arguments
+
+    Returns:
+        str: Matching paths relative to the search root, one per line, or a
+            message saying nothing matched
+
+    Notes:
+        Newest first, because a model looking for "the file I just wrote" or
+        "what changed" wants recency, and an alphabetical listing buries it.
+
+        Paths come back relative to the search root rather than absolute:
+        that is the form the other file tools accept back, so a result can be
+        passed straight to read_file without editing.
+    """
+    try:
+        if not path or not os.path.isabs(path):
+            workspace_dir = agent._get_agent_workspace_dir()
+            full_path = (
+                os.path.join(workspace_dir, path)
+                if path
+                else workspace_dir
+            )
+        else:
+            full_path = path
+
+        root = Path(full_path)
+
+        if not root.is_dir():
+            return f"Error: Directory does not exist at {full_path}"
+
+        matches = [
+            match for match in root.rglob(pattern) if match.is_file()
+        ]
+
+        if not matches:
+            return (
+                f"(no files matching {pattern!r} under {full_path})"
+            )
+
+        matches.sort(key=lambda m: m.stat().st_mtime, reverse=True)
+
+        listing = "\n".join(
+            str(match.relative_to(root)) for match in matches
+        )
+
+        output = truncate_tool_output(
+            listing,
+            context_window=agent.context_length,
+            model_name=agent.model_name,
+        )
+
+        agent.short_memory.add(
+            role="File Operations",
+            content=(
+                f"glob {pattern!r} in {full_path} -> "
+                f"{len(matches)} files"
+            ),
+        )
+
+        if agent.verbose:
+            logger.info(
+                f"glob {pattern!r} in {full_path} -> {len(matches)} files"
+            )
+
+        return output
+    except Exception as e:
+        error_msg = f"Error running glob {pattern!r}: {str(e)}"
         logger.error(error_msg)
         return error_msg
 
@@ -1240,15 +1383,21 @@ def create_sub_agent_tool(
             # Import Agent class to create sub-agent
             from swarms.structs.agent import Agent
 
-            # Create sub-agent with the same LLM as parent
+            # Without tools a sub-agent is strictly weaker than asking the parent
+            parent_tools = list(getattr(agent, "tools", None) or [])
+
+            # Create sub-agent with the same LLM and tools as parent
             sub_agent = Agent(
                 id=agent_id,
                 agent_name=agent_name,
                 agent_description=agent_description,
                 system_prompt=system_prompt,  # Use custom system prompt if provided
                 model_name=agent.model_name,
-                max_loops=1,
-                print_on=True,  # Reduce noise from sub-agents
+                tools=parent_tools,
+                # Finite even for an auto parent, so sub-agents cannot recurse
+                max_loops=5 if parent_tools else 1,
+                print_on=getattr(agent, "print_on", False),
+                verbose=agent.verbose,
             )
 
             # Cache the sub-agent
@@ -1361,8 +1510,7 @@ def assign_task_tool(
 
         # Execute tasks
         if wait_for_completion:
-            # Wait for tasks to complete using registry
-            # (order is not guaranteed; we map by spawned_task_id for reporting)
+            # Completion order is not guaranteed, results are mapped by spawned_task_id
             registry.gather(strategy="wait_all", timeout=None)
 
             # Format results based on registry state
@@ -1403,8 +1551,7 @@ def assign_task_tool(
 
             return result_msg
         else:
-            # Fire and forget: tasks are already running in the registry executor.
-            # Return the spawned IDs so callers can poll/cancel later.
+            # Fire and forget, the spawned ids let callers poll or cancel later
             lines = [
                 f"Dispatched {len(task_mappings)} task(s) to sub-agents (registry async mode).",
                 "Spawned task IDs:",
