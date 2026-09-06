@@ -1,6 +1,7 @@
 from typing import Union
 from swarms.structs.agent import Agent
 from typing import List, Callable
+from swarms.structs.context_utils import agent_answer, messages_for
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.utils.history_output_formatter import (
@@ -16,15 +17,14 @@ from swarms.prompts.agent_conversation_aggregator import (
 def aggregator_agent_task_prompt(
     task: str, workers: List[Agent], conversation: Conversation
 ):
+    """The aggregator's instruction. The conversation itself is sent
+    alongside it as chat turns, not pasted in here as one string."""
     return f"""
-    Please analyze and summarize the following multi-agent conversation, following your guidelines for comprehensive synthesis:
+    Please analyze and summarize the multi-agent conversation in the messages above, following your guidelines for comprehensive synthesis:
 
     Conversation Context:
     Original Task: {task}
     Number of Participating Agents: {len(workers)}
-
-    Conversation Content:
-    {conversation.get_str()}
 
     Please provide a 3,000 word comprehensive summary report of the conversation.
     """
@@ -68,12 +68,17 @@ def aggregate(
 
     results = run_agents_concurrently(agents=workers, task=task)
 
-    # Zip the results with the agents
+    # Record each worker's answer, not whatever its output_type made run()
+    # return: the default is the agent's whole conversation, which would put
+    # every worker's full transcript into the shared one.
     for result, agent in zip(results, workers):
-        conversation.add(content=result, role=agent.agent_name)
+        conversation.add(
+            content=agent_answer(agent, result), role=agent.agent_name
+        )
 
     final_result = aggregator_agent.run(
-        task=aggregator_agent_task_prompt(task, workers, conversation)
+        task=aggregator_agent_task_prompt(task, workers, conversation),
+        messages=messages_for("Aggregator", conversation),
     )
 
     conversation.add(
