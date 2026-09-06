@@ -31,7 +31,7 @@ def aggregator_agent_task_prompt(
 
 
 def aggregate(
-    workers: List[Callable],
+    workers: List[Agent],
     task: str = None,
     type: HistoryOutputType = "all",
     aggregator_model_name: str = "anthropic/claude-3-sonnet-20240229",
@@ -77,7 +77,9 @@ def aggregate(
         )
 
     final_result = aggregator_agent.run(
-        task=aggregator_agent_task_prompt(task, workers, conversation),
+        task=aggregator_agent_task_prompt(
+            task, workers, conversation
+        ),
         messages=messages_for("Aggregator", conversation),
     )
 
