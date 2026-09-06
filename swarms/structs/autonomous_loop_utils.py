@@ -1383,8 +1383,7 @@ def create_sub_agent_tool(
             # Import Agent class to create sub-agent
             from swarms.structs.agent import Agent
 
-            # Without the parent's tools a sub-agent is one stateless LLM call,
-            # strictly less capable than the parent asking the question itself.
+            # Without tools a sub-agent is strictly weaker than asking the parent
             parent_tools = list(getattr(agent, "tools", None) or [])
 
             # Create sub-agent with the same LLM and tools as parent
@@ -1395,8 +1394,7 @@ def create_sub_agent_tool(
                 system_prompt=system_prompt,  # Use custom system prompt if provided
                 model_name=agent.model_name,
                 tools=parent_tools,
-                # Tools need a call-then-read turn. Finite whatever the parent
-                # is, so a max_loops="auto" parent cannot recurse into sub-agents.
+                # Finite even for an auto parent, so sub-agents cannot recurse
                 max_loops=5 if parent_tools else 1,
                 print_on=getattr(agent, "print_on", False),
                 verbose=agent.verbose,
