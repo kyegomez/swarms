@@ -390,9 +390,6 @@ class LiteLLM:
         self.init_args = args
         self.init_kwargs = kwargs
 
-        # if self.reasoning_enabled is True:
-        #     self.reasoning_check()
-
     def reasoning_check(self):
         """
         Check if reasoning is enabled and supported by the model, and adjust parameters accordingly.
@@ -889,8 +886,7 @@ class LiteLLM:
         if not self.prompt_caching:
             return
 
-        # OpenAI-style controls (harmless/ignored on providers that don't use
-        # them; LiteLLM routes them for OpenAI-compatible backends).
+        # OpenAI-style controls, ignored by providers that lack them
         key = self._cache_opt("prompt_cache_key", None)
         if key is not None:
             completion_params["prompt_cache_key"] = key
@@ -928,8 +924,7 @@ class LiteLLM:
                 "image_url": {"url": image},
             }
         else:
-            # get_image_base64 always returns a data URI, so the MIME type
-            # can be extracted from it directly.
+            # get_image_base64 returns a data URI, the MIME type is in it
             image_url = get_image_base64(image)
             mime_type = "image/jpeg"
             if "data:" in image_url and ";base64," in image_url:
@@ -1213,8 +1208,7 @@ class LiteLLM:
         if self.top_p is not None:
             completion_params["top_p"] = self.top_p
 
-        # Merge initialization kwargs first (lower priority), then runtime
-        # kwargs (higher priority).
+        # Runtime kwargs override init kwargs
         if self.init_kwargs:
             completion_params.update(self.init_kwargs)
         if runtime_kwargs:
@@ -1240,8 +1234,7 @@ class LiteLLM:
         if self.base_url is not None:
             completion_params["base_url"] = self.base_url
 
-        # Only when present: litellm falls back to the provider env var
-        # on absence, and an explicit None would override that.
+        # An explicit None would override litellm's env-var fallback
         if self.api_key is not None:
             completion_params["api_key"] = self.api_key
 
@@ -1253,9 +1246,7 @@ class LiteLLM:
         if self.modalities and len(self.modalities) >= 2:
             completion_params["modalities"] = self.modalities
 
-        # Forward an explicitly requested effort level even when LiteLLM's
-        # local capability registry does not yet recognize a newly released
-        # model. `drop_params` handles providers that do not accept it.
+        # Forwarded even for models LiteLLM's registry lacks, drop_params covers the rest
         if self.reasoning_effort is not None:
             completion_params["reasoning_effort"] = (
                 self.reasoning_effort
@@ -1535,8 +1526,7 @@ class LiteLLM:
             responses = llm.batched_run(["Task 1", "Task 2", "Task 3"], batch_size=2)
             ```
         """
-        # Imported here, not at module scope: swarms.structs pulls this
-        # module back in, and a top-level import would be circular.
+        # Local import, a module-level one is circular via swarms.structs
         from swarms.structs.execution_utils import run_concurrently
 
         return run_concurrently(

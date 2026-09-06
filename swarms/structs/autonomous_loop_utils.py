@@ -160,9 +160,6 @@ def get_summary_prompt() -> str:
     )
 
 
-# Tool schemas.
-
-
 def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
     """
     Get tool definitions for autonomous planning and execution.
@@ -1100,11 +1097,8 @@ def run_bash_tool(
             content=f"Blocked (security): {command[:100]}{'...' if len(command) > 100 else ''}",
         )
         return f"Error: {rejection}"
-    # -------------------------------------------------------------------------
-
     try:
-        # Run in process cwd (where the user started the script) so commands like
-        # ls -la and python script.py see the project directory, not the agent workspace.
+        # Runs in the process cwd, not the agent workspace
         result = subprocess.run(
             command,
             shell=True,
@@ -1510,8 +1504,7 @@ def assign_task_tool(
 
         # Execute tasks
         if wait_for_completion:
-            # Wait for tasks to complete using registry
-            # (order is not guaranteed; we map by spawned_task_id for reporting)
+            # Completion order is not guaranteed, results are mapped by spawned_task_id
             registry.gather(strategy="wait_all", timeout=None)
 
             # Format results based on registry state
@@ -1552,8 +1545,7 @@ def assign_task_tool(
 
             return result_msg
         else:
-            # Fire and forget: tasks are already running in the registry executor.
-            # Return the spawned IDs so callers can poll/cancel later.
+            # Fire and forget, the spawned ids let callers poll or cancel later
             lines = [
                 f"Dispatched {len(task_mappings)} task(s) to sub-agents (registry async mode).",
                 "Spawned task IDs:",

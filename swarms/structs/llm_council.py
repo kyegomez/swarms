@@ -453,8 +453,7 @@ class LLMCouncil:
             for name, response in original_responses.items():
                 print(f"   {name}: {response[:100]}...")
 
-        # Step 2: Anonymize responses for evaluation
-        # Create anonymous IDs (A, B, C, D, etc.)
+        # Anonymise responses as A, B, C... for evaluation
         anonymous_ids = [
             chr(65 + i) for i in range(len(self.council_members))
         ]
@@ -476,8 +475,7 @@ class LLMCouncil:
                 "\n🔍 Council members evaluating each other's responses..."
             )
 
-        # Step 3: Have each member evaluate and rank all responses concurrently
-        # Create evaluation tasks for each member
+        # Every member ranks all responses, concurrently
         evaluation_tasks = [
             get_evaluation_prompt(
                 query, anonymous_responses, member.agent_name

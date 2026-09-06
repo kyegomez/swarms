@@ -63,8 +63,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.output_types import OutputType
 
 BID_TOOL = {
-    # The LLM is forced to call this function so every bid is a structured,
-    # machine-readable (confidence, estimated_cost) pair.
+    # Forced tool call, so every bid is a structured (confidence, estimated_cost) pair
     "type": "function",
     "function": {
         "name": "bid",
@@ -92,8 +91,7 @@ BID_TOOL = {
     },
 }
 
-# Lower bound used when clamping/dividing by estimated_cost so a
-# zero-cost bid can never produce a divide-by-zero or an infinite score.
+# Floor for estimated_cost so a zero-cost bid cannot divide by zero
 MIN_ESTIMATED_COST = 1e-6
 
 # Guards _extract_bid against pathological model output causing excessive parse time.
@@ -131,8 +129,7 @@ def _extract_bid(tool_output: Any) -> Tuple[float, float]:
         into the ``0..1`` range and cost is clamped to be strictly positive.
     """
     if isinstance(tool_output, str):
-        # Agents with output_type="str-all-except-first" (the default)
-        # return tool calls as the str() of a list of dicts, not JSON.
+        # The default output_type returns tool calls as str() of a list, not JSON
         if len(tool_output) > MAX_TOOL_OUTPUT_LEN:
             return 0.0, 1.0
         try:
@@ -425,8 +422,7 @@ class AuctionSwarm(SerializableMixin):
             return_agent_output_dict=True,
         )
 
-        # `winners` is sorted by score, highest first, so the first entry
-        # that did not error is the auctioneer's pick for "best result".
+        # winners is sorted by score, the first non-error entry is the pick
         successful = []
         for agent, *_ in winners:
             response = results.get(agent.agent_name)

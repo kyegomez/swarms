@@ -955,8 +955,7 @@ class Formatter:
                     )
                     task = getattr(order, "task", "No task provided")
 
-                # Text.assemble, not markup: task text is model-generated
-                # and any "[...]" in it would parse as a style tag.
+                # Text.assemble, model-generated "[...]" would parse as a style tag
                 tree.add(
                     Text.assemble(
                         (str(agent_name), "bold cyan"),

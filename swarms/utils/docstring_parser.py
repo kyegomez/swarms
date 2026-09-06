@@ -97,8 +97,7 @@ def parse(docstring: str) -> DocstringInfo:
                 continue
 
         if in_args_section and line:
-            # Check if this line starts a new parameter (starts with parameter name)
-            # Pattern: param_name (type): description
+            # param_name (type): description
             param_match = re.match(
                 r"^(\w+)\s*(?:\([^)]*\))?\s*:\s*(.+)$", line
             )
