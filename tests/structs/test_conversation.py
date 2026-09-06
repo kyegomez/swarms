@@ -1246,6 +1246,113 @@ def test_return_messages_as_dictionary_preserves_roles():
     assert messages[1]["content"] == "Hello, user!"
 
 
+# ---------------------------------------------------------------------------
+# Tool calls and tool results as conversation rows
+# ---------------------------------------------------------------------------
+
+
+def _tool_call(name="read_file", call_id="call_1", **arguments):
+    import json as _json
+
+    return {
+        "id": call_id,
+        "type": "function",
+        "function": {
+            "name": name,
+            "arguments": _json.dumps(arguments),
+        },
+    }
+
+
+class TestConversationToolTurns:
+    """``Conversation`` can hold the typed tool-call shape, not just prose."""
+
+    def test_add_stores_tool_calls_on_the_row(self):
+        conv = Conversation(time_enabled=False)
+        conv.add("Agent", None, tool_calls=[_tool_call(path="a.txt")])
+
+        row = conv.conversation_history[-1]
+        assert row["role"] == "Agent"
+        assert row["content"] is None
+        assert row["tool_calls"][0]["function"]["name"] == "read_file"
+
+    def test_add_stores_tool_call_id_on_a_result_row(self):
+        conv = Conversation(time_enabled=False)
+        conv.add(
+            "tool",
+            "contents",
+            tool_call_id="call_1",
+            metadata={"name": "read_file"},
+        )
+
+        row = conv.conversation_history[-1]
+        assert row["tool_call_id"] == "call_1"
+        assert row["metadata"]["name"] == "read_file"
+
+    def test_plain_rows_are_unchanged(self):
+        conv = Conversation(time_enabled=False)
+        conv.add("User", "hi")
+
+        row = conv.conversation_history[-1]
+        assert "tool_calls" not in row and "tool_call_id" not in row
+
+    def test_string_rendering_describes_the_call_and_the_result(self):
+        conv = Conversation(time_enabled=False)
+        conv.add("Agent", None, tool_calls=[_tool_call(path="a.txt")])
+        conv.add(
+            "tool",
+            "contents",
+            tool_call_id="call_1",
+            metadata={"name": "read_file"},
+        )
+
+        text = conv.return_history_as_string()
+        assert "Agent → read_file(" in text
+        assert "read_file → contents" in text
+        assert "None" not in text
+        assert conv.return_messages_as_strings()[0].startswith(
+            "Agent → read_file("
+        )
+
+    def test_final_message_content_of_a_tool_turn_is_its_calls(self):
+        """``output_type="final"`` used to see the raw call list as content;
+        it still gets the calls, not ``None``."""
+        conv = Conversation(time_enabled=False)
+        calls = [_tool_call(path="a.txt")]
+        conv.add("Agent", None, tool_calls=calls)
+
+        assert conv.get_final_message_content() == calls
+        assert conv.get_final_message().startswith(
+            "Agent → read_file("
+        )
+
+    def test_tool_rows_round_trip_through_json(self, tmp_path):
+        path = str(tmp_path / "conv.json")
+        conv = Conversation(
+            time_enabled=False, save_filepath=path, autosave=False
+        )
+        conv.add("Agent", None, tool_calls=[_tool_call(path="a.txt")])
+        conv.add(
+            "tool",
+            "contents",
+            tool_call_id="call_1",
+            metadata={"name": "read_file"},
+        )
+        conv.save_as_json(force=True)
+
+        loaded = Conversation(
+            time_enabled=False, save_filepath=path, autosave=False
+        )
+        loaded.load_from_json(path)
+
+        assert loaded.conversation_history[0]["tool_calls"][0][
+            "id"
+        ] == ("call_1")
+        assert (
+            loaded.conversation_history[1]["tool_call_id"] == "call_1"
+        )
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()

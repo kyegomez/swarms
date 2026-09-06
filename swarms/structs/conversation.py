@@ -55,6 +55,34 @@ def get_conversation_dir():
 DEFAULT_CONVERSATION_NAME = "conversation-test"
 
 
+def render_message(message: dict) -> str:
+    """One conversation row as ``role: content`` prose.
+
+    A tool-calling turn renders as ``role → name(arguments)`` and a tool
+    result as ``name → content``, so logs, exports and summaries read
+    sensibly. This is the only place tool turns become text; requests get
+    them typed via :func:`~swarms.structs.context_utils.messages_for`.
+    """
+    role = message.get("role")
+    content = message.get("content")
+
+    tool_calls = message.get("tool_calls")
+    if tool_calls:
+        calls = "; ".join(
+            f"{call.get('function', {}).get('name')}"
+            f"({call.get('function', {}).get('arguments', '')})"
+            for call in tool_calls
+        )
+        text = f"{role} → {calls}"
+        return f"{text}: {content}" if content else text
+
+    if message.get("tool_call_id"):
+        name = (message.get("metadata") or {}).get("name", "tool")
+        return f"{name} → {content}"
+
+    return f"{role}: {content}"
+
+
 class Conversation:
     """
     A class to manage a conversation history, allowing for the addition, deletion,
@@ -467,6 +495,8 @@ class Conversation:
         content: Union[str, dict, list, Any],
         metadata: Optional[dict] = None,
         category: Optional[str] = None,
+        tool_calls: Optional[List[dict]] = None,
+        tool_call_id: Optional[str] = None,
     ):
         """Add a message to the conversation history.
 
@@ -475,12 +505,19 @@ class Conversation:
             content (Union[str, dict, list]): The content of the message to be added.
             metadata (Optional[dict]): Optional metadata for the message.
             category (Optional[str]): Optional category for the message.
+            tool_calls (Optional[List[dict]]): See :meth:`add`.
+            tool_call_id (Optional[str]): See :meth:`add`.
         """
         # Base message with role and timestamp
         message = {
             "role": role,
             "content": content,
         }
+
+        if tool_calls:
+            message["tool_calls"] = tool_calls
+        if tool_call_id:
+            message["tool_call_id"] = tool_call_id
 
         if self.time_enabled:
             message["timestamp"] = datetime.datetime.now().isoformat()
@@ -595,6 +632,8 @@ class Conversation:
         content: Union[str, dict, list, Any],
         metadata: Optional[dict] = None,
         category: Optional[str] = None,
+        tool_calls: Optional[List[dict]] = None,
+        tool_call_id: Optional[str] = None,
     ):
         """Add a message to the conversation history.
 
@@ -603,12 +642,19 @@ class Conversation:
             content (Union[str, dict, list]): The content of the message to be added.
             metadata (Optional[dict]): Optional metadata for the message.
             category (Optional[str]): Optional category for the message.
+            tool_calls (Optional[List[dict]]): Tool calls the speaker made, in
+                the chat-completions shape. Makes this an assistant turn that
+                a tool result must answer.
+            tool_call_id (Optional[str]): Marks this message as the result of
+                that tool call. Put the tool's name in ``metadata["name"]``.
         """
         result = self.add_in_memory(
             role=role,
             content=content,
             metadata=metadata,
             category=category,
+            tool_calls=tool_calls,
+            tool_call_id=tool_call_id,
         )
 
         # Ensure autosave happens after the message is added
@@ -711,9 +757,7 @@ class Conversation:
             # Simple text export for non-JSON files
             with open(filename, "w", encoding="utf-8") as f:
                 for message in self.conversation_history:
-                    f.write(
-                        f"{message['role']}: {message['content']}\n"
-                    )
+                    f.write(f"{render_message(message)}\n")
 
     def import_conversation(self, filename: str):
         """Import a conversation history from a file.
@@ -783,14 +827,11 @@ class Conversation:
 
         for message in self.conversation_history:
             timestamp = message.get("timestamp")
+            rendered = render_message(message)
             if timestamp:
-                formatted_messages.append(
-                    f"[{timestamp}] {message['role']}: {message['content']}"
-                )
+                formatted_messages.append(f"[{timestamp}] {rendered}")
             else:
-                formatted_messages.append(
-                    f"{message['role']}: {message['content']}"
-                )
+                formatted_messages.append(rendered)
 
         return "\n\n".join(formatted_messages)
 
@@ -1264,7 +1305,7 @@ class Conversation:
             str: The last message formatted as 'role: content'.
         """
         if self.conversation_history:
-            return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
+            return render_message(self.conversation_history[-1])
         return ""
 
     def return_messages_as_strings(self):
@@ -1277,7 +1318,7 @@ class Conversation:
             list: List of messages formatted as 'role: content'.
         """
         return [
-            f"{message['role']}: {message['content']}"
+            render_message(message)
             for message in self.conversation_history
         ]
 
@@ -1333,7 +1374,7 @@ class Conversation:
             str: The final message formatted as 'role: content'.
         """
         if self.conversation_history:
-            return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
+            return render_message(self.conversation_history[-1])
         return ""
 
     def get_final_message_content(self):
@@ -1343,7 +1384,11 @@ class Conversation:
             str: The content of the final message.
         """
         if self.conversation_history:
-            output = self.conversation_history[-1]["content"]
+            last = self.conversation_history[-1]
+            output = last["content"]
+            # A tool-calling turn has no text, its content is the calls it made
+            if output is None and last.get("tool_calls"):
+                return last["tool_calls"]
             return output
         return ""
 
