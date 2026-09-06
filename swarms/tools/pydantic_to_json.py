@@ -53,8 +53,7 @@ def base_model_to_openai_function(
         if k not in ("title", "description")
     }
 
-    # `prop_name`, not `name`: this walrus used to rebind `name`, so the
-    # emitted function name became whichever docstring param matched last.
+    # prop_name, not name, the walrus used to rebind the function name
     for param in docstring.params:
         if (prop_name := param.arg_name) in parameters[
             "properties"

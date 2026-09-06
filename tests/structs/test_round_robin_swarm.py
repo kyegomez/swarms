@@ -72,3 +72,42 @@ def test_prior_turns_are_typed_not_flattened_into_the_task():
     assert any(
         "original task" in text for text in contents
     ), f"original task missing from the turns: {contents}"
+
+
+def test_second_run_does_not_replay_the_first_task():
+    """A reused swarm starts each task from an empty shared conversation."""
+
+    class _Memory:
+        def __init__(self):
+            self.last = ""
+
+        def get_final_message_content(self):
+            return self.last
+
+    class _RecordingAgent:
+        def __init__(self, name):
+            self.agent_name = name
+            self.short_memory = _Memory()
+            self.calls = []
+
+        def run(self, task=None, messages=None, **kwargs):
+            self.calls.append(
+                {"task": str(task), "messages": messages or []}
+            )
+            self.short_memory.last = f"{self.agent_name}-out"
+            return f"{self.agent_name}-out"
+
+    agent = _RecordingAgent("A")
+    swarm = RoundRobinSwarm(agents=[agent], max_loops=1)
+
+    swarm.run("first task")
+    swarm.run("second task")
+
+    second_call = agent.calls[-1]
+    seen = [second_call["task"]] + [
+        m["content"] for m in second_call["messages"]
+    ]
+
+    assert not any(
+        "first task" in text for text in seen
+    ), f"previous task replayed into the next run: {seen}"

@@ -183,8 +183,7 @@ class CronJob:
             number = int(match.group(1))
             unit = match.group(2)
 
-            # "0second" parsed fine and then scheduled a job that never fired:
-            # no error, no log line, just a cron job that silently does nothing.
+            # "0second" used to schedule a job that silently never fired
             if number == 0:
                 raise CronJobConfigError(
                     f"Interval must be greater than zero, got {interval!r}. "
@@ -681,8 +680,7 @@ class CronJob:
                     "max_consecutive_errors"
                 ),
             )
-            # _run schedules the task and starts this job's own thread; it
-            # does not block, which is what lets the fleet run together.
+            # _run starts the job's own thread without blocking
             job._run(spec["task"], **(spec.get("kwargs") or {}))
             jobs.append(job)
 

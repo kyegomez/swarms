@@ -136,8 +136,7 @@ def _describe(value: Any) -> str:
             if "0x" not in text:
                 return text
 
-        # Otherwise identify it by class and whatever name it carries, so an
-        # Agent reads as "Agent(Researcher)" rather than an address.
+        # Class plus name, so an Agent reads as "Agent(Researcher)" not an address
         name = getattr(value, "agent_name", None) or getattr(
             value, "name", None
         )
@@ -257,8 +256,7 @@ class _SpanHandle:
                 handle. Defaults to ``None``.
         """
         self._span = span
-        # Guards against double-finalizing a span (e.g. a caller records an
-        # error and capture_run's auto-capture also fires): first write wins.
+        # First write wins, a caller and the auto-capture can both record an error
         self._done = False
 
     def set(self, key: str, value: Any) -> None:
@@ -348,8 +346,7 @@ def _current_span(span: Optional["Span"]) -> Iterator[None]:
         return
 
     try:
-        # The caller's finally-block ends the span, and _SpanHandle owns error
-        # recording, so both are disabled here to avoid doing either twice.
+        # The caller ends the span and _SpanHandle records errors, so neither is done twice
         with trace.use_span(
             span,
             end_on_exit=False,
@@ -494,12 +491,9 @@ class SwarmTelemetry:
             None
         """
         try:
-            # What kind of component this is: "Agent", "SwarmRouter",
-            # "ConcurrentWorkflow", "SequentialWorkflow", ...
             span.set_attribute("swarms.component", type(obj).__name__)
 
-            # Human-readable name — an Agent stores it as ``agent_name``, a
-            # swarm as ``name``. Resolve either so single agents get a real name.
+            # An Agent stores its name as agent_name, a swarm as name
             name = getattr(obj, "agent_name", None) or getattr(
                 obj, "name", None
             )
@@ -510,8 +504,7 @@ class SwarmTelemetry:
             if obj_id is not None:
                 span.set_attribute("swarms.id", str(obj_id))
 
-            # ``swarm_type`` only exists on multi-agent swarms — never set it on
-            # a single Agent, where it would be meaningless.
+            # swarm_type only exists on multi-agent swarms
             swarm_type = getattr(obj, "swarm_type", None)
             if swarm_type is not None:
                 span.set_attribute(
@@ -575,8 +568,7 @@ class SwarmTelemetry:
             span = self._tracer.start_span(name)
             if obj is not None:
                 self._set_identity(span, obj)
-                # GenAI semantic convention: "agent" for a single Agent,
-                # "swarm" for any multi-agent structure.
+                # GenAI semantic convention
                 operation = (
                     "agent"
                     if type(obj).__name__ == "Agent"
@@ -597,8 +589,7 @@ class SwarmTelemetry:
             with _current_span(span):
                 yield handle
         except BaseException as exc:
-            # Auto-capture ANY error propagating through the block, even if the
-            # caller never called record_error. Then re-raise unchanged.
+            # Auto-capture any error, then re-raise unchanged
             handle.record_error(exc)
             raise
         finally:
@@ -858,8 +849,7 @@ def trace_run(
                 except Exception:
                     inputs = {}
 
-            # capture_run auto-records any exception that propagates here, so
-            # the wrapper only needs to record the success output.
+            # capture_run records exceptions itself, only the success output is needed
             with telem.capture_run(name, self, **inputs) as span:
                 result = func(self, *args, **kwargs)
                 span.record_output(result)

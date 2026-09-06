@@ -28,6 +28,7 @@ Run:
 """
 
 import json
+import os
 
 import pytest
 
@@ -35,6 +36,8 @@ from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
+    get_autonomous_planning_tools,
+    glob_tool,
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
 )
@@ -1146,3 +1149,98 @@ class TestContextCompression:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-q", "-p", "no:randomly"])
+
+
+# --------------------------------------------------------------------------
+# #1983 — glob tool
+# --------------------------------------------------------------------------
+
+
+class TestGlobTool:
+    """
+    Without glob the model shells out to `find`, which the run_bash
+    blocklist may refuse, or walks the tree one list_directory at a time.
+    """
+
+    def _tree(self, tmp_path):
+        (tmp_path / "pkg").mkdir()
+        (tmp_path / "pkg" / "deep").mkdir()
+        first = tmp_path / "pkg" / "old.py"
+        second = tmp_path / "pkg" / "deep" / "new.py"
+        other = tmp_path / "pkg" / "notes.md"
+        for path in (first, second, other):
+            path.write_text("x")
+        os.utime(first, (1_000, 1_000))
+        os.utime(second, (2_000, 2_000))
+        os.utime(other, (3_000, 3_000))
+        return first, second, other
+
+    def test_matches_recursively_and_reports_relative_paths(
+        self, tmp_path
+    ):
+        self._tree(tmp_path)
+
+        output = glob_tool(build_agent(), "*.py", str(tmp_path))
+
+        assert output.splitlines() == [
+            "pkg/deep/new.py",
+            "pkg/old.py",
+        ]
+
+    def test_newest_first(self, tmp_path):
+        self._tree(tmp_path)
+
+        output = glob_tool(build_agent(), "*", str(tmp_path))
+        listed = [
+            line
+            for line in output.splitlines()
+            if line.endswith(".md") or line.endswith(".py")
+        ]
+
+        assert listed[0] == "pkg/notes.md"
+
+    def test_no_matches_says_so_rather_than_returning_empty(
+        self, tmp_path
+    ):
+        self._tree(tmp_path)
+
+        output = glob_tool(build_agent(), "*.rs", str(tmp_path))
+
+        assert "no files" in output.lower()
+
+    def test_a_missing_root_is_an_error(self, tmp_path):
+        output = glob_tool(
+            build_agent(), "*.py", str(tmp_path / "nope")
+        )
+
+        assert "Error" in output
+
+    def test_output_is_capped_by_the_token_budget(self, tmp_path):
+        agent = build_agent(context_length=16000)
+        budget = int(agent.context_length * TOOL_OUTPUT_CONTEXT_SHARE)
+        for i in range(budget):
+            (
+                tmp_path / f"file_{i:06d}_padding_padding.py"
+            ).write_text("x")
+
+        output = glob_tool(agent, "*.py", str(tmp_path))
+
+        assert "output truncated" in output
+
+    def test_the_schema_and_the_loop_both_know_about_glob(self):
+        names = {
+            tool["function"]["name"]
+            for tool in get_autonomous_planning_tools()
+        }
+        assert "glob" in names
+
+        glob_schema = next(
+            tool["function"]
+            for tool in get_autonomous_planning_tools()
+            if tool["function"]["name"] == "glob"
+        )
+        assert glob_schema["parameters"]["required"] == ["pattern"]
+        assert set(glob_schema["parameters"]["properties"]) == {
+            "pattern",
+            "path",
+        }

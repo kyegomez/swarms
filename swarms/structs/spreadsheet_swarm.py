@@ -17,10 +17,8 @@ logger = initialize_logger(log_folder="spreadsheet_swarm")
 
 uuid_hex = uuid.uuid4().hex
 
-# --------------- NEW CHANGE START ---------------
-# Format time variable to be compatible across operating systems
+# Colons are not allowed in filenames on every OS
 formatted_time = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-# --------------- NEW CHANGE END ---------------
 
 
 def _now() -> str:

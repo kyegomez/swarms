@@ -200,8 +200,7 @@ class TreeAgent(Agent):
             )
             if self.verbose:
                 logger.info(f"Embedding type: {type(response)}")
-            # print(response)
-            # Handle different response structures from litellm
+            # litellm returns more than one response shape
             if hasattr(response, "data") and response.data:
                 if hasattr(response.data[0], "embedding"):
                     return response.data[0].embedding

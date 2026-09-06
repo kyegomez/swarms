@@ -273,8 +273,7 @@ class SocialAlgorithms:
         Returns:
             Callable: A drop-in replacement for ``agent.run``.
         """
-        # Whatever is bound now, so an instance override or an enclosing
-        # recorder still runs rather than being skipped for the class method.
+        # Whatever is bound now, so an instance override still runs
         original = agent.run
 
         def run(task, *args, **kwargs):
