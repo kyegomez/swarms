@@ -1656,6 +1656,36 @@ class Agent:
                                 loop_count=loop_count
                             )
 
+                    except AgentToolExecutionError as e:
+                        # A tool that already exhausted its own retries is not
+                        # a provider failure. Re-running the model cannot fix
+                        # it and costs another completion, so record it and
+                        # leave the retry loop instead of falling into the
+                        # generation handler below.
+                        if use_transcript and turn_calls:
+                            transcript.flush_tool_results(
+                                turn_calls, turn_results
+                            )
+
+                        capture_error(
+                            e,
+                            self,
+                            name="Agent.tool_error",
+                            loop=loop_count,
+                        )
+
+                        self.short_memory.add(
+                            role="Tool Executor",
+                            content=(
+                                f"Tool execution failed after "
+                                f"{self.tool_retry_attempts} attempts: {e}"
+                            ),
+                        )
+
+                        # Exit the retry loop, not the run: the next loop lets
+                        # the model read the failure and choose differently.
+                        success = True
+
                     except (
                         BadRequestError,
                         InternalServerError,

@@ -42,6 +42,7 @@ from swarms.structs.autonomous_loop_utils import (
     get_planning_prompt,
     grep_tool,
     list_directory_tool,
+    glob_tool,
     read_file_tool,
     respond_to_user_tool,
     run_bash_tool,
@@ -405,6 +406,9 @@ class AutonomousAgentLoop:
                     self.agent, **kwargs
                 ),
                 "grep": lambda **kwargs: grep_tool(
+                    self.agent, **kwargs
+                ),
+                "glob": lambda **kwargs: glob_tool(
                     self.agent, **kwargs
                 ),
                 "create_sub_agent": lambda **kwargs: create_sub_agent_tool(

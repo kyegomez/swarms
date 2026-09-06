@@ -30,6 +30,7 @@ import os
 import re as _re
 import subprocess
 import uuid
+from pathlib import Path
 from typing import Any, Dict, List
 
 from loguru import logger
@@ -502,6 +503,27 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
                         "context_lines": {
                             "type": "integer",
                             "description": "Lines of context to show around each match (default: 0)",
+                        },
+                    },
+                    "required": ["pattern"],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "glob",
+                "description": "Find files by name pattern, newest first. Returns paths relative to the search root. Prefer this over run_bash find for locating files.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "pattern": {
+                            "type": "string",
+                            "description": "Glob pattern matched recursively against every path under the root, e.g. '*.py' or 'test_*.json'",
+                        },
+                        "path": {
+                            "type": "string",
+                            "description": "Directory to search in (relative to workspace or absolute). Defaults to workspace root.",
                         },
                     },
                     "required": ["pattern"],
@@ -1240,6 +1262,92 @@ def grep_tool(
         return "Error: grep timed out after 30 seconds"
     except Exception as e:
         error_msg = f"Error running grep: {str(e)}"
+        logger.error(error_msg)
+        return error_msg
+
+
+def glob_tool(
+    agent: Any,
+    pattern: str,
+    path: str = "",
+    **kwargs,
+) -> str:
+    """
+    Find files by name pattern, newest first.
+
+    Args:
+        agent: The agent instance
+        pattern: Glob pattern matched against each path under the root,
+            e.g. ``*.py`` or ``test_*.json``. Matched recursively.
+        path: Directory to search (relative to workspace or absolute).
+            Defaults to the workspace root.
+        **kwargs: Additional arguments
+
+    Returns:
+        str: Matching paths relative to the search root, one per line, or a
+            message saying nothing matched
+
+    Notes:
+        Newest first, because a model looking for "the file I just wrote" or
+        "what changed" wants recency, and an alphabetical listing buries it.
+
+        Paths come back relative to the search root rather than absolute:
+        that is the form the other file tools accept back, so a result can be
+        passed straight to read_file without editing.
+    """
+    try:
+        if not path or not os.path.isabs(path):
+            workspace_dir = agent._get_agent_workspace_dir()
+            full_path = (
+                os.path.join(workspace_dir, path)
+                if path
+                else workspace_dir
+            )
+        else:
+            full_path = path
+
+        root = Path(full_path)
+
+        if not root.is_dir():
+            return f"Error: Directory does not exist at {full_path}"
+
+        matches = [
+            match for match in root.rglob(pattern) if match.is_file()
+        ]
+
+        if not matches:
+            return (
+                f"(no files matching {pattern!r} under {full_path})"
+            )
+
+        matches.sort(key=lambda m: m.stat().st_mtime, reverse=True)
+
+        listing = "\n".join(
+            str(match.relative_to(root)) for match in matches
+        )
+
+        output = truncate_tool_output(
+            listing,
+            context_window=agent.context_length,
+            model_name=agent.model_name,
+        )
+
+        agent.short_memory.add(
+            role="File Operations",
+            content=(
+                f"glob {pattern!r} in {full_path} -> "
+                f"{len(matches)} files"
+            ),
+        )
+
+        if agent.verbose:
+            logger.info(
+                f"glob {pattern!r} in {full_path} -> {len(matches)} files"
+            )
+
+        return output
+    except Exception as e:
+        error_msg = f"Error running glob {pattern!r}: {str(e)}"
         logger.error(error_msg)
         return error_msg
 

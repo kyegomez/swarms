@@ -315,6 +315,8 @@ class HeavySwarm(SerializableMixin):
         if self.show_dashboard:
             self.dashboard.show_task_init(task)
 
+        self.conversation.clear()
+
         # Add initial task to conversation
         self.conversation.add(
             role="User",

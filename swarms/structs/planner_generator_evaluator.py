@@ -810,6 +810,8 @@ class PlannerGeneratorEvaluator:
         total_retries = 0
 
         try:
+            self.conversation.clear()
+
             # Add task to conversation
             self.conversation.add(role="User", content=task)
 
