@@ -393,5 +393,91 @@ class TestRunSurface:
         assert len(a_chunks) == 2
 
 
+# --------------------------------------------------------------------------
+# Issue #2060 — decision prompt silence bias and second-turn behavior
+# --------------------------------------------------------------------------
+
+
+class TestGroupChatSilenceBias:
+    def test_prompt_formatting_and_placeholders(self):
+        from swarms.prompts.groupchat_prompt import (
+            GROUPCHAT_DECIDE_PROMPT,
+        )
+
+        formatted = GROUPCHAT_DECIDE_PROMPT.format(
+            agent_name="AgentA",
+            other_agents="AgentB, AgentC",
+            sender="User",
+            message="Initial question",
+        )
+        assert "AgentA" in formatted
+        assert "AgentB, AgentC" in formatted
+        assert "Initial question" in formatted
+
+    def test_prompt_does_not_contain_hardcoded_silence_threshold(
+        self,
+    ):
+        from swarms.prompts.groupchat_prompt import (
+            GROUPCHAT_DECIDE_PROMPT,
+        )
+
+        # The old prompt instructed: "If score < 0.5, return an empty message."
+        # This overrode configured thresholds < 0.5 (e.g. 0.15).
+        assert "If score < 0.5" not in GROUPCHAT_DECIDE_PROMPT
+        assert "Silence is the default" not in GROUPCHAT_DECIDE_PROMPT
+
+    def test_second_turn_rebuttal_or_new_contribution_can_continue_chat(
+        self,
+    ):
+        """Issue #2060: Room must be able to continue on turn 2 when an agent has a valid rebuttal/contribution."""
+        agent_a = ScriptedAgent(
+            "AgentA",
+            [(0.8, "Multi-agent systems improve parallelism.")],
+        )
+        agent_b = ScriptedAgent(
+            "AgentB",
+            [
+                (0.0, ""),  # turn 1: silent
+                (
+                    0.6,
+                    "Small teams should avoid multi-agent systems due to overhead.",
+                ),  # turn 2: rebuttal
+            ],
+        )
+        chat = make_chat(
+            [agent_a, agent_b], threshold=0.15, max_loops=6
+        )
+        chat.run(
+            "Should small engineering teams adopt multi-agent AI systems?"
+        )
+
+        chat_roles = roles(chat)
+        assert len(chat_roles) >= 3
+        assert chat_roles[:3] == ["User", "AgentA", "AgentB"]
+        assert "overhead" in contents(chat)[2]
+
+    def test_threshold_below_half_is_respected(self):
+        """Bids with moderate scores (e.g. 0.3) above a low threshold (0.15) take the floor."""
+        agent_a = ScriptedAgent("AgentA", [(0.8, "First claim.")])
+        agent_b = ScriptedAgent(
+            "AgentB",
+            [(0.0, ""), (0.3, "Moderate score contribution.")],
+        )
+        chat = make_chat([agent_a, agent_b], threshold=0.15)
+        chat.run("Discuss.")
+
+        assert roles(chat) == ["User", "AgentA", "AgentB"]
+
+    def test_true_silence_still_terminates_on_lull(self):
+        """When all agents genuinely return silent bids, chat still stops on a lull."""
+        agent_a = ScriptedAgent("AgentA", [(0.8, "Single reply.")])
+        agent_b = ScriptedAgent("AgentB", [(0.0, "")])
+
+        chat = make_chat([agent_a, agent_b], threshold=0.5)
+        chat.run("Task")
+
+        assert roles(chat) == ["User", "AgentA"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-q"])

@@ -5,8 +5,28 @@ This module provides a simple docstring parser that extracts parameter informati
 and descriptions from Python docstrings in Google/NumPy style format.
 """
 
+import inspect
 import re
 from typing import List, Optional, NamedTuple
+
+# Headers that end the description and, inside Args, end the parameter list.
+_SECTION_HEADERS = (
+    "args:",
+    "arguments:",
+    "parameters:",
+    "returns:",
+    "yields:",
+    "raises:",
+    "note:",
+    "notes:",
+    "example:",
+    "examples:",
+    "see also:",
+    "see_also:",
+    "attributes:",
+)
+
+_PARAM_RE = re.compile(r"^(\w+)\s*(?:\([^)]*\))?\s*:\s*(.+)$")
 
 
 class DocstringParam(NamedTuple):
@@ -36,102 +56,64 @@ def parse(docstring: str) -> DocstringInfo:
     if not docstring or not docstring.strip():
         return DocstringInfo(short_description=None, params=[])
 
-    # Clean up the docstring
-    lines = [line.strip() for line in docstring.strip().split("\n")]
+    # cleandoc, not strip-every-line: the parser below needs the relative
+    # indentation to tell a wrapped description from the next parameter.
+    lines = inspect.cleandoc(docstring).split("\n")
 
-    # Extract short description (first non-empty line that's not a section header)
+    # Extract short description: the first prose line before any section.
     short_description = None
     for line in lines:
-        if line and not line.startswith(
-            (
-                "Args:",
-                "Parameters:",
-                "Returns:",
-                "Yields:",
-                "Raises:",
-                "Note:",
-                "Example:",
-                "Examples:",
-            )
-        ):
-            short_description = line
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.lower().startswith(_SECTION_HEADERS):
             break
+        short_description = stripped
+        break
 
     # Extract parameters
-    params = []
-
-    # Look for Args: or Parameters: section
+    params: List[DocstringParam] = []
     in_args_section = False
     current_param = None
+    param_indent = 0
 
     for line in lines:
-        # Check if we're entering the Args/Parameters section
-        if line.lower().startswith(("args:", "parameters:")):
-            in_args_section = True
+        stripped = line.strip()
+        if not stripped:
+            continue
+        indent = len(line) - len(line.lstrip())
+        lowered = stripped.lower()
+
+        if not in_args_section:
+            if lowered.startswith(
+                ("args:", "arguments:", "parameters:")
+            ):
+                in_args_section = True
             continue
 
-        # Check if we're leaving the Args/Parameters section
-        if (
-            in_args_section
-            and line
-            and not line.startswith(" ")
-            and not line.startswith("\t")
-        ):
-            # Check if this is a new section header
-            if line.lower().startswith(
-                (
-                    "returns:",
-                    "yields:",
-                    "raises:",
-                    "note:",
-                    "example:",
-                    "examples:",
-                    "see also:",
-                    "see_also:",
-                )
-            ):
-                in_args_section = False
-                if current_param:
-                    params.append(current_param)
-                    current_param = None
-                continue
-
-        if in_args_section and line:
-            # Check if this line starts a new parameter (starts with parameter name)
-            # Pattern: param_name (type): description
-            param_match = re.match(
-                r"^(\w+)\s*(?:\([^)]*\))?\s*:\s*(.+)$", line
+        # A continuation is indented past the parameter it belongs to. Check
+        # this before the parameter pattern, which a wrapped line containing a
+        # colon would otherwise match.
+        if current_param is not None and indent > param_indent:
+            current_param = DocstringParam(
+                arg_name=current_param.arg_name,
+                description=f"{current_param.description} {stripped}",
             )
-            if param_match:
-                # Save previous parameter if exists
-                if current_param:
-                    params.append(current_param)
+            continue
 
-                param_name = param_match.group(1)
-                param_desc = param_match.group(2).strip()
-                current_param = DocstringParam(
-                    arg_name=param_name, description=param_desc
-                )
-            elif current_param and (
-                line.startswith(" ") or line.startswith("\t")
-            ):
-                # This is a continuation of the current parameter description
-                current_param = DocstringParam(
-                    arg_name=current_param.arg_name,
-                    description=current_param.description
-                    + " "
-                    + line.strip(),
-                )
-            elif not line.startswith(" ") and not line.startswith(
-                "\t"
-            ):
-                # This might be a new section, stop processing args
-                in_args_section = False
-                if current_param:
-                    params.append(current_param)
-                    current_param = None
+        if lowered.startswith(_SECTION_HEADERS):
+            break
 
-    # Add the last parameter if it exists
+        param_match = _PARAM_RE.match(stripped)
+        if param_match:
+            if current_param:
+                params.append(current_param)
+            current_param = DocstringParam(
+                arg_name=param_match.group(1),
+                description=param_match.group(2).strip(),
+            )
+            param_indent = indent
+
     if current_param:
         params.append(current_param)
 
