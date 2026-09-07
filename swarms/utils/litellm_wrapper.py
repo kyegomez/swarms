@@ -758,6 +758,51 @@ class LiteLLM:
             return bool(override)
         return self._is_anthropic_model()
 
+    # OpenAI families that reject max_tokens and require max_completion_tokens
+    _COMPLETION_TOKEN_FAMILIES = ("o1", "o3", "o4", "gpt-5", "gpt-6")
+
+    def _output_token_key(self) -> str:
+        """The request key the provider accepts for the output-token cap.
+
+        OpenAI's reasoning-era models reject ``max_tokens`` outright and
+        require ``max_completion_tokens``; every other provider LiteLLM
+        routes to takes ``max_tokens``. LiteLLM does not translate between
+        them, so the choice has to be made here.
+        """
+        name = (self.model_name or "").lower().split("/")[-1]
+        if name.startswith(self._COMPLETION_TOKEN_FAMILIES):
+            return "max_completion_tokens"
+        return "max_tokens"
+
+    @staticmethod
+    def _swap_token_key_for(
+        error: Exception, params: dict
+    ) -> Optional[dict]:
+        """Params with the output-token key renamed, if that is what ``error`` asks for.
+
+        The family list above cannot know every model in advance, so a
+        rejection that names the other key is retried once with it. Returns
+        None when the error is about something else.
+        """
+        text = str(error)
+        if "max_tokens" in params and "max_completion_tokens" in text:
+            swapped = dict(params)
+            swapped["max_completion_tokens"] = swapped.pop(
+                "max_tokens"
+            )
+            return swapped
+        if (
+            "max_completion_tokens" in params
+            and "max_completion_tokens" in text
+            and "max_tokens" in text
+        ):
+            swapped = dict(params)
+            swapped["max_tokens"] = swapped.pop(
+                "max_completion_tokens"
+            )
+            return swapped
+        return None
+
     def _is_anthropic_model(self) -> bool:
         """
         Whether the configured model is in the Anthropic Claude family, incl.
@@ -1199,7 +1244,7 @@ class LiteLLM:
                 task=task, img=img, imgs=imgs, messages=messages
             ),
             "stream": self.stream,
-            "max_tokens": self.max_tokens,
+            self._output_token_key(): self.max_tokens,
             "caching": self.caching,
             "temperature": self.temperature,
         }
@@ -1426,7 +1471,18 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
-            response = completion(**completion_params)
+            try:
+                response = completion(**completion_params)
+            except Exception as error:
+                retry_params = self._swap_token_key_for(
+                    error, completion_params
+                )
+                if retry_params is None:
+                    raise
+                logger.warning(
+                    f"{self.model_name} rejected the output-token key, retrying: {error}"
+                )
+                response = completion(**retry_params)
             self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
@@ -1467,7 +1523,18 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
-            response = await acompletion(**completion_params)
+            try:
+                response = await acompletion(**completion_params)
+            except Exception as error:
+                retry_params = self._swap_token_key_for(
+                    error, completion_params
+                )
+                if retry_params is None:
+                    raise
+                logger.warning(
+                    f"{self.model_name} rejected the output-token key, retrying: {error}"
+                )
+                response = await acompletion(**retry_params)
             self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
