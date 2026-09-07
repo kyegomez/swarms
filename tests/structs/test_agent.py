@@ -1471,6 +1471,7 @@ class TestAgentUsage:
             "input_tokens": 0,
             "output_tokens": 0,
             "cached_tokens": 0,
+            "reasoning_tokens": 0,
             "total_tokens": 0,
         }
         usage["input_tokens"] = 999
@@ -1488,6 +1489,7 @@ class TestAgentUsage:
             "input_tokens": 120,
             "output_tokens": 30,
             "cached_tokens": 100,
+            "reasoning_tokens": 0,
             "total_tokens": 150,
         }
 
@@ -1564,5 +1566,56 @@ class TestAgentUsage:
             "input_tokens": sum(100 * i for i in range(1, 7)),
             "output_tokens": sum(range(1, 7)),
             "cached_tokens": 0,
+            "reasoning_tokens": 0,
             "total_tokens": sum(100 * i + i for i in range(1, 7)),
+        }
+
+    def test_a_streaming_run_is_counted_from_the_final_chunk(self):
+        """Streaming usage arrives in a trailing usage-only chunk; the
+        agent's streaming consumer must drain it into agent.usage."""
+        from types import SimpleNamespace
+
+        def chunk(text):
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        delta=SimpleNamespace(content=text)
+                    )
+                ],
+                usage=None,
+            )
+
+        usage_chunk = SimpleNamespace(
+            choices=[],
+            usage=SimpleNamespace(
+                prompt_tokens=40,
+                completion_tokens=7,
+                total_tokens=47,
+                prompt_tokens_details=None,
+            ),
+        )
+
+        agent = self._agent(streaming_on=True)
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=iter(
+                [
+                    chunk("SMH "),
+                    chunk("vs "),
+                    chunk("SOXX"),
+                    usage_chunk,
+                ]
+            ),
+        ) as fake:
+            agent.run("Compare them.")
+
+        assert fake.call_args.kwargs["stream_options"] == {
+            "include_usage": True
+        }
+        assert agent.usage == {
+            "input_tokens": 40,
+            "output_tokens": 7,
+            "cached_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 47,
         }

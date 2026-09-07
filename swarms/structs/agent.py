@@ -4023,7 +4023,10 @@ Summary: {summary}
 
         Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens`` (the
         part of ``input_tokens`` served from the provider's prompt cache),
-        ``total_tokens``. Streaming calls are not counted.
+        ``reasoning_tokens`` (the part of ``output_tokens`` the model spent
+        thinking, 0 when the provider does not report it), ``total_tokens``.
+        Streaming calls count once their stream has been consumed, since the
+        provider reports usage in the final chunk.
         """
         return dict(self._usage)
 
