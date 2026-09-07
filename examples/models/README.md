@@ -31,6 +31,10 @@ Set the matching API key as an environment variable before running any example (
 - [groq_gpt_oss_models.py](gpt_oss/groq_gpt_oss_models.py) — GPT-OSS on Groq
 - [multi_agent_gpt_oss_example.py](gpt_oss/multi_agent_gpt_oss_example.py) — Multi-agent GPT-OSS
 
+### GPT-6 Astra
+- [gpt_astra.py](gpt_astra/gpt_astra.py) — Quantitative trading agent on gpt-6-astra
+- [gpt_astra_usage.py](gpt_astra/gpt_astra_usage.py) — Streamed run with `agent.usage`, including reasoning tokens
+
 ### Llama 4
 - [llama_4.py](llama4/llama_4.py) — Llama 4 agent
 - [litellm_example.py](llama4/litellm_example.py) — Llama 4 via LiteLLM

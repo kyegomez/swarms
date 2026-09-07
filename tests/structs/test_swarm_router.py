@@ -1086,6 +1086,7 @@ def _agent_with_usage(name, input_tokens, output_tokens):
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
         "cached_tokens": 0,
+        "reasoning_tokens": 0,
         "total_tokens": input_tokens + output_tokens,
     }
     return agent
@@ -1107,6 +1108,7 @@ def test_usage_starts_at_zero():
         "input_tokens": 0,
         "output_tokens": 0,
         "cached_tokens": 0,
+        "reasoning_tokens": 0,
         "total_tokens": 0,
     }
 
@@ -1122,6 +1124,7 @@ def test_usage_sums_the_configured_agents():
         "input_tokens": 150,
         "output_tokens": 15,
         "cached_tokens": 0,
+        "reasoning_tokens": 0,
         "total_tokens": 165,
     }
 
