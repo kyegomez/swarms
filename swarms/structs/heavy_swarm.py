@@ -12,6 +12,7 @@ from swarms.prompts.heavy_swarm_prompts import (
     grok_heavy_schema,
     schema,
 )
+from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
 from swarms.tools.tool_type import tool_type
@@ -1142,13 +1143,6 @@ class HeavySwarm(SerializableMixin):
         - Deliver prioritized, actionable recommendations with confidence levels
         - Flag risks, ethical concerns (Elizabeth), long-term systemic issues (Noah), and mitigation strategies
 
-        Conversation history for full context:
-
-        \n\n
-
-        {self.conversation.return_history_as_string()}
-
-        \n\n
 
         Present your synthesis as:
         1. Executive Summary (3-5 sentences)
@@ -1183,13 +1177,6 @@ class HeavySwarm(SerializableMixin):
         - Provide prioritized, actionable recommendations with confidence levels.
         - Identify risks, blind spots flagged by Lucas, and mitigation strategies.
 
-        Conversation history for context:
-
-        \n\n
-
-        {self.conversation.return_history_as_string()}
-
-        \n\n
 
         Present your synthesis as:
         1. Executive Summary
@@ -1227,13 +1214,6 @@ class HeavySwarm(SerializableMixin):
         - Ensure the report is well-structured, concise, and suitable for decision-makers (executive summary style).
         - Use bullet points, numbered lists, and section headings where appropriate for clarity and readability.
 
-        You may reference the conversation history for additional context:
-
-        \n\n
-
-        {self.conversation.return_history_as_string()}
-
-        \n\n
 
         Please present your synthesis in the following structure:
         1. Executive Summary
@@ -1246,7 +1226,12 @@ class HeavySwarm(SerializableMixin):
         Be thorough, objective, and ensure your synthesis is easy to follow for a non-technical audience.
         """
 
-        return synthesis_agent.run(synthesis_prompt)
+        return synthesis_agent.run(
+            synthesis_prompt,
+            messages=messages_for(
+                synthesis_agent.agent_name or "", self.conversation
+            ),
+        )
 
     def _parse_tool_calls(self, tool_calls: List) -> Dict[str, any]:
         """
