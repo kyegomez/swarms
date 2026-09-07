@@ -209,6 +209,19 @@ class Agent:
             "create_sub_agent", "assign_task".
             Defaults to "all" (all tools enabled). Pass a list of tool names to restrict tools, or "all"
             for unrestricted access. Use this to control which tools the agent can use during autonomous execution.
+        tool_permissions (Optional[Dict[str, Union[str, Callable]]]): Per-tool allow/deny policy for the
+            autonomous looper's built-in tools, keyed by tool name. A value is "allow", "deny", "ask", or a
+            callable `(tool_name, arguments) -> "allow" | "deny" | "ask"`, which is how you express a rule
+            such as "allow run_bash only when the command starts with pytest" without a keyword blocklist.
+            A refused call is returned to the model as a tool result, not raised, so the loop continues and
+            the model can choose another route. Every ruling is recorded on
+            `agent.autonomous_loop.permission_log`. Defaults to None (no per-tool rules).
+        default_permission (str): Applied to any autonomous-loop tool with no entry in `tool_permissions`.
+            One of "allow", "deny", "ask". Defaults to "allow", which is unchanged behavior -- with no
+            `tool_permissions` either, the loop skips the permission layer entirely.
+        permission_callback (Optional[Callable[[str, Dict[str, Any]], bool]]): Consulted for "ask", as
+            `(tool_name, arguments) -> bool`. With no callback, "ask" degrades to deny and the model is told
+            why, rather than the loop blocking on a prompt nobody is watching. Defaults to None.
         prompt_caching (bool): Enable provider-side prompt caching. When True, ephemeral
             cache_control breakpoints are added to the stable prefix of each request (system
             prompt, tools, and the last message) so it is cached and re-billed at a discount.
@@ -406,6 +419,15 @@ class Agent:
         marketplace_prompt_id: Optional[str] = None,
         skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
+        tool_permissions: Optional[
+            Dict[
+                str, Union[str, Callable[[str, Dict[str, Any]], str]]
+            ]
+        ] = None,
+        default_permission: str = "allow",
+        permission_callback: Optional[
+            Callable[[str, Dict[str, Any]], bool]
+        ] = None,
         context_compression: bool = True,
         persistent_memory: bool = False,
         *args,
@@ -415,6 +437,9 @@ class Agent:
         self.id = id or generate_id("agent")
         self.skills = SkillsManager(skills_dir=skills_dir)
         self.selected_tools = selected_tools
+        self.tool_permissions = tool_permissions
+        self.default_permission = default_permission
+        self.permission_callback = permission_callback
         self.llm = llm
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition

@@ -41,8 +41,8 @@ from swarms.structs.autonomous_loop_utils import (
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
 )
+from swarms.structs.tool_permissions import ToolPermissionPolicy
 from swarms.utils.litellm_tokenizer import count_tokens
-
 
 # --------------------------------------------------------------------------
 # helpers
@@ -1244,3 +1244,303 @@ class TestGlobTool:
             "pattern",
             "path",
         }
+
+
+# --------------------------------------------------------------------------
+# #2163 — per-tool permission policy
+# --------------------------------------------------------------------------
+
+
+def _finish(*extra_calls):
+    """A scripted run that does `extra_calls`, then closes out the task."""
+    return [
+        plan(("step1", [])),
+        [
+            *extra_calls,
+            tool_call(
+                "subtask_done",
+                task_id="step1",
+                summary="done",
+                success=True,
+            ),
+        ],
+        [
+            tool_call(
+                "complete_task",
+                task_id="main",
+                summary="done",
+                success=True,
+            )
+        ],
+    ]
+
+
+class TestToolPermissions:
+    """
+    The side-effecting tools used to execute unconditionally; the only guard
+    was a keyword blocklist on run_bash that both over- and under-blocks.
+    """
+
+    def test_a_denied_tool_does_not_run_and_the_model_is_told(
+        self, monkeypatch, tmp_path
+    ):
+        target = tmp_path / "should_not_exist.txt"
+        agent = build_agent(tool_permissions={"create_file": "deny"})
+        script_llm(
+            agent,
+            monkeypatch,
+            _finish(
+                tool_call(
+                    "create_file",
+                    file_path=str(target),
+                    content="payload",
+                )
+            ),
+        )
+
+        agent.run("test task")
+
+        assert not target.exists()
+        text = history(agent)
+        assert "Permission denied for create_file" in text
+        # The loop carried on rather than aborting on the refusal.
+        assert status_of(agent, "step1") == "completed"
+
+    def test_an_allowed_tool_still_runs(self, monkeypatch, tmp_path):
+        target = tmp_path / "written.txt"
+        agent = build_agent(
+            tool_permissions={"create_file": "allow"},
+            default_permission="deny",
+        )
+        script_llm(
+            agent,
+            monkeypatch,
+            _finish(
+                tool_call(
+                    "create_file",
+                    file_path=str(target),
+                    content="payload",
+                )
+            ),
+        )
+
+        agent.run("test task")
+
+        assert target.read_text() == "payload"
+
+    def test_a_callable_rule_decides_from_the_arguments(
+        self, monkeypatch, tmp_path
+    ):
+        allowed = tmp_path / "allowed.txt"
+        blocked = tmp_path / "blocked.txt"
+
+        def only_allowed_names(tool_name, arguments):
+            return (
+                "allow"
+                if arguments.get("file_path", "").endswith(
+                    "allowed.txt"
+                )
+                else "deny"
+            )
+
+        agent = build_agent(
+            tool_permissions={"create_file": only_allowed_names}
+        )
+        script_llm(
+            agent,
+            monkeypatch,
+            _finish(
+                tool_call(
+                    "create_file",
+                    file_path=str(allowed),
+                    content="ok",
+                ),
+                tool_call(
+                    "create_file",
+                    file_path=str(blocked),
+                    content="no",
+                ),
+            ),
+        )
+
+        agent.run("test task")
+
+        assert allowed.exists()
+        assert not blocked.exists()
+
+    def test_ask_without_a_callback_denies_and_says_why(
+        self, monkeypatch, tmp_path
+    ):
+        target = tmp_path / "asked.txt"
+        agent = build_agent(default_permission="ask")
+        script_llm(
+            agent,
+            monkeypatch,
+            _finish(
+                tool_call(
+                    "create_file",
+                    file_path=str(target),
+                    content="payload",
+                )
+            ),
+        )
+
+        agent.run("test task")
+
+        assert not target.exists()
+        assert "no permission_callback" in history(agent)
+
+    def test_ask_routes_to_the_callback(self, monkeypatch, tmp_path):
+        approved = tmp_path / "yes.txt"
+        refused = tmp_path / "no.txt"
+        asked = []
+
+        def callback(tool_name, arguments):
+            asked.append((tool_name, arguments.get("file_path")))
+            return arguments.get("file_path", "").endswith("yes.txt")
+
+        agent = build_agent(
+            default_permission="ask", permission_callback=callback
+        )
+        script_llm(
+            agent,
+            monkeypatch,
+            _finish(
+                tool_call(
+                    "create_file",
+                    file_path=str(approved),
+                    content="ok",
+                ),
+                tool_call(
+                    "create_file",
+                    file_path=str(refused),
+                    content="no",
+                ),
+            ),
+        )
+
+        agent.run("test task")
+
+        assert approved.exists()
+        assert not refused.exists()
+        assert [name for name, _ in asked] == [
+            "create_file",
+            "create_file",
+        ]
+
+    def test_control_flow_tools_are_never_gated(
+        self, monkeypatch, tmp_path
+    ):
+        """deny-everything must still let the loop plan and finish."""
+        target = tmp_path / "denied.txt"
+        agent = build_agent(default_permission="deny")
+        script_llm(
+            agent,
+            monkeypatch,
+            _finish(
+                tool_call(
+                    "create_file",
+                    file_path=str(target),
+                    content="payload",
+                )
+            ),
+        )
+
+        agent.run("test task")
+
+        assert not target.exists()
+        assert status_of(agent, "step1") == "completed"
+        gated = {
+            d.tool_name for d in agent.autonomous_loop.permission_log
+        }
+        assert gated == {"create_file"}
+
+    def test_every_decision_is_recorded(self, monkeypatch, tmp_path):
+        agent = build_agent(
+            tool_permissions={
+                "create_file": "allow",
+                "delete_file": "deny",
+            }
+        )
+        made = tmp_path / "kept.txt"
+        script_llm(
+            agent,
+            monkeypatch,
+            _finish(
+                tool_call(
+                    "create_file", file_path=str(made), content="x"
+                ),
+                tool_call("delete_file", file_path=str(made)),
+            ),
+        )
+
+        agent.run("test task")
+
+        log = agent.autonomous_loop.permission_log
+        assert [(d.tool_name, d.decision) for d in log] == [
+            ("create_file", "allow"),
+            ("delete_file", "deny"),
+        ]
+        assert (
+            made.exists()
+        ), "the denied delete still removed the file"
+
+    def test_the_default_configuration_skips_the_layer(
+        self, monkeypatch, tmp_path
+    ):
+        target = tmp_path / "default.txt"
+        agent = build_agent()
+        script_llm(
+            agent,
+            monkeypatch,
+            _finish(
+                tool_call(
+                    "create_file",
+                    file_path=str(target),
+                    content="payload",
+                )
+            ),
+        )
+
+        agent.run("test task")
+
+        assert target.read_text() == "payload"
+        assert agent.autonomous_loop.permission_log == []
+
+    def test_a_raising_rule_denies_instead_of_crashing_the_loop(
+        self, monkeypatch, tmp_path
+    ):
+        target = tmp_path / "boom.txt"
+
+        def broken(tool_name, arguments):
+            raise RuntimeError("policy bug")
+
+        agent = build_agent(tool_permissions={"create_file": broken})
+        script_llm(
+            agent,
+            monkeypatch,
+            _finish(
+                tool_call(
+                    "create_file",
+                    file_path=str(target),
+                    content="payload",
+                )
+            ),
+        )
+
+        agent.run("test task")
+
+        assert not target.exists()
+        assert "policy bug" in history(agent)
+        assert status_of(agent, "step1") == "completed"
+
+    def test_an_invalid_policy_value_is_rejected_at_construction(
+        self,
+    ):
+        with pytest.raises(ValueError, match="tool_permissions"):
+            ToolPermissionPolicy(
+                tool_permissions={"run_bash": "maybe"}
+            )
+
+        with pytest.raises(ValueError, match="default_permission"):
+            ToolPermissionPolicy(default_permission="maybe")

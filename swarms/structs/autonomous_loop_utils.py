@@ -641,6 +641,25 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
     ]
 
 
+# The built-in tools a permission policy governs: everything that reads,
+# writes or executes outside the loop. Control-flow tools (create_plan, think,
+# subtask_done, complete_task, respond_to_user, tool_search, the sub-agent
+# calls, handoff_task) are the loop's own bookkeeping and are never gated -
+# denying them strands the run instead of protecting anything.
+PERMISSIONED_TOOLS = frozenset(
+    {
+        "create_file",
+        "update_file",
+        "read_file",
+        "list_directory",
+        "delete_file",
+        "run_bash",
+        "grep",
+        "glob",
+    }
+)
+
+
 def get_autonomous_loop_tool_names() -> List[str]:
     """
     Return a list of all autonomous loop tool names.
