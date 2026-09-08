@@ -1,13 +1,3 @@
-"""A MixtureOfAgents swarm of gpt-6-astra agents through the Swarms API.
-
-Three specialists answer the task in parallel and a synthesizer combines
-their answers. Every agent runs gpt-6-astra.
-
-Run:
-    export SWARMS_API_KEY=...   # https://swarms.world/platform/api-keys
-    python examples/models/gpt_astra/swarms_api_mixture_of_agents.py
-"""
-
 import json
 import os
 
@@ -85,6 +75,8 @@ response = requests.post(
 )
 response.raise_for_status()
 result = response.json()
+
+print(json.dumps(result, indent=2))
 
 # output is the whole conversation, the synthesis is the last entry
 for message in result["output"]:
