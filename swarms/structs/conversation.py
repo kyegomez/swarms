@@ -2,6 +2,7 @@ import concurrent.futures
 import datetime
 import json
 import os
+import tempfile
 import threading
 import traceback
 import uuid
@@ -52,6 +53,16 @@ def get_conversation_dir():
 
 # Unnamed conversations share this name, so they must not resume from disk
 DEFAULT_CONVERSATION_NAME = "conversation-test"
+
+
+# Lessons are kept newest-first and capped, because MEMORY.md is preloaded in
+# full as a system preamble: an uncapped list of every lesson the agent has
+# ever drawn eventually crowds out the task it was given.
+MAX_MEMORY_LESSONS = 25
+
+# The marker the lessons section lives under, between the file header and the
+# interaction log. Matched exactly when the section is rewritten.
+LESSONS_HEADING = "## Lessons Learned"
 
 
 class Conversation:
@@ -275,6 +286,9 @@ class Conversation:
                 f"**Conversation:** {self.name}\n"
                 f"**Created:** {datetime.datetime.now().isoformat()}\n\n"
                 f"---\n\n"
+                f"{LESSONS_HEADING}\n\n"
+                f"_None yet._\n\n"
+                f"---\n\n"
                 f"## Interaction Log\n\n"
             )
             try:
@@ -425,6 +439,170 @@ class Conversation:
             logger.error(
                 f"Failed to archive MEMORY.md to {archive_path}: {e}"
             )
+
+    def record_lesson(
+        self,
+        lesson: str,
+        task: Optional[str] = None,
+        outcome: Optional[bool] = None,
+    ) -> bool:
+        """
+        Record one lesson in MEMORY.md's ``## Lessons Learned`` section.
+
+        The interaction log already carries whatever the agent wrote, so a
+        lesson is technically on disk the moment it appears in a completion
+        summary. What it is not is *findable*: it sits inside one entry among
+        every tool result and subtask summary the run produced, and the whole
+        file is preloaded verbatim on the next start. This puts lessons in one
+        addressable, bounded, newest-first list at the top of the file, where
+        both a person and the next run's preamble read them first.
+
+        The section is rewritten rather than appended to, because a cap is
+        only enforceable if the oldest entry can be dropped. The write is
+        atomic (temp file plus replace) under the same lock the append path
+        uses, so a crash mid-write cannot leave a truncated MEMORY.md.
+
+        Args:
+            lesson: What was learned. Blank or whitespace-only is ignored.
+            task: The task it was learned on. Stored alongside, because a
+                lesson without its context is noise.
+            outcome: Whether the run it came from succeeded. Recorded rather
+                than filtered on: a lesson from a failed run is often the
+                more useful one, and the agent cannot tell a failure of the
+                work from a failure of the environment. The reader can.
+
+        Returns:
+            True when a lesson was written, False when there was nothing to
+            record or no MEMORY.md is configured.
+
+        Example:
+            >>> conv.record_lesson(
+            ...     "Authentication should be implemented early",
+            ...     task="Build a web app",
+            ...     outcome=True,
+            ... )
+            True
+        """
+        if not self.memory_md_path:
+            return False
+
+        lesson_text = str(lesson or "").strip()
+        if not lesson_text:
+            return False
+
+        # One list entry, so a multi-line lesson does not break the section.
+        lesson_text = " ".join(lesson_text.split())
+        stamp = datetime.datetime.now().isoformat(timespec="seconds")
+        label = (
+            ""
+            if outcome is None
+            else f" — {'succeeded' if outcome else 'failed'}"
+        )
+        task_text = " ".join(str(task or "").split())
+        attribution = f" — task: {task_text}" if task_text else ""
+        entry = f"- {stamp}{label}{attribution}\n  {lesson_text}"
+
+        try:
+            with self._memory_md_lock:
+                self._init_memory_md()
+                with open(
+                    self.memory_md_path, "r", encoding="utf-8"
+                ) as f:
+                    content = f.read()
+
+                head, section, tail = self._split_lessons(content)
+                entries = self._parse_lessons(section)
+                entries.insert(0, entry)
+                del entries[MAX_MEMORY_LESSONS:]
+
+                rebuilt = (
+                    f"{head}{LESSONS_HEADING}\n\n"
+                    + "\n".join(entries)
+                    + f"\n\n{tail}"
+                )
+                self._atomic_write_memory_md(rebuilt)
+        except Exception as e:
+            logger.error(
+                f"Failed to record lesson in {self.memory_md_path}: {e}"
+            )
+            return False
+
+        return True
+
+    def _split_lessons(self, content: str) -> tuple:
+        """
+        Split MEMORY.md around its lessons section.
+
+        Args:
+            content: The whole file.
+
+        Returns:
+            ``(head, section_body, tail)``. ``head`` ends just before the
+            heading and ``tail`` starts at the next ``---`` separator, so
+            rejoining them with a rebuilt section leaves everything else
+            byte-identical. A file written before this section existed gets
+            an empty section spliced in ahead of its interaction log.
+        """
+        start = content.find(LESSONS_HEADING)
+        if start == -1:
+            log_at = content.find("## Interaction Log")
+            if log_at == -1:
+                return content.rstrip("\n") + "\n\n", "", ""
+            return content[:log_at], "", content[log_at:]
+
+        body_at = start + len(LESSONS_HEADING)
+        end = content.find("\n---", body_at)
+        if end == -1:
+            return content[:start], content[body_at:], ""
+        # Keep the separator with the tail; it belongs to the log below.
+        return (
+            content[:start],
+            content[body_at:end],
+            content[end + 1 :],
+        )
+
+    @staticmethod
+    def _parse_lessons(section: str) -> List[str]:
+        """
+        Read existing entries back out of the lessons section.
+
+        Args:
+            section: The section body, between the heading and the separator.
+
+        Returns:
+            The entries, newest first, each including its continuation line.
+            The placeholder a fresh file carries is not an entry.
+        """
+        entries: List[str] = []
+        for line in section.splitlines():
+            if line.startswith("- "):
+                entries.append(line)
+            elif entries and line.strip():
+                entries[-1] += "\n" + line
+        return entries
+
+    def _atomic_write_memory_md(self, content: str) -> None:
+        """
+        Replace MEMORY.md in one step.
+
+        Args:
+            content: The full new file contents.
+
+        Notes:
+            Written to a sibling temp file and renamed, so an interrupted
+            write leaves the previous memory intact rather than a half file.
+            Caller holds ``_memory_md_lock``.
+        """
+        directory = os.path.dirname(self.memory_md_path) or "."
+        fd, tmp_path = tempfile.mkstemp(dir=directory, suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(content)
+            os.replace(tmp_path, self.memory_md_path)
+        except Exception:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise
 
     def _append_to_memory_md(self, role: str, content: Any) -> None:
         """Append a single message to the MEMORY.md interaction log."""

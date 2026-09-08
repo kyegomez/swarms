@@ -41,6 +41,7 @@ from swarms.structs.autonomous_loop_utils import (
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
 )
+from swarms.structs.conversation import LESSONS_HEADING
 from swarms.utils.litellm_tokenizer import count_tokens
 
 
@@ -1244,3 +1245,92 @@ class TestGlobTool:
             "pattern",
             "path",
         }
+
+
+# --------------------------------------------------------------------------
+# #1998 — a task's lessons reach MEMORY.md's own section
+# --------------------------------------------------------------------------
+
+
+class TestLessonsReachMemory:
+    """
+    complete_task collects lessons_learned. They already land in MEMORY.md as
+    part of the completion summary, because every message does; what they did
+    not have was a section of their own that a later run can find.
+    """
+
+    def _agent(self, monkeypatch, tmp_path, **overrides):
+        monkeypatch.setattr(
+            "swarms.structs.agent.get_workspace_dir",
+            lambda: str(tmp_path),
+        )
+        return build_agent(persistent_memory=True, **overrides)
+
+    def _lessons(self, agent):
+        path = agent.short_memory.memory_md_path
+        text = open(path).read()
+        start = text.index(LESSONS_HEADING) + len(LESSONS_HEADING)
+        return text[start : text.index("## Interaction Log")]
+
+    def test_a_lesson_lands_in_the_section_attributed_to_its_task(
+        self, monkeypatch, tmp_path
+    ):
+        agent = self._agent(monkeypatch, tmp_path)
+
+        agent._complete_task_tool(
+            task_id="main",
+            summary="Build the auth service",
+            success=True,
+            lessons_learned="Authentication should be implemented early",
+        )
+
+        section = self._lessons(agent)
+        assert "Authentication should be implemented early" in section
+        assert "task: Build the auth service" in section
+        assert "succeeded" in section
+
+    def test_a_completion_with_no_lesson_adds_no_entry(
+        self, monkeypatch, tmp_path
+    ):
+        agent = self._agent(monkeypatch, tmp_path)
+
+        agent._complete_task_tool(
+            task_id="main", summary="did it", success=True
+        )
+
+        assert "- " not in self._lessons(agent)
+
+    def test_the_summary_still_carries_the_lesson(
+        self, monkeypatch, tmp_path
+    ):
+        """The section is additional, not a replacement."""
+        agent = self._agent(monkeypatch, tmp_path)
+
+        out = agent._complete_task_tool(
+            task_id="main",
+            summary="did it",
+            success=True,
+            lessons_learned="write the test first",
+        )
+
+        assert "Lessons Learned:\nwrite the test first" in out
+        assert "write the test first" in history(agent)
+
+    def test_without_persistent_memory_nothing_is_written(
+        self, monkeypatch, tmp_path
+    ):
+        monkeypatch.setattr(
+            "swarms.structs.agent.get_workspace_dir",
+            lambda: str(tmp_path),
+        )
+        agent = build_agent(persistent_memory=False)
+
+        agent._complete_task_tool(
+            task_id="main",
+            summary="did it",
+            success=True,
+            lessons_learned="a lesson",
+        )
+
+        assert agent.short_memory.memory_md_path is None
+        assert not (tmp_path / "agents").exists()
