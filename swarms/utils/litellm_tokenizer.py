@@ -78,3 +78,35 @@ def get_supported_models() -> list:
     except Exception as e:
         logger.warning(f"Could not retrieve model list: {e}")
         return []
+
+
+def cost_per_token(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cached_tokens: int = 0,
+) -> Optional[float]:
+    """Dollar cost of one call at LiteLLM's listed price for ``model``.
+
+    Args:
+        model: The model name as passed to the agent.
+        input_tokens: Prompt tokens, including any served from cache.
+        output_tokens: Completion tokens, including reasoning.
+        cached_tokens: The part of ``input_tokens`` served from cache, which
+            most providers bill at a lower rate.
+
+    Returns:
+        The cost in USD, or None when LiteLLM has no price for the model.
+    """
+    from litellm import cost_per_token as _litellm_cost
+
+    try:
+        prompt_cost, completion_cost = _litellm_cost(
+            model=model,
+            prompt_tokens=input_tokens,
+            completion_tokens=output_tokens,
+            cache_read_input_tokens=cached_tokens,
+        )
+    except Exception:
+        return None
+    return float(prompt_cost + completion_cost)
