@@ -1032,10 +1032,6 @@ _BASH_BLOCKLIST = [
     ("unset histfile",),
 ]
 
-# Command names that are only dangerous when they are the command being run.
-# Matched as a substring these fire on ordinary text: "sudo" hits
-# `grep -r sudo config/`, "halt" hits any word containing it, and "printenv"
-# hits a filename. Anchor them to a command position instead (#1969).
 _BASH_COMMAND_WORDS = (
     "sudo",
     "su",
