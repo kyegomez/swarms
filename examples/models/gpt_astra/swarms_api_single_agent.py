@@ -1,10 +1,3 @@
-"""One gpt-6-astra agent through the Swarms API, no framework install needed.
-
-Run:
-    export SWARMS_API_KEY=...   # https://swarms.world/platform/api-keys
-    python examples/models/gpt_astra/swarms_api_single_agent.py
-"""
-
 import json
 import os
 
@@ -29,7 +22,6 @@ payload = {
         ),
         "model_name": "gpt-6-astra",
         "max_loops": 1,
-        "max_tokens": 8000,
     },
     "task": (
         "Compare the SMH and SOXX semiconductor ETFs in one short paragraph: "
@@ -43,6 +35,4 @@ response = requests.post(
 response.raise_for_status()
 result = response.json()
 
-# outputs is the conversation, the agent's answer is the last entry
-print(result["outputs"][-1]["content"])
-print(json.dumps(result["usage"], indent=2))
+print(json.dumps(result, indent=2))
