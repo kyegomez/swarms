@@ -4018,6 +4018,25 @@ Summary: {summary}
             raise e
 
     @property
+    def input_tokens(self) -> int:
+        """Tokens the agent's next request would carry, counted with its model's tokenizer.
+
+        Covers everything the agent sends as input: the system prompt, the
+        whole conversation in ``short_memory``, and the tool schemas. Use it
+        to see how full the context window is before a run. It is an
+        estimate — the conversation is counted as rendered text, role labels
+        included — so it runs a little above what the provider bills. For the
+        billed figure, summed over past calls, see :attr:`usage`.
+        """
+        parts = [self.short_memory.return_history_as_string()]
+        if self.tools_list_dictionary:
+            parts.append(json.dumps(self.tools_list_dictionary))
+        return count_tokens(
+            "\n".join(part for part in parts if part),
+            model=self.model_name,
+        )
+
+    @property
     def usage(self) -> dict:
         """Token usage reported by the provider, summed over every LLM call this agent has made.
 

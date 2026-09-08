@@ -1619,3 +1619,35 @@ class TestAgentUsage:
             "reasoning_tokens": 0,
             "total_tokens": 47,
         }
+
+
+class TestAgentInputTokens:
+    """``agent.input_tokens`` is the size of the next request, not a bill."""
+
+    def test_counts_the_system_prompt_before_any_run(self):
+        agent = _patched_agent(
+            "CtxAgent", system_prompt="You are terse."
+        )
+        assert agent.input_tokens > 0
+
+    def test_grows_as_the_conversation_grows(self):
+        agent = _patched_agent("CtxAgent", system_prompt="Short.")
+        before = agent.input_tokens
+        agent.short_memory.add("User", "word " * 200)
+        assert agent.input_tokens > before + 100
+
+    def test_counts_tool_schemas_too(self):
+        bare = _patched_agent("CtxAgent", system_prompt="Short.")
+        with_tool = _patched_agent(
+            "CtxAgent",
+            system_prompt="Short.",
+            dynamic_tools=False,
+            tools=[_math_tool],
+        )
+        assert with_tool.input_tokens > bare.input_tokens
+
+    def test_is_independent_of_usage(self):
+        """usage is what the provider charged; input_tokens is a size."""
+        agent = _patched_agent("CtxAgent", system_prompt="Short.")
+        assert agent.usage["input_tokens"] == 0
+        assert agent.input_tokens > 0
