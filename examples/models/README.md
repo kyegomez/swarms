@@ -34,6 +34,8 @@ Set the matching API key as an environment variable before running any example (
 ### GPT-6 Astra
 - [gpt_astra.py](gpt_astra/gpt_astra.py) — Quantitative trading agent on gpt-6-astra
 - [gpt_astra_usage.py](gpt_astra/gpt_astra_usage.py) — Streamed run with `agent.usage`, including reasoning tokens
+- [swarms_api_single_agent.py](gpt_astra/swarms_api_single_agent.py) — One gpt-6-astra agent through the Swarms API (`/v1/agent/completions`)
+- [swarms_api_mixture_of_agents.py](gpt_astra/swarms_api_mixture_of_agents.py) — MixtureOfAgents of gpt-6-astra agents through the Swarms API (`/v1/swarm/completions`)
 
 ### Llama 4
 - [llama_4.py](llama4/llama_4.py) — Llama 4 agent
