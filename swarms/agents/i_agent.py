@@ -295,8 +295,6 @@ class IterativeReflectiveExpansion:
                 f"Candidate paths for next iteration: {candidate_paths}"
             )
 
-            # Every path already cleared the threshold, so another iteration
-            # would re-simulate the same paths and revise nothing.
             if not revised_any:
                 logger.info(
                     "All paths met the score threshold; stopping early."
