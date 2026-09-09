@@ -1,13 +1,3 @@
-"""
-The three point-to-point communication patterns, as classes and as functions.
-
-- OneToOne / one_to_one: a sender and a receiver exchange messages.
-- Broadcast / broadcast: one sender, many receivers.
-- OneToThree / one_to_three: one sender, exactly three receivers.
-
-Requires an ANTHROPIC_API_KEY (or swap MODEL for any LiteLLM model).
-"""
-
 import asyncio
 
 from dotenv import load_dotenv
