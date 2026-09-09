@@ -1,4 +1,3 @@
-import concurrent.futures
 import datetime
 import json
 import os
@@ -547,9 +546,6 @@ class Conversation:
             all_input_text = " ".join(input_messages)
             all_output_text = " ".join(output_messages)
 
-            print(all_input_text)
-            print(all_output_text)
-
             # Count tokens only if there is text
             input_tokens = (
                 count_tokens(
@@ -626,23 +622,24 @@ class Conversation:
         roles: List[str],
         contents: List[Union[str, dict, list, any]],
     ):
-        """Add multiple messages to the conversation history."""
+        """Add multiple messages to the conversation history, in order.
+
+        Args:
+            roles (List[str]): One role per message.
+            contents (List[Union[str, dict, list, any]]): One content per role.
+
+        Returns:
+            list: The result of each :meth:`add`, in the order given.
+        """
         if len(roles) != len(contents):
             raise ValueError(
                 "Number of roles and contents must match."
             )
 
-        # Now create a formula to get 25% of available cpus
-        max_workers = int(os.cpu_count() * 0.25)
-
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_workers
-        ) as executor:
-            futures = [
-                executor.submit(self.add, role, content)
-                for role, content in zip(roles, contents)
-            ]
-            concurrent.futures.wait(futures)
+        return [
+            self.add(role, content)
+            for role, content in zip(roles, contents)
+        ]
 
     def delete(self, index: str):
         """Delete a message from the conversation history."""
