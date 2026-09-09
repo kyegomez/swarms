@@ -1554,3 +1554,55 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def _endpoint_workflow():
+    wf = GraphWorkflow(name="Endpoints-Test", auto_compile=False)
+    wf.nodes["Alpha"] = Node(
+        id="Alpha", agent=create_test_agent("Alpha")
+    )
+    wf.nodes["Beta"] = Node(id="Beta", agent=create_test_agent("Beta"))
+    wf.add_edge("Alpha", "Beta")
+    return wf
+
+
+def test_entry_and_end_points_name_their_own_role_when_rejecting():
+    """The two setters share one body, so each must still say which it is."""
+    wf = _endpoint_workflow()
+    with pytest.raises(ValueError) as entry:
+        wf.set_entry_points(["Alpha", "Missing"])
+    assert (
+        str(entry.value)
+        == "Entry point node 'Missing' does not exist in GraphWorkflow"
+    )
+    with pytest.raises(ValueError) as end:
+        wf.set_end_points(["Missing"])
+    assert (
+        str(end.value)
+        == "End point node 'Missing' does not exist in GraphWorkflow"
+    )
+
+
+def test_a_rejected_endpoint_list_is_not_partially_applied():
+    wf = _endpoint_workflow()
+    wf.set_entry_points(["Alpha"])
+    with pytest.raises(ValueError):
+        wf.set_entry_points(["Beta", "Missing"])
+    assert wf.entry_points == ["Alpha"]
+
+
+def test_entry_and_end_points_write_to_their_own_attribute():
+    wf = _endpoint_workflow()
+    wf.set_entry_points(["Alpha"])
+    wf.set_end_points(["Beta"])
+    assert wf.entry_points == ["Alpha"]
+    assert wf.end_points == ["Beta"]
+
+
+def test_auto_endpoints_read_opposite_edge_directions():
+    wf = _endpoint_workflow()
+    wf.compile()
+    wf.auto_set_entry_points()
+    wf.auto_set_end_points()
+    assert wf.entry_points == ["Alpha"]
+    assert wf.end_points == ["Beta"]
