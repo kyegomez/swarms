@@ -1,5 +1,6 @@
 import json
 import concurrent.futures
+import os
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -698,6 +699,35 @@ def test_add_appends_to_memory_md(tmp_path):
     assert "### user — " in content
     assert "Test message" in content
     assert "---" in content
+
+
+def test_add_multiple_returns_one_result_per_message():
+    """add_multiple_messages reports what it added, rather than None."""
+    conv = Conversation()
+    added = conv.add_multiple_messages(
+        ["user", "assistant"], ["Hello", "Hi there"]
+    )
+    assert added is not None
+    assert len(added) == 2
+
+
+def test_add_multiple_does_not_depend_on_the_cpu_count(monkeypatch):
+    """A machine reporting fewer than four CPUs can still add messages.
+
+    int(os.cpu_count() * 0.25) is 0 for 1, 2 and 3 CPUs, which is a
+    ValueError from ThreadPoolExecutor rather than a slow path.
+    """
+    monkeypatch.setattr(os, "cpu_count", lambda: 1)
+    conv = Conversation()
+    conv.add_multiple_messages(
+        ["user", "assistant", "system"],
+        ["Hello", "Hi there", "System message"],
+    )
+    assert [msg["role"] for msg in conv.conversation_history] == [
+        "user",
+        "assistant",
+        "system",
+    ]
 
 
 def test_concurrent_add_thread_safety(tmp_path):
