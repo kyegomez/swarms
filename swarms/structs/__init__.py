@@ -13,6 +13,7 @@ from swarms.structs.auto_agent_builder import (
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
+from swarms.structs.broadcast import Broadcast, broadcast
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
@@ -53,6 +54,8 @@ from swarms.structs.multi_agent_exec import (
     run_single_agent,
 )
 from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.one_to_one import OneToOne, one_to_one
+from swarms.structs.one_to_three import OneToThree, one_to_three
 from swarms.structs.planner_generator_evaluator import (
     EvaluationReport,
     HarnessResult,
@@ -69,9 +72,6 @@ from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
 )
-from swarms.structs.broadcast import Broadcast, broadcast
-from swarms.structs.one_to_one import OneToOne, one_to_one
-from swarms.structs.one_to_three import OneToThree, one_to_three
 from swarms.structs.swarming_architectures import (
     circular_swarm,
     grid_swarm,
@@ -79,6 +79,13 @@ from swarms.structs.swarming_architectures import (
     pyramid_swarm,
     star_swarm,
 )
+
+from swarms.structs.check_models import (
+    model_count,
+    get_available_models,
+    is_model_available,
+)
+
 
 __all__ = [
     "AdvisorSwarm",
@@ -148,4 +155,7 @@ __all__ = [
     "SubagentTask",
     "TaskStatus",
     "RESPOND_TOOL",
+    "model_count",
+    "get_available_models",
+    "is_model_available",
 ]
