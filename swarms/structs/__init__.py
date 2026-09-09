@@ -69,12 +69,13 @@ from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
 )
+from swarms.structs.broadcast import Broadcast, broadcast
+from swarms.structs.one_to_one import OneToOne, one_to_one
+from swarms.structs.one_to_three import OneToThree, one_to_three
 from swarms.structs.swarming_architectures import (
-    broadcast,
     circular_swarm,
     grid_swarm,
     mesh_swarm,
-    one_to_one,
     pyramid_swarm,
     star_swarm,
 )
@@ -101,6 +102,10 @@ __all__ = [
     "grid_swarm",
     "mesh_swarm",
     "one_to_one",
+    "one_to_three",
+    "OneToOne",
+    "OneToThree",
+    "Broadcast",
     "pyramid_swarm",
     "star_swarm",
     "SpreadSheetSwarm",
