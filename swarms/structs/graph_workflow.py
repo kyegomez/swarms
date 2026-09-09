@@ -1478,7 +1478,9 @@ class GraphWorkflow:
             label (str): How to name the role in an error message.
         """
         if self.verbose:
-            logger.debug(f"Setting {label.lower()} points: {node_ids}")
+            logger.debug(
+                f"Setting {label.lower()} points: {node_ids}"
+            )
 
         try:
             for node_id in node_ids:
@@ -1671,7 +1673,9 @@ class GraphWorkflow:
 
             if not found and self.nodes:
                 edge_direction = (
-                    "incoming" if degree == "in_degree" else "outgoing"
+                    "incoming"
+                    if degree == "in_degree"
+                    else "outgoing"
                 )
                 logger.warning(
                     f"No {label} points found - all nodes have "

@@ -1561,7 +1561,9 @@ def _endpoint_workflow():
     wf.nodes["Alpha"] = Node(
         id="Alpha", agent=create_test_agent("Alpha")
     )
-    wf.nodes["Beta"] = Node(id="Beta", agent=create_test_agent("Beta"))
+    wf.nodes["Beta"] = Node(
+        id="Beta", agent=create_test_agent("Beta")
+    )
     wf.add_edge("Alpha", "Beta")
     return wf
 
