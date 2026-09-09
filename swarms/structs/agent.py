@@ -16,7 +16,6 @@ from typing import (
     Union,
 )
 
-import toml
 import yaml
 from litellm import model_list
 from litellm.exceptions import (
