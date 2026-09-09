@@ -723,9 +723,11 @@ def test_add_multiple_does_not_depend_on_the_cpu_count(monkeypatch):
         ["user", "assistant", "system"],
         ["Hello", "Hi there", "System message"],
     )
-    assert [
-        msg["role"] for msg in conv.conversation_history
-    ] == ["user", "assistant", "system"]
+    assert [msg["role"] for msg in conv.conversation_history] == [
+        "user",
+        "assistant",
+        "system",
+    ]
 
 
 def test_concurrent_add_thread_safety(tmp_path):
