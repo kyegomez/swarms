@@ -196,6 +196,50 @@ print(
 )
 ```
 
+### Serve an Agent as an MCP Server
+
+The reverse direction works too. `MCPDeployer` turns any agent, or any swarm, into an MCP server that other agents and MCP hosts can call, with an auth layer in front of it. Each target becomes one tool; pass a list or a dict to serve several from one server. [See the MCPDeployer examples](examples/mcp/mcp_deployer/)
+
+```python
+from swarms import Agent, MCPDeployer
+
+researcher = Agent(
+    agent_name="Researcher",
+    agent_description="Answers research questions with a short summary.",
+    model_name="gpt-5.4",
+    max_loops=1,
+)
+
+# Serves http://127.0.0.1:8000/mcp as the tool "researcher".
+MCPDeployer(researcher, api_keys=["sk-local-dev"], port=8000).run()
+```
+
+Any other agent can then use it by pointing at the URL with the key:
+
+```python
+from swarms import Agent
+from swarms.schemas.mcp_schemas import MCPConnection
+
+client = Agent(
+    agent_name="Client",
+    model_name="gpt-5.4",
+    mcp_url=MCPConnection(url="http://127.0.0.1:8000/mcp", api_key="sk-local-dev"),
+    max_loops=2,
+)
+client.run("Use the researcher tool to summarise the state of solid-state batteries.")
+```
+
+Auth can be static API keys, your own `auth` callable that reads the request headers, or an `mcp` `TokenVerifier` with required scopes. A server with no auth configured refuses to start unless you pass `allow_anonymous=True`. Transports: streamable HTTP (default), SSE, or stdio for desktop MCP hosts.
+
+| Example | What it shows |
+|---|---|
+| [single_agent_api_key.py](examples/mcp/mcp_deployer/single_agent_api_key.py) | One agent behind a static key |
+| [multiple_agents_one_server.py](examples/mcp/mcp_deployer/multiple_agents_one_server.py) | Two agents, a `SequentialWorkflow` and two functions as separate tools |
+| [custom_auth_per_tenant.py](examples/mcp/mcp_deployer/custom_auth_per_tenant.py) | Your own async auth callable reading an `x-tenant` header |
+| [token_verifier_with_scopes.py](examples/mcp/mcp_deployer/token_verifier_with_scopes.py) | `TokenVerifier` with required scopes |
+| [background_server_and_client_agent.py](examples/mcp/mcp_deployer/background_server_and_client_agent.py) | Serve, call from a second agent, and stop, all in one process |
+| [All MCPDeployer examples](examples/mcp/mcp_deployer/) | Every target kind, auth mode and transport |
+
 ### Your First Swarm: Multi-Agent Collaboration
 
 A **Swarm** consists of multiple agents working together. This simple example creates a two-agent workflow for researching and writing a blog post. [Learn More About SequentialWorkflow](https://docs.swarms.world/api/sequential-workflow)
