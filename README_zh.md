@@ -789,6 +789,8 @@ Swarms 是一个开源、社区驱动的框架，旨在通过为部署和编排�
 
 4. **加入讨论：** 想参与路线图讨论并与其他开发者交流，请加入我们的 [**Discord**](https://discord.gg/EamjgSaEQf) 社区。
 
+5. **所有提交、PR 和 Issue 都必须使用 WARP：** 无论是人还是 AI 智能体，所有贡献者的提交信息、PR 标题和 Issue 标题都必须采用 WARP（Warp Speed Protocol）速记格式：`[TYPE][Function/FileName][Short Description]`，例如 `[FIX][Agent._run][Raise AgentLLMError after retry exhaustion]`。完整规范见 [**WARP Git Message Skill**](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1)。未使用 WARP 的 Issue 和 PR 会排在使用了 WARP 的之后处理，因此不使用会有延迟。
+
 ### 感谢我们的贡献者
 
 感谢你为 swarms 做出的贡献。你的工作备受重视和认可。

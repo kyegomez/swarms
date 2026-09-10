@@ -851,6 +851,8 @@ We've made it easy to start contributing. Here's how you can help:
 
 4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
 
+5. **Use WARP for Every Commit, PR and Issue:** All contributors, people and AI agents alike, must write commit messages, PR titles and issue titles in the WARP (Warp Speed Protocol) shorthand: `[TYPE][Function/FileName][Short Description]`, for example `[FIX][Agent._run][Raise AgentLLMError after retry exhaustion]`. The full spec is the [**WARP Git Message Skill**](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1). Issues and PRs that skip WARP are triaged after the ones that use it, so expect a delay without it.
+
 ### Thank You to Our Contributors
 
 Thank you for contributing to swarms. Your work is extremely appreciated and recognized.
