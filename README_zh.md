@@ -178,6 +178,50 @@ print(
 )
 ```
 
+### 将智能体作为 MCP 服务器提供
+
+反过来也可以。`MCPDeployer` 能把任意智能体或任意 swarm 变成一个 MCP 服务器，供其他智能体和 MCP 宿主调用，并在前面加上一层鉴权。每个目标对应一个工具；传入列表或字典即可在一个服务器上提供多个目标。[查看 MCPDeployer 示例](examples/mcp/mcp_deployer/)
+
+```python
+from swarms import Agent, MCPDeployer
+
+researcher = Agent(
+    agent_name="Researcher",
+    agent_description="Answers research questions with a short summary.",
+    model_name="gpt-5.4",
+    max_loops=1,
+)
+
+# Serves http://127.0.0.1:8000/mcp as the tool "researcher".
+MCPDeployer(researcher, api_keys=["sk-local-dev"], port=8000).run()
+```
+
+任何其他智能体只需指向该 URL 并附上密钥即可使用它：
+
+```python
+from swarms import Agent
+from swarms.schemas.mcp_schemas import MCPConnection
+
+client = Agent(
+    agent_name="Client",
+    model_name="gpt-5.4",
+    mcp_url=MCPConnection(url="http://127.0.0.1:8000/mcp", api_key="sk-local-dev"),
+    max_loops=2,
+)
+client.run("Use the researcher tool to summarise the state of solid-state batteries.")
+```
+
+鉴权方式可以是静态 API 密钥、你自己编写的读取请求头的 `auth` 可调用对象，或带有必需 scope 的 `mcp` `TokenVerifier`。未配置任何鉴权的服务器会拒绝启动，除非显式传入 `allow_anonymous=True`。支持的传输方式：可流式 HTTP（默认）、SSE，以及面向桌面 MCP 宿主的 stdio。
+
+| 示例 | 展示内容 |
+|---|---|
+| [single_agent_api_key.py](examples/mcp/mcp_deployer/single_agent_api_key.py) | 一个智能体，使用静态密钥保护 |
+| [multiple_agents_one_server.py](examples/mcp/mcp_deployer/multiple_agents_one_server.py) | 两个智能体、一个 `SequentialWorkflow` 和两个函数，各自作为独立工具 |
+| [custom_auth_per_tenant.py](examples/mcp/mcp_deployer/custom_auth_per_tenant.py) | 自定义的异步鉴权可调用对象，读取 `x-tenant` 请求头 |
+| [token_verifier_with_scopes.py](examples/mcp/mcp_deployer/token_verifier_with_scopes.py) | 带必需 scope 的 `TokenVerifier` |
+| [background_server_and_client_agent.py](examples/mcp/mcp_deployer/background_server_and_client_agent.py) | 在同一进程中启动服务、由第二个智能体调用、然后停止 |
+| [全部 MCPDeployer 示例](examples/mcp/mcp_deployer/) | 覆盖每种目标类型、鉴权方式和传输方式 |
+
 ### 你的第一个 Swarm：多智能体协作
 
 一个 **Swarm** 由多个协同工作的智能体组成。下面这个简单示例创建了一个双智能体工作流，用于研究并撰写一篇博客文章。[了解更多关于 SequentialWorkflow 的信息](https://docs.swarms.world/api/sequential-workflow)
