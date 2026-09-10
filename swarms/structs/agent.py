@@ -113,6 +113,7 @@ from swarms.utils.index import (
 )
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
+from swarms.utils.codex_cli import validate_codex_agent
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -146,6 +147,8 @@ class Agent:
 
     Args:
         llm (Any): The language model to use
+        llm_backend (str): "litellm" (default) or the opt-in "codex" CLI backend.
+        codex_config (dict): Codex options: positive timeout in seconds (default 180).
         max_loops (int): The maximum number of loops to run
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
@@ -408,9 +411,32 @@ class Agent:
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
+        llm_backend: Literal["litellm", "codex"] = "litellm",
+        codex_config: Optional[Dict[str, Any]] = None,
         *args,
         **kwargs,
     ):
+        if llm_backend not in ("litellm", "codex"):
+            raise ValueError(
+                "llm_backend must be 'litellm' or 'codex'"
+            )
+        if codex_config is not None and (
+            llm_backend != "codex"
+            or not isinstance(codex_config, dict)
+        ):
+            raise ValueError(
+                "codex_config requires the Codex backend and a dict"
+            )
+        if llm_backend == "codex" and llm is not None:
+            raise ValueError(
+                "Use either llm_backend='codex' or a custom llm"
+            )
+        self.llm_backend = llm_backend
+        self.codex_config = (
+            dict(codex_config or {})
+            if llm_backend == "codex"
+            else None
+        )
         # super().__init__(*args, **kwargs)
         self.id = id or generate_id("agent")
         self.skills = SkillsManager(skills_dir=skills_dir)
@@ -519,6 +545,9 @@ class Agent:
         self.mode = mode
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
+
+        if self.llm_backend == "codex":
+            validate_codex_agent(self)
 
         self.mcp_manager = MCPManager(
             mcp_url=self.mcp_url,
@@ -2566,7 +2595,10 @@ Subtask Breakdown:
         except Exception:
             pass
 
-        if self.model_name not in model_list:
+        if (
+            self.llm_backend != "codex"
+            and self.model_name not in model_list
+        ):
             logger.warning(
                 f"The model '{self.model_name}' may not be supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
             )
