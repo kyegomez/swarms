@@ -12,6 +12,8 @@
   <a href="https://docs.swarms.world">Documentation</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
   <a href="https://swarms.world">Swarms Marketplace</a>
+  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+  <a href="./README_zh.md">中文</a>
 </p>
 
 
