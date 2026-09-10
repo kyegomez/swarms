@@ -40,3 +40,5 @@ Most examples under [`../agents/`](../agents/) and [`../client/`](../client/) th
 [`agent_as_tool_server.py`](agent_as_tool_server.py) is the interesting one: it turns a
 swarms `Agent` into an MCP tool, so *another* agent — or any MCP client — can spawn and
 run it remotely. That's how you compose swarms across process or machine boundaries.
+
+To serve an Agent or a whole swarm as an MCP tool with an auth layer, see [`../mcp_deployer/`](../mcp_deployer/).

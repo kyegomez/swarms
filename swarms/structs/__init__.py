@@ -53,6 +53,7 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
     run_single_agent,
 )
+from swarms.structs.mcp_deployer import MCPDeployer, deploy_as_mcp
 from swarms.structs.multi_agent_router import MultiAgentRouter
 from swarms.structs.one_to_one import OneToOne, one_to_one
 from swarms.structs.one_to_three import OneToThree, one_to_three
@@ -156,6 +157,8 @@ __all__ = [
     "TaskStatus",
     "RESPOND_TOOL",
     "model_count",
+    "MCPDeployer",
+    "deploy_as_mcp",
     "get_available_models",
     "is_model_available",
 ]
