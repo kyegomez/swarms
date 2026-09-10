@@ -2,6 +2,7 @@ import concurrent.futures
 import json
 import os
 import traceback
+from contextlib import nullcontext
 from typing import Dict, List, Optional
 
 from swarms.agents.heavy_swarm_agents import (
@@ -27,6 +28,149 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
+
+
+VARIANT_SPECS_HEAVY = [
+    (
+        "Harper",
+        "harper",
+        "Crafting narrative and storytelling angles",
+    ),
+    (
+        "Benjamin",
+        "benjamin",
+        "Analyzing data, finance and economics",
+    ),
+    (
+        "Lucas",
+        "lucas",
+        "Building code and technical solutions",
+    ),
+    (
+        "Olivia",
+        "olivia",
+        "Exploring literature, arts and culture",
+    ),
+    (
+        "James",
+        "james",
+        "Examining history, politics and philosophy",
+    ),
+    (
+        "Charlotte",
+        "charlotte",
+        "Applying math, statistics and logic",
+    ),
+    (
+        "Henry",
+        "henry",
+        "Engineering and innovation analysis",
+    ),
+    (
+        "Mia",
+        "mia",
+        "Biology, health and medicine perspective",
+    ),
+    (
+        "William",
+        "william",
+        "Business strategy and entrepreneurship",
+    ),
+    (
+        "Sebastian",
+        "sebastian",
+        "Physics, astronomy and hard sciences",
+    ),
+    (
+        "Jack",
+        "jack",
+        "Psychology and human behavior insights",
+    ),
+    (
+        "Owen",
+        "owen",
+        "Environment and global systems view",
+    ),
+    (
+        "Luna",
+        "luna",
+        "Space exploration and futurism lens",
+    ),
+    (
+        "Elizabeth",
+        "elizabeth",
+        "Ethics, policy and critical thinking",
+    ),
+    (
+        "Noah",
+        "noah",
+        "Long-term innovation and systems thinking",
+    ),
+]
+
+VARIANT_SPECS_MEDIUM = [
+    (
+        "Harper",
+        "harper",
+        "Gathering evidence and verifying facts",
+    ),
+    (
+        "Benjamin",
+        "benjamin",
+        "Applying rigorous logic and verification",
+    ),
+    (
+        "Lucas",
+        "lucas",
+        "Exploring creative angles and blind spots",
+    ),
+]
+
+VARIANT_SPECS_DEFAULT = [
+    (
+        "Research",
+        "research",
+        "Gathering comprehensive research data",
+    ),
+    (
+        "Analysis",
+        "analysis",
+        "Analyzing patterns and generating insights",
+    ),
+    (
+        "Alternatives",
+        "alternatives",
+        "Exploring creative solutions and alternatives",
+    ),
+    (
+        "Verification",
+        "verification",
+        "Validating findings and checking feasibility",
+    ),
+]
+
+VARIANT_SPECS = {
+    "heavy": VARIANT_SPECS_HEAVY,
+    "medium": VARIANT_SPECS_MEDIUM,
+}
+
+
+def specs_for(variant: str):
+    """Return the (label, key, description) table for a variant.
+
+    Any variant other than heavy or medium uses the four-agent
+    default roster.
+    """
+    return VARIANT_SPECS.get(variant, VARIANT_SPECS_DEFAULT)
+
+
+class NoOpTracker:
+    """Stands in for the dashboard progress tracker when the
+    dashboard is off, so the execution path does not need to
+    branch on show_dashboard."""
+
+    def __getattr__(self, _name):
+        return lambda *args, **kwargs: None
 
 
 class HeavySwarm(SerializableMixin):
@@ -398,15 +542,7 @@ class HeavySwarm(SerializableMixin):
                     # Agent execution phase
                     try:
                         if self.show_dashboard:
-                            agent_count = (
-                                15
-                                if self.variant == "heavy"
-                                else (
-                                    3
-                                    if self.variant == "medium"
-                                    else 4
-                                )
-                            )
+                            agent_count = len(specs_for(self.variant))
                             agent_label = (
                                 "Grok Heavy agents"
                                 if self.variant == "heavy"
@@ -541,398 +677,65 @@ class HeavySwarm(SerializableMixin):
         self, questions: Dict, agents: Dict, img: Optional[str] = None
     ) -> Dict[str, str]:
         """
-        Execute the 4 specialized agents in TRUE parallel using concurrent.futures.
+        Execute the variant's specialized agents in parallel.
+
+        Every agent in the roster for the active variant is submitted to a
+        thread pool at once, and results are collected as they complete.
+        Timeouts and exceptions are recorded per agent so one failing agent
+        cannot abort the others.
+
+        When show_dashboard is set, progress is reported through the
+        dashboard's tracker; otherwise the tracker is a no-op and the
+        execution path is identical.
 
         Args:
-            questions (Dict): Generated questions for each agent
-            agents (Dict): Dictionary of specialized agents
-            img (str, optional): Image input if needed
+            questions (Dict): Generated questions, keyed "<agent>_question".
+            agents (Dict): Specialized agent instances from create_agents().
+            img (str, optional): Image input for agents that support visual
+                analysis. Defaults to None.
 
         Returns:
-            Dict[str, str]: Results from each agent
+            Dict[str, str]: Each agent's output, keyed by the agent's key in
+                the variant roster (for example "research" or "harper").
         """
 
-        if self.show_dashboard:
-            return self._execute_agents_with_dashboard(
-                questions, agents, img
+        specs = specs_for(self.variant)
+
+        agent_configs = [
+            (label, key, "white", description)
+            for label, key, description in specs
+        ]
+
+        agent_tasks = [
+            (
+                label,
+                key,
+                agents[key],
+                questions.get(f"{key}_question", ""),
             )
-        else:
-            return self._execute_agents_basic(questions, agents, img)
+            for label, key, _ in specs
+        ]
 
-    def _execute_agents_basic(
-        self, questions: Dict, agents: Dict, img: Optional[str] = None
-    ) -> Dict[str, str]:
-        """
-        Execute specialized agents in parallel without dashboard visualization.
-
-        This method provides the core agent execution functionality using concurrent.futures
-        for true parallel processing. It executes the four specialized agents simultaneously
-        to maximize efficiency while providing basic error handling and timeout management.
-
-        The execution process:
-        1. Prepare agent tasks with their respective specialized questions
-        2. Submit all tasks to ThreadPoolExecutor for parallel execution
-        3. Collect results as agents complete their work
-        4. Handle timeouts and exceptions gracefully
-        5. Log results to conversation history
-
-        Args:
-            questions (Dict): Generated questions containing keys:
-                - research_question: Question for Research Agent
-                - analysis_question: Question for Analysis Agent
-                - alternatives_question: Question for Alternatives Agent
-                - verification_question: Question for Verification Agent
-            agents (Dict): Dictionary of specialized agent instances from create_agents()
-            img (str, optional): Image input for agents that support visual analysis.
-                Defaults to None.
-
-        Returns:
-            Dict[str, str]: Results from each agent execution with keys:
-                - 'research': Research Agent output
-                - 'analysis': Analysis Agent output
-                - 'alternatives': Alternatives Agent output
-                - 'verification': Verification Agent output
-
-        Note:
-            This method uses ThreadPoolExecutor with max_workers limit for parallel execution.
-            Each agent runs independently and results are collected as they complete.
-            Timeout and exception handling ensure robustness even if individual agents fail.
-        """
-
-        # Define agent execution tasks
-        def execute_agent(agent_info):
-            agent_type, agent, question = agent_info
-            try:
-                result = agent.run(question, img=img)
-
-                self.conversation.add(
-                    role=agent.agent_name,
-                    content=result,
-                    category="output",
-                )
-                return agent_type, result
-            except Exception as e:
-                self._log(
-                    "ERROR",
-                    f"❌ Error in {agent_type} Agent: {str(e)} Traceback: {traceback.format_exc()}",
-                )
-                return agent_type, f"Error: {str(e)}"
-
-        # Prepare agent tasks
-        if self.variant == "heavy":
-            heavy_keys = [
-                ("Harper", "harper"),
-                ("Benjamin", "benjamin"),
-                ("Lucas", "lucas"),
-                ("Olivia", "olivia"),
-                ("James", "james"),
-                ("Charlotte", "charlotte"),
-                ("Henry", "henry"),
-                ("Mia", "mia"),
-                ("William", "william"),
-                ("Sebastian", "sebastian"),
-                ("Jack", "jack"),
-                ("Owen", "owen"),
-                ("Luna", "luna"),
-                ("Elizabeth", "elizabeth"),
-                ("Noah", "noah"),
-            ]
-            agent_tasks = [
-                (
-                    name,
-                    agents[key],
-                    questions.get(f"{key}_question", ""),
-                )
-                for name, key in heavy_keys
-            ]
-        elif self.variant == "medium":
-            agent_tasks = [
-                (
-                    "Harper",
-                    agents["harper"],
-                    questions.get("harper_question", ""),
-                ),
-                (
-                    "Benjamin",
-                    agents["benjamin"],
-                    questions.get("benjamin_question", ""),
-                ),
-                (
-                    "Lucas",
-                    agents["lucas"],
-                    questions.get("lucas_question", ""),
-                ),
-            ]
-        else:
-            agent_tasks = [
-                (
-                    "Research",
-                    agents["research"],
-                    questions.get("research_question", ""),
-                ),
-                (
-                    "Analysis",
-                    agents["analysis"],
-                    questions.get("analysis_question", ""),
-                ),
-                (
-                    "Alternatives",
-                    agents["alternatives"],
-                    questions.get("alternatives_question", ""),
-                ),
-                (
-                    "Verification",
-                    agents["verification"],
-                    questions.get("verification_question", ""),
-                ),
-            ]
-
-        # Execute agents in parallel using ThreadPoolExecutor
-        results = {}
-        with ContextThreadPoolExecutor(
-            max_workers=self.max_workers
-        ) as executor:
-            # Submit all agent tasks
-            future_to_agent = {
-                executor.submit(execute_agent, task): task[0]
-                for task in agent_tasks
-            }
-
-            # Collect results as they complete
-            for future in concurrent.futures.as_completed(
-                future_to_agent
-            ):
-                agent_type = future_to_agent[future]
-                try:
-                    agent_name, result = future.result(
-                        timeout=self.timeout
-                    )
-                    results[agent_name.lower()] = result
-                except concurrent.futures.TimeoutError:
-                    self._log(
-                        "ERROR",
-                        f"⏰ Timeout for {agent_type} Agent after {self.timeout}s",
-                    )
-                    results[agent_type.lower()] = (
-                        f"Timeout after {self.timeout} seconds"
-                    )
-                except Exception as e:
-                    self._log(
-                        "ERROR",
-                        f"❌ Exception in {agent_type} Agent: {str(e)}",
-                    )
-                    results[agent_type.lower()] = (
-                        f"Exception: {str(e)}"
-                    )
-
-        return results
-
-    def _execute_agents_with_dashboard(
-        self, questions: Dict, agents: Dict, img: Optional[str] = None
-    ) -> Dict[str, str]:
-        """
-        Execute specialized agents in parallel with rich dashboard visualization and progress tracking.
-
-        This method provides an enhanced user experience by displaying real-time progress bars
-        and status updates for each agent execution. It combines the efficiency of parallel
-        processing with professional dashboard visualization using Rich console styling.
-
-        Dashboard Features:
-        - Individual progress bars for each of the 4 specialized agents
-        - Real-time status updates with professional Swarms-inspired styling
-        - Animated dots and progress indicators for visual engagement
-        - Color-coded status messages (red for processing, white for completion)
-        - Completion summary with mission accomplished messaging
-
-        Progress Phases for Each Agent:
-        1. INITIALIZING: Agent setup and preparation
-        2. PROCESSING QUERY: Question analysis and processing
-        3. EXECUTING: Core agent execution with animated indicators
-        4. GENERATING RESPONSE: Response formulation and completion
-        5. COMPLETE: Successful execution confirmation
-
-        Args:
-            questions (Dict): Generated specialized questions containing:
-                - research_question: Comprehensive information gathering query
-                - analysis_question: Pattern recognition and insight analysis query
-                - alternatives_question: Creative solutions and options exploration query
-                - verification_question: Validation and feasibility assessment query
-            agents (Dict): Dictionary of specialized agent instances with keys:
-                - research, analysis, alternatives, verification
-            img (str, optional): Image input for agents supporting visual analysis.
-                Defaults to None.
-
-        Returns:
-            Dict[str, str]: Comprehensive results from agent execution:
-                - Keys correspond to agent types (research, analysis, alternatives, verification)
-                - Values contain detailed agent outputs and analysis
-
-        Note:
-            This method requires show_dashboard=True in the HeavySwarm configuration.
-            It provides the same parallel execution as _execute_agents_basic but with
-            enhanced visual feedback and professional presentation.
-        """
-
-        # Agent configurations with professional styling
-        if self.variant == "heavy":
-            agent_configs = [
-                (
-                    "Harper",
-                    "harper",
-                    "white",
-                    "Crafting narrative and storytelling angles",
-                ),
-                (
-                    "Benjamin",
-                    "benjamin",
-                    "white",
-                    "Analyzing data, finance and economics",
-                ),
-                (
-                    "Lucas",
-                    "lucas",
-                    "white",
-                    "Building code and technical solutions",
-                ),
-                (
-                    "Olivia",
-                    "olivia",
-                    "white",
-                    "Exploring literature, arts and culture",
-                ),
-                (
-                    "James",
-                    "james",
-                    "white",
-                    "Examining history, politics and philosophy",
-                ),
-                (
-                    "Charlotte",
-                    "charlotte",
-                    "white",
-                    "Applying math, statistics and logic",
-                ),
-                (
-                    "Henry",
-                    "henry",
-                    "white",
-                    "Engineering and innovation analysis",
-                ),
-                (
-                    "Mia",
-                    "mia",
-                    "white",
-                    "Biology, health and medicine perspective",
-                ),
-                (
-                    "William",
-                    "william",
-                    "white",
-                    "Business strategy and entrepreneurship",
-                ),
-                (
-                    "Sebastian",
-                    "sebastian",
-                    "white",
-                    "Physics, astronomy and hard sciences",
-                ),
-                (
-                    "Jack",
-                    "jack",
-                    "white",
-                    "Psychology and human behavior insights",
-                ),
-                (
-                    "Owen",
-                    "owen",
-                    "white",
-                    "Environment and global systems view",
-                ),
-                (
-                    "Luna",
-                    "luna",
-                    "white",
-                    "Space exploration and futurism lens",
-                ),
-                (
-                    "Elizabeth",
-                    "elizabeth",
-                    "white",
-                    "Ethics, policy and critical thinking",
-                ),
-                (
-                    "Noah",
-                    "noah",
-                    "white",
-                    "Long-term innovation and systems thinking",
-                ),
-            ]
-        elif self.variant == "medium":
-            agent_configs = [
-                (
-                    "Harper",
-                    "harper",
-                    "white",
-                    "Gathering evidence and " "verifying facts",
-                ),
-                (
-                    "Benjamin",
-                    "benjamin",
-                    "white",
-                    "Applying rigorous logic " "and verification",
-                ),
-                (
-                    "Lucas",
-                    "lucas",
-                    "white",
-                    "Exploring creative angles " "and blind spots",
-                ),
-            ]
-        else:
-            agent_configs = [
-                (
-                    "Agent 1",
-                    "research",
-                    "white",
-                    "Gathering comprehensive " "research data",
-                ),
-                (
-                    "Agent 2",
-                    "analysis",
-                    "white",
-                    "Analyzing patterns and " "generating insights",
-                ),
-                (
-                    "Agent 3",
-                    "alternatives",
-                    "white",
-                    "Exploring creative solutions "
-                    "and alternatives",
-                ),
-                (
-                    "Agent 4",
-                    "verification",
-                    "white",
-                    "Validating findings and " "checking feasibility",
-                ),
-            ]
+        tracker_context = (
+            self.dashboard.agent_progress_tracker(agent_configs)
+            if self.show_dashboard
+            else nullcontext(NoOpTracker())
+        )
 
         results = {}
 
-        with self.dashboard.agent_progress_tracker(
-            agent_configs
-        ) as tracker:
+        with tracker_context as tracker:
 
-            def execute_agent_with_progress(agent_info):
-                agent_type, agent_key, agent, question = agent_info
+            def execute_agent(agent_info):
+                label, key, agent, question = agent_info
                 try:
-                    tracker.initializing(agent_key, agent_type)
-                    tracker.processing(agent_key, agent_type)
-                    tracker.executing(agent_key, agent_type)
+                    tracker.initializing(key, label)
+                    tracker.processing(key, label)
+                    tracker.executing(key, label)
 
                     result = agent.run(question, img=img)
 
-                    tracker.responding(agent_key, agent_type)
+                    tracker.responding(key, label)
 
                     self.conversation.add(
                         role=agent.agent_name,
@@ -940,156 +743,64 @@ class HeavySwarm(SerializableMixin):
                         category="output",
                     )
 
-                    tracker.complete(agent_key, agent_type)
+                    tracker.complete(key, label)
 
-                    return agent_type, result
-
+                    return key, result
                 except Exception as e:
-                    tracker.error(agent_key, agent_type)
+                    tracker.error(key, label)
                     self._log(
                         "ERROR",
-                        f"❌ Error in {agent_type} Agent: {str(e)} Traceback: {traceback.format_exc()}",
+                        f"❌ Error in {label} Agent: {str(e)} Traceback: {traceback.format_exc()}",
                     )
-                    return agent_type, f"Error: {str(e)}"
+                    return key, f"Error: {str(e)}"
 
-            # Prepare agent tasks with keys
-            if self.variant == "heavy":
-                heavy_keys = [
-                    ("Harper", "harper"),
-                    ("Benjamin", "benjamin"),
-                    ("Lucas", "lucas"),
-                    ("Olivia", "olivia"),
-                    ("James", "james"),
-                    ("Charlotte", "charlotte"),
-                    ("Henry", "henry"),
-                    ("Mia", "mia"),
-                    ("William", "william"),
-                    ("Sebastian", "sebastian"),
-                    ("Jack", "jack"),
-                    ("Owen", "owen"),
-                    ("Luna", "luna"),
-                    ("Elizabeth", "elizabeth"),
-                    ("Noah", "noah"),
-                ]
-                agent_tasks = [
-                    (
-                        name,
-                        key,
-                        agents[key],
-                        questions.get(f"{key}_question", ""),
-                    )
-                    for name, key in heavy_keys
-                ]
-            elif self.variant == "medium":
-                agent_tasks = [
-                    (
-                        "Harper",
-                        "harper",
-                        agents["harper"],
-                        questions.get("harper_question", ""),
-                    ),
-                    (
-                        "Benjamin",
-                        "benjamin",
-                        agents["benjamin"],
-                        questions.get("benjamin_question", ""),
-                    ),
-                    (
-                        "Lucas",
-                        "lucas",
-                        agents["lucas"],
-                        questions.get("lucas_question", ""),
-                    ),
-                ]
-            else:
-                agent_tasks = [
-                    (
-                        "Agent 1",
-                        "research",
-                        agents["research"],
-                        questions.get("research_question", ""),
-                    ),
-                    (
-                        "Agent 2",
-                        "analysis",
-                        agents["analysis"],
-                        questions.get("analysis_question", ""),
-                    ),
-                    (
-                        "Agent 3",
-                        "alternatives",
-                        agents["alternatives"],
-                        questions.get(
-                            "alternatives_question",
-                            "",
-                        ),
-                    ),
-                    (
-                        "Agent 4",
-                        "verification",
-                        agents["verification"],
-                        questions.get(
-                            "verification_question",
-                            "",
-                        ),
-                    ),
-                ]
-
-            # Execute agents in parallel
             with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
-                # Submit all agent tasks
                 future_to_agent = {
-                    executor.submit(
-                        execute_agent_with_progress, task
-                    ): task[1]
+                    executor.submit(execute_agent, task): task[1]
                     for task in agent_tasks
                 }
 
-                # Collect results as they complete
                 for future in concurrent.futures.as_completed(
                     future_to_agent
                 ):
-                    agent_key = future_to_agent[future]
+                    key = future_to_agent[future]
                     try:
-                        agent_name, result = future.result(
+                        agent_key, result = future.result(
                             timeout=self.timeout
                         )
-                        results[
-                            agent_name.lower()
-                            .replace("🔍 ", "")
-                            .replace("📊 ", "")
-                            .replace("⚡ ", "")
-                            .replace("✅ ", "")
-                        ] = result
+                        results[agent_key] = result
                     except concurrent.futures.TimeoutError:
-                        tracker.timeout(agent_key, agent_key)
-                        results[agent_key] = (
+                        tracker.timeout(key, key)
+                        self._log(
+                            "ERROR",
+                            f"⏰ Timeout for {key} Agent after {self.timeout}s",
+                        )
+                        results[key] = (
                             f"Timeout after {self.timeout} seconds"
                         )
                     except Exception as e:
-                        tracker.error(agent_key, agent_key)
-                        results[agent_key] = f"Exception: {str(e)}"
+                        tracker.error(key, key)
+                        self._log(
+                            "ERROR",
+                            f"❌ Exception in {key} Agent: {str(e)}",
+                        )
+                        results[key] = f"Exception: {str(e)}"
 
-        # Show completion summary
-        agent_count = (
-            15
-            if self.variant == "heavy"
-            else 3 if self.variant == "medium" else 4
-        )
-        synth_label = (
-            "Grok"
-            if self.variant == "heavy"
-            else (
-                "Captain Swarm"
-                if self.variant == "medium"
-                else "synthesis"
+        if self.show_dashboard:
+            synth_label = (
+                "Grok"
+                if self.variant == "heavy"
+                else (
+                    "Captain Swarm"
+                    if self.variant == "medium"
+                    else "synthesis"
+                )
             )
-        )
-        self.dashboard.show_execution_complete(
-            agent_count, synth_label
-        )
+            self.dashboard.show_execution_complete(
+                len(specs), synth_label
+            )
 
         return results
 
@@ -1426,47 +1137,9 @@ class HeavySwarm(SerializableMixin):
         if "error" in result:
             return {"error": result["error"]}
 
-        if self.variant == "heavy":
-            heavy_keys = [
-                "harper",
-                "benjamin",
-                "lucas",
-                "olivia",
-                "james",
-                "charlotte",
-                "henry",
-                "mia",
-                "william",
-                "sebastian",
-                "jack",
-                "owen",
-                "luna",
-                "elizabeth",
-                "noah",
-            ]
-            return {
-                f"{k}_question": result.get(f"{k}_question", "")
-                for k in heavy_keys
-            }
-
-        if self.variant == "medium":
-            return {
-                "harper_question": result.get("harper_question", ""),
-                "benjamin_question": result.get(
-                    "benjamin_question", ""
-                ),
-                "lucas_question": result.get("lucas_question", ""),
-            }
-
         return {
-            "research_question": result.get("research_question", ""),
-            "analysis_question": result.get("analysis_question", ""),
-            "alternatives_question": result.get(
-                "alternatives_question", ""
-            ),
-            "verification_question": result.get(
-                "verification_question", ""
-            ),
+            f"{key}_question": result.get(f"{key}_question", "")
+            for _, key, _ in specs_for(self.variant)
         }
 
     def get_questions_as_list(self, task: str) -> List[str]:
@@ -1512,38 +1185,7 @@ class HeavySwarm(SerializableMixin):
         if "error" in questions:
             return [f"Error: {questions['error']}"]
 
-        if self.variant == "heavy":
-            heavy_keys = [
-                "harper",
-                "benjamin",
-                "lucas",
-                "olivia",
-                "james",
-                "charlotte",
-                "henry",
-                "mia",
-                "william",
-                "sebastian",
-                "jack",
-                "owen",
-                "luna",
-                "elizabeth",
-                "noah",
-            ]
-            return [
-                questions.get(f"{k}_question", "") for k in heavy_keys
-            ]
-
-        if self.variant == "medium":
-            return [
-                questions.get("harper_question", ""),
-                questions.get("benjamin_question", ""),
-                questions.get("lucas_question", ""),
-            ]
-
         return [
-            questions.get("research_question", ""),
-            questions.get("analysis_question", ""),
-            questions.get("alternatives_question", ""),
-            questions.get("verification_question", ""),
+            questions.get(f"{key}_question", "")
+            for _, key, _ in specs_for(self.variant)
         ]
