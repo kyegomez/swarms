@@ -21,6 +21,8 @@ Covers four fixed defects:
 * #1962 — ``ContextCompressor.maybe_compress`` was never called on the
   ``max_loops="auto"`` path, so history grew unbounded in exactly the mode
   that needs compression most.
+* #1752 — the loop's three iteration budgets were module constants, so a
+  caller could not bound a run's cost without monkeypatching the module.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -35,6 +37,8 @@ import pytest
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     get_autonomous_planning_tools,
     glob_tool,
@@ -1244,3 +1248,112 @@ class TestGlobTool:
             "pattern",
             "path",
         }
+
+
+class TestIterationLimitsAreConfigurable:
+    """
+    The budgets decide a run's worst-case cost, and every iteration re-sends
+    the transcript, so a caller has to be able to set them per agent.
+    """
+
+    def _thinks_forever(self, agent, monkeypatch, *steps):
+        """Script a model that plans, then only ever calls `think`."""
+        turn = {"n": 0}
+
+        def scripted(task=None, *args, **kwargs):
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return plan(*steps)
+            return [
+                tool_call(
+                    "think",
+                    current_state=f"state {turn['n']}",
+                    analysis="pondering",
+                    next_actions=["keep thinking"],
+                    confidence=0.5,
+                )
+            ]
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        return turn
+
+    def test_the_defaults_are_the_module_constants(self):
+        agent = build_agent()
+
+        assert agent.max_planning_attempts == MAX_PLANNING_ATTEMPTS
+        assert (
+            agent.max_subtask_iterations == MAX_SUBTASK_ITERATIONS
+        )
+        assert agent.max_subtask_loops == MAX_SUBTASK_LOOPS
+
+    def test_a_smaller_subtask_budget_ends_a_stuck_subtask_sooner(
+        self, monkeypatch
+    ):
+        agent = build_agent(think_tool=True, max_subtask_loops=3)
+        turn = self._thinks_forever(agent, monkeypatch, ("s1", []))
+
+        agent.run("demo")
+
+        assert status_of(agent, "s1") == "failed"
+        assert turn["n"] < MAX_SUBTASK_LOOPS, (
+            f"a subtask capped at 3 loops consumed {turn['n']} LLM "
+            f"turns, which is the default budget of {MAX_SUBTASK_LOOPS}"
+        )
+
+    def test_the_default_subtask_budget_is_still_honoured(
+        self, monkeypatch
+    ):
+        agent = build_agent(think_tool=True)
+        turn = self._thinks_forever(agent, monkeypatch, ("s1", []))
+
+        agent.run("demo")
+
+        assert turn["n"] > 3, (
+            "an agent that set no budget was cut short at the value the "
+            "previous test asked for"
+        )
+
+    def test_the_run_budget_stops_the_outer_loop(self, monkeypatch):
+        agent = build_agent(
+            think_tool=True,
+            max_subtask_loops=2,
+            max_subtask_iterations=1,
+        )
+        self._thinks_forever(
+            agent, monkeypatch, ("s1", []), ("s2", []), ("s3", [])
+        )
+
+        agent.run("demo")
+
+        assert status_of(agent, "s2") == "pending"
+        assert status_of(agent, "s3") == "pending"
+
+    def test_the_planning_budget_bounds_planning_retries(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_planning_attempts=2)
+        calls = script_llm(
+            agent,
+            monkeypatch,
+            ["not a plan", "still not a plan", "nor this one"],
+        )
+
+        with pytest.raises(Exception):
+            agent.run("demo")
+
+        assert len(calls) == 2
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "max_planning_attempts",
+            "max_subtask_iterations",
+            "max_subtask_loops",
+        ],
+    )
+    @pytest.mark.parametrize("value", [0, -1, 2.5, True])
+    def test_a_budget_that_cannot_run_is_rejected_at_construction(
+        self, name, value
+    ):
+        with pytest.raises(ValueError):
+            build_agent(**{name: value})

@@ -198,15 +198,19 @@ class AutonomousAgentLoop:
         - Creates a detailed plan using the `create_plan` tool
         - Breaks down the task into subtasks with dependencies, priorities, and step IDs
         - Supports handoff delegation during planning if handoffs are configured
-        - Maximum planning attempts are controlled by MAX_PLANNING_ATTEMPTS
+        - Maximum planning attempts come from Agent.max_planning_attempts,
+          which defaults to MAX_PLANNING_ATTEMPTS
 
         **Phase 2: Execution**
         - Executes each subtask in dependency order
         - For each subtask, runs a thinking -> tool actions -> observation loop
         - Supports both planning tools (think, subtask_done, complete_task) and user-defined tools
         - Prevents infinite thinking loops with max_consecutive_thinks limit
-        - Each subtask has a maximum iteration limit (MAX_SUBTASK_LOOPS)
-        - Overall execution has a maximum iteration limit (MAX_SUBTASK_ITERATIONS)
+        - Each subtask has a maximum iteration limit, Agent.max_subtask_loops,
+          which defaults to MAX_SUBTASK_LOOPS
+        - Overall execution has a maximum iteration limit,
+          Agent.max_subtask_iterations, which defaults to
+          MAX_SUBTASK_ITERATIONS
 
         **Phase 3: Summary**
         - Generates a comprehensive final summary when all subtasks are complete
@@ -454,7 +458,11 @@ class AutonomousAgentLoop:
 
             plan_created = False
             planning_attempts = 0
-            max_planning_attempts = MAX_PLANNING_ATTEMPTS
+            max_planning_attempts = getattr(
+                self.agent,
+                "max_planning_attempts",
+                MAX_PLANNING_ATTEMPTS,
+            )
 
             while (
                 not plan_created
@@ -646,7 +654,11 @@ class AutonomousAgentLoop:
                     title="Autonomous Loop: Execution Phase",
                 )
 
-            max_subtask_iterations = MAX_SUBTASK_ITERATIONS
+            max_subtask_iterations = getattr(
+                self.agent,
+                "max_subtask_iterations",
+                MAX_SUBTASK_ITERATIONS,
+            )
             total_iterations = 0
 
             while not self._all_subtasks_complete():
@@ -692,7 +704,11 @@ class AutonomousAgentLoop:
 
                 # Subtask execution loop: thinking -> tool actions -> observation
                 subtask_iterations = 0
-                max_subtask_loops = MAX_SUBTASK_LOOPS
+                max_subtask_loops = getattr(
+                    self.agent,
+                    "max_subtask_loops",
+                    MAX_SUBTASK_LOOPS,
+                )
                 subtask_done = False
 
                 # Consecutive across the subtask, not one response.
