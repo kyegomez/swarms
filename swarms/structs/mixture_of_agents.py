@@ -1,3 +1,4 @@
+import copy
 from typing import Any, Dict, List, Optional
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
@@ -320,8 +321,23 @@ class MixtureOfAgents:
         """
         return batched_run(self.run, tasks)
 
+    def _clone_for_task(self) -> "MixtureOfAgents":
+        """Build a copy of this mixture with its own ``Conversation``.
+
+        ``_run`` resets and appends to ``self.conversation``, so one
+        instance cannot serve several threads. The copy shares the agents,
+        as the instance already did, and only the transcript is isolated.
+        """
+        clone = copy.copy(self)
+        clone._reset_conversation()
+        return clone
+
     def run_concurrently(self, tasks: List[str]) -> List[str]:
-        """Run multiple tasks concurrently through this mixture.
+        """Run multiple tasks concurrently, each on its own clone.
+
+        ``_run`` resets and appends to ``self.conversation``, so running
+        the same instance from several threads interleaves the tasks into
+        one transcript. Each task therefore runs on ``_clone_for_task()``.
 
         Args:
             tasks: Tasks to submit to the mixture in parallel.
@@ -330,4 +346,6 @@ class MixtureOfAgents:
             A list of formatted responses, one per task, in the order the
             tasks were given.
         """
-        return run_concurrently(self.run, tasks)
+        return run_concurrently(
+            lambda task: self._clone_for_task().run(task), tasks
+        )
