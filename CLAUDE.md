@@ -1067,6 +1067,28 @@ results = wf.run(task="Process this dataset from two angles and merge the findin
 
 ---
 
+## Contributing: WARP Git Messages (required)
+
+Every commit message, PR title and issue title you write for this repository must use the WARP (Warp Speed Protocol) shorthand. This is required of AI agents exactly as it is of people; a PR or issue without it is triaged later, so expect a delay if it is skipped.
+
+```
+[TYPE][Function/FileName][Short Description]
+```
+
+- `TYPE` in capitals: for example `FEAT`, `FIX`, `DOCS`, `REFACTOR`, `TEST`, `CHORE`.
+- `Function/FileName`: the function, class, module or file the change is about.
+- `Short Description`: one imperative line.
+
+```
+[FIX][Agent._run][Raise AgentLLMError after retry exhaustion]
+[FEAT][MCPDeployer][Serve several agents as separate tools]
+[DOCS][README][Add the MCPDeployer section]
+```
+
+Full specification: the [WARP Git Message Skill](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1) on the Swarms marketplace. Load it before writing a commit message, PR or issue for this repo.
+
+---
+
 ## What to Avoid
 
 **Don't import from submodules directly** — always import from `swarms`:
