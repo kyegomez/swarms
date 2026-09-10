@@ -540,7 +540,10 @@ class SequentialWorkflow:
                 max_workers=os.cpu_count()
             ) as executor:
                 results = [
-                    executor.submit(self.agent_rearrange.run, task)
+                    executor.submit(
+                        self.agent_rearrange._clone_for_task().run,
+                        task,
+                    )
                     for task in tasks
                 ]
                 return [
