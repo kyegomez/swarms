@@ -260,6 +260,7 @@ class AutonomousAgentLoop:
             self.agent.subtask_status = {}
             self.agent.plan_created = False
             self.agent.think_call_count = 0
+            self.agent._read_paths = {}
 
             self._say_user(task)
 
