@@ -1,12 +1,16 @@
 import asyncio
 import os
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 from pydantic import BaseModel, Field
 
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 model_recommendations = {
     "gpt-5.4": {
@@ -220,6 +224,8 @@ class ModelRouter:
                 f"Failed to initialize ModelRouter: {str(e)}"
             )
 
+        capture_init(self)
+
     def step(self, task: str):
         """
         Run a single task through the model router.
@@ -270,6 +276,7 @@ class ModelRouter:
 
         return final_output
 
+    @trace_run("ModelRouter.run")
     def run(self, task: str):
         """
         Run a task through the model router with memory.
@@ -349,7 +356,7 @@ class ModelRouter:
             RuntimeError: If concurrent execution fails
         """
         try:
-            with ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
                 outputs = list(executor.map(self.run, tasks))
