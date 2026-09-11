@@ -22,8 +22,11 @@ from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
+    GraphWorkflowNodeError,
     Node,
+    NodeFailure,
     NodeType,
+    RetryPolicy,
 )
 from swarms.structs.groupchat import RESPOND_TOOL, GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
@@ -102,8 +105,11 @@ __all__ = [
     "SequentialWorkflow",
     "MixtureOfAgents",
     "GraphWorkflow",
+    "GraphWorkflowNodeError",
     "Node",
+    "NodeFailure",
     "NodeType",
+    "RetryPolicy",
     "Edge",
     "broadcast",
     "circular_swarm",
