@@ -315,7 +315,7 @@ class MajorityVoting:
                 content=consensus_output,
             )
 
-        self.workspace.save_conversation()
+        self.workspace.save_conversation(self.conversation)
 
         return history_output_formatter(
             conversation=self.conversation,
