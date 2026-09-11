@@ -117,6 +117,10 @@ GROQ_API_KEY=""
 
 ### Your First Agent
 
+To use an existing local Codex login, see the optional
+[Codex CLI backend](examples/models/codex/README.md) and its Python/YAML examples.
+
+
 An **Agent** is the fundamental building block of a swarm—an autonomous entity powered by an LLM + Tools + Memory. [Learn more Here](https://docs.swarms.world/api/agent)
 
 ```python
