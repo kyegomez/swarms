@@ -684,6 +684,7 @@ def _load_arch_classes():
         MixtureOfAgents,
         MultiAgentRouter,
         RoundRobinSwarm,
+        SelfMoASeq,
         SequentialWorkflow,
         SwarmRouter,
     )
@@ -713,6 +714,7 @@ def _load_arch_classes():
         "PlannerWorkerSwarm": PlannerWorkerSwarm,
         "BatchedGridWorkflow": BatchedGridWorkflow,
         "LLMCouncil": LLMCouncil,
+        "SelfMoASeq": SelfMoASeq,
     }
 
 
