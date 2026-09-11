@@ -5,8 +5,10 @@ import pytest
 from swarms.structs.agent import Agent
 from swarms.structs.graph_workflow import (
     GraphWorkflow,
+    GraphWorkflowNodeError,
     Node,
     NodeType,
+    RetryPolicy,
 )
 
 try:
@@ -1554,3 +1556,250 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def _flaky_agent(name, failures=0, error=TimeoutError):
+    from unittest.mock import MagicMock
+
+    agent = MagicMock()
+    agent.agent_name = name
+    agent.run = MagicMock(
+        side_effect=[error(f"{name} down")] * failures
+        + [f"output-{name}"]
+    )
+    return agent
+
+
+def test_retry_policy_reruns_a_transient_failure():
+    agent = _flaky_agent("Retry-A", failures=2)
+    wf = GraphWorkflow(name="Retry")
+    wf.add_node(
+        agent, retry=RetryPolicy(max_attempts=3, backoff="none")
+    )
+
+    results = wf.run("task")
+
+    assert results["Retry-A"] == "output-Retry-A"
+    assert agent.run.call_count == 3
+    assert wf.failed_nodes == {}
+
+
+def test_retry_policy_stops_at_the_budget():
+    agent = _flaky_agent("Retry-B", failures=5)
+    wf = GraphWorkflow(name="Retry")
+    wf.add_node(
+        agent, retry=RetryPolicy(max_attempts=2, backoff="none")
+    )
+
+    results = wf.run("task")
+
+    assert "Retry-B" not in results
+    assert agent.run.call_count == 2
+    failure = wf.failed_nodes["Retry-B"]
+    assert failure.attempts == 2
+    assert isinstance(failure.error, TimeoutError)
+    assert failure.to_dict()["error_type"] == "TimeoutError"
+
+
+def test_retry_policy_ignores_unlisted_exceptions():
+    agent = _flaky_agent("Retry-C", failures=1, error=ValueError)
+    wf = GraphWorkflow(name="Retry")
+    wf.add_node(
+        agent,
+        retry=RetryPolicy(
+            max_attempts=3, backoff="none", retry_on=(TimeoutError,)
+        ),
+    )
+
+    wf.run("task")
+
+    assert agent.run.call_count == 1
+    assert "Retry-C" in wf.failed_nodes
+
+
+def test_default_retry_applies_to_nodes_without_their_own():
+    agent = _flaky_agent("Retry-D", failures=1)
+    wf = GraphWorkflow(
+        name="Retry",
+        default_retry=RetryPolicy(max_attempts=2, backoff="none"),
+    )
+    wf.add_node(agent)
+
+    results = wf.run("task")
+
+    assert results["Retry-D"] == "output-Retry-D"
+    assert agent.run.call_count == 2
+
+
+def test_skip_downstream_skips_dependents_and_keeps_independent_branches():
+    failing = _flaky_agent("Fail-A", failures=1)
+    dependent = _flaky_agent("Dep-B")
+    independent = _flaky_agent("Ind-C")
+    seen = []
+
+    wf = GraphWorkflow(name="Skip")
+    wf.add_nodes([failing, dependent, independent])
+    wf.add_edge("Fail-A", "Dep-B")
+
+    results = wf.run(
+        "task", on_node_complete=lambda nid, out: seen.append(nid)
+    )
+
+    assert results == {"Ind-C": "output-Ind-C"}
+    assert dependent.run.call_count == 0
+    assert wf.skipped_nodes == {"Dep-B": "Fail-A"}
+    assert list(wf.failed_nodes) == ["Fail-A"]
+    assert seen == ["Ind-C"]
+
+
+def test_skip_downstream_cascades_through_the_subgraph():
+    a = _flaky_agent("Cas-A", failures=1)
+    b = _flaky_agent("Cas-B")
+    c = _flaky_agent("Cas-C")
+    wf = GraphWorkflow(name="Cascade")
+    wf.add_nodes([a, b, c])
+    wf.add_edge("Cas-A", "Cas-B")
+    wf.add_edge("Cas-B", "Cas-C")
+
+    results = wf.run("task")
+
+    assert results == {}
+    assert wf.skipped_nodes == {"Cas-B": "Cas-A", "Cas-C": "Cas-B"}
+    assert b.run.call_count == 0
+    assert c.run.call_count == 0
+
+
+def test_fail_fast_raises_with_the_failure():
+    failing = _flaky_agent("Fail-A", failures=1)
+    dependent = _flaky_agent("Dep-B")
+    wf = GraphWorkflow(name="FailFast", on_failure="fail_fast")
+    wf.add_nodes([failing, dependent])
+    wf.add_edge("Fail-A", "Dep-B")
+
+    with pytest.raises(GraphWorkflowNodeError) as info:
+        wf.run("task")
+
+    assert info.value.failure.node_id == "Fail-A"
+    assert isinstance(info.value.__cause__, TimeoutError)
+    assert dependent.run.call_count == 0
+
+
+def test_propagate_error_keeps_the_error_string_flowing():
+    failing = _flaky_agent("Fail-A", failures=1)
+    dependent = _flaky_agent("Dep-B")
+    wf = GraphWorkflow(name="Propagate", on_failure="propagate_error")
+    wf.add_nodes([failing, dependent])
+    wf.add_edge("Fail-A", "Dep-B")
+
+    results = wf.run("task")
+
+    assert results["Fail-A"].startswith("[ERROR] Agent Fail-A failed")
+    assert results["Dep-B"] == "output-Dep-B"
+    assert dependent.run.call_count == 1
+    handed_down = dependent.run.call_args.kwargs["messages"]
+    assert any("[ERROR]" in m["content"] for m in handed_down)
+    assert "Fail-A" in wf.failed_nodes
+    assert wf.skipped_nodes == {}
+
+
+def test_failed_layer_is_not_checkpointed(tmp_path):
+    failing = _flaky_agent("CPF-A", failures=1)
+    healthy = _flaky_agent("CPF-C")
+    downstream = _flaky_agent("CPF-D")
+    cp_dir = str(tmp_path / "checkpoints")
+    wf = GraphWorkflow(name="CPF", checkpoint_dir=cp_dir)
+    wf.add_nodes([failing, healthy, downstream])
+    wf.add_edge("CPF-C", "CPF-D")
+
+    results = wf.run("checkpoint task")
+
+    assert results == {
+        "CPF-C": "output-CPF-C",
+        "CPF-D": "output-CPF-D",
+    }
+    cp_files = sorted(
+        f.name for f in tmp_path.glob("checkpoints/*.json")
+    )
+    assert len(cp_files) == 1
+    assert cp_files[0].endswith("_layer_1.json")
+
+
+def test_failure_state_is_reset_on_each_run():
+    agent = _flaky_agent("Reset-A", failures=1)
+    wf = GraphWorkflow(name="Reset")
+    wf.add_node(agent)
+
+    assert wf.run("task") == {}
+    assert "Reset-A" in wf.failed_nodes
+
+    assert wf.run("task") == {"Reset-A": "output-Reset-A"}
+    assert wf.failed_nodes == {}
+
+
+def test_retry_policy_round_trips_through_the_topology_spec():
+    agent = _flaky_agent("Spec-X")
+    policy = RetryPolicy(
+        max_attempts=4,
+        backoff="linear",
+        base_delay=0.5,
+        max_delay=5,
+        retry_on=(TimeoutError, ConnectionError),
+    )
+    wf = GraphWorkflow(name="Spec")
+    wf.add_node(agent, retry=policy)
+    wf.add_node(_flaky_agent("Spec-Y"))
+
+    spec = wf.to_spec()
+    by_id = {n["id"]: n for n in spec["nodes"]}
+    assert by_id["Spec-X"]["retry"] == {
+        "max_attempts": 4,
+        "backoff": "linear",
+        "base_delay": 0.5,
+        "max_delay": 5.0,
+        "retry_on": ["TimeoutError", "ConnectionError"],
+    }
+    assert "retry" not in by_id["Spec-Y"]
+
+    rebuilt = GraphWorkflow.from_topology_spec(
+        spec, {"Spec-X": agent, "Spec-Y": _flaky_agent("Spec-Y")}
+    )
+    assert rebuilt.nodes["Spec-X"].retry == policy
+    assert rebuilt.nodes["Spec-Y"].retry is None
+
+
+def test_retry_policy_delays_follow_the_backoff():
+    exponential = RetryPolicy(
+        backoff="exponential", base_delay=1, max_delay=5
+    )
+    assert [exponential.delay_for(n) for n in (1, 2, 3, 4)] == [
+        1.0,
+        2.0,
+        4.0,
+        5.0,
+    ]
+    linear = RetryPolicy(backoff="linear", base_delay=1, max_delay=10)
+    assert [linear.delay_for(n) for n in (1, 2, 3)] == [1.0, 2.0, 3.0]
+    assert (
+        RetryPolicy(backoff="constant", base_delay=2).delay_for(7)
+        == 2.0
+    )
+    assert (
+        RetryPolicy(backoff="none", base_delay=2).delay_for(1) == 0.0
+    )
+    assert RetryPolicy(retry_on=TimeoutError).should_retry(
+        TimeoutError()
+    )
+    assert not RetryPolicy(retry_on=TimeoutError).should_retry(
+        ValueError()
+    )
+
+
+def test_retry_policy_rejects_bad_values():
+    with pytest.raises(ValueError):
+        RetryPolicy(max_attempts=0)
+    with pytest.raises(ValueError):
+        RetryPolicy(backoff="bogus")
+    with pytest.raises(ValueError):
+        RetryPolicy(retry_on=("not a type",))
+    with pytest.raises(ValueError):
+        GraphWorkflow(on_failure="explode")
