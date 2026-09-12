@@ -197,6 +197,10 @@ class Agent:
             Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
             and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
+        skill_urls (List[str]): Marketplace .md URLs, each serving one skill in the same
+            SKILL.md frontmatter format. Fetched concurrently, rendered in the order given,
+            and composed with skills_dir. No API key is required — the .md endpoint is public.
+            Example: skill_urls=["https://swarms.world/prompt/<uuid>.md"]
         think_tool (bool): Whether the autonomous looper (max_loops="auto") offers the
             `think` tool. Defaults to False. A `think` call spends a full round-trip to
             produce reasoning the model could emit inline alongside its actions, so it is
@@ -405,6 +409,7 @@ class Agent:
         use_cases: Optional[List[Dict[str, Any]]] = None,
         marketplace_prompt_id: Optional[str] = None,
         skills_dir: Optional[str] = None,
+        skill_urls: Optional[List[str]] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
@@ -413,7 +418,9 @@ class Agent:
     ):
         # super().__init__(*args, **kwargs)
         self.id = id or generate_id("agent")
-        self.skills = SkillsManager(skills_dir=skills_dir)
+        self.skills = SkillsManager(
+            skills_dir=skills_dir, skill_urls=skill_urls
+        )
         self.selected_tools = selected_tools
         self.llm = llm
         self.max_loops = max_loops
@@ -712,6 +719,15 @@ class Agent:
     @skills_dir.setter
     def skills_dir(self, skills_dir: Optional[str]) -> None:
         self.skills.set_skills_dir(skills_dir)
+
+    @property
+    def skill_urls(self) -> List[str]:
+        """Marketplace skill URLs the agent loads Agent Skills from."""
+        return self.skills.skill_urls
+
+    @skill_urls.setter
+    def skill_urls(self, skill_urls: Optional[List[str]]) -> None:
+        self.skills.set_skill_urls(skill_urls)
 
     @property
     def skills_metadata(self) -> List[Dict[str, str]]:
@@ -3329,7 +3345,7 @@ Subtask Breakdown:
                     "No task provided. Exiting interactive mode."
                 )
 
-        if exists(self.skills_dir):
+        if self.skills.enabled:
             self.handle_skills(task=task)
 
         if not isinstance(task, str):

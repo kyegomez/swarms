@@ -187,9 +187,26 @@ class DynamicSkillsLoader:
         Returns:
             List of relevant skill metadata dictionaries
         """
+        return self.select_relevant(task, self.skills_metadata)
+
+    def select_relevant(
+        self, task: str, skills: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
+        """
+        Filter any skill metadata list by similarity to a task.
+
+        Args:
+            task: User task description
+            skills: Metadata dicts, from this loader's directory or from
+                another source such as remote marketplace skills.
+
+        Returns:
+            The skills scoring at or above ``similarity_threshold``, highest
+            first, each carrying its ``similarity_score``.
+        """
         relevant_skills = []
 
-        for skill in self.skills_metadata:
+        for skill in skills:
             similarity_score = self._calculate_task_similarity(
                 task, skill["description"]
             )
