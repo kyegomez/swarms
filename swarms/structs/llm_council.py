@@ -11,10 +11,11 @@ often selecting responses from other models as superior to their own.
 """
 
 import random
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
@@ -259,6 +260,42 @@ Your task:
 Provide your final synthesized response below. You may reference which perspectives or approaches influenced different parts of your answer."""
 
 
+def councillor_answers(
+    members: List[Any], raw: Dict[str, Any]
+) -> Dict[str, str]:
+    """
+    Reduce each councillor's return to its final answer.
+
+    Args:
+        members: The council members, in roster order.
+        raw: Whatever ``run`` returned, keyed by ``agent_name``.
+
+    Returns:
+        Dict[str, str]: One answer per member name.
+
+    Notes:
+        The council anonymises these as Response A/B/C and shows them to the
+        other members to rank. ``Agent.run`` honours ``output_type``, whose
+        default is the agent's whole conversation -- and a transcript repeats
+        the councillor's own system-prompt persona, so an "anonymous"
+        response is identifiable by anyone reading it.
+
+        The default members are built with ``output_type="final"``, which
+        fixes this at the source. This is the second line: a caller supplying
+        their own members cannot be made to set it, and a nested structure or
+        test double may have no ``short_memory`` at all, so the raw return is
+        the fallback rather than an error.
+    """
+    answers: Dict[str, str] = {}
+
+    for member in members:
+        name = getattr(member, "agent_name", "")
+        fallback = raw.get(name, "")
+        answers[name] = agent_answer(member, fallback=fallback)
+
+    return answers
+
+
 class LLMCouncil:
     """
     An LLM Council that orchestrates multiple specialized agents to collaboratively
@@ -347,6 +384,7 @@ class LLMCouncil:
             model_name="gpt-5.1",
             max_loops=1,
             verbose=False,
+            output_type="final",
             temperature=0.7,
         )
 
@@ -358,6 +396,7 @@ class LLMCouncil:
             model_name="gemini-2.5-flash",  # Using available Gemini model
             max_loops=1,
             verbose=False,
+            output_type="final",
             temperature=0.7,
         )
 
@@ -369,6 +408,7 @@ class LLMCouncil:
             model_name="anthropic/claude-sonnet-4-5",  # Using available Claude model
             max_loops=1,
             verbose=False,
+            output_type="final",
             temperature=0.0,
             top_p=None,
         )
@@ -381,6 +421,7 @@ class LLMCouncil:
             model_name="xai/grok-4-1-fast-reasoning",  # Using available model as proxy for Grok-4
             max_loops=1,
             verbose=False,
+            output_type="final",
             temperature=0.8,
         )
 
@@ -430,17 +471,10 @@ class LLMCouncil:
             return_agent_output_dict=True,
         )
 
-        # Map results to member names
-        original_responses = {
-            member.agent_name: response
-            for member, response in zip(
-                self.council_members,
-                [
-                    results_dict.get(member.agent_name, "")
-                    for member in self.council_members
-                ],
-            )
-        }
+        # Answers, not transcripts: these get anonymised and ranked (#2053).
+        original_responses = councillor_answers(
+            self.council_members, results_dict
+        )
 
         # Add each council member's response to conversation
         for member_name, response in original_responses.items():

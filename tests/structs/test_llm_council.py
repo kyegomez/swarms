@@ -316,3 +316,88 @@ def test_llm_council_output_types():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# --------------------------------------------------------------------------
+# #2053 — councillors must contribute answers, not transcripts
+# --------------------------------------------------------------------------
+
+
+class _EchoCouncillor:
+    """A councillor whose transcript names itself, the way a real one does."""
+
+    def __init__(self, name, persona):
+        self.agent_name = name
+        self.persona = persona
+        self.short_memory = self
+
+    def run(self, task, *args, **kwargs):
+        return (
+            f"System: You are {self.persona}.\n"
+            f"Human: {task}\n"
+            f"{self.agent_name}: the answer is 42"
+        )
+
+    def get_final_message_content(self):
+        return "the answer is 42"
+
+
+def test_default_councillors_return_answers_not_transcripts():
+    """
+    Every councillor is built with output_type='final'.
+
+    Agent.run honours output_type, which defaults to
+    'str-all-except-first' -- the agent's whole conversation. The council
+    then anonymises those returns as Response A/B/C and shows them to the
+    other members to rank. A transcript carries the councillor's own
+    system-prompt persona, so 'anonymous' Response B is identifiable by
+    anyone reading it.
+    """
+    council = LLMCouncil(verbose=False)
+
+    for member in council.council_members:
+        assert member.output_type == "final", (
+            f"{member.agent_name} would contribute its transcript, "
+            "which defeats the anonymisation"
+        )
+
+
+def test_a_transcript_return_is_reduced_to_the_answer():
+    """
+    Defence in depth: a caller passing their own council members cannot be
+    forced to set output_type, so the collection step takes the agent's
+    final message rather than whatever run() returned.
+    """
+    from swarms.structs.llm_council import councillor_answers
+
+    members = [
+        _EchoCouncillor("Alpha", "a terse analyst"),
+        _EchoCouncillor("Beta", "a creative writer"),
+    ]
+    raw = {
+        "Alpha": members[0].run("q"),
+        "Beta": members[1].run("q"),
+    }
+
+    answers = councillor_answers(members, raw)
+
+    assert answers == {
+        "Alpha": "the answer is 42",
+        "Beta": "the answer is 42",
+    }
+    for text in answers.values():
+        assert "System:" not in text
+        assert "terse analyst" not in text
+        assert "creative writer" not in text
+
+
+def test_a_missing_final_message_falls_back_to_the_raw_return():
+    """A test double or nested structure with no short_memory must not vanish."""
+    from swarms.structs.llm_council import councillor_answers
+
+    class Bare:
+        agent_name = "Gamma"
+
+    answers = councillor_answers([Bare()], {"Gamma": "plain answer"})
+
+    assert answers == {"Gamma": "plain answer"}
