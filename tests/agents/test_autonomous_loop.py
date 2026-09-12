@@ -37,6 +37,7 @@ from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
     get_autonomous_planning_tools,
+    get_execution_prompt,
     glob_tool,
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
@@ -1244,3 +1245,246 @@ class TestGlobTool:
             "pattern",
             "path",
         }
+
+
+# --------------------------------------------------------------------------
+# #1985 — a plan step can declare how it will be checked
+# --------------------------------------------------------------------------
+
+
+class TestPlanVerification:
+    """
+    subtask_done was a self-report. A step can now commit to a falsifiable
+    criterion at planning time, and cannot be called successful without one.
+    """
+
+    def test_a_step_carries_its_verification_through_the_plan(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t",
+            [
+                {
+                    "step_id": "a",
+                    "verification": "pytest tests/test_auth.py exits 0",
+                },
+                {"step_id": "b"},
+            ],
+        )
+
+        assert (
+            agent.autonomous_subtasks[0]["verification"]
+            == "pytest tests/test_auth.py exits 0"
+        )
+        # A step with nothing checkable is allowed, and is not None.
+        assert agent.autonomous_subtasks[1]["verification"] == ""
+
+    def test_a_revision_can_sharpen_a_pending_step_s_criterion(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t", [{"step_id": "a", "verification": "it works"}]
+        )
+        loop._create_plan_tool(
+            "t", [{"step_id": "a", "verification": "pytest exits 0"}]
+        )
+
+        assert (
+            agent.autonomous_subtasks[0]["verification"]
+            == "pytest exits 0"
+        )
+
+    def test_a_finished_step_keeps_what_it_was_checked_against(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t", [{"step_id": "a", "verification": "pytest exits 0"}]
+        )
+        loop._subtask_done_tool(
+            task_id="a",
+            summary="did it",
+            success=True,
+            verification_result="ran pytest, exit 0, 12 passed",
+        )
+        loop._create_plan_tool(
+            "t",
+            [
+                {"step_id": "a", "verification": "something else"},
+                {"step_id": "b"},
+            ],
+        )
+
+        assert (
+            agent.autonomous_subtasks[0]["verification_result"]
+            == "ran pytest, exit 0, 12 passed"
+        )
+        assert status_of(agent, "a") == "completed"
+
+    def test_success_is_refused_without_the_observation(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t", [{"step_id": "a", "verification": "pytest exits 0"}]
+        )
+
+        result = loop._subtask_done_tool(
+            task_id="a", summary="trust me", success=True
+        )
+
+        assert "Not accepted" in result
+        assert "pytest exits 0" in result
+        # Nothing moved: not the status, not the cursor.
+        assert status_of(agent, "a") == "pending"
+        assert agent.current_subtask_index == 0
+
+    def test_the_observation_is_accepted_and_recorded(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t", [{"step_id": "a", "verification": "pytest exits 0"}]
+        )
+
+        loop._subtask_done_tool(
+            task_id="a",
+            summary="fixed the auth check",
+            success=True,
+            verification_result="pytest tests/test_auth.py -> exit 0",
+        )
+
+        assert status_of(agent, "a") == "completed"
+        assert (
+            agent.autonomous_subtasks[0]["verification_result"]
+            == "pytest tests/test_auth.py -> exit 0"
+        )
+        # The summary is written against what was observed, so it has to be
+        # in the transcript the summary is generated from.
+        assert "[VERIFIED] a: pytest tests/test_auth.py" in history(
+            agent
+        )
+
+    def test_failing_needs_no_proof(self):
+        """success=False is not a claim that has to be substantiated."""
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t", [{"step_id": "a", "verification": "pytest exits 0"}]
+        )
+
+        result = loop._subtask_done_tool(
+            task_id="a", summary="could not do it", success=False
+        )
+
+        assert "Not accepted" not in result
+        assert status_of(agent, "a") == "failed"
+
+    def test_a_step_with_no_criterion_is_unchanged(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool("t", [{"step_id": "a"}])
+
+        result = loop._subtask_done_tool(
+            task_id="a", summary="done", success=True
+        )
+
+        assert "Not accepted" not in result
+        assert status_of(agent, "a") == "completed"
+
+    def test_whitespace_is_not_an_observation(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t", [{"step_id": "a", "verification": "pytest exits 0"}]
+        )
+
+        result = loop._subtask_done_tool(
+            task_id="a",
+            summary="done",
+            success=True,
+            verification_result="   ",
+        )
+
+        assert "Not accepted" in result
+        assert status_of(agent, "a") == "pending"
+
+    def test_the_criterion_reaches_the_model_in_the_execution_prompt(
+        self,
+    ):
+        subtasks = [
+            {
+                "step_id": "a",
+                "description": "fix auth",
+                "status": "pending",
+            }
+        ]
+
+        with_check = get_execution_prompt(
+            "a", "fix auth", subtasks, verification="pytest exits 0"
+        )
+        without = get_execution_prompt("a", "fix auth", subtasks)
+
+        assert "Verification for this subtask: pytest exits 0" in (
+            with_check
+        )
+        assert "will be refused" in with_check
+        # A step with nothing to check is not told about a check.
+        assert "Verification for this subtask" not in without
+        assert "will be refused" not in without
+
+    def test_a_refusal_leaves_the_loop_running_and_the_retry_lands(
+        self, monkeypatch
+    ):
+        """End to end: refused once, then accepted with the observation."""
+        agent = build_agent()
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                [
+                    tool_call(
+                        "create_plan",
+                        task_description="test task",
+                        steps=[
+                            {
+                                "step_id": "step1",
+                                "description": "do step1",
+                                "priority": "high",
+                                "dependencies": [],
+                                "verification": "pytest exits 0",
+                            }
+                        ],
+                    )
+                ],
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                        verification_result="pytest -> exit 0",
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+
+        agent.run("test task")
+
+        text = history(agent)
+        assert "Not accepted" in text
+        assert status_of(agent, "step1") == "completed"
+        assert "[VERIFIED] step1: pytest -> exit 0" in text
