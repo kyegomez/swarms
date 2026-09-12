@@ -1,3 +1,4 @@
+import copy
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional
 
@@ -314,7 +315,7 @@ class MajorityVoting:
                 content=consensus_output,
             )
 
-        self.workspace.save_conversation()
+        self.workspace.save_conversation(self.conversation)
 
         return history_output_formatter(
             conversation=self.conversation,
@@ -337,11 +338,21 @@ class MajorityVoting:
         """
         return batched_run(self.run, tasks, *args, **kwargs)
 
+    def _clone_for_task(self) -> "MajorityVoting":
+        """Build a copy of this system for one concurrent task.
+
+        ``run`` replaces ``self.conversation`` and every voter writes into
+        it, so one instance cannot serve several threads. The copy shares
+        the agents, as the instance already did; ``run`` gives it its own
+        Conversation.
+        """
+        return copy.copy(self)
+
     def run_concurrently(
         self, tasks: List[str], *args, **kwargs
     ) -> List[Any]:
         """
-        Runs the majority voting system concurrently.
+        Runs the majority voting system concurrently, each task on its own clone.
 
         Args:
             tasks (List[str]): List of tasks to be performed by the agents.
@@ -351,4 +362,11 @@ class MajorityVoting:
         Returns:
             List[Any]: List of majority votes for each task.
         """
-        return run_concurrently(self.run, tasks, *args, **kwargs)
+        return run_concurrently(
+            lambda task, *a, **kw: self._clone_for_task().run(
+                task, *a, **kw
+            ),
+            tasks,
+            *args,
+            **kwargs,
+        )
