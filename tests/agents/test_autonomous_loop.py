@@ -232,6 +232,44 @@ class TestDependencyResolution:
 # --------------------------------------------------------------------------
 
 
+class TestPriorityOrdering:
+    """The plan schema, the prompt and the docstring all promise this."""
+
+    def test_a_critical_subtask_runs_before_an_earlier_low_one(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t",
+            [
+                {"step_id": "a", "priority": "low"},
+                {"step_id": "b", "priority": "critical"},
+                {"step_id": "c", "priority": "high"},
+            ],
+        )
+
+        assert loop._get_next_executable_subtask()["step_id"] == "b"
+
+        agent.autonomous_subtasks[1]["status"] = "completed"
+        assert loop._get_next_executable_subtask()["step_id"] == "c"
+
+    def test_a_blocked_critical_subtask_does_not_jump_the_queue(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t",
+            [
+                {"step_id": "a", "priority": "low"},
+                {
+                    "step_id": "b",
+                    "priority": "critical",
+                    "dependencies": ["a"],
+                },
+            ],
+        )
+
+        assert loop._get_next_executable_subtask()["step_id"] == "a"
+
+
 class TestToolOutputIsCapped:
     """One oversized read is re-sent on every later call of the run."""
 
