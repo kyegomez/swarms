@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 import traceback
-from typing import Callable, List, Union
+from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
 
@@ -16,7 +16,7 @@ class BatchAgentExecutionError(Exception):
 def batch_agent_execution(
     agents: List[Union[Agent, Callable]],
     tasks: List[str] = None,
-    imgs: List[str] = None,
+    imgs: Optional[List[str]] = None,
     max_workers: int = max(1, int(os.cpu_count() * 0.9)),
 ):
     """
@@ -25,12 +25,14 @@ def batch_agent_execution(
     Args:
         agents (List[Agent]): List of agents to execute
         tasks (list[str]): List of tasks to execute
+        imgs (list[str]): Optional list of image paths, one per agent/task pair
 
     Returns:
-        List[str]: List of results from each agent execution
+        List[str]: List of results from each agent execution, in the same
+            order as ``agents``/``tasks`` regardless of completion order
 
     Raises:
-        ValueError: If number of agents doesn't match number of tasks
+        ValueError: If number of agents doesn't match number of tasks or imgs
     """
     try:
 
@@ -43,7 +45,14 @@ def batch_agent_execution(
                 "Number of agents must match number of tasks"
             )
 
-        results = []
+        if imgs is None:
+            imgs = [None] * len(agents)
+        elif len(imgs) != len(agents):
+            raise ValueError(
+                "Number of imgs must match number of agents"
+            )
+
+        results: List[Any] = [None] * len(agents)
 
         formatter.print_panel(
             f"Executing {len(agents)} agents on {len(tasks)} tasks using {max_workers} workers"
@@ -52,32 +61,26 @@ def batch_agent_execution(
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=max_workers
         ) as executor:
-            # Submit all tasks to the executor
-            future_to_task = {
-                executor.submit(agent.run, task, imgs): (
-                    agent,
-                    task,
-                    imgs,
+            # Submit all tasks to the executor, tracking each future's index
+            # so results land back in agents[i]/tasks[i] order regardless of
+            # completion order.
+            future_to_index = {
+                executor.submit(agent.run, task, img): index
+                for index, (agent, task, img) in enumerate(
+                    zip(agents, tasks, imgs)
                 )
-                for agent, task, imgs in zip(agents, tasks, imgs)
             }
 
-            # Collect results as they complete
             for future in concurrent.futures.as_completed(
-                future_to_task
+                future_to_index
             ):
-                agent, task = future_to_task[future]
+                index = future_to_index[future]
                 try:
-                    result = future.result()
-                    results.append(result)
+                    results[index] = future.result()
                 except Exception as e:
-                    print(
-                        f"Task failed for agent {agent.agent_name}: {str(e)}"
+                    logger.error(
+                        f"Task failed for agent {agents[index].agent_name}: {str(e)}"
                     )
-                    results.append(None)
-
-            # Wait for all futures to complete before returning
-            concurrent.futures.wait(future_to_task.keys())
 
         return results
     except Exception as e:
