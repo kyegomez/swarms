@@ -23,7 +23,7 @@ During plan execution, if an error <error> occurs, you should provide an explana
 Then you can revise the original plan and generate a new plan. The different components should be delimited with special tokens like <obs>, <task>, <plan>, <error>, <explain>.
 
 To accomplish tasks, you should:
-- Understand the goal based on <task>, there can be images interleaved in the the task like <task> What is this <img> </task>
+- Understand the goal based on <task>, there can be images interleaved in the task like <task> What is this <img> </task>
 - Determine the steps required to achieve the goal, Translate steps into a structured <plan>
 - Mentally simulate executing the <plan>
 - Execute the <plan> with <act> and observe the results <obs> then update the <plan> accordingly
