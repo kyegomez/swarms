@@ -9,6 +9,7 @@ import ast
 import os
 import tempfile
 
+import pytest
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,7 +20,6 @@ from swarms.agents.auto_generate_swarm_config import (
     _slugify,
     write_autoswarm_file,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -330,6 +330,93 @@ class TestGeneratedFileCreatesRealSwarmRouter:
         ns = _exec_generated_code(source)
 
         assert ns["swarm"].max_loops == 1
+
+    def test_swarm_max_loops_rejects_bool_true(self):
+        """bool is a subclass of int; True must not silently become 1."""
+        config = {
+            "agents": [
+                {"agent_name": "A", "system_prompt": "Agent A."},
+            ],
+            "swarm_architecture": {
+                "name": "Bool-True",
+                "swarm_type": "SequentialWorkflow",
+                "max_loops": True,
+            },
+        }
+        with pytest.raises(ValueError, match="got bool"):
+            _generate_file(config=config)
+
+    def test_swarm_max_loops_rejects_bool_false(self):
+        """False must not be skipped by a truthy guard — reject as bool."""
+        config = {
+            "agents": [
+                {"agent_name": "A", "system_prompt": "Agent A."},
+            ],
+            "swarm_architecture": {
+                "name": "Bool-False",
+                "swarm_type": "SequentialWorkflow",
+                "max_loops": False,
+            },
+        }
+        with pytest.raises(ValueError, match="got bool"):
+            _generate_file(config=config)
+
+    def test_swarm_max_loops_zero_is_emitted(self):
+        """Presence check must not drop max_loops: 0 (falsy but present)."""
+        config = {
+            "agents": [
+                {"agent_name": "A", "system_prompt": "Agent A."},
+            ],
+            "swarm_architecture": {
+                "name": "Zero-Loops",
+                "swarm_type": "SequentialWorkflow",
+                "max_loops": 0,
+            },
+        }
+        _, source = _generate_file(config=config)
+        assert "max_loops=0" in source
+
+    def test_swarm_max_loops_string_int_coerces(self):
+        config = {
+            "agents": [
+                {"agent_name": "A", "system_prompt": "Agent A."},
+            ],
+            "swarm_architecture": {
+                "name": "String-Int",
+                "swarm_type": "SequentialWorkflow",
+                "max_loops": "3",
+            },
+        }
+        _, source = _generate_file(config=config)
+        ns = _exec_generated_code(source)
+        assert ns["swarm"].max_loops == 3
+
+    def test_swarm_max_loops_invalid_string_raises(self):
+        config = {
+            "agents": [
+                {"agent_name": "A", "system_prompt": "Agent A."},
+            ],
+            "swarm_architecture": {
+                "name": "Bad-String",
+                "swarm_type": "SequentialWorkflow",
+                "max_loops": "abc",
+            },
+        }
+        with pytest.raises(ValueError, match="must be an integer"):
+            _generate_file(config=config)
+
+    def test_swarm_max_loops_missing_omits_kwarg(self):
+        config = {
+            "agents": [
+                {"agent_name": "A", "system_prompt": "Agent A."},
+            ],
+            "swarm_architecture": {
+                "name": "No-Loops",
+                "swarm_type": "SequentialWorkflow",
+            },
+        }
+        _, source = _generate_file(config=config)
+        assert "max_loops=" not in source
 
     def test_swarm_has_all_agents(self):
         from swarms.structs.agent import Agent
