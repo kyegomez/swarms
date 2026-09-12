@@ -688,6 +688,7 @@ def _load_arch_classes():
         RoundRobinSwarm,
         SelfMoASeq,
         SequentialWorkflow,
+        SocialAlgorithms,
         SwarmRouter,
     )
     from swarms.structs.batched_grid_workflow import (
@@ -719,6 +720,7 @@ def _load_arch_classes():
         "LLMCouncil": LLMCouncil,
         "SelfMoASeq": SelfMoASeq,
         "AutoSwarmBuilder": AutoSwarmBuilder,
+        "SocialAlgorithms": SocialAlgorithms,
     }
 
 
