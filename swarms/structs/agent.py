@@ -3901,6 +3901,17 @@ Summary: {summary}
             role=self.agent_name, content=comprehensive_summary
         )
 
+        # The summary already reaches MEMORY.md, because every message does.
+        # This puts the lesson in the file's own capped, newest-first list as
+        # well, so the next run finds it without reading back a whole
+        # interaction log to look for it.
+        if lessons_learned and self.persistent_memory:
+            self.short_memory.record_lesson(
+                lesson=lessons_learned,
+                task=summary,
+                outcome=success,
+            )
+
         if self.verbose:
             logger.info(
                 "Main task marked as completed with comprehensive summary"

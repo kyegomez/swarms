@@ -7,7 +7,11 @@ from pathlib import Path
 
 from loguru import logger
 
-from swarms.structs.conversation import Conversation
+from swarms.structs.conversation import (
+    LESSONS_HEADING,
+    MAX_MEMORY_LESSONS,
+    Conversation,
+)
 
 
 def setup_temp_conversations_dir():
@@ -1288,3 +1292,148 @@ if __name__ == "__main__":
     logger.success(
         "Test execution completed. Results saved to test_results.md"
     )
+
+
+# ==========================================================================
+# #1998 — lessons get their own bounded section in MEMORY.md
+# ==========================================================================
+
+
+def _memory_conversation(tmp_path, **kwargs):
+    """A Conversation writing to a MEMORY.md under tmp_path."""
+    return Conversation(
+        name="lessons_test",
+        memory_md_path=str(tmp_path / "MEMORY.md"),
+        **kwargs,
+    )
+
+
+def _lessons_section(path):
+    """The text between the lessons heading and the interaction log."""
+    text = Path(path).read_text()
+    start = text.index(LESSONS_HEADING) + len(LESSONS_HEADING)
+    return text[start : text.index("## Interaction Log")]
+
+
+def test_record_lesson_writes_an_attributed_entry(tmp_path):
+    conv = _memory_conversation(tmp_path)
+
+    assert (
+        conv.record_lesson(
+            "Authentication should be implemented early",
+            task="Build a web app",
+            outcome=True,
+        )
+        is True
+    )
+
+    section = _lessons_section(conv.memory_md_path)
+    assert "Authentication should be implemented early" in section
+    # A lesson without its context is noise, so the task travels with it.
+    assert "task: Build a web app" in section
+    assert "succeeded" in section
+
+
+def test_record_lesson_keeps_the_newest_first(tmp_path):
+    conv = _memory_conversation(tmp_path)
+    conv.record_lesson("first lesson", task="a")
+    conv.record_lesson("second lesson", task="b")
+
+    section = _lessons_section(conv.memory_md_path)
+    assert section.index("second lesson") < section.index(
+        "first lesson"
+    )
+
+
+def test_a_failed_run_is_recorded_and_labelled(tmp_path):
+    conv = _memory_conversation(tmp_path)
+    conv.record_lesson("retry with backoff", task="x", outcome=False)
+
+    assert "failed" in _lessons_section(conv.memory_md_path)
+
+
+def test_a_multiline_lesson_stays_one_entry(tmp_path):
+    conv = _memory_conversation(tmp_path)
+    conv.record_lesson("line one\nline two", task="x")
+
+    section = _lessons_section(conv.memory_md_path)
+    assert "line one line two" in section
+    # One bullet, not two.
+    assert section.count("\n- ") == 1
+
+
+def test_an_empty_lesson_is_not_recorded(tmp_path):
+    conv = _memory_conversation(tmp_path)
+
+    assert conv.record_lesson("   ", task="x") is False
+    assert conv.record_lesson(None, task="x") is False
+    assert "- " not in _lessons_section(conv.memory_md_path)
+
+
+def test_no_memory_file_means_nothing_to_record(tmp_path):
+    conv = Conversation(name="no_memory")
+
+    assert conv.record_lesson("something", task="x") is False
+
+
+def test_the_list_is_capped_and_drops_the_oldest(tmp_path):
+    conv = _memory_conversation(tmp_path)
+    for i in range(MAX_MEMORY_LESSONS + 3):
+        conv.record_lesson(f"lesson number {i}", task="x")
+
+    section = _lessons_section(conv.memory_md_path)
+    assert section.count("\n- ") == MAX_MEMORY_LESSONS
+    # The three oldest fell off; the newest is still there.
+    assert "lesson number 0 " not in section + " "
+    assert f"lesson number {MAX_MEMORY_LESSONS + 2}" in section
+
+
+def test_recording_a_lesson_does_not_disturb_the_interaction_log(
+    tmp_path,
+):
+    conv = _memory_conversation(tmp_path)
+    conv.add("User", "a question")
+    conv.add("Assistant", "an answer")
+    before = Path(conv.memory_md_path).read_text()
+    log_before = before[before.index("## Interaction Log") :]
+
+    conv.record_lesson("a lesson", task="x")
+
+    after = Path(conv.memory_md_path).read_text()
+    assert after[after.index("## Interaction Log") :] == log_before
+
+
+def test_a_file_written_before_the_section_existed_gains_one(
+    tmp_path,
+):
+    """MEMORY.md files already on disk have no lessons heading."""
+    path = tmp_path / "MEMORY.md"
+    path.write_text(
+        "# Agent Memory\n\n---\n\n## Interaction Log\n\n"
+        "### User — 2026-01-01T00:00:00\n\nhello\n\n---\n\n"
+    )
+    conv = Conversation(name="legacy", memory_md_path=str(path))
+
+    assert conv.record_lesson("a lesson", task="x") is True
+
+    text = path.read_text()
+    assert text.index(LESSONS_HEADING) < text.index(
+        "## Interaction Log"
+    )
+    assert "hello" in text
+
+
+def test_a_failed_write_leaves_the_previous_memory_intact(
+    tmp_path, monkeypatch
+):
+    conv = _memory_conversation(tmp_path)
+    conv.record_lesson("the good lesson", task="x")
+    before = Path(conv.memory_md_path).read_text()
+
+    def boom(*args, **kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(Conversation, "_atomic_write_memory_md", boom)
+
+    assert conv.record_lesson("the lost lesson", task="y") is False
+    assert Path(conv.memory_md_path).read_text() == before
