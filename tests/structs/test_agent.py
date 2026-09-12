@@ -1028,25 +1028,53 @@ class TestArunForwarding:
         agent.to_dict = lambda: {}
         return agent
 
-    def test_extra_positional_args_reach_run(self):
-        """`task=`/`img=` as keywords alongside *args made every extra
-        positional collide with `task`: arun(task, img, extra) raised
-        `TypeError: got multiple values for argument 'task'`.
-        """
+    def test_task_and_img_reach_run_with_kwargs(self):
+        """The forwarding arun is actually able to do."""
+        import asyncio
+
         agent = self._bare_agent()
         seen = {}
 
-        def fake_run(*args, **kwargs):
-            seen["args"] = args
+        def fake_run(task=None, img=None, **kwargs):
+            seen["task"] = task
+            seen["img"] = img
             seen["kwargs"] = kwargs
             return "ok"
 
         agent.run = fake_run
 
-        result = asyncio.run(Agent.arun(agent, "T", "I", "EXTRA"))
+        result = asyncio.run(
+            Agent.arun(agent, "T", "I", streaming_callback=None)
+        )
 
         assert result == "ok"
-        assert seen["args"] == ("T", "I", "EXTRA")
+        assert seen["task"] == "T"
+        assert seen["img"] == "I"
+        assert seen["kwargs"] == {"streaming_callback": None}
+
+    def test_a_third_positional_is_refused_not_bound_to_imgs(self):
+        """It has to fail loudly, because there is no correct place for it.
+
+        run()'s positionals after `img` are imgs/correct_answer/
+        streaming_callback/n, so forwarding a third positional through does
+        not reach run()'s own *args -- it lands on `imgs`, a List[str] of
+        image paths:
+
+            >>> inspect.signature(Agent.run).bind_partial(
+            ...     None, "T", "I", "EXTRA").arguments
+            {'task': 'T', 'img': 'I', 'imgs': 'EXTRA'}
+
+        A stub declared as ``fake_run(*args, **kwargs)`` cannot see that --
+        it accepts anything positionally -- which is why the real signature
+        is used here.
+        """
+        import asyncio
+
+        agent = self._bare_agent()
+        agent.run = lambda task=None, img=None, imgs=None, **kw: "ok"
+
+        with pytest.raises(TypeError):
+            asyncio.run(Agent.arun(agent, "T", "I", "EXTRA"))
 
     def test_error_path_does_not_await_a_sync_handler(self):
         """`_handle_run_error` is sync and re-raises; the await was harmless
