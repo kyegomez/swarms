@@ -36,6 +36,7 @@ from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
+    _check_bash_command,
     get_autonomous_planning_tools,
     glob_tool,
     TOOL_OUTPUT_CONTEXT_SHARE,
@@ -1244,3 +1245,37 @@ class TestGlobTool:
             "pattern",
             "path",
         }
+
+
+class TestBashBlocklistMatchesCommandsNotSubstrings:
+    """Substring matching blocked ordinary work and missed the real thing (#1969)."""
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "make test > /dev/null 2>&1",
+            "command -v jq > /dev/null",
+            "grep -r sudo config/",
+            "cat sudoers.md",
+            "ls printenv.txt",
+            "echo halted",
+        ],
+    )
+    def test_benign_commands_are_allowed(self, command):
+        assert _check_bash_command(command) is None
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "sudo rm file",
+            "echo hi; sudo reboot",
+            "ls && sudo -i",
+            "mkfs.ext4 /dev/sda",
+            "rm -rf /tmp/x",
+        ],
+    )
+    def test_privileged_commands_are_still_blocked(self, command):
+        assert _check_bash_command(command) is not None
+
+    def test_a_long_command_is_not_rejected_for_length_alone(self):
+        assert _check_bash_command("echo " + "a" * 1000) is None
