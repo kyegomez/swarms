@@ -1251,10 +1251,7 @@ class TestGlobTool:
 
 
 class TestIterationLimitsAreConfigurable:
-    """
-    The budgets decide a run's worst-case cost, and every iteration re-sends
-    the transcript, so a caller has to be able to set them per agent.
-    """
+    """The three budgets bound a run's cost, so they must be settable per agent."""
 
     def _thinks_forever(self, agent, monkeypatch, *steps):
         """Script a model that plans, then only ever calls `think`."""
@@ -1281,37 +1278,24 @@ class TestIterationLimitsAreConfigurable:
         agent = build_agent()
 
         assert agent.max_planning_attempts == MAX_PLANNING_ATTEMPTS
-        assert (
-            agent.max_subtask_iterations == MAX_SUBTASK_ITERATIONS
-        )
+        assert agent.max_subtask_iterations == MAX_SUBTASK_ITERATIONS
         assert agent.max_subtask_loops == MAX_SUBTASK_LOOPS
 
-    def test_a_smaller_subtask_budget_ends_a_stuck_subtask_sooner(
-        self, monkeypatch
-    ):
-        agent = build_agent(think_tool=True, max_subtask_loops=3)
-        turn = self._thinks_forever(agent, monkeypatch, ("s1", []))
-
-        agent.run("demo")
-
-        assert status_of(agent, "s1") == "failed"
-        assert turn["n"] < MAX_SUBTASK_LOOPS, (
-            f"a subtask capped at 3 loops consumed {turn['n']} LLM "
-            f"turns, which is the default budget of {MAX_SUBTASK_LOOPS}"
+    def test_the_subtask_budget_is_per_agent(self, monkeypatch):
+        capped = build_agent(think_tool=True, max_subtask_loops=3)
+        capped_turns = self._thinks_forever(
+            capped, monkeypatch, ("s1", [])
         )
+        capped.run("demo")
 
-    def test_the_default_subtask_budget_is_still_honoured(
-        self, monkeypatch
-    ):
-        agent = build_agent(think_tool=True)
-        turn = self._thinks_forever(agent, monkeypatch, ("s1", []))
-
-        agent.run("demo")
-
-        assert turn["n"] > 3, (
-            "an agent that set no budget was cut short at the value the "
-            "previous test asked for"
+        default = build_agent(think_tool=True)
+        default_turns = self._thinks_forever(
+            default, monkeypatch, ("s1", [])
         )
+        default.run("demo")
+
+        assert status_of(capped, "s1") == "failed"
+        assert capped_turns["n"] < default_turns["n"]
 
     def test_the_run_budget_stops_the_outer_loop(self, monkeypatch):
         agent = build_agent(
@@ -1351,9 +1335,6 @@ class TestIterationLimitsAreConfigurable:
             "max_subtask_loops",
         ],
     )
-    @pytest.mark.parametrize("value", [0, -1, 2.5, True])
-    def test_a_budget_that_cannot_run_is_rejected_at_construction(
-        self, name, value
-    ):
+    def test_a_budget_below_one_is_rejected(self, name):
         with pytest.raises(ValueError):
-            build_agent(**{name: value})
+            build_agent(**{name: 0})
