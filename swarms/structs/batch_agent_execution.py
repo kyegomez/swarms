@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 import traceback
-from typing import Any, Callable, List, Union
+from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
 
@@ -16,7 +16,7 @@ class BatchAgentExecutionError(Exception):
 def batch_agent_execution(
     agents: List[Union[Agent, Callable]],
     tasks: List[str] = None,
-    imgs: List[str] = None,
+    imgs: Optional[List[str]] = None,
     max_workers: int = max(1, int(os.cpu_count() * 0.9)),
 ):
     """
