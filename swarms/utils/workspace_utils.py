@@ -1,5 +1,4 @@
 import os
-from functools import lru_cache
 from loguru import logger
 
 
@@ -17,10 +16,14 @@ def check_if_workspace_dir_exists():
     return os.path.exists(workspace_dir)
 
 
-@lru_cache(maxsize=1)
 def get_workspace_dir():
     """
     Retrieve the workspace directory path from the WORKSPACE_DIR environment variable.
+
+    Read on every call. This used to be lru_cached with no arguments, so the
+    first resolved value was frozen for the life of the process and later
+    changes to WORKSPACE_DIR had no effect. os.getenv is a dict lookup, so
+    there was nothing to cache.
 
     Returns:
         str: The absolute path of the workspace directory.
