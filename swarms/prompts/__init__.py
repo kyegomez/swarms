@@ -1,5 +1,5 @@
+from swarms.prompts import autonomous_agent_prompt as _autonomous_agent_prompt
 from swarms.prompts.autonomous_agent_prompt import (
-    AUTONOMOUS_AGENT_SYSTEM_PROMPT,
     get_autonomous_agent_prompt,
     get_autonomous_agent_prompt_with_context,
 )
@@ -31,3 +31,11 @@ __all__ = [
     "get_autonomous_agent_prompt",
     "get_autonomous_agent_prompt_with_context",
 ]
+
+
+def __getattr__(name: str):
+    if name == "AUTONOMOUS_AGENT_SYSTEM_PROMPT":
+        return _autonomous_agent_prompt.AUTONOMOUS_AGENT_SYSTEM_PROMPT
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}"
+    )

@@ -12,7 +12,15 @@ def get_time() -> str:
     return f"Current date and time: {now.strftime('%A, %B %d, %Y %H:%M %Z')}\n"
 
 
-AUTONOMOUS_AGENT_SYSTEM_PROMPT = f"""
+def _build_autonomous_agent_system_prompt() -> str:
+    """
+    Build the autonomous agent system prompt, embedding the current time.
+
+    Called fresh each time instead of once at import, so the "Current
+    date and time" line reflects when the prompt is requested rather
+    than when this module first loaded.
+    """
+    return f"""
 You are an elite autonomous agent operating in a structured autonomous loop by The Swarms Corporation.
 Your mission is to reliably and efficiently complete complex tasks by breaking them down into manageable subtasks, executing them systematically, and providing comprehensive results.
 
@@ -280,10 +288,13 @@ def get_autonomous_agent_prompt(
         str: The autonomous agent system prompt.
     """
     if include_think_tool:
-        return AUTONOMOUS_AGENT_SYSTEM_PROMPT
+        return _build_autonomous_agent_system_prompt()
 
     # Overridden at the end rather than excised; the think guidance is woven through in a dozen places.
-    return AUTONOMOUS_AGENT_SYSTEM_PROMPT + NO_THINK_TOOL_OVERRIDE
+    return (
+        _build_autonomous_agent_system_prompt()
+        + NO_THINK_TOOL_OVERRIDE
+    )
 
 
 def get_autonomous_agent_prompt_with_context(
@@ -302,7 +313,7 @@ def get_autonomous_agent_prompt_with_context(
     Returns:
         str: Contextualized autonomous agent prompt
     """
-    prompt = AUTONOMOUS_AGENT_SYSTEM_PROMPT
+    prompt = _build_autonomous_agent_system_prompt()
 
     if agent_name:
         prompt = prompt.replace(
@@ -327,3 +338,15 @@ def get_autonomous_agent_prompt_with_context(
         )
 
     return prompt
+
+
+def __getattr__(name: str) -> str:
+    """
+    Recompute ``AUTONOMOUS_AGENT_SYSTEM_PROMPT`` on every attribute
+    access (PEP 562) instead of returning a value frozen at import time.
+    """
+    if name == "AUTONOMOUS_AGENT_SYSTEM_PROMPT":
+        return _build_autonomous_agent_system_prompt()
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}"
+    )
