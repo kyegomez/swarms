@@ -65,6 +65,9 @@ from swarms.schemas.mcp_schemas import (
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.autonomous_loop_utils import (
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
+    MAX_SUBTASK_LOOPS,
     get_autonomous_loop_tool_names,
     get_summary_prompt,
 )
@@ -135,6 +138,31 @@ def agent_id() -> str:
     return generate_id("agent")
 
 
+def _positive_limit(name: str, value: int) -> int:
+    """
+    Validate an autonomous-loop iteration limit.
+
+    Args:
+        name: The constructor parameter the value came from.
+        value: The caller-supplied limit.
+
+    Returns:
+        int: The validated limit.
+
+    Raises:
+        ValueError: If the value is not an integer of at least 1. A limit of
+            zero or less makes the phase it bounds unable to run at all, and
+            fails far from the call that set it.
+    """
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(
+            f"{name} must be an int, got {type(value).__name__}"
+        )
+    if value < 1:
+        raise ValueError(f"{name} must be at least 1, got {value}")
+    return value
+
+
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
@@ -203,6 +231,16 @@ class Agent:
             off unless asked for. Enable it for models that do not reason natively, or
             when an explicit analysis step is worth the extra turn. When False, the system
             prompt is adjusted to match so the model is not told to call a tool it lacks.
+        max_planning_attempts (int): How many times the autonomous looper
+            (max_loops="auto") may ask the model for a plan before giving up.
+            Defaults to MAX_PLANNING_ATTEMPTS.
+        max_subtask_iterations (int): Ceiling on execution-phase iterations across
+            the whole run, counting every subtask. Defaults to
+            MAX_SUBTASK_ITERATIONS.
+        max_subtask_loops (int): Ceiling on iterations spent inside any one
+            subtask before the loop moves on. Defaults to MAX_SUBTASK_LOOPS.
+            The worst case for a run is max_subtask_iterations LLM calls, so
+            these two together are what bound a run's cost.
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
             "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
@@ -396,6 +434,9 @@ class Agent:
         reasoning_effort: Optional[ReasoningEffort] = None,
         thinking_tokens: int = 1024,
         think_tool: bool = False,
+        max_planning_attempts: int = MAX_PLANNING_ATTEMPTS,
+        max_subtask_iterations: int = MAX_SUBTASK_ITERATIONS,
+        max_subtask_loops: int = MAX_SUBTASK_LOOPS,
         dynamic_tools: bool = True,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
@@ -512,6 +553,15 @@ class Agent:
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
         self.think_tool = think_tool
+        self.max_planning_attempts = _positive_limit(
+            "max_planning_attempts", max_planning_attempts
+        )
+        self.max_subtask_iterations = _positive_limit(
+            "max_subtask_iterations", max_subtask_iterations
+        )
+        self.max_subtask_loops = _positive_limit(
+            "max_subtask_loops", max_subtask_loops
+        )
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
