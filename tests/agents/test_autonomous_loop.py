@@ -1244,3 +1244,39 @@ class TestGlobTool:
             "pattern",
             "path",
         }
+
+
+class TestFinalSummaryShape:
+    """The complete_task path returns the same shape as the other paths."""
+
+    def test_complete_task_result_follows_output_type(
+        self, monkeypatch
+    ):
+        agent = build_agent(output_type="list")
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="all done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+
+        result = agent.run("test task")
+
+        assert isinstance(result, list)
