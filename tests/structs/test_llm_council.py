@@ -316,3 +316,113 @@ def test_llm_council_output_types():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def _record(agent, calls):
+    """Replace an agent's run() with a stub that records the context it got."""
+    name = agent.agent_name
+    turns = [0]
+
+    def _run(task=None, messages=None, **kwargs):
+        turns[0] += 1
+        answer = f"{name}-answer-{turns[0]}"
+        calls.append(
+            {
+                "agent": name,
+                "task": task,
+                "messages": list(messages or []),
+                "answer": answer,
+            }
+        )
+        agent.short_memory.add(role=name, content=answer)
+        return answer
+
+    agent.run = _run
+    return agent
+
+
+def _recorded_council():
+    """An LLMCouncil whose members and chairman all record what they were sent."""
+    calls = []
+    members = [
+        _record(
+            Agent(
+                agent_name=name,
+                agent_description=f"Recording councillor {name}",
+                model_name="gpt-4o",
+                max_loops=1,
+                persistent_memory=False,
+                print_on=False,
+                autosave=False,
+            ),
+            calls,
+        )
+        for name in ("Member-A", "Member-B")
+    ]
+    council = LLMCouncil(council_members=members, verbose=False)
+    _record(council.chairman, calls)
+    return council, calls
+
+
+def _chairman_call(calls):
+    """The single recorded call the Chairman made."""
+    return next(c for c in calls if c["agent"] == "Chairman")
+
+
+def test_chairman_receives_each_councillor_response_as_its_own_turn():
+    """Each member's answer reaches the Chairman as a labelled turn."""
+    council, calls = _recorded_council()
+    council.run("what is the best vector database")
+
+    chairman = _chairman_call(calls)
+    turns = "\n".join(m["content"] for m in chairman["messages"])
+
+    for name in ("Member-A", "Member-B"):
+        assert f"{name}: {name}-answer-1" in turns
+
+
+def test_chairman_task_carries_no_councillor_text():
+    """The synthesis prompt holds the instruction, not the council's output."""
+    council, calls = _recorded_council()
+    council.run("what is the best vector database")
+
+    chairman = _chairman_call(calls)
+
+    assert "=== Member-A ===" not in str(chairman["task"])
+    assert "Member-A-answer-1" not in str(chairman["task"])
+    assert "COUNCIL MEMBER RESPONSES" not in str(chairman["task"])
+    assert "COUNCIL MEMBER EVALUATIONS" not in str(chairman["task"])
+
+
+def test_chairman_receives_the_evaluations_as_turns():
+    """Peer evaluations arrive as turns rather than an interpolated section."""
+    council, calls = _recorded_council()
+    council.run("what is the best vector database")
+
+    chairman = _chairman_call(calls)
+    turns = "\n".join(m["content"] for m in chairman["messages"])
+
+    assert "Member-A-Evaluation:" in turns
+    assert "Member-B-Evaluation:" in turns
+
+
+def test_chairman_task_keeps_the_query_and_the_id_mapping():
+    """The query and the anonymous id key stay in the instruction."""
+    council, calls = _recorded_council()
+    council.run("a very distinctive question about tungsten")
+
+    task = str(_chairman_call(calls)["task"])
+
+    assert "a very distinctive question about tungsten" in task
+    assert "ANONYMOUS ID MAPPING" in task
+
+
+def test_everything_the_chairman_reads_is_a_typed_turn():
+    """No message reaches the Chairman as anything but a typed chat turn."""
+    council, calls = _recorded_council()
+    council.run("what is the best vector database")
+
+    for message in _chairman_call(calls)["messages"]:
+        assert isinstance(message, dict)
+        assert message["role"] in ("user", "assistant")
+        assert isinstance(message["content"], str)
