@@ -16,7 +16,6 @@ from typing import (
     Union,
 )
 
-import toml
 import yaml
 from litellm import model_list
 from litellm.exceptions import (
@@ -2802,41 +2801,6 @@ Subtask Breakdown:
         except Exception as e:
             logger.error(f"Error logging state info: {e}")
 
-    def get_saveable_state(self) -> Dict[str, Any]:
-        """
-        Get a dictionary of all saveable state values.
-        Useful for debugging or manual state inspection.
-
-        Returns:
-            Dict[str, Any]: Dictionary of saveable values
-        """
-        return SafeLoaderUtils.create_state_dict(self)
-
-    def get_preserved_instances(self) -> Dict[str, Any]:
-        """
-        Get a dictionary of all preserved class instances.
-        Useful for debugging or manual state inspection.
-
-        Returns:
-            Dict[str, Any]: Dictionary of preserved instances
-        """
-        return SafeLoaderUtils.preserve_instances(self)
-
-    def save_to_yaml(self, file_path: str) -> None:
-        """
-        Save the agent to a YAML file
-
-        Args:
-            file_path (str): The path to the YAML file
-        """
-        try:
-            logger.info(f"Saving agent to YAML file: {file_path}")
-            with open(file_path, "w") as f:
-                yaml.dump(self.to_dict(), f)
-        except Exception as error:
-            logger.error(f"Error saving agent to YAML: {error}")
-            raise error
-
     def get_llm_parameters(self):
         return self.llm_manager.get_parameters()
 
@@ -2943,20 +2907,6 @@ Subtask Breakdown:
         except Exception:
             pass
 
-    def check_available_tokens(self):
-        tokens_used = count_tokens(
-            self.short_memory.return_history_as_string(),
-            model=self.model_name,
-        )
-
-        limit = self.context_length - tokens_used
-
-        if self.verbose:
-            logger.info(
-                f"Tokens available: {limit} You have {tokens_used} tokens used"
-            )
-        return limit
-
     def _serialize_callable(
         self, attr_value: Callable
     ) -> Dict[str, Any]:
@@ -3030,9 +2980,6 @@ Subtask Breakdown:
             self.to_dict(), indent=indent, *args, **kwargs
         )
 
-    def to_toml(self, *args, **kwargs):
-        return toml.dumps(self.to_dict(), *args, **kwargs)
-
     def model_dump_json(self):
         """
         Save the agent model configuration to JSON in the agent-specific workspace directory.
@@ -3053,28 +3000,6 @@ Subtask Breakdown:
 
         return (
             f"Model saved to {agent_workspace}/{self.agent_name}.json"
-        )
-
-    def model_dump_yaml(self):
-        """
-        Save the agent model configuration to YAML in the agent-specific workspace directory.
-
-        Returns:
-            str: Message indicating where the file was saved.
-        """
-        agent_workspace = self._get_agent_workspace_dir()
-        logger.info(
-            f"Saving {self.agent_name} model to YAML in the {agent_workspace} directory"
-        )
-
-        create_file_in_folder(
-            agent_workspace,
-            f"{self.agent_name}.yaml",
-            str(self.to_yaml()),
-        )
-
-        return (
-            f"Model saved to {agent_workspace}/{self.agent_name}.yaml"
         )
 
     def handle_tool_schema_ops(self):
@@ -3639,29 +3564,6 @@ Subtask Breakdown:
             for task, img in zip(tasks, imgs)
         ]
 
-    def showcase_config(self):
-
-        # Convert all values in config_dict to concise string representations
-        config_dict = self.to_dict()
-        for key, value in config_dict.items():
-            if isinstance(value, list):
-                # Format list as a comma-separated string
-                config_dict[key] = ", ".join(
-                    str(item) for item in value
-                )
-            elif isinstance(value, dict):
-                # Format dict as key-value pairs in a single string
-                config_dict[key] = ", ".join(
-                    f"{k}: {v}" for k, v in value.items()
-                )
-            else:
-                # Ensure any non-iterable value is a string
-                config_dict[key] = str(value)
-
-        return formatter.print_table(
-            f"Agent: {self.agent_name} Configuration", config_dict
-        )
-
     def talk_to(
         self, agent: Any, task: str, img: str = None, *args, **kwargs
     ) -> Any:
@@ -3906,20 +3808,6 @@ Summary: {summary}
                 "Main task marked as completed with comprehensive summary"
             )
         return comprehensive_summary
-
-    def output_cleaner_op(self, response: str):
-        # Apply the cleaner function to the response
-        if self.output_cleaner is not None:
-            logger.info("Applying output cleaner to response.")
-
-            response = self.output_cleaner(response)
-
-            logger.info(f"Response after output cleaner: {response}")
-
-            self.short_memory.add(
-                role="Output Cleaner",
-                content=response,
-            )
 
     def mcp_tool_handling(
         self, response: any, current_loop: Optional[int] = 0
