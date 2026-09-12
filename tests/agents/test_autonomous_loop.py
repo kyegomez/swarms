@@ -21,6 +21,8 @@ Covers four fixed defects:
 * #1962 — ``ContextCompressor.maybe_compress`` was never called on the
   ``max_loops="auto"`` path, so history grew unbounded in exactly the mode
   that needs compression most.
+* #1982 — ``update_file(mode="replace")`` overwrote files the model had never
+  read, so a guess at the contents silently replaced the real ones.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -36,10 +38,12 @@ from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
+    create_file_tool,
     get_autonomous_planning_tools,
     glob_tool,
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
+    update_file_tool,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
 
@@ -1244,3 +1248,187 @@ class TestGlobTool:
             "pattern",
             "path",
         }
+
+
+class TestReadBeforeWrite:
+    """
+    Whole-file replace is the only edit mode, so an unread replace turns a
+    model's guess at the contents into the contents.
+    """
+
+    def _file(self, tmp_path, text="original\n"):
+        target = tmp_path / "notes.txt"
+        target.write_text(text)
+        return target
+
+    def test_replacing_an_unread_file_is_refused(self, tmp_path):
+        agent = build_agent()
+        target = self._file(tmp_path)
+
+        output = update_file_tool(agent, str(target), "guessed")
+
+        assert "has not been read" in output
+        assert target.read_text() == "original\n"
+
+    def test_reading_first_allows_the_replace(self, tmp_path):
+        agent = build_agent()
+        target = self._file(tmp_path)
+
+        read_file_tool(agent, str(target))
+        output = update_file_tool(agent, str(target), "rewritten")
+
+        assert "Successfully updated" in output
+        assert target.read_text() == "rewritten"
+
+    def test_a_change_on_disk_after_the_read_is_refused(
+        self, tmp_path
+    ):
+        agent = build_agent()
+        target = self._file(tmp_path)
+
+        read_file_tool(agent, str(target))
+        target.write_text("someone else got here first\n")
+        os.utime(target, (9_000, 9_000))
+        output = update_file_tool(agent, str(target), "rewritten")
+
+        assert "changed on disk" in output
+        assert target.read_text() == "someone else got here first\n"
+
+    def test_append_does_not_need_a_read(self, tmp_path):
+        agent = build_agent()
+        target = self._file(tmp_path)
+
+        output = update_file_tool(
+            agent, str(target), "more\n", mode="append"
+        )
+
+        assert "Successfully appended" in output
+        assert target.read_text() == "original\nmore\n"
+
+    def test_a_file_this_run_created_may_be_replaced(self, tmp_path):
+        agent = build_agent()
+        target = tmp_path / "fresh.txt"
+
+        create_file_tool(agent, str(target), "first")
+        output = update_file_tool(agent, str(target), "second")
+
+        assert "Successfully updated" in output
+        assert target.read_text() == "second"
+
+    def test_two_replaces_in_a_row_are_allowed(self, tmp_path):
+        agent = build_agent()
+        target = self._file(tmp_path)
+
+        read_file_tool(agent, str(target))
+        update_file_tool(agent, str(target), "first")
+        output = update_file_tool(agent, str(target), "second")
+
+        assert "Successfully updated" in output
+        assert target.read_text() == "second"
+
+    def test_the_refusal_reaches_the_model(self, tmp_path):
+        agent = build_agent()
+        target = self._file(tmp_path)
+
+        update_file_tool(agent, str(target), "guessed")
+
+        assert "has not been read" in history(agent)
+
+    def test_one_agent_read_does_not_license_another(self, tmp_path):
+        reader = build_agent()
+        writer = build_agent()
+        target = self._file(tmp_path)
+
+        read_file_tool(reader, str(target))
+        output = update_file_tool(writer, str(target), "guessed")
+
+        assert "has not been read" in output
+
+    def _run_that(self, agent, monkeypatch, *calls):
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                list(calls)
+                + [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+        agent.run("test task")
+
+    def test_a_blind_replace_inside_a_run_leaves_the_file_alone(
+        self, monkeypatch, tmp_path
+    ):
+        agent = build_agent()
+        target = self._file(tmp_path)
+
+        self._run_that(
+            agent,
+            monkeypatch,
+            tool_call(
+                "update_file",
+                file_path=str(target),
+                content="guessed",
+            ),
+        )
+
+        assert target.read_text() == "original\n"
+        assert "has not been read" in history(agent)
+
+    def test_a_read_then_replace_inside_one_run_writes(
+        self, monkeypatch, tmp_path
+    ):
+        agent = build_agent()
+        target = self._file(tmp_path)
+
+        self._run_that(
+            agent,
+            monkeypatch,
+            tool_call("read_file", file_path=str(target)),
+            tool_call(
+                "update_file",
+                file_path=str(target),
+                content="rewritten",
+            ),
+        )
+
+        assert target.read_text() == "rewritten"
+
+    def test_a_new_run_forgets_the_previous_run_reads(
+        self, monkeypatch, tmp_path
+    ):
+        agent = build_agent()
+        target = self._file(tmp_path)
+
+        self._run_that(
+            agent,
+            monkeypatch,
+            tool_call("read_file", file_path=str(target)),
+        )
+        self._run_that(
+            agent,
+            monkeypatch,
+            tool_call(
+                "update_file",
+                file_path=str(target),
+                content="guessed",
+            ),
+        )
+
+        assert target.read_text() == "original\n"
+
+    def test_the_schema_tells_the_model_to_read_first(self):
+        update_schema = next(
+            tool["function"]
+            for tool in get_autonomous_planning_tools()
+            if tool["function"]["name"] == "update_file"
+        )
+
+        assert "read_file" in update_schema["description"]
