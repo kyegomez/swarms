@@ -504,11 +504,6 @@ class AutonomousAgentLoop:
                                         "create_plan"
                                     ](**arguments)
 
-                                    # Add result to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"create_plan result: {result}",
-                                    )
                                     planning_results[
                                         tool_call.get("id", "")
                                     ] = result
@@ -539,11 +534,6 @@ class AutonomousAgentLoop:
                                         )
                                     )
 
-                                    # Add result to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"handoff_task result: {result}",
-                                    )
                                     planning_results[
                                         tool_call.get("id", "")
                                     ] = result
@@ -844,7 +834,11 @@ class AutonomousAgentLoop:
                                                     tool_error,
                                                 )
 
-                                        # Add result to memory
+                                        # Kept deliberately (#2168): on the
+                                        # failure path `result` is
+                                        # _format_tool_error output, and the
+                                        # test suite shows the typed row does
+                                        # not carry it into the next prompt.
                                         self.agent.short_memory.add(
                                             role="Tool Executor",
                                             content=f"{function_name} result: {result}",
@@ -971,13 +965,6 @@ class AutonomousAgentLoop:
                                         regular_tool_calls
                                     )
 
-                                    # Add to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=format_data_structure(
-                                            tool_output
-                                        ),
-                                    )
                                     self._map_batch_results(
                                         regular_tool_calls,
                                         tool_output,
@@ -1517,6 +1504,9 @@ class AutonomousAgentLoop:
                 if self.agent.verbose:
                     logger.error(outcome)
 
+            # Kept deliberately (#2168): on the failure path `outcome` is the
+            # error text and no typed row is flushed for it, so this is the
+            # only record the model sees.
             self.agent.short_memory.add(
                 role="Tool Executor", content=f"{name}: {outcome}"
             )
