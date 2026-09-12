@@ -674,6 +674,7 @@ def _load_arch_classes():
     from swarms import (
         Agent,
         AgentRearrange,
+        AutoSwarmBuilder,
         ConcurrentWorkflow,
         CouncilAsAJudge,
         GraphWorkflow,
@@ -717,6 +718,7 @@ def _load_arch_classes():
         "BatchedGridWorkflow": BatchedGridWorkflow,
         "LLMCouncil": LLMCouncil,
         "SelfMoASeq": SelfMoASeq,
+        "AutoSwarmBuilder": AutoSwarmBuilder,
     }
 
 
