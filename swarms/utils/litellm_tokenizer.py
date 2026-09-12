@@ -1,10 +1,37 @@
+import hashlib
+from collections import OrderedDict
+from functools import lru_cache
+from typing import Optional
+
 from litellm import encode, model_list
 from loguru import logger
-from typing import Optional
-from functools import lru_cache
 
 # Use consistent default model
 DEFAULT_MODEL = "gpt-5.4"
+
+_TOKEN_COUNT_CACHE: "OrderedDict[tuple, int]" = OrderedDict()
+_TOKEN_COUNT_CACHE_MAX = 512
+
+
+def _cache_key(text: str, model: str) -> tuple:
+    return (
+        hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        model,
+    )
+
+
+def _cache_get(key: tuple) -> Optional[int]:
+    if key in _TOKEN_COUNT_CACHE:
+        _TOKEN_COUNT_CACHE.move_to_end(key)
+        return _TOKEN_COUNT_CACHE[key]
+    return None
+
+
+def _cache_put(key: tuple, value: int) -> None:
+    _TOKEN_COUNT_CACHE[key] = value
+    _TOKEN_COUNT_CACHE.move_to_end(key)
+    while len(_TOKEN_COUNT_CACHE) > _TOKEN_COUNT_CACHE_MAX:
+        _TOKEN_COUNT_CACHE.popitem(last=False)
 
 
 def count_tokens(
@@ -33,9 +60,15 @@ def count_tokens(
     # Set fallback encoder
     fallback_model = default_encoder or DEFAULT_MODEL
 
+    key = _cache_key(text, model)
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
+
     # First attempt with the requested model
     try:
         tokens = encode(model=model, text=text)
+        _cache_put(key, len(tokens))
         return len(tokens)
 
     except Exception as e:
