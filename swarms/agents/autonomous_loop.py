@@ -43,6 +43,7 @@ from swarms.structs.autonomous_loop_utils import (
     grep_tool,
     list_directory_tool,
     glob_tool,
+    edit_file_tool,
     read_file_tool,
     respond_to_user_tool,
     run_bash_tool,
@@ -392,6 +393,9 @@ class AutonomousAgentLoop:
                     self.agent, **kwargs
                 ),
                 "read_file": lambda **kwargs: read_file_tool(
+                    self.agent, **kwargs
+                ),
+                "edit_file": lambda **kwargs: edit_file_tool(
                     self.agent, **kwargs
                 ),
                 "list_directory": lambda **kwargs: list_directory_tool(

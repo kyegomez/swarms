@@ -29,6 +29,7 @@ Run:
 
 import json
 import os
+from pathlib import Path
 
 import pytest
 
@@ -36,6 +37,7 @@ from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
+    edit_file_tool,
     get_autonomous_planning_tools,
     glob_tool,
     TOOL_OUTPUT_CONTEXT_SHARE,
@@ -1145,6 +1147,109 @@ class TestContextCompression:
 
         assert loop._maybe_compress_context() is False
         assert len(loop._transcript) == 1
+
+
+# --------------------------------------------------------------------------
+# #1979 — edit_file exact-string replacement
+# --------------------------------------------------------------------------
+
+
+class TestEditFileTool:
+    """
+    Without an exact-string edit the model rewrites whole files through
+    update_file, which clobbers everything it did not mean to touch and pays
+    output tokens for every unchanged line.
+    """
+
+    def _file(self, tmp_path, body):
+        target = tmp_path / "module.py"
+        target.write_text(body)
+        return str(target)
+
+    def test_a_unique_match_is_replaced_and_nothing_else_moves(
+        self, tmp_path
+    ):
+        path = self._file(
+            tmp_path, "alpha = 1\nbeta = 2\ngamma = 3\n"
+        )
+
+        output = edit_file_tool(
+            build_agent(), path, "beta = 2", "beta = 20"
+        )
+
+        assert "Error" not in output
+        assert (
+            Path(path).read_text()
+            == "alpha = 1\nbeta = 20\ngamma = 3\n"
+        )
+
+    def test_no_match_is_an_error_that_says_so(self, tmp_path):
+        path = self._file(tmp_path, "alpha = 1\n")
+
+        output = edit_file_tool(
+            build_agent(), path, "missing", "replacement"
+        )
+
+        assert "Error" in output
+        assert "0" in output
+        assert Path(path).read_text() == "alpha = 1\n"
+
+    def test_several_matches_are_refused_with_the_count(
+        self, tmp_path
+    ):
+        path = self._file(tmp_path, "x = 1\nx = 1\nx = 1\n")
+
+        output = edit_file_tool(build_agent(), path, "x = 1", "x = 2")
+
+        assert "Error" in output
+        assert "3" in output
+        assert Path(path).read_text() == "x = 1\nx = 1\nx = 1\n"
+
+    def test_replace_all_takes_every_match(self, tmp_path):
+        path = self._file(tmp_path, "x = 1\nx = 1\nx = 1\n")
+
+        output = edit_file_tool(
+            build_agent(), path, "x = 1", "x = 2", replace_all=True
+        )
+
+        assert "3" in output
+        assert Path(path).read_text() == "x = 2\nx = 2\nx = 2\n"
+
+    def test_a_missing_file_is_an_error(self, tmp_path):
+        output = edit_file_tool(
+            build_agent(), str(tmp_path / "nope.py"), "a", "b"
+        )
+
+        assert "Error" in output
+
+    def test_an_identical_replacement_is_refused(self, tmp_path):
+        path = self._file(tmp_path, "alpha = 1\n")
+
+        output = edit_file_tool(
+            build_agent(), path, "alpha = 1", "alpha = 1"
+        )
+
+        assert "Error" in output
+        assert Path(path).read_text() == "alpha = 1\n"
+
+    def test_the_schema_and_the_loop_both_know_about_edit_file(self):
+        names = {
+            tool["function"]["name"]
+            for tool in get_autonomous_planning_tools()
+        }
+        assert "edit_file" in names
+
+        schema = next(
+            tool["function"]
+            for tool in get_autonomous_planning_tools()
+            if tool["function"]["name"] == "edit_file"
+        )
+        assert schema["parameters"]["required"] == [
+            "file_path",
+            "old_string",
+            "new_string",
+        ]
+        assert "replace_all" in schema["parameters"]["properties"]
 
 
 if __name__ == "__main__":
