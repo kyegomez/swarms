@@ -265,7 +265,7 @@ class CouncilAsAJudge:
             model_name (str): Name of the model to use for evaluations
             output_type (str): Type of output to return
             cache_size (int): Size of the LRU cache for prompts
-            max_workers (int): Maximum number of worker threads for parallel execution
+            max_workers: Derived internally from CPU count (read-only attribute, not a constructor parameter).
             random_model_name (bool): Whether to use random model names
             max_loops (int): Maximum number of loops for agents
             aggregation_model_name (str): Model name for the aggregator agent
