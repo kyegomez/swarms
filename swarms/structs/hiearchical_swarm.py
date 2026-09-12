@@ -490,13 +490,22 @@ class HierarchicalSwarm:
                 ),
                 img=img,
             )
+
+            if isinstance(function_call, str):
+                director_record = function_call
+            else:
+                plan, orders = self.parse_orders(function_call)
+                director_record = "\n\n".join(
+                    [plan]
+                    + [
+                        f"{order.agent_name}: {order.task}"
+                        for order in orders
+                    ]
+                )
+
             self.conversation.add(
                 role="Director",
-                content=(
-                    function_call
-                    if isinstance(function_call, str)
-                    else any_to_str(function_call)
-                ),
+                content=director_record,
             )
 
             return function_call
