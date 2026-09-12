@@ -53,6 +53,15 @@ def get_conversation_dir():
 DEFAULT_CONVERSATION_NAME = "conversation-test"
 
 
+# Upper bound on the MEMORY.md text injected as the preload preamble.
+# The file itself keeps growing on disk; only what is injected is capped.
+MEMORY_MD_PRELOAD_CHARS = 8000
+
+# Inserted between the kept head and tail of a truncated preamble so the
+# omitted history is visible to the model instead of silently dropped.
+MEMORY_MD_PRELOAD_OMITTED_MARKER = "[… older entries omitted …]"
+
+
 class Conversation:
     """
     A class to manage a conversation history, allowing for the addition, deletion,
@@ -101,6 +110,7 @@ class Conversation:
         cache_enabled: bool = False,
         output_metadata: bool = False,
         memory_md_path: Optional[str] = None,
+        memory_md_preload_chars: int = MEMORY_MD_PRELOAD_CHARS,
     ):
 
         # Initialize all attributes first
@@ -128,6 +138,7 @@ class Conversation:
         self.caching = cache_enabled
         self.output_metadata = output_metadata
         self.memory_md_path = memory_md_path
+        self.memory_md_preload_chars = memory_md_preload_chars
         self._memory_md_lock = threading.Lock()
 
         # Suppressed so the static system_prompt and rules are not re-appended to MEMORY.md every construction.
@@ -306,6 +317,8 @@ class Conversation:
         if "### " not in content:
             return
 
+        content = self._bound_memory_md_for_preload(content)
+
         self.conversation_history.append(
             {
                 "role": "System",
@@ -319,6 +332,45 @@ class Conversation:
             }
         )
         self._str_cache = None
+
+    def _bound_memory_md_for_preload(self, content: str) -> str:
+        """Cap the MEMORY.md text injected as the preload preamble.
+
+        MEMORY.md is an append-only log, so the preamble would otherwise
+        grow with the agent's whole history and be paid on the first
+        request of every run. A file within ``memory_md_preload_chars``
+        is returned unchanged. A larger file keeps its head (the file
+        header and any curated sections written before the first log
+        entry) and the most recent log entries, and marks the omitted
+        middle so the model knows history was dropped rather than
+        silently truncated. MEMORY.md on disk is never modified.
+        """
+        limit = self.memory_md_preload_chars
+        if limit is None or limit <= 0 or len(content) <= limit:
+            return content
+
+        first_entry = content.find("### ")
+        head = content[:first_entry]
+        log = content[first_entry:]
+
+        # The head is bounded too, so a curated section cannot crowd out
+        # every recent entry. Reserve at least half of the budget for
+        # the log.
+        head_budget = min(len(head), limit // 2)
+        head = head[:head_budget]
+
+        tail_budget = limit - len(head)
+        tail = log[-tail_budget:]
+        # Start the tail at an entry boundary so no entry is cut in half.
+        boundary = tail.find("### ")
+        if boundary > 0:
+            tail = tail[boundary:]
+
+        return (
+            f"{head.rstrip()}\n\n"
+            f"{MEMORY_MD_PRELOAD_OMITTED_MARKER}\n\n"
+            f"{tail}"
+        )
 
     def compact(
         self,
