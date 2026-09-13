@@ -16,6 +16,7 @@ from typing import Dict, List, Optional
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.context_utils import messages_for, split_last_turn
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
     run_agents_concurrently,
@@ -202,50 +203,46 @@ Remember: The goal is honest, objective evaluation. If another model's response 
 
 def get_synthesis_prompt(
     query: str,
-    original_responses: Dict[str, str],
-    evaluations: Dict[str, str],
-    id_to_member: Dict[str, str],
+    *args,
+    id_to_member: Optional[Dict[str, str]] = None,
+    original_responses: Optional[Dict[str, str]] = None,
+    evaluations: Optional[Dict[str, str]] = None,
+    **kwargs,
 ) -> str:
     """
     Create synthesis prompt for the Chairman.
 
     Args:
         query: Original user query
-        original_responses: Dict mapping member names to their responses
-        evaluations: Dict mapping evaluator names to their evaluation texts
         id_to_member: Mapping from anonymous IDs to member names
+        original_responses: Deprecated; responses are now passed via conversation turns
+        evaluations: Deprecated; evaluations are now passed via conversation turns
 
     Returns:
         Formatted synthesis prompt
     """
-    responses_section = "\n\n".join(
-        [
-            f"=== {name} ===\n{response}"
-            for name, response in original_responses.items()
-        ]
-    )
+    if args:
+        if len(args) == 1 and id_to_member is None:
+            id_to_member = args[0]
+        elif len(args) >= 3 and id_to_member is None:
+            # Positional call: (query, original_responses, evaluations, id_to_member)
+            id_to_member = args[2]
 
-    evaluations_section = "\n\n".join(
-        [
-            f"=== Evaluation by {name} ===\n{evaluation}"
-            for name, evaluation in evaluations.items()
-        ]
+    id_to_member = id_to_member or {}
+    mapping_str = "\n".join(
+        [f"  {aid} = {name}" for aid, name in id_to_member.items()]
+    )
+    mapping_section = (
+        f"\nANONYMOUS ID MAPPING (for reference):\n{mapping_str}\n"
+        if mapping_str
+        else ""
     )
 
     return f"""As the Chairman of the LLM Council, synthesize the following information into a final, comprehensive answer.
 
 ORIGINAL QUERY:
 {query}
-
-COUNCIL MEMBER RESPONSES:
-{responses_section}
-
-COUNCIL MEMBER EVALUATIONS AND RANKINGS:
-{evaluations_section}
-
-ANONYMOUS ID MAPPING (for reference):
-{chr(10).join([f"  {aid} = {name}" for aid, name in id_to_member.items()])}
-
+{mapping_section}
 Your task:
 1. Review all council member responses
 2. Consider the evaluations and rankings provided by each member
@@ -508,10 +505,14 @@ class LLMCouncil:
             print("👔 Chairman synthesizing final response...\n")
 
         synthesis_prompt = get_synthesis_prompt(
-            query, original_responses, evaluations, id_to_member
+            query=query, id_to_member=id_to_member
         )
+        self.conversation.add(role="User", content=synthesis_prompt)
 
-        final_response = self.chairman.run(task=synthesis_prompt)
+        prior, task = split_last_turn(
+            messages_for("Chairman", self.conversation)
+        )
+        final_response = self.chairman.run(task=task, messages=prior)
 
         # Add chairman's final response to conversation
         self.conversation.add(role="Chairman", content=final_response)
