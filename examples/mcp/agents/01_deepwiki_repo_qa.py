@@ -45,9 +45,8 @@ agent = Agent(
     reasoning_effort=None,
 )
 
-if __name__ == "__main__":
-    result = agent.run(
-        "Use your DeepWiki tools to explain what the kyegomez/swarms "
-        "repository is for and list its main multi-agent structures."
-    )
-    print(result)
+result = agent.run(
+    "Use your DeepWiki tools to explain what the kyegomez/swarms "
+    "repository is for and list its main multi-agent structures."
+)
+print(result)

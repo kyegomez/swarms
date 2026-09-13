@@ -2161,7 +2161,7 @@ class Agent:
         self,
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[dict]] = None,
-    ) -> str:
+    ) -> Any:
         """
         Generate a comprehensive final summary of the autonomous task execution.
 
@@ -2173,7 +2173,7 @@ class Agent:
                 flattened string rendering of it.
 
         Returns:
-            str: Comprehensive summary
+            Any: The conversation shaped by ``output_type``, on every path.
         """
         summary_prompt = get_summary_prompt()
         self.short_memory.add(
@@ -2237,7 +2237,9 @@ class Agent:
                                 title="Task Completion Summary",
                             )
 
-                        return result
+                        return history_output_formatter(
+                            self.short_memory, type=self.output_type
+                        )
 
             # If complete_task wasn't called, generate summary manually
             comprehensive_summary = f"""Task Execution Summary
@@ -4018,12 +4020,34 @@ Summary: {summary}
             raise e
 
     @property
+    def input_tokens(self) -> int:
+        """Tokens the agent's next request would carry, counted with its model's tokenizer.
+
+        Covers everything the agent sends as input: the system prompt, the
+        whole conversation in ``short_memory``, and the tool schemas. Use it
+        to see how full the context window is before a run. It is an
+        estimate — the conversation is counted as rendered text, role labels
+        included — so it runs a little above what the provider bills. For the
+        billed figure, summed over past calls, see :attr:`usage`.
+        """
+        parts = [self.short_memory.return_history_as_string()]
+        if self.tools_list_dictionary:
+            parts.append(json.dumps(self.tools_list_dictionary))
+        return count_tokens(
+            "\n".join(part for part in parts if part),
+            model=self.model_name,
+        )
+
+    @property
     def usage(self) -> dict:
         """Token usage reported by the provider, summed over every LLM call this agent has made.
 
         Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens`` (the
         part of ``input_tokens`` served from the provider's prompt cache),
-        ``total_tokens``. Streaming calls are not counted.
+        ``reasoning_tokens`` (the part of ``output_tokens`` the model spent
+        thinking, 0 when the provider does not report it), ``total_tokens``.
+        Streaming calls count once their stream has been consumed, since the
+        provider reports usage in the final chunk.
         """
         return dict(self._usage)
 

@@ -601,7 +601,7 @@ class SwarmRouter(SerializableMixin):
         agent a built swarm holds on its own — a ``HierarchicalSwarm``
         director, a ``MixtureOfAgents`` aggregator, a judge. Keys:
         ``input_tokens``, ``output_tokens``, ``cached_tokens``,
-        ``total_tokens``. Agent totals are lifetime totals, so an agent
+        ``reasoning_tokens``, ``total_tokens``. Agent totals are lifetime totals, so an agent
         shared with another router contributes what it spent there too.
         Streaming calls are not counted.
         """
