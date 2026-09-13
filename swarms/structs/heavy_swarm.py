@@ -10,6 +10,7 @@ from swarms.agents.heavy_swarm_agents import (
 )
 from swarms.prompts.heavy_swarm_prompts import (
     grok_heavy_schema,
+    grok_schema,
     schema,
 )
 from swarms.structs.context_utils import messages_for
@@ -1345,6 +1346,26 @@ class HeavySwarm(SerializableMixin):
             active_schema = grok_heavy_schema
         elif self.variant == "medium":
             prompt = f"""
+        System: Grok task decomposer. Generate 3 non-overlapping domain-specific questions via function tool.
+
+        Specialists:
+        - Harper (Creative Writing & Storytelling): narrative framing, metaphors, human storytelling angles
+        - Benjamin (Data, Finance & Economics): quantitative data, financial modeling, economic implications
+        - Lucas (Coding, Programming & Technical): technical implementation, algorithms, systems architecture
+
+        Requirements:
+        - Each question ≤40 words, domain-specific, action-oriented
+        - No duplication across specialists
+        - Ambiguity notes only in "thinking" field (≤60 words)
+        - Each question must leverage the specialist's unique domain expertise
+
+        Task: {task}
+
+        Use generate_grok_questions function only.
+        """
+            active_schema = grok_schema
+        else:
+            prompt = f"""
         System: Technical task analyzer. Generate 4 non-overlapping analytical questions via function tool.
 
         Roles:
@@ -1380,10 +1401,7 @@ class HeavySwarm(SerializableMixin):
             model=self.question_agent_model_name,
             tools_list_dictionary=active_schema,
             max_tokens=max_tokens,
-            temperature=0.7,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
+            top_p=None,  # Anthropic rejects temperature and top_p together
             tool_choice="auto",
         )
 
