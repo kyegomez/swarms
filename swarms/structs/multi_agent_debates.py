@@ -1,4 +1,4 @@
-from typing import Callable, Union, List
+from typing import List
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -16,7 +16,7 @@ class OneOnOneDebate:
     def __init__(
         self,
         max_loops: int = 1,
-        agents: list[Union[Agent, Callable]] = None,
+        agents: list[Agent] = None,
         img: str = None,
         output_type: str = "str-all-except-first",
     ):
