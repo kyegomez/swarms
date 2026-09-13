@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 import traceback
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, List, Optional
 
 from loguru import logger
 
@@ -14,7 +14,7 @@ class BatchAgentExecutionError(Exception):
 
 
 def batch_agent_execution(
-    agents: List[Union[Agent, Callable]],
+    agents: List[Agent],
     tasks: List[str] = None,
     imgs: Optional[List[str]] = None,
     max_workers: int = max(1, int(os.cpu_count() * 0.9)),
@@ -61,9 +61,6 @@ def batch_agent_execution(
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=max_workers
         ) as executor:
-            # Submit all tasks to the executor, tracking each future's index
-            # so results land back in agents[i]/tasks[i] order regardless of
-            # completion order.
             future_to_index = {
                 executor.submit(agent.run, task, img): index
                 for index, (agent, task, img) in enumerate(
