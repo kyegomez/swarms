@@ -1,5 +1,3 @@
-from typing import Callable, Union
-
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
@@ -11,7 +9,7 @@ from swarms.utils.history_output_formatter import (
 def one_on_one_debate(
     max_loops: int = 1,
     task: str = None,
-    agents: list[Union[Agent, Callable]] = None,
+    agents: list[Agent] = None,
     img: str = None,
     output_type: str = "str-all-except-first",
     send_intros: bool = False,
