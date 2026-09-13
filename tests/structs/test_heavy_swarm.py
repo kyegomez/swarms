@@ -470,6 +470,168 @@ class TestGrokHeavyPrompts:
 # ============================================================================
 
 
+class TestQuestionDecomposerSeesTheImage:
+    """#1903: the decomposer writes the questions every worker answers, but it
+    took only `task`, so a visual run decomposed the sentence and guessed at
+    the image.
+    """
+
+    def _capture(self, monkeypatch):
+        seen = {}
+
+        class FakeLiteLLM:
+            def __init__(self, **kwargs):
+                seen["prompt"] = kwargs.get("system_prompt", "")
+
+            def run(self, task, *args, **kwargs):
+                seen["task"] = task
+                seen["img"] = kwargs.get("img")
+                return ""
+
+        monkeypatch.setattr(
+            "swarms.structs.heavy_swarm.LiteLLM", FakeLiteLLM
+        )
+        return seen
+
+    def test_img_reaches_the_question_agent(self, monkeypatch):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+
+        swarm.execute_question_generation(
+            "What does this chart imply?", img="revenue.png"
+        )
+
+        assert seen["img"] == "revenue.png"
+        assert "An image accompanies this task" in seen["prompt"]
+
+    def test_text_only_runs_are_unchanged(self, monkeypatch):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+
+        swarm.execute_question_generation("A text-only task")
+
+        assert seen["img"] is None
+        assert "An image accompanies this task" not in seen["prompt"]
+
+
+class TestQuestionAgentPerVariant:
+    """The decomposer's schema has to match the roster that reads its output,
+    and its sampling settings have to be ones every provider accepts.
+    """
+
+    def _capture(self, monkeypatch):
+        seen = {}
+
+        class FakeLiteLLM:
+            def __init__(self, **kwargs):
+                seen.update(kwargs)
+
+            def run(self, task, *args, **kwargs):
+                return ""
+
+        monkeypatch.setattr(
+            "swarms.structs.heavy_swarm.LiteLLM", FakeLiteLLM
+        )
+        return seen
+
+    @pytest.mark.parametrize(
+        "variant, function_name, roles",
+        [
+            (
+                "default",
+                "generate_specialized_questions",
+                [
+                    "research",
+                    "analysis",
+                    "alternatives",
+                    "verification",
+                ],
+            ),
+            (
+                "medium",
+                "generate_grok_questions",
+                ["harper", "benjamin", "lucas"],
+            ),
+            (
+                "heavy",
+                "generate_grok_heavy_questions",
+                ["harper", "benjamin", "lucas", "noah"],
+            ),
+        ],
+    )
+    def test_schema_matches_the_variant_roster(
+        self, monkeypatch, variant, function_name, roles
+    ):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant=variant,
+        )
+
+        swarm.execute_question_generation("A task")
+
+        tool = seen["tools_list_dictionary"][0]["function"]
+        assert tool["name"] == function_name
+        for role in roles:
+            assert (
+                f"{role}_question" in tool["parameters"]["properties"]
+            )
+        assert (
+            f"Use {function_name} function only"
+            in seen["system_prompt"]
+        )
+
+    def test_no_hard_coded_sampling_values(self, monkeypatch):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+
+        swarm.execute_question_generation("A task")
+
+        assert seen.get("top_p") is None
+        assert "temperature" not in seen
+        assert "frequency_penalty" not in seen
+        assert "presence_penalty" not in seen
+
+    def test_medium_get_questions_only_returns_its_roster(
+        self, monkeypatch
+    ):
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+        monkeypatch.setattr(
+            swarm,
+            "execute_question_generation",
+            lambda task, img=None: {
+                "harper_question": "h",
+                "benjamin_question": "b",
+                "lucas_question": "l",
+            },
+        )
+
+        questions = swarm.get_questions_only("A task")
+
+        assert questions == {
+            "harper_question": "h",
+            "benjamin_question": "b",
+            "lucas_question": "l",
+        }
+
+
 class TestSwarmRouterGrokIntegration:
     """Verify SwarmRouter passes through grok flag."""
 
