@@ -482,7 +482,8 @@ class Conversation:
             ... )
             True
         """
-        if not self.memory_md_path:
+        memory_md_path = self.memory_md_path
+        if not memory_md_path:
             return False
 
         lesson_text = str(lesson or "").strip()
@@ -505,7 +506,7 @@ class Conversation:
             with self._memory_md_lock:
                 self._init_memory_md()
                 with open(
-                    self.memory_md_path, "r", encoding="utf-8"
+                    memory_md_path, "r", encoding="utf-8"
                 ) as f:
                     content = f.read()
 
@@ -519,7 +520,7 @@ class Conversation:
                     + "\n".join(entries)
                     + f"\n\n{tail}"
                 )
-                self._atomic_write_memory_md(rebuilt)
+                self._atomic_write_memory_md(memory_md_path, rebuilt)
         except Exception as e:
             logger.error(
                 f"Failed to record lesson in {self.memory_md_path}: {e}"
@@ -580,11 +581,14 @@ class Conversation:
                 entries[-1] += "\n" + line
         return entries
 
-    def _atomic_write_memory_md(self, content: str) -> None:
+    def _atomic_write_memory_md(
+        self, path: str, content: str
+    ) -> None:
         """
         Replace MEMORY.md in one step.
 
         Args:
+            path: The MEMORY.md path to replace.
             content: The full new file contents.
 
         Notes:
@@ -592,12 +596,12 @@ class Conversation:
             write leaves the previous memory intact rather than a half file.
             Caller holds ``_memory_md_lock``.
         """
-        directory = os.path.dirname(self.memory_md_path) or "."
+        directory = os.path.dirname(path) or "."
         fd, tmp_path = tempfile.mkstemp(dir=directory, suffix=".tmp")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(content)
-            os.replace(tmp_path, self.memory_md_path)
+            os.replace(tmp_path, path)
         except Exception:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
