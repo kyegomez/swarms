@@ -48,6 +48,7 @@ from swarms.structs.autonomous_loop_utils import (
     run_bash_tool,
     update_file_tool,
 )
+from swarms.telemetry.otel import ContextThreadPoolExecutor
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
@@ -91,6 +92,21 @@ ALWAYS_LOADED_TOOLS = frozenset(
         "respond_to_user",
     }
 )
+
+WORKER_TOOL_NAMES = frozenset(
+    {
+        "create_file",
+        "update_file",
+        "read_file",
+        "list_directory",
+        "delete_file",
+        "run_bash",
+        "grep",
+        "glob",
+    }
+)
+
+_WORKER_TOOL_PATH_ARGS = ("file_path", "directory_path", "path")
 
 
 class AutonomousAgentLoop:
@@ -743,6 +759,7 @@ class AutonomousAgentLoop:
                         # Handle tool calls
                         if isinstance(response, list):
                             regular_tool_calls = []
+                            worker_tool_calls = []
                             # Set, not returned, so later calls run.
                             task_complete = False
 
@@ -785,6 +802,8 @@ class AutonomousAgentLoop:
                                     if (
                                         function_name
                                         in planning_tool_handlers
+                                        and function_name
+                                        not in WORKER_TOOL_NAMES
                                     ):
                                         # A raise is not a completion.
                                         tool_failed = False
@@ -915,11 +934,32 @@ class AutonomousAgentLoop:
                                             and not tool_failed
                                         ):
                                             task_complete = True
+                                    elif (
+                                        function_name
+                                        in planning_tool_handlers
+                                    ):
+                                        worker_tool_calls.append(
+                                            {
+                                                "tool_call": tool_call,
+                                                "function_name": function_name,
+                                                "arguments": arguments,
+                                                "path_key": self._resolve_worker_tool_path(
+                                                    arguments
+                                                ),
+                                            }
+                                        )
                                     else:
                                         # Collect regular tool calls for batch visualization and execution
                                         regular_tool_calls.append(
                                             tool_call
                                         )
+
+                            if worker_tool_calls:
+                                self._execute_worker_tool_calls(
+                                    worker_tool_calls,
+                                    planning_tool_handlers,
+                                    turn_results,
+                                )
 
                             # MCP resolves elsewhere; split first.
                             if regular_tool_calls:
@@ -1521,6 +1561,109 @@ class AutonomousAgentLoop:
                 role="Tool Executor", content=f"{name}: {outcome}"
             )
             results[call.get("id", "")] = outcome
+
+    def _resolve_worker_tool_path(
+        self, arguments: Dict[str, Any]
+    ) -> Optional[str]:
+        """The path a worker tool call targets, or ``None`` if it has none.
+
+        ``run_bash`` takes no path argument, so every bash call resolves to
+        ``None`` and is grouped as independent, same as a call with an empty
+        ``path``/``directory_path``.
+        """
+        for key in _WORKER_TOOL_PATH_ARGS:
+            value = arguments.get(key)
+            if value:
+                return str(value)
+        return None
+
+    def _run_worker_tool_call(
+        self,
+        entry: Dict[str, Any],
+        planning_tool_handlers: Dict[str, Callable],
+        turn_results: Dict[str, Any],
+    ) -> None:
+        """Execute one worker tool call and record its result.
+
+        Shared by the sequential path (a single call) and each worker-thread
+        group in :meth:`_execute_worker_tool_calls`, so both produce
+        identical memory entries and ``turn_results``.
+        """
+        function_name = entry["function_name"]
+        arguments = entry["arguments"]
+        tool_call = entry["tool_call"]
+
+        if self.agent.print_on:
+            self.agent._visualize_function_call(
+                function_name, arguments
+            )
+
+        try:
+            result = planning_tool_handlers[function_name](
+                **arguments
+            )
+            tool_failed = False
+        except Exception as tool_error:
+            tool_failed = True
+            result = _format_tool_error(function_name, tool_error)
+
+        self.agent.short_memory.add(
+            role="Tool Executor",
+            content=f"{function_name} result: {result}",
+        )
+        turn_results[tool_call.get("id", "")] = result
+        self.agent.think_call_count = 0
+
+        if tool_failed:
+            if self.agent.print_on:
+                formatter.print_panel(
+                    result, title=f"Tool Error: {function_name}"
+                )
+            if self.agent.verbose:
+                logger.warning(result)
+
+    def _execute_worker_tool_calls(
+        self,
+        worker_calls: List[Dict[str, Any]],
+        planning_tool_handlers: Dict[str, Callable],
+        turn_results: Dict[str, Any],
+    ) -> None:
+        """Run built-in file/IO tool calls, grouped by the path they target.
+
+        Calls that resolve to the same path run in their original order on
+        one thread, so a read and a write to the same file never race.
+        Calls with no path argument, and calls to distinct paths, run
+        concurrently. A single call skips the pool entirely.
+        """
+        if len(worker_calls) <= 1:
+            for entry in worker_calls:
+                self._run_worker_tool_call(
+                    entry, planning_tool_handlers, turn_results
+                )
+            return
+
+        groups: Dict[Any, List[Dict[str, Any]]] = {}
+        for entry in worker_calls:
+            key = entry["path_key"]
+            if key is None:
+                key = id(entry["tool_call"])
+            groups.setdefault(key, []).append(entry)
+
+        def run_group(group: List[Dict[str, Any]]) -> None:
+            for entry in group:
+                self._run_worker_tool_call(
+                    entry, planning_tool_handlers, turn_results
+                )
+
+        with ContextThreadPoolExecutor(
+            max_workers=len(groups)
+        ) as executor:
+            futures = [
+                executor.submit(run_group, group)
+                for group in groups.values()
+            ]
+            for future in futures:
+                future.result()
 
     def _prewarm_tools_from_plan(
         self, task_description: str, steps: List[Dict]
