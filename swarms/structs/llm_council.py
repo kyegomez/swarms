@@ -262,7 +262,7 @@ Provide your final synthesized response below. You may reference which perspecti
 
 def councillor_answers(
     members: List[Any], raw: Dict[str, Any]
-) -> Dict[str, str]:
+) -> Dict[str, Any]:
     """
     Reduce each councillor's return to its final answer.
 
@@ -271,7 +271,7 @@ def councillor_answers(
         raw: Whatever ``run`` returned, keyed by ``agent_name``.
 
     Returns:
-        Dict[str, str]: One answer per member name.
+        Dict[str, Any]: One answer per member name.
 
     Notes:
         The council anonymises these as Response A/B/C and shows them to the
@@ -286,7 +286,7 @@ def councillor_answers(
         test double may have no ``short_memory`` at all, so the raw return is
         the fallback rather than an error.
     """
-    answers: Dict[str, str] = {}
+    answers: Dict[str, Any] = {}
 
     for member in members:
         name = getattr(member, "agent_name", "")

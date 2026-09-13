@@ -314,10 +314,6 @@ def test_llm_council_output_types():
         raise
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
-
-
 # --------------------------------------------------------------------------
 # #2053 — councillors must contribute answers, not transcripts
 # --------------------------------------------------------------------------
@@ -401,3 +397,7 @@ def test_a_missing_final_message_falls_back_to_the_raw_return():
     answers = councillor_answers([Bare()], {"Gamma": "plain answer"})
 
     assert answers == {"Gamma": "plain answer"}
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
