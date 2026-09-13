@@ -1312,9 +1312,7 @@ class HierarchicalStructuredCommunicationFramework:
 
     def _create_default_refiner(self) -> Agent:
         """Create a default refiner agent"""
-        return self._make_agent(
-            "Refiner", self._get_refiner_prompt()
-        )
+        return self._make_agent("Refiner", self._get_refiner_prompt())
 
     def _get_supervisor_prompt(self) -> str:
         """Get the supervisor system prompt"""

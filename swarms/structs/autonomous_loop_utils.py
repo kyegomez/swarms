@@ -755,9 +755,7 @@ def create_file_tool(
 
         return f"Successfully created file: {full_path}"
     except Exception as e:
-        return _file_tool_error(
-            agent, "creating file", file_path, e
-        )
+        return _file_tool_error(agent, "creating file", file_path, e)
 
 
 def update_file_tool(
@@ -808,9 +806,7 @@ def update_file_tool(
 
         return f"Successfully {action} file: {full_path}"
     except Exception as e:
-        return _file_tool_error(
-            agent, "updating file", file_path, e
-        )
+        return _file_tool_error(agent, "updating file", file_path, e)
 
 
 def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
@@ -852,9 +848,7 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
 
         return content
     except Exception as e:
-        return _file_tool_error(
-            agent, "reading file", file_path, e
-        )
+        return _file_tool_error(agent, "reading file", file_path, e)
 
 
 def list_directory_tool(
@@ -961,9 +955,7 @@ def delete_file_tool(agent: Any, file_path: str, **kwargs) -> str:
 
         return f"Successfully deleted file: {full_path}"
     except Exception as e:
-        return _file_tool_error(
-            agent, "deleting file", file_path, e
-        )
+        return _file_tool_error(agent, "deleting file", file_path, e)
 
 
 _BASH_BLOCKLIST = [
