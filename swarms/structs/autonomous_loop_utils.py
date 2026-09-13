@@ -448,7 +448,7 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "run_bash",
-                "description": "Execute a bash/shell command on the terminal. Use this to run system commands, scripts, or any shell operations. Returns stdout and stderr.",
+                "description": "Execute a bash/shell command on the terminal. Use this to run system commands, scripts, or any shell operations. Returns stdout and stderr. Do not write files with redirects or heredocs; use create_file or update_file for that.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -1079,7 +1079,19 @@ _BASH_MAX_LENGTH = 512
 def _check_bash_command(command: str) -> str | None:
     """Return a rejection reason if *command* matches a dangerous pattern, else None."""
     if len(command) > _BASH_MAX_LENGTH:
-        return f"Command exceeds maximum allowed length of {_BASH_MAX_LENGTH} characters."
+        if "<<" in command or ">" in command:
+            # A heredoc or redirect this long is a file being written through
+            # bash. Saying so stops the model shrinking the file and retrying.
+            return (
+                f"Command blocked: {len(command)} characters, over the "
+                f"{_BASH_MAX_LENGTH} limit. Bash is not for writing files: "
+                "put the content in create_file (new file) or update_file "
+                "(existing file) and call that instead."
+            )
+        return (
+            f"Command blocked: {len(command)} characters, over the "
+            f"{_BASH_MAX_LENGTH} limit. Split it into shorter commands."
+        )
     cmd_lower = command.lower()
     for pattern in _BASH_BLOCKLIST:
         if all(token in cmd_lower for token in pattern):

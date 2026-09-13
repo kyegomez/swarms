@@ -10,6 +10,7 @@ from swarms.structs.multi_agent_exec import (
 )
 from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -95,6 +96,8 @@ class SpreadSheetSwarm:
         self.agent_tasks = {}  # Simple dict to store agent tasks
 
         self.reliability_check()
+
+        capture_init(self)
 
     def reliability_check(self):
         """
@@ -188,6 +191,7 @@ class SpreadSheetSwarm:
     def load_from_csv(self):
         self._load_from_csv()
 
+    @trace_run("SpreadSheetSwarm.run_from_config", input_params=())
     def run_from_config(self):
         """
         Run all agents with their configured tasks concurrently
@@ -279,6 +283,7 @@ class SpreadSheetSwarm:
                 "outputs": self.outputs,
             }
 
+    @trace_run("SpreadSheetSwarm.run")
     def run(self, task: str = None, *args, **kwargs):
         """
         Run the swarm with the specified task.
