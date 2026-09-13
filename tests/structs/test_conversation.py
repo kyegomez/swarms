@@ -1,5 +1,6 @@
 import json
 import concurrent.futures
+import os
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -704,6 +705,35 @@ def test_add_appends_to_memory_md(tmp_path):
     assert "---" in content
 
 
+def test_add_multiple_returns_one_result_per_message():
+    """add_multiple_messages reports what it added, rather than None."""
+    conv = Conversation()
+    added = conv.add_multiple_messages(
+        ["user", "assistant"], ["Hello", "Hi there"]
+    )
+    assert added is not None
+    assert len(added) == 2
+
+
+def test_add_multiple_does_not_depend_on_the_cpu_count(monkeypatch):
+    """A machine reporting fewer than four CPUs can still add messages.
+
+    int(os.cpu_count() * 0.25) is 0 for 1, 2 and 3 CPUs, which is a
+    ValueError from ThreadPoolExecutor rather than a slow path.
+    """
+    monkeypatch.setattr(os, "cpu_count", lambda: 1)
+    conv = Conversation()
+    conv.add_multiple_messages(
+        ["user", "assistant", "system"],
+        ["Hello", "Hi there", "System message"],
+    )
+    assert [msg["role"] for msg in conv.conversation_history] == [
+        "user",
+        "assistant",
+        "system",
+    ]
+
+
 def test_concurrent_add_thread_safety(tmp_path):
     """Concurrent add() calls serialize writes via the lock."""
     md_path = tmp_path / "MEMORY.md"
@@ -1250,20 +1280,6 @@ def test_return_messages_as_dictionary_preserves_roles():
     assert messages[1]["content"] == "Hello, user!"
 
 
-if __name__ == "__main__":
-    logger.info("Starting test execution")
-    results = run_all_tests()
-    report = generate_markdown_report(results)
-
-    # Save report to file
-    with open("test_results.md", "w") as f:
-        f.write(report)
-
-    logger.success(
-        "Test execution completed. Results saved to test_results.md"
-    )
-
-
 # ==========================================================================
 # #1998 — lessons get their own bounded section in MEMORY.md
 # ==========================================================================
@@ -1407,3 +1423,51 @@ def test_a_failed_write_leaves_the_previous_memory_intact(
 
     assert conv.record_lesson("the lost lesson", task="y") is False
     assert Path(conv.memory_md_path).read_text() == before
+
+
+if __name__ == "__main__":
+    logger.info("Starting test execution")
+    results = run_all_tests()
+    report = generate_markdown_report(results)
+
+    # Save report to file
+    with open("test_results.md", "w") as f:
+        f.write(report)
+
+    logger.success(
+        "Test execution completed. Results saved to test_results.md"
+    )
+
+
+def test_return_all_except_first_without_a_system_prompt():
+    conv = Conversation()
+    conv.add("User", "Task")
+    conv.add("Agent-1", "First answer")
+    conv.add("Agent-2", "Second answer")
+
+    assert [m["role"] for m in conv.return_all_except_first()] == [
+        "Agent-1",
+        "Agent-2",
+    ]
+
+    text = conv.return_all_except_first_string()
+    assert "First answer" in text
+    assert "Second answer" in text
+    assert "Task" not in text
+
+
+def test_return_all_except_first_with_a_system_prompt():
+    conv = Conversation(system_prompt="You are helpful.")
+    conv.add("User", "Task")
+    conv.add("Agent-1", "First answer")
+    conv.add("Agent-2", "Second answer")
+
+    assert [m["role"] for m in conv.return_all_except_first()] == [
+        "Agent-1",
+        "Agent-2",
+    ]
+
+    text = conv.return_all_except_first_string()
+    assert "You are helpful." not in text
+    assert "Task" not in text
+    assert "First answer" in text
