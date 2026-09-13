@@ -688,6 +688,7 @@ def _load_arch_classes():
         RoundRobinSwarm,
         SelfMoASeq,
         SequentialWorkflow,
+        SpreadSheetSwarm,
         SocialAlgorithms,
         SwarmRouter,
     )
@@ -719,6 +720,7 @@ def _load_arch_classes():
         "BatchedGridWorkflow": BatchedGridWorkflow,
         "LLMCouncil": LLMCouncil,
         "SelfMoASeq": SelfMoASeq,
+        "SpreadSheetSwarm": SpreadSheetSwarm,
         "AutoSwarmBuilder": AutoSwarmBuilder,
         "SocialAlgorithms": SocialAlgorithms,
     }
