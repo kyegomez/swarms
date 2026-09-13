@@ -3,12 +3,14 @@ from typing import Any
 
 import pytest
 
-from swarms import Agent
+from swarms import Agent, PlannerGeneratorEvaluator
 from swarms.schemas.hs_schemas import OrderBatch
+from swarms.schemas.planner_worker_schemas import PlannerTask
 from swarms.structs.hiearchical_swarm import (
     HierarchicalOrder,
     HierarchicalSwarm,
 )
+from swarms.structs.planner_worker_swarm import TaskQueue
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
@@ -1118,3 +1120,79 @@ def test_second_run_does_not_carry_the_first_task():
     assert swarm._delivered.get("Worker", 0) <= len(
         swarm.conversation.conversation_history
     )
+
+
+def test_task_queue_pending_count_tracks_dependency_readiness():
+    """get_pending_count only counts PENDING tasks whose dependencies are done."""
+    queue = TaskQueue()
+    collect = PlannerTask(
+        title="Collect", description="Collect the data"
+    )
+    analyse = PlannerTask(
+        title="Analyse",
+        description="Analyse the data",
+        depends_on=[collect.id],
+    )
+    queue.add_tasks([collect, analyse])
+
+    assert queue.get_pending_count() == 1
+
+    claimed = queue.claim("worker-1")
+
+    assert claimed.id == collect.id
+    assert queue.get_pending_count() == 0
+
+    assert queue.start(collect.id, claimed.version)
+    assert queue.complete(collect.id, "the data", claimed.version + 1)
+
+    assert queue.get_pending_count() == 1
+    assert queue.get_completed_count() == 1
+
+
+def test_task_queue_failed_count_only_counts_exhausted_retries():
+    """get_failed_count ignores a failure that still has a retry budget."""
+    queue = TaskQueue()
+    task = PlannerTask(
+        title="Flaky",
+        description="Fails on every attempt",
+        max_retries=1,
+    )
+    queue.add_task(task)
+
+    first = queue.claim("worker-1")
+
+    assert queue.start(task.id, first.version)
+    assert queue.fail(task.id, "boom", first.version + 1)
+    assert queue.get_failed_count() == 0
+    assert queue.get_pending_count() == 1
+
+    retry = queue.claim("worker-1")
+
+    assert queue.start(task.id, retry.version)
+    assert queue.fail(task.id, "boom again", retry.version + 1)
+    assert queue.get_failed_count() == 1
+    assert queue.get_pending_count() == 0
+
+
+def test_harness_result_reflects_conversation_state(tmp_path):
+    """get_harness_result reports identity plus the live conversation history."""
+    harness = PlannerGeneratorEvaluator(
+        name="PGE-Under-Test",
+        working_directory=str(tmp_path),
+    )
+
+    before = harness.get_harness_result()
+
+    assert before["id"] == harness.id
+    assert before["name"] == "PGE-Under-Test"
+    assert before["shared_state_path"] == harness.shared_state_path
+    assert before["conversation"] == []
+
+    harness.conversation.add(role="System", content="step one passed")
+
+    after = harness.get_harness_result()
+
+    assert len(after["conversation"]) == 1
+    assert after["conversation"][-1]["role"] == "System"
+    assert after["conversation"][-1]["content"] == "step one passed"
+    assert after["id"] == before["id"]

@@ -190,25 +190,6 @@ def find_agent_by_id(
     )
 
 
-def find_multiple_agents_by_name(
-    agents: List[Union["Agent", Callable]],
-    agent_names: List[str],
-) -> List[Agent]:
-    """
-    Find multiple agents by their names in a list of agents.
-
-    Args:
-        agents (List[Union[Agent, Callable]]): The list of agent objects to search through.
-        agent_names (List[str]): A list containing the names of agents to find.
-
-    Returns:
-        List[Agent]: A list of agent objects whose names are in agent_names.
-    """
-    return [
-        agent for agent in agents if agent.agent_name in agent_names
-    ]
-
-
 def return_all_agent_names(
     agents: List[Union["Agent", Callable]],
 ) -> List[str]:
