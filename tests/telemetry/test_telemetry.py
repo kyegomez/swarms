@@ -698,6 +698,7 @@ def _load_arch_classes():
     from swarms.structs.debate_with_judge import DebateWithJudge
     from swarms.structs.llm_council import LLMCouncil
     from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
+    from swarms.structs.one_to_three import OneToThree
 
     return {
         "Agent": Agent,
@@ -723,6 +724,7 @@ def _load_arch_classes():
         "SpreadSheetSwarm": SpreadSheetSwarm,
         "AutoSwarmBuilder": AutoSwarmBuilder,
         "SocialAlgorithms": SocialAlgorithms,
+        "OneToThree": OneToThree,
     }
 
 
@@ -791,6 +793,15 @@ class TestConstructionEmitsInitSpan:
 
         MajorityVoting(agents=[_agent()])
         assert _by_name(spans, "MajorityVoting.init") is not None
+
+    def test_one_to_three(self, spans):
+        from swarms.structs.one_to_three import OneToThree
+
+        OneToThree(
+            sender=_agent("Sender"),
+            receivers=[_agent("R1"), _agent("R2"), _agent("R3")],
+        )
+        assert _by_name(spans, "OneToThree.init") is not None
 
 
 # ===========================================================================
