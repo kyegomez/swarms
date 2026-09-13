@@ -12,9 +12,13 @@ Covers:
 """
 
 import os
+from unittest.mock import MagicMock, patch
+import io
 
 import pytest
 from dotenv import load_dotenv
+from rich.console import Console
+from swarms.utils.heavy_swarm_dashboard import HeavySwarmDashboard
 
 from swarms.prompts.heavy_swarm_prompts import (
     BENJAMIN_HEAVY_PROMPT,
@@ -702,6 +706,136 @@ class TestGrokHeavyFullPipeline:
         assert result is not None
         assert isinstance(result, str)
         assert len(result) > 100
+
+
+# ============================================================================
+# Dashboard Status & Execution Failure Tracking (Issue #1908)
+# ============================================================================
+
+
+class TestHeavySwarmDashboardStatus:
+    """Verify HeavySwarmDashboard.show_execution_complete reflects failures/timeouts."""
+
+    def test_show_execution_complete_all_success(self):
+        output = io.StringIO()
+        console = Console(file=output, force_terminal=False, color_system=None, width=120)
+        dashboard = HeavySwarmDashboard(console=console)
+
+        dashboard.show_execution_complete(
+            agent_count=4,
+            synth_label="synthesis",
+            success_count=4,
+            failed_count=0,
+            timeout_count=0,
+        )
+        content = output.getvalue()
+        assert "ALL AGENTS COMPLETED SUCCESSFULLY!" in content
+        assert "Results from all 4 specialized agents are ready for synthesis" in content
+
+    def test_show_execution_complete_partial_failure(self):
+        output = io.StringIO()
+        console = Console(file=output, force_terminal=False, color_system=None, width=120)
+        dashboard = HeavySwarmDashboard(console=console)
+
+        dashboard.show_execution_complete(
+            agent_count=4,
+            synth_label="synthesis",
+            success_count=2,
+            failed_count=1,
+            timeout_count=1,
+        )
+        content = output.getvalue()
+        assert "AGENT EXECUTION COMPLETED WITH WARNINGS" in content
+        assert "2/4 agents completed successfully" in content
+        assert "1 failed, 1 timed out" in content
+        assert "Available results are ready for synthesis" in content
+
+    def test_show_execution_complete_all_failed(self):
+        output = io.StringIO()
+        console = Console(file=output, force_terminal=False, color_system=None, width=120)
+        dashboard = HeavySwarmDashboard(console=console)
+
+        dashboard.show_execution_complete(
+            agent_count=4,
+            synth_label="synthesis",
+            success_count=0,
+            failed_count=3,
+            timeout_count=1,
+        )
+        content = output.getvalue()
+        assert "AGENT EXECUTION FAILED" in content
+        assert "0/4 agents succeeded" in content
+        assert "3 failed, 1 timed out" in content
+
+    def test_show_execution_complete_default_backward_compatible(self):
+        output = io.StringIO()
+        console = Console(file=output, force_terminal=False, color_system=None, width=120)
+        dashboard = HeavySwarmDashboard(console=console)
+
+        dashboard.show_execution_complete(
+            agent_count=3,
+            synth_label="Captain Swarm",
+        )
+        content = output.getvalue()
+        assert "ALL AGENTS COMPLETED SUCCESSFULLY!" in content
+        assert "Results from all 3 specialized agents are ready for Captain Swarm" in content
+
+
+class TestHeavySwarmExecutionDashboardAggregation:
+    """Verify _execute_agents_with_dashboard tracks counts correctly."""
+
+    def test_execute_agents_with_dashboard_mixed_outcomes(self):
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+            show_dashboard=True,
+        )
+
+        mock_dashboard = MagicMock()
+        swarm.dashboard = mock_dashboard
+
+        # Mock agents: 1 success, 1 returning error, 1 exception
+        agent_success = MagicMock()
+        agent_success.run.return_value = "Success output"
+        agent_success.agent_name = "Harper"
+
+        agent_error = MagicMock()
+        agent_error.run.side_effect = RuntimeError("Agent failed")
+        agent_error.agent_name = "Benjamin"
+
+        agent_success2 = MagicMock()
+        agent_success2.run.return_value = "Another success"
+        agent_success2.agent_name = "Lucas"
+
+        agents = {
+            "harper": agent_success,
+            "benjamin": agent_error,
+            "lucas": agent_success2,
+        }
+
+        questions = {
+            "harper_question": "Harper task",
+            "benjamin_question": "Benjamin task",
+            "lucas_question": "Lucas task",
+        }
+
+        results = swarm._execute_agents_with_dashboard(questions, agents)
+
+        assert "harper" in results
+        assert results["harper"] == "Success output"
+        assert "benjamin" in results
+        assert "Error: Agent failed" in results["benjamin"]
+        assert "lucas" in results
+        assert results["lucas"] == "Another success"
+
+        mock_dashboard.show_execution_complete.assert_called_once_with(
+            3,
+            "Captain Swarm",
+            success_count=2,
+            failed_count=1,
+            timeout_count=0,
+        )
 
 
 if __name__ == "__main__":
