@@ -297,15 +297,15 @@ class SequentialWorkflow:
             result = self.agent_rearrange.run(**run_kwargs)
         return result
 
-    @trace_run(
-        "SequentialWorkflow.run", input_params=("task", "img", "imgs")
-    )
     def _autosave_conversation(self) -> None:
         """Persist history; SequentialWorkflow keeps it on AgentRearrange."""
         self.workspace.save_conversation(
             getattr(self.agent_rearrange, "conversation", None)
         )
 
+    @trace_run(
+        "SequentialWorkflow.run", input_params=("task", "img", "imgs")
+    )
     def run(
         self,
         task: str,
