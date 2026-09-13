@@ -698,6 +698,7 @@ def _load_arch_classes():
     from swarms.structs.debate_with_judge import DebateWithJudge
     from swarms.structs.llm_council import LLMCouncil
     from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
+    from swarms.structs.swarm_rearrange import SwarmRearrange
 
     return {
         "Agent": Agent,
@@ -723,6 +724,7 @@ def _load_arch_classes():
         "SpreadSheetSwarm": SpreadSheetSwarm,
         "AutoSwarmBuilder": AutoSwarmBuilder,
         "SocialAlgorithms": SocialAlgorithms,
+        "SwarmRearrange": SwarmRearrange,
     }
 
 
@@ -791,6 +793,12 @@ class TestConstructionEmitsInitSpan:
 
         MajorityVoting(agents=[_agent()])
         assert _by_name(spans, "MajorityVoting.init") is not None
+
+    def test_swarm_rearrange(self, spans):
+        from swarms.structs.swarm_rearrange import SwarmRearrange
+
+        SwarmRearrange(name="SR", swarms=[_agent()], flow="Agent-1")
+        assert _by_name(spans, "SwarmRearrange.init") is not None
 
 
 # ===========================================================================
