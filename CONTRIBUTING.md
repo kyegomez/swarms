@@ -54,17 +54,41 @@ Search existing issues first. If it's new, open a [Bug Report](https://github.co
 
 ---
 
+## WARP Git Messages
+
+Every commit message, PR title and issue title in this repository must use the WARP (Warp Speed Protocol) shorthand. This applies to people and to AI agents alike.
+
+```
+[TYPE][Function/FileName][Short Description]
+```
+
+- `TYPE`: what kind of change it is, in capitals, for example `FEAT`, `FIX`, `DOCS`, `REFACTOR`, `TEST`, `CHORE`.
+- `Function/FileName`: the function, class, module or file the change is about.
+- `Short Description`: one line, imperative, saying what changed.
+
+```
+[FIX][Agent._run][Raise AgentLLMError after retry exhaustion]
+[FEAT][MCPDeployer][Serve several agents as separate tools]
+[DOCS][README][Add the MCPDeployer section]
+```
+
+The full specification, with the type list, validation rules and examples, is the [WARP Git Message Skill](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1) on the Swarms marketplace. Agents can load it directly; humans can read it.
+
+Issues and PRs that do not follow WARP are triaged after the ones that do, so expect a delay on review and merge if it is not used.
+
+---
+
 ## Pull Requests
 
 ```bash
 git checkout -b fix/short-description
 # make the change, add a test
 pytest tests/
-git commit -am "Fix X in Y"
+git commit -am "[FIX][Y][Fix X]"
 git push origin fix/short-description
 ```
 
-Then open the PR against `master`, describe the problem it solves, and link the issue (`Fixes #1234`).
+Then open the PR against `master` with a WARP title, describe the problem it solves, and link the issue (`Fixes #1234`).
 
 ### Keep PRs short and simple
 

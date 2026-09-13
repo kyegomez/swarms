@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from swarms.structs.serialization import SerializableMixin
 from swarms.structs.agent import Agent
+from swarms.telemetry.otel import capture_init, trace_run
 
 
 class SelfMoASeq(SerializableMixin):
@@ -113,6 +114,7 @@ class SelfMoASeq(SerializableMixin):
         }
 
         self._log("info", "Self-MoA-Seq initialization complete")
+        capture_init(self)
 
     def setup(self) -> None:
         """
@@ -263,6 +265,7 @@ class SelfMoASeq(SerializableMixin):
             )
             raise
 
+    @trace_run("SelfMoASeq.run")
     def run(
         self,
         task: str,

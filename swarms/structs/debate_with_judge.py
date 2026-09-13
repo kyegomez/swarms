@@ -278,6 +278,8 @@ class DebateWithJudge:
         if not task or not isinstance(task, str):
             raise ValueError("Task must be a non-empty string")
 
+        self.conversation.clear()
+
         # Initialize agents with their roles
         self._initialize_agents(task)
 

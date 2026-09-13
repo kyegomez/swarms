@@ -1,4 +1,3 @@
-import concurrent.futures
 import datetime
 import json
 import os
@@ -50,8 +49,7 @@ def get_conversation_dir():
     return conversation_dir
 
 
-# Conversations built without a name share this one, so they must not resume
-# from each other's files. See setup_file_path.
+# Unnamed conversations share this name, so they must not resume from disk
 DEFAULT_CONVERSATION_NAME = "conversation-test"
 
 
@@ -109,8 +107,7 @@ class Conversation:
         self.id = id or generate_id()
         self.name = name
         self.save_filepath = save_filepath
-        # Whether the caller chose the file, as opposed to it being derived
-        # from the default name. Only an explicit choice resumes from disk.
+        # Only an explicitly chosen file resumes from disk
         self._explicit_save_filepath = save_filepath is not None
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
@@ -148,8 +145,7 @@ class Conversation:
         self.setup_file_path()
         self.setup()
 
-        # Re-enable MEMORY.md writes and preload any prior interaction log
-        # as a single System preamble message.
+        # Prior MEMORY.md content becomes one System preamble message
         self._suppress_memory_md = False
         if self.memory_md_path:
             self._init_memory_md()
@@ -262,9 +258,6 @@ class Conversation:
 
         if self.custom_rules_prompt is not None:
             self.add(self.user or "User", self.custom_rules_prompt)
-
-        # if self.tokenizer is not None:
-        #     self.truncate_memory_with_tokenizer()
 
     def _autosave(self):
         """Automatically save the conversation if autosave is enabled."""
@@ -553,9 +546,6 @@ class Conversation:
             all_input_text = " ".join(input_messages)
             all_output_text = " ".join(output_messages)
 
-            print(all_input_text)
-            print(all_output_text)
-
             # Count tokens only if there is text
             input_tokens = (
                 count_tokens(
@@ -632,23 +622,24 @@ class Conversation:
         roles: List[str],
         contents: List[Union[str, dict, list, any]],
     ):
-        """Add multiple messages to the conversation history."""
+        """Add multiple messages to the conversation history, in order.
+
+        Args:
+            roles (List[str]): One role per message.
+            contents (List[Union[str, dict, list, any]]): One content per role.
+
+        Returns:
+            list: The result of each :meth:`add`, in the order given.
+        """
         if len(roles) != len(contents):
             raise ValueError(
                 "Number of roles and contents must match."
             )
 
-        # Now create a formula to get 25% of available cpus
-        max_workers = int(os.cpu_count() * 0.25)
-
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_workers
-        ) as executor:
-            futures = [
-                executor.submit(self.add, role, content)
-                for role, content in zip(roles, contents)
-            ]
-            concurrent.futures.wait(futures)
+        return [
+            self.add(role, content)
+            for role, content in zip(roles, contents)
+        ]
 
     def delete(self, index: str):
         """Delete a message from the conversation history."""
@@ -1118,8 +1109,7 @@ class Conversation:
                 if remaining_tokens <= 0:
                     break
 
-                # If we have space left, we need to truncate this message
-                # Use binary search to find content length that fits remaining token space
+                # Binary-search a prefix of this message that fits the remaining budget
                 truncated_content = self._binary_search_truncate(
                     content,
                     remaining_tokens,
@@ -1347,16 +1337,33 @@ class Conversation:
             return output
         return ""
 
+    def _index_after_first_message(self) -> int:
+        """Index of the first message after the system prompt and the input.
+
+        Neither fixed offset is right for both shapes. ``Agent.short_memory``
+        begins ``[System, User, ...]``, so a slice of 1 echoes the task back
+        in the agent's own output. Swarms like ``ConcurrentWorkflow`` begin
+        ``[User, agent, agent, ...]`` with no system row, so a slice of 2
+        drops the first agent's answer. Read the history instead of guessing.
+        """
+        history = self.conversation_history
+        start = (
+            1 if history and history[0].get("role") == "System" else 0
+        )
+        return start + 1
+
     def return_all_except_first(self):
-        """Return all messages except the first one.
+        """Return all messages except the system prompt and the first input.
 
         Returns:
             list: List of messages except the first one.
         """
-        return self.conversation_history[1:]
+        return self.conversation_history[
+            self._index_after_first_message() :
+        ]
 
     def return_all_except_first_string(self):
-        """Return all messages except the first one as a string.
+        """Return all messages except the system prompt and the first input.
 
         Returns:
             str: All messages except the first one as a string.
@@ -1364,7 +1371,9 @@ class Conversation:
         return "\n".join(
             [
                 f"{msg['content']}"
-                for msg in self.conversation_history[1:]
+                for msg in self.conversation_history[
+                    self._index_after_first_message() :
+                ]
             ]
         )
 
@@ -1538,8 +1547,7 @@ class Conversation:
         if total_tokens <= self.context_length:
             return all_tokens
 
-        # We need to remove characters from the beginning until we're under the limit
-        # Start by removing a percentage of characters and adjust iteratively
+        # Drop characters from the front until the string fits
         target_tokens = self.context_length
         current_string = all_tokens
 

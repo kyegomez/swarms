@@ -181,8 +181,7 @@ def _msg_collab_prompt_ignored(swarm_type: str) -> str:
     )
 
 
-# Swarm types whose constructor carries the collaboration preamble through to
-# the agents. Everywhere else the flag has nothing to deliver it.
+# The only constructors that carry the collaboration preamble to the agents
 _COLLAB_PROMPT_SWARM_TYPES = frozenset(
     {"SequentialWorkflow", "AgentRearrange"}
 )
@@ -589,8 +588,7 @@ class SwarmRouter(SerializableMixin):
             self.multi_agent_collab_prompt is True
             and self.swarm_type not in _COLLAB_PROMPT_SWARM_TYPES
         ):
-            # Not self._log: that is gated on verbose, and a flag that
-            # silently does nothing is the thing being warned about.
+            # Not self._log, that is gated on verbose and this must always show
             logger.warning(
                 _msg_collab_prompt_ignored(self.swarm_type)
             )
@@ -603,7 +601,7 @@ class SwarmRouter(SerializableMixin):
         agent a built swarm holds on its own — a ``HierarchicalSwarm``
         director, a ``MixtureOfAgents`` aggregator, a judge. Keys:
         ``input_tokens``, ``output_tokens``, ``cached_tokens``,
-        ``total_tokens``. Agent totals are lifetime totals, so an agent
+        ``reasoning_tokens``, ``total_tokens``. Agent totals are lifetime totals, so an agent
         shared with another router contributes what it spent there too.
         Streaming calls are not counted.
         """

@@ -1081,3 +1081,40 @@ def test_the_director_panel_carries_the_plan(capsys):
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_second_run_does_not_carry_the_first_task():
+    """A reused swarm starts each task from an empty conversation and cursor."""
+    director = StubAgent(
+        "Director",
+        [
+            OrderBatch(
+                orders=[
+                    HierarchicalOrder(
+                        agent_name="Worker", task="first subtask"
+                    )
+                ]
+            ),
+            OrderBatch(
+                orders=[
+                    HierarchicalOrder(
+                        agent_name="Worker", task="second subtask"
+                    )
+                ]
+            ),
+        ],
+    )
+    worker = StubAgent("Worker", ["first answer", "second answer"])
+    swarm = make_recovery_swarm(director, [worker], max_loops=1)
+
+    swarm.run("first task")
+    swarm.run("second task")
+
+    history = swarm.conversation.get_str()
+
+    assert "first task" not in history, history
+    assert "first answer" not in history, history
+    assert "second task" in history, history
+    assert swarm._delivered.get("Worker", 0) <= len(
+        swarm.conversation.conversation_history
+    )

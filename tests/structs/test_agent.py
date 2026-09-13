@@ -1196,6 +1196,53 @@ class TestToolExecutionRetry:
             ), f"attempts={attempts!r} should still run once"
 
 
+class TestToolFailureIsNotAnLLMError:
+    """#1924: a tool that exhausted its own retries raised into the generation
+    handler, which logged it as Agent.llm_error and re-ran the model, so one
+    broken tool cost up to retry_attempts extra completions.
+    """
+
+    @staticmethod
+    def _broken_tool(query: str) -> str:
+        """Always fails.
+
+        Args:
+            query: anything at all.
+        """
+        raise RuntimeError("tool is broken")
+
+    def test_a_failing_tool_does_not_re_run_the_model(self):
+        agent = _patched_agent(
+            "ToolFailAgent",
+            model_name="gpt-5.4",
+            dynamic_tools=False,
+            tools=[self._broken_tool],
+            retry_attempts=3,
+        )
+
+        llm_calls = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            llm_calls.append(task)
+            return [
+                {
+                    "type": "function",
+                    "id": "call-1",
+                    "function": {
+                        "name": "_broken_tool",
+                        "arguments": '{"query": "x"}',
+                    },
+                }
+            ]
+
+        agent.call_llm = fake_call_llm
+        agent.run("use the tool")
+
+        assert (
+            len(llm_calls) == 1
+        ), f"a tool failure re-ran the model {len(llm_calls)} times"
+
+
 class TestConcurrentExecutionPool:
     """#1793: both concurrent entry points referenced self.executor, which
     __init__ never assigned — run_concurrent_tasks swallowed the AttributeError
@@ -1426,6 +1473,7 @@ class TestAgentUsage:
             "input_tokens": 0,
             "output_tokens": 0,
             "cached_tokens": 0,
+            "reasoning_tokens": 0,
             "total_tokens": 0,
         }
         usage["input_tokens"] = 999
@@ -1443,6 +1491,7 @@ class TestAgentUsage:
             "input_tokens": 120,
             "output_tokens": 30,
             "cached_tokens": 100,
+            "reasoning_tokens": 0,
             "total_tokens": 150,
         }
 
@@ -1519,8 +1568,91 @@ class TestAgentUsage:
             "input_tokens": sum(100 * i for i in range(1, 7)),
             "output_tokens": sum(range(1, 7)),
             "cached_tokens": 0,
+            "reasoning_tokens": 0,
             "total_tokens": sum(100 * i + i for i in range(1, 7)),
         }
+
+    def test_a_streaming_run_is_counted_from_the_final_chunk(self):
+        """Streaming usage arrives in a trailing usage-only chunk; the
+        agent's streaming consumer must drain it into agent.usage."""
+        from types import SimpleNamespace
+
+        def chunk(text):
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        delta=SimpleNamespace(content=text)
+                    )
+                ],
+                usage=None,
+            )
+
+        usage_chunk = SimpleNamespace(
+            choices=[],
+            usage=SimpleNamespace(
+                prompt_tokens=40,
+                completion_tokens=7,
+                total_tokens=47,
+                prompt_tokens_details=None,
+            ),
+        )
+
+        agent = self._agent(streaming_on=True)
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=iter(
+                [
+                    chunk("SMH "),
+                    chunk("vs "),
+                    chunk("SOXX"),
+                    usage_chunk,
+                ]
+            ),
+        ) as fake:
+            agent.run("Compare them.")
+
+        assert fake.call_args.kwargs["stream_options"] == {
+            "include_usage": True
+        }
+        assert agent.usage == {
+            "input_tokens": 40,
+            "output_tokens": 7,
+            "cached_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 47,
+        }
+
+
+class TestAgentInputTokens:
+    """``agent.input_tokens`` is the size of the next request, not a bill."""
+
+    def test_counts_the_system_prompt_before_any_run(self):
+        agent = _patched_agent(
+            "CtxAgent", system_prompt="You are terse."
+        )
+        assert agent.input_tokens > 0
+
+    def test_grows_as_the_conversation_grows(self):
+        agent = _patched_agent("CtxAgent", system_prompt="Short.")
+        before = agent.input_tokens
+        agent.short_memory.add("User", "word " * 200)
+        assert agent.input_tokens > before + 100
+
+    def test_counts_tool_schemas_too(self):
+        bare = _patched_agent("CtxAgent", system_prompt="Short.")
+        with_tool = _patched_agent(
+            "CtxAgent",
+            system_prompt="Short.",
+            dynamic_tools=False,
+            tools=[_math_tool],
+        )
+        assert with_tool.input_tokens > bare.input_tokens
+
+    def test_is_independent_of_usage(self):
+        """usage is what the provider charged; input_tokens is a size."""
+        agent = _patched_agent("CtxAgent", system_prompt="Short.")
+        assert agent.usage["input_tokens"] == 0
+        assert agent.input_tokens > 0
 
 
 class TestStateFilePathAgreement:
