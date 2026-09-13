@@ -2,6 +2,7 @@ from typing import Callable, Union, List
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.deep_discussion import one_on_one_debate
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -46,39 +47,14 @@ class OneOnOneDebate:
         Raises:
             ValueError: If the `agents` list does not contain exactly two Agent instances.
         """
-        conversation = Conversation()
-
-        if len(self.agents) != 2:
-            raise ValueError(
-                "There must be exactly two agents in the dialogue."
-            )
-
-        agent1 = self.agents[0]
-        agent2 = self.agents[1]
-
-        # Inform agents about each other
-        agent1_intro = f"You are {agent1.agent_name} debating against {agent2.agent_name}. Your role is to engage in a thoughtful debate."
-        agent2_intro = f"You are {agent2.agent_name} debating against {agent1.agent_name}. Your role is to engage in a thoughtful debate."
-
-        # Set up initial context for both agents
-        agent1.run(task=agent1_intro)
-        agent2.run(task=agent2_intro)
-
-        message = task
-        speaker = agent1
-        other = agent2
-
-        for i in range(self.max_loops):
-            # Current speaker responds
-            response = speaker.run(task=message, img=self.img)
-            conversation.add(speaker.agent_name, response)
-
-            # Swap roles
-            message = response
-            speaker, other = other, speaker
-
-        return history_output_formatter(
-            conversation=conversation, type=self.output_type
+        return one_on_one_debate(
+            max_loops=self.max_loops,
+            task=task,
+            agents=self.agents,
+            img=self.img,
+            output_type=self.output_type,
+            send_intros=True,
+            use_agent_answer=False,
         )
 
 

@@ -195,6 +195,24 @@ class SwarmRearrange:
         logger.info("Flow is valid.")
         return True
 
+    def _run_swarm_by_name(
+        self, swarm_name: str, current_task, img, *args, **kwargs
+    ) -> str:
+        """Run the named swarm against current_task and return its result string."""
+        swarm = self.swarms[swarm_name]
+        result = swarm.run(current_task, img, *args, **kwargs)
+        result = any_to_str(result)
+        self.conversation.add(role=swarm.name, content=result)
+        logger.info(
+            f"Swarm {swarm_name} returned result of type: {type(result)}"
+        )
+        if isinstance(result, bool):
+            logger.warning(
+                f"Swarm {swarm_name} returned a boolean value: {result}"
+            )
+            result = str(result)
+        return result
+
     def run(
         self,
         task: str = None,
@@ -268,25 +286,13 @@ class SwarmRearrange:
                                         "Enter your response: "
                                     )
                             else:
-                                swarm = self.swarms[swarm_name]
-                                result = swarm.run(
-                                    current_task, img, *args, **kwargs
+                                result = self._run_swarm_by_name(
+                                    swarm_name,
+                                    current_task,
+                                    img,
+                                    *args,
+                                    **kwargs,
                                 )
-                                result = any_to_str(result)
-                                self.conversation.add(
-                                    role=swarm.name, content=result
-                                )
-
-                                logger.info(
-                                    f"Swarm {swarm_name} returned result of type: {type(result)}"
-                                )
-                                if isinstance(result, bool):
-                                    logger.warning(
-                                        f"Swarm {swarm_name} returned a boolean value: {result}"
-                                    )
-                                    result = str(
-                                        result
-                                    )  # Convert boolean to string
                                 results.append(result)
 
                         current_task = "; ".join(
@@ -314,25 +320,13 @@ class SwarmRearrange:
                                     "Enter the next task: "
                                 )
                         else:
-                            swarm = self.swarms[swarm_name]
-                            result = swarm.run(
-                                current_task, img, *args, **kwargs
+                            result = self._run_swarm_by_name(
+                                swarm_name,
+                                current_task,
+                                img,
+                                *args,
+                                **kwargs,
                             )
-                            result = any_to_str(result)
-
-                            self.conversation.add(
-                                role=swarm.name, content=result
-                            )
-                            logger.info(
-                                f"Swarm {swarm_name} returned result of type: {type(result)}"
-                            )
-                            if isinstance(result, bool):
-                                logger.warning(
-                                    f"Swarm {swarm_name} returned a boolean value: {result}"
-                                )
-                                result = str(
-                                    result
-                                )  # Convert boolean to string
                             current_task = (
                                 result
                                 if result is not None

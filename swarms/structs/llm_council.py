@@ -28,100 +28,100 @@ from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.generate_id import generate_id
 
 
-def get_gpt_councilor_prompt() -> str:
+_COUNCILOR_STRENGTHS = {
+    "GPT-5.1": [
+        "Deep analytical thinking and comprehensive coverage",
+        "Ability to break down complex topics into detailed components",
+        "Thorough exploration of multiple perspectives",
+        "Rich contextual understanding",
+    ],
+    "Gemini 3 Pro": [
+        "Clear and structured communication",
+        "Efficient information processing",
+        "Condensed yet comprehensive responses",
+        "Well-organized presentation",
+    ],
+    "Claude Sonnet 4.5": [
+        "Nuanced understanding and balanced perspectives",
+        "Thoughtful consideration of trade-offs",
+        "Clear reasoning and logical structure",
+        "Ethical and responsible analysis",
+    ],
+    "Grok-4": [
+        "Creative problem-solving and innovative thinking",
+        "Unique perspectives and out-of-the-box approaches",
+        "Engaging and dynamic communication style",
+        "Ability to connect seemingly unrelated concepts",
+    ],
+}
+
+_COUNCILOR_APPROACH = {
+    "GPT-5.1": [
+        "Provide detailed, well-structured responses",
+        "Include relevant context and background information",
+        "Consider multiple angles and perspectives",
+        "Be thorough but clear in your explanations",
+    ],
+    "Gemini 3 Pro": [
+        "Provide concise but complete answers",
+        "Structure information clearly and logically",
+        "Focus on key points without unnecessary verbosity",
+        "Present information in an easily digestible format",
+    ],
+    "Claude Sonnet 4.5": [
+        "Provide balanced, well-reasoned responses",
+        "Consider multiple viewpoints and implications",
+        "Be thoughtful about potential limitations or edge cases",
+        "Maintain clarity while showing depth of thought",
+    ],
+    "Grok-4": [
+        "Provide creative and innovative responses",
+        "Offer unique perspectives and fresh insights",
+        "Be engaging and dynamic in your communication",
+        "Think creatively while maintaining accuracy",
+    ],
+}
+
+_COUNCILOR_ROLE_SUMMARY = {
+    "GPT-5.1": "comprehensive, analytical, and thorough",
+    "Gemini 3 Pro": "concise, well-processed, and structured",
+    "Claude Sonnet 4.5": "thoughtful, balanced, and nuanced",
+    "Grok-4": "creative, innovative, and unique",
+}
+
+_COUNCILOR_FOCUS = {
+    "GPT-5.1": "quality, depth, and clarity",
+    "Gemini 3 Pro": "clarity, structure, and efficiency",
+    "Claude Sonnet 4.5": "thoughtfulness, balance, and nuanced reasoning",
+    "Grok-4": "creativity, innovation, and unique insights",
+}
+
+
+def get_councilor_prompt(model_label: str) -> str:
     """
-    Get system prompt for GPT-5.1 councilor.
+    Get the system prompt for a named councilor.
+
+    Args:
+        model_label: One of "GPT-5.1", "Gemini 3 Pro", "Claude Sonnet 4.5", "Grok-4".
 
     Returns:
-        System prompt string for GPT-5.1 councilor agent.
+        System prompt string for the councilor agent.
     """
-    return """You are a member of the LLM Council, representing GPT-5.1. Your role is to provide comprehensive, analytical, and thorough responses to user queries.
+    strengths = "\n".join(
+        f"- {s}" for s in _COUNCILOR_STRENGTHS[model_label]
+    )
+    approach = "\n".join(
+        f"- {s}" for s in _COUNCILOR_APPROACH[model_label]
+    )
+    return f"""You are a member of the LLM Council, representing {model_label}. Your role is to provide {_COUNCILOR_ROLE_SUMMARY[model_label]} responses to user queries.
 
 Your strengths:
-- Deep analytical thinking and comprehensive coverage
-- Ability to break down complex topics into detailed components
-- Thorough exploration of multiple perspectives
-- Rich contextual understanding
+{strengths}
 
 Your approach:
-- Provide detailed, well-structured responses
-- Include relevant context and background information
-- Consider multiple angles and perspectives
-- Be thorough but clear in your explanations
+{approach}
 
-Remember: You are part of a council where multiple AI models will respond to the same query, and then evaluate each other's responses. Focus on quality, depth, and clarity."""
-
-
-def get_gemini_councilor_prompt() -> str:
-    """
-    Get system prompt for Gemini 3 Pro councilor.
-
-    Returns:
-        System prompt string for Gemini 3 Pro councilor agent.
-    """
-    return """You are a member of the LLM Council, representing Gemini 3 Pro. Your role is to provide concise, well-processed, and structured responses to user queries.
-
-Your strengths:
-- Clear and structured communication
-- Efficient information processing
-- Condensed yet comprehensive responses
-- Well-organized presentation
-
-Your approach:
-- Provide concise but complete answers
-- Structure information clearly and logically
-- Focus on key points without unnecessary verbosity
-- Present information in an easily digestible format
-
-Remember: You are part of a council where multiple AI models will respond to the same query, and then evaluate each other's responses. Focus on clarity, structure, and efficiency."""
-
-
-def get_claude_councilor_prompt() -> str:
-    """
-    Get system prompt for Claude Sonnet 4.5 councilor.
-
-    Returns:
-        System prompt string for Claude Sonnet 4.5 councilor agent.
-    """
-    return """You are a member of the LLM Council, representing Claude Sonnet 4.5. Your role is to provide thoughtful, balanced, and nuanced responses to user queries.
-
-Your strengths:
-- Nuanced understanding and balanced perspectives
-- Thoughtful consideration of trade-offs
-- Clear reasoning and logical structure
-- Ethical and responsible analysis
-
-Your approach:
-- Provide balanced, well-reasoned responses
-- Consider multiple viewpoints and implications
-- Be thoughtful about potential limitations or edge cases
-- Maintain clarity while showing depth of thought
-
-Remember: You are part of a council where multiple AI models will respond to the same query, and then evaluate each other's responses. Focus on thoughtfulness, balance, and nuanced reasoning."""
-
-
-def get_grok_councilor_prompt() -> str:
-    """
-    Get system prompt for Grok-4 councilor.
-
-    Returns:
-        System prompt string for Grok-4 councilor agent.
-    """
-    return """You are a member of the LLM Council, representing Grok-4. Your role is to provide creative, innovative, and unique perspectives on user queries.
-
-Your strengths:
-- Creative problem-solving and innovative thinking
-- Unique perspectives and out-of-the-box approaches
-- Engaging and dynamic communication style
-- Ability to connect seemingly unrelated concepts
-
-Your approach:
-- Provide creative and innovative responses
-- Offer unique perspectives and fresh insights
-- Be engaging and dynamic in your communication
-- Think creatively while maintaining accuracy
-
-Remember: You are part of a council where multiple AI models will respond to the same query, and then evaluate each other's responses. Focus on creativity, innovation, and unique insights."""
+Remember: You are part of a council where multiple AI models will respond to the same query, and then evaluate each other's responses. Focus on {_COUNCILOR_FOCUS[model_label]}."""
 
 
 def get_chairman_prompt() -> str:
@@ -259,6 +259,42 @@ Your task:
 Provide your final synthesized response below. You may reference which perspectives or approaches influenced different parts of your answer."""
 
 
+_DEFAULT_COUNCIL_SPECS = [
+    {
+        "model_label": "GPT-5.1",
+        "agent_name": "GPT-5.1-Councilor",
+        "agent_description": "Analytical and comprehensive AI councilor specializing in deep analysis and thorough responses",
+        "model_name": "gpt-5.1",
+        "temperature": 0.7,
+        "top_p": None,
+    },
+    {
+        "model_label": "Gemini 3 Pro",
+        "agent_name": "Gemini-3-Pro-Councilor",
+        "agent_description": "Concise and well-processed AI councilor specializing in clear, structured responses",
+        "model_name": "gemini-2.5-flash",
+        "temperature": 0.7,
+        "top_p": None,
+    },
+    {
+        "model_label": "Claude Sonnet 4.5",
+        "agent_name": "Claude-Sonnet-4.5-Councilor",
+        "agent_description": "Thoughtful and balanced AI councilor specializing in nuanced and well-reasoned responses",
+        "model_name": "anthropic/claude-sonnet-4-5",
+        "temperature": 0.0,
+        "top_p": None,
+    },
+    {
+        "model_label": "Grok-4",
+        "agent_name": "Grok-4-Councilor",
+        "agent_description": "Creative and innovative AI councilor specializing in unique perspectives and creative solutions",
+        "model_name": "xai/grok-4-1-fast-reasoning",
+        "temperature": 0.8,
+        "top_p": None,
+    },
+]
+
+
 class LLMCouncil:
     """
     An LLM Council that orchestrates multiple specialized agents to collaboratively
@@ -338,55 +374,21 @@ class LLMCouncil:
         Returns:
             List of Agent instances configured as council members.
         """
-
-        # GPT-5.1 Agent - Analytical and comprehensive
-        gpt_agent = Agent(
-            agent_name="GPT-5.1-Councilor",
-            agent_description="Analytical and comprehensive AI councilor specializing in deep analysis and thorough responses",
-            system_prompt=get_gpt_councilor_prompt(),
-            model_name="gpt-5.1",
-            max_loops=1,
-            verbose=False,
-            temperature=0.7,
-        )
-
-        # Gemini 3 Pro Agent - Concise and processed
-        gemini_agent = Agent(
-            agent_name="Gemini-3-Pro-Councilor",
-            agent_description="Concise and well-processed AI councilor specializing in clear, structured responses",
-            system_prompt=get_gemini_councilor_prompt(),
-            model_name="gemini-2.5-flash",  # Using available Gemini model
-            max_loops=1,
-            verbose=False,
-            temperature=0.7,
-        )
-
-        # Claude Sonnet 4.5 Agent - Balanced and thoughtful
-        claude_agent = Agent(
-            agent_name="Claude-Sonnet-4.5-Councilor",
-            agent_description="Thoughtful and balanced AI councilor specializing in nuanced and well-reasoned responses",
-            system_prompt=get_claude_councilor_prompt(),
-            model_name="anthropic/claude-sonnet-4-5",  # Using available Claude model
-            max_loops=1,
-            verbose=False,
-            temperature=0.0,
-            top_p=None,
-        )
-
-        # Grok-4 Agent - Creative and innovative
-        grok_agent = Agent(
-            agent_name="Grok-4-Councilor",
-            agent_description="Creative and innovative AI councilor specializing in unique perspectives and creative solutions",
-            system_prompt=get_grok_councilor_prompt(),
-            model_name="xai/grok-4-1-fast-reasoning",  # Using available model as proxy for Grok-4
-            max_loops=1,
-            verbose=False,
-            temperature=0.8,
-        )
-
-        members = [gpt_agent, gemini_agent, claude_agent, grok_agent]
-
-        return members
+        return [
+            Agent(
+                agent_name=spec["agent_name"],
+                agent_description=spec["agent_description"],
+                system_prompt=get_councilor_prompt(
+                    spec["model_label"]
+                ),
+                model_name=spec["model_name"],
+                max_loops=1,
+                verbose=False,
+                temperature=spec["temperature"],
+                top_p=spec["top_p"],
+            )
+            for spec in _DEFAULT_COUNCIL_SPECS
+        ]
 
     @trace_run(
         "LLMCouncil.run",

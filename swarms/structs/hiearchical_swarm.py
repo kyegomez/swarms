@@ -56,6 +56,17 @@ _ORDER_BATCH_SCHEMA = BaseTool().base_model_to_dict(OrderBatch)
 _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
 
 
+def _report_error(context: str, exc: Exception) -> str:
+    """Format and log the shared traceback-plus-issue-link error message."""
+    error_msg = (
+        f"[ERROR] {context}: {exc} | Traceback: {traceback.format_exc()} "
+        "| If this issue persists, please report it at: "
+        "https://github.com/kyegomez/swarms/issues"
+    )
+    logger.error(error_msg)
+    return error_msg
+
+
 class HierarchicalSwarm:
     """Coordinate a director and workers across iterative task loops."""
 
@@ -298,9 +309,7 @@ class HierarchicalSwarm:
             return Agent(**settings)
 
         except Exception as e:
-            logger.error(
-                f"[ERROR] Failed to setup director: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
-            )
+            _report_error("Failed to setup director", e)
             raise
 
     def _get_planning_director(self) -> Agent:
@@ -623,9 +632,7 @@ class HierarchicalSwarm:
                 except Exception as e:
                     last_error = e
                     last_output = None
-                    logger.error(
-                        f"[ERROR] Loop execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
-                    )
+                    _report_error("Loop execution failed", e)
 
                 current_loop += 1
 
@@ -1001,9 +1008,7 @@ class HierarchicalSwarm:
         try:
             return _parse_orders(output)
         except Exception as e:
-            logger.error(
-                f"[ERROR] Failed to parse orders: {e} | Traceback: {traceback.format_exc()} | Report at: https://github.com/kyegomez/swarms/issues"
-            )
+            _report_error("Failed to parse orders", e)
             raise
 
     def execute_orders(
@@ -1074,9 +1079,7 @@ class HierarchicalSwarm:
             return outputs
 
         except Exception as e:
-            logger.error(
-                f"[ERROR] Order execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
-            )
+            _report_error("Order execution failed", e)
             self.conversation.add(
                 role="System",
                 content=(

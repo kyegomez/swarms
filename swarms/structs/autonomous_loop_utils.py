@@ -695,6 +695,26 @@ def respond_to_user_tool(
     return f"Message sent to user: {message}"
 
 
+def _resolve_workspace_path(agent: Any, path: str) -> str:
+    """Resolve *path* against the agent workspace when it is relative."""
+    if os.path.isabs(path):
+        return path
+    return os.path.join(agent._get_agent_workspace_dir(), path)
+
+
+def _file_tool_error(
+    agent: Any, verb: str, target: str, exc: Exception
+) -> str:
+    """Log, record, and format the error shared by every file tool."""
+    error_msg = f"Error {verb} {target}: {str(exc)}"
+    logger.error(error_msg)
+    agent.short_memory.add(
+        role="File Operations",
+        content=f"Error: {error_msg}",
+    )
+    return error_msg
+
+
 def create_file_tool(
     agent: Any, file_path: str, content: str, **kwargs
 ) -> str:
@@ -711,12 +731,7 @@ def create_file_tool(
         str: Path to the created file or error message
     """
     try:
-        # Resolve path - if relative, use agent workspace
-        if not os.path.isabs(file_path):
-            workspace_dir = agent._get_agent_workspace_dir()
-            full_path = os.path.join(workspace_dir, file_path)
-        else:
-            full_path = file_path
+        full_path = _resolve_workspace_path(agent, file_path)
 
         # Create parent directories if they don't exist
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
@@ -740,13 +755,9 @@ def create_file_tool(
 
         return f"Successfully created file: {full_path}"
     except Exception as e:
-        error_msg = f"Error creating file {file_path}: {str(e)}"
-        logger.error(error_msg)
-        agent.short_memory.add(
-            role="File Operations",
-            content=f"Error: {error_msg}",
+        return _file_tool_error(
+            agent, "creating file", file_path, e
         )
-        return error_msg
 
 
 def update_file_tool(
@@ -770,12 +781,7 @@ def update_file_tool(
         str: Success message or error message
     """
     try:
-        # Resolve path - if relative, use agent workspace
-        if not os.path.isabs(file_path):
-            workspace_dir = agent._get_agent_workspace_dir()
-            full_path = os.path.join(workspace_dir, file_path)
-        else:
-            full_path = file_path
+        full_path = _resolve_workspace_path(agent, file_path)
 
         # Check if file exists
         if not os.path.exists(full_path):
@@ -802,13 +808,9 @@ def update_file_tool(
 
         return f"Successfully {action} file: {full_path}"
     except Exception as e:
-        error_msg = f"Error updating file {file_path}: {str(e)}"
-        logger.error(error_msg)
-        agent.short_memory.add(
-            role="File Operations",
-            content=f"Error: {error_msg}",
+        return _file_tool_error(
+            agent, "updating file", file_path, e
         )
-        return error_msg
 
 
 def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
@@ -824,12 +826,7 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         str: File contents or error message
     """
     try:
-        # Resolve path - if relative, use agent workspace
-        if not os.path.isabs(file_path):
-            workspace_dir = agent._get_agent_workspace_dir()
-            full_path = os.path.join(workspace_dir, file_path)
-        else:
-            full_path = file_path
+        full_path = _resolve_workspace_path(agent, file_path)
 
         # Check if file exists
         if not os.path.exists(full_path):
@@ -855,13 +852,9 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
 
         return content
     except Exception as e:
-        error_msg = f"Error reading file {file_path}: {str(e)}"
-        logger.error(error_msg)
-        agent.short_memory.add(
-            role="File Operations",
-            content=f"Error: {error_msg}",
+        return _file_tool_error(
+            agent, "reading file", file_path, e
         )
-        return error_msg
 
 
 def list_directory_tool(
@@ -924,15 +917,9 @@ def list_directory_tool(
 
         return result
     except Exception as e:
-        error_msg = (
-            f"Error listing directory {directory_path}: {str(e)}"
+        return _file_tool_error(
+            agent, "listing directory", directory_path, e
         )
-        logger.error(error_msg)
-        agent.short_memory.add(
-            role="File Operations",
-            content=f"Error: {error_msg}",
-        )
-        return error_msg
 
 
 def delete_file_tool(agent: Any, file_path: str, **kwargs) -> str:
@@ -948,12 +935,7 @@ def delete_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         str: Success message or error message
     """
     try:
-        # Resolve path - if relative, use agent workspace
-        if not os.path.isabs(file_path):
-            workspace_dir = agent._get_agent_workspace_dir()
-            full_path = os.path.join(workspace_dir, file_path)
-        else:
-            full_path = file_path
+        full_path = _resolve_workspace_path(agent, file_path)
 
         # Check if file exists
         if not os.path.exists(full_path):
@@ -979,13 +961,9 @@ def delete_file_tool(agent: Any, file_path: str, **kwargs) -> str:
 
         return f"Successfully deleted file: {full_path}"
     except Exception as e:
-        error_msg = f"Error deleting file {file_path}: {str(e)}"
-        logger.error(error_msg)
-        agent.short_memory.add(
-            role="File Operations",
-            content=f"Error: {error_msg}",
+        return _file_tool_error(
+            agent, "deleting file", file_path, e
         )
-        return error_msg
 
 
 _BASH_BLOCKLIST = [
