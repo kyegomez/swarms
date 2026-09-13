@@ -4270,9 +4270,10 @@ Summary: {summary}
             success = False
             raise
         finally:
-            if self.tool_loader:
+            loader = self.tool_loader
+            if loader is not None:
                 for name in tool_names:
-                    self.tool_loader.record_outcome(name, success)
+                    loader.record_outcome(name, success)
 
         self.short_memory.add(
             role="Tool Executor",
