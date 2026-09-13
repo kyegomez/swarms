@@ -1,11 +1,8 @@
 from typing import List, Union, Dict, Any
 
 
-from swarms.structs.agent import Agent
 from swarms.structs.context_utils import (
-    agent_answer,
-    messages_for,
-    split_last_turn,
+    run_on_conversation as _run_on_conversation,
 )
 from swarms.structs.omni_agent_types import AgentListType
 from swarms.utils.loguru_logger import initialize_logger
@@ -16,35 +13,6 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.output_types import OutputType
 
 logger = initialize_logger(log_folder="swarming_architectures")
-
-
-def _run_on_conversation(
-    agent: Agent, conversation: Conversation
-) -> str:
-    """Run ``agent`` on the shared conversation and record its answer.
-
-    The conversation is delivered as typed chat turns - the agent's own
-    messages as ``assistant``, everyone else's as labelled ``user`` turns -
-    so the model can tell its own prior output from a peer's and the request
-    keeps a stable prefix for caching.
-
-    Args:
-        agent (Agent): The agent to run.
-        conversation (Conversation): The shared conversation, appended to
-            in place with the agent's answer.
-
-    Returns:
-        str: The agent's answer.
-    """
-    prior, task = split_last_turn(
-        messages_for(agent.agent_name, conversation)
-    )
-    response = agent.run(task=task, messages=prior)
-
-    # run() honours output_type, which by default is the whole conversation, not the answer.
-    answer = agent_answer(agent, fallback=response)
-    conversation.add(agent.agent_name, answer)
-    return answer
 
 
 def circular_swarm(
@@ -276,104 +244,3 @@ def pyramid_swarm(
 
 
 # One-to-One Communication between two agents
-def one_to_one(
-    sender: Agent,
-    receiver: Agent,
-    task: str,
-    max_loops: int = 1,
-    output_type: OutputType = "dict",
-) -> Union[Dict[str, Any], List[str]]:
-    """
-    Implements one-to-one communication between two agents.
-
-    Args:
-        sender (Agent): The agent sending the message.
-        receiver (Agent): The agent receiving the message.
-        task (str): The task to be processed.
-        max_loops (int, optional): Maximum number of communication loops. Defaults to 1.
-        output_type (OutputType, optional): The format of the output. Defaults to "dict".
-
-    Returns:
-        Union[Dict[str, Any], List[str]]: The formatted output of the communication.
-            If output_type is "dict", returns a dictionary containing the conversation history.
-            If output_type is "list", returns a list of responses.
-
-    Raises:
-        ValueError: If sender, receiver, or task is empty.
-    """
-    conversation = Conversation()
-    conversation.add(
-        role="User",
-        content=task,
-    )
-
-    try:
-        for _ in range(max_loops):
-            # Sender processes the task
-            sender_response = sender.run(task)
-            conversation.add(
-                role=sender.agent_name,
-                content=sender_response,
-            )
-
-            # Receiver processes the result of the sender
-            receiver_response = receiver.run(sender_response)
-            conversation.add(
-                role=receiver.agent_name,
-                content=receiver_response,
-            )
-
-        return history_output_formatter(conversation, output_type)
-
-    except Exception as error:
-        logger.error(
-            f"Error during one_to_one communication: {error}"
-        )
-        raise error
-
-
-async def broadcast(
-    sender: Agent,
-    agents: AgentListType,
-    task: str,
-    output_type: OutputType = "dict",
-) -> Union[Dict[str, Any], List[str]]:
-    """
-    Implements a broadcast communication pattern where one agent sends to many.
-
-    Args:
-        sender (Agent): The agent broadcasting the message.
-        agents (AgentListType): List of agents receiving the broadcast.
-        task (str): The task to be broadcast.
-        output_type (OutputType, optional): The format of the output. Defaults to "dict".
-
-    Returns:
-        Union[Dict[str, Any], List[str]]: The formatted output of the broadcast.
-            If output_type is "dict", returns a dictionary containing the conversation history.
-            If output_type is "list", returns a list of responses.
-
-    Raises:
-        ValueError: If sender, agents, or task is empty.
-    """
-    conversation = Conversation()
-    conversation.add(
-        role="User",
-        content=task,
-    )
-
-    if not sender or not agents or not task:
-        raise ValueError("Sender, agents, and task cannot be empty.")
-
-    try:
-        # First get the sender's broadcast message
-        _run_on_conversation(sender, conversation)
-
-        # Then have all agents process it
-        for agent in agents:
-            _run_on_conversation(agent, conversation)
-
-        return history_output_formatter(conversation, output_type)
-
-    except Exception as error:
-        logger.error(f"Error during broadcast: {error}")
-        raise error

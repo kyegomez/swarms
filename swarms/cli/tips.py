@@ -146,8 +146,7 @@ TIP_CATEGORIES: Dict[str, List[str]] = {
 
 # Random labels.
 
-# (emoji, label, accent style). Sampling these gives the startup banner the
-# "feels fresh every time" quality.
+# (emoji, label, accent style), sampled so the startup banner varies
 TIP_LABELS: List[tuple[str, str, str]] = [
     ("※", "Tip", "bold red"),
     ("⚡", "Pro tip", "bold yellow"),

@@ -160,9 +160,6 @@ def get_summary_prompt() -> str:
     )
 
 
-# Tool schemas.
-
-
 def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
     """
     Get tool definitions for autonomous planning and execution.
@@ -461,7 +458,7 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "run_bash",
-                "description": "Execute a bash/shell command on the terminal. Use this to run system commands, scripts, or any shell operations. Returns stdout and stderr.",
+                "description": "Execute a bash/shell command on the terminal. Use this to run system commands, scripts, or any shell operations. Returns stdout and stderr. Do not write files with redirects or heredocs; use create_file or update_file for that.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -1133,7 +1130,19 @@ _BASH_MAX_LENGTH = 512
 def _check_bash_command(command: str) -> str | None:
     """Return a rejection reason if *command* matches a dangerous pattern, else None."""
     if len(command) > _BASH_MAX_LENGTH:
-        return f"Command exceeds maximum allowed length of {_BASH_MAX_LENGTH} characters."
+        if "<<" in command or ">" in command:
+            # A heredoc or redirect this long is a file being written through
+            # bash. Saying so stops the model shrinking the file and retrying.
+            return (
+                f"Command blocked: {len(command)} characters, over the "
+                f"{_BASH_MAX_LENGTH} limit. Bash is not for writing files: "
+                "put the content in create_file (new file) or update_file "
+                "(existing file) and call that instead."
+            )
+        return (
+            f"Command blocked: {len(command)} characters, over the "
+            f"{_BASH_MAX_LENGTH} limit. Split it into shorter commands."
+        )
     cmd_lower = command.lower()
     for pattern in _BASH_BLOCKLIST:
         if all(token in cmd_lower for token in pattern):
@@ -1170,11 +1179,8 @@ def run_bash_tool(
             content=f"Blocked (security): {command[:100]}{'...' if len(command) > 100 else ''}",
         )
         return f"Error: {rejection}"
-    # -------------------------------------------------------------------------
-
     try:
-        # Run in process cwd (where the user started the script) so commands like
-        # ls -la and python script.py see the project directory, not the agent workspace.
+        # Runs in the process cwd, not the agent workspace
         result = subprocess.run(
             command,
             shell=True,
@@ -1459,15 +1465,21 @@ def create_sub_agent_tool(
             # Import Agent class to create sub-agent
             from swarms.structs.agent import Agent
 
-            # Create sub-agent with the same LLM as parent
+            # Without tools a sub-agent is strictly weaker than asking the parent
+            parent_tools = list(getattr(agent, "tools", None) or [])
+
+            # Create sub-agent with the same LLM and tools as parent
             sub_agent = Agent(
                 id=agent_id,
                 agent_name=agent_name,
                 agent_description=agent_description,
                 system_prompt=system_prompt,  # Use custom system prompt if provided
                 model_name=agent.model_name,
-                max_loops=1,
-                print_on=True,  # Reduce noise from sub-agents
+                tools=parent_tools,
+                # Finite even for an auto parent, so sub-agents cannot recurse
+                max_loops=5 if parent_tools else 1,
+                print_on=getattr(agent, "print_on", False),
+                verbose=agent.verbose,
             )
 
             # Cache the sub-agent
@@ -1580,8 +1592,7 @@ def assign_task_tool(
 
         # Execute tasks
         if wait_for_completion:
-            # Wait for tasks to complete using registry
-            # (order is not guaranteed; we map by spawned_task_id for reporting)
+            # Completion order is not guaranteed, results are mapped by spawned_task_id
             registry.gather(strategy="wait_all", timeout=None)
 
             # Format results based on registry state
@@ -1622,8 +1633,7 @@ def assign_task_tool(
 
             return result_msg
         else:
-            # Fire and forget: tasks are already running in the registry executor.
-            # Return the spawned IDs so callers can poll/cancel later.
+            # Fire and forget, the spawned ids let callers poll or cancel later
             lines = [
                 f"Dispatched {len(task_mappings)} task(s) to sub-agents (registry async mode).",
                 "Spawned task IDs:",

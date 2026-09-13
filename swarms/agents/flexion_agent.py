@@ -91,8 +91,7 @@ class ReflexionMemory:
         Returns:
             List[Dict[str, Any]]: Relevant memories
         """
-        # In a production implementation, this would use embeddings and vector similarity
-        # For now, implement a simple keyword-based relevance scoring
+        # Keyword scoring stands in for embedding similarity
         scored_memories = []
 
         # Score and combine memories from both short and long-term
@@ -306,8 +305,7 @@ class ReflexionAgent:
 
         evaluation = self.evaluator.run(task=prompt)
 
-        # Extract numerical score from evaluation (in a production system, you'd want a more
-        # robust parsing method here, potentially using structured output)
+        # Regex over prose stands in for structured output
         try:
             # Look for a final score in the format "Final Score: X/10" or similar
             import re
@@ -484,8 +482,6 @@ class ReflexionAgent:
                     f"Starting iteration {iteration+1}/{self.max_loops}"
                 )
 
-                # In first iteration, generate new response
-                # In subsequent iterations, refine previous response
                 if iteration == 0:
                     step_result = self.step(task, iteration)
                     step_result["response"]

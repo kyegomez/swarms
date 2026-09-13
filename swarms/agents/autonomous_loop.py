@@ -169,9 +169,7 @@ class AutonomousAgentLoop:
         if summary is None:
             return False
 
-        # compact() already re-seeded short_memory with the summary,
-        # so the transcript copy must not be mirrored back a second
-        # time.
+        # compact() already re-seeded short_memory, do not mirror the summary twice
         self._transcript = Transcript()
         self._say_user(
             "[Compressed Memory Summary]\n"
@@ -714,14 +712,9 @@ class AutonomousAgentLoop:
                 ):
                     subtask_iterations += 1
 
-                    # Between iterations every recorded tool call has
-                    # been answered, so this is the one point the
-                    # transcript can be replaced without orphaning a
-                    # tool_call id.
+                    # Every tool call is answered here, so replacing the transcript orphans nothing
                     if self._maybe_compress_context():
-                        # The rebuilt transcript holds only the
-                        # summary; restore the instruction for the
-                        # subtask in flight.
+                        # The rebuilt transcript holds only the summary, restore the subtask
                         self._say_user(execution_prompt)
 
                     try:

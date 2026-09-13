@@ -111,6 +111,7 @@ def empty_usage() -> dict:
         "input_tokens": 0,
         "output_tokens": 0,
         "cached_tokens": 0,
+        "reasoning_tokens": 0,
         "total_tokens": 0,
     }
 
@@ -126,19 +127,33 @@ def usage_from_response(response: any) -> Optional[dict]:
 
     LiteLLM reports every provider in the OpenAI shape: ``prompt_tokens``,
     ``completion_tokens``, ``total_tokens``, with cache reads under
-    ``prompt_tokens_details.cached_tokens``.
+    ``prompt_tokens_details.cached_tokens`` and hidden reasoning under
+    ``completion_tokens_details.reasoning_tokens``. Both are breakdowns of
+    the input and output counts, not additions to them; a provider that
+    does not report a breakdown yields 0, which means unknown.
     """
     usage = _field(response, "usage")
     if not usage:
         return None
-    details = _field(usage, "prompt_tokens_details")
-    cached = _field(details, "cached_tokens", 0) if details else 0
+    prompt_details = _field(usage, "prompt_tokens_details")
+    cached = (
+        _field(prompt_details, "cached_tokens", 0)
+        if prompt_details
+        else 0
+    )
+    completion_details = _field(usage, "completion_tokens_details")
+    reasoning = (
+        _field(completion_details, "reasoning_tokens", 0)
+        if completion_details
+        else 0
+    )
     input_tokens = _field(usage, "prompt_tokens", 0) or 0
     output_tokens = _field(usage, "completion_tokens", 0) or 0
     return {
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
         "cached_tokens": cached or 0,
+        "reasoning_tokens": reasoning or 0,
         "total_tokens": _field(usage, "total_tokens", 0)
         or input_tokens + output_tokens,
     }
@@ -389,9 +404,6 @@ class LiteLLM:
         # Store additional args and kwargs for use in run method
         self.init_args = args
         self.init_kwargs = kwargs
-
-        # if self.reasoning_enabled is True:
-        #     self.reasoning_check()
 
     def reasoning_check(self):
         """
@@ -761,6 +773,51 @@ class LiteLLM:
             return bool(override)
         return self._is_anthropic_model()
 
+    # OpenAI families that reject max_tokens and require max_completion_tokens
+    _COMPLETION_TOKEN_FAMILIES = ("o1", "o3", "o4", "gpt-5", "gpt-6")
+
+    def _output_token_key(self) -> str:
+        """The request key the provider accepts for the output-token cap.
+
+        OpenAI's reasoning-era models reject ``max_tokens`` outright and
+        require ``max_completion_tokens``; every other provider LiteLLM
+        routes to takes ``max_tokens``. LiteLLM does not translate between
+        them, so the choice has to be made here.
+        """
+        name = (self.model_name or "").lower().split("/")[-1]
+        if name.startswith(self._COMPLETION_TOKEN_FAMILIES):
+            return "max_completion_tokens"
+        return "max_tokens"
+
+    @staticmethod
+    def _swap_token_key_for(
+        error: Exception, params: dict
+    ) -> Optional[dict]:
+        """Params with the output-token key renamed, if that is what ``error`` asks for.
+
+        The family list above cannot know every model in advance, so a
+        rejection that names the other key is retried once with it. Returns
+        None when the error is about something else.
+        """
+        text = str(error)
+        if "max_tokens" in params and "max_completion_tokens" in text:
+            swapped = dict(params)
+            swapped["max_completion_tokens"] = swapped.pop(
+                "max_tokens"
+            )
+            return swapped
+        if (
+            "max_completion_tokens" in params
+            and "max_completion_tokens" in text
+            and "max_tokens" in text
+        ):
+            swapped = dict(params)
+            swapped["max_tokens"] = swapped.pop(
+                "max_completion_tokens"
+            )
+            return swapped
+        return None
+
     def _is_anthropic_model(self) -> bool:
         """
         Whether the configured model is in the Anthropic Claude family, incl.
@@ -889,8 +946,7 @@ class LiteLLM:
         if not self.prompt_caching:
             return
 
-        # OpenAI-style controls (harmless/ignored on providers that don't use
-        # them; LiteLLM routes them for OpenAI-compatible backends).
+        # OpenAI-style controls, ignored by providers that lack them
         key = self._cache_opt("prompt_cache_key", None)
         if key is not None:
             completion_params["prompt_cache_key"] = key
@@ -928,8 +984,7 @@ class LiteLLM:
                 "image_url": {"url": image},
             }
         else:
-            # get_image_base64 always returns a data URI, so the MIME type
-            # can be extracted from it directly.
+            # get_image_base64 returns a data URI, the MIME type is in it
             image_url = get_image_base64(image)
             mime_type = "image/jpeg"
             if "data:" in image_url and ";base64," in image_url:
@@ -1204,7 +1259,7 @@ class LiteLLM:
                 task=task, img=img, imgs=imgs, messages=messages
             ),
             "stream": self.stream,
-            "max_tokens": self.max_tokens,
+            self._output_token_key(): self.max_tokens,
             "caching": self.caching,
             "temperature": self.temperature,
         }
@@ -1213,8 +1268,13 @@ class LiteLLM:
         if self.top_p is not None:
             completion_params["top_p"] = self.top_p
 
-        # Merge initialization kwargs first (lower priority), then runtime
-        # kwargs (higher priority).
+        # A stream carries no usage unless asked, it then arrives as a final chunk
+        if self.stream:
+            completion_params["stream_options"] = {
+                "include_usage": True
+            }
+
+        # Runtime kwargs override init kwargs
         if self.init_kwargs:
             completion_params.update(self.init_kwargs)
         if runtime_kwargs:
@@ -1240,8 +1300,7 @@ class LiteLLM:
         if self.base_url is not None:
             completion_params["base_url"] = self.base_url
 
-        # Only when present: litellm falls back to the provider env var
-        # on absence, and an explicit None would override that.
+        # An explicit None would override litellm's env-var fallback
         if self.api_key is not None:
             completion_params["api_key"] = self.api_key
 
@@ -1253,9 +1312,7 @@ class LiteLLM:
         if self.modalities and len(self.modalities) >= 2:
             completion_params["modalities"] = self.modalities
 
-        # Forward an explicitly requested effort level even when LiteLLM's
-        # local capability registry does not yet recognize a newly released
-        # model. `drop_params` handles providers that do not accept it.
+        # Forwarded even for models LiteLLM's registry lacks, drop_params covers the rest
         if self.reasoning_effort is not None:
             completion_params["reasoning_effort"] = (
                 self.reasoning_effort
@@ -1302,21 +1359,40 @@ class LiteLLM:
         if completion_params.get("max_tokens", 0) < threshold:
             completion_params["max_tokens"] = target
 
-    def _record_usage(self, response: any) -> None:
-        """Add the provider-reported token counts of one response to ``self.usage``.
-
-        Streaming responses are generators with no usage attached, so they
-        are skipped; a response without a ``usage`` block is skipped too.
-        """
-        if self.stream or response is None:
-            return
-        call_usage = usage_from_response(response)
+    def _accumulate_usage(self, call_usage: Optional[dict]) -> None:
+        """Fold one call's token counts into ``self.usage`` and tell the hook."""
         if call_usage is None:
             return
         for key in self.usage:
             self.usage[key] += call_usage[key]
         if self.usage_hook is not None:
             self.usage_hook(call_usage)
+
+    def _record_usage(self, response: any) -> None:
+        """Add the provider-reported token counts of one response to ``self.usage``.
+
+        A stream's usage arrives in its final chunk and is recorded by
+        :meth:`_track_streaming_usage` as the stream is consumed; a
+        response without a ``usage`` block is skipped.
+        """
+        if self.stream or response is None:
+            return
+        self._accumulate_usage(usage_from_response(response))
+
+    def _track_streaming_usage(self, stream: any):
+        """Yield the stream's chunks, recording the trailing usage chunk.
+
+        With ``stream_options={"include_usage": True}`` the provider ends
+        the stream with a chunk that carries ``usage`` and no ``choices``.
+        It is consumed for accounting and not forwarded, so consumers never
+        see an empty token.
+        """
+        for chunk in stream:
+            if _field(chunk, "usage"):
+                self._accumulate_usage(usage_from_response(chunk))
+                if not _field(chunk, "choices"):
+                    continue
+            yield chunk
 
     def _process_response(self, response: any):
         """
@@ -1329,9 +1405,9 @@ class LiteLLM:
             )
             return None
 
-        # Streaming: return the generator directly.
+        # Streaming: hand back the generator, with usage recorded as it drains
         if self.stream:
-            return response
+            return self._track_streaming_usage(response)
 
         # Before the reasoning branch: reasoning models still emit tool_calls, which would be dropped.
         if self.tools_list_dictionary is not None and getattr(
@@ -1435,7 +1511,18 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
-            response = completion(**completion_params)
+            try:
+                response = completion(**completion_params)
+            except Exception as error:
+                retry_params = self._swap_token_key_for(
+                    error, completion_params
+                )
+                if retry_params is None:
+                    raise
+                logger.warning(
+                    f"{self.model_name} rejected the output-token key, retrying: {error}"
+                )
+                response = completion(**retry_params)
             self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
@@ -1476,7 +1563,18 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
-            response = await acompletion(**completion_params)
+            try:
+                response = await acompletion(**completion_params)
+            except Exception as error:
+                retry_params = self._swap_token_key_for(
+                    error, completion_params
+                )
+                if retry_params is None:
+                    raise
+                logger.warning(
+                    f"{self.model_name} rejected the output-token key, retrying: {error}"
+                )
+                response = await acompletion(**retry_params)
             self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
@@ -1535,8 +1633,7 @@ class LiteLLM:
             responses = llm.batched_run(["Task 1", "Task 2", "Task 3"], batch_size=2)
             ```
         """
-        # Imported here, not at module scope: swarms.structs pulls this
-        # module back in, and a top-level import would be circular.
+        # Local import, a module-level one is circular via swarms.structs
         from swarms.structs.execution_utils import run_concurrently
 
         return run_concurrently(

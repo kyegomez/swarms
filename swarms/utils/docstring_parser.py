@@ -56,8 +56,7 @@ def parse(docstring: str) -> DocstringInfo:
     if not docstring or not docstring.strip():
         return DocstringInfo(short_description=None, params=[])
 
-    # cleandoc, not strip-every-line: the parser below needs the relative
-    # indentation to tell a wrapped description from the next parameter.
+    # cleandoc keeps the relative indentation that separates a wrapped line from the next parameter
     lines = inspect.cleandoc(docstring).split("\n")
 
     # Extract short description: the first prose line before any section.
@@ -91,9 +90,7 @@ def parse(docstring: str) -> DocstringInfo:
                 in_args_section = True
             continue
 
-        # A continuation is indented past the parameter it belongs to. Check
-        # this before the parameter pattern, which a wrapped line containing a
-        # colon would otherwise match.
+        # Checked before the parameter pattern, which a wrapped line with a colon would match
         if current_param is not None and indent > param_indent:
             current_param = DocstringParam(
                 arg_name=current_param.arg_name,

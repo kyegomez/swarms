@@ -711,8 +711,7 @@ class PlannerGeneratorEvaluator:
                 criterion_scores[criterion] = float(score)
                 criterion_thresholds[criterion] = float(threshold)
 
-        # If no table parsed, try alternative patterns:
-        # "Criterion: score/10" or "Criterion: score out of 10"
+        # No table, try "Criterion: score/10" and "Criterion: score out of 10"
         if not criterion_scores:
             alt_scores = re.findall(
                 r"\*?\*?([^*:\n]+?)\*?\*?\s*:\s*(\d+(?:\.\d+)?)\s*(?:/\s*10|out of 10)",

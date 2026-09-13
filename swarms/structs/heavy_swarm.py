@@ -10,8 +10,10 @@ from swarms.agents.heavy_swarm_agents import (
 )
 from swarms.prompts.heavy_swarm_prompts import (
     grok_heavy_schema,
+    grok_schema,
     schema,
 )
+from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
 from swarms.tools.tool_type import tool_type
@@ -363,14 +365,14 @@ class HeavySwarm(SerializableMixin):
                                 start()
                                 questions = (
                                     self.execute_question_generation(
-                                        loop_task
+                                        loop_task, img=img
                                     )
                                 )
                                 finish()
                         else:
                             questions = (
                                 self.execute_question_generation(
-                                    loop_task
+                                    loop_task, img=img
                                 )
                             )
 
@@ -1142,13 +1144,6 @@ class HeavySwarm(SerializableMixin):
         - Deliver prioritized, actionable recommendations with confidence levels
         - Flag risks, ethical concerns (Elizabeth), long-term systemic issues (Noah), and mitigation strategies
 
-        Conversation history for full context:
-
-        \n\n
-
-        {self.conversation.return_history_as_string()}
-
-        \n\n
 
         Present your synthesis as:
         1. Executive Summary (3-5 sentences)
@@ -1183,13 +1178,6 @@ class HeavySwarm(SerializableMixin):
         - Provide prioritized, actionable recommendations with confidence levels.
         - Identify risks, blind spots flagged by Lucas, and mitigation strategies.
 
-        Conversation history for context:
-
-        \n\n
-
-        {self.conversation.return_history_as_string()}
-
-        \n\n
 
         Present your synthesis as:
         1. Executive Summary
@@ -1227,13 +1215,6 @@ class HeavySwarm(SerializableMixin):
         - Ensure the report is well-structured, concise, and suitable for decision-makers (executive summary style).
         - Use bullet points, numbered lists, and section headings where appropriate for clarity and readability.
 
-        You may reference the conversation history for additional context:
-
-        \n\n
-
-        {self.conversation.return_history_as_string()}
-
-        \n\n
 
         Please present your synthesis in the following structure:
         1. Executive Summary
@@ -1246,7 +1227,12 @@ class HeavySwarm(SerializableMixin):
         Be thorough, objective, and ensure your synthesis is easy to follow for a non-technical audience.
         """
 
-        return synthesis_agent.run(synthesis_prompt)
+        return synthesis_agent.run(
+            synthesis_prompt,
+            messages=messages_for(
+                synthesis_agent.agent_name or "", self.conversation
+            ),
+        )
 
     def _parse_tool_calls(self, tool_calls: List) -> Dict[str, any]:
         """
@@ -1310,13 +1296,16 @@ class HeavySwarm(SerializableMixin):
             }
 
     def execute_question_generation(
-        self, task: str
+        self, task: str, img: Optional[str] = None
     ) -> Dict[str, str]:
         """
         Execute the question generation using the schema with a language model.
 
         Args:
             task (str): The main task to analyze
+            img (Optional[str]): Image accompanying the task. The decomposer
+                writes the questions every worker then answers, so without it
+                a visual task is decomposed from the sentence alone.
 
         Returns:
             Dict[str, str]: Generated questions for each agent role with parsed data
@@ -1357,6 +1346,26 @@ class HeavySwarm(SerializableMixin):
             active_schema = grok_heavy_schema
         elif self.variant == "medium":
             prompt = f"""
+        System: Grok task decomposer. Generate 3 non-overlapping domain-specific questions via function tool.
+
+        Specialists:
+        - Harper (Creative Writing & Storytelling): narrative framing, metaphors, human storytelling angles
+        - Benjamin (Data, Finance & Economics): quantitative data, financial modeling, economic implications
+        - Lucas (Coding, Programming & Technical): technical implementation, algorithms, systems architecture
+
+        Requirements:
+        - Each question ≤40 words, domain-specific, action-oriented
+        - No duplication across specialists
+        - Ambiguity notes only in "thinking" field (≤60 words)
+        - Each question must leverage the specialist's unique domain expertise
+
+        Task: {task}
+
+        Use generate_grok_questions function only.
+        """
+            active_schema = grok_schema
+        else:
+            prompt = f"""
         System: Technical task analyzer. Generate 4 non-overlapping analytical questions via function tool.
 
         Roles:
@@ -1377,6 +1386,14 @@ class HeavySwarm(SerializableMixin):
         """
             active_schema = schema
 
+        # Named so the decomposer treats the image as part of the task
+        # rather than guessing at what the sentence refers to.
+        if img:
+            prompt += (
+                "\n        An image accompanies this task. Read it and write "
+                "the questions from what it actually shows.\n"
+            )
+
         max_tokens = 5000 if self.variant == "heavy" else 3000
 
         question_agent = LiteLLM(
@@ -1384,15 +1401,12 @@ class HeavySwarm(SerializableMixin):
             model=self.question_agent_model_name,
             tools_list_dictionary=active_schema,
             max_tokens=max_tokens,
-            temperature=0.7,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
+            top_p=None,  # Anthropic rejects temperature and top_p together
             tool_choice="auto",
         )
 
         # Get raw tool calls from LiteLLM
-        raw_output = question_agent.run(task)
+        raw_output = question_agent.run(task, img=img)
 
         # Parse the tool calls and return clean data
         out = self._parse_tool_calls(raw_output)
@@ -1404,7 +1418,9 @@ class HeavySwarm(SerializableMixin):
 
         return out
 
-    def get_questions_only(self, task: str) -> Dict[str, str]:
+    def get_questions_only(
+        self, task: str, img: Optional[str] = None
+    ) -> Dict[str, str]:
         """
         Generate and extract only the specialized questions without metadata or execution.
 
@@ -1436,7 +1452,7 @@ class HeavySwarm(SerializableMixin):
             >>> questions = swarm.get_questions_only("Analyze market trends for EVs")
             >>> print(questions['research_question'])
         """
-        result = self.execute_question_generation(task)
+        result = self.execute_question_generation(task, img=img)
 
         if "error" in result:
             return {"error": result["error"]}
@@ -1484,7 +1500,9 @@ class HeavySwarm(SerializableMixin):
             ),
         }
 
-    def get_questions_as_list(self, task: str) -> List[str]:
+    def get_questions_as_list(
+        self, task: str, img: Optional[str] = None
+    ) -> List[str]:
         """
         Generate specialized questions and return them as an ordered list.
 
@@ -1522,7 +1540,7 @@ class HeavySwarm(SerializableMixin):
             This method internally calls get_questions_only() and converts the dictionary
             to a list format, maintaining the standard agent order.
         """
-        questions = self.get_questions_only(task)
+        questions = self.get_questions_only(task, img=img)
 
         if "error" in questions:
             return [f"Error: {questions['error']}"]

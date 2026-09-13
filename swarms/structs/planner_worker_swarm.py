@@ -21,6 +21,7 @@ from swarms.schemas.planner_worker_schemas import (
     TaskPriority,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.workspace_manager import WorkspaceManager
@@ -802,12 +803,18 @@ class PlannerWorkerSwarm:
         eval_task = (
             f"Original goal: {self._original_task}\n\n"
             f"Task execution report:\n{task_report}\n\n"
-            f"Full conversation history:\n{self.conversation.get_str()}\n\n"
             "Evaluate whether the goal has been achieved. "
             "If not, identify specific gaps and provide instructions for the next planning cycle."
         )
 
-        raw_output = judge.run(task=eval_task, img=img)
+        # The history goes as typed turns rather than inside the task string:
+        # the judge's own earlier verdicts come back as assistant turns, so a
+        # second cycle can tell its own reasoning from the planner's.
+        raw_output = judge.run(
+            task=eval_task,
+            img=img,
+            messages=messages_for("CycleJudge", self.conversation),
+        )
 
         try:
             verdict = self._parse_structured_output(

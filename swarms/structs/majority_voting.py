@@ -253,8 +253,7 @@ class MajorityVoting:
 
         """
 
-        # A reused instance would otherwise serve the previous task's votes
-        # as context for this one.
+        # A reused instance would otherwise carry the previous task's votes
         self.conversation = Conversation(time_enabled=False)
 
         self.conversation.add(
