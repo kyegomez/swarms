@@ -35,6 +35,8 @@ import pytest
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
+    _BASH_MAX_LENGTH,
+    _check_bash_command,
     MAX_SUBTASK_LOOPS,
     get_autonomous_planning_tools,
     glob_tool,
@@ -1145,6 +1147,51 @@ class TestContextCompression:
 
         assert loop._maybe_compress_context() is False
         assert len(loop._transcript) == 1
+
+
+class TestRunBashSteersFileWritesToTheFileTools:
+    """A worker that writes a report through `cat > file << EOF` hits the
+    length limit and, told only "too long", shrinks the file and tries again
+    for minutes. The rejection has to name the tool it should use instead.
+    """
+
+    def test_long_heredoc_is_pointed_at_create_file(self):
+        body = "line of report text\n" * 40
+        command = f"cat > /tmp/report.md << 'EOF'\n{body}EOF"
+        assert len(command) > _BASH_MAX_LENGTH
+
+        reason = _check_bash_command(command)
+
+        assert reason is not None
+        assert "create_file" in reason and "update_file" in reason
+
+    def test_long_redirect_is_pointed_at_create_file(self):
+        command = "echo '" + "x" * _BASH_MAX_LENGTH + "' > out.txt"
+
+        assert "create_file" in _check_bash_command(command)
+
+    def test_long_plain_command_is_told_to_split(self):
+        command = "ls " + " ".join(f"dir{i}" for i in range(200))
+        assert len(command) > _BASH_MAX_LENGTH
+
+        reason = _check_bash_command(command)
+
+        assert "Split it" in reason
+        assert "create_file" not in reason
+
+    def test_short_writes_are_still_allowed(self):
+        assert _check_bash_command("echo hi > notes.txt") is None
+        assert (
+            _check_bash_command("cat > a.txt << 'EOF'\nhi\nEOF")
+            is None
+        )
+
+    def test_tool_description_says_not_to_write_files_with_bash(self):
+        tools = {
+            t["function"]["name"]: t["function"]
+            for t in get_autonomous_planning_tools()
+        }
+        assert "create_file" in tools["run_bash"]["description"]
 
 
 if __name__ == "__main__":
