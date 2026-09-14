@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import queue
 import threading
 import time
 import traceback
@@ -203,6 +204,17 @@ class Agent:
             off unless asked for. Enable it for models that do not reason natively, or
             when an explicit analysis step is worth the extra turn. When False, the system
             prompt is adjusted to match so the model is not told to call a tool it lacks.
+        cancel_event (Optional[threading.Event]): Cancellation token for the autonomous
+            looper (max_loops="auto"). Another thread may set it while a run is in
+            flight; the loop checks it at every iteration boundary, stops starting new
+            work, and winds down through the summary phase so partial work is returned
+            and the summary reports the run as cancelled. Defaults to None, which skips
+            the check entirely.
+        steering_queue (Optional[queue.Queue]): Queue of operator messages for the
+            autonomous looper (max_loops="auto"). Another thread may push corrections
+            while a run is in flight; the loop drains the queue at every iteration
+            boundary and injects each message as a user turn, so the model sees the
+            correction before its next call. Defaults to None, which skips the drain.
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
             "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
@@ -408,6 +420,8 @@ class Agent:
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
+        cancel_event: Optional[threading.Event] = None,
+        steering_queue: Optional["queue.Queue[str]"] = None,
         *args,
         **kwargs,
     ):
@@ -607,7 +621,11 @@ class Agent:
 
         # Reads config off this agent, so it must come after the config is set
         self.llm_manager = LLMManager(agent=self)
-        self.autonomous_loop = AutonomousAgentLoop(agent=self)
+        self.autonomous_loop = AutonomousAgentLoop(
+            agent=self,
+            cancel_event=cancel_event,
+            steering_queue=steering_queue,
+        )
 
         # self.init_handling()
         self.setup_config()
@@ -721,6 +739,37 @@ class Agent:
     @skills_metadata.setter
     def skills_metadata(self, metadata: List[Dict[str, str]]) -> None:
         self.skills.metadata = metadata
+
+    @property
+    def cancel_event(self) -> Optional[threading.Event]:
+        """Cancellation token consulted by the ``max_loops="auto"`` loop.
+
+        Stored on the loop rather than duplicated here so a caller that
+        swaps the token after construction cannot leave the agent and the
+        loop disagreeing about which event is live.
+        """
+        return self.autonomous_loop.cancel_event
+
+    @cancel_event.setter
+    def cancel_event(
+        self, cancel_event: Optional[threading.Event]
+    ) -> None:
+        self.autonomous_loop.cancel_event = cancel_event
+
+    @property
+    def steering_queue(self) -> Optional["queue.Queue[str]"]:
+        """Operator message queue drained by the ``max_loops="auto"`` loop.
+
+        Delegates to the loop for the same single-owner reason as
+        :attr:`cancel_event`.
+        """
+        return self.autonomous_loop.steering_queue
+
+    @steering_queue.setter
+    def steering_queue(
+        self, steering_queue: Optional["queue.Queue[str]"]
+    ) -> None:
+        self.autonomous_loop.steering_queue = steering_queue
 
     def handle_skills(self, task: Optional[str] = None):
         """
@@ -4336,16 +4385,14 @@ Summary: {summary}
         if self.tool_call_summary is True:
             temp_llm = self.temp_llm_instance_for_tool_summary()
 
-            tool_response = temp_llm.run(
-                f"""
+            tool_response = temp_llm.run(f"""
                 Please analyze and summarize the following tool execution output in a clear and concise way. 
                 Focus on the key information and insights that would be most relevant to the user's original request.
                 If there are any errors or issues, highlight them prominently.
                 
                 Tool Output:
                 {output}
-                """
-            )
+                """)
 
             self.short_memory.add(
                 role=self.agent_name,

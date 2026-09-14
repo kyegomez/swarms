@@ -29,11 +29,17 @@ Run:
 
 import json
 import os
+import queue
+import threading
 
 import pytest
 
 from swarms import Agent
-from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.agents.autonomous_loop import (
+    AutonomousAgentLoop,
+    CANCELLATION_NOTICE,
+    STEERING_TURN_HEADER,
+)
 from swarms.structs.autonomous_loop_utils import (
     _BASH_MAX_LENGTH,
     _check_bash_command,
@@ -44,7 +50,6 @@ from swarms.structs.autonomous_loop_utils import (
     read_file_tool,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
-
 
 # --------------------------------------------------------------------------
 # helpers
@@ -1327,3 +1332,315 @@ class TestFinalSummaryShape:
         result = agent.run("test task")
 
         assert isinstance(result, list)
+
+
+# --------------------------------------------------------------------------
+# #1986 — interrupt and mid-run steering
+# --------------------------------------------------------------------------
+
+
+class TestCancellation:
+    """A cancelled run must wind down, not blow up.
+
+    Before #1986 the only way to stop an autonomous run was ``Ctrl+C``,
+    which raised through ``_handle_run_error`` and lost everything the run
+    had already produced. A set ``cancel_event`` must instead stop new work
+    at the next iteration boundary and exit through the summary phase.
+    """
+
+    def test_cancel_between_subtasks_keeps_completed_work(
+        self, monkeypatch
+    ):
+        """Cancel arrives while step1 is finishing, so the run makes
+        exactly three model calls - plan, one execution turn, summary -
+        and step2 is never dispatched.
+        """
+        agent = build_agent()
+        cancel = threading.Event()
+        agent.cancel_event = cancel
+
+        calls = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            calls.append(task)
+            index = len(calls)
+            if index == 1:
+                return plan(("step1", []), ("step2", ["step1"]))
+            if index == 2:
+                cancel.set()
+                return [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="did step1",
+                        success=True,
+                    )
+                ]
+            return "no further action"
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        result = agent.run("test task")
+
+        assert len(calls) == 3
+        assert status_of(agent, "step1") == "completed"
+        assert status_of(agent, "step2") == "pending"
+
+        transcript = history(agent)
+        assert "did step1" in transcript
+        assert "[Run Cancelled]" in transcript
+        assert "working on subtask: step2" not in transcript
+        assert "[Run Cancelled]" in str(result)
+
+    def test_cancel_from_another_thread_stops_mid_subtask(
+        self, monkeypatch
+    ):
+        """The event is set by a separate thread while the loop is inside
+        an LLM call - the case the feature exists for. Three calls is
+        strictly fewer than the subtask iteration budget, which is what a
+        run without the boundary check would have spent.
+        """
+        agent = build_agent()
+        cancel = threading.Event()
+        agent.cancel_event = cancel
+        inside_llm_call = threading.Event()
+
+        calls = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            calls.append(task)
+            index = len(calls)
+            if index == 1:
+                return plan(("step1", []))
+            if index == 2:
+                inside_llm_call.set()
+                cancel.wait(5)
+                return "still thinking, no tool calls"
+            return "no further action"
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        def operator():
+            inside_llm_call.wait(5)
+            cancel.set()
+
+        interrupter = threading.Thread(target=operator, daemon=True)
+        interrupter.start()
+
+        result = agent.run("test task")
+        interrupter.join(5)
+
+        assert cancel.is_set()
+
+        assert MAX_SUBTASK_LOOPS > 1
+        assert len(calls) == 3
+        assert status_of(agent, "step1") == "cancelled"
+        assert "[Run Cancelled]" in str(result)
+
+    def test_cancel_before_planning_completes_does_not_raise(
+        self, monkeypatch
+    ):
+        """Cancelling before a plan exists must not fall through to the
+        "Failed to create plan" exception.
+        """
+        agent = build_agent()
+        cancel = threading.Event()
+        cancel.set()
+        agent.cancel_event = cancel
+
+        calls = script_llm(agent, monkeypatch, [])
+
+        result = agent.run("test task")
+
+        assert len(calls) == 1
+        assert agent.plan_created is False
+        assert "[Run Cancelled]" in history(agent)
+        assert result is not None
+
+
+class TestSteering:
+    """Operator corrections reach the model between iterations."""
+
+    def test_steering_message_precedes_the_next_model_call(
+        self, monkeypatch
+    ):
+        """The correction is queued during the planning call, so it must
+        appear as a user turn in the body of the very next request, and
+        in the operator-visible conversation exactly once.
+        """
+        agent = build_agent()
+        steering = queue.Queue()
+        agent.steering_queue = steering
+        correction = "Ignore the slow API, read the cache instead."
+
+        bodies = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            bodies.append(list(kwargs.get("messages") or []))
+            index = len(bodies)
+            if index == 1:
+                steering.put(correction)
+                return plan(("step1", []))
+            if index == 2:
+                return [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ]
+            return "no further action"
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        agent.run("test task")
+
+        execution_body = bodies[1]
+        steered = [
+            message
+            for message in execution_body
+            if message["role"] == "user"
+            and correction in message["content"]
+        ]
+        assert len(steered) == 1
+        assert STEERING_TURN_HEADER in steered[0]["content"]
+
+        assert history(agent).count(correction) == 1
+        assert steering.empty()
+
+    def test_steering_from_another_thread_mid_subtask(
+        self, monkeypatch
+    ):
+        """A correction pushed while the loop is inside an LLM call is
+        injected at the following subtask-iteration boundary.
+        """
+        agent = build_agent()
+        steering = queue.Queue()
+        agent.steering_queue = steering
+        correction = "Stop writing prose, produce the table."
+        inside_llm_call = threading.Event()
+        pushed = threading.Event()
+
+        bodies = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            bodies.append(list(kwargs.get("messages") or []))
+            index = len(bodies)
+            if index == 1:
+                return plan(("step1", []))
+            if index == 2:
+                inside_llm_call.set()
+                pushed.wait(5)
+                return "no tool calls this turn"
+            return [
+                tool_call(
+                    "subtask_done",
+                    task_id="step1",
+                    summary="done",
+                    success=True,
+                )
+            ]
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        def operator():
+            inside_llm_call.wait(5)
+            steering.put(correction)
+            pushed.set()
+
+        sender = threading.Thread(target=operator, daemon=True)
+        sender.start()
+
+        agent.run("test task")
+        sender.join(5)
+
+        assert len(bodies) >= 3
+        third_request = bodies[2]
+        assert third_request[-1]["role"] == "user"
+        assert correction in third_request[-1]["content"]
+        assert STEERING_TURN_HEADER in third_request[-1]["content"]
+
+    def test_steering_drains_every_pending_message_in_order(self):
+        agent = build_agent()
+        steering = queue.Queue()
+        loop = AutonomousAgentLoop(agent, steering_queue=steering)
+        steering.put("first")
+        steering.put("second")
+
+        assert loop._drain_steering_queue() == 2
+
+        injected = [
+            message["content"] for message in loop._transcript
+        ]
+        assert injected == [
+            f"{STEERING_TURN_HEADER}\nfirst",
+            f"{STEERING_TURN_HEADER}\nsecond",
+        ]
+        assert loop._drain_steering_queue() == 0
+
+
+class TestControlsAreInertByDefault:
+    """With both controls unset the run must be exactly what it was.
+
+    The checks sit on every iteration boundary, so the default path has to
+    stay free of extra turns and extra model calls.
+    """
+
+    def test_defaults_are_none_everywhere(self):
+        agent = build_agent()
+
+        assert agent.cancel_event is None
+        assert agent.steering_queue is None
+        assert agent.autonomous_loop.cancel_event is None
+        assert agent.autonomous_loop.steering_queue is None
+        assert agent.autonomous_loop._cancel_requested() is False
+        assert agent.autonomous_loop._drain_steering_queue() == 0
+
+    def test_unconfigured_run_has_the_same_calls_and_turns(
+        self, monkeypatch
+    ):
+        """The call sequence is unchanged: planning at loop 0, one
+        subtask iteration at loop 1, then the summary call, which is the
+        only one passing a flattened history as its task.
+        """
+        agent = build_agent()
+        requests = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            requests.append((task, kwargs.get("current_loop")))
+            index = len(requests)
+            if index == 1:
+                return plan(("step1", []))
+            if index == 2:
+                return [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ]
+            return [
+                tool_call(
+                    "complete_task",
+                    task_id="main",
+                    summary="all done",
+                    success=True,
+                )
+            ]
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        result = agent.run("test task")
+
+        assert len(requests) == 3
+        assert requests[0] == (None, 0)
+        assert requests[1] == (None, 1)
+        assert requests[2][0] is not None
+
+        transcript = history(agent)
+        assert STEERING_TURN_HEADER not in transcript
+        assert CANCELLATION_NOTICE not in transcript
+        assert status_of(agent, "step1") == "completed"
+        assert result is not None
