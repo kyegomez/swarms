@@ -76,7 +76,6 @@ def _format_tool_error(function_name: str, error: Exception) -> str:
 
 
 # Enough for a typical plan without pulling in the whole catalog.
-# Ranking for the plan schema's priority enum; lower sorts first.
 SUBTASK_PRIORITY_ORDER = {
     "critical": 0,
     "high": 1,
@@ -1796,7 +1795,6 @@ class AutonomousAgentLoop:
         if not eligible:
             return None
 
-        # min() is stable, so creation order remains the tiebreaker.
         return min(eligible, key=self._priority_rank)
 
     @staticmethod
