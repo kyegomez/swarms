@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 
 import pytest
@@ -1550,6 +1551,282 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
         "B: OUT_B",
     ]
     assert "OUT_A" not in prompt and "OUT_B" not in prompt
+
+
+def _async_mock_agent(
+    name: str, response: str = None, delay: float = 0.0
+):
+    """Return an agent double whose ``arun`` is a real coroutine function."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    a = MagicMock()
+    a.agent_name = name
+    a.run = MagicMock(return_value=response or f"output-{name}")
+
+    async def _arun(*args, **kwargs):
+        if delay:
+            await asyncio.sleep(delay)
+        return response or f"output-{name}"
+
+    a.arun = AsyncMock(side_effect=_arun)
+    return a
+
+
+def test_arun_awaits_the_agents_own_async_path():
+    """arun was run() on a thread, so Agent.arun was unreachable from a graph."""
+    first = _async_mock_agent("AR-Alpha")
+    second = _async_mock_agent("AR-Beta")
+
+    wf = GraphWorkflow(name="AR-Chain")
+    wf.add_nodes([first, second])
+    wf.add_edge("AR-Alpha", "AR-Beta")
+
+    results = asyncio.run(wf.arun("async task"))
+
+    assert results == {
+        "AR-Alpha": "output-AR-Alpha",
+        "AR-Beta": "output-AR-Beta",
+    }
+    assert first.arun.await_count == 1
+    assert second.arun.await_count == 1
+    assert first.run.call_count == 0
+    assert second.run.call_count == 0
+
+
+def test_arun_runs_a_wide_layer_past_the_thread_pool_cap():
+    """Threads were the unit of concurrency, so a wide layer queued behind cores."""
+    import threading
+    import time
+    from unittest.mock import MagicMock
+
+    WIDTH = 32
+
+    def async_tracker(name, state):
+        a = MagicMock()
+        a.agent_name = name
+
+        async def _arun(*args, **kwargs):
+            state["in_flight"] += 1
+            state["peak"] = max(state["peak"], state["in_flight"])
+            await asyncio.sleep(0.02)
+            state["in_flight"] -= 1
+            return f"output-{name}"
+
+        a.arun = _arun
+        return a
+
+    def sync_tracker(name, state, lock):
+        a = MagicMock()
+        a.agent_name = name
+
+        def _run(*args, **kwargs):
+            with lock:
+                state["in_flight"] += 1
+                state["peak"] = max(state["peak"], state["in_flight"])
+            time.sleep(0.02)
+            with lock:
+                state["in_flight"] -= 1
+            return f"output-{name}"
+
+        a.run = MagicMock(side_effect=_run)
+        return a
+
+    async_state = {"in_flight": 0, "peak": 0}
+    async_wf = GraphWorkflow(name="AR-Wide-Async")
+    async_wf.add_nodes(
+        [
+            async_tracker(f"AR-W-{i}", async_state)
+            for i in range(WIDTH)
+        ]
+    )
+    asyncio.run(async_wf.arun("async task"))
+
+    sync_state = {"in_flight": 0, "peak": 0}
+    lock = threading.Lock()
+    sync_wf = GraphWorkflow(name="AR-Wide-Sync")
+    sync_wf.add_nodes(
+        [
+            sync_tracker(f"AR-W-{i}", sync_state, lock)
+            for i in range(WIDTH)
+        ]
+    )
+    sync_wf.run("sync task")
+
+    assert async_state["peak"] == WIDTH
+    assert sync_state["peak"] <= sync_wf._max_workers
+
+
+def test_arun_spends_no_workflow_thread_on_an_async_agent():
+    """An awaited node must not occupy a graph pool thread for its whole call."""
+    import threading
+    from unittest.mock import MagicMock
+
+    seen = {}
+
+    agent = MagicMock()
+    agent.agent_name = "AR-Threadless"
+
+    async def _arun(*args, **kwargs):
+        seen["threads"] = [t.name for t in threading.enumerate()]
+        return "output-AR-Threadless"
+
+    agent.arun = _arun
+
+    wf = GraphWorkflow(name="Threadless")
+    wf.add_node(agent)
+
+    asyncio.run(wf.arun("async task"))
+
+    assert not [
+        name for name in seen["threads"] if name.startswith("graph-")
+    ], seen["threads"]
+
+
+def test_arun_bounds_a_layer_with_max_parallel_nodes():
+    """max_parallel_nodes is the async path's concurrency knob, not core count."""
+    from unittest.mock import MagicMock
+
+    def tracking_agent(name: str, state: dict):
+        a = MagicMock()
+        a.agent_name = name
+
+        async def _arun(*args, **kwargs):
+            state["in_flight"] += 1
+            state["peak"] = max(state["peak"], state["in_flight"])
+            await asyncio.sleep(0.01)
+            state["in_flight"] -= 1
+            return f"output-{name}"
+
+        a.arun = _arun
+        return a
+
+    def peak_for(limit):
+        state = {"in_flight": 0, "peak": 0}
+        wf = GraphWorkflow(
+            name="AR-Bounded", max_parallel_nodes=limit
+        )
+        wf.add_nodes(
+            [tracking_agent(f"AR-Wide-{i}", state) for i in range(4)]
+        )
+        asyncio.run(wf.arun("async task"))
+        return state["peak"]
+
+    assert peak_for(2) == 2
+    assert peak_for(None) == 4
+
+
+def test_arun_dispatches_only_the_sync_only_agents_to_threads():
+    """One legacy agent must not force its async siblings onto threads."""
+    legacy = _mock_agent("AR-Legacy")
+    modern = _async_mock_agent("AR-Modern")
+
+    wf = GraphWorkflow(name="AR-Mixed")
+    wf.add_nodes([legacy, modern])
+
+    results = asyncio.run(wf.arun("async task"))
+
+    assert results == {
+        "AR-Legacy": "output-AR-Legacy",
+        "AR-Modern": "output-AR-Modern",
+    }
+    assert legacy.run.call_count == 1
+    assert modern.arun.await_count == 1
+    assert modern.run.call_count == 0
+
+
+def test_arun_output_matches_run_across_loops():
+    """The two paths must not drift: same graph, same keys, same values."""
+    sync_wf = GraphWorkflow(name="AR-Parity-Sync", max_loops=2)
+    sync_wf.add_nodes([_mock_agent("P-One"), _mock_agent("P-Two")])
+    sync_wf.add_edge("P-One", "P-Two")
+
+    async_wf = GraphWorkflow(name="AR-Parity-Async", max_loops=2)
+    async_wf.add_nodes(
+        [_async_mock_agent("P-One"), _async_mock_agent("P-Two")]
+    )
+    async_wf.add_edge("P-One", "P-Two")
+
+    assert asyncio.run(async_wf.arun("parity task")) == sync_wf.run(
+        "parity task"
+    )
+
+
+def test_arun_isolates_a_failing_node():
+    """gather must not cancel a layer because one node raised."""
+    from unittest.mock import MagicMock
+
+    good = _async_mock_agent("AR-Good")
+    bad = MagicMock()
+    bad.agent_name = "AR-Bad"
+
+    async def _boom(*args, **kwargs):
+        raise RuntimeError("provider exploded")
+
+    bad.arun = _boom
+
+    wf = GraphWorkflow(name="AR-Failure")
+    wf.add_nodes([good, bad])
+
+    results = asyncio.run(wf.arun("async task"))
+
+    assert results["AR-Good"] == "output-AR-Good"
+    assert results["AR-Bad"].startswith(
+        "[ERROR] Agent AR-Bad failed:"
+    )
+    assert "provider exploded" in results["AR-Bad"]
+
+
+def test_arun_recurses_into_subgraphs_asynchronously():
+    """A subgraph node must go through arun, not drop back to run."""
+    inner_agent = _async_mock_agent("AR-Inner", "inner-output")
+    inner = GraphWorkflow(name="AR-SubWF")
+    inner.add_node(inner_agent)
+
+    downstream = _async_mock_agent("AR-Downstream")
+    outer = GraphWorkflow(name="AR-Outer")
+    outer.add_node(inner)
+    outer.add_node(downstream)
+    outer.add_edge("AR-SubWF", "AR-Downstream")
+
+    results = asyncio.run(outer.arun("async task"))
+
+    assert "inner-output" in results["AR-SubWF"]
+    assert inner_agent.arun.await_count == 1
+    assert inner_agent.run.call_count == 0
+    delivered = [
+        m["content"]
+        for m in downstream.arun.await_args.kwargs.get("messages")
+        or []
+    ]
+    assert any("inner-output" in c for c in delivered), delivered
+
+
+def test_arun_checkpoints_and_resumes_like_run(tmp_path):
+    """Checkpointing came free when arun wrapped run; it must still work."""
+    first = _async_mock_agent("AR-CP-Alpha")
+    second = _async_mock_agent("AR-CP-Beta")
+
+    wf = GraphWorkflow(
+        name="AR-CP", checkpoint_dir=str(tmp_path / "checkpoints")
+    )
+    wf.add_nodes([first, second])
+    wf.add_edge("AR-CP-Alpha", "AR-CP-Beta")
+
+    TASK = "async checkpoint task"
+    results = asyncio.run(wf.arun(TASK))
+    task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
+
+    assert len(list(tmp_path.glob("checkpoints/*.json"))) == 2
+    assert (
+        tmp_path / "checkpoints" / f"{task_key}_layer_0.json"
+    ).exists()
+
+    first.arun.reset_mock()
+    second.arun.reset_mock()
+
+    assert asyncio.run(wf.arun(TASK)) == results
+    assert first.arun.await_count == 0
+    assert second.arun.await_count == 0
 
 
 if __name__ == "__main__":
