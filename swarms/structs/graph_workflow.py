@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 import hashlib
+import inspect
 import json
 import os
 import time
@@ -10,6 +11,7 @@ from pathlib import Path
 from enum import Enum
 from typing import (
     Any,
+    Awaitable,
     Callable,
     Dict,
     Iterable,
@@ -46,6 +48,7 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
+    capture_run,
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
@@ -1824,41 +1827,684 @@ class GraphWorkflow:
             )
             raise e
 
+    def _node_pool(
+        self, widest_layer: int
+    ) -> ContextThreadPoolExecutor:
+        """Build the one thread pool a run dispatches sync work onto.
+
+        A pool wider than the widest layer can never place a task, so the
+        widest layer is the ceiling. Both ``run`` and ``arun`` size their pool
+        here so the two paths cannot disagree about how much thread capacity a
+        graph gets.
+
+        Args:
+            widest_layer (int): Node count of the widest layer in the plan.
+
+        Returns:
+            ContextThreadPoolExecutor: A pool carrying the caller's context.
+        """
+        workers = max(1, min(self._max_workers, widest_layer))
+        pool = ContextThreadPoolExecutor(
+            max_workers=workers,
+            thread_name_prefix=f"graph-{self.name}",
+        )
+        if self.verbose:
+            logger.debug(
+                f"Created shared thread pool with {workers} workers"
+            )
+        return pool
+
+    def _layer_prompts(
+        self,
+        layer: List[Tuple[str, Any, "NodeType", str]],
+        task: str,
+        prev_outputs: Dict[str, Any],
+        layer_idx: int,
+        loop_idx: int,
+    ) -> List[Tuple[str, Any, "NodeType", str, str, List[Any]]]:
+        """Build every prompt in a layer before any of its nodes is dispatched.
+
+        Prompt building reads ``prev_outputs``, so doing it up front keeps a
+        node's context independent of how its siblings happen to be scheduled.
+        A node whose prompt cannot be built carries the failure forward as its
+        prompt instead of aborting the layer.
+
+        Args:
+            layer (List[Tuple[str, Any, NodeType, str]]): Compiled layer entries.
+            task (str): The run's task.
+            prev_outputs (Dict[str, Any]): Outputs available to this layer.
+            layer_idx (int): Index of this layer in the execution plan.
+            loop_idx (int): Current loop iteration, 0-based.
+
+        Returns:
+            List[Tuple[str, Any, NodeType, str, str, List[Any]]]: One entry per
+            node: ``(node_id, agent, node_type, agent_name, prompt, messages)``.
+        """
+        layer_data = []
+        for node_id, agent, node_type, agent_name in layer:
+            try:
+                prompt, prior_messages = self._build_prompt(
+                    node_id,
+                    task,
+                    prev_outputs,
+                    layer_idx,
+                    loop_idx,
+                )
+            except Exception as e:
+                logger.exception(
+                    f"Error building prompt for node {node_id}: {e}"
+                )
+                # Continue with an error prompt as fallback
+                prompt = f"Error building prompt: {e}"
+                prior_messages = []
+            layer_data.append(
+                (
+                    node_id,
+                    agent,
+                    node_type,
+                    agent_name,
+                    prompt,
+                    prior_messages,
+                )
+            )
+        return layer_data
+
+    def _node_invocation(
+        self,
+        node_id: str,
+        agent: Any,
+        node_type: "NodeType",
+        prompt: str,
+        messages: Optional[List[Any]],
+        img: Optional[str],
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+        streaming_callback: Optional[Callable[[str, str], None]],
+    ) -> Callable[[], Any]:
+        """Bind one node's synchronous invocation into a zero-arg callable.
+
+        Args:
+            node_id (str): Node being invoked.
+            agent (Any): The node's agent, or the inner workflow for a subgraph.
+            node_type (NodeType): Agent or subgraph.
+            prompt (str): This turn's instruction.
+            messages (Optional[List[Any]]): Predecessor outputs as typed turns.
+            img (Optional[str]): Image forwarded to the agent.
+            args (Tuple[Any, ...]): Extra positional arguments from the caller.
+            kwargs (Dict[str, Any]): Extra keyword arguments from the caller.
+            streaming_callback (Optional[Callable[[str, str], None]]): Token
+                callback, receiving ``(node_id, token)``.
+
+        Returns:
+            Callable[[], Any]: The node's call, ready for a pool or direct use.
+        """
+        messages = messages or []
+
+        if node_type == NodeType.SUBGRAPH:
+            # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
+            inner: GraphWorkflow = agent
+            _prev_cp = inner.checkpoint_dir
+            if self.checkpoint_dir and not inner.checkpoint_dir:
+                inner.checkpoint_dir = str(
+                    Path(self.checkpoint_dir) / node_id
+                )
+
+            flattened = self._subgraph_task(prompt, messages)
+
+            def _run_inner(
+                _inner=inner,
+                _prompt=flattened,
+                _prev=_prev_cp,
+            ):
+                try:
+                    return _inner.run(
+                        _prompt,
+                        img=img,
+                        *args,
+                        **kwargs,
+                    )
+                finally:
+                    _inner.checkpoint_dir = _prev
+
+            return _run_inner
+
+        if streaming_callback is None:
+            # Common path: no per-node kwargs copy needed.
+            def _run_agent(
+                _agent=agent,
+                _prompt=prompt,
+                _messages=messages,
+            ):
+                return _agent.run(
+                    task=_prompt,
+                    img=img,
+                    messages=_messages,
+                    *args,
+                    **kwargs,
+                )
+
+            return _run_agent
+
+        def _run_agent_streaming(
+            _agent=agent,
+            _prompt=prompt,
+            _nid=node_id,
+            _messages=messages,
+        ):
+            call_kwargs = dict(kwargs)
+            call_kwargs["streaming_callback"] = (
+                lambda token: streaming_callback(_nid, token)
+            )
+            return _agent.run(
+                task=_prompt,
+                img=img,
+                messages=_messages,
+                *args,
+                **call_kwargs,
+            )
+
+        return _run_agent_streaming
+
+    @staticmethod
+    def _subgraph_task(prompt: str, messages: List[Any]) -> str:
+        """Flatten a subgraph node's turns into the single task string it takes."""
+        return "\n\n".join(
+            [m["content"] for m in messages] + [prompt]
+        )
+
+    async def _anode_result(
+        self,
+        node_id: str,
+        agent: Any,
+        node_type: "NodeType",
+        prompt: str,
+        messages: Optional[List[Any]],
+        img: Optional[str],
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+        streaming_callback: Optional[Callable[[str, str], None]],
+        pool: Callable[[], ContextThreadPoolExecutor],
+    ) -> Any:
+        """Await one node through the deepest async path it exposes.
+
+        A subgraph recurses through ``arun``, and an agent whose ``arun`` is a
+        coroutine function is awaited directly, so neither holds a workflow
+        thread for the duration of an LLM call. An agent that is sync-only is
+        dispatched to this workflow's own pool rather than the loop's default
+        executor: one legacy agent then costs one thread instead of forcing the
+        whole graph onto threads, and it cannot starve unrelated async work
+        sharing the process-wide default pool.
+
+        Args:
+            node_id (str): Node being invoked.
+            agent (Any): The node's agent, or the inner workflow for a subgraph.
+            node_type (NodeType): Agent or subgraph.
+            prompt (str): This turn's instruction.
+            messages (Optional[List[Any]]): Predecessor outputs as typed turns.
+            img (Optional[str]): Image forwarded to the agent.
+            args (Tuple[Any, ...]): Extra positional arguments from the caller.
+            kwargs (Dict[str, Any]): Extra keyword arguments from the caller.
+            streaming_callback (Optional[Callable[[str, str], None]]): Token
+                callback, receiving ``(node_id, token)``.
+            pool (Callable[[], ContextThreadPoolExecutor]): Lazily creates the
+                run's thread pool, only reached by sync-only agents.
+
+        Returns:
+            Any: The node's output.
+        """
+        messages = messages or []
+
+        if node_type == NodeType.SUBGRAPH:
+            inner: GraphWorkflow = agent
+            _prev_cp = inner.checkpoint_dir
+            if self.checkpoint_dir and not inner.checkpoint_dir:
+                inner.checkpoint_dir = str(
+                    Path(self.checkpoint_dir) / node_id
+                )
+            try:
+                return await inner.arun(
+                    self._subgraph_task(prompt, messages),
+                    img=img,
+                    *args,
+                    **kwargs,
+                )
+            finally:
+                inner.checkpoint_dir = _prev_cp
+
+        agent_arun = getattr(agent, "arun", None)
+        if inspect.iscoroutinefunction(agent_arun):
+            call_kwargs = dict(kwargs)
+            if streaming_callback is not None:
+                call_kwargs["streaming_callback"] = (
+                    lambda token: streaming_callback(node_id, token)
+                )
+            return await agent_arun(
+                task=prompt,
+                img=img,
+                messages=messages,
+                *args,
+                **call_kwargs,
+            )
+
+        return await asyncio.get_running_loop().run_in_executor(
+            pool(),
+            self._node_invocation(
+                node_id,
+                agent,
+                node_type,
+                prompt,
+                messages,
+                img,
+                args,
+                kwargs,
+                streaming_callback,
+            ),
+        )
+
+    def _record_output(
+        self,
+        node_id: str,
+        agent_name: str,
+        node_type: "NodeType",
+        output: Any,
+        prev_outputs: Dict[str, Any],
+        execution_results: Dict[str, Any],
+        on_node_complete: Optional[Callable[[str, Any], None]],
+    ) -> None:
+        """Persist one node's output into the run's state.
+
+        Args:
+            node_id (str): Node that produced the output.
+            agent_name (str): Name recorded as the conversation role.
+            node_type (NodeType): Agent or subgraph.
+            output (Any): What the node returned.
+            prev_outputs (Dict[str, Any]): Context for downstream layers.
+            execution_results (Dict[str, Any]): The loop's returned results.
+            on_node_complete (Optional[Callable[[str, Any], None]]): Fired as
+                soon as this node finishes, before its layer completes.
+        """
+        # SUBGRAPH nodes only, so an agent returning a dict is not silently flattened.
+        if node_type == NodeType.SUBGRAPH and isinstance(
+            output, dict
+        ):
+            output = "\n\n".join(
+                f"[{k}]: {v}"
+                for k, v in output.items()
+                if v is not None
+            )
+
+        prev_outputs[node_id] = output
+        execution_results[node_id] = output
+
+        try:
+            self.conversation.add(role=agent_name, content=output)
+        except Exception as e:
+            logger.exception(
+                f"Error adding output to conversation for agent {agent_name}: {e}"
+            )
+
+        if on_node_complete is not None:
+            try:
+                on_node_complete(node_id, output)
+            except Exception as e:
+                logger.exception(
+                    f"Error in on_node_complete callback for {agent_name}: {e}"
+                )
+
+    def _restore_layer_checkpoint(
+        self,
+        task_key: str,
+        layer_idx: int,
+        prev_outputs: Dict[str, Any],
+        execution_results: Dict[str, Any],
+    ) -> bool:
+        """Replay a layer from its checkpoint file when one exists.
+
+        Args:
+            task_key (str): Stable per-task checkpoint key.
+            layer_idx (int): Layer being considered.
+            prev_outputs (Dict[str, Any]): Context for downstream layers.
+            execution_results (Dict[str, Any]): The loop's returned results.
+
+        Returns:
+            bool: ``True`` when the layer was restored and must be skipped;
+            ``False`` when it has to execute, including when a checkpoint file
+            exists but could not be read.
+        """
+        checkpoint_path = self._checkpoint_path(task_key, layer_idx)
+        if not checkpoint_path.exists():
+            return False
+
+        try:
+            saved = json.loads(
+                checkpoint_path.read_text(encoding="utf-8")
+            )
+        except Exception as cp_err:
+            logger.warning(
+                f"Failed to load checkpoint {checkpoint_path}, "
+                f"re-executing layer: {cp_err}"
+            )
+            return False
+
+        prev_outputs.update(saved)
+        execution_results.update(saved)
+        # Replayed so state matches a non-checkpoint run
+        for node_id, output in saved.items():
+            agent_name = (
+                getattr(
+                    self.nodes[node_id].agent,
+                    "agent_name",
+                    node_id,
+                )
+                if node_id in self.nodes
+                else node_id
+            )
+            try:
+                self.conversation.add(role=agent_name, content=output)
+            except Exception:
+                pass
+        logger.info(
+            f"Checkpoint found - skipping layer {layer_idx + 1} "
+            f"({len(saved)} agents restored from {checkpoint_path})"
+        )
+        return True
+
+    def _persist_layer_checkpoint(
+        self,
+        task_key: str,
+        layer_idx: int,
+        layer: List[Tuple[str, Any, "NodeType", str]],
+        prev_outputs: Dict[str, Any],
+    ) -> None:
+        """Write one layer's outputs so a crash later does not re-run it.
+
+        A checkpoint failure is logged and swallowed: losing the ability to
+        resume is not a reason to lose the run.
+
+        Args:
+            task_key (str): Stable per-task checkpoint key.
+            layer_idx (int): Layer that just finished.
+            layer (List[Tuple[str, Any, NodeType, str]]): Its compiled entries.
+            prev_outputs (Dict[str, Any]): Outputs recorded so far.
+        """
+        try:
+            Path(self.checkpoint_dir).mkdir(
+                parents=True, exist_ok=True
+            )
+            checkpoint_path = self._checkpoint_path(
+                task_key, layer_idx
+            )
+            layer_outputs = {
+                entry[0]: prev_outputs[entry[0]]
+                for entry in layer
+                if entry[0] in prev_outputs
+            }
+            checkpoint_path.write_text(
+                json.dumps(layer_outputs, indent=2, default=str),
+                encoding="utf-8",
+            )
+            if self.verbose:
+                logger.info(
+                    f"Checkpoint saved for layer {layer_idx + 1} → {checkpoint_path}"
+                )
+        except Exception as cp_err:
+            logger.warning(
+                f"Failed to save checkpoint for layer {layer_idx + 1}: {cp_err}"
+            )
+
+    @staticmethod
+    async def _safe_output_async(
+        agent_name: str, produce: Awaitable[Any]
+    ) -> Tuple[bool, Any]:
+        """Await ``produce``, turning a failure into an ``[ERROR]`` string.
+
+        The async twin of :meth:`_safe_output`, so one node blowing up degrades
+        that node's output rather than cancelling its whole ``asyncio.gather``
+        layer and losing its siblings' work.
+
+        Args:
+            agent_name (str): Name used in the error output.
+            produce (Awaitable[Any]): The node's pending result.
+
+        Returns:
+            Tuple[bool, Any]: ``(succeeded, output)``.
+        """
+        try:
+            return True, await produce
+        except Exception as e:
+            logger.exception(
+                f"Error in GraphWorkflow agent execution for {agent_name}: {e}"
+            )
+            return False, f"[ERROR] Agent {agent_name} failed: {e}"
+
     async def arun(
         self,
         task: Optional[str] = None,
+        img: Optional[str] = None,
+        on_node_complete: Optional[Callable[[str, Any], None]] = None,
+        streaming_callback: Optional[
+            Callable[[str, str], None]
+        ] = None,
         *args: Any,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """
-        Async version of run for better performance with I/O bound operations.
+        """Run the workflow on the event loop, one ``asyncio.gather`` per layer.
+
+        Same graph semantics and same return shape as :meth:`run`: layers in
+        topological order, nodes inside a layer concurrent, outputs recorded as
+        each node finishes, checkpoints per layer, end-point outputs carried
+        into the next loop.
+
+        What differs is the unit of concurrency. Nodes are awaited rather than
+        submitted to a thread pool, so an agent exposing a coroutine ``arun``
+        never occupies a thread and the loop stays free for other coroutines
+        while the graph waits on provider sockets. Sync-only agents still work:
+        each is dispatched individually to this workflow's own pool. Subgraph
+        nodes recurse through ``arun``.
+
+        Concurrency is bounded by ``max_parallel_nodes`` when it was set;
+        otherwise a layer's nodes all start together. The CPU-derived
+        ``_max_workers`` deliberately does not bound this path, because an LLM
+        call is an I/O wait and cores are the wrong unit for sizing it.
 
         Args:
-            task (Optional[str]): Task to execute. Uses self.task if not provided.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            task (Optional[str]): Task to execute. Uses ``self.task`` if omitted.
+            img (Optional[str]): Optional image path for multimodal tasks.
+            on_node_complete (Optional[Callable[[str, Any], None]]): Fired as
+                each agent finishes, receiving ``(node_id, output)``. Takes
+                precedence over the instance-level callback.
+            streaming_callback (Optional[Callable[[str, str], None]]): Fired per
+                token, receiving ``(node_id, token)``.
+            *args: Additional positional arguments forwarded to each node.
+            **kwargs: Additional keyword arguments forwarded to each node.
 
         Returns:
-            Dict[str, Any]: Execution results from all nodes.
+            Dict[str, Any]: Execution results keyed by node ID, matching
+            :meth:`run` — including the ``{node_id}_loop_{n}`` keys when
+            ``max_loops > 1``.
+
+        Raises:
+            Exception: Whatever compilation or the loop walk raises; individual
+                node failures are captured as ``[ERROR]`` outputs instead.
         """
+        _on_node_complete = on_node_complete or self.on_node_complete
+        run_start_time = time.time()
+
+        if task is not None:
+            self.task = task
+        else:
+            task = self.task
+
         if self.verbose:
             logger.info("Starting async GraphWorkflow execution")
 
-        try:
-            result = await asyncio.to_thread(
-                self.run, task, *args, **kwargs
-            )
+        if not self._compiled:
+            self.compile()
 
-            if self.verbose:
-                logger.success(
-                    "Async GraphWorkflow execution completed"
+        widest_layer = max(
+            (len(layer) for layer in self._execution_plan), default=1
+        )
+        executor: Optional[ContextThreadPoolExecutor] = None
+
+        def _get_executor() -> ContextThreadPoolExecutor:
+            nonlocal executor
+            if executor is None:
+                executor = self._node_pool(widest_layer)
+            return executor
+
+        semaphore = (
+            asyncio.Semaphore(max(1, self.max_parallel_nodes))
+            if self.max_parallel_nodes is not None
+            else None
+        )
+
+        with capture_run(
+            "GraphWorkflow.arun", self, task=task, img=img
+        ) as span:
+            try:
+                loop = 0
+                all_loop_results: Dict[str, Any] = {}
+                prior_loop_end_outputs: Dict[str, Any] = {}
+
+                while loop < self.max_loops:
+                    execution_results: Dict[str, Any] = {}
+                    prev_outputs: Dict[str, Any] = {}
+
+                    task_key = (
+                        self._task_key(task)
+                        if self.checkpoint_dir
+                        else None
+                    )
+
+                    if prior_loop_end_outputs:
+                        prev_outputs.update(prior_loop_end_outputs)
+
+                    for layer_idx, layer in enumerate(
+                        self._execution_plan
+                    ):
+                        if (
+                            self.checkpoint_dir
+                            and self._restore_layer_checkpoint(
+                                task_key,
+                                layer_idx,
+                                prev_outputs,
+                                execution_results,
+                            )
+                        ):
+                            continue
+
+                        layer_data = self._layer_prompts(
+                            layer,
+                            task,
+                            prev_outputs,
+                            layer_idx,
+                            loop,
+                        )
+
+                        async def _execute(entry) -> None:
+                            (
+                                node_id,
+                                agent,
+                                node_type,
+                                agent_name,
+                                prompt,
+                                prior_messages,
+                            ) = entry
+
+                            async def _awaited() -> Any:
+                                return await self._anode_result(
+                                    node_id,
+                                    agent,
+                                    node_type,
+                                    prompt,
+                                    prior_messages,
+                                    img,
+                                    args,
+                                    kwargs,
+                                    streaming_callback,
+                                    _get_executor,
+                                )
+
+                            if semaphore is None:
+                                ok, output = (
+                                    await self._safe_output_async(
+                                        agent_name, _awaited()
+                                    )
+                                )
+                            else:
+                                async with semaphore:
+                                    ok, output = (
+                                        await self._safe_output_async(
+                                            agent_name, _awaited()
+                                        )
+                                    )
+
+                            if ok and self.verbose:
+                                logger.success(
+                                    f"Agent {agent_name} completed successfully"
+                                )
+
+                            self._record_output(
+                                node_id,
+                                agent_name,
+                                node_type,
+                                output,
+                                prev_outputs,
+                                execution_results,
+                                _on_node_complete,
+                            )
+
+                        await asyncio.gather(
+                            *(_execute(entry) for entry in layer_data)
+                        )
+
+                        if self.checkpoint_dir:
+                            self._persist_layer_checkpoint(
+                                task_key,
+                                layer_idx,
+                                layer,
+                                prev_outputs,
+                            )
+
+                    loop += 1
+
+                    prior_loop_end_outputs = {
+                        node_id: execution_results[node_id]
+                        for node_id in self.end_points
+                        if node_id in execution_results
+                    }
+
+                    if self.max_loops > 1:
+                        for (
+                            node_id,
+                            output,
+                        ) in execution_results.items():
+                            all_loop_results[
+                                f"{node_id}_loop_{loop}"
+                            ] = output
+
+                total_execution_time = time.time() - run_start_time
+                logger.info(
+                    f"Async GraphWorkflow execution completed: {len(execution_results)} agents "
+                    f"executed across {self.max_loops} loop(s) in {total_execution_time:.3f}s"
                 )
 
-            return result
+                if self.max_loops > 1:
+                    all_loop_results.update(execution_results)
+                    span.record_output(all_loop_results)
+                    return all_loop_results
 
-        except Exception as e:
-            logger.exception(f"Error in GraphWorkflow.arun: {e}")
-            raise e
+                span.record_output(execution_results)
+                return execution_results
+
+            except Exception as e:
+                span.record_error(e)
+                logger.exception(f"Error in GraphWorkflow.arun: {e}")
+                raise e
+
+            finally:
+                if executor is not None:
+                    executor.shutdown(wait=True)
 
     @staticmethod
     def _task_key(task: str) -> str:
@@ -1976,17 +2622,7 @@ class GraphWorkflow:
         def _get_executor() -> ContextThreadPoolExecutor:
             nonlocal executor
             if executor is None:
-                executor = ContextThreadPoolExecutor(
-                    max_workers=max(
-                        1, min(self._max_workers, widest_layer)
-                    ),
-                    thread_name_prefix=f"graph-{self.name}",
-                )
-                if self.verbose:
-                    logger.debug(
-                        f"Created shared thread pool with "
-                        f"{max(1, min(self._max_workers, widest_layer))} workers"
-                    )
+                executor = self._node_pool(widest_layer)
             return executor
 
         try:
@@ -2029,47 +2665,16 @@ class GraphWorkflow:
                     layer_start_time = time.time()
 
                     # Resume: skip any layer already checkpointed for this task.
-                    if self.checkpoint_dir:
-                        checkpoint_path = self._checkpoint_path(
-                            task_key, layer_idx
+                    if (
+                        self.checkpoint_dir
+                        and self._restore_layer_checkpoint(
+                            task_key,
+                            layer_idx,
+                            prev_outputs,
+                            execution_results,
                         )
-                        if checkpoint_path.exists():
-                            try:
-                                saved = json.loads(
-                                    checkpoint_path.read_text(
-                                        encoding="utf-8"
-                                    )
-                                )
-                                prev_outputs.update(saved)
-                                execution_results.update(saved)
-                                # Replayed so state matches a non-checkpoint run
-                                for node_id, output in saved.items():
-                                    agent_name = (
-                                        getattr(
-                                            self.nodes[node_id].agent,
-                                            "agent_name",
-                                            node_id,
-                                        )
-                                        if node_id in self.nodes
-                                        else node_id
-                                    )
-                                    try:
-                                        self.conversation.add(
-                                            role=agent_name,
-                                            content=output,
-                                        )
-                                    except Exception:
-                                        pass
-                                logger.info(
-                                    f"Checkpoint found - skipping layer {layer_idx + 1} "
-                                    f"({len(saved)} agents restored from {checkpoint_path})"
-                                )
-                                continue
-                            except Exception as cp_err:
-                                logger.warning(
-                                    f"Failed to load checkpoint {checkpoint_path}, "
-                                    f"re-executing layer: {cp_err}"
-                                )
+                    ):
+                        continue
 
                     if self.verbose:
                         logger.info(
@@ -2077,159 +2682,9 @@ class GraphWorkflow:
                             f"with {len(layer)} nodes: {[n[0] for n in layer]}"
                         )
 
-                    # Pre-build all prompts for this layer
-                    layer_data = []
-                    for (
-                        node_id,
-                        agent,
-                        node_type,
-                        agent_name,
-                    ) in layer:
-                        try:
-                            prompt, prior_messages = (
-                                self._build_prompt(
-                                    node_id,
-                                    task,
-                                    prev_outputs,
-                                    layer_idx,
-                                    loop,
-                                )
-                            )
-                        except Exception as e:
-                            logger.exception(
-                                f"Error building prompt for node {node_id}: {e}"
-                            )
-                            # Continue with an error prompt as fallback
-                            prompt = f"Error building prompt: {e}"
-                            prior_messages = []
-                        layer_data.append(
-                            (
-                                node_id,
-                                agent,
-                                node_type,
-                                agent_name,
-                                prompt,
-                                prior_messages,
-                            )
-                        )
-
-                    def _make_call(
-                        node_id,
-                        agent,
-                        node_type,
-                        prompt,
-                        messages=None,
-                    ):
-                        """Bind one node's invocation into a zero-arg callable."""
-                        messages = messages or []
-                        if node_type == NodeType.SUBGRAPH:
-                            # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
-                            inner: GraphWorkflow = agent
-                            _prev_cp = inner.checkpoint_dir
-                            if (
-                                self.checkpoint_dir
-                                and not inner.checkpoint_dir
-                            ):
-                                inner.checkpoint_dir = str(
-                                    Path(self.checkpoint_dir)
-                                    / node_id
-                                )
-
-                            flattened = "\n\n".join(
-                                [m["content"] for m in messages]
-                                + [prompt]
-                            )
-
-                            def _run_inner(
-                                _inner=inner,
-                                _prompt=flattened,
-                                _prev=_prev_cp,
-                            ):
-                                try:
-                                    return _inner.run(
-                                        _prompt,
-                                        img=img,
-                                        *args,
-                                        **kwargs,
-                                    )
-                                finally:
-                                    _inner.checkpoint_dir = _prev
-
-                            return _run_inner
-
-                        if _streaming_callback is None:
-                            # Common path: no per-node kwargs copy needed.
-                            def _run_agent(
-                                _agent=agent,
-                                _prompt=prompt,
-                                _messages=messages,
-                            ):
-                                return _agent.run(
-                                    task=_prompt,
-                                    img=img,
-                                    messages=_messages,
-                                    *args,
-                                    **kwargs,
-                                )
-
-                            return _run_agent
-
-                        def _run_agent_streaming(
-                            _agent=agent,
-                            _prompt=prompt,
-                            _nid=node_id,
-                            _messages=messages,
-                        ):
-                            call_kwargs = dict(kwargs)
-                            call_kwargs["streaming_callback"] = (
-                                lambda token: _streaming_callback(
-                                    _nid, token
-                                )
-                            )
-                            return _agent.run(
-                                task=_prompt,
-                                img=img,
-                                messages=_messages,
-                                *args,
-                                **call_kwargs,
-                            )
-
-                        return _run_agent_streaming
-
-                    def _record(
-                        node_id, agent_name, node_type, output
-                    ):
-                        """Persist one node's output into the run's state."""
-                        # SUBGRAPH nodes only, so an agent returning a dict is not silently flattened.
-                        if (
-                            node_type == NodeType.SUBGRAPH
-                            and isinstance(output, dict)
-                        ):
-                            output = "\n\n".join(
-                                f"[{k}]: {v}"
-                                for k, v in output.items()
-                                if v is not None
-                            )
-
-                        prev_outputs[node_id] = output
-                        execution_results[node_id] = output
-
-                        try:
-                            self.conversation.add(
-                                role=agent_name, content=output
-                            )
-                        except Exception as e:
-                            logger.exception(
-                                f"Error adding output to conversation for agent {agent_name}: {e}"
-                            )
-
-                        if _on_node_complete is not None:
-                            try:
-                                _on_node_complete(node_id, output)
-                            except Exception as e:
-                                logger.exception(
-                                    f"Error in on_node_complete callback for {agent_name}: {e}"
-                                )
+                    layer_data = self._layer_prompts(
+                        layer, task, prev_outputs, layer_idx, loop
+                    )
 
                     if len(layer_data) == 1:
                         # Single-node layer, a worker thread would only add latency
@@ -2243,16 +2698,26 @@ class GraphWorkflow:
                         ) = layer_data[0]
                         _, output = self._safe_output(
                             agent_name,
-                            _make_call(
+                            self._node_invocation(
                                 node_id,
                                 agent,
                                 node_type,
                                 prompt,
                                 prior_messages,
+                                img,
+                                args,
+                                kwargs,
+                                _streaming_callback,
                             ),
                         )
-                        _record(
-                            node_id, agent_name, node_type, output
+                        self._record_output(
+                            node_id,
+                            agent_name,
+                            node_type,
+                            output,
+                            prev_outputs,
+                            execution_results,
+                            _on_node_complete,
                         )
                     else:
                         # Parallel layer: dispatch onto the run-wide pool.
@@ -2269,12 +2734,16 @@ class GraphWorkflow:
                         ) in layer_data:
                             try:
                                 future = pool.submit(
-                                    _make_call(
+                                    self._node_invocation(
                                         node_id,
                                         agent,
                                         node_type,
                                         prompt,
                                         prior_messages,
+                                        img,
+                                        args,
+                                        kwargs,
+                                        _streaming_callback,
                                     )
                                 )
                                 future_to_data[future] = (
@@ -2312,8 +2781,14 @@ class GraphWorkflow:
                                         f"({completed_count}/{len(layer_data)})"
                                     )
 
-                            _record(
-                                node_id, agent_name, node_type, output
+                            self._record_output(
+                                node_id,
+                                agent_name,
+                                node_type,
+                                output,
+                                prev_outputs,
+                                execution_results,
+                                _on_node_complete,
                             )
 
                     layer_execution_time = (
@@ -2322,34 +2797,9 @@ class GraphWorkflow:
 
                     # Save now so a crash on a later layer does not force re-running this one.
                     if self.checkpoint_dir:
-                        try:
-                            Path(self.checkpoint_dir).mkdir(
-                                parents=True, exist_ok=True
-                            )
-                            checkpoint_path = self._checkpoint_path(
-                                task_key, layer_idx
-                            )
-                            layer_outputs = {
-                                entry[0]: prev_outputs[entry[0]]
-                                for entry in layer
-                                if entry[0] in prev_outputs
-                            }
-                            checkpoint_path.write_text(
-                                json.dumps(
-                                    layer_outputs,
-                                    indent=2,
-                                    default=str,
-                                ),
-                                encoding="utf-8",
-                            )
-                            if self.verbose:
-                                logger.info(
-                                    f"Checkpoint saved for layer {layer_idx + 1} → {checkpoint_path}"
-                                )
-                        except Exception as cp_err:
-                            logger.warning(
-                                f"Failed to save checkpoint for layer {layer_idx + 1}: {cp_err}"
-                            )
+                        self._persist_layer_checkpoint(
+                            task_key, layer_idx, layer, prev_outputs
+                        )
 
                     if self.verbose:
                         logger.success(
