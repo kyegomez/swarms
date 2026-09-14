@@ -29,6 +29,7 @@ from loguru import logger
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
+    MAX_PLAN_REPAIR_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     assign_task_tool,
@@ -113,6 +114,7 @@ class AutonomousAgentLoop:
         self._transcript = Transcript()
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
+        self._repair_attempts: Dict[str, int] = {}
 
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
@@ -260,6 +262,7 @@ class AutonomousAgentLoop:
             self.agent.subtask_status = {}
             self.agent.plan_created = False
             self.agent.think_call_count = 0
+            self._repair_attempts = {}
 
             self._say_user(task)
 
@@ -745,6 +748,7 @@ class AutonomousAgentLoop:
                             regular_tool_calls = []
                             # Set, not returned, so later calls run.
                             task_complete = False
+                            needs_repair = None
 
                             for tool_call in response:
                                 if isinstance(
@@ -892,6 +896,16 @@ class AutonomousAgentLoop:
                                                 == subtask_id
                                             ):
                                                 subtask_done = True
+                                                if not arguments.get(
+                                                    "success", True
+                                                ):
+                                                    needs_repair = (
+                                                        subtask_id,
+                                                        arguments.get(
+                                                            "summary",
+                                                            "",
+                                                        ),
+                                                    )
                                                 # Show subtask completion
                                                 if (
                                                     self.agent.print_on
@@ -1042,6 +1056,11 @@ class AutonomousAgentLoop:
                             self._flush_tool_results(
                                 turn_calls, turn_results
                             )
+
+                            if needs_repair is not None:
+                                self._attempt_plan_repair(
+                                    *needs_repair
+                                )
 
                             if task_complete:
                                 return self.agent._generate_final_summary(
@@ -1213,6 +1232,7 @@ class AutonomousAgentLoop:
                             subtask["status"] = "failed"
                             subtask.setdefault("summary", reason)
                             break
+                    self._attempt_plan_repair(subtask_id, reason)
 
                     if self.agent.print_on:
                         formatter.print_panel(
@@ -1735,6 +1755,66 @@ class AutonomousAgentLoop:
         )
 
         return f"Subtask {task_id} marked as {'completed' if success else 'failed'}"
+
+    def _attempt_plan_repair(
+        self, failed_step_id: str, reason: str
+    ) -> bool:
+        attempts = self._repair_attempts.get(failed_step_id, 0)
+        if attempts >= MAX_PLAN_REPAIR_ATTEMPTS:
+            return False
+        self._repair_attempts[failed_step_id] = attempts + 1
+
+        self._say_user(
+            f"Subtask {failed_step_id} failed: {reason} Revise the "
+            "plan with create_plan to reach the goal another way, or "
+            "leave the plan as-is if the task cannot be completed."
+        )
+
+        try:
+            response = self.agent.call_llm(
+                task=None, messages=self._transcript.messages
+            )
+            response = self.agent.parse_llm_output(response)
+        except Exception as e:
+            if self.agent.verbose:
+                logger.warning(f"Plan repair call failed: {e}")
+            return False
+
+        self.agent.short_memory.add(
+            role=self.agent.agent_name, content=response
+        )
+        turn_calls = self._record_assistant(response)
+        turn_results: Dict[str, Any] = {}
+        revised = False
+
+        if isinstance(response, list):
+            for tool_call in response:
+                if not (
+                    isinstance(tool_call, dict)
+                    and tool_call.get("function", {}).get("name")
+                ):
+                    continue
+                function_name = tool_call["function"]["name"]
+                if function_name != "create_plan":
+                    continue
+                try:
+                    arguments = json.loads(
+                        tool_call["function"]["arguments"]
+                    )
+                    result = self._create_plan_tool(**arguments)
+                    revised = "no changes" not in result
+                except Exception as tool_error:
+                    result = _format_tool_error(
+                        function_name, tool_error
+                    )
+                self.agent.short_memory.add(
+                    role="Tool Executor",
+                    content=f"{function_name} result: {result}",
+                )
+                turn_results[tool_call.get("id", "")] = result
+
+        self._flush_tool_results(turn_calls, turn_results)
+        return revised
 
     def _get_next_executable_subtask(
         self,

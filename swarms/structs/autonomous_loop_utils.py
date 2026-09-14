@@ -42,6 +42,7 @@ from swarms.utils.litellm_tokenizer import DEFAULT_MODEL, count_tokens
 MAX_PLANNING_ATTEMPTS = 5
 MAX_SUBTASK_ITERATIONS = 100
 MAX_SUBTASK_LOOPS = 20
+MAX_PLAN_REPAIR_ATTEMPTS = 1
 MAX_CONSECUTIVE_THINKS = 2
 
 # The loop re-serializes its history into every later prompt, so one oversized tool result is paid for on every remaining call of the run.
