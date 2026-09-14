@@ -268,5 +268,103 @@ class TestIntegerMaxLoopsUsesMessages:
         assert seen["messages"] is None
 
 
+class TestIntegerPathMemoryCarriesToolTurns:
+    """Memory from run 1 is rebuilt cleanly in run 2 without duplicate tool/user rows."""
+
+    def _agent(self, **kwargs):
+        return Agent(
+            agent_name="IntPathTest",
+            model_name="gpt-4o-mini",
+            persistent_memory=False,
+            print_on=False,
+            verbose=False,
+            autosave=False,
+            tool_call_summary=False,
+            **kwargs,
+        )
+
+    def test_next_run_rebuilds_a_well_formed_request_from_memory(
+        self, monkeypatch
+    ):
+        def get_weather(city: str) -> str:
+            """Return the weather for a city.
+
+            Args:
+                city: The city name.
+            """
+            return f"{city}: sunny"
+
+        agent = self._agent(max_loops=1, tools=[get_weather])
+        captured = []
+
+        # Run 1: model emits a tool call
+        monkeypatch.setattr(
+            agent,
+            "call_llm",
+            lambda task=None, *a, **k: [
+                tool_call("get_weather", call_id="w1", city="Paris")
+            ],
+        )
+        agent.run("weather in Paris?")
+
+        # Check memory has no Tool Executor row
+        roles_in_memory = [
+            m.get("role")
+            for m in agent.short_memory.conversation_history
+            if isinstance(m, dict)
+        ]
+        assert "Tool Executor" not in roles_in_memory
+
+        # Run 2: run next turn from memory
+        monkeypatch.setattr(
+            agent,
+            "call_llm",
+            lambda task=None, *a, **k: (
+                captured.append(k.get("messages")),
+                "The weather in Paris is sunny.",
+            )[1],
+        )
+        agent.run("what should I wear?")
+
+        assert len(captured) == 1
+        messages = captured[0]
+
+        # Negative assertion: no user message contains the tool result content
+        user_messages = [
+            m["content"] for m in messages if m["role"] == "user"
+        ]
+        assert not any(
+            "Paris: sunny" in str(u) for u in user_messages
+        )
+        assert not any(
+            "Tool Executor" in str(u) for u in user_messages
+        )
+
+    def test_return_history_as_string_renders_each_tool_result_once(
+        self, monkeypatch
+    ):
+        def get_weather(city: str) -> str:
+            """Return the weather for a city.
+
+            Args:
+                city: The city name.
+            """
+            return f"{city}: sunny"
+
+        agent = self._agent(max_loops=1, tools=[get_weather])
+        monkeypatch.setattr(
+            agent,
+            "call_llm",
+            lambda task=None, *a, **k: [
+                tool_call("get_weather", call_id="w1", city="Paris")
+            ],
+        )
+        agent.run("weather in Paris?")
+
+        history_str = agent.short_memory.return_history_as_string()
+        # Verify Tool Executor does not appear in history string
+        assert "Tool Executor" not in history_str
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-q", "-p", "no:randomly"])

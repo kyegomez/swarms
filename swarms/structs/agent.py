@@ -1533,10 +1533,6 @@ class Agent:
                                 result = self._tool_search_tool(
                                     **arguments
                                 )
-                                self.short_memory.add(
-                                    role="Tool Executor",
-                                    content=f"tool_search result: {result}",
-                                )
                                 turn_results[
                                     tool_call.get("id", "")
                                 ] = result
@@ -1582,11 +1578,6 @@ class Agent:
 
                                     result = self._handoff_task_tool(
                                         handoffs=handoffs_list
-                                    )
-                                    # Add result to memory
-                                    self.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"Handoff Result:\n{result}",
                                     )
                                     turn_results[
                                         tool_call.get("id", "")
@@ -2128,10 +2119,10 @@ class Agent:
         Seed a structured transcript from ``short_memory``.
 
         Conversation roles are free-form strings ("User", the agent name,
-        "Tool Executor", ...), so they are mapped onto chat roles here. The
-        system prompt is skipped because the LLM wrapper supplies it. Turns
-        added *during* a run are appended structurally on top of this prefix,
-        which is what preserves tool-call fidelity where it matters most.
+        ...), so they are mapped onto chat roles here. The system prompt is
+        skipped because the LLM wrapper supplies it. Turns added *during* a
+        run are appended structurally on top of this prefix, which is what
+        preserves tool-call fidelity where it matters most.
         """
         transcript = Transcript()
         for message in self.short_memory.conversation_history:
@@ -2223,12 +2214,6 @@ class Agent:
                         )
 
                         result = self._complete_task_tool(**arguments)
-
-                        # Add result to memory
-                        self.short_memory.add(
-                            role="Tool Executor",
-                            content=f"complete_task result: {result}",
-                        )
 
                         # Show comprehensive summary
                         if self.print_on:
@@ -3937,7 +3922,7 @@ Summary: {summary}
 
         **Post-Execution Processing:**
         1. Formats the tool results as JSON
-        2. Adds them to conversation memory under the "Tool Executor" role
+        2. Records typed tool results in the transcript/conversation
         3. Generates a natural-language summary with a tool-free LLM instance
         4. Displays the summary if ``print_on=True``
 
@@ -3985,12 +3970,6 @@ Summary: {summary}
                     title="MCP Tool Response: 🛠️",
                     style="green",
                 )
-
-            # Add to the memory
-            self.short_memory.add(
-                role="Tool Executor",
-                content=text_content,
-            )
 
             # Create a temporary LLM instance without tools for the follow-up call
             try:
@@ -4255,11 +4234,6 @@ Summary: {summary}
                 logger.error(f"Error executing tools: {e}")
                 raise e
 
-        self.short_memory.add(
-            role="Tool Executor",
-            content=format_data_structure(output),
-        )
-
         # Stored so a transcript builder can map it to tool_call ids.
         self._last_tool_output = output
 
@@ -4336,16 +4310,14 @@ Summary: {summary}
         if self.tool_call_summary is True:
             temp_llm = self.temp_llm_instance_for_tool_summary()
 
-            tool_response = temp_llm.run(
-                f"""
+            tool_response = temp_llm.run(f"""
                 Please analyze and summarize the following tool execution output in a clear and concise way. 
                 Focus on the key information and insights that would be most relevant to the user's original request.
                 If there are any errors or issues, highlight them prominently.
                 
                 Tool Output:
                 {output}
-                """
-            )
+                """)
 
             self.short_memory.add(
                 role=self.agent_name,
