@@ -866,7 +866,6 @@ class TestToolSchemasStayOutOfTheConversation:
     """Schemas reach the model as the API's `tools` parameter, not as a turn."""
 
     def test_no_conversation_turn_carries_the_tool_schemas(self):
-        # dynamic_tools=False is the branch that reaches tool_handling().
         agent = _patched_agent(
             "SchemaAgent",
             model_name="gpt-5.4",
