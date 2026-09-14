@@ -245,8 +245,6 @@ class TestToolOutputIsCapped:
     def test_read_file_truncates_a_large_file(self):
         agent = build_agent(context_length=16000)
         budget = int(agent.context_length * TOOL_OUTPUT_CONTEXT_SHARE)
-        # Inside the workspace: this PR makes the file tools refuse a path
-        # outside it, so tmp_path would be rejected before the cap is reached.
         big = Path(agent._get_agent_workspace_dir()) / "big.txt"
         big.write_text("word " * (budget * 2))
 
@@ -259,9 +257,6 @@ class TestToolOutputIsCapped:
         )
 
     def test_budget_follows_the_agent_context_window(self):
-        # Each agent gets its own workspace, and this PR makes the file tools
-        # refuse anything outside it, so the file is written per agent rather
-        # than shared from tmp_path.
         def read_with(context_length):
             agent = build_agent(context_length=context_length)
             big = Path(agent._get_agent_workspace_dir()) / "big.txt"
@@ -281,7 +276,6 @@ class TestBatchedToolCalls:
         self, monkeypatch
     ):
         agent = build_agent()
-        # Inside the agent's workspace: the file tools refuse paths outside it.
         target = (
             Path(agent._get_agent_workspace_dir()) / "written.txt"
         )
@@ -329,7 +323,6 @@ class TestBatchedToolCalls:
         self, monkeypatch
     ):
         agent = build_agent()
-        # Inside the agent's workspace: the file tools refuse paths outside it.
         target = Path(agent._get_agent_workspace_dir()) / "late.txt"
 
         script_llm(
@@ -422,7 +415,6 @@ class TestToolErrorFeedback:
         self, monkeypatch
     ):
         agent = build_agent()
-        # Inside the agent's workspace: the file tools refuse paths outside it.
         target = (
             Path(agent._get_agent_workspace_dir())
             / "after_bad_json.txt"
@@ -1184,9 +1176,6 @@ class TestFileToolsStayInTheWorkspace:
 
         agent = MagicMock()
         agent._get_agent_workspace_dir.return_value = str(ws)
-        # read_file_tool now sizes its output cap from the agent's context
-        # window; a bare MagicMock yields a 1-token budget and truncates
-        # everything to nothing.
         agent.context_length = 128000
         return agent, ws, tmp_path / "outside_secret.txt"
 
