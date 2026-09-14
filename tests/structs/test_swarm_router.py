@@ -1151,3 +1151,149 @@ def test_usage_counts_a_shared_agent_once():
     router._swarm_cache["fake"] = type("S", (), {"agents": [agent]})()
 
     assert router.usage["input_tokens"] == 100
+
+
+# ============================================================================
+# last_run_usage
+# ============================================================================
+
+
+def _spending_router(agents, spend):
+    """A router whose fake swarm adds ``spend`` to each agent's usage on run.
+
+    ``spend`` maps agent -> (input_tokens, output_tokens) added per run;
+    agents absent from it are not touched.
+    """
+    with patch("swarms.structs.agent.LiteLLM"):
+        router = SwarmRouter(
+            name="run-usage-router",
+            agents=agents,
+            swarm_type="SequentialWorkflow",
+            autosave=False,
+        )
+
+    class _Swarm:
+        def __init__(self):
+            self.agents = list(agents)
+            self.agent_rearrange = self
+            self.conversation = None
+
+        def run(self, **kwargs):
+            for agent, (i, o) in spend.items():
+                agent._add_usage(
+                    {
+                        "input_tokens": i,
+                        "output_tokens": o,
+                        "cached_tokens": 0,
+                        "reasoning_tokens": 0,
+                        "total_tokens": i + o,
+                    }
+                )
+            return "ok"
+
+    router._swarm_factory = {
+        k: (lambda *a, **k: _Swarm()) for k in router._swarm_factory
+    }
+    return router
+
+
+def test_last_run_usage_is_none_before_the_first_run():
+    router = _spending_router([_agent_with_usage("A", 0, 0)], {})
+    assert router.last_run_usage is None
+
+
+def test_last_run_usage_covers_only_that_run():
+    a = _agent_with_usage("A", 1000, 100)  # spent earlier, elsewhere
+    b = _agent_with_usage("B", 0, 0)
+    router = _spending_router([a, b], {a: (10, 1), b: (20, 2)})
+
+    router.run("go")
+
+    usage = router.last_run_usage
+    assert usage["input_tokens"] == 30
+    assert usage["output_tokens"] == 3
+    assert usage["total_tokens"] == 33
+    assert (
+        usage["cost_breakdown"]["agents"]["A"]["input_tokens"] == 10
+    )
+    assert (
+        usage["cost_breakdown"]["agents"]["B"]["output_tokens"] == 2
+    )
+    assert usage["cost_breakdown"]["num_agents"] == 2
+    # The lifetime total still carries A's earlier spend
+    assert router.usage["input_tokens"] == 1030
+
+
+def test_last_run_usage_resets_each_run():
+    a = _agent_with_usage("A", 0, 0)
+    router = _spending_router([a], {a: (10, 1)})
+
+    router.run("one")
+    router.run("two")
+
+    assert router.last_run_usage["input_tokens"] == 10
+    assert router.usage["input_tokens"] == 20
+
+
+def test_an_agent_the_swarm_built_during_the_run_is_counted():
+    """A director or aggregator has no snapshot; all its usage is this run's."""
+    worker = _agent_with_usage("Worker", 0, 0)
+    router = _spending_router([worker], {worker: (5, 1)})
+    factory = router._swarm_factory["SequentialWorkflow"]
+
+    def _with_director(*a, **k):
+        swarm = factory()
+        swarm.director = _agent_with_usage("Director", 40, 4)
+        return swarm
+
+    router._swarm_factory["SequentialWorkflow"] = _with_director
+
+    router.run("go")
+
+    agents = router.last_run_usage["cost_breakdown"]["agents"]
+    assert agents["Director"]["input_tokens"] == 40
+    assert router.last_run_usage["input_tokens"] == 45
+
+
+def test_cost_comes_from_the_agents_model_price():
+    a = _agent_with_usage("A", 0, 0)
+    a.model_name = "gpt-4o-mini"
+    router = _spending_router([a], {a: (1000, 100)})
+
+    router.run("go")
+
+    usage = router.last_run_usage
+    assert (
+        usage["cost_breakdown"]["agents"]["A"]["model"]
+        == "gpt-4o-mini"
+    )
+    assert usage["cost_breakdown"]["agents"]["A"]["cost"] > 0
+    assert usage["total_cost"] == pytest.approx(
+        usage["cost_breakdown"]["agents"]["A"]["cost"], rel=1e-6
+    )
+
+
+def test_an_unpriced_model_reports_no_cost_without_failing():
+    a = _agent_with_usage("A", 0, 0)
+    a.model_name = "no-such-model-anywhere"
+    router = _spending_router([a], {a: (10, 1)})
+
+    router.run("go")
+
+    usage = router.last_run_usage
+    assert usage["input_tokens"] == 10
+    assert usage["cost_breakdown"]["agents"]["A"]["cost"] is None
+    assert usage["total_cost"] is None
+    assert usage["cost_breakdown"]["num_agents_priced"] == 0
+
+
+def test_agents_that_did_nothing_are_left_out_of_the_breakdown():
+    a = _agent_with_usage("A", 0, 0)
+    idle = _agent_with_usage("Idle", 0, 0)
+    router = _spending_router([a, idle], {a: (10, 1)})
+
+    router.run("go")
+
+    assert set(router.last_run_usage["cost_breakdown"]["agents"]) == {
+        "A"
+    }

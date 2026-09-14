@@ -41,6 +41,7 @@ from swarms.telemetry.otel import (
 )
 from swarms.utils.generate_id import generate_id
 from swarms.utils.litellm_wrapper import empty_usage
+from swarms.utils.litellm_tokenizer import cost_per_token
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 
@@ -343,6 +344,9 @@ class SwarmRouter(SerializableMixin):
             run — the primary ``swarm_type`` unless a fallback was used.
         usage (dict): Provider token usage summed over every agent the
             router's swarms have run. See :attr:`usage`.
+        last_run_usage (dict | None): The most recent run's tokens and cost,
+            per agent — ``total_cost`` and a ``cost_breakdown`` like the
+            Swarms API returns. ``None`` until the first run.
         fallback_attempts (List[dict]): One ``{"swarm_type", "error"}`` entry
             per swarm that failed during the most recent run.
         swarm_workspace_dir (str | None): Autosave workspace, set when
@@ -460,6 +464,8 @@ class SwarmRouter(SerializableMixin):
         self.swarm = None
         self.active_swarm_type = swarm_type
         self.fallback_attempts = []
+        # Filled by every run: that run's tokens and cost, per agent
+        self.last_run_usage: Optional[dict] = None
 
         # Always built: a disabled manager no-ops, an absent one raises.
         self._setup_autosave()
@@ -610,6 +616,59 @@ class SwarmRouter(SerializableMixin):
             for key, value in agent.usage.items():
                 total[key] += value
         return total
+
+    def _usage_snapshot(self) -> Dict[int, tuple]:
+        """Each held agent's lifetime usage right now, keyed by identity."""
+        return {
+            id(agent): (agent, dict(agent.usage))
+            for agent in self._usage_agents()
+        }
+
+    def _run_usage_since(self, before: Dict[int, tuple]) -> dict:
+        """This run's tokens and cost: every agent's usage minus its snapshot.
+
+        An agent the swarm built during the run has no snapshot, so all of
+        its usage is this run's. Cost comes from LiteLLM's price table for
+        each agent's own model; an agent whose model has no listed price
+        contributes ``None`` and is left out of ``total_cost``.
+        """
+        total = empty_usage()
+        agents = {}
+        total_cost = 0.0
+        priced = 0
+        for agent_id, (
+            agent,
+            usage,
+        ) in self._usage_snapshot().items():
+            baseline = before.get(agent_id, (None, empty_usage()))[1]
+            delta = {k: usage[k] - baseline.get(k, 0) for k in usage}
+            if not any(delta.values()):
+                continue
+            for key, value in delta.items():
+                total[key] += value
+            cost = cost_per_token(
+                agent.model_name,
+                delta["input_tokens"],
+                delta["output_tokens"],
+                delta["cached_tokens"],
+            )
+            if cost is not None:
+                total_cost += cost
+                priced += 1
+            agents[agent.agent_name] = {
+                **delta,
+                "model": agent.model_name,
+                "cost": cost,
+            }
+        return {
+            **total,
+            "total_cost": round(total_cost, 6) if priced else None,
+            "cost_breakdown": {
+                "agents": agents,
+                "num_agents": len(agents),
+                "num_agents_priced": priced,
+            },
+        }
 
     def _usage_agents(self) -> List[Agent]:
         """Every distinct Agent the router or its built swarms hold."""
@@ -1019,6 +1078,7 @@ class SwarmRouter(SerializableMixin):
 
         chain = [self.swarm_type] + list(self.fallback_swarms or [])
         self.fallback_attempts = []
+        usage_before = self._usage_snapshot()
 
         for position, swarm_type in enumerate(chain):
             try:
@@ -1047,6 +1107,7 @@ class SwarmRouter(SerializableMixin):
             ) from self.fallback_attempts[-1]["error"]
 
         self.list_agents_to_eachother()
+        self.last_run_usage = self._run_usage_since(usage_before)
 
         # Config is written at init; overwriting it here would lose it.
         self.workspace.save_state()
@@ -1057,6 +1118,7 @@ class SwarmRouter(SerializableMixin):
                 "tasks": tasks if tasks else None,
                 "status": "completed",
                 "swarm_type": self.active_swarm_type,
+                "usage": self.last_run_usage,
                 "fallback_attempts": [
                     {
                         "swarm_type": a["swarm_type"],
