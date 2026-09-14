@@ -6,6 +6,10 @@ from typing import Dict, Optional, Tuple
 from loguru import logger
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import (
+    messages_for,
+    split_last_turn,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.utils.history_output_formatter import (
@@ -201,25 +205,6 @@ Your report should be structured as follows:
    - Implementation considerations
 
 Focus on synthesizing the input feedback without adding new analysis."""
-
-
-def build_aggregation_prompt(rationales: Dict[str, str]) -> str:
-    """
-    Builds the prompt for aggregating evaluation results.
-
-    Args:
-        rationales (Dict[str, str]): Dictionary mapping dimension names to their evaluation results
-
-    Returns:
-        str: The formatted aggregation prompt
-    """
-    aggregation_input = "### MULTI-DIMENSION TECHNICAL ANALYSIS:\n"
-    for dim, text in rationales.items():
-        aggregation_input += (
-            f"\n--- {dim.upper()} ANALYSIS ---\n{text.strip()}\n"
-        )
-    aggregation_input += "\n### COMPREHENSIVE TECHNICAL REPORT:\n"
-    return aggregation_input
 
 
 class CouncilAsAJudge:
@@ -469,12 +454,9 @@ class CouncilAsAJudge:
                     for dim, agent, _ in tasks
                 }
 
-                # Collect results as they complete
-                all_rationales = {}
                 for future in as_completed(future_to_dim):
                     try:
-                        dim, result = future.result()
-                        all_rationales[dim] = result
+                        future.result()
                     except Exception as e:
                         dim = future_to_dim[future]
                         logger.error(
@@ -484,12 +466,14 @@ class CouncilAsAJudge:
                             f"Failed to evaluate dimension {dim}: {str(e)}"
                         )
 
-            # Generate final report
-            aggregation_prompt = build_aggregation_prompt(
-                all_rationales
+            prior, aggregation_task = split_last_turn(
+                messages_for(
+                    self.aggregator_agent.agent_name,
+                    self.conversation,
+                )
             )
             final_report = self.aggregator_agent.run(
-                aggregation_prompt
+                task=aggregation_task, messages=prior
             )
 
             self.conversation.add(
