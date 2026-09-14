@@ -131,13 +131,13 @@ workflow.visualize(
 ### 💾 Enterprise Features
 
 ```python
-# Complete workflow serialization
-json_data = workflow.to_json(include_conversation=True)
-restored = GraphWorkflow.from_json(json_data)
+spec = workflow.to_spec()
+registry = {"AgentName": agent}
+restored = GraphWorkflow.from_topology_spec(spec, registry)
 
 # File persistence
-workflow.save_to_file("my_workflow.json")
-loaded = GraphWorkflow.load_from_file("my_workflow.json")
+workflow.save_spec("my_workflow.json")
+loaded = GraphWorkflow.load("my_workflow.json", agent_registry=registry)
 
 # Validation and monitoring
 validation = workflow.validate(auto_fix=True)
