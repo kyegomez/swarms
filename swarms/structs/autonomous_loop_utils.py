@@ -1107,7 +1107,6 @@ def run_bash_tool(
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
-            # The agent workspace, not the process cwd: every file tool resolves relative paths against it, so bash in the launch directory saw a different tree
             cwd=workspace_dir,
             encoding="utf-8",
             errors="replace",
