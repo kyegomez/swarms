@@ -402,21 +402,19 @@ def step_5_workflow_features():
     print(f"   ⚠️ Warnings: {len(validation['warnings'])}")
     print(f"   ❌ Errors: {len(validation['errors'])}")
 
-    # Feature 3: JSON serialization
-    print("\n🔍 Feature 3: JSON Serialization")
+    print("\n🔍 Feature 3: Topology Spec Serialization")
     try:
-        json_data = workflow.to_json()
+        spec = workflow.to_spec()
+        registry = {
+            "FeatureTestAgent1": agent1,
+            "FeatureTestAgent2": agent2,
+        }
+        restored = GraphWorkflow.from_topology_spec(spec, registry)
         print(
-            f"   ✅ JSON export successful ({len(json_data)} characters)"
-        )
-
-        # Test deserialization
-        restored = GraphWorkflow.from_json(json_data)
-        print(
-            f"   ✅ JSON import successful ({len(restored.nodes)} nodes)"
+            f"   ✅ Spec export/import successful ({len(restored.nodes)} nodes)"
         )
     except Exception as e:
-        print(f"   ❌ JSON serialization failed: {e}")
+        print(f"   ❌ Spec serialization failed: {e}")
 
     # Feature 4: Workflow summary
     print("\n🔍 Feature 4: Workflow Summary")
