@@ -698,6 +698,10 @@ def _load_arch_classes():
     from swarms.structs.debate_with_judge import DebateWithJudge
     from swarms.structs.llm_council import LLMCouncil
     from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
+    from swarms.structs.multi_agent_debates import (
+        OneOnOneDebate,
+        ExpertPanelDiscussion,
+    )
 
     return {
         "Agent": Agent,
@@ -723,6 +727,8 @@ def _load_arch_classes():
         "SpreadSheetSwarm": SpreadSheetSwarm,
         "AutoSwarmBuilder": AutoSwarmBuilder,
         "SocialAlgorithms": SocialAlgorithms,
+        "OneOnOneDebate": OneOnOneDebate,
+        "ExpertPanelDiscussion": ExpertPanelDiscussion,
     }
 
 
@@ -791,6 +797,22 @@ class TestConstructionEmitsInitSpan:
 
         MajorityVoting(agents=[_agent()])
         assert _by_name(spans, "MajorityVoting.init") is not None
+
+    def test_one_on_one_debate(self, spans):
+        from swarms.structs.multi_agent_debates import OneOnOneDebate
+
+        OneOnOneDebate(agents=[_agent("Debater1"), _agent("Debater2")])
+        assert _by_name(spans, "OneOnOneDebate.init") is not None
+
+    def test_expert_panel_discussion(self, spans):
+        from swarms.structs.multi_agent_debates import ExpertPanelDiscussion
+
+        ExpertPanelDiscussion(
+            agents=[_agent("Expert1"), _agent("Expert2")],
+            moderator=_agent("Moderator"),
+        )
+        assert _by_name(spans, "ExpertPanelDiscussion.init") is not None
+
 
 
 # ===========================================================================
