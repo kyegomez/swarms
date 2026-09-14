@@ -22,6 +22,8 @@ writes agent state through it, mirroring the existing
 """
 
 import json
+import queue
+import threading
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
@@ -92,6 +94,16 @@ ALWAYS_LOADED_TOOLS = frozenset(
     }
 )
 
+STEERING_TURN_HEADER = "[Operator Steering]"
+
+CANCELLATION_NOTICE = (
+    "[Run Cancelled]\n"
+    "The operator cancelled this run, so no further subtasks will be "
+    "started. Summarize the work that was actually completed above, "
+    "state plainly that the run was cancelled before finishing, and "
+    "list what remains outstanding."
+)
+
 
 class AutonomousAgentLoop:
     """
@@ -101,18 +113,32 @@ class AutonomousAgentLoop:
         agent: The owning :class:`~swarms.structs.agent.Agent`. All agent
             configuration and state is read and written through this
             reference.
+        cancel_event: Optional :class:`threading.Event` another thread can
+            set to stop the run. Checked at every iteration boundary; when
+            set the loop stops starting work and exits through the summary
+            phase so partial work survives. ``None`` disables the check.
+        steering_queue: Optional :class:`queue.Queue` of operator messages.
+            Drained at every iteration boundary, each message becoming a
+            user turn before the next LLM call. ``None`` disables draining.
 
     Example:
         >>> agent = Agent(agent_name="Researcher", max_loops="auto")
         >>> agent.run("Compare the top 3 vector databases")  # routes here
     """
 
-    def __init__(self, agent: Any):
+    def __init__(
+        self,
+        agent: Any,
+        cancel_event: Optional[threading.Event] = None,
+        steering_queue: Optional["queue.Queue[str]"] = None,
+    ):
         self.agent = agent
         # The real body sent to the model; short_memory mirrors it.
         self._transcript = Transcript()
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
+        self.cancel_event = cancel_event
+        self.steering_queue = steering_queue
 
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
@@ -180,6 +206,111 @@ class AutonomousAgentLoop:
         )
         return True
 
+    def _cancel_requested(self) -> bool:
+        """Whether the operator has asked for this run to stop.
+
+        Read through a local name rather than twice off ``self`` so a
+        thread swapping the event out between the two accesses cannot
+        produce an ``AttributeError`` on ``None``. When no event was
+        supplied this is a single ``is None`` comparison, which is why
+        the checks can sit on every iteration boundary unconditionally.
+
+        Returns:
+            bool: True when a cancel event was supplied and is set.
+        """
+        cancel_event = self.cancel_event
+        return cancel_event is not None and cancel_event.is_set()
+
+    def _drain_steering_queue(self) -> int:
+        """Inject every pending operator message as a user turn.
+
+        Drained rather than read one-at-a-time so a burst of corrections
+        all reach the model in the same request, and drained with
+        ``get_nowait`` rather than a timeout so the loop never sleeps
+        waiting for a message that may never come.
+
+        Returns:
+            int: How many messages were injected.
+        """
+        steering_queue = self.steering_queue
+        if steering_queue is None:
+            return 0
+
+        injected = 0
+        while True:
+            try:
+                message = steering_queue.get_nowait()
+            except queue.Empty:
+                break
+
+            self._say_user(f"{STEERING_TURN_HEADER}\n{message}")
+            injected += 1
+
+        if injected and self.agent.print_on:
+            formatter.print_panel(
+                f"Injected {injected} operator message(s) before the "
+                "next model call.",
+                title="Autonomous Loop: Steering",
+            )
+
+        return injected
+
+    def _mark_subtask_cancelled(self, subtask_id: str) -> None:
+        """Record an in-flight subtask as cancelled rather than failed.
+
+        The iteration-budget path marks an unfinished subtask ``failed``
+        with an "exhausted its budget" reason, which would misreport a
+        subtask the operator stopped on purpose. A distinct status keeps
+        the final summary honest; nothing is dispatched afterwards, so it
+        never has to satisfy a dependency check.
+        """
+        reason = "Cancelled by the operator before completion."
+        self.agent.subtask_status[subtask_id] = "cancelled"
+        for subtask in self.agent.autonomous_subtasks:
+            if subtask["step_id"] == subtask_id:
+                subtask["status"] = "cancelled"
+                subtask.setdefault("summary", reason)
+                break
+
+    def _finish_cancelled(
+        self,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+    ) -> Any:
+        """Wind a cancelled run down through the normal summary phase.
+
+        Cancellation deliberately returns instead of raising: raising
+        would route through ``_handle_run_error`` and lose the run, which
+        is the whole failure the cancel event exists to avoid. The notice
+        is added to the conversation so the summary the model writes -
+        and the history handed back to the caller - says the run was
+        cancelled rather than silently looking short.
+
+        Args:
+            streaming_callback: Callback receiving streaming tokens,
+                forwarded to the summary call.
+
+        Returns:
+            Any: The conversation shaped by ``output_type``, exactly as an
+            uncancelled run returns it.
+        """
+        self._say_user(CANCELLATION_NOTICE)
+
+        if self.agent.print_on:
+            formatter.print_panel(
+                "Run cancelled by the operator. Summarizing the work "
+                "completed so far...",
+                title="Autonomous Loop: Cancelled",
+            )
+        if self.agent.verbose:
+            logger.info(
+                "Autonomous loop cancelled; exiting through the summary "
+                "phase to preserve partial work."
+            )
+
+        return self.agent._generate_final_summary(
+            streaming_callback=streaming_callback
+        )
+
     def _run_autonomous_loop(
         self,
         task: Optional[Union[str, Any]] = None,
@@ -242,6 +373,13 @@ class AutonomousAgentLoop:
             - The method resets autonomous loop state at the start of each execution
             - Tool execution results are automatically added to conversation memory
             - Progress visualization is shown if print_on=True
+            - ``self.cancel_event``, when supplied, is checked at every
+              iteration boundary of the planning and execution phases. A set
+              event stops new work and returns through the summary phase, so
+              the run is reported as cancelled instead of raising
+            - ``self.steering_queue``, when supplied, is drained at the same
+              boundaries and each message becomes a user turn, so an operator
+              can correct a run in flight
 
         Examples:
             >>> agent = Agent(max_loops="auto", interactive=False)
@@ -260,6 +398,7 @@ class AutonomousAgentLoop:
             self.agent.subtask_status = {}
             self.agent.plan_created = False
             self.agent.think_call_count = 0
+            cancelled = False
 
             self._say_user(task)
 
@@ -460,6 +599,12 @@ class AutonomousAgentLoop:
                 not plan_created
                 and planning_attempts < max_planning_attempts
             ):
+                if self._cancel_requested():
+                    cancelled = True
+                    break
+
+                self._drain_steering_queue()
+
                 planning_attempts += 1
                 try:
                     response = self.agent.call_llm(
@@ -588,6 +733,9 @@ class AutonomousAgentLoop:
                     if planning_attempts >= max_planning_attempts:
                         raise
 
+            if cancelled:
+                return self._finish_cancelled(streaming_callback)
+
             if not plan_created:
                 raise Exception(
                     "Failed to create plan after maximum attempts"
@@ -650,6 +798,12 @@ class AutonomousAgentLoop:
             total_iterations = 0
 
             while not self._all_subtasks_complete():
+                if self._cancel_requested():
+                    cancelled = True
+                    break
+
+                self._drain_steering_queue()
+
                 total_iterations += 1
                 if total_iterations > max_subtask_iterations:
                     if self.agent.print_on:
@@ -716,6 +870,12 @@ class AutonomousAgentLoop:
                     if self._maybe_compress_context():
                         # The rebuilt transcript holds only the summary, restore the subtask
                         self._say_user(execution_prompt)
+
+                    if self._cancel_requested():
+                        cancelled = True
+                        break
+
+                    self._drain_steering_queue()
 
                     try:
                         response = self.agent.call_llm(
@@ -1201,6 +1361,10 @@ class AutonomousAgentLoop:
                             ),
                         )
 
+                if cancelled:
+                    self._mark_subtask_cancelled(subtask_id)
+                    break
+
                 if not subtask_done:
                     # Failed, not pending; pending would re-run it.
                     reason = (
@@ -1225,6 +1389,9 @@ class AutonomousAgentLoop:
                             f"Subtask {subtask_id} not completed after "
                             f"{max_subtask_loops} iterations - marking failed."
                         )
+
+            if cancelled:
+                return self._finish_cancelled(streaming_callback)
 
             # Phase 3: Final Summary
             if self.agent.print_on:
