@@ -336,10 +336,6 @@ class SocialAlgorithms:
         try:
             result = future.result(timeout=self.max_execution_time)
         except FuturesTimeoutError:
-            # Don't block here waiting for the runaway call to finish;
-            # report the timeout the moment the deadline passes. The
-            # thread itself keeps running in the background and is
-            # reclaimed once it returns.
             pool.shutdown(wait=False)
             raise TimeoutError(
                 f"Algorithm execution exceeded {self.max_execution_time} seconds"
