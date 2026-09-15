@@ -778,6 +778,8 @@ class GraphWorkflow:
         checkpoint_dir: Optional[str] = None,
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
+        interrupt_before: Optional[List[str]] = None,
+        interrupt_after: Optional[List[str]] = None,
     ):
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
@@ -818,6 +820,10 @@ class GraphWorkflow:
 
         # Checkpoint configuration
         self.checkpoint_dir = checkpoint_dir
+
+        self.interrupt_before = set(interrupt_before or [])
+        self.interrupt_after = set(interrupt_after or [])
+        self._pending_resume: Optional[Dict[str, Any]] = None
 
         # Private optimization attributes
         self._compiled = False
@@ -1892,6 +1898,34 @@ class GraphWorkflow:
             )
             return False, f"[ERROR] Agent {agent_name} failed: {e}"
 
+    def _pause_run(
+        self,
+        kind: str,
+        pending_nodes: List[str],
+        next_layer_idx: int,
+        loop: int,
+        execution_results: Dict[str, Any],
+        prev_outputs: Dict[str, Any],
+        prior_loop_end_outputs: Dict[str, Any],
+        all_loop_results: Dict[str, Any],
+        task: Optional[str],
+    ) -> Dict[str, Any]:
+        self._pending_resume = {
+            "kind": kind,
+            "layer_idx": next_layer_idx,
+            "loop": loop,
+            "task": task,
+            "execution_results": dict(execution_results),
+            "prev_outputs": dict(prev_outputs),
+            "prior_loop_end_outputs": dict(prior_loop_end_outputs),
+            "all_loop_results": dict(all_loop_results),
+        }
+        result = dict(all_loop_results) if self.max_loops > 1 else {}
+        result.update(execution_results)
+        result["interrupted"] = True
+        result["pending_nodes"] = pending_nodes
+        return result
+
     @trace_run(
         "GraphWorkflow.run",
         input_params=("task", "tasks", "img", "imgs"),
@@ -1904,6 +1938,7 @@ class GraphWorkflow:
         streaming_callback: Optional[
             Callable[[str, str], None]
         ] = None,
+        _resume_from: Optional[Dict[str, Any]] = None,
         *args: Any,
         **kwargs: Any,
     ) -> Dict[str, Any]:
@@ -1938,6 +1973,16 @@ class GraphWorkflow:
         # Resolve callbacks: run-level overrides instance-level
         _on_node_complete = on_node_complete or self.on_node_complete
         _streaming_callback = streaming_callback
+        _resume_active = _resume_from is not None
+        _resume_layer_idx = (
+            _resume_from["layer_idx"] if _resume_from else None
+        )
+        _resume_kind = _resume_from["kind"] if _resume_from else None
+        _resume_overrides = (
+            dict(_resume_from.get("overrides") or {})
+            if _resume_from
+            else {}
+        )
         run_start_time = time.time()
 
         if task is not None:
@@ -1990,11 +2035,19 @@ class GraphWorkflow:
             return executor
 
         try:
-            loop = 0
+            loop = _resume_from["loop"] if _resume_from else 0
             # Accumulated results across all loops
-            all_loop_results: Dict[str, Any] = {}
+            all_loop_results: Dict[str, Any] = (
+                dict(_resume_from["all_loop_results"])
+                if _resume_from
+                else {}
+            )
             # End-point outputs carried forward as context for the next loop
-            prior_loop_end_outputs: Dict[str, Any] = {}
+            prior_loop_end_outputs: Dict[str, Any] = (
+                dict(_resume_from["prior_loop_end_outputs"])
+                if _resume_from
+                else {}
+            )
 
             while loop < self.max_loops:
                 loop_start_time = time.time()
@@ -2009,8 +2062,14 @@ class GraphWorkflow:
                         f"Starting execution loop {loop + 1}/{self.max_loops}{cache_status}"
                     )
 
-                execution_results = {}
-                prev_outputs = {}
+                if _resume_active and loop == _resume_from["loop"]:
+                    execution_results = dict(
+                        _resume_from["execution_results"]
+                    )
+                    prev_outputs = dict(_resume_from["prev_outputs"])
+                else:
+                    execution_results = {}
+                    prev_outputs = {}
 
                 # Deterministic key, not hash(): Python salts hashes, so they differ across runs.
                 task_key = (
@@ -2027,6 +2086,12 @@ class GraphWorkflow:
                     self._execution_plan
                 ):
                     layer_start_time = time.time()
+
+                    if (
+                        _resume_active
+                        and layer_idx < _resume_layer_idx
+                    ):
+                        continue
 
                     # Resume: skip any layer already checkpointed for this task.
                     if self.checkpoint_dir:
@@ -2070,6 +2135,77 @@ class GraphWorkflow:
                                     f"Failed to load checkpoint {checkpoint_path}, "
                                     f"re-executing layer: {cp_err}"
                                 )
+
+                    layer_node_ids = [entry[0] for entry in layer]
+
+                    is_resume_point = (
+                        _resume_active
+                        and layer_idx == _resume_layer_idx
+                    )
+
+                    if (
+                        self.interrupt_before
+                        and not (
+                            is_resume_point
+                            and _resume_kind == "before"
+                        )
+                        and any(
+                            nid in self.interrupt_before
+                            for nid in layer_node_ids
+                        )
+                    ):
+                        return self._pause_run(
+                            kind="before",
+                            pending_nodes=[
+                                nid
+                                for nid in layer_node_ids
+                                if nid in self.interrupt_before
+                            ],
+                            next_layer_idx=layer_idx,
+                            loop=loop,
+                            execution_results=execution_results,
+                            prev_outputs=prev_outputs,
+                            prior_loop_end_outputs=prior_loop_end_outputs,
+                            all_loop_results=all_loop_results,
+                            task=task,
+                        )
+
+                    if (
+                        is_resume_point
+                        and _resume_kind == "before"
+                        and _resume_overrides
+                    ):
+                        for (
+                            node_id,
+                            value,
+                        ) in _resume_overrides.items():
+                            if node_id not in layer_node_ids:
+                                continue
+                            agent_name = (
+                                getattr(
+                                    self.nodes[node_id].agent,
+                                    "agent_name",
+                                    node_id,
+                                )
+                                if node_id in self.nodes
+                                else node_id
+                            )
+                            prev_outputs[node_id] = value
+                            execution_results[node_id] = value
+                            try:
+                                self.conversation.add(
+                                    role=agent_name, content=value
+                                )
+                            except Exception:
+                                pass
+                        layer = [
+                            entry
+                            for entry in layer
+                            if entry[0] not in _resume_overrides
+                        ]
+
+                    if is_resume_point:
+                        _resume_active = False
 
                     if self.verbose:
                         logger.info(
@@ -2330,9 +2466,9 @@ class GraphWorkflow:
                                 task_key, layer_idx
                             )
                             layer_outputs = {
-                                entry[0]: prev_outputs[entry[0]]
-                                for entry in layer
-                                if entry[0] in prev_outputs
+                                node_id: prev_outputs[node_id]
+                                for node_id in layer_node_ids
+                                if node_id in prev_outputs
                             }
                             checkpoint_path.write_text(
                                 json.dumps(
@@ -2356,6 +2492,27 @@ class GraphWorkflow:
                             f"Layer {layer_idx + 1} completed in {layer_execution_time:.3f}s"
                         )
 
+                    if self.interrupt_after and any(
+                        nid in self.interrupt_after
+                        for nid in layer_node_ids
+                    ):
+                        return self._pause_run(
+                            kind="after",
+                            pending_nodes=[
+                                nid
+                                for nid in layer_node_ids
+                                if nid in self.interrupt_after
+                            ],
+                            next_layer_idx=layer_idx + 1,
+                            loop=loop,
+                            execution_results=execution_results,
+                            prev_outputs=prev_outputs,
+                            prior_loop_end_outputs=prior_loop_end_outputs,
+                            all_loop_results=all_loop_results,
+                            task=task,
+                        )
+
+                _resume_active = False
                 loop_execution_time = time.time() - loop_start_time
                 loop += 1
 
@@ -2407,6 +2564,39 @@ class GraphWorkflow:
         finally:
             if executor is not None:
                 executor.shutdown(wait=True)
+
+    def resume(
+        self, overrides: Optional[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
+        if self._pending_resume is None:
+            raise ValueError(
+                "GraphWorkflow has no interrupted run to resume; call run() first."
+            )
+        state = self._pending_resume
+        self._pending_resume = None
+        overrides = dict(overrides or {})
+        if state["kind"] == "after":
+            for node_id, value in overrides.items():
+                agent_name = (
+                    getattr(
+                        self.nodes[node_id].agent,
+                        "agent_name",
+                        node_id,
+                    )
+                    if node_id in self.nodes
+                    else node_id
+                )
+                state["execution_results"][node_id] = value
+                state["prev_outputs"][node_id] = value
+                try:
+                    self.conversation.add(
+                        role=agent_name, content=value
+                    )
+                except Exception:
+                    pass
+            overrides = {}
+        state["overrides"] = overrides
+        return self.run(task=state["task"], _resume_from=state)
 
     def _fan_patterns(
         self,
