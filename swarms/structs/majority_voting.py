@@ -1,6 +1,6 @@
 import copy
 from concurrent.futures import as_completed
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from swarms.structs.execution_utils import (
     batched_run,
@@ -350,7 +350,7 @@ class MajorityVoting:
 
     def run_concurrently(
         self, tasks: List[str], *args, **kwargs
-    ) -> List[Any]:
+    ) -> Union[List[Any], Dict[Any, Any]]:
         """
         Runs the majority voting system concurrently, each task on its own clone.
 
