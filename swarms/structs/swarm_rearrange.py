@@ -125,13 +125,6 @@ class SwarmRearrange:
         logger.info(f"Adding swarm {swarm.name} to the swarm.")
         self.swarms[swarm.name] = swarm
 
-    def track_history(
-        self,
-        swarm_name: str,
-        result: str,
-    ):
-        self.swarm_history[swarm_name].append(result)
-
     def remove_swarm(self, swarm_name: str):
         """
         Removes an swarm from the swarm.
