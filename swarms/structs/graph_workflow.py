@@ -2136,7 +2136,6 @@ class GraphWorkflow:
                                 logger.exception(
                                     f"Error building prompt for node {node_id}: {e}"
                                 )
-                                # Continue with an error prompt as fallback
                                 prompt = f"Error building prompt: {e}"
                                 prior_messages = []
                         layer_data.append(
