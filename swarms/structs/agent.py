@@ -1,9 +1,11 @@
 import asyncio
+import functools
 import json
 import os
 import threading
 import time
 import traceback
+import types
 from contextlib import nullcontext
 from typing import (
     Any,
@@ -133,6 +135,49 @@ def parse_done_token(response: str) -> bool:
 def agent_id() -> str:
     """Deprecated: use ``generate_id("agent")``."""
     return generate_id("agent")
+
+
+class _BoundRun:
+    """``agent.run`` on an instance: calls run and keeps that run's usage."""
+
+    def __init__(self, agent: Any, func: Callable):
+        self._agent = agent
+        self._func = func
+        self.__wrapped__ = types.MethodType(func, agent)
+
+    def __call__(self, *args, **kwargs) -> Any:
+        before = self._agent.usage
+        try:
+            return self._func(self._agent, *args, **kwargs)
+        finally:
+            after = self._agent.usage
+            self._agent.last_run_usage = {
+                key: after[key] - before.get(key, 0) for key in after
+            }
+
+    @property
+    def usage(self) -> dict:
+        """Token usage of the most recent run only; see ``Agent.usage`` for the lifetime total."""
+        return dict(self._agent.last_run_usage)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._func, name)
+
+    def __repr__(self) -> str:
+        return f"<bound method Agent.run of {self._agent!r}>"
+
+
+class _RunWithUsage:
+    """Descriptor so ``agent.run(...)`` records per-run usage and ``agent.run.usage`` reads it."""
+
+    def __init__(self, func: Callable):
+        self._func = func
+        functools.update_wrapper(self, func)
+
+    def __get__(self, agent: Any, owner: Any = None) -> Any:
+        if agent is None:
+            return self._func
+        return _BoundRun(agent, self._func)
 
 
 # Agent output types
@@ -509,6 +554,7 @@ class Agent:
         self.tool_loader: Optional[DynamicToolLoader] = None
         self._mcp_tools_deferred = False
         self._usage = empty_usage()
+        self.last_run_usage = empty_usage()
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
         self.think_tool = think_tool
@@ -3237,6 +3283,7 @@ Subtask Breakdown:
         """
         return self.skills.load_full_skill(skill_name)
 
+    @_RunWithUsage
     @trace_run("Agent.run", input_params=("task", "img", "imgs"))
     def run(
         self,
@@ -4048,6 +4095,9 @@ Summary: {summary}
         thinking, 0 when the provider does not report it), ``total_tokens``.
         Streaming calls count once their stream has been consumed, since the
         provider reports usage in the final chunk.
+
+        ``agent.run.usage`` (or ``agent.last_run_usage``) is the same dict
+        for the most recent ``run`` only.
         """
         return dict(self._usage)
 

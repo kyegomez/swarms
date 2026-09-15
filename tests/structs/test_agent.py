@@ -1493,6 +1493,56 @@ class TestAgentUsage:
             "total_tokens": 150,
         }
 
+    def test_run_usage_is_the_last_run_only(self):
+        agent = self._agent()
+        assert agent.run.usage["total_tokens"] == 0
+
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=self._response(100, 20),
+        ):
+            agent.run("one")
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=self._response(7, 3),
+        ):
+            agent.run("two")
+
+        assert agent.run.usage == {
+            "input_tokens": 7,
+            "output_tokens": 3,
+            "cached_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 10,
+        }
+        assert agent.last_run_usage == agent.run.usage
+        assert agent.usage["total_tokens"] == 130
+
+    def test_run_usage_returns_a_copy(self):
+        agent = self._agent()
+        usage = agent.run.usage
+        usage["total_tokens"] = 999
+        assert agent.run.usage["total_tokens"] == 0
+
+    def test_calling_the_agent_directly_updates_run_usage(self):
+        agent = self._agent()
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=self._response(5, 5),
+        ):
+            agent("x")
+
+        assert agent.run.usage["total_tokens"] == 10
+
+    def test_run_still_looks_like_the_method(self):
+        import inspect
+
+        agent = self._agent()
+        assert agent.run.__name__ == "run"
+        assert "task" in inspect.signature(agent.run).parameters
+        # Class-level access is the traced function, as telemetry expects.
+        assert hasattr(Agent.run, "__wrapped__")
+
     def test_totals_survive_an_llm_rebuild(self):
         agent = self._agent()
         with patch(
