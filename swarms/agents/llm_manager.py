@@ -47,6 +47,7 @@ from swarms.schemas.agent_errors import AgentLLMInitializationError
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.codex_cli import CodexCLI, validate_codex_agent
 
 DEFAULT_MODEL_NAME = "gpt-5.4"
 
@@ -173,9 +174,11 @@ class LLMManager:
 
     # Construction and configuration.
 
-    def build(self, *args, **kwargs) -> Optional[LiteLLM]:
+    def build(
+        self, *args, **kwargs
+    ) -> Optional[Union[LiteLLM, CodexCLI]]:
         """
-        Build the LiteLLM instance from every configuration source.
+        Build the selected LLM backend from the agent configuration.
 
         Combines the agent's core settings, ``llm_args``,
         ``tools_list_dictionary``, MCP tool schemas, and any arguments passed
@@ -187,9 +190,25 @@ class LLMManager:
             **kwargs: Merged into the LiteLLM configuration, taking precedence.
 
         Returns:
-            LiteLLM: The initialized instance, or None if initialization failed.
+            The initialized backend, or None if LiteLLM initialization failed.
         """
         agent = self.agent
+
+        if getattr(agent, "llm_backend", "litellm") == "codex":
+            validate_codex_agent(agent)
+            if args or kwargs:
+                raise ValueError(
+                    "Use codex_config for Codex backend options"
+                )
+            return CodexCLI(
+                model_name=(
+                    self.get_current_model()
+                    if agent.fallback_models
+                    else agent.model_name
+                ),
+                system_prompt=agent.system_prompt,
+                **agent.codex_config,
+            )
 
         if agent.model_name is None:
             agent.model_name = DEFAULT_MODEL_NAME
@@ -318,12 +337,20 @@ class LLMManager:
 
         Checks vision support when an image is supplied, function calling when
         a tool schema is set, and parallel function calling when more than two
-        tools are registered. Logging only — never raises.
+        tools are registered. Codex rejects unsupported inputs explicitly.
 
         Args:
             img (str, optional): Image input to check vision support for.
         """
         agent = self.agent
+
+        if getattr(agent, "llm_backend", "litellm") == "codex":
+            validate_codex_agent(agent)
+            if img is not None:
+                raise ValueError(
+                    "Codex supports text only, not images"
+                )
+            return
 
         # Only check vision support if an image is provided
         if img is not None:
@@ -522,6 +549,14 @@ class LLMManager:
         # Filter out is_last from kwargs if present
         if "is_last" in kwargs:
             del kwargs["is_last"]
+
+        if getattr(agent, "llm_backend", "litellm") == "codex":
+            validate_codex_agent(agent)
+            if streaming_callback is not None:
+                raise ValueError(
+                    "Codex does not support streaming callbacks"
+                )
+            agent.llm.system_prompt = agent.system_prompt
 
         try:
             if agent.stream and hasattr(agent.llm, "stream"):

@@ -91,6 +91,13 @@ class ContextCompressor:
         return self.usage_ratio(agent) >= self.threshold
 
     def _summarize(self, agent: Any, history: str) -> str:
+        if getattr(agent, "llm_backend", None) == "codex":
+            return agent.llm.run(
+                task=COMPRESSION_USER_TEMPLATE.format(
+                    history=history
+                ),
+                system_prompt=COMPRESSION_SYSTEM_PROMPT,
+            )
         model = self.summarizer_model or getattr(
             agent, "model_name", None
         )
