@@ -195,12 +195,33 @@ class Prompt(BaseModel):
         )
 
     def add_tools(self, tools: List[Callable]) -> str:
+        """
+        Appends converted tool schemas to the prompt content.
+
+        Args:
+            tools (List[Callable]): List of callable tools to convert and append.
+
+        Returns:
+            str: The updated prompt content.
+        """
         tools_prompt = BaseTool(
             tools=tools, tool_system_prompt=None
         ).convert_tool_into_openai_schema()
-        self.content += "\n"
-        self.content += "\n"
-        self.content += tools_prompt
+        if isinstance(tools_prompt, (dict, list)):
+            tools_str = json.dumps(tools_prompt, indent=2)
+        else:
+            tools_str = str(tools_prompt)
+
+        new_content = f"{self.content}\n\n{tools_str}"
+        self.content = new_content
+        self.edit_history.append(new_content)
+        self.edit_count += 1
+        self.last_modified_at = time.strftime("%Y-%m-%d %H:%M:%S")
+
+        if self.autosave:
+            self._autosave()
+
+        return self.content
 
     def _autosave(self) -> None:
         """
