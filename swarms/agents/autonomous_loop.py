@@ -22,14 +22,13 @@ writes agent state through it, mirroring the existing
 """
 
 import json
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Union
 
 from loguru import logger
 
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
-    MAX_PLAN_REPAIR_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     assign_task_tool,
@@ -114,7 +113,7 @@ class AutonomousAgentLoop:
         self._transcript = Transcript()
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
-        self._repair_attempts: Dict[str, int] = {}
+        self._repaired_steps: Set[str] = set()
 
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
@@ -262,7 +261,7 @@ class AutonomousAgentLoop:
             self.agent.subtask_status = {}
             self.agent.plan_created = False
             self.agent.think_call_count = 0
-            self._repair_attempts = {}
+            self._repaired_steps = set()
 
             self._say_user(task)
 
@@ -1759,10 +1758,9 @@ class AutonomousAgentLoop:
     def _attempt_plan_repair(
         self, failed_step_id: str, reason: str
     ) -> bool:
-        attempts = self._repair_attempts.get(failed_step_id, 0)
-        if attempts >= MAX_PLAN_REPAIR_ATTEMPTS:
+        if failed_step_id in self._repaired_steps:
             return False
-        self._repair_attempts[failed_step_id] = attempts + 1
+        self._repaired_steps.add(failed_step_id)
 
         self._say_user(
             f"Subtask {failed_step_id} failed: {reason} Revise the "
