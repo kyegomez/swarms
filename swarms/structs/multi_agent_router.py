@@ -199,22 +199,6 @@ class MultiAgentRouter:
         """
         return f"MultiAgentRouter(name={self.name}, agents={[a.agent_name for a in self.agents]})"
 
-    def query_ragent(self, task: str) -> str:
-        """
-        Query the shared memory / research-agent system attached to the router.
-
-        Args:
-            task (str): The query string to forward to ``shared_memory_system``.
-
-        Returns:
-            str: The response returned by the shared memory system.
-
-        Raises:
-            AttributeError: If no ``shared_memory_system`` was configured on the
-                router.
-        """
-        return self.shared_memory_system.query(task)
-
     def _create_boss_system_prompt(self) -> str:
         """
         Creates a system prompt for the boss agent that includes information about all available agents.
