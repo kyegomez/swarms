@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
 from swarms.structs.agent import Agent
@@ -332,7 +332,9 @@ class MixtureOfAgents:
         clone._reset_conversation()
         return clone
 
-    def run_concurrently(self, tasks: List[str]) -> List[str]:
+    def run_concurrently(
+        self, tasks: List[str]
+    ) -> Union[List[Any], Dict[Any, Any]]:
         """Run multiple tasks concurrently, each on its own clone.
 
         ``_run`` resets and appends to ``self.conversation``, so running
