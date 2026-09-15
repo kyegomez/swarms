@@ -553,26 +553,33 @@ def test_graph_workflow_checkpoint_writes_and_resumes(tmp_path):
     wf.compile()
 
     TASK = "checkpoint test task"
+    RUN_ID = "run-1"
 
     # First run — all three agents execute, three checkpoint files written
-    results = wf.run(TASK)
+    results = wf.run(TASK, run_id=RUN_ID)
     assert results["CP-Alpha"] == "output-CP-Alpha"
     assert results["CP-Beta"] == "output-CP-Beta"
     assert results["CP-Gamma"] == "output-CP-Gamma"
 
-    task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
+    run_key = hashlib.sha256(RUN_ID.encode("utf-8")).hexdigest()[:16]
     cp_files = list(tmp_path.glob("checkpoints/*.json"))
     assert len(cp_files) == 3
-    assert any(f"{task_key}_layer_0" in f.name for f in cp_files)
-    assert any(f"{task_key}_layer_1" in f.name for f in cp_files)
-    assert any(f"{task_key}_layer_2" in f.name for f in cp_files)
+    assert any(f"{run_key}_layer_0" in f.name for f in cp_files)
+    assert any(f"{run_key}_layer_1" in f.name for f in cp_files)
+    assert any(f"{run_key}_layer_2" in f.name for f in cp_files)
+
+    wf.run(TASK, run_id="run-2")
+    assert a1.run.call_count == 2
+    assert a2.run.call_count == 2
+    assert a3.run.call_count == 2
+    assert len(list(tmp_path.glob("checkpoints/*.json"))) == 6
 
     # Reset call counts, then run again — all layers should be skipped
     a1.run.reset_mock()
     a2.run.reset_mock()
     a3.run.reset_mock()
 
-    results2 = wf.run(TASK)
+    results2 = wf.run(TASK, run_id=RUN_ID)
     assert a1.run.call_count == 0
     assert a2.run.call_count == 0
     assert a3.run.call_count == 0
@@ -601,17 +608,18 @@ def test_graph_workflow_checkpoint_partial_resume(tmp_path):
     wf.compile()
 
     TASK = "partial resume task"
-    wf.run(TASK)
+    RUN_ID = "partial-run"
+    wf.run(TASK, run_id=RUN_ID)
 
     # Delete the last layer's checkpoint to simulate a crash after layer 2
-    task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
-    (tmp_path / "checkpoints" / f"{task_key}_layer_2.json").unlink()
+    run_key = hashlib.sha256(RUN_ID.encode("utf-8")).hexdigest()[:16]
+    (tmp_path / "checkpoints" / f"{run_key}_layer_2.json").unlink()
 
     a1.run.reset_mock()
     a2.run.reset_mock()
     a3.run.reset_mock()
 
-    wf.run(TASK)
+    wf.run(TASK, run_id=RUN_ID)
 
     assert a1.run.call_count == 0  # restored from checkpoint
     assert a2.run.call_count == 0  # restored from checkpoint
@@ -619,7 +627,6 @@ def test_graph_workflow_checkpoint_partial_resume(tmp_path):
 
 
 def test_graph_workflow_clear_checkpoints(tmp_path):
-    """clear_checkpoints() removes only the target task's files."""
     from unittest.mock import MagicMock
 
     def make_agent(name):
@@ -637,25 +644,24 @@ def test_graph_workflow_clear_checkpoints(tmp_path):
     wf.add_edge("CL-Alpha", "CL-Beta")
     wf.compile()
 
-    TASK_A = "task a"
-    TASK_B = "task b"
+    TASK = "shared task"
+    RUN_A = "run-a"
+    RUN_B = "run-b"
 
-    wf.run(TASK_A)
-    wf.run(TASK_B)
+    wf.run(TASK, run_id=RUN_A)
+    wf.run(TASK, run_id=RUN_B)
 
     all_files_before = list(tmp_path.glob("checkpoints/*.json"))
-    assert len(all_files_before) == 4  # 2 layers x 2 tasks
+    assert len(all_files_before) == 4  # 2 layers x 2 runs
 
-    deleted = wf.clear_checkpoints(TASK_A)
+    deleted = wf.clear_checkpoints(RUN_A)
     assert deleted == 2
 
     remaining = list(tmp_path.glob("checkpoints/*.json"))
-    assert len(remaining) == 2  # only TASK_B files remain
+    assert len(remaining) == 2  # only RUN_B files remain
 
-    task_b_key = hashlib.sha256(TASK_B.encode("utf-8")).hexdigest()[
-        :16
-    ]
-    assert all(task_b_key in f.name for f in remaining)
+    run_b_key = hashlib.sha256(RUN_B.encode("utf-8")).hexdigest()[:16]
+    assert all(run_b_key in f.name for f in remaining)
 
 
 def test_graph_workflow_clear_checkpoints_no_dir():
@@ -685,13 +691,14 @@ def test_graph_workflow_checkpoint_conversation_replay(tmp_path):
     wf.compile()
 
     TASK = "conversation replay task"
-    wf.run(TASK)
+    RUN_ID = "replay-run"
+    wf.run(TASK, run_id=RUN_ID)
 
     # Second run — both layers restored from checkpoints
     a1.run.reset_mock()
     a2.run.reset_mock()
     wf.conversation = type(wf.conversation)()  # fresh conversation
-    wf.run(TASK)
+    wf.run(TASK, run_id=RUN_ID)
 
     assert a1.run.call_count == 0
     assert a2.run.call_count == 0
