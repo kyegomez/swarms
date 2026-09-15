@@ -1194,6 +1194,48 @@ class TestRunBashSteersFileWritesToTheFileTools:
         assert "create_file" in tools["run_bash"]["description"]
 
 
+class TestFailureTriggeredReplanning:
+    def test_repair_turn_lets_the_model_route_around_a_failure(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t",
+            [
+                {"step_id": "fetch_prices", "dependencies": []},
+                {
+                    "step_id": "summarize",
+                    "dependencies": ["fetch_prices"],
+                },
+            ],
+        )
+        agent.autonomous_subtasks[0]["status"] = "failed"
+        agent.subtask_status["fetch_prices"] = "failed"
+
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(
+                    ("fetch_prices", []),
+                    ("summarize", []),
+                    ("fetch_prices_backup", []),
+                )
+            ],
+        )
+
+        loop._attempt_plan_repair(
+            "fetch_prices",
+            "ConnectionError: api.example.com unreachable",
+        )
+
+        next_subtask = loop._get_next_executable_subtask()
+        assert next_subtask is not None and next_subtask[
+            "step_id"
+        ] in ("summarize", "fetch_prices_backup")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-q", "-p", "no:randomly"])
 
