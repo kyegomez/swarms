@@ -703,6 +703,9 @@ class AutonomousAgentLoop:
                     subtask_id,
                     subtask_desc,
                     self.agent.autonomous_subtasks,
+                    verification=current_subtask.get(
+                        "verification", ""
+                    ),
                 )
                 self._say_user(execution_prompt)
 
@@ -891,10 +894,23 @@ class AutonomousAgentLoop:
                                                 )
                                                 == subtask_id
                                             ):
-                                                subtask_done = True
+                                                # Read what the handler did,
+                                                # not what the model asked
+                                                # for: subtask_done refuses a
+                                                # success claim on a step
+                                                # with an unmet verification,
+                                                # and a refusal has to leave
+                                                # the loop running.
+                                                subtask_done = self.agent.subtask_status.get(
+                                                    subtask_id
+                                                ) in (
+                                                    "completed",
+                                                    "failed",
+                                                )
                                                 # Show subtask completion
                                                 if (
-                                                    self.agent.print_on
+                                                    subtask_done
+                                                    and self.agent.print_on
                                                 ):
                                                     status = (
                                                         "completed"
@@ -1355,6 +1371,12 @@ class AutonomousAgentLoop:
                 "priority": step.get("priority", "medium"),
                 "dependencies": dependencies,
                 "status": "pending",
+                # Declared at planning time, before there is any incentive to
+                # call the step done. A revision may add or sharpen it; a
+                # finished step keeps whatever it was checked against.
+                "verification": str(
+                    step.get("verification", "") or ""
+                ),
             }
             incoming_order.append(step_id)
 
@@ -1646,7 +1668,12 @@ class AutonomousAgentLoop:
         return result
 
     def _subtask_done_tool(
-        self, task_id: str, summary: str, success: bool, **kwargs
+        self,
+        task_id: str,
+        summary: str,
+        success: bool,
+        verification_result: str = "",
+        **kwargs,
     ) -> str:
         """
         Mark a subtask as completed and move to the next task in the plan.
@@ -1677,6 +1704,9 @@ class AutonomousAgentLoop:
             success (bool): Whether the subtask was completed successfully.
                 - True: Subtask completed as intended
                 - False: Subtask failed but execution continues
+            verification_result (str): What the model ran or looked at to check
+                the step's ``verification`` criterion, and what it observed.
+                Required to mark a step that declared a criterion successful.
             **kwargs: Additional arguments (currently unused, reserved for future use).
 
         Returns:
@@ -1689,6 +1719,11 @@ class AutonomousAgentLoop:
             - Failed subtasks don't block execution but are tracked for final summary
             - Think call count is reset to prevent carryover thinking loops
             - If verbose=True, subtask completion is logged
+            - A step that declared a ``verification`` cannot be marked
+              successful without a ``verification_result``. The refusal is
+              returned as an ordinary tool result and no state is touched, so
+              the model can run the check and call again. ``success=False``
+              never needs one: failing is not a claim that has to be proved.
 
         Examples:
             >>> result = agent._subtask_done_tool(
@@ -1699,6 +1734,34 @@ class AutonomousAgentLoop:
             >>> # Returns: "Subtask step1 marked as completed"
             >>> # Updates status and allows loop to proceed to next subtask
         """
+        subtask = next(
+            (
+                s
+                for s in self.agent.autonomous_subtasks
+                if s["step_id"] == task_id
+            ),
+            None,
+        )
+        declared = (subtask or {}).get("verification", "")
+        verification_result = str(verification_result or "").strip()
+
+        # A success claim on a step with a criterion has to carry the check.
+        # Refused as a tool result, not raised: the loop continues and the
+        # model gets another turn to actually run it.
+        if success and declared and not verification_result:
+            logger.info(
+                f"Refused subtask_done for {task_id}: no verification_result "
+                f"for the declared check {declared!r}"
+            )
+            return (
+                f"Not accepted. Subtask {task_id} declared a verification: "
+                f"{declared}\n"
+                "Run it, then call subtask_done again with "
+                "verification_result set to what you actually observed. "
+                "If it does not pass, call subtask_done with success=false "
+                "and say why."
+            )
+
         if self.agent.verbose:
             logger.info(f"Completing subtask {task_id}: {summary}")
 
@@ -1709,13 +1772,11 @@ class AutonomousAgentLoop:
             )
 
         # Update subtask in list
-        for subtask in self.agent.autonomous_subtasks:
-            if subtask["step_id"] == task_id:
-                subtask["status"] = (
-                    "completed" if success else "failed"
-                )
-                subtask["summary"] = summary
-                break
+        if subtask is not None:
+            subtask["status"] = "completed" if success else "failed"
+            subtask["summary"] = summary
+            if verification_result:
+                subtask["verification_result"] = verification_result
 
         # Reset think call count when subtask is done
         self.agent.think_call_count = 0
@@ -1728,10 +1789,19 @@ class AutonomousAgentLoop:
                 f"Subtask {task_id} marked as {'completed' if success else 'failed'}. Moving to next subtask."
             )
 
-        # Add to memory
+        # Add to memory. The observation goes in too, so the final summary is
+        # written against what was checked rather than what was claimed.
+        verified_line = (
+            f"\n[VERIFIED] {task_id}: {verification_result}"
+            if verification_result
+            else ""
+        )
         self.agent.short_memory.add(
             role=self.agent.agent_name,
-            content=f"[SUBTASK DONE] {task_id}: {summary} (Success: {success})",
+            content=(
+                f"[SUBTASK DONE] {task_id}: {summary} "
+                f"(Success: {success}){verified_line}"
+            ),
         )
 
         return f"Subtask {task_id} marked as {'completed' if success else 'failed'}"
