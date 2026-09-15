@@ -1533,10 +1533,6 @@ class Agent:
                                 result = self._tool_search_tool(
                                     **arguments
                                 )
-                                self.short_memory.add(
-                                    role="Tool Executor",
-                                    content=f"tool_search result: {result}",
-                                )
                                 turn_results[
                                     tool_call.get("id", "")
                                 ] = result
@@ -1582,11 +1578,6 @@ class Agent:
 
                                     result = self._handoff_task_tool(
                                         handoffs=handoffs_list
-                                    )
-                                    # Add result to memory
-                                    self.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"Handoff Result:\n{result}",
                                     )
                                     turn_results[
                                         tool_call.get("id", "")
