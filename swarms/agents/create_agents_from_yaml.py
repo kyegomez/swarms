@@ -65,7 +65,7 @@ class SwarmConfig(BaseModel):
     """Configuration model for creating swarm routers with support for custom kwargs."""
 
     name: str
-    description: str
+    description: str = ""
     max_loops: int = Field(default=1, ge=1)
     swarm_type: str
     task: Optional[str] = None
@@ -262,7 +262,6 @@ def create_agents_from_yaml(
 
                 required_fields = {
                     "name",
-                    "description",
                     "swarm_type",
                 }
                 missing_fields = required_fields - set(
@@ -345,9 +344,9 @@ def create_agents_from_yaml(
                         "Cannot run swarm: No swarm_architecture section found in YAML configuration.\n"
                         "Please add a swarm_architecture section with:\n"
                         "  - name: your_swarm_name\n"
-                        "  - description: your_swarm_description\n"
                         "  - swarm_type: one of [SequentialWorkflow, ConcurrentWorkflow, AgentRearrange, MixtureOfAgents, auto]\n"
-                        "  - task: your_task_description"
+                        "  - description: your_swarm_description (optional)\n"
+                        "  - task: your_task_description (optional until run)"
                     )
                 raise ValueError(
                     "Cannot run swarm: SwarmRouter creation failed. Check the previous error messages."
