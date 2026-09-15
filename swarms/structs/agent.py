@@ -2161,7 +2161,7 @@ class Agent:
         self,
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[dict]] = None,
-    ) -> str:
+    ) -> Any:
         """
         Generate a comprehensive final summary of the autonomous task execution.
 
@@ -2173,7 +2173,7 @@ class Agent:
                 flattened string rendering of it.
 
         Returns:
-            str: Comprehensive summary
+            Any: The conversation shaped by ``output_type``, on every path.
         """
         summary_prompt = get_summary_prompt()
         self.short_memory.add(
@@ -2237,7 +2237,9 @@ class Agent:
                                 title="Task Completion Summary",
                             )
 
-                        return result
+                        return history_output_formatter(
+                            self.short_memory, type=self.output_type
+                        )
 
             # If complete_task wasn't called, generate summary manually
             comprehensive_summary = f"""Task Execution Summary

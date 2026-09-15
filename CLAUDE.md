@@ -1089,6 +1089,29 @@ Full specification: the [WARP Git Message Skill](https://swarms.world/prompt/32d
 
 ---
 
+## Comments: one line, only when needed
+
+A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.
+
+```python
+# Good
+# Sequential on purpose: agents share a rate-limited client.
+return [agent.run(task) for agent in agents]
+```
+
+```python
+# Bad
+# ------------------------------------------------------------
+# This function takes a list of agents and runs each of them
+# against the provided task, collecting the results into a list
+# which is then returned to the caller.
+# ------------------------------------------------------------
+```
+
+Multi-line comment blocks keep arriving in PRs and keep getting removed. Write them short the first time.
+
+---
+
 ## What to Avoid
 
 **Don't import from submodules directly** — always import from `swarms`:
