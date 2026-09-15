@@ -4,6 +4,7 @@ import pytest
 
 from swarms.structs.agent import Agent
 from swarms.structs.graph_workflow import (
+    Edge,
     GraphWorkflow,
     Node,
     NodeType,
@@ -1550,6 +1551,213 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
         "B: OUT_B",
     ]
     assert "OUT_A" not in prompt and "OUT_B" not in prompt
+
+
+def _routing_workflow(classifier_output, join=None):
+    """Classifier fanning out to two mutually exclusive branches that rejoin."""
+    wf = GraphWorkflow(name="Routing", auto_compile=False)
+    wf.add_node(_mock_agent("Classifier", classifier_output))
+    wf.add_node(_mock_agent("Urgent"))
+    wf.add_node(_mock_agent("Normal"))
+    wf.add_node(
+        _mock_agent("Report"),
+        metadata={"join": join} if join else None,
+    )
+    wf.add_edge(
+        Edge(
+            source="Classifier",
+            target="Urgent",
+            condition=lambda output, ctx: "urgent" in output.lower(),
+        )
+    )
+    wf.add_edge(
+        Edge(
+            source="Classifier",
+            target="Normal",
+            condition=lambda output, ctx: "urgent"
+            not in output.lower(),
+        )
+    )
+    wf.add_edge("Urgent", "Report")
+    wf.add_edge("Normal", "Report")
+    return wf
+
+
+@pytest.mark.parametrize(
+    "classifier_output, taken, dropped",
+    [
+        ("This ticket is URGENT", "Urgent", "Normal"),
+        ("Routine password reset", "Normal", "Urgent"),
+    ],
+)
+def test_conditional_edge_routes_to_one_branch_and_skips_the_other(
+    classifier_output, taken, dropped
+):
+    """The predicate decides which branch of a fan-out executes."""
+    wf = _routing_workflow(classifier_output)
+
+    result = wf.run("triage the ticket")
+
+    assert set(result) == {"Classifier", taken, "Report"}
+    assert dropped not in result
+    assert wf.skipped_nodes == [dropped]
+    wf.nodes[taken].agent.run.assert_called_once()
+    wf.nodes[dropped].agent.run.assert_not_called()
+
+
+def test_node_with_every_inbound_condition_failing_is_skipped():
+    """A gated-out node is absent from the results and never invoked."""
+    wf = GraphWorkflow(name="All-Fail", auto_compile=False)
+    wf.add_node(_mock_agent("Source"))
+    wf.add_node(_mock_agent("Gated"))
+    wf.add_node(_mock_agent("Downstream"))
+    wf.add_edge(
+        Edge(
+            source="Source",
+            target="Gated",
+            condition=lambda output, ctx: False,
+        )
+    )
+    wf.add_edge("Gated", "Downstream")
+
+    result = wf.run("do the work")
+
+    assert result == {"Source": "output-Source"}
+    assert wf.skipped_nodes == ["Gated", "Downstream"]
+    wf.nodes["Gated"].agent.run.assert_not_called()
+    wf.nodes["Downstream"].agent.run.assert_not_called()
+
+
+def test_downstream_prompt_carries_only_the_predecessor_that_ran():
+    """A skipped predecessor leaves no gap in the surviving attribution."""
+    wf = _routing_workflow("This ticket is URGENT")
+
+    wf.run("triage the ticket")
+
+    call_kwargs = wf.nodes["Report"].agent.run.call_args.kwargs
+    contents = [m["content"] for m in call_kwargs["messages"]]
+    assert "Urgent: output-Urgent" in contents
+    assert not any(c.startswith("Normal: ") for c in contents)
+    assert call_kwargs["task"]
+
+
+def test_build_prompt_survives_losing_every_predecessor():
+    """All predecessors skipped still yields a usable prompt, not an error."""
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B"]:
+        wf.add_node(create_test_agent(name))
+    wf.add_edge("A", "B")
+
+    prompt, messages = wf._build_prompt(
+        "B", "the task", {}, layer_idx=1
+    )
+
+    assert "the task" in prompt
+    assert messages == []
+
+
+def test_join_all_requires_every_inbound_edge_to_pass():
+    """The opt-in all-join rule drops a node one of whose branches was cut."""
+    default_any = _routing_workflow("This ticket is URGENT")
+    join_all = _routing_workflow("This ticket is URGENT", join="all")
+
+    assert "Report" in default_any.run("triage the ticket")
+
+    result = join_all.run("triage the ticket")
+    assert "Report" not in result
+    assert join_all.skipped_nodes == ["Normal", "Report"]
+
+
+def test_unconditional_graph_is_untouched_by_conditional_routing():
+    """Every node still runs and nothing is recorded as skipped."""
+    wf = GraphWorkflow(name="Plain", auto_compile=False)
+    for name in ["First", "Second", "Third"]:
+        wf.add_node(_mock_agent(name))
+    wf.add_edge("First", "Second")
+    wf.add_edge("First", "Third")
+
+    result = wf.run("do the work")
+
+    assert result == {
+        "First": "output-First",
+        "Second": "output-Second",
+        "Third": "output-Third",
+    }
+    assert wf.skipped_nodes == []
+
+
+def test_to_spec_warns_that_it_is_dropping_a_condition(monkeypatch):
+    """The condition cannot survive JSON, so the caller is told it is gone."""
+    from swarms.structs import graph_workflow as graph_workflow_module
+
+    warnings = []
+    monkeypatch.setattr(
+        graph_workflow_module.logger,
+        "warning",
+        lambda message, *a, **kw: warnings.append(str(message)),
+    )
+
+    wf = _routing_workflow("This ticket is URGENT")
+    spec = wf.to_spec()
+
+    assert any(
+        "Classifier -> Urgent" in w and "cannot be serialized" in w
+        for w in warnings
+    ), warnings
+    assert all("condition" not in e for e in spec["edges"])
+
+    rebuilt = GraphWorkflow.from_topology_spec(
+        spec,
+        {
+            name: _mock_agent(name)
+            for name in ["Classifier", "Urgent", "Normal", "Report"]
+        },
+    )
+    assert all(e.condition is None for e in rebuilt.edges)
+    assert set(rebuilt.run("triage the ticket")) == {
+        "Classifier",
+        "Urgent",
+        "Normal",
+        "Report",
+    }
+
+
+def test_validate_warns_when_an_end_point_is_gated_on_every_path():
+    """An end point only reachable through conditions may never run."""
+    wf = _routing_workflow("This ticket is URGENT")
+    wf.compile()
+
+    result = wf.validate()
+
+    assert any(
+        "behind a condition" in w and "Report" in w
+        for w in result["warnings"]
+    ), result["warnings"]
+    assert result["is_valid"] is True
+
+
+def test_validate_stays_quiet_when_a_plain_path_reaches_the_end_point():
+    """A guaranteed path to the end point means no gating warning."""
+    wf = GraphWorkflow(name="Guaranteed", auto_compile=False)
+    wf.add_node(_mock_agent("Start"))
+    wf.add_node(_mock_agent("Optional"))
+    wf.add_node(_mock_agent("Finish"))
+    wf.add_edge(
+        Edge(
+            source="Start",
+            target="Optional",
+            condition=lambda output, ctx: False,
+        )
+    )
+    wf.add_edge("Start", "Finish")
+    wf.add_edge("Optional", "Finish")
+    wf.compile()
+
+    result = wf.validate()
+
+    assert not any(
+        "behind a condition" in w for w in result["warnings"]
+    ), result["warnings"]
 
 
 if __name__ == "__main__":
