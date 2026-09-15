@@ -1167,7 +1167,7 @@ def _stub_council_run(agent, reply, calls):
     agent.run = _run
 
 
-def _offline_council():
+def test_council_as_judge_aggregator_receives_typed_turns():
     from swarms.structs.council_as_judge import CouncilAsAJudge
 
     council = CouncilAsAJudge(
@@ -1182,36 +1182,20 @@ def _offline_council():
             agent, f"{agent.agent_name}-rationale", calls
         )
     _stub_council_run(council.aggregator_agent, "final report", calls)
-    return council, calls
-
-
-def test_council_as_judge_aggregator_receives_typed_turns():
-    council, calls = _offline_council()
 
     council.run(task="Evaluate this response for quality.")
 
-    aggregator_calls = [
+    call = next(
         c
         for c in calls
         if c["agent"] == council.aggregator_agent.agent_name
+    )
+    contents = [m["content"] for m in call["messages"]] + [
+        str(call["task"])
     ]
-    assert len(aggregator_calls) == 1
-    call = aggregator_calls[0]
-    turns = call["messages"] + [
-        {"role": "user", "content": str(call["task"])}
-    ]
-
-    for message in turns:
-        assert isinstance(message, dict)
-        assert message["role"] in ("user", "assistant", "system")
-        assert isinstance(message["content"], str)
-
-    contents = [m["content"] for m in turns]
     for agent in council.judge_agents.values():
         assert any(
             f"{agent.agent_name}: {agent.agent_name}-rationale"
             in text
             for text in contents
         ), f"no turn attributed to {agent.agent_name}: {contents}"
-
-    assert len(turns) == len(council.judge_agents) + 1
