@@ -7,7 +7,10 @@ from pathlib import Path
 
 from loguru import logger
 
-from swarms.structs.conversation import Conversation
+from swarms.structs.conversation import (
+    MEMORY_MD_PRELOAD_OMITTED_MARKER,
+    Conversation,
+)
 
 
 def setup_temp_conversations_dir():
@@ -682,6 +685,112 @@ def test_preload_does_not_write_to_disk(tmp_path):
         conversations_dir=str(tmp_path / "convs"),
     )
     assert md_path.read_text() == content
+
+
+def _preamble(conv):
+    return [
+        m
+        for m in conv.conversation_history
+        if "Persistent Memory" in str(m.get("content", ""))
+    ]
+
+
+def _entry(i):
+    return f"### user — 2025-01-01T00:00:{i:02d}\n\nmessage {i}\n\n---\n\n"
+
+
+def test_preload_within_bound_is_injected_unchanged(tmp_path):
+    """A file smaller than the bound is injected in full."""
+    md_path = tmp_path / "MEMORY.md"
+    file_text = "# Agent Memory\n\n## Interaction Log\n\n" + _entry(1)
+    md_path.write_text(file_text)
+    conv = Conversation(
+        memory_md_path=str(md_path),
+        conversations_dir=str(tmp_path / "convs"),
+        memory_md_preload_chars=len(file_text),
+    )
+    content = _preamble(conv)[0]["content"]
+    assert file_text in content
+    assert MEMORY_MD_PRELOAD_OMITTED_MARKER not in content
+
+
+def test_preload_is_bounded_and_keeps_head_and_recent_entries(
+    tmp_path,
+):
+    """An oversized file is cut to the bound: header plus the most
+    recent entries survive, the omitted middle is marked."""
+    md_path = tmp_path / "MEMORY.md"
+    head = (
+        "# Agent Memory\n\n## Lessons Learned\n\n- keep it short\n\n"
+        "## Interaction Log\n\n"
+    )
+    file_text = head + "".join(_entry(i) for i in range(1, 41))
+    md_path.write_text(file_text)
+    limit = 600
+    conv = Conversation(
+        memory_md_path=str(md_path),
+        conversations_dir=str(tmp_path / "convs"),
+        memory_md_preload_chars=limit,
+    )
+    preambles = _preamble(conv)
+    assert len(preambles) == 1
+    content = preambles[0]["content"]
+    injected = content.split("context coherently.\n\n", 1)[1]
+
+    assert (
+        len(injected)
+        <= limit + len(MEMORY_MD_PRELOAD_OMITTED_MARKER) + 4
+    )
+    assert injected.startswith("# Agent Memory")
+    assert "## Lessons Learned" in injected
+    assert MEMORY_MD_PRELOAD_OMITTED_MARKER in injected
+    # The newest entry is kept, the oldest is dropped.
+    assert "message 40" in injected
+    assert "message 1\n" not in injected
+    # The tail starts at an entry boundary, never inside an entry.
+    tail = injected.split(MEMORY_MD_PRELOAD_OMITTED_MARKER, 1)[1]
+    assert tail.lstrip().startswith("### user")
+    # Bounding the preamble never touches the file on disk.
+    assert md_path.read_text() == file_text
+
+
+def test_preload_bound_does_not_grow_across_sessions(tmp_path):
+    """The preamble stays bounded no matter how many sessions have
+    appended to MEMORY.md."""
+    md_path = tmp_path / "MEMORY.md"
+    sizes = []
+    for session in range(4):
+        conv = Conversation(
+            memory_md_path=str(md_path),
+            conversations_dir=str(tmp_path / "convs"),
+            memory_md_preload_chars=2000,
+        )
+        preambles = _preamble(conv)
+        sizes.append(len(preambles[0]["content"]) if preambles else 0)
+        for i in range(10):
+            conv.add(
+                "user", f"session {session} message {i} " + "x" * 80
+            )
+    assert sizes[0] == 0
+    assert sizes[1] > 0
+    assert max(sizes) < 2000 + 200
+    # On disk the log keeps everything.
+    assert md_path.stat().st_size > 4 * 10 * 80
+
+
+def test_preload_bound_disabled_with_zero(tmp_path):
+    """memory_md_preload_chars=0 disables the bound."""
+    md_path = tmp_path / "MEMORY.md"
+    file_text = "# Agent Memory\n\n## Interaction Log\n\n" + "".join(
+        _entry(i) for i in range(1, 30)
+    )
+    md_path.write_text(file_text)
+    conv = Conversation(
+        memory_md_path=str(md_path),
+        conversations_dir=str(tmp_path / "convs"),
+        memory_md_preload_chars=0,
+    )
+    assert file_text in _preamble(conv)[0]["content"]
 
 
 # ── Write-through ──
