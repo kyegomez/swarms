@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+from typing import Optional
 
 import pytest
 
@@ -1554,7 +1555,7 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
 
 
 def _async_mock_agent(
-    name: str, response: str = None, delay: float = 0.0
+    name: str, response: Optional[str] = None, delay: float = 0.0
 ):
     """Return an agent double whose ``arun`` is a real coroutine function."""
     from unittest.mock import AsyncMock, MagicMock

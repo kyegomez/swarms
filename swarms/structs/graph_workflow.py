@@ -2228,9 +2228,10 @@ class GraphWorkflow:
             prev_outputs (Dict[str, Any]): Outputs recorded so far.
         """
         try:
-            Path(self.checkpoint_dir).mkdir(
-                parents=True, exist_ok=True
-            )
+            checkpoint_dir = self.checkpoint_dir
+            if not checkpoint_dir:
+                return
+            Path(checkpoint_dir).mkdir(parents=True, exist_ok=True)
             checkpoint_path = self._checkpoint_path(
                 task_key, layer_idx
             )
@@ -2334,6 +2335,10 @@ class GraphWorkflow:
             self.task = task
         else:
             task = self.task
+        if task is None:
+            raise ValueError(
+                "GraphWorkflow.arun needs a task: none was passed and self.task is unset"
+            )
 
         if self.verbose:
             logger.info("Starting async GraphWorkflow execution")
@@ -2365,15 +2370,16 @@ class GraphWorkflow:
                 loop = 0
                 all_loop_results: Dict[str, Any] = {}
                 prior_loop_end_outputs: Dict[str, Any] = {}
+                execution_results: Dict[str, Any] = {}
 
                 while loop < self.max_loops:
-                    execution_results: Dict[str, Any] = {}
+                    execution_results = {}
                     prev_outputs: Dict[str, Any] = {}
 
                     task_key = (
                         self._task_key(task)
                         if self.checkpoint_dir
-                        else None
+                        else ""
                     )
 
                     if prior_loop_end_outputs:
@@ -2590,6 +2596,10 @@ class GraphWorkflow:
             self.task = task
         else:
             task = self.task
+        if task is None:
+            raise ValueError(
+                "GraphWorkflow.run needs a task: none was passed and self.task is unset"
+            )
 
         if self.verbose:
             logger.info(
@@ -2652,7 +2662,7 @@ class GraphWorkflow:
                 task_key = (
                     self._task_key(task)
                     if self.checkpoint_dir
-                    else None
+                    else ""
                 )
 
                 # Later loops seed entry points with the previous loop's end outputs
