@@ -585,6 +585,8 @@ class Node:
         type (NodeType): AGENT or SUBGRAPH.
         agent (Any): The Agent or GraphWorkflow associated with the node.
         metadata (Dict[str, Any], optional): Additional metadata for the node.
+        retry (RetryPolicy, optional): How this node re-runs when its agent
+            raises. ``None`` means the workflow's ``default_retry`` applies.
     """
 
     def __init__(
@@ -593,6 +595,7 @@ class Node:
         type: NodeType = NodeType.AGENT,
         agent: Any = None,
         metadata: Dict[str, Any] = None,
+        retry: Optional["RetryPolicy"] = None,
     ):
         """
         Initialize a Node.
@@ -602,11 +605,13 @@ class Node:
             type (NodeType, optional): The type of the node. Defaults to NodeType.AGENT.
             agent (Any, optional): The Agent or GraphWorkflow associated with the node.
             metadata (Dict[str, Any], optional): Additional metadata for the node.
+            retry (RetryPolicy, optional): Per-node retry policy. Defaults to None.
         """
         self.id = id
         self.type = type
         self.agent = agent
         self.metadata = metadata or {}
+        self.retry = retry
 
         if not self.id:
             if self.agent is not None:
@@ -742,6 +747,249 @@ class Edge:
         return cls(source=src, target=tgt, metadata=metadata)
 
 
+FAIL_FAST = "fail_fast"
+SKIP_DOWNSTREAM = "skip_downstream"
+PROPAGATE_ERROR = "propagate_error"
+FAILURE_POLICIES = (FAIL_FAST, SKIP_DOWNSTREAM, PROPAGATE_ERROR)
+
+
+class RetryPolicy:
+    """
+    How a node re-runs after its agent raises.
+
+    Attributes:
+        max_attempts (int): Total attempts, the first one included. ``1``
+            disables retries.
+        backoff (str): ``"none"``, ``"constant"``, ``"linear"`` or
+            ``"exponential"``. Sets how the wait grows between attempts.
+        base_delay (float): Seconds the first wait lasts.
+        max_delay (float): Ceiling for any single wait, in seconds.
+        retry_on (Tuple[type, ...]): Exception types that trigger a retry.
+            Any other exception fails the node on the spot.
+    """
+
+    BACKOFFS = ("none", "constant", "linear", "exponential")
+
+    def __init__(
+        self,
+        max_attempts: int = 3,
+        backoff: str = "exponential",
+        base_delay: float = 1.0,
+        max_delay: float = 30.0,
+        retry_on: Union[type, Tuple[type, ...]] = (Exception,),
+    ):
+        """
+        Initialize a RetryPolicy.
+
+        Args:
+            max_attempts (int): Total attempts, the first one included.
+            backoff (str): One of ``RetryPolicy.BACKOFFS``.
+            base_delay (float): Seconds the first wait lasts.
+            max_delay (float): Ceiling for any single wait, in seconds.
+            retry_on (Union[type, Tuple[type, ...]]): Exception type or
+                types that trigger a retry.
+
+        Raises:
+            ValueError: If any argument is out of range or ``retry_on``
+                holds something that is not an exception type.
+        """
+        if int(max_attempts) < 1:
+            raise ValueError(
+                f"max_attempts must be at least 1, got {max_attempts}"
+            )
+        if backoff not in self.BACKOFFS:
+            raise ValueError(
+                f"backoff must be one of {self.BACKOFFS}, got {backoff!r}"
+            )
+        if base_delay < 0 or max_delay < 0:
+            raise ValueError(
+                "base_delay and max_delay must be zero or positive"
+            )
+        if isinstance(retry_on, type):
+            retry_on = (retry_on,)
+        retry_on = tuple(retry_on)
+        if not retry_on or not all(
+            isinstance(t, type) and issubclass(t, BaseException)
+            for t in retry_on
+        ):
+            raise ValueError(
+                "retry_on must be a non-empty tuple of exception types"
+            )
+        self.max_attempts = int(max_attempts)
+        self.backoff = backoff
+        self.base_delay = float(base_delay)
+        self.max_delay = float(max_delay)
+        self.retry_on = retry_on
+
+    def should_retry(self, error: BaseException) -> bool:
+        """
+        Whether ``error`` is one of the types this policy retries.
+
+        Args:
+            error (BaseException): The exception the agent raised.
+
+        Returns:
+            bool: True when ``error`` is an instance of any ``retry_on`` type.
+        """
+        return isinstance(error, self.retry_on)
+
+    def delay_for(self, attempt: int) -> float:
+        """
+        Seconds to wait after ``attempt`` failed, before the next one.
+
+        Args:
+            attempt (int): The 1-based attempt that just failed.
+
+        Returns:
+            float: The wait, capped at ``max_delay``.
+        """
+        if self.backoff == "none":
+            return 0.0
+        if self.backoff == "constant":
+            delay = self.base_delay
+        elif self.backoff == "linear":
+            delay = self.base_delay * attempt
+        else:
+            delay = self.base_delay * (2 ** (attempt - 1))
+        return min(delay, self.max_delay)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Serialize the policy. Exception types are stored by name.
+
+        Returns:
+            Dict[str, Any]: A JSON-compatible dict for ``from_dict``.
+        """
+        return {
+            "max_attempts": self.max_attempts,
+            "backoff": self.backoff,
+            "base_delay": self.base_delay,
+            "max_delay": self.max_delay,
+            "retry_on": [t.__name__ for t in self.retry_on],
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "RetryPolicy":
+        """
+        Rebuild a policy from ``to_dict`` output.
+
+        Exception names are resolved against the builtins. A name that is
+        not a builtin exception is dropped, and when none survive the policy
+        retries on ``Exception``.
+
+        Args:
+            data (Dict[str, Any]): A dict produced by ``to_dict``.
+
+        Returns:
+            RetryPolicy: The reconstructed policy.
+        """
+        import builtins
+
+        resolved = tuple(
+            t
+            for t in (
+                getattr(builtins, name, None)
+                for name in data.get("retry_on") or []
+            )
+            if isinstance(t, type) and issubclass(t, BaseException)
+        )
+        return cls(
+            max_attempts=data.get("max_attempts", 3),
+            backoff=data.get("backoff", "exponential"),
+            base_delay=data.get("base_delay", 1.0),
+            max_delay=data.get("max_delay", 30.0),
+            retry_on=resolved or (Exception,),
+        )
+
+    def __eq__(self, other: Any) -> bool:
+        return (
+            isinstance(other, RetryPolicy)
+            and self.to_dict() == other.to_dict()
+        )
+
+    def __repr__(self) -> str:
+        names = ", ".join(t.__name__ for t in self.retry_on)
+        return (
+            f"RetryPolicy(max_attempts={self.max_attempts}, "
+            f"backoff={self.backoff!r}, base_delay={self.base_delay}, "
+            f"max_delay={self.max_delay}, retry_on=({names},))"
+        )
+
+
+class NodeFailure:
+    """
+    One node's failure after its retry budget is spent.
+
+    Kept on ``GraphWorkflow.failed_nodes`` so a caller can inspect what
+    went wrong without scanning outputs for an ``[ERROR]`` prefix.
+
+    Attributes:
+        node_id (str): The node that failed.
+        agent_name (str): The agent's name, for messages.
+        error (BaseException): The last exception raised.
+        attempts (int): How many times the node was tried.
+        layer (int): The execution layer the node sat in.
+        loop (int): The 0-based workflow loop during which it failed.
+    """
+
+    def __init__(
+        self,
+        node_id: str,
+        agent_name: str,
+        error: BaseException,
+        attempts: int,
+        layer: int,
+        loop: int,
+    ):
+        self.node_id = node_id
+        self.agent_name = agent_name
+        self.error = error
+        self.attempts = attempts
+        self.layer = layer
+        self.loop = loop
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        A JSON-compatible view of the failure.
+
+        Returns:
+            Dict[str, Any]: node id, agent name, error type and text,
+            attempts, layer and loop.
+        """
+        return {
+            "node_id": self.node_id,
+            "agent_name": self.agent_name,
+            "error_type": type(self.error).__name__,
+            "error": str(self.error),
+            "attempts": self.attempts,
+            "layer": self.layer,
+            "loop": self.loop,
+        }
+
+    def __str__(self) -> str:
+        return (
+            f"{self.node_id} failed after {self.attempts} attempt(s) "
+            f"in layer {self.layer}, loop {self.loop}: "
+            f"{type(self.error).__name__}: {self.error}"
+        )
+
+    def __repr__(self) -> str:
+        return f"NodeFailure({self})"
+
+
+class GraphWorkflowNodeError(Exception):
+    """
+    Raised by ``GraphWorkflow.run`` under ``on_failure="fail_fast"``.
+
+    Attributes:
+        failure (NodeFailure): The node failure that aborted the run.
+    """
+
+    def __init__(self, failure: NodeFailure):
+        super().__init__(str(failure))
+        self.failure = failure
+
+
 class GraphWorkflow:
     """
     Represents a workflow graph where each node is an agent.
@@ -778,10 +1026,55 @@ class GraphWorkflow:
         checkpoint_dir: Optional[str] = None,
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
+        on_failure: str = SKIP_DOWNSTREAM,
+        default_retry: Optional[RetryPolicy] = None,
     ):
+        """
+        Initialize a GraphWorkflow.
+
+        Args:
+            id (Optional[str]): Workflow id. Generated when omitted.
+            name (Optional[str]): Workflow name.
+            description (Optional[str]): Workflow description.
+            nodes (Optional[Dict[str, Node]]): Nodes keyed by id.
+            edges (Optional[List[Edge]]): Edges between the nodes.
+            entry_points (Optional[List[str]]): Node ids the run starts at.
+            end_points (Optional[List[str]]): Node ids whose outputs feed
+                the next loop.
+            max_loops (int): How many times the whole graph runs.
+            task (Optional[str]): Default task for ``run``.
+            auto_compile (bool): Compile at construction when nodes exist.
+            verbose (bool): Detailed logging.
+            backend (str): ``"networkx"`` or ``"rustworkx"``.
+            checkpoint_dir (Optional[str]): Directory for per-layer
+                checkpoints.
+            on_node_complete (Optional[Callable[[str, Any], None]]):
+                Called with ``(node_id, output)`` after each node succeeds.
+            max_parallel_nodes (Optional[int]): Thread pool size for a layer.
+            on_failure (str): What happens once a node's retries are spent.
+                ``"skip_downstream"`` records the failure in
+                ``failed_nodes``, skips every node that depends on it and
+                keeps running independent branches. ``"fail_fast"`` raises
+                ``GraphWorkflowNodeError`` at once. ``"propagate_error"``
+                feeds an ``[ERROR] ...`` string downstream as before.
+            default_retry (Optional[RetryPolicy]): Retry policy for nodes
+                that do not carry their own. ``None`` means one attempt.
+
+        Raises:
+            ValueError: If ``on_failure`` is not one of ``FAILURE_POLICIES``.
+        """
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
         self.on_node_complete = on_node_complete
+        if on_failure not in FAILURE_POLICIES:
+            raise ValueError(
+                f"on_failure must be one of {FAILURE_POLICIES}, got {on_failure!r}"
+            )
+        self.on_failure = on_failure
+        self.default_retry = default_retry
+        self.failed_nodes: Dict[str, NodeFailure] = {}
+        self.skipped_nodes: Dict[str, str] = {}
+        self._node_attempts: Dict[str, int] = {}
 
         if self.verbose:
             logger.info("Initializing GraphWorkflow")
@@ -1873,24 +2166,151 @@ class GraphWorkflow:
             / f"{task_key}_layer_{layer_idx}.json"
         )
 
-    @staticmethod
-    def _safe_output(
-        agent_name: str, produce: Callable[[], Any]
+    def _blocking_predecessor(self, node_id: str) -> Optional[str]:
+        """
+        The predecessor that keeps a node from running, if any.
+
+        Only ``skip_downstream`` blocks nodes; the other policies either
+        never reach this point or feed error text through as output.
+
+        Args:
+            node_id (str): The node about to run.
+
+        Returns:
+            Optional[str]: The first failed or skipped predecessor, else None.
+        """
+        if self.on_failure != SKIP_DOWNSTREAM:
+            return None
+        for pred in self._get_predecessors(node_id):
+            if (
+                pred in self.failed_nodes
+                or pred in self.skipped_nodes
+            ):
+                return pred
+        return None
+
+    def _retry_policy_for(
+        self, node_id: str
+    ) -> Optional[RetryPolicy]:
+        """
+        The retry policy a node runs under.
+
+        Args:
+            node_id (str): The node to look up.
+
+        Returns:
+            Optional[RetryPolicy]: The node's own policy, else the workflow
+            ``default_retry``, else ``None`` for a single attempt.
+        """
+        node = self.nodes.get(node_id)
+        policy = getattr(node, "retry", None)
+        return policy if policy is not None else self.default_retry
+
+    def _retrying(
+        self,
+        node_id: str,
+        agent_name: str,
+        produce: Callable[[], Any],
+    ) -> Callable[[], Any]:
+        """
+        Wrap ``produce`` so it re-runs under the node's retry policy.
+
+        Args:
+            node_id (str): The node being invoked.
+            agent_name (str): The agent's name, for log lines.
+            produce (Callable[[], Any]): The zero-argument node invocation.
+
+        Returns:
+            Callable[[], Any]: ``produce`` itself when no policy applies.
+            Otherwise a callable that re-invokes ``produce`` on a retryable
+            exception, sleeps ``policy.delay_for(attempt)`` between tries,
+            and raises the last exception once the budget is spent or the
+            exception is not in ``retry_on``. The attempt count lands in
+            ``self._node_attempts`` for the failure record.
+        """
+        policy = self._retry_policy_for(node_id)
+        if policy is None:
+            return produce
+
+        def _run() -> Any:
+            attempt = 1
+            while True:
+                try:
+                    result = produce()
+                    self._node_attempts[node_id] = attempt
+                    return result
+                except Exception as e:
+                    self._node_attempts[node_id] = attempt
+                    if (
+                        attempt >= policy.max_attempts
+                        or not policy.should_retry(e)
+                    ):
+                        raise
+                    delay = policy.delay_for(attempt)
+                    logger.warning(
+                        f"GraphWorkflow node {agent_name} failed on attempt "
+                        f"{attempt}/{policy.max_attempts} "
+                        f"({type(e).__name__}: {e}); retrying in {delay:.2f}s"
+                    )
+                    if delay > 0:
+                        time.sleep(delay)
+                    attempt += 1
+
+        return _run
+
+    def _settle(
+        self,
+        node_id: str,
+        agent_name: str,
+        produce: Callable[[], Any],
+        layer_idx: int,
+        loop_idx: int,
     ) -> Tuple[bool, Any]:
         """
-        Run ``produce``, turning a failure into an ``[ERROR]`` string.
+        Run ``produce`` and apply ``on_failure`` when it raises.
 
-        One node blowing up degrades that node's output rather than the whole
-        layer, so downstream agents still receive something to work with.
-        Returns ``(succeeded, output)``.
+        Args:
+            node_id (str): The node being settled.
+            agent_name (str): The agent's name, for messages.
+            produce (Callable[[], Any]): The invocation, already wrapped by
+                ``_retrying`` where a policy applies.
+            layer_idx (int): The execution layer, for the failure record.
+            loop_idx (int): The 0-based workflow loop, for the failure record.
+
+        Returns:
+            Tuple[bool, Any]: ``(True, output)`` on success. On failure the
+            node is recorded in ``failed_nodes`` and the second element is
+            an ``[ERROR] ...`` string under ``propagate_error`` or ``None``
+            under ``skip_downstream``, which tells the caller to record
+            nothing for the node.
+
+        Raises:
+            GraphWorkflowNodeError: Under ``fail_fast``, chained from the
+                agent's exception.
         """
         try:
             return True, produce()
         except Exception as e:
+            failure = NodeFailure(
+                node_id=node_id,
+                agent_name=agent_name,
+                error=e,
+                attempts=self._node_attempts.pop(node_id, 1),
+                layer=layer_idx,
+                loop=loop_idx,
+            )
+            self.failed_nodes[node_id] = failure
             logger.exception(
                 f"Error in GraphWorkflow agent execution for {agent_name}: {e}"
             )
-            return False, f"[ERROR] Agent {agent_name} failed: {e}"
+            if self.on_failure == FAIL_FAST:
+                raise GraphWorkflowNodeError(failure) from e
+            if self.on_failure == PROPAGATE_ERROR:
+                return (
+                    False,
+                    f"[ERROR] Agent {agent_name} failed: {e}",
+                )
+            return False, None
 
     @trace_run(
         "GraphWorkflow.run",
@@ -1934,11 +2354,21 @@ class GraphWorkflow:
                 When max_loops > 1, returns a dict with per-loop results
                 keyed as ``{node_id}_loop_{loop_number}`` plus the final
                 loop's results under the plain ``node_id`` keys.
+                Under ``on_failure="skip_downstream"`` failed and skipped
+                nodes are absent; read ``failed_nodes`` and
+                ``skipped_nodes`` on the workflow for them.
+
+        Raises:
+            GraphWorkflowNodeError: Under ``on_failure="fail_fast"``, when
+                a node fails after its retry budget.
         """
         # Resolve callbacks: run-level overrides instance-level
         _on_node_complete = on_node_complete or self.on_node_complete
         _streaming_callback = streaming_callback
         run_start_time = time.time()
+        self.failed_nodes = {}
+        self.skipped_nodes = {}
+        self._node_attempts = {}
 
         if task is not None:
             self.task = task
@@ -2085,6 +2515,16 @@ class GraphWorkflow:
                         node_type,
                         agent_name,
                     ) in layer:
+                        blocked_by = self._blocking_predecessor(
+                            node_id
+                        )
+                        if blocked_by is not None:
+                            self.skipped_nodes[node_id] = blocked_by
+                            logger.warning(
+                                f"Skipping node {node_id}: it depends on "
+                                f"{blocked_by}, which failed or was skipped"
+                            )
+                            continue
                         try:
                             prompt, prior_messages = (
                                 self._build_prompt(
@@ -2241,19 +2681,27 @@ class GraphWorkflow:
                             prompt,
                             prior_messages,
                         ) = layer_data[0]
-                        _, output = self._safe_output(
+                        ok, output = self._settle(
+                            node_id,
                             agent_name,
-                            _make_call(
+                            self._retrying(
                                 node_id,
-                                agent,
-                                node_type,
-                                prompt,
-                                prior_messages,
+                                agent_name,
+                                _make_call(
+                                    node_id,
+                                    agent,
+                                    node_type,
+                                    prompt,
+                                    prior_messages,
+                                ),
                             ),
+                            layer_idx,
+                            loop,
                         )
-                        _record(
-                            node_id, agent_name, node_type, output
-                        )
+                        if ok or output is not None:
+                            _record(
+                                node_id, agent_name, node_type, output
+                            )
                     else:
                         # Parallel layer: dispatch onto the run-wide pool.
                         pool = _get_executor()
@@ -2269,12 +2717,16 @@ class GraphWorkflow:
                         ) in layer_data:
                             try:
                                 future = pool.submit(
-                                    _make_call(
+                                    self._retrying(
                                         node_id,
-                                        agent,
-                                        node_type,
-                                        prompt,
-                                        prior_messages,
+                                        agent_name,
+                                        _make_call(
+                                            node_id,
+                                            agent,
+                                            node_type,
+                                            prompt,
+                                            prior_messages,
+                                        ),
                                     )
                                 )
                                 future_to_data[future] = (
@@ -2286,11 +2738,22 @@ class GraphWorkflow:
                                 logger.exception(
                                     f"Error submitting task for agent {agent_name}: {e}"
                                 )
-                                error_output = f"[ERROR] Failed to submit task: {e}"
-                                prev_outputs[node_id] = error_output
-                                execution_results[node_id] = (
-                                    error_output
+
+                                def _reraise(_e=e):
+                                    raise _e
+
+                                _, output = self._settle(
+                                    node_id,
+                                    agent_name,
+                                    _reraise,
+                                    layer_idx,
+                                    loop,
                                 )
+                                if output is not None:
+                                    prev_outputs[node_id] = output
+                                    execution_results[node_id] = (
+                                        output
+                                    )
 
                         completed_count = 0
                         for future in concurrent.futures.as_completed(
@@ -2301,8 +2764,12 @@ class GraphWorkflow:
                                 agent_name,
                                 node_type,
                             ) = future_to_data[future]
-                            ok, output = self._safe_output(
-                                agent_name, future.result
+                            ok, output = self._settle(
+                                node_id,
+                                agent_name,
+                                future.result,
+                                layer_idx,
+                                loop,
                             )
                             if ok:
                                 completed_count += 1
@@ -2312,16 +2779,26 @@ class GraphWorkflow:
                                         f"({completed_count}/{len(layer_data)})"
                                     )
 
-                            _record(
-                                node_id, agent_name, node_type, output
-                            )
+                            if ok or output is not None:
+                                _record(
+                                    node_id,
+                                    agent_name,
+                                    node_type,
+                                    output,
+                                )
 
                     layer_execution_time = (
                         time.time() - layer_start_time
                     )
 
+                    layer_clean = not any(
+                        entry[0] in self.failed_nodes
+                        or entry[0] in self.skipped_nodes
+                        for entry in layer
+                    )
+
                     # Save now so a crash on a later layer does not force re-running this one.
-                    if self.checkpoint_dir:
+                    if self.checkpoint_dir and layer_clean:
                         try:
                             Path(self.checkpoint_dir).mkdir(
                                 parents=True, exist_ok=True
@@ -2858,27 +3335,43 @@ class GraphWorkflow:
         """Serialize one node in whichever shape was asked for."""
         if shallow:
             if node.type == NodeType.SUBGRAPH:
-                return {
+                return self._with_retry(
+                    node,
+                    {
+                        "id": node_id,
+                        "type": "subgraph",
+                        "spec": node.agent.to_dict(shallow=True),
+                        "metadata": node.metadata,
+                    },
+                )
+            return self._with_retry(
+                node,
+                {
                     "id": node_id,
-                    "type": "subgraph",
-                    "spec": node.agent.to_dict(shallow=True),
+                    "agent_name": getattr(
+                        node.agent, "agent_name", node_id
+                    ),
                     "metadata": node.metadata,
-                }
-            return {
-                "id": node_id,
-                "agent_name": getattr(
-                    node.agent, "agent_name", node_id
-                ),
-                "metadata": node.metadata,
-            }
+                },
+            )
 
-        return {
+        payload = {
             "id": node.id,
             # .value, str(node.type) renders as "NodeType.AGENT" and will not parse back
             "type": node.type.value,
             "metadata": node.metadata,
             "agent": self._agent_payload(node),
         }
+        return self._with_retry(node, payload)
+
+    @staticmethod
+    def _with_retry(
+        node: "Node", payload: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Add the node's retry policy to a serialized node when it has one."""
+        if node.retry is not None:
+            payload["retry"] = node.retry.to_dict()
+        return payload
 
     def to_dict(
         self,
@@ -3216,6 +3709,11 @@ class GraphWorkflow:
 
         nodes = {}
         for n in spec["nodes"]:
+            retry = (
+                RetryPolicy.from_dict(n["retry"])
+                if n.get("retry")
+                else None
+            )
             if n.get("type") == "subgraph":
                 inner_wf = cls.from_topology_spec(
                     n["spec"], agent_registry, **kwargs
@@ -3224,12 +3722,14 @@ class GraphWorkflow:
                     inner_wf,
                     node_id=n["id"],
                     metadata=n.get("metadata") or {},
+                    retry=retry,
                 )
             else:
                 nodes[n["id"]] = Node(
                     id=n["id"],
                     agent=agent_registry[n["agent_name"]],
                     metadata=n.get("metadata") or {},
+                    retry=retry,
                 )
 
         return cls(
