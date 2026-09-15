@@ -4,6 +4,7 @@ import pytest
 
 from swarms.structs.agent import Agent
 from swarms.structs.graph_workflow import (
+    FanOut,
     GraphWorkflow,
     Node,
     NodeType,
@@ -1550,6 +1551,40 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
         "B: OUT_B",
     ]
     assert "OUT_A" not in prompt and "OUT_B" not in prompt
+
+
+def test_fan_out_expands_target_per_item():
+    from unittest.mock import MagicMock
+
+    def make_agent(name, side_effect):
+        a = MagicMock()
+        a.agent_name = name
+        a.run = MagicMock(side_effect=side_effect)
+        return a
+
+    source = make_agent(
+        "Source", lambda **kw: FanOut("Worker", ["a", "b", "c"])
+    )
+    worker = make_agent("Worker", lambda **kw: kw["task"])
+    merge = make_agent("Merge", lambda **kw: "merged")
+
+    wf = GraphWorkflow(name="FanOutWF")
+    wf.add_nodes([source, worker, merge])
+    wf.add_edge("Source", "Worker")
+    wf.add_edge("Worker", "Merge")
+
+    result = wf.run("start task")
+
+    assert worker.run.call_count == 3
+    assert [c.kwargs["task"] for c in worker.run.call_args_list] == [
+        "a",
+        "b",
+        "c",
+    ]
+    assert result["Worker[0]"] == "a"
+    assert result["Worker[1]"] == "b"
+    assert result["Worker[2]"] == "c"
+    assert merge.run.call_args.kwargs["task"] == ["a", "b", "c"]
 
 
 if __name__ == "__main__":

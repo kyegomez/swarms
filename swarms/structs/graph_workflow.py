@@ -6,6 +6,7 @@ import os
 import time
 import traceback
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 from enum import Enum
 from typing import (
@@ -740,6 +741,12 @@ class Edge:
         # Put all kwargs into metadata dict
         metadata = kwargs if kwargs else None
         return cls(source=src, target=tgt, metadata=metadata)
+
+
+@dataclass
+class FanOut:
+    node_id: str
+    items: List[Any]
 
 
 class GraphWorkflow:
@@ -2011,6 +2018,8 @@ class GraphWorkflow:
 
                 execution_results = {}
                 prev_outputs = {}
+                pending_fanouts: Dict[str, List[Any]] = {}
+                fan_collected: Set[str] = set()
 
                 # Deterministic key, not hash(): Python salts hashes, so they differ across runs.
                 task_key = (
@@ -2079,29 +2088,57 @@ class GraphWorkflow:
 
                     # Pre-build all prompts for this layer
                     layer_data = []
+                    expanded_targets: Dict[str, List[str]] = {}
                     for (
                         node_id,
                         agent,
                         node_type,
                         agent_name,
                     ) in layer:
-                        try:
-                            prompt, prior_messages = (
-                                self._build_prompt(
-                                    node_id,
-                                    task,
-                                    prev_outputs,
-                                    layer_idx,
-                                    loop,
+                        if node_id in pending_fanouts:
+                            items = pending_fanouts.pop(node_id)
+                            instance_ids = []
+                            for index, item in enumerate(items):
+                                instance_id = f"{node_id}[{index}]"
+                                instance_ids.append(instance_id)
+                                layer_data.append(
+                                    (
+                                        instance_id,
+                                        agent,
+                                        node_type,
+                                        agent_name,
+                                        item,
+                                        [],
+                                    )
                                 )
-                            )
-                        except Exception as e:
-                            logger.exception(
-                                f"Error building prompt for node {node_id}: {e}"
-                            )
-                            # Continue with an error prompt as fallback
-                            prompt = f"Error building prompt: {e}"
+                            expanded_targets[node_id] = instance_ids
+                            continue
+
+                        preds = self._get_predecessors(node_id)
+                        if (
+                            len(preds) == 1
+                            and preds[0] in fan_collected
+                        ):
+                            prompt = prev_outputs[preds[0]]
                             prior_messages = []
+                        else:
+                            try:
+                                prompt, prior_messages = (
+                                    self._build_prompt(
+                                        node_id,
+                                        task,
+                                        prev_outputs,
+                                        layer_idx,
+                                        loop,
+                                    )
+                                )
+                            except Exception as e:
+                                logger.exception(
+                                    f"Error building prompt for node {node_id}: {e}"
+                                )
+                                # Continue with an error prompt as fallback
+                                prompt = f"Error building prompt: {e}"
+                                prior_messages = []
                         layer_data.append(
                             (
                                 node_id,
@@ -2213,6 +2250,10 @@ class GraphWorkflow:
 
                         prev_outputs[node_id] = output
                         execution_results[node_id] = output
+                        if isinstance(output, FanOut):
+                            pending_fanouts[output.node_id] = list(
+                                output.items
+                            )
 
                         try:
                             self.conversation.add(
@@ -2315,6 +2356,19 @@ class GraphWorkflow:
                             _record(
                                 node_id, agent_name, node_type, output
                             )
+
+                    for (
+                        original_id,
+                        instance_ids,
+                    ) in expanded_targets.items():
+                        collected = [
+                            prev_outputs[instance_id]
+                            for instance_id in instance_ids
+                            if instance_id in prev_outputs
+                        ]
+                        prev_outputs[original_id] = collected
+                        execution_results[original_id] = collected
+                        fan_collected.add(original_id)
 
                     layer_execution_time = (
                         time.time() - layer_start_time
