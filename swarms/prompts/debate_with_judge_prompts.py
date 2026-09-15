@@ -68,29 +68,25 @@ Provide a strong, well-reasoned argument with evidence and examples."""
 
 PRO_REFINEMENT_ROUND_PROMPT = """Loop {loop_number}: Based on the judge's previous evaluation, present an improved argument in favor of: {topic}
 
+The judge's evaluation is in the conversation above.
+
 Address any weaknesses identified and strengthen your position with additional evidence and reasoning."""
 
 CON_FIRST_ROUND_PROMPT = """Present your counter-argument against: {topic}
 
-Pro's argument:
-{pro_argument}
+The Pro argument you are answering is in the conversation above.
 
 Provide a strong, well-reasoned counter-argument that addresses the Pro's points and presents evidence against the position."""
 
 CON_REFINEMENT_ROUND_PROMPT = """Loop {loop_number}: Based on the judge's previous evaluation, present an improved counter-argument against: {topic}
 
-Pro's current argument:
-{pro_argument}
+Pro's current argument and the judge's evaluation are in the conversation above.
 
 Address any weaknesses identified and strengthen your counter-position with additional evidence and reasoning."""
 
 JUDGE_ROUND_PROMPT = """Loop {loop_number}/{max_loops}: Evaluate the debate on: {topic}
 
-Pro's argument ({pro_agent_name}):
-{pro_argument}
-
-Con's argument ({con_agent_name}):
-{con_argument}
+This loop's arguments are in the conversation above: {pro_agent_name} for the Pro position, {con_agent_name} for the Con position.
 
 """
 
@@ -104,4 +100,4 @@ JUDGE_INTERMEDIATE_ROUND_INSTRUCTIONS = """Evaluate both arguments and provide:
 - Assessment of strengths and weaknesses in each argument
 - A refined synthesis that incorporates the best elements from both sides
 - Specific feedback for improvement in the next loop
-- Your synthesis will be used as the topic for the next loop"""
+- Both debaters read your synthesis before their next argument"""
