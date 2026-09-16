@@ -45,7 +45,7 @@ def one_on_one_debate(
     """
     conversation = Conversation()
 
-    if len(agents) != 2:
+    if not agents or len(agents) != 2:
         raise ValueError(
             "There must be exactly two agents in the dialogue."
         )
