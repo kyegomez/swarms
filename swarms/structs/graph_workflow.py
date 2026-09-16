@@ -1744,7 +1744,7 @@ class GraphWorkflow:
     def _build_prompt(
         self,
         node_id: str,
-        task: str,
+        task: Optional[str],
         prev_outputs: Dict[str, Any],
         layer_idx: int,
         loop_idx: int = 0,
@@ -1754,7 +1754,7 @@ class GraphWorkflow:
 
         Args:
             node_id (str): The node ID to build a prompt for.
-            task (str): The main task.
+            task (Optional[str]): The main task.
             prev_outputs (Dict[str, Any]): Previous outputs from predecessor nodes.
                 For loop_idx > 0 this also contains end-point outputs from the
                 previous loop iteration.
