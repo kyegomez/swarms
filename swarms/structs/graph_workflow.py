@@ -2062,7 +2062,11 @@ class GraphWorkflow:
                         f"Starting execution loop {loop + 1}/{self.max_loops}{cache_status}"
                     )
 
-                if _resume_active and loop == _resume_from["loop"]:
+                if (
+                    _resume_active
+                    and _resume_from
+                    and loop == _resume_from["loop"]
+                ):
                     execution_results = dict(
                         _resume_from["execution_results"]
                     )
