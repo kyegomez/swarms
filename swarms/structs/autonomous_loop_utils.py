@@ -50,6 +50,34 @@ TOOL_OUTPUT_CONTEXT_SHARE = 0.25
 # Used when the caller has no context window to share, e.g. a tool called outside an agent.
 DEFAULT_TOOL_OUTPUT_TOKENS = 4096
 
+SUBTASK_PRIORITIES: List[str] = ["low", "medium", "high", "critical"]
+DEFAULT_SUBTASK_PRIORITY: str = "medium"
+SUBTASK_PRIORITY_RANK: Dict[str, int] = {
+    name: rank for rank, name in enumerate(SUBTASK_PRIORITIES)
+}
+
+
+def subtask_priority_rank(priority: Any) -> int:
+    """Rank a subtask priority so eligible subtasks can be ordered.
+
+    Args:
+        priority: The priority recorded on a subtask. Matching is
+            case-insensitive and tolerant of surrounding whitespace,
+            because the value comes from a model-authored plan.
+
+    Returns:
+        int: A rank where a larger number is more urgent. Anything
+            outside ``SUBTASK_PRIORITIES`` ranks as
+            ``DEFAULT_SUBTASK_PRIORITY``.
+    """
+    if not isinstance(priority, str):
+        return SUBTASK_PRIORITY_RANK[DEFAULT_SUBTASK_PRIORITY]
+
+    return SUBTASK_PRIORITY_RANK.get(
+        priority.strip().lower(),
+        SUBTASK_PRIORITY_RANK[DEFAULT_SUBTASK_PRIORITY],
+    )
+
 
 def truncate_tool_output(
     text: str,
@@ -199,12 +227,9 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
                                     "description": {"type": "string"},
                                     "priority": {
                                         "type": "string",
-                                        "enum": [
-                                            "low",
-                                            "medium",
-                                            "high",
-                                            "critical",
-                                        ],
+                                        "enum": list(
+                                            SUBTASK_PRIORITIES
+                                        ),
                                     },
                                     "dependencies": {
                                         "type": "array",
