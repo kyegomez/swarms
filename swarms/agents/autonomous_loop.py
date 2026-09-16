@@ -114,6 +114,35 @@ class AutonomousAgentLoop:
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
 
+    def _accrete_skill(self, task: Optional[str]) -> Optional[str]:
+        """Record the steps this run completed as a reusable skill.
+
+        Args:
+            task: The task the run was given, used as the skill's name and
+                description so dynamic loading can match it later.
+
+        Returns:
+            Path to the written skill, or ``None`` when the agent has not
+            opted in, has no skills directory, or completed no step.
+        """
+        agent = self.agent
+
+        if not getattr(agent, "skill_accretion", False):
+            return None
+
+        steps = [
+            subtask["description"]
+            for subtask in (agent.autonomous_subtasks or [])
+            if subtask.get("status") == "completed"
+        ]
+
+        if not task or not steps:
+            return None
+
+        return agent.skills.save_skill(
+            name=task, description=task, steps=steps
+        )
+
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
         self._transcript.append_user(content)
@@ -1044,6 +1073,7 @@ class AutonomousAgentLoop:
                             )
 
                             if task_complete:
+                                self._accrete_skill(task)
                                 return self.agent._generate_final_summary(
                                     streaming_callback=streaming_callback,
                                     messages=self._transcript.messages,
@@ -1232,6 +1262,8 @@ class AutonomousAgentLoop:
                     "All subtasks completed. Generating final summary...",
                     title="Autonomous Loop: Summary Phase",
                 )
+
+            self._accrete_skill(task)
 
             return self.agent._generate_final_summary(
                 streaming_callback=streaming_callback

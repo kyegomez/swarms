@@ -20,6 +20,7 @@ decides what to do with it. That keeps prompt mutation in one visible place in
 """
 
 import os
+import re
 from typing import Dict, List, Optional
 
 import yaml
@@ -189,6 +190,69 @@ class SkillsManager:
                 skills.append(skill)
 
         return skills
+
+    def save_skill(
+        self,
+        name: str,
+        description: str,
+        steps: List[str],
+    ) -> Optional[str]:
+        """
+        Write a skill to ``skills_dir`` so later runs can load it.
+
+        The file is a plan fragment, not executable code: it lists the steps a
+        run took, and a later agent reads them through the same Tier 1/Tier 2
+        loading as any hand-written skill.
+
+        Args:
+            name: Human readable skill name. Slugified for the folder.
+            description: What the skill accomplishes, matched against a task
+                during dynamic loading.
+            steps: The steps to record, in execution order.
+
+        Returns:
+            Path to the written ``SKILL.md``, or ``None`` when skills are
+            disabled, the steps are empty, or the write failed.
+        """
+        if not self.skills_dir or not steps:
+            return None
+
+        slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")[
+            :60
+        ]
+
+        if not slug:
+            return None
+
+        frontmatter = yaml.safe_dump(
+            {"name": slug, "description": description},
+            sort_keys=False,
+            default_flow_style=False,
+        ).strip()
+        body = "\n".join(
+            f"{index}. {step}"
+            for index, step in enumerate(steps, start=1)
+        )
+
+        skill_file = os.path.join(
+            self.skills_dir, slug, SKILL_FILENAME
+        )
+
+        try:
+            os.makedirs(os.path.dirname(skill_file), exist_ok=True)
+            with open(skill_file, "w", encoding="utf-8") as f:
+                f.write(
+                    f"---\n{frontmatter}\n---\n\n"
+                    f"# Steps\n\n{body}\n"
+                )
+        except Exception as e:
+            logger.warning(
+                f"Failed to save skill {slug} to {skill_file}: {e}"
+            )
+            return None
+
+        logger.info(f"Saved skill: {slug} -> {skill_file}")
+        return skill_file
 
     def _parse_skill_file(
         self, skill_file: str, fallback_name: str

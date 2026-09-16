@@ -197,6 +197,9 @@ class Agent:
             Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
             and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
+        skill_accretion (bool): Whether a finished autonomous run writes its completed
+            steps back to skills_dir as a SKILL.md, so a later run can start from them.
+            Requires skills_dir. Defaults to False.
         think_tool (bool): Whether the autonomous looper (max_loops="auto") offers the
             `think` tool. Defaults to False. A `think` call spends a full round-trip to
             produce reasoning the model could emit inline alongside its actions, so it is
@@ -405,6 +408,7 @@ class Agent:
         use_cases: Optional[List[Dict[str, Any]]] = None,
         marketplace_prompt_id: Optional[str] = None,
         skills_dir: Optional[str] = None,
+        skill_accretion: bool = False,
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
@@ -414,6 +418,7 @@ class Agent:
         # super().__init__(*args, **kwargs)
         self.id = id or generate_id("agent")
         self.skills = SkillsManager(skills_dir=skills_dir)
+        self.skill_accretion = skill_accretion
         self.selected_tools = selected_tools
         self.llm = llm
         self.max_loops = max_loops

@@ -1327,3 +1327,119 @@ class TestFinalSummaryShape:
         result = agent.run("test task")
 
         assert isinstance(result, list)
+
+
+class TestSkillAccretion:
+    """#2003 — a completed run leaves its steps behind as a skill."""
+
+    def _script_a_finished_run(self, agent, monkeypatch):
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", []), ("step2", ["step1"])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step2",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="all done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+
+    def test_an_opted_in_run_writes_its_completed_steps(
+        self, monkeypatch, tmp_path
+    ):
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir()
+        agent = build_agent(
+            skills_dir=str(skills_dir), skill_accretion=True
+        )
+        self._script_a_finished_run(agent, monkeypatch)
+
+        agent.run("Publish release notes")
+
+        skills = agent.skills.load_metadata()
+
+        assert [skill["name"] for skill in skills] == [
+            "publish_release_notes"
+        ]
+        assert "1. do step1" in skills[0]["content"]
+        assert "2. do step2" in skills[0]["content"]
+
+    def test_the_default_run_writes_nothing(
+        self, monkeypatch, tmp_path
+    ):
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir()
+        agent = build_agent(skills_dir=str(skills_dir))
+        self._script_a_finished_run(agent, monkeypatch)
+
+        agent.run("Publish release notes")
+
+        assert list(skills_dir.iterdir()) == []
+
+    def test_an_unfinished_subtask_is_left_out(
+        self, monkeypatch, tmp_path
+    ):
+        skills_dir = tmp_path / "skills"
+        skills_dir.mkdir()
+        agent = build_agent(
+            skills_dir=str(skills_dir), skill_accretion=True
+        )
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", []), ("step2", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step2",
+                        summary="could not",
+                        success=False,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="partial",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+
+        agent.run("Publish release notes")
+
+        content = agent.skills.load_metadata()[0]["content"]
+
+        assert "do step1" in content
+        assert "do step2" not in content
