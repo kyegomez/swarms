@@ -38,13 +38,17 @@ from swarms.structs.autonomous_loop_utils import (
     _BASH_MAX_LENGTH,
     _check_bash_command,
     MAX_SUBTASK_LOOPS,
+    WorkspaceEscapeError,
+    create_file_tool,
+    delete_file_tool,
     get_autonomous_planning_tools,
     glob_tool,
+    grep_tool,
+    resolve_workspace_path,
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
-
 
 # --------------------------------------------------------------------------
 # helpers
@@ -1192,6 +1196,107 @@ class TestRunBashSteersFileWritesToTheFileTools:
             for t in get_autonomous_planning_tools()
         }
         assert "create_file" in tools["run_bash"]["description"]
+
+
+class TestWorkspaceSandbox:
+    """`workspace_sandbox=True` keeps file tools in the workspace."""
+
+    def _agent(self, workspace, sandbox):
+        agent = build_agent(workspace_sandbox=sandbox)
+        agent._get_agent_workspace_dir = lambda: str(workspace)
+        return agent
+
+    def test_default_agent_still_reaches_outside_the_workspace(
+        self, tmp_path
+    ):
+        workspace = tmp_path / "ws"
+        workspace.mkdir()
+        outside = tmp_path / "outside.txt"
+
+        agent = self._agent(workspace, sandbox=False)
+        assert agent.workspace_sandbox is False
+
+        result = create_file_tool(agent, str(outside), "hi")
+
+        assert result.startswith("Successfully created file")
+        assert outside.read_text() == "hi"
+
+    def test_sandbox_refuses_a_relative_escape_and_writes_nothing(
+        self, tmp_path
+    ):
+        workspace = tmp_path / "ws"
+        workspace.mkdir()
+        agent = self._agent(workspace, sandbox=True)
+
+        result = create_file_tool(agent, "../escaped.txt", "hi")
+
+        assert "outside the workspace sandbox" in result
+        assert not (tmp_path / "escaped.txt").exists()
+
+    def test_sandbox_refuses_an_absolute_path_outside(self, tmp_path):
+        workspace = tmp_path / "ws"
+        workspace.mkdir()
+        outside = tmp_path / "secret.txt"
+        outside.write_text("secret")
+
+        agent = self._agent(workspace, sandbox=True)
+
+        assert "outside the workspace sandbox" in read_file_tool(
+            agent, str(outside)
+        )
+        assert "outside the workspace sandbox" in delete_file_tool(
+            agent, str(outside)
+        )
+        assert "outside the workspace sandbox" in grep_tool(
+            agent, "secret", str(tmp_path)
+        )
+        assert "outside the workspace sandbox" in glob_tool(
+            agent, "*.txt", str(tmp_path)
+        )
+        assert outside.read_text() == "secret"
+
+    def test_sandbox_allows_work_inside_the_workspace(self, tmp_path):
+        workspace = tmp_path / "ws"
+        workspace.mkdir()
+        agent = self._agent(workspace, sandbox=True)
+
+        created = create_file_tool(agent, "notes/report.md", "body")
+
+        assert created.startswith("Successfully created file")
+        assert "body" in read_file_tool(agent, "notes/report.md")
+        assert (workspace / "notes" / "report.md").exists()
+
+    def test_sandbox_judges_a_symlink_by_where_it_resolves(
+        self, tmp_path
+    ):
+        workspace = tmp_path / "ws"
+        workspace.mkdir()
+        (workspace / "inside.txt").write_text("inside")
+        (tmp_path / "outside.txt").write_text("outside")
+
+        (workspace / "link_in").symlink_to(workspace / "inside.txt")
+        (workspace / "link_out").symlink_to(tmp_path / "outside.txt")
+
+        agent = self._agent(workspace, sandbox=True)
+
+        assert "inside" in read_file_tool(agent, "link_in")
+        assert "outside the workspace sandbox" in read_file_tool(
+            agent, "link_out"
+        )
+
+    def test_resolver_returns_the_workspace_root_for_an_empty_path(
+        self, tmp_path
+    ):
+        workspace = tmp_path / "ws"
+        workspace.mkdir()
+        agent = self._agent(workspace, sandbox=True)
+
+        assert resolve_workspace_path(agent, "") == str(workspace)
+        assert resolve_workspace_path(agent, "a/b") == str(
+            workspace / "a" / "b"
+        )
+        with pytest.raises(WorkspaceEscapeError):
+            resolve_workspace_path(agent, "../b")
 
 
 if __name__ == "__main__":
