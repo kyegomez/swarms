@@ -28,6 +28,7 @@ from loguru import logger
 
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.structs.autonomous_loop_utils import (
+    DEFAULT_SUBTASK_PRIORITY,
     MAX_PLANNING_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
@@ -46,6 +47,7 @@ from swarms.structs.autonomous_loop_utils import (
     read_file_tool,
     respond_to_user_tool,
     run_bash_tool,
+    subtask_priority_rank,
     update_file_tool,
 )
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
@@ -679,7 +681,7 @@ class AutonomousAgentLoop:
                 subtask_id = current_subtask["step_id"]
                 subtask_desc = current_subtask["description"]
                 subtask_priority = current_subtask.get(
-                    "priority", "medium"
+                    "priority", DEFAULT_SUBTASK_PRIORITY
                 )
 
                 # Show subtask start
@@ -1352,7 +1354,9 @@ class AutonomousAgentLoop:
             incoming[step_id] = {
                 "step_id": step_id,
                 "description": step.get("description", ""),
-                "priority": step.get("priority", "medium"),
+                "priority": step.get(
+                    "priority", DEFAULT_SUBTASK_PRIORITY
+                ),
                 "dependencies": dependencies,
                 "status": "pending",
             }
@@ -1740,7 +1744,14 @@ class AutonomousAgentLoop:
         self,
     ) -> Optional[Dict[str, Any]]:
         """
-        Get the next executable subtask based on dependencies and status.
+        Get the next subtask by dependency, priority and status.
+
+        Every pending subtask whose dependencies have all completed
+        is eligible. The most urgent of those wins, ranked by
+        ``subtask_priority_rank``; equal priorities keep plan order,
+        so the earliest eligible subtask is returned. Subtasks whose
+        dependencies can no longer complete are skipped on the way
+        past.
 
         Returns:
             Dictionary of the next subtask or None if all are done
@@ -1749,14 +1760,14 @@ class AutonomousAgentLoop:
             return None
 
         # Find subtasks that are pending and have all dependencies completed
+        next_subtask: Optional[Dict[str, Any]] = None
+        next_rank = -1
+
         for subtask in self.agent.autonomous_subtasks:
             if subtask["status"] != "pending":
                 continue
 
             dependencies = subtask.get("dependencies", [])
-            if not dependencies:
-                return subtask
-
             statuses = [
                 self.agent.subtask_status.get(dep)
                 for dep in dependencies
@@ -1764,7 +1775,13 @@ class AutonomousAgentLoop:
 
             # Only completed unblocks; failed and unknown do not.
             if all(status == "completed" for status in statuses):
-                return subtask
+                rank = subtask_priority_rank(
+                    subtask.get("priority", DEFAULT_SUBTASK_PRIORITY)
+                )
+                if rank > next_rank:
+                    next_subtask = subtask
+                    next_rank = rank
+                continue
 
             # Unreachable: skip so the run can terminate.
             blockers = [
@@ -1775,7 +1792,7 @@ class AutonomousAgentLoop:
             if blockers:
                 self._skip_subtask(subtask, blockers)
 
-        return None
+        return next_subtask
 
     def _skip_subtask(
         self, subtask: Dict[str, Any], blockers: List[str]

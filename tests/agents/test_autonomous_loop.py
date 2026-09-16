@@ -37,14 +37,15 @@ from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     _BASH_MAX_LENGTH,
     _check_bash_command,
+    DEFAULT_SUBTASK_PRIORITY,
     MAX_SUBTASK_LOOPS,
     get_autonomous_planning_tools,
     glob_tool,
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
+    subtask_priority_rank,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
-
 
 # --------------------------------------------------------------------------
 # helpers
@@ -227,6 +228,99 @@ class TestDependencyResolution:
 
         agent.autonomous_subtasks[0]["status"] = "skipped"
         assert loop._all_subtasks_complete() is True
+
+
+class TestSubtaskPriorityOrdering:
+    """Priority decides which eligible subtask runs next."""
+
+    def test_higher_priority_runs_before_an_earlier_listed_subtask(
+        self,
+    ):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t",
+            [
+                {"step_id": "a", "priority": "medium"},
+                {"step_id": "b", "priority": "critical"},
+                {"step_id": "c", "priority": "high"},
+            ],
+        )
+
+        nxt = loop._get_next_executable_subtask()
+        assert nxt is not None and nxt["step_id"] == "b"
+
+    def test_equal_priority_keeps_plan_order(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t",
+            [
+                {"step_id": "a", "priority": "high"},
+                {"step_id": "b", "priority": "high"},
+            ],
+        )
+
+        nxt = loop._get_next_executable_subtask()
+        assert nxt is not None and nxt["step_id"] == "a"
+
+    def test_priority_never_overrides_an_unmet_dependency(self):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t",
+            [
+                {"step_id": "a", "priority": "low"},
+                {
+                    "step_id": "b",
+                    "priority": "critical",
+                    "dependencies": ["a"],
+                },
+            ],
+        )
+
+        nxt = loop._get_next_executable_subtask()
+        assert nxt is not None and nxt["step_id"] == "a"
+
+    def test_priority_ordering_survives_casing_and_unknown_values(
+        self,
+    ):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool(
+            "t",
+            [
+                {"step_id": "a", "priority": "low"},
+                {"step_id": "b", "priority": "urgent"},
+                {"step_id": "c", "priority": "  CRITICAL "},
+            ],
+        )
+
+        nxt = loop._get_next_executable_subtask()
+        assert nxt is not None and nxt["step_id"] == "c"
+
+        agent.autonomous_subtasks[2]["status"] = "completed"
+        agent.subtask_status["c"] = "completed"
+
+        nxt = loop._get_next_executable_subtask()
+        assert nxt is not None and nxt["step_id"] == "b"
+
+    def test_rank_helper_defaults_unknown_priorities_to_medium(self):
+        assert subtask_priority_rank(
+            "critical"
+        ) > subtask_priority_rank("high")
+        assert subtask_priority_rank("high") > subtask_priority_rank(
+            "medium"
+        )
+        assert subtask_priority_rank(
+            "medium"
+        ) > subtask_priority_rank("low")
+        assert subtask_priority_rank(
+            "urgent"
+        ) == subtask_priority_rank(DEFAULT_SUBTASK_PRIORITY)
+        assert subtask_priority_rank(None) == subtask_priority_rank(
+            DEFAULT_SUBTASK_PRIORITY
+        )
 
 
 # --------------------------------------------------------------------------
