@@ -214,7 +214,9 @@ class SkillsManager:
             Path to the written ``SKILL.md``, or ``None`` when skills are
             disabled, the steps are empty, or the write failed.
         """
-        if not self.skills_dir or not steps:
+        skills_dir = self.skills_dir
+
+        if not skills_dir or not steps:
             return None
 
         slug = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")[
@@ -234,9 +236,7 @@ class SkillsManager:
             for index, step in enumerate(steps, start=1)
         )
 
-        skill_file = os.path.join(
-            self.skills_dir, slug, SKILL_FILENAME
-        )
+        skill_file = os.path.join(skills_dir, slug, SKILL_FILENAME)
 
         try:
             os.makedirs(os.path.dirname(skill_file), exist_ok=True)
