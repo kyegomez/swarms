@@ -408,6 +408,7 @@ class Agent:
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -553,6 +554,9 @@ class Agent:
 
         # When False the agent does not read or write MEMORY.md across sessions.
         self.persistent_memory = persistent_memory
+
+        # Prior turns, seeded into short_memory and re-sent as context on every run.
+        self.messages = messages
 
         # Applies to auto and integer max_loops alike
         self.context_compression = context_compression
@@ -1011,6 +1015,7 @@ class Agent:
             tokenizer_model_name=self.model_name,
             context_length=self.context_length,
             memory_md_path=memory_md_path,
+            messages=self.messages,
         )
 
         return memory
@@ -1945,6 +1950,7 @@ class Agent:
         task: str,
         img: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -1959,6 +1965,8 @@ class Agent:
             img (Optional[str]): Optional image input for multimodal models.
             streaming_callback (Optional[Callable[[str], None]]): Callback
                 receiving streaming tokens in real time.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat
+                format that the loop's transcript starts from.
             *args: Passed through to the loop.
             **kwargs: Passed through to the loop.
 
@@ -1969,6 +1977,7 @@ class Agent:
             task=task,
             img=img,
             streaming_callback=streaming_callback,
+            messages=messages,
             *args,
             **kwargs,
         )
@@ -3246,6 +3255,7 @@ Subtask Breakdown:
         correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         n: int = 1,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -3273,6 +3283,10 @@ Subtask Breakdown:
             correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
             n (int): How many outputs to generate (number of runs). Defaults to 1.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
+                e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
+                They are added to the agent's conversation and sent as the context
+                this task continues from. Defaults to the agent's own ``messages``.
             *args: Additional positional arguments for extensibility.
             **kwargs: Additional keyword arguments passed to LLM/tool execution.
 
@@ -3296,6 +3310,10 @@ Subtask Breakdown:
             >>> with open("image.jpg", "rb") as f:
             ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
             >>> agent.run("Describe this image", img=img_base64)
+            >>> agent.run(
+            ...     "And what did I just ask you?",
+            ...     messages=[{"role": "user", "content": "Name three primes."}],
+            ... )
         """
 
         # Outside interactive mode, fail fast instead of blocking on stdin
@@ -3340,7 +3358,10 @@ Subtask Breakdown:
         if streaming_callback is None:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
-            # else: both are None, streaming_callback stays None
+
+        # Constructor messages are already in short_memory; per-call ones are not.
+        if messages:
+            self.short_memory.add_messages(messages)
 
         try:
             if self.max_loops == "auto":
@@ -3349,6 +3370,7 @@ Subtask Breakdown:
                     task=task,
                     img=img,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
@@ -3360,6 +3382,7 @@ Subtask Breakdown:
                     img=img,
                     imgs=imgs,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
