@@ -185,6 +185,7 @@ class AutonomousAgentLoop:
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -225,6 +226,9 @@ class AutonomousAgentLoop:
             img (Optional[str]): Optional image path or data to be processed during execution.
             streaming_callback (Optional[Callable[[str], None]]): Optional callback function
                 to receive streaming tokens in real-time. Useful for dashboard integration.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format. When
+                given, the loop's transcript starts from them instead of empty; the agent
+                has already recorded them in ``short_memory``.
             *args: Additional positional arguments passed to LLM calls.
             **kwargs: Additional keyword arguments passed to LLM calls.
 
@@ -254,7 +258,7 @@ class AutonomousAgentLoop:
         try:
 
             # Cleared before seeding, or the opening turn is lost.
-            self._transcript = Transcript()
+            self._transcript = Transcript(list(messages or []))
             self.agent.autonomous_subtasks = []
             self.agent.current_subtask_index = 0
             self.agent.subtask_status = {}
