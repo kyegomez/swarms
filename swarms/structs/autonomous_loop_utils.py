@@ -102,6 +102,27 @@ Use the create_plan tool to break down this task into manageable subtasks. Each 
 """
 
 
+def get_plan_skeleton_prompt(name: str, steps: str) -> str:
+    """
+    Get the prompt that offers a previously successful plan as a starting shape.
+
+    Args:
+        name: The matching skill's name.
+        steps: The skill's body, which carries its steps.
+
+    Returns:
+        str: Prompt text to append to the planning prompt.
+    """
+    return f"""
+
+A previous run of a similar task worked through the skill `{name}`:
+
+{steps}
+
+Treat this as a starting shape, not an instruction. Reuse the steps that fit this task, drop the ones that do not, and add whatever this task needs that the skill does not cover.
+"""
+
+
 def get_execution_prompt(
     subtask_id: str,
     subtask_desc: str,

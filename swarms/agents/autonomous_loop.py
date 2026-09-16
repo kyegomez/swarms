@@ -39,6 +39,7 @@ from swarms.structs.autonomous_loop_utils import (
     delete_file_tool,
     get_autonomous_planning_tools,
     get_execution_prompt,
+    get_plan_skeleton_prompt,
     get_planning_prompt,
     grep_tool,
     list_directory_tool,
@@ -450,6 +451,13 @@ class AutonomousAgentLoop:
                 )
 
             planning_prompt = get_planning_prompt(task)
+
+            skeleton = self.agent.skills.skeleton_for_task(task)
+            if skeleton:
+                planning_prompt += get_plan_skeleton_prompt(
+                    skeleton["name"], skeleton["content"]
+                )
+
             self._say_user(planning_prompt)
 
             plan_created = False

@@ -1327,3 +1327,87 @@ class TestFinalSummaryShape:
         result = agent.run("test task")
 
         assert isinstance(result, list)
+
+
+class TestPlanSkeleton:
+    """#2000 — a matching skill seeds planning instead of being re-derived."""
+
+    def _write_skill(self, root, name, description, body):
+        folder = root / name
+        folder.mkdir(parents=True)
+        (folder / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: {description}\n---\n\n{body}\n"
+        )
+
+    def _run(self, agent, monkeypatch):
+        calls = script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="all done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+        agent.run(
+            "Write release notes from the merged pull requests since the last tag"
+        )
+        return calls
+
+    def test_a_matching_skill_is_offered_as_a_starting_shape(
+        self, monkeypatch, tmp_path
+    ):
+        skills_dir = tmp_path / "skills"
+        self._write_skill(
+            skills_dir,
+            "release-notes",
+            "Collect merged pull requests since the last tag and write release notes",
+            "# Steps\n\n1. read the git log\n2. write RELEASES.md",
+        )
+        agent = build_agent(skills_dir=str(skills_dir))
+
+        self._run(agent, monkeypatch)
+
+        text = history(agent)
+
+        assert "1. read the git log" in text
+        assert "Treat this as a starting shape" in text
+
+    def test_an_unrelated_skill_is_not_offered(
+        self, monkeypatch, tmp_path
+    ):
+        skills_dir = tmp_path / "skills"
+        self._write_skill(
+            skills_dir,
+            "pdf-processing",
+            "Extract tables from scanned pdf invoices",
+            "# Steps\n\n1. ocr the pdf",
+        )
+        agent = build_agent(skills_dir=str(skills_dir))
+
+        self._run(agent, monkeypatch)
+
+        assert "Treat this as a starting shape" not in history(agent)
+
+    def test_an_agent_without_skills_plans_as_before(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+
+        self._run(agent, monkeypatch)
+
+        assert "Treat this as a starting shape" not in history(agent)

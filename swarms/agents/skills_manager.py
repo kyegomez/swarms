@@ -149,6 +149,38 @@ class SkillsManager:
         )
         return self.build_prompt(relevant_skills)
 
+    def skeleton_for_task(
+        self, task: Optional[str]
+    ) -> Optional[Dict[str, str]]:
+        """
+        The skill whose description best matches ``task``, body included.
+
+        Uses the same similarity matching as dynamic loading, so a skill is
+        only offered when it would already have been folded into the prompt.
+
+        Args:
+            task: The task about to be planned.
+
+        Returns:
+            The skill's metadata dict, or ``None`` when skills are disabled,
+            the task is empty, or nothing clears the similarity threshold.
+        """
+        if not self.enabled or not task:
+            return None
+
+        if self.dynamic_loader is None:
+            self.dynamic_loader = DynamicSkillsLoader(
+                self.skills_dir,
+                similarity_threshold=self.similarity_threshold,
+            )
+
+        relevant = self.dynamic_loader.load_relevant_skills(task)
+
+        if not relevant or not relevant[0].get("content"):
+            return None
+
+        return relevant[0]
+
     def load_metadata(
         self, skills_dir: Optional[str] = None
     ) -> List[Dict[str, str]]:

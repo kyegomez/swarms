@@ -580,3 +580,64 @@ class TestAgentIntegration:
 
         assert agent.system_prompt.startswith(before)
         assert "web-search" in agent.system_prompt
+
+
+class TestSkeletonForTask:
+    """#2000 — planning can start from a skill that already matched."""
+
+    def _write_skill(self, root, name, description, body):
+        folder = root / name
+        folder.mkdir()
+        (folder / "SKILL.md").write_text(
+            f"---\nname: {name}\ndescription: {description}\n---\n\n{body}\n"
+        )
+
+    def test_the_best_match_is_returned_with_its_body(self, tmp_path):
+        self._write_skill(
+            tmp_path,
+            "release-notes",
+            "Collect merged pull requests since the last tag and write release notes",
+            "# Steps\n\n1. read the git log\n2. write RELEASES.md",
+        )
+        self._write_skill(
+            tmp_path,
+            "pdf-processing",
+            "Extract tables from scanned pdf invoices",
+            "# Steps\n\n1. ocr the pdf",
+        )
+        manager = SkillsManager(skills_dir=str(tmp_path))
+
+        skeleton = manager.skeleton_for_task(
+            "Write release notes from the merged pull requests since the last tag"
+        )
+
+        assert skeleton["name"] == "release-notes"
+        assert "1. read the git log" in skeleton["content"]
+
+    def test_an_unrelated_task_matches_nothing(self, tmp_path):
+        self._write_skill(
+            tmp_path,
+            "pdf-processing",
+            "Extract tables from scanned pdf invoices",
+            "# Steps\n\n1. ocr the pdf",
+        )
+        manager = SkillsManager(skills_dir=str(tmp_path))
+
+        assert (
+            manager.skeleton_for_task(
+                "Refactor the billing middleware in the api service"
+            )
+            is None
+        )
+
+    def test_no_skills_dir_and_no_task_return_none(self, tmp_path):
+        assert (
+            SkillsManager(skills_dir=None).skeleton_for_task("x")
+            is None
+        )
+        assert (
+            SkillsManager(skills_dir=str(tmp_path)).skeleton_for_task(
+                ""
+            )
+            is None
+        )
