@@ -165,12 +165,14 @@ class SkillsManager:
             The skill's metadata dict, or ``None`` when skills are disabled,
             the task is empty, or nothing clears the similarity threshold.
         """
-        if not self.enabled or not task:
+        skills_dir = self.skills_dir
+
+        if not self.enabled or not task or not skills_dir:
             return None
 
         if self.dynamic_loader is None:
             self.dynamic_loader = DynamicSkillsLoader(
-                self.skills_dir,
+                skills_dir,
                 similarity_threshold=self.similarity_threshold,
             )
 
