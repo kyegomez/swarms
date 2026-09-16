@@ -32,12 +32,14 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     assign_task_tool,
+    budget_mode,
     cancel_sub_agent_tasks_tool,
     check_sub_agent_status_tool,
     create_file_tool,
     create_sub_agent_tool,
     delete_file_tool,
     get_autonomous_planning_tools,
+    get_budget_mode_prompt,
     get_execution_prompt,
     get_planning_prompt,
     grep_tool,
@@ -693,6 +695,7 @@ class AutonomousAgentLoop:
                 # Subtask execution loop: thinking -> tool actions -> observation
                 subtask_iterations = 0
                 max_subtask_loops = MAX_SUBTASK_LOOPS
+                subtask_budget_mode = "normal"
                 subtask_done = False
 
                 # Consecutive across the subtask, not one response.
@@ -711,6 +714,24 @@ class AutonomousAgentLoop:
                     and subtask_iterations < max_subtask_loops
                 ):
                     subtask_iterations += 1
+
+                    mode = budget_mode(
+                        subtask_iterations, max_subtask_loops
+                    )
+                    if mode != subtask_budget_mode:
+                        subtask_budget_mode = mode
+                        wind_down = get_budget_mode_prompt(
+                            mode,
+                            subtask_iterations,
+                            max_subtask_loops,
+                        )
+                        if wind_down:
+                            self._say_user(wind_down)
+                            if self.agent.print_on:
+                                formatter.print_panel(
+                                    wind_down,
+                                    title=f"Budget Mode: {mode}",
+                                )
 
                     # Every tool call is answered here, so replacing the transcript orphans nothing
                     if self._maybe_compress_context():

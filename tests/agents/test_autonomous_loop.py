@@ -38,7 +38,9 @@ from swarms.structs.autonomous_loop_utils import (
     _BASH_MAX_LENGTH,
     _check_bash_command,
     MAX_SUBTASK_LOOPS,
+    budget_mode,
     get_autonomous_planning_tools,
+    get_budget_mode_prompt,
     glob_tool,
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
@@ -1327,3 +1329,67 @@ class TestFinalSummaryShape:
         result = agent.run("test task")
 
         assert isinstance(result, list)
+
+
+class TestBudgetAwareDegradation:
+    """#1997 — a subtask winds down instead of running flat into its cap."""
+
+    def test_modes_follow_the_remaining_budget(self):
+        assert budget_mode(1, 20) == "normal"
+        assert budget_mode(9, 20) == "normal"
+        assert budget_mode(10, 20) == "focus"
+        assert budget_mode(15, 20) == "focus"
+        assert budget_mode(16, 20) == "consolidate"
+        assert budget_mode(20, 20) == "consolidate"
+        assert budget_mode(0, 0) == "consolidate"
+
+    def test_a_subtask_that_never_finishes_is_told_to_wind_down(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        script_llm(agent, monkeypatch, [plan(("step1", []))])
+
+        agent.run("test task")
+
+        text = history(agent)
+        focus = get_budget_mode_prompt("focus", 10, MAX_SUBTASK_LOOPS)
+        consolidate = get_budget_mode_prompt(
+            "consolidate", 16, MAX_SUBTASK_LOOPS
+        )
+
+        assert focus.splitlines()[1] in text
+        assert consolidate.splitlines()[1] in text
+        assert text.count(focus.splitlines()[1]) == 1
+        assert text.count(consolidate.splitlines()[1]) == 1
+
+    def test_a_short_subtask_never_mentions_the_budget(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="all done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+
+        agent.run("test task")
+
+        assert "Budget check" not in history(agent)
