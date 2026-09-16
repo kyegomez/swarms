@@ -197,6 +197,12 @@ class Agent:
             Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
             and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
+        workspace_sandbox (bool): Whether the autonomous loop's file
+            tools are confined to the agent workspace. When True, a
+            path that resolves outside the workspace is refused and
+            the refusal reaches the model as a tool result. Defaults
+            to False, which keeps today's behavior of accepting any
+            path the process can reach.
         think_tool (bool): Whether the autonomous looper (max_loops="auto") offers the
             `think` tool. Defaults to False. A `think` call spends a full round-trip to
             produce reasoning the model could emit inline alongside its actions, so it is
@@ -408,6 +414,7 @@ class Agent:
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
+        workspace_sandbox: bool = False,
         *args,
         **kwargs,
     ):
@@ -553,6 +560,8 @@ class Agent:
 
         # When False the agent does not read or write MEMORY.md across sessions.
         self.persistent_memory = persistent_memory
+
+        self.workspace_sandbox = workspace_sandbox
 
         # Applies to auto and integer max_loops alike
         self.context_compression = context_compression
@@ -4336,16 +4345,14 @@ Summary: {summary}
         if self.tool_call_summary is True:
             temp_llm = self.temp_llm_instance_for_tool_summary()
 
-            tool_response = temp_llm.run(
-                f"""
+            tool_response = temp_llm.run(f"""
                 Please analyze and summarize the following tool execution output in a clear and concise way. 
                 Focus on the key information and insights that would be most relevant to the user's original request.
                 If there are any errors or issues, highlight them prominently.
                 
                 Tool Output:
                 {output}
-                """
-            )
+                """)
 
             self.short_memory.add(
                 role=self.agent_name,
