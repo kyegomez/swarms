@@ -580,3 +580,71 @@ class TestAgentIntegration:
 
         assert agent.system_prompt.startswith(before)
         assert "web-search" in agent.system_prompt
+
+
+class TestSaveSkill:
+    """#2003 — a finished run can write its steps back as a skill."""
+
+    def test_a_saved_skill_loads_back_as_metadata(self, tmp_path):
+        manager = SkillsManager(skills_dir=str(tmp_path))
+
+        path = manager.save_skill(
+            name="Publish release notes",
+            description="Collect merged PRs since the last tag and write notes.",
+            steps=[
+                "read the git log since the previous tag",
+                "group changes by type",
+                "write notes to RELEASES.md",
+            ],
+        )
+
+        assert path is not None
+
+        loaded = manager.load_metadata()
+
+        assert [skill["name"] for skill in loaded] == [
+            "publish_release_notes"
+        ]
+        assert (
+            loaded[0]["description"]
+            == "Collect merged PRs since the last tag and write notes."
+        )
+        assert (
+            "1. read the git log since the previous tag"
+            in loaded[0]["content"]
+        )
+
+    def test_a_description_with_yaml_punctuation_survives(
+        self, tmp_path
+    ):
+        manager = SkillsManager(skills_dir=str(tmp_path))
+
+        manager.save_skill(
+            name="Ratio check",
+            description="Answer: is 3:1 fine? yes, when measured",
+            steps=["measure it"],
+        )
+
+        loaded = manager.load_metadata()
+
+        assert (
+            loaded[0]["description"]
+            == "Answer: is 3:1 fine? yes, when measured"
+        )
+
+    def test_nothing_is_written_without_steps_or_a_skills_dir(
+        self, tmp_path
+    ):
+        assert (
+            SkillsManager(skills_dir=str(tmp_path)).save_skill(
+                name="Empty", description="d", steps=[]
+            )
+            is None
+        )
+        assert (
+            SkillsManager(skills_dir=None).save_skill(
+                name="No dir", description="d", steps=["a"]
+            )
+            is None
+        )
+        assert list(tmp_path.iterdir()) == []
