@@ -178,17 +178,67 @@ class HeavySwarmDashboard:
         self.console.print()
 
     def show_execution_complete(
-        self, agent_count: int, synth_label: str
+        self,
+        agent_count: int,
+        synth_label: str,
+        success_count: Optional[int] = None,
+        failed_count: int = 0,
+        timeout_count: int = 0,
     ) -> None:
-        self.console.print(
-            Panel(
-                "[bold red]⚡ ALL AGENTS COMPLETED SUCCESSFULLY![/bold red]\n"
-                f"[white]Results from all {agent_count} specialized agents "
-                f"are ready for {synth_label}[/white]",
-                title="[bold red]EXECUTION COMPLETE[/bold red]",
-                border_style="red",
+        if success_count is None:
+            success_count = max(
+                0, agent_count - failed_count - timeout_count
             )
-        )
+
+        if failed_count == 0 and timeout_count == 0:
+            self.console.print(
+                Panel(
+                    "[bold red]⚡ ALL AGENTS COMPLETED SUCCESSFULLY![/bold red]\n"
+                    f"[white]Results from all {agent_count} specialized agents "
+                    f"are ready for {synth_label}[/white]",
+                    title="[bold red]EXECUTION COMPLETE[/bold red]",
+                    border_style="red",
+                )
+            )
+        elif success_count > 0:
+            failure_details = []
+            if failed_count > 0:
+                failure_details.append(f"{failed_count} failed")
+            if timeout_count > 0:
+                failure_details.append(f"{timeout_count} timed out")
+            details_str = (
+                f" ({', '.join(failure_details)})"
+                if failure_details
+                else ""
+            )
+            self.console.print(
+                Panel(
+                    "[bold yellow]⚠️ AGENT EXECUTION COMPLETED WITH WARNINGS[/bold yellow]\n"
+                    f"[white]{success_count}/{agent_count} agents completed successfully{details_str}. "
+                    f"Available results are ready for {synth_label}[/white]",
+                    title="[bold yellow]EXECUTION COMPLETE WITH WARNINGS[/bold yellow]",
+                    border_style="yellow",
+                )
+            )
+        else:
+            failure_details = []
+            if failed_count > 0:
+                failure_details.append(f"{failed_count} failed")
+            if timeout_count > 0:
+                failure_details.append(f"{timeout_count} timed out")
+            details_str = (
+                f" ({', '.join(failure_details)})"
+                if failure_details
+                else ""
+            )
+            self.console.print(
+                Panel(
+                    "[bold red]❌ AGENT EXECUTION FAILED[/bold red]\n"
+                    f"[white]0/{agent_count} agents succeeded{details_str}.[/white]",
+                    title="[bold red]EXECUTION FAILED[/bold red]",
+                    border_style="red",
+                )
+            )
         self.console.print()
 
     # ----- Progress contexts ----------------------------------------------
