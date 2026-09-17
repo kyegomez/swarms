@@ -409,7 +409,7 @@ class Agent:
         max_planning_attempts: int = MAX_PLANNING_ATTEMPTS,
         max_subtask_iterations: int = MAX_SUBTASK_ITERATIONS,
         max_subtask_loops: int = MAX_SUBTASK_LOOPS,
-        dynamic_tools: bool = True,
+        dynamic_tools: bool = False,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
