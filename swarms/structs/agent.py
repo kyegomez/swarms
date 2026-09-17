@@ -65,6 +65,9 @@ from swarms.schemas.mcp_schemas import (
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.autonomous_loop_utils import (
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
+    MAX_SUBTASK_LOOPS,
     get_autonomous_loop_tool_names,
     get_summary_prompt,
 )
@@ -203,6 +206,13 @@ class Agent:
             off unless asked for. Enable it for models that do not reason natively, or
             when an explicit analysis step is worth the extra turn. When False, the system
             prompt is adjusted to match so the model is not told to call a tool it lacks.
+        max_planning_attempts (int): Autonomous loop (max_loops="auto") only. How many
+            times to ask the model for a plan before giving up. Defaults to 5.
+        max_subtask_iterations (int): Autonomous loop only. Ceiling on execution
+            iterations across the whole run, which is also its worst-case number of
+            LLM calls. Defaults to 100.
+        max_subtask_loops (int): Autonomous loop only. Ceiling on iterations spent
+            inside any one subtask before moving on. Defaults to 20.
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
             "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
@@ -396,6 +406,9 @@ class Agent:
         reasoning_effort: Optional[ReasoningEffort] = None,
         thinking_tokens: int = 1024,
         think_tool: bool = False,
+        max_planning_attempts: int = MAX_PLANNING_ATTEMPTS,
+        max_subtask_iterations: int = MAX_SUBTASK_ITERATIONS,
+        max_subtask_loops: int = MAX_SUBTASK_LOOPS,
         dynamic_tools: bool = True,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
@@ -513,6 +526,19 @@ class Agent:
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
         self.think_tool = think_tool
+        # A budget below 1 would silently make the phase it bounds do nothing.
+        for name, value in (
+            ("max_planning_attempts", max_planning_attempts),
+            ("max_subtask_iterations", max_subtask_iterations),
+            ("max_subtask_loops", max_subtask_loops),
+        ):
+            if value < 1:
+                raise ValueError(
+                    f"{name} must be at least 1, got {value}"
+                )
+        self.max_planning_attempts = max_planning_attempts
+        self.max_subtask_iterations = max_subtask_iterations
+        self.max_subtask_loops = max_subtask_loops
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
