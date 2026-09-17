@@ -44,6 +44,7 @@ from litellm.utils import (
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentLLMInitializationError
+from swarms.schemas.stream_schemas import ThinkingToken
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists
 from swarms.utils.litellm_wrapper import LiteLLM
@@ -422,49 +423,93 @@ class LLMManager:
             accumulator[i] for i in sorted(accumulator)
         )
 
-    def extract_thinking_from_stream(self, stream):
-        """Yield only content chunks from a stream, displaying thinking chunks as a panel first.
+    def extract_thinking_from_stream(
+        self,
+        stream,
+        on_thinking: Optional[Callable[[str], None]] = None,
+    ):
+        """Yield only content chunks from a stream, surfacing thinking chunks.
 
         Anthropic (and other reasoning providers) emit thinking deltas before content
-        deltas. This generator consumes all thinking chunks silently, then flushes a
-        single thinking panel to the console, and finally yields every subsequent
-        content chunk unchanged so callers can handle them normally.
+        deltas. This generator consumes all thinking chunks, then flushes a single
+        thinking panel to the console, and finally yields every subsequent content
+        chunk unchanged so callers can handle them normally.
+
+        ``on_thinking`` receives each reasoning delta as it arrives. When the agent
+        opted into ``stream_thinking`` and printing is on, the batched panel is
+        replaced by a live one that grows with each delta.
         """
         thinking_parts = []
         thinking_displayed = False
+        live = self._live_thinking_panel()
 
-        for chunk in stream:
-            if not hasattr(chunk, "choices") or not chunk.choices:
+        try:
+            for chunk in stream:
+                if not hasattr(chunk, "choices") or not chunk.choices:
+                    yield chunk
+                    continue
+
+                delta = chunk.choices[0].delta
+                reasoning = getattr(delta, "reasoning_content", None)
+
+                if reasoning:
+                    thinking_parts.append(reasoning)
+
+                    if on_thinking is not None:
+                        on_thinking(reasoning)
+                    if live is not None:
+                        live.append(reasoning)
+
+                    continue
+
+                if thinking_parts and not thinking_displayed:
+                    self._flush_thinking(thinking_parts, live)
+                    thinking_displayed = True
+
                 yield chunk
-                continue
 
-            delta = chunk.choices[0].delta
-            reasoning = getattr(delta, "reasoning_content", None)
-
-            if reasoning:
-                thinking_parts.append(reasoning)
-                continue  # swallow the thinking chunk; don't pass to content stream
-
-            # First non-thinking chunk — flush accumulated thinking
             if thinking_parts and not thinking_displayed:
-                if self.agent.print_on:
-                    formatter.print_thinking_panel(
-                        "".join(thinking_parts),
-                        title=self._thinking_title(),
-                    )
-                thinking_displayed = True
+                self._flush_thinking(thinking_parts, live)
+        finally:
+            if live is not None:
+                live.close()
 
-            yield chunk
+    def _live_thinking_panel(self):
+        """A growing reasoning panel, or None when the batched panel applies."""
+        if not (self.agent.stream_thinking and self.agent.print_on):
+            return None
 
-        # Edge case: stream ended with only thinking and no content chunks
-        if (
-            thinking_parts
-            and not thinking_displayed
-            and self.agent.print_on
-        ):
+        return formatter.live_thinking_panel(
+            title=self._thinking_title()
+        )
+
+    def _flush_thinking(self, thinking_parts: list, live) -> None:
+        """Close the live panel, or print the batched one, at the boundary."""
+        if live is not None:
+            live.close()
+        elif self.agent.print_on:
             formatter.print_thinking_panel(
                 "".join(thinking_parts), title=self._thinking_title()
             )
+
+    def _thinking_forwarder(
+        self, streaming_callback: Optional[Callable[[str], None]]
+    ) -> Optional[Callable[[str], None]]:
+        """Wrap reasoning deltas as ``ThinkingToken`` for ``streaming_callback``.
+
+        Returns None unless the agent opted into ``stream_thinking``, which keeps
+        every existing consumer on exactly the stream it receives today.
+        """
+        if (
+            streaming_callback is None
+            or not self.agent.stream_thinking
+        ):
+            return None
+
+        def forward(reasoning: str) -> None:
+            streaming_callback(ThinkingToken(reasoning))
+
+        return forward
 
     def _thinking_title(self) -> str:
         """Panel title for reasoning output."""
@@ -505,7 +550,8 @@ class LLMManager:
             current_loop (int): Loop iteration, used in streaming panel titles.
             streaming_callback (Optional[Callable[[str], None]]): Receives
                 ``token_info`` dicts in detailed streaming, token strings in
-                panel streaming.
+                panel streaming, and ``ThinkingToken`` instances for reasoning
+                deltas when the agent sets ``stream_thinking``.
             *args: Passed through to ``llm.run()``.
             **kwargs: Passed through to ``llm.run()``. ``is_last`` is filtered out.
 
@@ -602,7 +648,10 @@ class LLMManager:
         tool_calls_out: list = []
 
         for chunk in self.stream_with_tool_collection(
-            self.extract_thinking_from_stream(streaming_response),
+            self.extract_thinking_from_stream(
+                streaming_response,
+                self._thinking_forwarder(streaming_callback),
+            ),
             tool_calls_out,
         ):
             if first_chunk is None:
@@ -733,7 +782,8 @@ class LLMManager:
             complete_response = self._collect_stream(
                 self.stream_with_tool_collection(
                     self.extract_thinking_from_stream(
-                        streaming_response
+                        streaming_response,
+                        self._thinking_forwarder(streaming_callback),
                     ),
                     tool_calls_out,
                 ),
@@ -793,6 +843,7 @@ class LLMManager:
         """
         thinking_parts: list = []
         first_content_chunk = None
+        live = self._live_thinking_panel()
 
         for chunk in streaming_response:
             delta = (
@@ -807,14 +858,15 @@ class LLMManager:
             )
             if reasoning:
                 thinking_parts.append(reasoning)
+
+                if live is not None:
+                    live.append(reasoning)
             else:
                 first_content_chunk = chunk
                 break
 
         if thinking_parts:
-            formatter.print_thinking_panel(
-                "".join(thinking_parts), title=self._thinking_title()
-            )
+            self._flush_thinking(thinking_parts, live)
 
         # The first chunk was already consumed, chain it back in
         chained = itertools.chain(

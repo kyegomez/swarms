@@ -306,6 +306,61 @@ def choose_random_color():
     return random_color
 
 
+class LiveThinkingPanel:
+    """A reasoning panel that grows delta-by-delta instead of appearing at once.
+
+    The Rich ``Live`` display is only opened on the first non-empty delta, so a
+    model that emits no reasoning never leaves an empty panel behind. ``close``
+    is idempotent and leaves the finished panel on screen, which lets a caller
+    close it at the content boundary and again from a ``finally``.
+    """
+
+    def __init__(self, console: "Console", title: str = "Thinking"):
+        self.console = console
+        self.title = title
+        self._text = Text(style="dim italic")
+        self._live = None
+        self._closed = False
+
+    def _panel(self) -> Panel:
+        return Panel(
+            self._text,
+            title=f"[bold magenta]{self.title}[/bold magenta]",
+            border_style="magenta",
+            padding=(0, 1),
+        )
+
+    def append(self, delta: str) -> None:
+        """Render ``delta`` at the end of the panel, opening it if needed."""
+        if not delta or self._closed:
+            return
+
+        self._text.append(delta)
+
+        if self._live is None:
+            self._live = Live(
+                self._panel(),
+                console=self.console,
+                refresh_per_second=20,
+            )
+            self._live.start()
+        else:
+            self._live.update(self._panel())
+
+    def close(self) -> None:
+        """Stop the live display, keeping the rendered panel on screen."""
+        if self._closed:
+            return
+
+        self._closed = True
+
+        if self._live is not None:
+            self._live.update(self._panel())
+            self._live.stop()
+            self._live = None
+            self.console.line()
+
+
 class Formatter:
     """
     A class for formatting and printing rich text to the console.
@@ -1004,6 +1059,16 @@ class Formatter:
             padding=(0, 1),
         )
         self.console.print(panel)
+
+    def live_thinking_panel(
+        self, title: str = "Thinking"
+    ) -> LiveThinkingPanel:
+        """Return a :class:`LiveThinkingPanel` bound to this console.
+
+        Args:
+            title (str): Panel title.
+        """
+        return LiveThinkingPanel(self.console, title=title)
 
 
 # Global formatter instance with markdown output enabled by default
