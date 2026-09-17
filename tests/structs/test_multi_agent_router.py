@@ -5,6 +5,7 @@ import time
 import pytest
 
 from swarms.structs.agent import Agent
+from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_router import MultiAgentRouter
 
 
@@ -544,6 +545,137 @@ def test_concurrent_batch_run_returns_results_in_input_order():
         "ok:a",
         "ok:c",
     ]
+
+
+def _stubbed_router(names=("Agent1", "Agent2", "Agent3")):
+    agents = []
+    for name in names:
+        agent = Agent.__new__(Agent)
+        agent.agent_name = name
+        agent.run = (
+            lambda task, _name=name: f"{_name} answered: {task}"
+        )
+        agents.append(agent)
+
+    router = MultiAgentRouter.__new__(MultiAgentRouter)
+    router.agents = agents
+    router.skip_null_tasks = True
+    router.print_on = False
+    router.conversation = Conversation()
+    return router
+
+
+def _handoffs(*pairs):
+    return {
+        "handoffs": [
+            {"agent_name": name, "task": task} for name, task in pairs
+        ]
+    }
+
+
+def _recorded(router):
+    return [
+        (message["role"], message["content"])
+        for message in router.conversation.conversation_history
+    ]
+
+
+def test_every_selected_agent_response_is_recorded():
+    router = _stubbed_router()
+
+    router.handle_multiple_handoffs(
+        _handoffs(
+            ("Agent1", "research it"),
+            ("Agent2", "code it"),
+            ("Agent3", "review it"),
+        ),
+        "original task",
+    )
+
+    assert _recorded(router) == [
+        ("Agent1", "Agent1 answered: research it"),
+        ("Agent2", "Agent2 answered: code it"),
+        ("Agent3", "Agent3 answered: review it"),
+    ]
+
+
+def test_no_agent_is_run_and_then_discarded():
+    router = _stubbed_router()
+
+    router.handle_multiple_handoffs(
+        _handoffs(("Agent1", "a"), ("Agent2", "b"), ("Agent3", "c")),
+        "original task",
+    )
+
+    assert len(router.conversation.conversation_history) == 3
+
+
+def test_each_response_is_recorded_under_its_own_agent_name():
+    router = _stubbed_router()
+
+    router.handle_multiple_handoffs(
+        _handoffs(("Agent2", "b"), ("Agent1", "a")), "original task"
+    )
+
+    roles = [role for role, _ in _recorded(router)]
+    assert roles == ["Agent2", "Agent1"]
+
+
+def test_a_single_handoff_is_unchanged():
+    router = _stubbed_router()
+
+    router.handle_multiple_handoffs(
+        _handoffs(("Agent2", "only task")), "original task"
+    )
+
+    assert _recorded(router) == [
+        ("Agent2", "Agent2 answered: only task")
+    ]
+
+
+def test_skipped_agents_are_not_recorded():
+    router = _stubbed_router()
+
+    router.handle_multiple_handoffs(
+        {
+            "handoffs": [
+                {"agent_name": "Agent1", "task": "real work"},
+                {"agent_name": "Agent2", "task": None},
+                {"agent_name": "Agent3", "task": ""},
+            ]
+        },
+        "",
+    )
+
+    assert _recorded(router) == [
+        ("Agent1", "Agent1 answered: real work")
+    ]
+
+
+def test_a_handoff_with_no_task_falls_back_to_the_original():
+    router = _stubbed_router()
+
+    router.handle_multiple_handoffs(
+        _handoffs(("Agent1", None), ("Agent2", "explicit")),
+        "original task",
+    )
+
+    assert _recorded(router) == [
+        ("Agent1", "Agent1 answered: original task"),
+        ("Agent2", "Agent2 answered: explicit"),
+    ]
+
+
+def test_an_unknown_agent_is_rejected_before_anything_runs():
+    router = _stubbed_router()
+
+    with pytest.raises(ValueError, match="unknown agent"):
+        router.handle_multiple_handoffs(
+            _handoffs(("Agent1", "a"), ("Nobody", "b")),
+            "original task",
+        )
+
+    assert router.conversation.conversation_history == []
 
 
 if __name__ == "__main__":
