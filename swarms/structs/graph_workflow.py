@@ -7,6 +7,7 @@ import time
 import traceback
 import uuid
 from pathlib import Path
+from types import MappingProxyType
 from enum import Enum
 from typing import (
     Any,
@@ -585,6 +586,8 @@ class Node:
         type (NodeType): AGENT or SUBGRAPH.
         agent (Any): The Agent or GraphWorkflow associated with the node.
         metadata (Dict[str, Any], optional): Additional metadata for the node.
+            ``{"join": "all"}`` makes the node run only when every inbound edge
+            passes; the default, ``"any"``, needs one.
     """
 
     def __init__(
@@ -671,6 +674,13 @@ class Edge:
         source (str): The ID of the source node.
         target (str): The ID of the target node.
         metadata (Dict[str, Any], optional): Additional metadata for the edge.
+        condition (Optional[Callable[[Any, Dict[str, Any]], bool]]): Predicate
+            called as ``condition(source_output, ctx)`` once the source node has
+            produced its output; the target only runs when it returns true.
+            ``ctx`` carries ``task``, ``loop``, ``layer``, ``target`` and a
+            read-only ``outputs`` map of everything produced so far. A callable
+            cannot be represented in JSON, so ``to_spec``/``to_json`` drop it
+            with a warning and the rebuilt edge routes unconditionally.
     """
 
     def __init__(
@@ -678,6 +688,9 @@ class Edge:
         source: str = None,
         target: str = None,
         metadata: Dict[str, Any] = None,
+        condition: Optional[
+            Callable[[Any, Dict[str, Any]], bool]
+        ] = None,
     ):
         """
         Initialize an Edge.
@@ -686,10 +699,13 @@ class Edge:
             source (str, optional): The ID of the source node.
             target (str, optional): The ID of the target node.
             metadata (Dict[str, Any], optional): Additional metadata for the edge.
+            condition (Optional[Callable[[Any, Dict[str, Any]], bool]], optional):
+                Predicate gating the target on the source's output.
         """
         self.source = source
         self.target = target
         self.metadata = metadata or {}
+        self.condition = condition
 
     @classmethod
     def from_nodes(
@@ -737,9 +753,14 @@ class Edge:
             # Assume it's already a string ID
             tgt = target_node
 
-        # Put all kwargs into metadata dict
+        condition = kwargs.pop("condition", None)
         metadata = kwargs if kwargs else None
-        return cls(source=src, target=tgt, metadata=metadata)
+        return cls(
+            source=src,
+            target=tgt,
+            metadata=metadata,
+            condition=condition,
+        )
 
 
 class GraphWorkflow:
@@ -753,6 +774,7 @@ class GraphWorkflow:
         end_points (List[str]): A list of node IDs that serve as end points of the graph.
         graph_backend (GraphBackend): A graph backend object (NetworkX or Rustworkx) representing the workflow graph.
         task (str): The task to be executed by the workflow.
+        skipped_nodes (List[str]): Node IDs gated out by conditional edges during the most recent execution loop.
         _compiled (bool): Whether the graph has been compiled for optimization.
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
         _max_workers (int): Maximum nodes executed concurrently. Set from max_parallel_nodes if provided, otherwise int(get_cpu_cores() * 0.95) with a minimum of 1.
@@ -825,6 +847,10 @@ class GraphWorkflow:
         self._execution_plan = []
         self._successors_map = {}
         self._predecessors_cache = {}
+        self._has_conditions = False
+        self._inbound_edges = {}
+        self._join_all = frozenset()
+        self.skipped_nodes = []
         self.max_parallel_nodes = max_parallel_nodes
         self._max_workers = (
             max(1, max_parallel_nodes)
@@ -929,6 +955,9 @@ class GraphWorkflow:
         self._sorted_layers = []
         self._execution_plan = []
         self._successors_map = {}
+        self._has_conditions = False
+        self._inbound_edges = {}
+        self._join_all = frozenset()
         self._compilation_timestamp = None
 
         # Clear predecessors cache when graph structure changes
@@ -986,6 +1015,23 @@ class GraphWorkflow:
                 node_id: tuple(parents)
                 for node_id, parents in pred.items()
             }
+
+            self._has_conditions = any(
+                edge.condition is not None for edge in self.edges
+            )
+            if self._has_conditions:
+                inbound = {}
+                for edge in self.edges:
+                    if edge.target in self.nodes:
+                        inbound.setdefault(edge.target, []).append(
+                            edge
+                        )
+                self._inbound_edges = inbound
+                self._join_all = frozenset(
+                    node_id
+                    for node_id, node in self.nodes.items()
+                    if (node.metadata or {}).get("join") == "all"
+                )
 
             # Never raises, so compile() stays compatible; use validate(raise_on_error=True) for strict.
             if self.nodes:
@@ -1162,6 +1208,32 @@ class GraphWorkflow:
                 warnings.append(
                     f"Found {len(dead_ends)} nodes that cannot reach any "
                     f"exit point: {set(dead_ends)}"
+                )
+
+        if (
+            self.entry_points
+            and self.end_points
+            and any(edge.condition is not None for edge in self.edges)
+        ):
+            unconditional: Dict[str, List[str]] = {}
+            for edge in self.edges:
+                if edge.condition is None:
+                    unconditional.setdefault(edge.source, []).append(
+                        edge.target
+                    )
+            always_run = self._multi_source_reachable(
+                self.entry_points, unconditional
+            )
+            gated = sorted(
+                node_id
+                for node_id in self.end_points
+                if node_id not in always_run
+            )
+            if gated:
+                warnings.append(
+                    f"Found {len(gated)} end point(s) behind a condition on "
+                    f"every path from the entry points, so they may never "
+                    f"run: {set(gated)}"
                 )
 
         return (
@@ -1734,6 +1806,83 @@ class GraphWorkflow:
             cache[node_id] = preds
         return preds
 
+    def _edge_passed(
+        self,
+        edge: "Edge",
+        prev_outputs: Dict[str, Any],
+        ctx: Dict[str, Any],
+    ) -> bool:
+        """
+        Whether ``edge`` delivers to its target this layer.
+
+        An edge cannot pass while its source has produced nothing — skipped,
+        so downstream of another failed condition. Presence in ``prev_outputs``
+        is the test rather than a separate skip set, so a checkpoint resume
+        prunes exactly the same nodes. A predicate that raises is treated as
+        not passing.
+        """
+        if edge.source not in prev_outputs:
+            return False
+        if edge.condition is None:
+            return True
+        try:
+            return bool(
+                edge.condition(prev_outputs[edge.source], ctx)
+            )
+        except Exception as e:
+            logger.exception(
+                f"Error evaluating condition on edge "
+                f"{edge.source} -> {edge.target}: {e}"
+            )
+            return False
+
+    def _eligible_layer(
+        self,
+        layer: List[Tuple[Any, ...]],
+        task: str,
+        prev_outputs: Dict[str, Any],
+        layer_idx: int,
+        loop_idx: int,
+    ) -> List[Tuple[Any, ...]]:
+        """
+        The entries of a compiled layer whose inbound edges let them run.
+
+        The topological order still holds, only the eligible set shrinks. A
+        node runs when any inbound edge passes, or when every one does if its
+        metadata asks for ``{"join": "all"}``. Nodes dropped here are appended
+        to :attr:`skipped_nodes` and never enter the results.
+        """
+        outputs_view = MappingProxyType(prev_outputs)
+        eligible = []
+
+        for entry in layer:
+            node_id = entry[0]
+            inbound = self._inbound_edges.get(node_id)
+            if not inbound:
+                eligible.append(entry)
+                continue
+
+            ctx = {
+                "task": task,
+                "loop": loop_idx,
+                "layer": layer_idx,
+                "target": node_id,
+                "outputs": outputs_view,
+            }
+            gate = all if node_id in self._join_all else any
+            if gate(
+                self._edge_passed(edge, prev_outputs, ctx)
+                for edge in inbound
+            ):
+                eligible.append(entry)
+            else:
+                self.skipped_nodes.append(node_id)
+                logger.info(
+                    f"Skipping node '{node_id}': no inbound edge passed"
+                )
+
+        return eligible
+
     def _build_prompt(
         self,
         node_id: str,
@@ -1934,6 +2083,8 @@ class GraphWorkflow:
                 When max_loops > 1, returns a dict with per-loop results
                 keyed as ``{node_id}_loop_{loop_number}`` plus the final
                 loop's results under the plain ``node_id`` keys.
+                Nodes gated out by an :class:`Edge` condition are absent from
+                the results and listed in :attr:`skipped_nodes`.
         """
         # Resolve callbacks: run-level overrides instance-level
         _on_node_complete = on_node_complete or self.on_node_complete
@@ -2012,6 +2163,9 @@ class GraphWorkflow:
                 execution_results = {}
                 prev_outputs = {}
 
+                if self._has_conditions:
+                    self.skipped_nodes = []
+
                 # Deterministic key, not hash(): Python salts hashes, so they differ across runs.
                 task_key = (
                     self._task_key(task)
@@ -2070,6 +2224,13 @@ class GraphWorkflow:
                                     f"Failed to load checkpoint {checkpoint_path}, "
                                     f"re-executing layer: {cp_err}"
                                 )
+
+                    if self._has_conditions:
+                        layer = self._eligible_layer(
+                            layer, task, prev_outputs, layer_idx, loop
+                        )
+                        if not layer:
+                            continue
 
                     if self.verbose:
                         logger.info(
@@ -2820,7 +2981,15 @@ class GraphWorkflow:
 
     @staticmethod
     def _edge_payload(edge: "Edge") -> Dict[str, Any]:
-        """Serialize one edge. Identical in both shapes."""
+        """Serialize one edge. Identical in both shapes. A ``condition`` is a
+        callable, so it cannot be written to JSON and is dropped — the rebuilt
+        edge routes unconditionally."""
+        if edge.condition is not None:
+            logger.warning(
+                f"Edge {edge.source} -> {edge.target} has a condition, which "
+                f"cannot be serialized; the rebuilt edge will route "
+                f"unconditionally"
+            )
         return {
             "source": edge.source,
             "target": edge.target,
