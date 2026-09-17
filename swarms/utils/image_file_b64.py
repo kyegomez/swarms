@@ -3,98 +3,26 @@ Image file utilities for converting images to base64 data URIs.
 
 This module provides functions for handling various image input formats and
 converting them to base64-encoded data URIs suitable for use with LLM APIs.
+
+The SSRF guard now lives in :mod:`swarms.utils.url_guard` so the skill fetcher
+can share it. ``_ip_is_blocked`` and ``_is_safe_url`` stay bound here because
+``_fetch_image_url`` resolves the guard through this module's namespace, which
+is the seam ``tests/utils/test_ssrf_url_guard.py`` patches.
 """
 
 import base64
-import ipaddress
 import re
-import socket
 import uuid
 from functools import lru_cache
 from pathlib import Path
-from urllib.parse import urlparse
 
 import requests
 from loguru import logger
 
+from swarms.utils.url_guard import ip_is_blocked, is_safe_url
 
-def _ip_is_blocked(addr: ipaddress._BaseAddress) -> bool:
-    """Return True for any address that must never be reached over the network.
-
-    Covers loopback, private (RFC 1918), link-local (incl. the 169.254.169.254
-    cloud-metadata range), reserved, unspecified, and multicast space. IPv4
-    addresses embedded in IPv6 (``::ffff:a.b.c.d`` and 6to4) are unwrapped and
-    re-checked, so a mapped metadata address cannot slip through.
-    """
-    # Unwrap IPv4-in-IPv6 so ::ffff:169.254.169.254 is judged as the v4 address.
-    mapped = getattr(addr, "ipv4_mapped", None)
-    if mapped is not None:
-        addr = mapped
-    sixtofour = getattr(addr, "sixtofour", None)
-    if sixtofour is not None:
-        addr = sixtofour
-
-    return (
-        addr.is_private
-        or addr.is_loopback
-        or addr.is_link_local
-        or addr.is_reserved
-        or addr.is_unspecified
-        or addr.is_multicast
-    )
-
-
-def _is_safe_url(url: str) -> bool:
-    """
-    Reject URLs that target private/link-local networks (SSRF prevention).
-
-    Only ``http``/``https`` are permitted, and the host is **resolved** before
-    the verdict: a hostname that maps to a private or cloud-metadata address is
-    blocked, and *every* address it resolves to must be public (so a name with
-    one public and one internal A-record cannot be used to pivot). Numeric host
-    forms (decimal, hex, octal) and IPv4-in-IPv6 are normalized rather than
-    trusted as opaque strings.
-
-    Note: this checks the addresses known at call time. A determined attacker
-    controlling DNS can still rebind between this check and the subsequent
-    request (TOCTOU); eliminating that requires pinning the resolved IP for the
-    actual connection, which the calling HTTP client does not currently do.
-    """
-    try:
-        parsed = urlparse(url)
-        if parsed.scheme not in ("http", "https"):
-            return False
-
-        host = (parsed.hostname or "").strip()
-        if not host or host.lower() == "localhost":
-            return False
-
-        # A literal IP in any notation ipaddress accepts is judged directly
-        try:
-            return not _ip_is_blocked(ipaddress.ip_address(host))
-        except ValueError:
-            pass  # a hostname — resolve it below.
-
-        # Resolve the hostname and require EVERY answer to be public.
-        try:
-            infos = socket.getaddrinfo(host, None)
-        except socket.gaierror:
-            return False  # cannot resolve — do not fetch.
-
-        resolved = {info[4][0] for info in infos}
-        if not resolved:
-            return False
-
-        for ip in resolved:
-            try:
-                if _ip_is_blocked(ipaddress.ip_address(ip)):
-                    return False
-            except ValueError:
-                return False
-
-        return True
-    except Exception:
-        return False
+_ip_is_blocked = ip_is_blocked
+_is_safe_url = is_safe_url
 
 
 @lru_cache(maxsize=32)
