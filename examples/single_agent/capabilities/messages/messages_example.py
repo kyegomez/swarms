@@ -1,5 +1,3 @@
-"""Seed an agent with prior turns: at construction, and per run."""
-
 from dotenv import load_dotenv
 
 from swarms import Agent
