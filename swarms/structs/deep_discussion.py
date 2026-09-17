@@ -13,7 +13,7 @@ def one_on_one_debate(
     task: str = None,
     agents: list[Union[Agent, Callable]] = None,
     img: str = None,
-    output_type: str = "str-all-except-first",
+    output_type: str = "str",
 ) -> list:
     """
     Simulate a turn-based debate between two agents for a specified number of loops.
@@ -28,7 +28,7 @@ def one_on_one_debate(
         agents (list[Agent]): A list containing exactly two Agent instances who will debate.
         img (str, optional): An optional image input to be passed to each agent's run method.
         output_type (str): The format for the output conversation history. Passed to
-            `history_output_formatter`. Default is "str-all-except-first".
+            `history_output_formatter`. Defaults to "str", retaining all debate turns.
 
     Returns:
         list: The formatted conversation history, as produced by `history_output_formatter`.
