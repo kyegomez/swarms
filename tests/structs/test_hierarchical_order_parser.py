@@ -211,7 +211,7 @@ def test_malformed_order_raises_value_error():
 
 
 def test_hierarchical_swarm_delegates_to_the_parser():
-    from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+    from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
     class Director:
         agent_name = "Director"
