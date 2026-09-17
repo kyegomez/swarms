@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 import traceback
-from typing import Any, Callable, List, Optional, Union
+from typing import Callable, List, Optional, Union
 
 from loguru import logger
 
@@ -20,38 +20,20 @@ def batch_agent_execution(
     max_workers: int = max(1, int(os.cpu_count() * 0.9)),
 ):
     """
-    Execute a batch of agents on a list of tasks concurrently.
-
-    Each agent is paired with the task at the same index: ``agents[i]``
-    runs ``tasks[i]`` with ``imgs[i]``.
+    Concurrently execute agents (or callables) on tasks (with optional images).
 
     Args:
-        agents (List[Union[Agent, Callable]]): Agents to execute, one per task.
-        tasks (List[str]): Tasks to execute, one per agent.
-        imgs (List[str], optional): Image passed to each agent alongside its
-            task, one per agent. Defaults to None, meaning no images.
-        max_workers (int): Cap on threads used to run the batch.
+        agents (List[Agent|Callable]): Agents/callables to run.
+        tasks (List[str]): Tasks (one per agent).
+        imgs (List[str], optional): Images for agents; None for no images.
+        max_workers (int): Thread pool size.
 
     Returns:
-        List[Any]: One result per agent, in the order the agents were given.
-            An agent that raised leaves ``None`` in its own slot.
+        List[Any]: Results (aligned to agents, None if exception).
 
     Raises:
-        BatchAgentExecutionError: Wrapping any failure to set up or run the
-            batch, including the length mismatches below.
-        ValueError: If the number of agents, tasks or imgs disagree.
-
-    Notes:
-        ``agents`` is typed as accepting a plain callable as well as an
-        ``Agent``, so the runner is resolved with ``getattr(agent, "run",
-        agent)`` rather than assuming ``.run`` exists. An ``Agent`` behaves
-        exactly as before; a callable is now called directly instead of
-        raising ``AttributeError``.
-
-        Results are placed by index rather than appended on completion, so
-        the returned list is aligned with ``agents`` no matter what order
-        the threads finish in. Callers pair results with agents positionally
-        and have nothing else to key on.
+        BatchAgentExecutionError: On batch setup/run errors.
+        ValueError: On length mismatch between agents, tasks, imgs.
     """
     try:
 
@@ -69,15 +51,17 @@ def batch_agent_execution(
                 "Number of imgs must match number of agents"
             )
 
-        img_list: List[Optional[str]] = [
+        img_list = [
             imgs[index] if imgs is not None else None
             for index in range(len(agents))
         ]
+
         names = [
             getattr(agent, "agent_name", repr(agent))
             for agent in agents
         ]
-        results: List[Any] = [None] * len(agents)
+
+        results = [None] * len(agents)
 
         formatter.print_panel(
             f"Executing {len(agents)} agents on {len(tasks)} tasks using {max_workers} workers"
