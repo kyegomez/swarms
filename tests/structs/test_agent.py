@@ -1390,6 +1390,7 @@ class TestEmptyToolsList:
 
     @staticmethod
     def _agent(**kwargs):
+        kwargs.setdefault("dynamic_tools", True)
         return Agent(
             agent_name="empty_tools_agent",
             model_name="gpt-4o-mini",
@@ -1651,3 +1652,61 @@ class TestAgentInputTokens:
         agent = _patched_agent("CtxAgent", system_prompt="Short.")
         assert agent.usage["input_tokens"] == 0
         assert agent.input_tokens > 0
+
+
+class TestSeededMessages:
+    """``messages`` seeds the conversation and is sent as context."""
+
+    PRIOR = [
+        {"role": "user", "content": "My project is called Helios."},
+        {"role": "assistant", "content": "Noted: Helios."},
+    ]
+
+    def test_constructor_messages_land_in_short_memory(self):
+        agent = _patched_agent("SeedAgent", messages=self.PRIOR)
+
+        contents = [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+        ]
+        assert "My project is called Helios." in contents
+        assert "Noted: Helios." in contents
+
+    def test_constructor_messages_are_sent_as_context(self):
+        agent = _patched_agent("SeedAgent", messages=self.PRIOR)
+        sent = {}
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            sent["messages"] = kwargs.get("messages")
+            return "Helios"
+
+        agent.call_llm = fake_call_llm
+        agent.run("What is my project called?")
+
+        contents = [m["content"] for m in sent["messages"]]
+        assert "My project is called Helios." in contents
+        assert "What is my project called?" in contents
+
+    def test_run_messages_are_recorded_and_sent(self):
+        agent = _patched_agent("SeedAgent")
+        sent = {}
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            sent["messages"] = kwargs.get("messages")
+            return "Helios"
+
+        agent.call_llm = fake_call_llm
+        agent.run("What is my project called?", messages=self.PRIOR)
+
+        assert [m["role"] for m in sent["messages"]] == [
+            "user",
+            "assistant",
+            "user",
+        ]
+
+        recorded = [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+        ]
+        assert "My project is called Helios." in recorded
+        assert "Noted: Helios." in recorded

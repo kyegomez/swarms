@@ -21,6 +21,8 @@ Covers four fixed defects:
 * #1962 — ``ContextCompressor.maybe_compress`` was never called on the
   ``max_loops="auto"`` path, so history grew unbounded in exactly the mode
   that needs compression most.
+* #1752 — the loop's three iteration budgets were module constants, so a
+  caller could not bound a run's cost without monkeypatching the module.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -37,6 +39,8 @@ from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     _BASH_MAX_LENGTH,
     _check_bash_command,
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     get_autonomous_planning_tools,
     glob_tool,
@@ -1473,3 +1477,93 @@ class TestExceptionRetryNudgeIsUserTurn:
             "ERROR: the previous step failed with RuntimeError" in u
             for u in user_messages
         )
+
+
+class TestIterationLimitsAreConfigurable:
+    """The three budgets bound a run's cost, so they must be settable per agent."""
+
+    def _thinks_forever(self, agent, monkeypatch, *steps):
+        """Script a model that plans, then only ever calls `think`."""
+        turn = {"n": 0}
+
+        def scripted(task=None, *args, **kwargs):
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return plan(*steps)
+            return [
+                tool_call(
+                    "think",
+                    current_state=f"state {turn['n']}",
+                    analysis="pondering",
+                    next_actions=["keep thinking"],
+                    confidence=0.5,
+                )
+            ]
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        return turn
+
+    def test_the_defaults_are_the_module_constants(self):
+        agent = build_agent()
+
+        assert agent.max_planning_attempts == MAX_PLANNING_ATTEMPTS
+        assert agent.max_subtask_iterations == MAX_SUBTASK_ITERATIONS
+        assert agent.max_subtask_loops == MAX_SUBTASK_LOOPS
+
+    def test_the_subtask_budget_is_per_agent(self, monkeypatch):
+        capped = build_agent(think_tool=True, max_subtask_loops=3)
+        capped_turns = self._thinks_forever(
+            capped, monkeypatch, ("s1", [])
+        )
+        capped.run("demo")
+
+        default = build_agent(think_tool=True)
+        default_turns = self._thinks_forever(
+            default, monkeypatch, ("s1", [])
+        )
+        default.run("demo")
+
+        assert status_of(capped, "s1") == "failed"
+        assert capped_turns["n"] < default_turns["n"]
+
+    def test_the_run_budget_stops_the_outer_loop(self, monkeypatch):
+        agent = build_agent(
+            think_tool=True,
+            max_subtask_loops=2,
+            max_subtask_iterations=1,
+        )
+        self._thinks_forever(
+            agent, monkeypatch, ("s1", []), ("s2", []), ("s3", [])
+        )
+
+        agent.run("demo")
+
+        assert status_of(agent, "s2") == "pending"
+        assert status_of(agent, "s3") == "pending"
+
+    def test_the_planning_budget_bounds_planning_retries(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_planning_attempts=2)
+        calls = script_llm(
+            agent,
+            monkeypatch,
+            ["not a plan", "still not a plan", "nor this one"],
+        )
+
+        with pytest.raises(Exception):
+            agent.run("demo")
+
+        assert len(calls) == 2
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "max_planning_attempts",
+            "max_subtask_iterations",
+            "max_subtask_loops",
+        ],
+    )
+    def test_a_budget_below_one_is_rejected(self, name):
+        with pytest.raises(ValueError):
+            build_agent(**{name: 0})

@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import secrets
 import threading
 import traceback
 import uuid
@@ -31,26 +32,17 @@ def generate_conversation_id() -> str:
 
 
 def get_conversation_dir():
-    """Get the directory for storing conversation logs."""
-    # Get the current working directory
-    conversation_dir = os.path.join(os.getcwd(), "conversations")
-    try:
-        os.makedirs(conversation_dir, mode=0o755, exist_ok=True)
-    except Exception as e:
-        logger.error(
-            f"Failed to create conversations directory: {str(e)}"
-        )
-        # Fallback to the same directory as the script
-        conversation_dir = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "conversations",
-        )
-        os.makedirs(conversation_dir, mode=0o755, exist_ok=True)
-    return conversation_dir
+    """Get the directory for storing conversation logs.
+
+    The path is not created here: constructing a Conversation must not litter
+    the working directory. The save paths create it when they write.
+    """
+    return os.path.join(os.getcwd(), "conversations")
 
 
-# Unnamed conversations share this name, so they must not resume from disk
-DEFAULT_CONVERSATION_NAME = "conversation-test"
+def generate_conversation_name() -> str:
+    """Name an unnamed conversation, uniquely per instance."""
+    return f"conversation-{secrets.token_hex(4)}"
 
 
 class Conversation:
@@ -80,7 +72,7 @@ class Conversation:
     def __init__(
         self,
         id: Optional[str] = None,
-        name: str = "conversation-test",  # see DEFAULT_NAME below
+        name: Optional[str] = None,
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
         autosave: bool = False,
@@ -101,11 +93,14 @@ class Conversation:
         cache_enabled: bool = False,
         output_metadata: bool = False,
         memory_md_path: Optional[str] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
     ):
 
         # Initialize all attributes first
         self.id = id or generate_id()
-        self.name = name
+        # Only an explicitly chosen name resumes from disk
+        self._explicit_name = name is not None
+        self.name = name or generate_conversation_name()
         self.save_filepath = save_filepath
         # Only an explicitly chosen file resumes from disk
         self._explicit_save_filepath = save_filepath is not None
@@ -133,9 +128,6 @@ class Conversation:
         # Suppressed so the static system_prompt and rules are not re-appended to MEMORY.md every construction.
         self._suppress_memory_md = True
 
-        if self.name is None:
-            self.name = id
-
         self.conversation_history = []
         self._str_cache: Optional[str] = None
         self._cache_hits: int = 0
@@ -150,6 +142,9 @@ class Conversation:
         if self.memory_md_path:
             self._init_memory_md()
             self._preload_memory_md()
+
+        if messages:
+            self.add_messages(messages)
 
     def setup_file_path(self):
         """Set up the file path for saving the conversation and load existing data if available."""
@@ -191,11 +186,11 @@ class Conversation:
             "%Y-%m-%d_%H-%M-%S"
         )
 
-        # Named conversations only: `name` defaults to "conversation-test", so every anonymous one shared a file.
+        # Named conversations only: an unnamed one gets a fresh random name, so it has nothing to resume.
         wants_persistence = (
             self._explicit_save_filepath
             or self.load_filepath is not None
-            or self.name != DEFAULT_CONVERSATION_NAME
+            or self._explicit_name
         )
 
         # Check if file exists and load it
@@ -640,6 +635,43 @@ class Conversation:
             self.add(role, content)
             for role, content in zip(roles, contents)
         ]
+
+    def add_messages(self, messages: List[Dict[str, Any]]):
+        """Add chat-format messages to the conversation history, in order.
+
+        Args:
+            messages (List[Dict[str, Any]]): Messages shaped like
+                ``{"role": ..., "content": ...}``. Any other keys - ``name``,
+                ``tool_calls``, ``tool_call_id`` - are kept as metadata so a
+                tool exchange survives the round trip.
+
+        Returns:
+            list: The result of each :meth:`add`, in the order given.
+        """
+        added = []
+        for message in messages:
+            if not isinstance(message, dict):
+                raise ValueError(
+                    f"Each message must be a dict with 'role' and 'content', got {type(message).__name__}."
+                )
+            if "role" not in message:
+                raise ValueError(
+                    f"Message is missing a 'role' key: {message}"
+                )
+
+            extra = {
+                key: value
+                for key, value in message.items()
+                if key not in ("role", "content")
+            }
+            added.append(
+                self.add(
+                    role=message["role"],
+                    content=message.get("content"),
+                    metadata=extra or None,
+                )
+            )
+        return added
 
     def delete(self, index: str):
         """Delete a message from the conversation history."""
