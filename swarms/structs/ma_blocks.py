@@ -13,6 +13,9 @@ from swarms.prompts.agent_conversation_aggregator import (
     AGGREGATOR_SYSTEM_PROMPT,
 )
 
+_FIND_AGENT_INDEX_CACHE: dict = {}
+_FIND_AGENT_INDEX_CACHE_MAX = 256
+
 
 def aggregator_agent_task_prompt(
     task: str, workers: List[Agent], conversation: Conversation
@@ -34,7 +37,7 @@ def aggregate(
     workers: List[Agent],
     task: str = None,
     type: HistoryOutputType = "all",
-    aggregator_model_name: str = "anthropic/claude-3-sonnet-20240229",
+    aggregator_model_name: str = "claude-sonnet-5",
 ):
     """
     Aggregate a list of tasks into a single task.
@@ -63,7 +66,8 @@ def aggregate(
         max_loops=1,
         model_name=aggregator_model_name,
         output_type="final",
-        max_tokens=4000,
+        temperature=None,
+        top_p=None,
     )
 
     results = run_agents_concurrently(agents=workers, task=task)
@@ -127,10 +131,6 @@ def run_agent(
         return agent.run(task=task, *args, **kwargs)
     except Exception as e:
         raise RuntimeError(f"Error running agent: {str(e)}")
-
-
-_FIND_AGENT_INDEX_CACHE: dict = {}
-_FIND_AGENT_INDEX_CACHE_MAX = 256
 
 
 def find_agent_by_name(
