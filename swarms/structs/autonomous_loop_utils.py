@@ -31,7 +31,7 @@ import re as _re
 import subprocess
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -397,13 +397,23 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "read_file",
-                "description": "Read the contents of a file. Returns the file content as a string.",
+                "description": "Read a file as numbered lines. Reads the whole file by default; pass offset and limit to read a window of a large file instead of all of it.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "file_path": {
                             "type": "string",
                             "description": "Path to the file to read (relative to workspace or absolute)",
+                        },
+                        "offset": {
+                            "type": "integer",
+                            "description": "Zero-based line to start at. Omit to read from the first line.",
+                            "minimum": 0,
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "How many lines to return. Omit to read to the end of the file.",
+                            "minimum": 1,
                         },
                     },
                     "required": ["file_path"],
@@ -811,19 +821,51 @@ def update_file_tool(
         return error_msg
 
 
-def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
+def read_file_tool(
+    agent: Any,
+    file_path: str,
+    offset: int = 0,
+    limit: Optional[int] = None,
+    **kwargs,
+) -> str:
     """
-    Read the contents of a file.
+    Read a file, or a window of it, as numbered lines.
 
     Args:
         agent: The agent instance
         file_path: Path to the file (relative to workspace or absolute)
+        offset: Zero-based line to start at. ``0`` reads from the top.
+        limit: How many lines to return. ``None`` reads to the end.
         **kwargs: Additional arguments
 
     Returns:
-        str: File contents or error message
+        str: Numbered lines, or an error message
+
+    Notes:
+        Lines are numbered by their position in the file, not in the window,
+        so a model reading with an offset can still cite a real line number.
+        The number is right-aligned in six columns and separated by a tab -
+        the shape ``grep -n`` already produces, so both tools read the same
+        way.
+
+        Windowing is applied before the token cap from :func:`truncate_tool_output`,
+        so asking for a window is what keeps a large file from being cut off
+        at the tail; the cap remains the backstop.
+
+        Lines are split on ``\n`` alone rather than with ``str.splitlines``,
+        which also breaks on form feed and other separators ``grep -n`` does
+        not count. An empty file returns ``"(empty file)"`` rather than an
+        empty string, which reads to a model like a failed call.
     """
     try:
+        if offset < 0:
+            return (
+                f"Error: offset must be zero or greater, got {offset}"
+            )
+
+        if limit is not None and limit < 1:
+            return f"Error: limit must be one or greater, got {limit}"
+
         # Resolve path - if relative, use agent workspace
         if not os.path.isabs(file_path):
             workspace_dir = agent._get_agent_workspace_dir()
@@ -838,20 +880,48 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         # Read file
         with open(full_path, "r", encoding="utf-8") as f:
             raw = f.read()
+
+        # Only "\n" separates lines, which is what grep -n counts. splitlines()
+        # also breaks on form feed, vertical tab, \x1c-\x1e and \x85, so a file
+        # with a ^L page break would number every later line one higher than
+        # grep does -- the exact citation mismatch this function exists to fix.
+        lines = raw.split("\n")
+        if lines and lines[-1] == "":
+            lines.pop()
+
+        if not lines:
+            return "(empty file)"
+
+        if offset and offset >= len(lines):
+            return (
+                f"Error: offset {offset} is past the end of {full_path}, "
+                f"which has {len(lines)} lines"
+            )
+
+        end = None if limit is None else offset + limit
+        window = lines[offset:end]
+
+        numbered = "\n".join(
+            f"{offset + i + 1:6}\t{line}"
+            for i, line in enumerate(window)
+        )
+
         content = truncate_tool_output(
-            raw,
+            numbered,
             context_window=agent.context_length,
             model_name=agent.model_name,
         )
 
+        shown = f"lines {offset + 1}-{offset + len(window)} of {len(lines)}"
+
         # Add to memory
         agent.short_memory.add(
             role="File Operations",
-            content=f"Read file: {full_path} ({len(raw)} characters)",
+            content=f"Read file: {full_path} ({shown})",
         )
 
         if agent.verbose:
-            logger.info(f"Read file: {full_path}")
+            logger.info(f"Read file: {full_path} ({shown})")
 
         return content
     except Exception as e:
