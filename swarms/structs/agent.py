@@ -4264,19 +4264,39 @@ Summary: {summary}
                         title=f"Agent: {self.agent_name} Function Call",
                     )
 
-        try:
-            output = self.tool_struct.execute_function_calls_from_api_response(
+        tool_names = [
+            call.get("function", {}).get("name")
+            for call in (
                 response
+                if isinstance(response, list)
+                else [response] if isinstance(response, dict) else []
             )
-        except Exception as e:
-            # Retry the tool call
-            output = self.tool_struct.execute_function_calls_from_api_response(
-                response
-            )
+            if isinstance(call, dict)
+            and call.get("function", {}).get("name")
+        ]
 
-            if output is None:
-                logger.error(f"Error executing tools: {e}")
-                raise e
+        success = True
+        try:
+            try:
+                output = self.tool_struct.execute_function_calls_from_api_response(
+                    response
+                )
+            except Exception as e:
+                output = self.tool_struct.execute_function_calls_from_api_response(
+                    response
+                )
+
+                if output is None:
+                    logger.error(f"Error executing tools: {e}")
+                    raise e
+        except Exception:
+            success = False
+            raise
+        finally:
+            loader = self.tool_loader
+            if loader is not None:
+                for name in tool_names:
+                    loader.record_outcome(name, success)
 
         self.short_memory.add(
             role="Tool Executor",

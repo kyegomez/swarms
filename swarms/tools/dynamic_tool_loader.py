@@ -153,6 +153,39 @@ def _tokenize(text: str) -> List[str]:
     ]
 
 
+_SUCCESS_PRIOR_WEIGHT = 0.5
+
+
+@dataclass
+class ToolStats:
+    """
+    Observed call outcomes for one tool, used as a ranking prior.
+
+    `DynamicToolLoader.search` scales `w = _SUCCESS_PRIOR_WEIGHT` against
+    `success_rate` in `score = text_overlap * (1 + w * success_rate)`: mild
+    enough that a strong text match from an unproven tool still outranks a
+    weak match from a tool that has always worked.
+    """
+
+    successes: int = 0
+    failures: int = 0
+
+    @property
+    def total(self) -> int:
+        return self.successes + self.failures
+
+    @property
+    def success_rate(self) -> float:
+        """
+        Laplace-smoothed success rate: 0.5 until observed, moves with use.
+
+        Never reaches 0, so a tool that has failed every time it was called
+        keeps a positive multiplier - it ranks worse than a reliable tool,
+        never as unreachable.
+        """
+        return (self.successes + 1) / (self.total + 2)
+
+
 class DynamicToolLoader:
     """
     A catalog of deferred tools plus the ``tool_search`` tool that loads them.
@@ -181,6 +214,7 @@ class DynamicToolLoader:
         always_loaded: Iterable[Dict[str, Any]] = (),
     ):
         self._catalog: Dict[str, DeferredTool] = {}
+        self._stats: Dict[str, ToolStats] = {}
         self.always_loaded: List[Dict[str, Any]] = list(always_loaded)
 
         if tools:
@@ -248,6 +282,11 @@ class DynamicToolLoader:
         so it can be tested. Swap in embeddings only when this measurably
         fails.
 
+        The overlap score is then scaled by `record_outcome`'s observed
+        success rate for that tool (`ToolStats.success_rate`), so two tools
+        matching a query equally well are ranked by which one has actually
+        worked.
+
         Args:
             query: Keywords, or ``select:name1,name2`` for exact names.
             limit: Maximum results.
@@ -279,12 +318,16 @@ class DynamicToolLoader:
         for tool in self._catalog.values():
             name_tokens = _tokenize(tool.name)
             haystack = tool.terms
-            score = sum(
+            text_score = sum(
                 3 if term in name_tokens else 1
                 for term in terms
                 if term in haystack
             )
-            if score:
+            if text_score:
+                success_rate = self.tool_stats(tool.name).success_rate
+                score = text_score * (
+                    1 + _SUCCESS_PRIOR_WEIGHT * success_rate
+                )
                 scored.append((score, tool.name, tool))
 
         # Sort by score, then name, so results are stable run to run.
@@ -305,6 +348,24 @@ class DynamicToolLoader:
                 tool.loaded = True
                 fresh.append(tool)
         return fresh
+
+    def record_outcome(self, name: str, success: bool) -> None:
+        """
+        Record that a call to `name` succeeded or failed.
+
+        Feeds the success-rate prior in `search`. In-memory only: stats
+        accumulate for the life of this loader and reset when a new run
+        rebuilds it.
+        """
+        stats = self._stats.setdefault(name, ToolStats())
+        if success:
+            stats.successes += 1
+        else:
+            stats.failures += 1
+
+    def tool_stats(self, name: str) -> ToolStats:
+        """Observed successes/failures for `name`, for inspection or debugging."""
+        return self._stats.get(name, ToolStats())
 
     def run_search(
         self,
