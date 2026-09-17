@@ -371,7 +371,7 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "update_file",
-                "description": "Update an existing file with new content. You can replace the entire file or append to it.",
+                "description": "Update an existing file with new content. You can replace the entire file or append to it. A 'replace' is refused unless you have already read the file in this run, so call read_file first.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -695,6 +695,66 @@ def respond_to_user_tool(
     return f"Message sent to user: {message}"
 
 
+def _record_read(agent: Any, full_path: str) -> None:
+    """
+    Record that the agent has seen the current contents of a path.
+
+    Args:
+        agent: The agent instance
+        full_path: Absolute path whose contents the agent now holds
+
+    Returns:
+        None
+    """
+    reads = getattr(agent, "_read_paths", None)
+    if not isinstance(reads, dict):
+        reads = {}
+        agent._read_paths = reads
+
+    try:
+        reads[os.path.realpath(full_path)] = os.path.getmtime(
+            full_path
+        )
+    except OSError:
+        pass
+
+
+def _read_before_write_error(agent: Any, full_path: str) -> Any:
+    """
+    Check the read-before-write invariant for a whole-file replace.
+
+    Args:
+        agent: The agent instance
+        full_path: Absolute path about to be replaced
+
+    Returns:
+        An actionable error message, or None when the replace may proceed.
+    """
+    key = os.path.realpath(full_path)
+    reads = getattr(agent, "_read_paths", None)
+    if not isinstance(reads, dict) or key not in reads:
+        return (
+            f"Error: {full_path} has not been read in this run, so "
+            "replacing it would overwrite contents you have not seen. "
+            "Call read_file on it first, or use mode='append' to add to "
+            "it without replacing what is there."
+        )
+
+    try:
+        current_mtime = os.path.getmtime(full_path)
+    except OSError:
+        return None
+
+    if current_mtime != reads[key]:
+        return (
+            f"Error: {full_path} changed on disk after you read it, so "
+            "replacing it would discard that change. Call read_file on "
+            "it again before replacing it."
+        )
+
+    return None
+
+
 def create_file_tool(
     agent: Any, file_path: str, content: str, **kwargs
 ) -> str:
@@ -735,6 +795,8 @@ def create_file_tool(
             content=f"Created file: {full_path}",
         )
 
+        _record_read(agent, full_path)
+
         if agent.verbose:
             logger.info(f"Created file: {full_path}")
 
@@ -768,6 +830,12 @@ def update_file_tool(
 
     Returns:
         str: Success message or error message
+
+    Notes:
+        A 'replace' is refused unless the agent read the file earlier in this
+        run and the file has not changed since, because replacing a file the
+        model has not seen destroys whatever it was guessing at. 'append' and
+        create_file are exempt.
     """
     try:
         # Resolve path - if relative, use agent workspace
@@ -780,6 +848,15 @@ def update_file_tool(
         # Check if file exists
         if not os.path.exists(full_path):
             return f"Error: File does not exist at {full_path}. Use create_file to create new files."
+
+        if mode != "append":
+            refusal = _read_before_write_error(agent, full_path)
+            if refusal is not None:
+                agent.short_memory.add(
+                    role="File Operations",
+                    content=refusal,
+                )
+                return refusal
 
         # Update file based on mode
         if mode == "append":
@@ -796,6 +873,8 @@ def update_file_tool(
             role="File Operations",
             content=f"{action.capitalize()} file: {full_path}",
         )
+
+        _record_read(agent, full_path)
 
         if agent.verbose:
             logger.info(f"{action.capitalize()} file: {full_path}")
@@ -822,6 +901,10 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
 
     Returns:
         str: File contents or error message
+
+    Notes:
+        A successful read satisfies the read-before-write invariant that
+        update_file's 'replace' mode enforces.
     """
     try:
         # Resolve path - if relative, use agent workspace
@@ -849,6 +932,8 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
             role="File Operations",
             content=f"Read file: {full_path} ({len(raw)} characters)",
         )
+
+        _record_read(agent, full_path)
 
         if agent.verbose:
             logger.info(f"Read file: {full_path}")
