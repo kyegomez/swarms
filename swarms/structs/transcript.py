@@ -111,6 +111,7 @@ class Transcript:
                     item.get("id")
                     or f"call_{len(self._messages)}_{index}"
                 )
+                item.setdefault("id", call_id)
                 arguments = function.get("arguments", "{}")
                 tool_calls.append(
                     {

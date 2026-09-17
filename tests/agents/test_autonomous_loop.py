@@ -49,7 +49,6 @@ from swarms.structs.autonomous_loop_utils import (
 )
 from swarms.utils.litellm_tokenizer import count_tokens
 
-
 # --------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------
@@ -405,9 +404,16 @@ class TestToolErrorFeedback:
 
         agent.run("test task")
 
-        text = history(agent)
-        assert "handler blew up" in text
-        assert "RuntimeError" in text
+        tool_messages = [
+            m
+            for m in agent.autonomous_loop._transcript.messages
+            if m["role"] == "tool"
+        ]
+        assert any(
+            "handler blew up" in m["content"]
+            and "RuntimeError" in m["content"]
+            for m in tool_messages
+        )
 
     def test_malformed_arguments_do_not_abort_the_iteration(
         self, monkeypatch, tmp_path
@@ -455,7 +461,15 @@ class TestToolErrorFeedback:
         assert (
             target.exists()
         ), "a malformed call aborted the whole response"
-        assert "ERROR: think failed" in history(agent)
+        tool_messages = [
+            m
+            for m in agent.autonomous_loop._transcript.messages
+            if m["role"] == "tool"
+        ]
+        assert any(
+            "ERROR: think failed" in m["content"]
+            for m in tool_messages
+        )
 
     def test_failed_subtask_done_does_not_complete_the_subtask(
         self, monkeypatch
@@ -1331,6 +1345,138 @@ class TestFinalSummaryShape:
         result = agent.run("test task")
 
         assert isinstance(result, list)
+
+
+# --------------------------------------------------------------------------
+# #2168 — drop duplicate Tool Executor prose rows
+# --------------------------------------------------------------------------
+
+
+class TestNoDuplicateToolExecutorRowsInAutonomousLoop:
+    """Tool results are stored once as typed tool rows, not duplicated in memory."""
+
+    def test_tool_results_have_no_tool_executor_prose_rows(
+        self, monkeypatch, tmp_path
+    ):
+        agent = build_agent()
+        target = tmp_path / "out.txt"
+
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "create_file",
+                        file_path=str(target),
+                        content="file content",
+                    )
+                ],
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="file created",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+
+        agent.run("create a file")
+
+        # In short_memory, there must be no "Tool Executor" rows
+        roles_in_memory = [
+            m.get("role")
+            for m in agent.short_memory.conversation_history
+            if isinstance(m, dict)
+        ]
+        assert "Tool Executor" not in roles_in_memory
+
+        # In transcript, tool results are typed with role="tool" and tool_call_id
+        tool_messages = [
+            m
+            for m in agent.autonomous_loop._transcript.messages
+            if m["role"] == "tool"
+        ]
+        assert len(tool_messages) >= 3
+        for tm in tool_messages:
+            assert tm.get("tool_call_id")
+
+
+class TestExceptionRetryNudgeIsUserTurn:
+    """Subtask exception retry nudge is sent as a user turn, not Tool Executor."""
+
+    def test_exception_nudge_reaches_model_as_user_turn(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        captured_messages = []
+
+        turn_count = {"val": 0}
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            messages = kwargs.get("messages")
+            if messages:
+                captured_messages.append(list(messages))
+            turn_count["val"] += 1
+            if turn_count["val"] == 1:
+                return plan(("step1", []))
+            elif turn_count["val"] == 2:
+                # Force a crash in subtask execution loop by returning something that causes an exception
+                # inside the subtask loop (e.g. invalid response format that triggers execution exception)
+                raise RuntimeError("simulated subtask failure")
+            elif turn_count["val"] == 3:
+                return [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="recovered",
+                        success=True,
+                    )
+                ]
+            return [
+                tool_call(
+                    "complete_task",
+                    task_id="main",
+                    summary="done",
+                    success=True,
+                )
+            ]
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        agent.run("test task")
+
+        # Verify short_memory has no "Tool Executor" entry
+        roles = [
+            m.get("role")
+            for m in agent.short_memory.conversation_history
+            if isinstance(m, dict)
+        ]
+        assert "Tool Executor" not in roles
+
+        # The 3rd LLM call (after retry) must have received the error nudge as a user turn
+        assert len(captured_messages) >= 2
+        post_error_messages = captured_messages[-1]
+        user_messages = [
+            m["content"]
+            for m in post_error_messages
+            if m["role"] == "user"
+        ]
+        assert any(
+            "ERROR: the previous step failed with RuntimeError" in u
+            for u in user_messages
+        )
 
 
 class TestIterationLimitsAreConfigurable:
