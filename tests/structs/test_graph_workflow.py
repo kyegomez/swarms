@@ -1,6 +1,7 @@
 import hashlib
 
 import pytest
+from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.graph_workflow import (
@@ -1554,3 +1555,113 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class _StubAgent:
+    """Minimal agent stand-in: structural tests need no model."""
+
+    def __init__(self, name: str):
+        self.agent_name = name
+
+    def run(self, task=None, img=None, *args, **kwargs):
+        return f"{self.agent_name}-out"
+
+
+def _compile_and_capture(workflow: GraphWorkflow) -> str:
+    """Compile, returning the warnings logged. swarms logs through loguru, so
+    a sink is needed rather than caplog."""
+    captured = []
+    sink_id = logger.add(captured.append, level="WARNING")
+    try:
+        workflow.compile()
+    finally:
+        logger.remove(sink_id)
+    return "".join(captured)
+
+
+def _cyclic_workflow(backend: str = "networkx") -> GraphWorkflow:
+    workflow = GraphWorkflow(auto_compile=False, backend=backend)
+    for name in ("a", "b", "c"):
+        workflow.add_node(_StubAgent(name))
+    workflow.add_edge("a", "b")
+    workflow.add_edge("b", "c")
+    workflow.add_edge("c", "a")
+    return workflow
+
+
+@pytest.mark.parametrize("backend", ["networkx", "rustworkx"])
+def test_cycle_flattening_is_reported_by_compile(backend):
+    """A cycle is flattened into one parallel layer. compile() has to say so,
+    and name the nodes that lost their ordering."""
+    if backend == "rustworkx" and not RUSTWORKX_AVAILABLE:
+        pytest.skip("rustworkx not available")
+
+    workflow = _cyclic_workflow(backend)
+    warnings = _compile_and_capture(workflow)
+
+    assert workflow._sorted_layers == [["a", "b", "c"]]
+    assert "flattened into one parallel layer" in warnings
+    assert "['a', 'b', 'c']" in warnings
+
+
+@pytest.mark.parametrize("backend", ["networkx", "rustworkx"])
+def test_cycle_is_a_validation_error_not_a_warning(backend):
+    """Flattening silently discards declared ordering, so it fails validation
+    rather than passing with a warning."""
+    if backend == "rustworkx" and not RUSTWORKX_AVAILABLE:
+        pytest.skip("rustworkx not available")
+
+    result = _cyclic_workflow(backend).validate()
+
+    assert result["is_valid"] is False
+    cycle_errors = [
+        e for e in result["errors"] if "cycles in workflow" in e
+    ]
+    assert cycle_errors
+    assert "['a', 'b', 'c']" in cycle_errors[0]
+    assert not any(
+        "cycles in workflow" in w for w in result["warnings"]
+    )
+
+
+def test_cycle_raises_under_strict_validation():
+    with pytest.raises(ValueError, match="cycles in workflow"):
+        _cyclic_workflow().validate(raise_on_error=True)
+
+
+def test_only_the_nodes_that_lost_ordering_are_named():
+    """An acyclic prefix keeps its layers; only the cyclic remainder is
+    reported."""
+    workflow = GraphWorkflow(auto_compile=False)
+    for name in ("p", "q", "r", "s"):
+        workflow.add_node(_StubAgent(name))
+    workflow.add_edge("p", "q")
+    workflow.add_edge("q", "r")
+    workflow.add_edge("r", "s")
+    workflow.add_edge("s", "q")
+
+    warnings = _compile_and_capture(workflow)
+
+    assert workflow._sorted_layers == [["p"], ["q", "r", "s"]]
+    assert "['q', 'r', 's']" in warnings
+    assert GraphWorkflow._flattened_nodes(
+        workflow._sorted_layers, workflow._predecessors_cache
+    ) == ["q", "r", "s"]
+
+
+@pytest.mark.parametrize("backend", ["networkx", "rustworkx"])
+def test_acyclic_workflows_are_unaffected(backend):
+    if backend == "rustworkx" and not RUSTWORKX_AVAILABLE:
+        pytest.skip("rustworkx not available")
+
+    workflow = GraphWorkflow(auto_compile=False, backend=backend)
+    for name in ("x", "y", "z"):
+        workflow.add_node(_StubAgent(name))
+    workflow.add_edge("x", "y")
+    workflow.add_edge("y", "z")
+
+    warnings = _compile_and_capture(workflow)
+
+    assert workflow._sorted_layers == [["x"], ["y"], ["z"]]
+    assert "flattened" not in warnings
+    assert workflow.validate()["is_valid"] is True

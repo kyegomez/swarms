@@ -936,6 +936,40 @@ class GraphWorkflow:
         if self.verbose:
             logger.debug("Cleared predecessors cache")
 
+    @staticmethod
+    def _flattened_nodes(
+        layers: List[List[str]],
+        pred: Dict[str, List[str]],
+    ) -> List[str]:
+        """Nodes whose declared ordering the layering could not honour.
+
+        Both backends layer what Kahn's algorithm can and append whatever is
+        left — the cyclic remainder — as one final layer. A node in that
+        remainder has a predecessor in its own layer or a later one, which is
+        exactly the ordering that was declared and then discarded. Acyclic
+        graphs return an empty list.
+
+        Args:
+            layers (List[List[str]]): Topological layers from ``compile``.
+            pred (Dict[str, List[str]]): Predecessor map from ``compile``.
+
+        Returns:
+            List[str]: Affected node IDs, sorted.
+        """
+        position = {
+            node_id: index
+            for index, layer in enumerate(layers)
+            for node_id in layer
+        }
+        return sorted(
+            node_id
+            for node_id, index in position.items()
+            if any(
+                position.get(parent, index) >= index
+                for parent in pred.get(node_id, ())
+            )
+        )
+
     def compile(self) -> None:
         """
         Pre-compute expensive operations for faster execution.
@@ -986,6 +1020,17 @@ class GraphWorkflow:
                 node_id: tuple(parents)
                 for node_id, parents in pred.items()
             }
+
+            flattened = self._flattened_nodes(sorted_layers, pred)
+            if flattened:
+                logger.warning(
+                    f"GraphWorkflow contains a cycle. It will NOT be "
+                    f"executed as a cycle: {flattened} are flattened into "
+                    f"one parallel layer and each runs once, so the edge "
+                    f"ordering you declared between them is discarded. Use "
+                    f"max_loops to re-run the whole graph, or restructure "
+                    f"the graph as a DAG."
+                )
 
             # Never raises, so compile() stays compatible; use validate(raise_on_error=True) for strict.
             if self.nodes:
@@ -1128,11 +1173,23 @@ class GraphWorkflow:
             if enumerate_cycles:
                 cycles = self.graph_backend.simple_cycles()
                 if cycles:
-                    warnings.append(
-                        f"Found {len(cycles)} cycles in workflow"
+                    involved = sorted(
+                        {node for cycle in cycles for node in cycle}
+                    )
+                    errors.append(
+                        f"Found {len(cycles)} cycles in workflow. "
+                        f"Cycles are not executed as cycles: the nodes in "
+                        f"them are flattened into one parallel layer and "
+                        f"each runs once, so the edge ordering declared "
+                        f"between {involved} is discarded"
                     )
             elif not self.graph_backend.is_dag():
-                warnings.append("Found cycles in workflow")
+                errors.append(
+                    "Found cycles in workflow. Cycles are not executed as "
+                    "cycles: the nodes in them are flattened into one "
+                    "parallel layer and each runs once, so the edge "
+                    "ordering declared between them is discarded"
+                )
         except Exception as e:
             warnings.append(f"Could not check for cycles: {e}")
 
