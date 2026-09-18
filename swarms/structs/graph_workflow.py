@@ -2888,7 +2888,7 @@ class GraphWorkflow:
     ) -> Dict[str, Any]:
         """
         Serialize the workflow to a dict. The single builder behind
-        :meth:`to_spec`, :meth:`to_json`, :meth:`save` and friends.
+        :meth:`to_spec`, :meth:`save` and friends.
 
         Args:
             shallow: Topology only — each node names its agent, subgraphs
@@ -3005,43 +3005,6 @@ class GraphWorkflow:
         """
         return self.to_dict(shallow=True)
 
-    def to_json(
-        self,
-        fast: bool = True,
-        include_conversation: bool = False,
-        include_runtime_state: bool = False,
-    ) -> str:
-        """
-        Serialize to a JSON string with agents embedded.
-
-        Args:
-            fast: Ignored; kept for backward compatibility.
-            include_conversation: Include conversation history.
-            include_runtime_state: Include compilation state.
-
-        Returns:
-            JSON representation of the workflow.
-        """
-        try:
-            result = json.dumps(
-                self.to_dict(
-                    shallow=False,
-                    include_conversation=include_conversation,
-                    include_runtime_state=include_runtime_state,
-                ),
-                indent=2,
-                default=str,
-            )
-            if self.verbose:
-                logger.success(
-                    f"Serialized GraphWorkflow to JSON ({len(result)} characters, "
-                    f"{len(self.nodes)} nodes, {len(self.edges)} edges)"
-                )
-            return result
-        except Exception as e:
-            logger.exception(f"Error in GraphWorkflow.to_json: {e}")
-            raise e
-
     def _write_json(
         self,
         path: str,
@@ -3121,20 +3084,6 @@ class GraphWorkflow:
         """Write :meth:`to_spec` to ``path`` — the form to commit. Rebuild with
         :meth:`from_topology_spec`."""
         self.save(path, shallow=True)
-
-    @staticmethod
-    def _parse_node_type(raw: Any) -> "NodeType":
-        """Parse a node type. Older exports wrote "NodeType.AGENT", which
-        NodeType() rejects, so accept both spellings."""
-        if isinstance(raw, NodeType):
-            return raw
-        text = str(raw)
-        if text.startswith("NodeType."):
-            text = text.split(".", 1)[1].lower()
-        try:
-            return NodeType(text)
-        except ValueError:
-            return NodeType.AGENT
 
     @classmethod
     def _edges_from_payload(
@@ -3244,163 +3193,28 @@ class GraphWorkflow:
         )
 
     @classmethod
-    def from_json(
-        cls,
-        json_str: str,
-        restore_runtime_state: bool = False,
-        agent_registry: Optional[Dict[str, "Agent"]] = None,
-    ) -> "GraphWorkflow":
-        """
-        Rebuild from a deep export. Nodes keep their exported ids so edges
-        resolve; agents come back as dicts unless a registry rehydrates them.
-
-        Args:
-            json_str: JSON produced by :meth:`to_json`.
-            restore_runtime_state: Restore compilation state.
-            agent_registry: Optional ``agent_name -> Agent`` to wire nodes to.
-
-        Returns:
-            The reconstructed workflow.
-
-        Raises:
-            ValueError: If ``json_str`` is not valid JSON.
-        """
-        try:
-            data = json.loads(json_str)
-        except json.JSONDecodeError as e:
-            logger.error(
-                f"Invalid JSON format in GraphWorkflow.from_json: {e}"
-            )
-            raise ValueError(f"Invalid JSON format: {e}")
-
-        try:
-            schema_version = data.get("schema_version", "legacy")
-
-            nodes = {}
-            for n in data.get("nodes", []):
-                try:
-                    agent = n.get("agent")
-                    if isinstance(agent, dict):
-                        name = agent.get("agent_name")
-                        if agent_registry and name in agent_registry:
-                            agent = agent_registry[name]
-                        elif "serialization_error" in agent:
-                            logger.warning(
-                                f"Node {n['id']} was exported with an agent "
-                                f"serialization error: {agent['serialization_error']}"
-                            )
-                    nodes[n["id"]] = Node(
-                        id=n["id"],
-                        type=cls._parse_node_type(n.get("type")),
-                        agent=agent,
-                        metadata=n.get("metadata") or {},
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to deserialize node {n.get('id', 'unknown')}: {e}"
-                    )
-
-            params = {
-                k: v
-                for k, v in {
-                    "id": data.get("id"),
-                    "name": data.get("name", "Loaded-Workflow"),
-                    "description": data.get(
-                        "description", "Workflow loaded from JSON"
-                    ),
-                    "max_loops": data.get("max_loops", 1),
-                    "task": data.get("task"),
-                    "auto_compile": data.get("auto_compile", True),
-                    "verbose": data.get("verbose", False),
-                }.items()
-                if v is not None
-            }
-
-            result = cls(
-                nodes=nodes,
-                edges=cls._edges_from_payload(data),
-                entry_points=data.get("entry_points") or [],
-                end_points=data.get("end_points") or [],
-                **params,
-            )
-
-            if "max_workers" in data:
-                result._max_workers = data["max_workers"]
-
-            if data.get("conversation"):
-                try:
-                    from swarms.structs.conversation import (
-                        Conversation,
-                    )
-
-                    conv_data = data["conversation"]
-                    if (
-                        isinstance(conv_data, dict)
-                        and "history" in conv_data
-                    ):
-                        conv = Conversation()
-                        conv.history = conv_data["history"]
-                        result.conversation = conv
-                    else:
-                        logger.warning(
-                            "Conversation data present but in unrecognized format"
-                        )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to restore conversation: {e}"
-                    )
-
-            if restore_runtime_state and "runtime_state" in data:
-                try:
-                    runtime_state = data["runtime_state"]
-                    if runtime_state.get("is_compiled", False):
-                        result._compiled = True
-                        result._compilation_timestamp = (
-                            runtime_state.get("compilation_timestamp")
-                        )
-                        result._sorted_layers = (
-                            runtime_state.get("sorted_layers") or []
-                        )
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to restore runtime state: {e}"
-                    )
-
-            logger.success(
-                f"Loaded GraphWorkflow: {len(nodes)} nodes, "
-                f"{len(result.edges)} edges, schema_version: {schema_version}"
-            )
-            return result
-
-        except Exception as e:
-            logger.exception(f"Error in GraphWorkflow.from_json: {e}")
-            raise e
-
-    @classmethod
     def load(
         cls,
         path: str,
         agent_registry: Optional[Dict[str, "Agent"]] = None,
-        restore_runtime_state: bool = False,
         **kwargs: Any,
     ) -> "GraphWorkflow":
         """
-        Read back a file written by :meth:`save`, detecting which shape it
-        holds so one call handles both.
+        Read back a file written by :meth:`save_spec` or :meth:`save`.
 
         Args:
             path: Path to the JSON file.
-            agent_registry: ``agent_name -> Agent``. Required for a shallow
-                spec, optional for a deep export.
-            restore_runtime_state: Deep exports only.
-            **kwargs: Forwarded to the constructor for shallow specs.
+            agent_registry: ``agent_name -> Agent``. Required to resolve the
+                agent names stored in a topology spec.
+            **kwargs: Forwarded to the constructor.
 
         Returns:
             The reconstructed workflow.
 
         Raises:
             FileNotFoundError: If ``path`` does not exist.
-            ValueError: If a shallow spec is loaded without a registry.
+            ValueError: If ``path`` holds a deep export with agents embedded
+                as data, or a topology spec is loaded without a registry.
         """
         if not os.path.exists(path):
             raise FileNotFoundError(
@@ -3417,21 +3231,22 @@ class GraphWorkflow:
             for n in payload.get("nodes", [])
         )
 
-        if is_shallow:
-            if agent_registry is None:
-                raise ValueError(
-                    f"{path} holds a topology spec, which stores agent names "
-                    f"rather than agents. Pass agent_registry={{name: agent}} "
-                    f"to resolve them."
-                )
-            return cls.from_topology_spec(
-                payload, agent_registry, **kwargs
+        if not is_shallow:
+            raise ValueError(
+                f"{path} holds a deep export with agents embedded as data, "
+                f"which cannot be rebuilt into live Agent objects. Use "
+                f"save_spec()/from_topology_spec() to persist and reload "
+                f"workflows."
             )
 
-        return cls.from_json(
-            raw,
-            restore_runtime_state=restore_runtime_state,
-            agent_registry=agent_registry,
+        if agent_registry is None:
+            raise ValueError(
+                f"{path} holds a topology spec, which stores agent names "
+                f"rather than agents. Pass agent_registry={{name: agent}} "
+                f"to resolve them."
+            )
+        return cls.from_topology_spec(
+            payload, agent_registry, **kwargs
         )
 
     def get_compilation_status(self) -> Dict[str, Any]:
@@ -3463,58 +3278,6 @@ class GraphWorkflow:
             status["end_points"] = self.end_points
 
         return status
-
-    def save_to_file(
-        self,
-        filepath: str,
-        include_conversation: bool = False,
-        include_runtime_state: bool = False,
-        overwrite: bool = False,
-    ) -> str:
-        """
-        :meth:`save` with agents embedded, plus a ``.json`` extension and a
-        refusal to clobber by default.
-
-        Args:
-            filepath: Path to save the JSON file.
-            include_conversation: Include conversation history.
-            include_runtime_state: Include compilation state.
-            overwrite: Whether to replace an existing file.
-
-        Returns:
-            Path to the saved file.
-
-        Raises:
-            FileExistsError: If the file exists and ``overwrite`` is ``False``.
-        """
-        try:
-            return self._write_json(
-                filepath,
-                self.to_dict(
-                    shallow=False,
-                    include_conversation=include_conversation,
-                    include_runtime_state=include_runtime_state,
-                ),
-                overwrite=overwrite,
-                ensure_extension=True,
-            )
-        except FileExistsError:
-            raise
-        except Exception as e:
-            logger.exception(
-                f"Failed to save GraphWorkflow to {filepath}: {e}"
-            )
-            raise e
-
-    @classmethod
-    def load_from_file(
-        cls, filepath: str, restore_runtime_state: bool = False
-    ) -> "GraphWorkflow":
-        """:meth:`load` for files written by :meth:`save_to_file`. Raises
-        ``FileNotFoundError`` if ``filepath`` does not exist."""
-        return cls.load(
-            filepath, restore_runtime_state=restore_runtime_state
-        )
 
     def validate(
         self,

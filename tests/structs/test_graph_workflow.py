@@ -1341,15 +1341,6 @@ def test_visualize_sanitizes_the_workflow_name_into_the_output_path():
     assert safe == "team_alpha"
 
 
-# ---------------------------------------------------------------------------
-# Persistence round-trips
-#
-# to_json / from_json / save_to_file / load_from_file / save_spec had no
-# coverage. These pin the observable contract of each so the shared
-# to_dict / _write_json core cannot change it silently.
-# ---------------------------------------------------------------------------
-
-
 def _two_node_workflow(name="Persist-WF"):
     a = create_test_agent("Alpha")
     b = create_test_agent("Beta")
@@ -1363,90 +1354,34 @@ def _two_node_workflow(name="Persist-WF"):
     return wf
 
 
-def test_to_json_emits_the_documented_envelope():
-    """to_json returns an indented JSON string carrying schema + metrics."""
-    import json
-
+def test_save_spec_load_round_trip_can_run(tmp_path):
     wf = _two_node_workflow()
-    data = json.loads(wf.to_json())
+    target = tmp_path / "spec.json"
+    wf.save_spec(str(target))
 
-    assert data["schema_version"] == "1.0.0"
-    assert data["name"] == "Persist-WF"
-    assert data["max_loops"] == 2
-    assert {n["id"] for n in data["nodes"]} == {"Alpha", "Beta"}
-    assert data["edges"] == [
-        {"source": "Alpha", "target": "Beta", "metadata": {}}
-    ]
-    assert data["entry_points"] == ["Alpha"]
-    assert data["end_points"] == ["Beta"]
-    assert data["metrics"]["node_count"] == 2
-    assert data["metrics"]["edge_count"] == 1
-    # Every node carries a serialized agent, not a bare name.
-    assert all("agent" in n for n in data["nodes"])
+    registry = {
+        node.agent.agent_name: node.agent
+        for node in wf.nodes.values()
+    }
+    rebuilt = GraphWorkflow.load(str(target), agent_registry=registry)
 
-
-def test_to_json_optional_sections_are_off_by_default():
-    import json
-
-    wf = _two_node_workflow()
-    assert "runtime_state" not in json.loads(wf.to_json())
-    assert "runtime_state" in json.loads(
-        wf.to_json(include_runtime_state=True)
+    assert all(
+        hasattr(node.agent, "run") for node in rebuilt.nodes.values()
+    )
+    result = rebuilt.run("Say hello")
+    assert result is not None
+    assert not any(
+        "has no attribute 'run'" in str(v) for v in result.values()
     )
 
 
-def test_from_json_round_trip_preserves_topology():
+def test_load_rejects_a_deep_export(tmp_path):
     wf = _two_node_workflow()
-    rebuilt = GraphWorkflow.from_json(wf.to_json())
+    target = tmp_path / "deep.json"
+    wf.save(str(target), shallow=False)
 
-    assert rebuilt.name == wf.name
-    assert rebuilt.max_loops == wf.max_loops
-    assert set(rebuilt.nodes) == set(wf.nodes)
-    assert {(e.source, e.target) for e in rebuilt.edges} == {
-        (e.source, e.target) for e in wf.edges
-    }
-
-
-def test_from_json_rejects_malformed_json():
-    with pytest.raises(ValueError):
-        GraphWorkflow.from_json("{not json")
-
-
-def test_save_to_file_and_load_from_file_round_trip(tmp_path):
-    wf = _two_node_workflow()
-    target = tmp_path / "wf.json"
-
-    returned = wf.save_to_file(str(target))
-    assert returned == str(target)
-    assert target.exists()
-
-    rebuilt = GraphWorkflow.load_from_file(str(target))
-    assert set(rebuilt.nodes) == set(wf.nodes)
-    assert rebuilt.name == wf.name
-
-
-def test_save_to_file_appends_the_json_extension(tmp_path):
-    wf = _two_node_workflow()
-    returned = wf.save_to_file(str(tmp_path / "noext"))
-    assert returned.endswith(".json")
-    assert (tmp_path / "noext.json").exists()
-
-
-def test_save_to_file_refuses_to_clobber_without_overwrite(tmp_path):
-    wf = _two_node_workflow()
-    target = tmp_path / "wf.json"
-    wf.save_to_file(str(target))
-
-    with pytest.raises(FileExistsError):
-        wf.save_to_file(str(target))
-
-    # Explicit opt-in succeeds.
-    assert wf.save_to_file(str(target), overwrite=True) == str(target)
-
-
-def test_load_from_file_missing_path_raises_filenotfound(tmp_path):
-    with pytest.raises(FileNotFoundError):
-        GraphWorkflow.load_from_file(str(tmp_path / "nope.json"))
+    with pytest.raises(ValueError, match="deep export"):
+        GraphWorkflow.load(str(target))
 
 
 def test_save_spec_writes_the_shallow_topology(tmp_path):
