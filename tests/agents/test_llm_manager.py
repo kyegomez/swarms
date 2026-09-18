@@ -167,6 +167,12 @@ def reasoning_chunk(text):
     )
 
 
+def dropped_stream():
+    """A stream the provider abandons after one chunk."""
+    yield content_chunk("partial")
+    raise RuntimeError("provider dropped the stream")
+
+
 ########################################################
 # Fixtures
 ########################################################
@@ -705,6 +711,18 @@ class TestCallDetailedStreaming:
 
         assert fake_llm.stream is False
 
+    def test_restores_llm_stream_flag_when_the_stream_breaks(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = dropped_stream()
+        fake_llm.stream = False
+        agent.stream = True
+
+        with pytest.raises(RuntimeError, match="dropped"):
+            agent.llm_manager.call("hi", current_loop=0)
+
+        assert fake_llm.stream is False
+
     def test_tool_calls_returned_instead_of_text(
         self, agent, fake_llm
     ):
@@ -819,6 +837,19 @@ class TestCallPanelStreaming:
         result = agent.llm_manager.call("hi", current_loop=0)
 
         assert result == "AB"
+
+    def test_restores_llm_stream_flag_when_the_stream_breaks(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = dropped_stream()
+        fake_llm.stream = False
+        agent.streaming_on = True
+        agent.print_on = False
+
+        with pytest.raises(RuntimeError, match="dropped"):
+            agent.llm_manager.call("hi", current_loop=0)
+
+        assert fake_llm.stream is False
 
     def test_tool_calls_returned_instead_of_text(
         self, agent, fake_llm
