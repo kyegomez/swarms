@@ -590,8 +590,21 @@ class AutonomousAgentLoop:
                         raise
 
             if not plan_created:
-                raise Exception(
-                    "Failed to create plan after maximum attempts"
+                logger.warning(
+                    f"{self.agent.agent_name} did not call create_plan in "
+                    f"{max_planning_attempts} attempts. Running the task as a "
+                    "single step instead of failing the run."
+                )
+                self._create_plan_tool(
+                    task_description=task,
+                    steps=[
+                        {
+                            "step_id": "task",
+                            "description": task,
+                            "priority": "high",
+                            "dependencies": [],
+                        }
+                    ],
                 )
 
             # Already in the catalog when dynamic_tools is on.
