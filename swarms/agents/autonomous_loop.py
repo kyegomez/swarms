@@ -651,8 +651,7 @@ class AutonomousAgentLoop:
             total_iterations = 0
 
             while not self._all_subtasks_complete():
-                total_iterations += 1
-                if total_iterations > max_subtask_iterations:
+                if total_iterations >= max_subtask_iterations:
                     if self.agent.print_on:
                         formatter.print_panel(
                             f"Maximum iterations ({max_subtask_iterations}) reached. Stopping execution.",
@@ -710,8 +709,10 @@ class AutonomousAgentLoop:
                 while (
                     not subtask_done
                     and subtask_iterations < max_subtask_loops
+                    and total_iterations < max_subtask_iterations
                 ):
                     subtask_iterations += 1
+                    total_iterations += 1
 
                     # Every tool call is answered here, so replacing the transcript orphans nothing
                     if self._maybe_compress_context():
