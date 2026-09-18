@@ -1,13 +1,13 @@
 import hashlib
 
 import pytest
-from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.graph_workflow import (
     GraphWorkflow,
     Node,
     NodeType,
+    logger,
 )
 
 try:
@@ -1557,16 +1557,6 @@ if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
 
-class _StubAgent:
-    """Minimal agent stand-in: structural tests need no model."""
-
-    def __init__(self, name: str):
-        self.agent_name = name
-
-    def run(self, task=None, img=None, *args, **kwargs):
-        return f"{self.agent_name}-out"
-
-
 def _compile_and_capture(workflow: GraphWorkflow) -> str:
     """Compile, returning the warnings logged. swarms logs through loguru, so
     a sink is needed rather than caplog."""
@@ -1582,7 +1572,7 @@ def _compile_and_capture(workflow: GraphWorkflow) -> str:
 def _cyclic_workflow(backend: str = "networkx") -> GraphWorkflow:
     workflow = GraphWorkflow(auto_compile=False, backend=backend)
     for name in ("a", "b", "c"):
-        workflow.add_node(_StubAgent(name))
+        workflow.add_node(create_test_agent(name))
     workflow.add_edge("a", "b")
     workflow.add_edge("b", "c")
     workflow.add_edge("c", "a")
@@ -1634,7 +1624,7 @@ def test_only_the_nodes_that_lost_ordering_are_named():
     reported."""
     workflow = GraphWorkflow(auto_compile=False)
     for name in ("p", "q", "r", "s"):
-        workflow.add_node(_StubAgent(name))
+        workflow.add_node(create_test_agent(name))
     workflow.add_edge("p", "q")
     workflow.add_edge("q", "r")
     workflow.add_edge("r", "s")
@@ -1656,7 +1646,7 @@ def test_acyclic_workflows_are_unaffected(backend):
 
     workflow = GraphWorkflow(auto_compile=False, backend=backend)
     for name in ("x", "y", "z"):
-        workflow.add_node(_StubAgent(name))
+        workflow.add_node(create_test_agent(name))
     workflow.add_edge("x", "y")
     workflow.add_edge("y", "z")
 
