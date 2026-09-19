@@ -1002,11 +1002,6 @@ class Agent:
                 self.tools_list_dictionary.append(tool)
                 existing_tool_names.add(tool_name)
 
-        self.short_memory.add(
-            role=self.agent_name,
-            content=self.tools_list_dictionary,
-        )
-
     def short_memory_init(self):
         # Compactly assemble initial prompt as a string with available fields
         prompt = self.system_prompt
