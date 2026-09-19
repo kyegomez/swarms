@@ -93,3 +93,21 @@ def test_no_agent_receives_a_flattened_transcript():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_a_second_run_starts_from_an_empty_conversation():
+    """batched_run answered task 2 with task 1 still in the prompt."""
+    duo, calls = _duo()
+
+    first, second = duo.batched_run(
+        ["what is 2 + 2", "who painted Guernica"]
+    )
+
+    assert len(second) == len(first), second
+
+    later = [
+        message["content"]
+        for call in calls[2:]
+        for message in call["messages"]
+    ]
+    assert not any("2 + 2" in content for content in later), later
