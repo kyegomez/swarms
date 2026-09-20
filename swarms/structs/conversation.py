@@ -130,6 +130,7 @@ class Conversation:
 
         self.conversation_history = []
         self._str_cache: Optional[str] = None
+        self._rendered_lines: Optional[List[str]] = None
         self._cache_hits: int = 0
         self._cache_misses: int = 0
 
@@ -312,7 +313,7 @@ class Conversation:
                 ),
             }
         )
-        self._str_cache = None
+        self._invalidate_cache()
 
     def compact(
         self,
@@ -335,7 +336,7 @@ class Conversation:
         self._suppress_memory_md = True
         try:
             self.conversation_history = []
-            self._str_cache = None
+            self._invalidate_cache()
             if self.system_prompt is not None:
                 self.conversation_history.append(
                     {
@@ -484,6 +485,8 @@ class Conversation:
         # Add message to conversation history
         self.conversation_history.append(message)
         self._str_cache = None
+        if self._rendered_lines is not None:
+            self._rendered_lines.append(self._render_message(message))
 
         # Persist to MEMORY.md if enabled
         if self.memory_md_path:
@@ -675,7 +678,7 @@ class Conversation:
     def delete(self, index: str):
         """Delete a message from the conversation history."""
         self.conversation_history.pop(int(index))
-        self._str_cache = None
+        self._invalidate_cache()
 
     def update(self, index: str, role, content):
         """Update a message in the conversation history.
@@ -688,7 +691,7 @@ class Conversation:
         if 0 <= int(index) < len(self.conversation_history):
             self.conversation_history[int(index)]["role"] = role
             self.conversation_history[int(index)]["content"] = content
-            self._str_cache = None
+            self._invalidate_cache()
         else:
             logger.warning(f"Invalid index: {index}")
 
@@ -797,21 +800,26 @@ class Conversation:
             return self.dynamic_auto_chunking()
         return self._return_history_as_string_worker()
 
+    def _invalidate_cache(self) -> None:
+        """Drop both caches after a change that is not a plain append."""
+        self._str_cache = None
+        self._rendered_lines = None
+
+    def _render_message(self, message: Dict[str, Any]) -> str:
+        """Render one message the way the history string shows it."""
+        timestamp = message.get("timestamp")
+        if timestamp:
+            return f"[{timestamp}] {message['role']}: {message['content']}"
+        return f"{message['role']}: {message['content']}"
+
     def _return_history_as_string_worker(self):
-        formatted_messages = []
+        if self._rendered_lines is None:
+            self._rendered_lines = [
+                self._render_message(message)
+                for message in self.conversation_history
+            ]
 
-        for message in self.conversation_history:
-            timestamp = message.get("timestamp")
-            if timestamp:
-                formatted_messages.append(
-                    f"[{timestamp}] {message['role']}: {message['content']}"
-                )
-            else:
-                formatted_messages.append(
-                    f"{message['role']}: {message['content']}"
-                )
-
-        return "\n\n".join(formatted_messages)
+        return "\n\n".join(self._rendered_lines)
 
     def get_str(self) -> str:
         """Alias for :meth:`return_history_as_string` (kept for compatibility).
@@ -997,7 +1005,7 @@ class Conversation:
         """
         if isinstance(data, list):
             self.conversation_history = data
-            self._str_cache = None
+            self._invalidate_cache()
             return
 
         if not isinstance(data, dict):
@@ -1015,7 +1023,7 @@ class Conversation:
         self.conversation_history = data.get(
             "conversation_history", []
         )
-        self._str_cache = None
+        self._invalidate_cache()
 
     def load_from_json(self, filename: str):
         """Load the conversation history and metadata from a JSON file.
@@ -1166,7 +1174,7 @@ class Conversation:
 
         # Update conversation history
         self.conversation_history = truncated_history
-        self._str_cache = None
+        self._invalidate_cache()
 
     def _binary_search_truncate(
         self, text, target_tokens, model_name
@@ -1228,7 +1236,7 @@ class Conversation:
     def clear(self):
         """Clear the conversation history."""
         self.conversation_history = []
-        self._str_cache = None
+        self._invalidate_cache()
 
     def to_json(self):
         """Convert the conversation history to a JSON string.
@@ -1418,7 +1426,7 @@ class Conversation:
             messages (List[dict]): List of messages to add.
         """
         self.conversation_history.extend(messages)
-        self._str_cache = None
+        self._invalidate_cache()
 
     @classmethod
     def load_conversation(
