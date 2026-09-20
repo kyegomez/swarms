@@ -132,7 +132,6 @@ class Conversation:
         self._str_cache: Optional[str] = None
         self._cache_hits: int = 0
         self._cache_misses: int = 0
-        self._last_cached_tokens: int = 0
 
         self.setup_file_path()
         self.setup()
@@ -787,9 +786,6 @@ class Conversation:
         if self._str_cache is None:
             self._cache_misses += 1
             self._str_cache = self._build_history_string()
-            self._last_cached_tokens = count_tokens(
-                self._str_cache, self.tokenizer_model_name
-            )
         else:
             self._cache_hits += 1
 
@@ -836,7 +832,13 @@ class Conversation:
         return {
             "hits": self._cache_hits,
             "misses": self._cache_misses,
-            "cached_tokens": self._last_cached_tokens,
+            "cached_tokens": (
+                count_tokens(
+                    self._str_cache, self.tokenizer_model_name
+                )
+                if self._str_cache is not None
+                else 0
+            ),
             "hit_rate": (
                 self._cache_hits / total_calls
                 if total_calls > 0
