@@ -485,8 +485,6 @@ class Conversation:
         # Add message to conversation history
         self.conversation_history.append(message)
         self._str_cache = None
-        if self._rendered_lines is not None:
-            self._rendered_lines.append(self._render_message(message))
 
         # Persist to MEMORY.md if enabled
         if self.memory_md_path:
@@ -805,21 +803,26 @@ class Conversation:
         self._str_cache = None
         self._rendered_lines = None
 
-    def _render_message(self, message: Dict[str, Any]) -> str:
-        """Render one message the way the history string shows it."""
-        timestamp = message.get("timestamp")
-        if timestamp:
-            return f"[{timestamp}] {message['role']}: {message['content']}"
-        return f"{message['role']}: {message['content']}"
-
     def _return_history_as_string_worker(self):
-        if self._rendered_lines is None:
-            self._rendered_lines = [
-                self._render_message(message)
-                for message in self.conversation_history
-            ]
+        history = self.conversation_history
+        lines = self._rendered_lines
 
-        return "\n\n".join(self._rendered_lines)
+        if lines is None or len(lines) > len(history):
+            lines = []
+            self._rendered_lines = lines
+
+        for message in history[len(lines) :]:
+            timestamp = message.get("timestamp")
+            if timestamp:
+                lines.append(
+                    f"[{timestamp}] {message['role']}: {message['content']}"
+                )
+            else:
+                lines.append(
+                    f"{message['role']}: {message['content']}"
+                )
+
+        return "\n\n".join(lines)
 
     def get_str(self) -> str:
         """Alias for :meth:`return_history_as_string` (kept for compatibility).
