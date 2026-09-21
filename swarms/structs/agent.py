@@ -65,6 +65,9 @@ from swarms.schemas.mcp_schemas import (
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.autonomous_loop_utils import (
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
+    MAX_SUBTASK_LOOPS,
     get_autonomous_loop_tool_names,
     get_summary_prompt,
 )
@@ -112,7 +115,7 @@ from swarms.utils.index import (
     format_data_structure,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -203,6 +206,13 @@ class Agent:
             off unless asked for. Enable it for models that do not reason natively, or
             when an explicit analysis step is worth the extra turn. When False, the system
             prompt is adjusted to match so the model is not told to call a tool it lacks.
+        max_planning_attempts (int): Autonomous loop (max_loops="auto") only. How many
+            times to ask the model for a plan before giving up. Defaults to 5.
+        max_subtask_iterations (int): Autonomous loop only. Ceiling on execution
+            iterations across the whole run, which is also its worst-case number of
+            LLM calls. Defaults to 100.
+        max_subtask_loops (int): Autonomous loop only. Ceiling on iterations spent
+            inside any one subtask before moving on. Defaults to 20.
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
             "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
@@ -396,7 +406,10 @@ class Agent:
         reasoning_effort: Optional[ReasoningEffort] = None,
         thinking_tokens: int = 1024,
         think_tool: bool = False,
-        dynamic_tools: bool = True,
+        max_planning_attempts: int = MAX_PLANNING_ATTEMPTS,
+        max_subtask_iterations: int = MAX_SUBTASK_ITERATIONS,
+        max_subtask_loops: int = MAX_SUBTASK_LOOPS,
+        dynamic_tools: bool = False,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
@@ -408,6 +421,7 @@ class Agent:
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -458,11 +472,9 @@ class Agent:
         self.rules = rules
         self.max_tokens = max_tokens
         self.temperature = temperature
-        # Always use environment variable for workspace_dir, ignore user input
-        # Fallback to default if environment variable is not set
+        # The environment wins over the argument, with a default when unset
         self.workspace_dir = get_workspace_dir()
-        # Built on first use: file tools need the dir even without
-        # autosave, but constructing every agent must not create one.
+        # Built on first use, constructing an agent must not create a directory
         self._workspace = None
         self.tags = tags
         self.use_cases = use_cases
@@ -510,9 +522,23 @@ class Agent:
         self.dynamic_tools = dynamic_tools
         self.tool_loader: Optional[DynamicToolLoader] = None
         self._mcp_tools_deferred = False
+        self._usage = empty_usage()
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
         self.think_tool = think_tool
+        # A budget below 1 would silently make the phase it bounds do nothing.
+        for name, value in (
+            ("max_planning_attempts", max_planning_attempts),
+            ("max_subtask_iterations", max_subtask_iterations),
+            ("max_subtask_loops", max_subtask_loops),
+        ):
+            if value < 1:
+                raise ValueError(
+                    f"{name} must be at least 1, got {value}"
+                )
+        self.max_planning_attempts = max_planning_attempts
+        self.max_subtask_iterations = max_subtask_iterations
+        self.max_subtask_loops = max_subtask_loops
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
@@ -544,8 +570,7 @@ class Agent:
             self.max_tokens = self._default_max_tokens() or 16000
 
         if self.max_loops == "auto":
-            # The prompt must agree with the tool list: without this the model
-            # is instructed to call a `think` tool it was never given.
+            # Without this the prompt tells the model to call a think tool it lacks
             self.system_prompt += (
                 "\n\n"
                 + get_autonomous_agent_prompt(
@@ -556,8 +581,10 @@ class Agent:
         # When False the agent does not read or write MEMORY.md across sessions.
         self.persistent_memory = persistent_memory
 
-        # Context compression is available for both max_loops="auto" and
-        # integer max_loops runs. Gated purely on the user-facing boolean.
+        # Prior turns, seeded into short_memory and re-sent as context on every run.
+        self.messages = messages
+
+        # Applies to auto and integer max_loops alike
         self.context_compression = context_compression
         if self.context_compression:
             self._context_compressor = ContextCompressor(
@@ -608,8 +635,7 @@ class Agent:
         if self.fallback_models and not self.model_name:
             self.model_name = self.fallback_models[0]
 
-        # Owns model rotation, LiteLLM construction, and LLM invocation.
-        # Reads config off this agent, so it must be built after config is set.
+        # Reads config off this agent, so it must come after the config is set
         self.llm_manager = LLMManager(agent=self)
         self.autonomous_loop = AutonomousAgentLoop(agent=self)
 
@@ -676,6 +702,11 @@ class Agent:
 
         if self.llm is None:
             self.llm = self.llm_handling()
+        elif getattr(
+            self.llm, "usage_hook", None
+        ) is None and hasattr(self.llm, "usage_hook"):
+            # A caller-supplied LiteLLM reports into this agent too.
+            self.llm.usage_hook = self._add_usage
 
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
@@ -1010,6 +1041,7 @@ class Agent:
             tokenizer_model_name=self.model_name,
             context_length=self.context_length,
             memory_md_path=memory_md_path,
+            messages=self.messages,
         )
 
         return memory
@@ -1358,8 +1390,7 @@ class Agent:
             # Set the loop count
             loop_count = 0
 
-            # Structured conversation for this run. Built lazily below so the
-            # transforms path can keep its flattened prompt.
+            # Built lazily so the transforms path can keep its flattened prompt
             transcript: Optional[Transcript] = None
 
             # Clear the short memory
@@ -1377,8 +1408,6 @@ class Agent:
             ):
                 loop_count += 1
 
-                # Compress short-term memory if an auto-loop run has
-                # crossed the configured fraction of the context window.
                 if self._context_compressor is not None:
                     self._context_compressor.maybe_compress(self)
 
@@ -1489,8 +1518,7 @@ class Agent:
 
                         # Print
                         if self.print_on is True:
-                            # Skip printing structured output (list of tool calls) here
-                            # Function call visualization is handled in execute_tools
+                            # Tool calls are visualised in execute_tools
                             if isinstance(response, list):
                                 # Tool calls will be visualized in execute_tools, skip here
                                 pass
@@ -1650,6 +1678,31 @@ class Agent:
                                 loop_count=loop_count
                             )
 
+                    except AgentToolExecutionError as e:
+                        # A tool failure is not a provider failure, re-running the model cannot fix it
+                        if use_transcript and turn_calls:
+                            transcript.flush_tool_results(
+                                turn_calls, turn_results
+                            )
+
+                        capture_error(
+                            e,
+                            self,
+                            name="Agent.tool_error",
+                            loop=loop_count,
+                        )
+
+                        self.short_memory.add(
+                            role="Tool Executor",
+                            content=(
+                                f"Tool execution failed after "
+                                f"{self.tool_retry_attempts} attempts: {e}"
+                            ),
+                        )
+
+                        # Exit the retry loop, not the run, so the model can read the failure
+                        success = True
+
                     except (
                         BadRequestError,
                         InternalServerError,
@@ -1657,15 +1710,13 @@ class Agent:
                         Exception,
                     ) as e:
 
-                        # Close out any tool calls recorded before the failure,
-                        # so the retried request is still well formed.
+                        # Answer the recorded tool calls so the retried request is well formed
                         if use_transcript and turn_calls:
                             transcript.flush_tool_results(
                                 turn_calls, turn_results
                             )
 
-                        # Track the LLM/generation error via telemetry — the
-                        # retry loop swallows it, so capture_run never sees it.
+                        # The retry loop swallows this, so capture_run never sees it
                         capture_error(
                             e,
                             self,
@@ -1729,8 +1780,7 @@ class Agent:
                             "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
                         )
                     except (KeyboardInterrupt, EOFError):
-                        # Graceful exit on Ctrl+C / Ctrl+D during
-                        # interactive input. No traceback, no error.
+                        # Ctrl+C / Ctrl+D during input exits without a traceback
                         formatter.console.print()
                         self.pretty_print(
                             "Session ended by user. Goodbye.",
@@ -1926,6 +1976,7 @@ class Agent:
         task: str,
         img: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -1940,6 +1991,8 @@ class Agent:
             img (Optional[str]): Optional image input for multimodal models.
             streaming_callback (Optional[Callable[[str], None]]): Callback
                 receiving streaming tokens in real time.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat
+                format that the loop's transcript starts from.
             *args: Passed through to the loop.
             **kwargs: Passed through to the loop.
 
@@ -1950,6 +2003,7 @@ class Agent:
             task=task,
             img=img,
             streaming_callback=streaming_callback,
+            messages=messages,
             *args,
             **kwargs,
         )
@@ -2048,8 +2102,7 @@ class Agent:
             try:
                 cached = self.add_mcp_tools_to_memory()
             except Exception as error:
-                # A server being unreachable must not take down agent setup;
-                # the agent simply runs without those tools.
+                # An unreachable server must not take down agent setup
                 logger.error(
                     f"Could not fetch MCP tools to defer: {error}"
                 )
@@ -2143,7 +2196,7 @@ class Agent:
         self,
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[dict]] = None,
-    ) -> str:
+    ) -> Any:
         """
         Generate a comprehensive final summary of the autonomous task execution.
 
@@ -2155,7 +2208,7 @@ class Agent:
                 flattened string rendering of it.
 
         Returns:
-            str: Comprehensive summary
+            Any: The conversation shaped by ``output_type``, on every path.
         """
         summary_prompt = get_summary_prompt()
         self.short_memory.add(
@@ -2219,7 +2272,9 @@ class Agent:
                                 title="Task Completion Summary",
                             )
 
-                        return result
+                        return history_output_formatter(
+                            self.short_memory, type=self.output_type
+                        )
 
             # If complete_task wasn't called, generate summary manually
             comprehensive_summary = f"""Task Execution Summary
@@ -2993,8 +3048,7 @@ Subtask Breakdown:
             Dict[str, Any]: A dictionary representation of the class attributes.
         """
 
-        # Create a copy of the dict to avoid mutating the original object
-        # Remove the llm object from the copy since it's not serializable
+        # The llm object is not serializable
         dict_copy = self.__dict__.copy()
         dict_copy.pop("llm", None)
 
@@ -3227,6 +3281,7 @@ Subtask Breakdown:
         correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         n: int = 1,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -3254,6 +3309,10 @@ Subtask Breakdown:
             correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
             n (int): How many outputs to generate (number of runs). Defaults to 1.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
+                e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
+                They are added to the agent's conversation and sent as the context
+                this task continues from. Defaults to the agent's own ``messages``.
             *args: Additional positional arguments for extensibility.
             **kwargs: Additional keyword arguments passed to LLM/tool execution.
 
@@ -3277,10 +3336,13 @@ Subtask Breakdown:
             >>> with open("image.jpg", "rb") as f:
             ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
             >>> agent.run("Describe this image", img=img_base64)
+            >>> agent.run(
+            ...     "And what did I just ask you?",
+            ...     messages=[{"role": "user", "content": "Name three primes."}],
+            ... )
         """
 
-        # If no task is provided, prompt for one only in interactive mode.
-        # Outside interactive mode, fail fast instead of blocking on stdin.
+        # Outside interactive mode, fail fast instead of blocking on stdin
         if task is None or (
             isinstance(task, str) and task.strip() == ""
         ):
@@ -3300,8 +3362,7 @@ Subtask Breakdown:
                     "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
                 ).strip()
             except (KeyboardInterrupt, EOFError):
-                # Graceful exit on Ctrl+C / Ctrl+D before the first task
-                # has even been entered. No traceback, no error.
+                # Ctrl+C / Ctrl+D before the first task exits without a traceback
                 formatter.console.print()
                 self.pretty_print(
                     "Session ended by user. Goodbye.",
@@ -3323,7 +3384,10 @@ Subtask Breakdown:
         if streaming_callback is None:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
-            # else: both are None, streaming_callback stays None
+
+        # Constructor messages are already in short_memory; per-call ones are not.
+        if messages:
+            self.short_memory.add_messages(messages)
 
         try:
             if self.max_loops == "auto":
@@ -3332,6 +3396,7 @@ Subtask Breakdown:
                     task=task,
                     img=img,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
@@ -3343,6 +3408,7 @@ Subtask Breakdown:
                     img=img,
                     imgs=imgs,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
@@ -3683,8 +3749,7 @@ Subtask Breakdown:
             List[Any]: One entry per agent, in the order the agents were given.
                 An agent whose conversation raised contributes None.
         """
-        # Pool is scoped to the call — see run_concurrent_tasks for why this is
-        # not an Agent-level executor.
+        # Scoped to the call, see run_concurrent_tasks for why
         with ContextThreadPoolExecutor(
             max_workers=os.cpu_count()
         ) as executor:
@@ -4003,6 +4068,43 @@ Summary: {summary}
             )
             raise e
 
+    @property
+    def input_tokens(self) -> int:
+        """Tokens the agent's next request would carry, counted with its model's tokenizer.
+
+        Covers everything the agent sends as input: the system prompt, the
+        whole conversation in ``short_memory``, and the tool schemas. Use it
+        to see how full the context window is before a run. It is an
+        estimate — the conversation is counted as rendered text, role labels
+        included — so it runs a little above what the provider bills. For the
+        billed figure, summed over past calls, see :attr:`usage`.
+        """
+        parts = [self.short_memory.return_history_as_string()]
+        if self.tools_list_dictionary:
+            parts.append(json.dumps(self.tools_list_dictionary))
+        return count_tokens(
+            "\n".join(part for part in parts if part),
+            model=self.model_name,
+        )
+
+    @property
+    def usage(self) -> dict:
+        """Token usage reported by the provider, summed over every LLM call this agent has made.
+
+        Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens`` (the
+        part of ``input_tokens`` served from the provider's prompt cache),
+        ``reasoning_tokens`` (the part of ``output_tokens`` the model spent
+        thinking, 0 when the provider does not report it), ``total_tokens``.
+        Streaming calls count once their stream has been consumed, since the
+        provider reports usage in the final chunk.
+        """
+        return dict(self._usage)
+
+    def _add_usage(self, call_usage: dict) -> None:
+        """Fold one completion's usage into the running total."""
+        for key in self._usage:
+            self._usage[key] += call_usage.get(key, 0)
+
     def temp_llm_instance_for_tool_summary(self):
         return LiteLLM(
             model_name=self.model_name,
@@ -4015,6 +4117,7 @@ Summary: {summary}
             parallel_tool_calls=False,
             base_url=self.llm_base_url,
             api_key=self.llm_api_key,
+            usage_hook=self._add_usage,
         )
 
     def get_available_models(self) -> List[str]:

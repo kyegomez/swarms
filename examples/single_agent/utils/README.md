@@ -4,6 +4,7 @@ This directory contains utility functions and helpers for single agent operation
 
 ## Examples
 
+- [agent_usage.py](agent_usage.py) - `agent.usage`: provider token counts and cost per run
 - [async_agent.py](async_agent.py) - Async agent implementation
 - [custom_agent_base_url.py](custom_agent_base_url.py) - Custom base URL configuration
 - [dynamic_context_window.py](dynamic_context_window.py) - Dynamic context window management

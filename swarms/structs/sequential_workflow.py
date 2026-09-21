@@ -297,15 +297,15 @@ class SequentialWorkflow:
             result = self.agent_rearrange.run(**run_kwargs)
         return result
 
-    @trace_run(
-        "SequentialWorkflow.run", input_params=("task", "img", "imgs")
-    )
     def _autosave_conversation(self) -> None:
         """Persist history; SequentialWorkflow keeps it on AgentRearrange."""
         self.workspace.save_conversation(
             getattr(self.agent_rearrange, "conversation", None)
         )
 
+    @trace_run(
+        "SequentialWorkflow.run", input_params=("task", "img", "imgs")
+    )
     def run(
         self,
         task: str,
@@ -478,11 +478,7 @@ class SequentialWorkflow:
             )
 
         try:
-            # One clone per task. `run` appends to a conversation that is
-            # built once in __init__ and never reset, then formats the whole
-            # history — so reusing the instance made every result carry the
-            # transcripts of the tasks before it. `AgentRearrange.batch_run`
-            # already isolates this way for the same reason.
+            # One clone per task, a reused instance carries every earlier transcript
             return [
                 self.agent_rearrange._clone_for_task().run(task)
                 for task in tasks
@@ -544,7 +540,10 @@ class SequentialWorkflow:
                 max_workers=os.cpu_count()
             ) as executor:
                 results = [
-                    executor.submit(self.agent_rearrange.run, task)
+                    executor.submit(
+                        self.agent_rearrange._clone_for_task().run,
+                        task,
+                    )
                     for task in tasks
                 ]
                 return [

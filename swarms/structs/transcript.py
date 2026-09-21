@@ -106,8 +106,7 @@ class Transcript:
                 name = function.get("name")
                 if not name:
                     continue
-                # Providers normally supply an id; synthesise a stable one if
-                # not, since result pairing depends on it.
+                # Result pairing needs an id, synthesise one if the provider gave none
                 call_id = (
                     item.get("id")
                     or f"call_{len(self._messages)}_{index}"
