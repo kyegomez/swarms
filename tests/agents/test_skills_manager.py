@@ -24,12 +24,12 @@ import os
 
 import pytest
 
+from swarms.agents import skills_manager
 from swarms.agents.skills_manager import (
     SKILLS_PROMPT_HEADER,
     SkillsManager,
 )
 from swarms.structs.dynamic_skills_loader import DynamicSkillsLoader
-
 
 ########################################################
 # Helpers: build real skill folders on disk
@@ -580,3 +580,235 @@ class TestAgentIntegration:
 
         assert agent.system_prompt.startswith(before)
         assert "web-search" in agent.system_prompt
+
+
+########################################################
+# Remote skills: Agent(skill_urls=[...]) (#2127)
+########################################################
+
+
+REMOTE_SKILL = """---
+id: 162975eb-61f7-4416-ac01-7d87ea67761f
+name: Yuki
+description: Swarms' playful mascot and smart companion.
+created_at: 2026-03-25T15:52:02.940629+00:00
+source: https://swarms.world/prompt/162975eb-61f7-4416-ac01-7d87ea67761f
+---
+
+# YUKI
+
+Answer as Yuki.
+
+---
+
+Rules below the horizontal rule must survive the split.
+"""
+
+SECOND_REMOTE_SKILL = """---
+name: Valuation
+description: Builds discounted cash flow models.
+---
+
+# Valuation
+
+Start from unlevered free cash flow.
+"""
+
+YUKI_URL = "https://swarms.world/prompt/162975eb.md"
+VALUATION_URL = "https://swarms.world/prompt/9b2c1a04.md"
+
+
+class _StubResponse:
+    def __init__(self, text: str, status: int = 200):
+        self.text = text
+        self.status_code = status
+
+    def raise_for_status(self) -> None:
+        if self.status_code >= 400:
+            raise RuntimeError(f"HTTP {self.status_code}")
+
+
+def _stub_urls(monkeypatch, bodies, calls=None):
+    """Serve `bodies` (url -> markdown, RuntimeError, or int status) offline."""
+    skills_manager._fetch_skill_markdown.cache_clear()
+
+    def _get(url, timeout=None):
+        if calls is not None:
+            calls.append(url)
+        body = bodies.get(url)
+        if body is None:
+            return _StubResponse("", 404)
+        if isinstance(body, Exception):
+            raise body
+        return _StubResponse(body)
+
+    monkeypatch.setattr(skills_manager.requests, "get", _get)
+    monkeypatch.setattr(
+        skills_manager, "is_safe_url", lambda url: True
+    )
+
+
+def test_remote_skills_render_into_the_same_section(monkeypatch):
+    _stub_urls(monkeypatch, {YUKI_URL: REMOTE_SKILL})
+
+    manager = SkillsManager(skill_urls=[YUKI_URL])
+    prompt = manager.prompt_for_task()
+
+    assert prompt.startswith(SKILLS_PROMPT_HEADER)
+    assert "## Yuki" in prompt
+    assert "Swarms' playful mascot" in prompt
+    assert "Answer as Yuki." in prompt
+    assert "Rules below the horizontal rule must survive" in prompt
+
+
+def test_remote_metadata_carries_the_marketplace_fields(monkeypatch):
+    _stub_urls(monkeypatch, {YUKI_URL: REMOTE_SKILL})
+
+    manager = SkillsManager(skill_urls=[YUKI_URL])
+    manager.prompt_for_task()
+
+    skill = manager.metadata[0]
+    assert skill["name"] == "Yuki"
+    assert skill["path"] == YUKI_URL
+    assert skill["id"] == "162975eb-61f7-4416-ac01-7d87ea67761f"
+    assert skill["source"].startswith("https://swarms.world/prompt/")
+
+
+def test_local_and_remote_skills_compose_in_order(
+    monkeypatch, tmp_path
+):
+    _stub_urls(
+        monkeypatch,
+        {YUKI_URL: REMOTE_SKILL, VALUATION_URL: SECOND_REMOTE_SKILL},
+    )
+    _write_skill(
+        tmp_path,
+        "local_one",
+        name="LocalOne",
+        description="A local skill.",
+        body="Local body.",
+    )
+
+    manager = SkillsManager(
+        skills_dir=str(tmp_path),
+        skill_urls=[YUKI_URL, VALUATION_URL],
+    )
+    manager.prompt_for_task()
+
+    assert [s["name"] for s in manager.metadata] == [
+        "LocalOne",
+        "Yuki",
+        "Valuation",
+    ]
+
+
+def test_one_unreachable_url_is_skipped_not_fatal(monkeypatch):
+    _stub_urls(
+        monkeypatch,
+        {
+            YUKI_URL: REMOTE_SKILL,
+            VALUATION_URL: TimeoutError("connection timed out"),
+        },
+    )
+
+    manager = SkillsManager(
+        skill_urls=[
+            YUKI_URL,
+            VALUATION_URL,
+            "https://swarms.world/gone.md",
+        ]
+    )
+    prompt = manager.prompt_for_task()
+
+    assert [s["name"] for s in manager.metadata] == ["Yuki"]
+    assert "## Yuki" in prompt
+
+
+def test_a_body_without_frontmatter_is_skipped(monkeypatch):
+    _stub_urls(monkeypatch, {YUKI_URL: "# No frontmatter here\n"})
+
+    manager = SkillsManager(skill_urls=[YUKI_URL])
+
+    assert manager.prompt_for_task() == ""
+    assert manager.metadata == []
+
+
+def test_the_same_url_is_fetched_once_per_process(monkeypatch):
+    calls = []
+    _stub_urls(monkeypatch, {YUKI_URL: REMOTE_SKILL}, calls=calls)
+
+    for _ in range(3):
+        SkillsManager(skill_urls=[YUKI_URL]).prompt_for_task()
+
+    assert calls == [YUKI_URL]
+
+
+def test_a_blocked_url_is_never_fetched(monkeypatch):
+    calls = []
+    _stub_urls(monkeypatch, {YUKI_URL: REMOTE_SKILL}, calls=calls)
+    monkeypatch.setattr(
+        skills_manager, "is_safe_url", lambda url: False
+    )
+
+    manager = SkillsManager(
+        skill_urls=["http://169.254.169.254/latest.md"]
+    )
+
+    assert manager.prompt_for_task() == ""
+    assert calls == []
+
+
+def test_enabled_is_true_for_a_url_only_manager(monkeypatch):
+    manager = SkillsManager(skill_urls=[YUKI_URL])
+    assert manager.enabled is True
+
+
+def test_load_full_skill_returns_a_remote_body(monkeypatch):
+    _stub_urls(monkeypatch, {YUKI_URL: REMOTE_SKILL})
+
+    manager = SkillsManager(skill_urls=[YUKI_URL])
+    manager.prompt_for_task()
+
+    body = manager.load_full_skill("Yuki")
+    assert body is not None
+    assert body.startswith("# YUKI")
+
+
+def test_dynamic_loading_filters_remote_skills_by_the_task(
+    monkeypatch,
+):
+    _stub_urls(
+        monkeypatch,
+        {YUKI_URL: REMOTE_SKILL, VALUATION_URL: SECOND_REMOTE_SKILL},
+    )
+
+    manager = SkillsManager(
+        skill_urls=[YUKI_URL, VALUATION_URL],
+        similarity_threshold=0.3,
+    )
+    manager.prompt_for_task("Build a discounted cash flow model")
+
+    assert [s["name"] for s in manager.metadata] == ["Valuation"]
+
+
+def test_agent_with_only_skill_urls_reaches_handle_skills(
+    monkeypatch,
+):
+    _stub_urls(monkeypatch, {YUKI_URL: REMOTE_SKILL})
+
+    from swarms import Agent
+
+    agent = Agent(
+        agent_name="RemoteSkillsAgent",
+        model_name="gpt-5.4",
+        max_loops=1,
+        skill_urls=[YUKI_URL],
+    )
+
+    assert agent.skill_urls == [YUKI_URL]
+    assert agent.skills.enabled is True
+
+    before = agent.system_prompt
+    agent.handle_skills()
+    assert "## Yuki" in agent.system_prompt
+    assert len(agent.system_prompt) > len(before)
