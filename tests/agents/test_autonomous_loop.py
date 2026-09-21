@@ -42,7 +42,6 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
-    _check_bash_command,
     get_autonomous_planning_tools,
     glob_tool,
     TOOL_OUTPUT_CONTEXT_SHARE,
