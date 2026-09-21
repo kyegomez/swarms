@@ -4,7 +4,7 @@ from loguru import logger
 
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
-from swarms.structs.context_utils import agent_answer
+from swarms.structs.context_utils import agent_answer, messages_for
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -136,6 +136,11 @@ class DebateWithJudge:
 
         # Initialize conversation history
         self.conversation = Conversation()
+
+        # Each agent's system prompt as the caller supplied it, so the
+        # per-run role framing in _initialize_agents replaces the previous
+        # run's framing instead of accumulating on top of it.
+        self._base_system_prompts: dict[int, str] = {}
 
         if self.verbose:
             logger.info(
@@ -283,9 +288,6 @@ class DebateWithJudge:
         # Initialize agents with their roles
         self._initialize_agents(task)
 
-        # Start with the initial task
-        current_topic = task
-
         if self.verbose:
             logger.info(f"Starting debate on: {task}")
 
@@ -295,10 +297,13 @@ class DebateWithJudge:
                 logger.info(f"Loop {round_num + 1}/{self.max_loops}")
 
             # Step 1: Pro agent presents argument
-            pro_prompt = self._create_pro_prompt(
-                current_topic, round_num
+            pro_prompt = self._create_pro_prompt(task, round_num)
+            pro_argument = self.pro_agent.run(
+                task=pro_prompt,
+                messages=messages_for(
+                    self.pro_agent.agent_name, self.conversation
+                ),
             )
-            pro_argument = self.pro_agent.run(task=pro_prompt)
             pro_argument = agent_answer(
                 self.pro_agent, fallback=pro_argument
             )
@@ -310,10 +315,13 @@ class DebateWithJudge:
                 logger.debug(f"Pro argument: {pro_argument[:100]}...")
 
             # Step 2: Con agent presents counter-argument
-            con_prompt = self._create_con_prompt(
-                current_topic, pro_argument, round_num
+            con_prompt = self._create_con_prompt(task, round_num)
+            con_argument = self.con_agent.run(
+                task=con_prompt,
+                messages=messages_for(
+                    self.con_agent.agent_name, self.conversation
+                ),
             )
-            con_argument = self.con_agent.run(task=con_prompt)
             con_argument = agent_answer(
                 self.con_agent, fallback=con_argument
             )
@@ -325,10 +333,13 @@ class DebateWithJudge:
                 logger.debug(f"Con argument: {con_argument[:100]}...")
 
             # Step 3: Judge evaluates both arguments and provides synthesis
-            judge_prompt = self._create_judge_prompt(
-                current_topic, pro_argument, con_argument, round_num
+            judge_prompt = self._create_judge_prompt(task, round_num)
+            judge_synthesis = self.judge_agent.run(
+                task=judge_prompt,
+                messages=messages_for(
+                    self.judge_agent.agent_name, self.conversation
+                ),
             )
-            judge_synthesis = self.judge_agent.run(task=judge_prompt)
             judge_synthesis = agent_answer(
                 self.judge_agent, fallback=judge_synthesis
             )
@@ -341,8 +352,9 @@ class DebateWithJudge:
                     f"Judge synthesis: {judge_synthesis[:100]}..."
                 )
 
-            # Use judge's synthesis as input for next loop
-            current_topic = judge_synthesis
+            # current_topic stays the debate's motion. The synthesis is what
+            # the next loop refines, and every agent now reads it as its own
+            # turn -- restating it as the "topic" would send it twice.
 
         # Return formatted output
         return history_output_formatter(
@@ -351,10 +363,22 @@ class DebateWithJudge:
 
     def _initialize_agents(self, task: str) -> None:
         """
-        Initialize agents with their respective roles and context.
+        Give each agent its role and the motion, in its system prompt.
+
+        The intros used to be delivered by running each agent once and
+        throwing the answer away: three billed calls whose only effect was to
+        leave the intro in that agent's ``short_memory``. Each debate turn now
+        carries the shared conversation as ``messages=``, which replaces the
+        memory-derived prefix, so an intro parked in memory would never reach
+        the model at all. It goes in the system prompt instead, where role
+        framing belongs and where it costs nothing to send.
+
+        The agent's own system prompt is captured on the first call and
+        re-used on every later one, so repeated ``run()`` calls on the same
+        instance re-frame it rather than stacking intros.
 
         Args:
-            task (str): The initial task/topic for context.
+            task (str): The motion being debated.
         """
         names = {
             "task": task,
@@ -363,22 +387,25 @@ class DebateWithJudge:
             "judge_agent_name": self.judge_agent.agent_name,
         }
 
-        self.pro_agent.run(
-            task=PRO_AGENT_INTRO_PROMPT.format(**names)
-        )
-        self.con_agent.run(
-            task=CON_AGENT_INTRO_PROMPT.format(**names)
-        )
-        self.judge_agent.run(
-            task=JUDGE_AGENT_INTRO_PROMPT.format(**names)
-        )
+        for agent, intro in (
+            (self.pro_agent, PRO_AGENT_INTRO_PROMPT),
+            (self.con_agent, CON_AGENT_INTRO_PROMPT),
+            (self.judge_agent, JUDGE_AGENT_INTRO_PROMPT),
+        ):
+            base = self._base_system_prompts.setdefault(
+                id(agent), agent.system_prompt or ""
+            )
+            framing = intro.format(**names)
+            agent.system_prompt = (
+                f"{base}\n\n{framing}" if base else framing
+            )
 
     def _create_pro_prompt(self, topic: str, round_num: int) -> str:
         """
         Create the prompt for the Pro agent.
 
         Args:
-            topic (str): The current topic or refined question.
+            topic (str): The motion being debated.
             round_num (int): The current loop number (0-indexed).
 
         Returns:
@@ -391,45 +418,37 @@ class DebateWithJudge:
             loop_number=round_num + 1, topic=topic
         )
 
-    def _create_con_prompt(
-        self, topic: str, pro_argument: str, round_num: int
-    ) -> str:
+    def _create_con_prompt(self, topic: str, round_num: int) -> str:
         """
         Create the prompt for the Con agent.
 
+        The Pro argument it is answering is not pasted in: it reaches the Con
+        agent as its own turn in ``messages=``.
+
         Args:
-            topic (str): The current topic or refined question.
-            pro_argument (str): The Pro agent's argument to counter.
+            topic (str): The motion being debated.
             round_num (int): The current loop number (0-indexed).
 
         Returns:
             str: The prompt for the Con agent.
         """
         if round_num == 0:
-            return CON_FIRST_ROUND_PROMPT.format(
-                topic=topic, pro_argument=pro_argument
-            )
+            return CON_FIRST_ROUND_PROMPT.format(topic=topic)
 
         return CON_REFINEMENT_ROUND_PROMPT.format(
             loop_number=round_num + 1,
             topic=topic,
-            pro_argument=pro_argument,
         )
 
-    def _create_judge_prompt(
-        self,
-        topic: str,
-        pro_argument: str,
-        con_argument: str,
-        round_num: int,
-    ) -> str:
+    def _create_judge_prompt(self, topic: str, round_num: int) -> str:
         """
         Create the prompt for the Judge agent.
 
+        Both arguments reach the judge as turns in ``messages=``, so only the
+        loop framing and the speakers' names are in the prompt.
+
         Args:
-            topic (str): The current topic or refined question.
-            pro_argument (str): The Pro agent's argument.
-            con_argument (str): The Con agent's argument.
+            topic (str): The motion being debated.
             round_num (int): The current loop number (0-indexed).
 
         Returns:
@@ -442,9 +461,7 @@ class DebateWithJudge:
             max_loops=self.max_loops,
             topic=topic,
             pro_agent_name=self.pro_agent.agent_name,
-            pro_argument=pro_argument,
             con_agent_name=self.con_agent.agent_name,
-            con_argument=con_argument,
         )
 
         if is_final_round:
