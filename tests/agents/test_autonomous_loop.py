@@ -21,6 +21,8 @@ Covers four fixed defects:
 * #1962 — ``ContextCompressor.maybe_compress`` was never called on the
   ``max_loops="auto"`` path, so history grew unbounded in exactly the mode
   that needs compression most.
+* #1752 — the loop's three iteration budgets were module constants, so a
+  caller could not bound a run's cost without monkeypatching the module.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -35,6 +37,10 @@ import pytest
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
+    _BASH_MAX_LENGTH,
+    _check_bash_command,
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     _check_bash_command,
     get_autonomous_planning_tools,
@@ -1148,6 +1154,53 @@ class TestContextCompression:
         assert len(loop._transcript) == 1
 
 
+class TestRunBashSteersFileWritesToTheFileTools:
+    """A worker that writes a report through `cat > file << EOF` hits the
+    length limit and, told only "too long", shrinks the file and tries again
+    for minutes. The rejection has to name the tool it should use instead.
+    """
+
+    def test_long_heredoc_is_pointed_at_create_file(self):
+        body = "line of report text\n" * (_BASH_MAX_LENGTH // 20 + 10)
+        command = f"cat > /tmp/report.md << 'EOF'\n{body}EOF"
+        assert len(command) > _BASH_MAX_LENGTH
+
+        reason = _check_bash_command(command)
+
+        assert reason is not None
+        assert "create_file" in reason and "update_file" in reason
+
+    def test_long_redirect_is_pointed_at_create_file(self):
+        command = "echo '" + "x" * _BASH_MAX_LENGTH + "' > out.txt"
+
+        assert "create_file" in _check_bash_command(command)
+
+    def test_long_plain_command_is_told_to_split(self):
+        command = "ls " + " ".join(
+            f"dir{i}" for i in range(_BASH_MAX_LENGTH // 4)
+        )
+        assert len(command) > _BASH_MAX_LENGTH
+
+        reason = _check_bash_command(command)
+
+        assert "Split it" in reason
+        assert "create_file" not in reason
+
+    def test_short_writes_are_still_allowed(self):
+        assert _check_bash_command("echo hi > notes.txt") is None
+        assert (
+            _check_bash_command("cat > a.txt << 'EOF'\nhi\nEOF")
+            is None
+        )
+
+    def test_tool_description_says_not_to_write_files_with_bash(self):
+        tools = {
+            t["function"]["name"]: t["function"]
+            for t in get_autonomous_planning_tools()
+        }
+        assert "create_file" in tools["run_bash"]["description"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-q", "-p", "no:randomly"])
 
@@ -1279,3 +1332,129 @@ class TestBashBlocklistMatchesCommandsNotSubstrings:
 
     def test_a_long_command_is_not_rejected_for_length_alone(self):
         assert _check_bash_command("echo " + "a" * 1000) is None
+
+
+class TestFinalSummaryShape:
+    """The complete_task path returns the same shape as the other paths."""
+
+    def test_complete_task_result_follows_output_type(
+        self, monkeypatch
+    ):
+        agent = build_agent(output_type="list")
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="all done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+
+        result = agent.run("test task")
+
+        assert isinstance(result, list)
+
+
+class TestIterationLimitsAreConfigurable:
+    """The three budgets bound a run's cost, so they must be settable per agent."""
+
+    def _thinks_forever(self, agent, monkeypatch, *steps):
+        """Script a model that plans, then only ever calls `think`."""
+        turn = {"n": 0}
+
+        def scripted(task=None, *args, **kwargs):
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return plan(*steps)
+            return [
+                tool_call(
+                    "think",
+                    current_state=f"state {turn['n']}",
+                    analysis="pondering",
+                    next_actions=["keep thinking"],
+                    confidence=0.5,
+                )
+            ]
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        return turn
+
+    def test_the_defaults_are_the_module_constants(self):
+        agent = build_agent()
+
+        assert agent.max_planning_attempts == MAX_PLANNING_ATTEMPTS
+        assert agent.max_subtask_iterations == MAX_SUBTASK_ITERATIONS
+        assert agent.max_subtask_loops == MAX_SUBTASK_LOOPS
+
+    def test_the_subtask_budget_is_per_agent(self, monkeypatch):
+        capped = build_agent(think_tool=True, max_subtask_loops=3)
+        capped_turns = self._thinks_forever(
+            capped, monkeypatch, ("s1", [])
+        )
+        capped.run("demo")
+
+        default = build_agent(think_tool=True)
+        default_turns = self._thinks_forever(
+            default, monkeypatch, ("s1", [])
+        )
+        default.run("demo")
+
+        assert status_of(capped, "s1") == "failed"
+        assert capped_turns["n"] < default_turns["n"]
+
+    def test_the_run_budget_stops_the_outer_loop(self, monkeypatch):
+        agent = build_agent(
+            think_tool=True,
+            max_subtask_loops=2,
+            max_subtask_iterations=1,
+        )
+        self._thinks_forever(
+            agent, monkeypatch, ("s1", []), ("s2", []), ("s3", [])
+        )
+
+        agent.run("demo")
+
+        assert status_of(agent, "s2") == "pending"
+        assert status_of(agent, "s3") == "pending"
+
+    def test_the_planning_budget_bounds_planning_retries(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_planning_attempts=2)
+        calls = script_llm(
+            agent,
+            monkeypatch,
+            ["not a plan", "still not a plan", "nor this one"],
+        )
+
+        with pytest.raises(Exception):
+            agent.run("demo")
+
+        assert len(calls) == 2
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "max_planning_attempts",
+            "max_subtask_iterations",
+            "max_subtask_loops",
+        ],
+    )
+    def test_a_budget_below_one_is_rejected(self, name):
+        with pytest.raises(ValueError):
+            build_agent(**{name: 0})
