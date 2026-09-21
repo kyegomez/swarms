@@ -1,6 +1,5 @@
 """Provider shapes accepted by ``tool_call_arguments``."""
 
-import pytest
 from pydantic import BaseModel
 
 from swarms.utils.str_to_dict import tool_call_arguments
@@ -48,9 +47,9 @@ def test_accepts_a_bare_call_outside_a_list():
     assert tool_call_arguments(_object_call()) == PARSED
 
 
-@pytest.mark.parametrize(
-    "bad",
-    [
+def test_returns_none_for_output_it_cannot_unwrap():
+    """Callers supply their own default, so unusable output must come back as None."""
+    unusable = [
         None,
         "",
         [],
@@ -58,12 +57,6 @@ def test_accepts_a_bare_call_outside_a_list():
         {"function": {"name": "bid", "arguments": "{not json"}},
         {"function": {"name": "bid", "arguments": "[1, 2]"}},
         {"no_function_key": 1},
-    ],
-)
-def test_returns_none_for_output_it_cannot_unwrap(bad):
-    """Callers supply their own default, so unusable output must come back as None."""
-    assert tool_call_arguments(bad) is None
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+    ]
+    for value in unusable:
+        assert tool_call_arguments(value) is None
