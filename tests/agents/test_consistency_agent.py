@@ -3,8 +3,6 @@
 import threading
 import time
 
-import pytest
-
 from swarms.agents.consistency_agent import SelfConsistencyAgent
 from swarms.structs.agent import Agent
 
@@ -57,7 +55,3 @@ def test_no_sample_sees_an_earlier_samples_answer():
     for sample in samples:
         for index in range(1, 4):
             assert f"ANSWER_{index}" not in sample["prompt"]
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
