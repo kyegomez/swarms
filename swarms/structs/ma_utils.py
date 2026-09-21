@@ -100,8 +100,6 @@ models = [
     "openai/gpt-4o",
     "groq/deepseek-r1-distill-qwen-32b",
     "groq/deepseek-r1-distill-qwen-32b",
-    # "gemini/gemini-pro",
-    # "gemini/gemini-1.5-pro",
     "groq/moonshotai/kimi-k2-instruct",
     "openai/03-mini",
     "o4-mini",

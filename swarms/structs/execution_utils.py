@@ -82,8 +82,7 @@ def batched_run(
 
     if imgs is not None:
         imgs = list(imgs)
-        # Length-checked rather than zipped: zip would silently drop the
-        # tail and run fewer tasks than the caller asked for.
+        # zip would silently drop the tail and run fewer tasks than asked
         if len(imgs) != len(tasks):
             raise ValueError(
                 f"Got {len(tasks)} tasks and {len(imgs)} images; pass "
@@ -106,13 +105,11 @@ def batched_run(
     if max_workers is None:
         results = [call(i, task) for i, task in enumerate(tasks)]
     else:
-        # ContextThreadPoolExecutor, not the plain one: it carries the
-        # tracing context in, so worker spans stay nested under the run.
+        # ContextThreadPoolExecutor carries the tracing context into the workers
         with ContextThreadPoolExecutor(
             max_workers=max_workers
         ) as executor:
-            # Futures are read in submission order, so element i is always
-            # the result for tasks[i] even when they finish out of order.
+            # Read in submission order, so element i is the result for tasks[i]
             futures = [
                 executor.submit(call, i, task)
                 for i, task in enumerate(tasks)

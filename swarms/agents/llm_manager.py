@@ -289,8 +289,6 @@ class LLMManager:
                     if len(args) == 1 and isinstance(args[0], dict):
                         additional_args.update(args[0])
                     else:
-                        # For other types of args, log them for debugging
-                        # and potentially handle them based on their type
                         logger.debug(
                             f"Received positional args in llm_handling: {args}"
                         )
@@ -756,8 +754,7 @@ class LLMManager:
         # Restore original stream setting
         self.agent.llm.stream = original_stream
 
-        # If the model made tool calls during the stream, return them
-        # so the auto loop executes them — same format as non-streaming.
+        # Tool calls made mid-stream come back in the non-streaming shape
         return tool_calls_out if tool_calls_out else complete_response
 
     def _collect_stream(
@@ -819,8 +816,7 @@ class LLMManager:
                 "".join(thinking_parts), title=self._thinking_title()
             )
 
-        # Chain the already-consumed first chunk with the remaining stream,
-        # then wrap with tool-call collection.
+        # The first chunk was already consumed, chain it back in
         chained = itertools.chain(
             (
                 [first_content_chunk]
