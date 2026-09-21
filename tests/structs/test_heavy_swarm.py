@@ -11,7 +11,9 @@ Covers:
 - End-to-end pipeline against a real API (skipped when OPENAI_API_KEY is missing)
 """
 
+import json
 import os
+from types import SimpleNamespace
 
 import pytest
 from dotenv import load_dotenv
@@ -864,6 +866,50 @@ class TestGrokHeavyFullPipeline:
         assert result is not None
         assert isinstance(result, str)
         assert len(result) > 100
+
+
+class TestParseToolCallsProviderShapes:
+    """_parse_tool_calls went through the shared unwrap, so every shape parses."""
+
+    QUESTIONS = {"research_question": "What happened?"}
+
+    def _arguments(self):
+        return json.dumps(self.QUESTIONS)
+
+    def test_dict_shaped_tool_call_parses(self):
+        """Reaching through .function.arguments raised AttributeError on a dict."""
+        call = {
+            "id": "call_1",
+            "function": {
+                "name": "gen",
+                "arguments": self._arguments(),
+            },
+        }
+        result = HeavySwarm._parse_tool_calls(None, [call])
+        assert result["research_question"] == "What happened?"
+
+    def test_object_shaped_tool_call_parses_with_its_identity(self):
+        call = SimpleNamespace(
+            id="call_1",
+            function=SimpleNamespace(
+                name="gen", arguments=self._arguments()
+            ),
+        )
+        result = HeavySwarm._parse_tool_calls(None, [call])
+        assert result["research_question"] == "What happened?"
+        assert result["tool_call_id"] == "call_1"
+        assert result["function_name"] == "gen"
+
+    def test_unparseable_arguments_report_an_error(self):
+        call = SimpleNamespace(
+            id="call_1",
+            function=SimpleNamespace(
+                name="gen", arguments="{not json"
+            ),
+        )
+        result = HeavySwarm._parse_tool_calls(None, [call])
+        assert "error" in result
+        assert result["raw_arguments"] == "{not json"
 
 
 if __name__ == "__main__":
