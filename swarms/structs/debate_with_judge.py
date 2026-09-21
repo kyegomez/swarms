@@ -4,6 +4,7 @@ from loguru import logger
 
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -277,6 +278,8 @@ class DebateWithJudge:
         if not task or not isinstance(task, str):
             raise ValueError("Task must be a non-empty string")
 
+        self.conversation.clear()
+
         # Initialize agents with their roles
         self._initialize_agents(task)
 
@@ -296,6 +299,9 @@ class DebateWithJudge:
                 current_topic, round_num
             )
             pro_argument = self.pro_agent.run(task=pro_prompt)
+            pro_argument = agent_answer(
+                self.pro_agent, fallback=pro_argument
+            )
             self.conversation.add(
                 self.pro_agent.agent_name, pro_argument
             )
@@ -308,6 +314,9 @@ class DebateWithJudge:
                 current_topic, pro_argument, round_num
             )
             con_argument = self.con_agent.run(task=con_prompt)
+            con_argument = agent_answer(
+                self.con_agent, fallback=con_argument
+            )
             self.conversation.add(
                 self.con_agent.agent_name, con_argument
             )
@@ -320,6 +329,9 @@ class DebateWithJudge:
                 current_topic, pro_argument, con_argument, round_num
             )
             judge_synthesis = self.judge_agent.run(task=judge_prompt)
+            judge_synthesis = agent_answer(
+                self.judge_agent, fallback=judge_synthesis
+            )
             self.conversation.add(
                 self.judge_agent.agent_name, judge_synthesis
             )

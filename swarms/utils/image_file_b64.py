@@ -69,8 +69,7 @@ def _is_safe_url(url: str) -> bool:
         if not host or host.lower() == "localhost":
             return False
 
-        # If the host is already a literal IP (in any notation ipaddress
-        # accepts — decimal, hex, dotted), judge it directly.
+        # A literal IP in any notation ipaddress accepts is judged directly
         try:
             return not _ip_is_blocked(ipaddress.ip_address(host))
         except ValueError:

@@ -58,6 +58,9 @@ from swarms.utils.formatter import formatter
 load_swarms_env()
 
 
+DEFAULT_HEAVY_SWARM_MODEL: str = "gpt-5.4"
+
+
 # Single source of truth: argparse validates against it and main() suggests the closest match.
 COMMAND_CHOICES: List[str] = [
     "init",
@@ -340,8 +343,8 @@ def load_markdown_agents(
 def run_heavy_swarm(
     task: str,
     max_loops: int = 1,
-    question_agent_model_name: str = "gpt-5.4",
-    worker_model_name: str = "gpt-5.4",
+    question_agent_model_name: str = DEFAULT_HEAVY_SWARM_MODEL,
+    worker_model_name: str = DEFAULT_HEAVY_SWARM_MODEL,
     verbose: bool = False,
 ) -> Optional[Any]:
     """
@@ -850,11 +853,11 @@ class CustomHelpAction(argparse.Action):
             ),
             (
                 "--question-agent-model-name MODEL",
-                "Model for question generation agent (default: gpt-4o-mini)",
+                f"Model for question generation agent (default: {DEFAULT_HEAVY_SWARM_MODEL})",
             ),
             (
                 "--worker-model-name MODEL",
-                "Model for worker agents (default: gpt-4o-mini)",
+                f"Model for worker agents (default: {DEFAULT_HEAVY_SWARM_MODEL})",
             ),
             ("--context-length N", "Context length for the agent"),
             ("--retry-attempts N", "Number of retry attempts"),
@@ -1120,14 +1123,14 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--question-agent-model-name",
         type=str,
-        default="gpt-5.4",
-        help="Model name for question generation agent (default: gpt-4o-mini)",
+        default=DEFAULT_HEAVY_SWARM_MODEL,
+        help=f"Model name for question generation agent (default: {DEFAULT_HEAVY_SWARM_MODEL})",
     )
     parser.add_argument(
         "--worker-model-name",
         type=str,
-        default="gpt-5.4",
-        help="Model name for specialized worker agents (default: gpt-4o-mini)",
+        default=DEFAULT_HEAVY_SWARM_MODEL,
+        help=f"Model name for specialized worker agents (default: {DEFAULT_HEAVY_SWARM_MODEL})",
     )
     # Autoswarm specific arguments
     parser.add_argument(
@@ -2277,8 +2280,7 @@ def main() -> None:
     try:
         show_ascii_art()
 
-        # Typo correction: catch mistyped command name before argparse
-        # rejects it with a generic "invalid choice" error.
+        # Catch a mistyped command before argparse's generic "invalid choice"
         if (
             len(sys.argv) > 1
             and not sys.argv[1].startswith("-")

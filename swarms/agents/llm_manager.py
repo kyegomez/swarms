@@ -224,6 +224,8 @@ class LLMManager:
                 "agent_name": agent.agent_name,
                 "prompt_caching": agent.prompt_caching,
                 "cache_config": agent.cache_config,
+                # The agent keeps the running total, so a rebuilt LLM does not reset it.
+                "usage_hook": agent._add_usage,
                 # Omitting these sends custom-endpoint traffic to the default provider instead.
                 "base_url": agent.llm_base_url,
                 "api_key": agent.llm_api_key,
@@ -287,8 +289,6 @@ class LLMManager:
                     if len(args) == 1 and isinstance(args[0], dict):
                         additional_args.update(args[0])
                     else:
-                        # For other types of args, log them for debugging
-                        # and potentially handle them based on their type
                         logger.debug(
                             f"Received positional args in llm_handling: {args}"
                         )
@@ -754,8 +754,7 @@ class LLMManager:
         # Restore original stream setting
         self.agent.llm.stream = original_stream
 
-        # If the model made tool calls during the stream, return them
-        # so the auto loop executes them — same format as non-streaming.
+        # Tool calls made mid-stream come back in the non-streaming shape
         return tool_calls_out if tool_calls_out else complete_response
 
     def _collect_stream(
@@ -817,8 +816,7 @@ class LLMManager:
                 "".join(thinking_parts), title=self._thinking_title()
             )
 
-        # Chain the already-consumed first chunk with the remaining stream,
-        # then wrap with tool-call collection.
+        # The first chunk was already consumed, chain it back in
         chained = itertools.chain(
             (
                 [first_content_chunk]

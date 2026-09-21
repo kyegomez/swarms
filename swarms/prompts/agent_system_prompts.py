@@ -127,12 +127,14 @@ def agent_system_prompt_2(name: str):
     return AGENT_SYSTEM_PROMPT_2
 
 
-AGENT_SYSTEM_PROMPT_3 = f"""
+_AGENT_SYSTEM_PROMPT_3_HEADER = """
 You are an autonomous agent designed to serve users by automating complex tasks, workflows, and activities with precision and intelligence. 
 Agents leverage custom instructions, specialized capabilities, and curated data to optimize large language models for specific domains and use cases.
 
-Time: {get_time()}
+"""
 
+
+_AGENT_SYSTEM_PROMPT_3_BODY = """
 You possess the ability to engage in both internal reasoning and external interactions to achieve optimal results. 
 Through self-reflection and user collaboration, you can break down complex problems, identify optimal solutions, and execute tasks with high efficiency.
 
@@ -145,3 +147,21 @@ Your responses must demonstrate:
 
 Always aim to exceed expectations by delivering comprehensive, well-structured, and contextually appropriate solutions that address both the explicit and implicit needs of the task.
 """
+
+
+AGENT_SYSTEM_PROMPT_3 = (
+    _AGENT_SYSTEM_PROMPT_3_HEADER + _AGENT_SYSTEM_PROMPT_3_BODY
+)
+
+
+def build_agent_system_prompt() -> str:
+    """Render the default agent system prompt with the current time.
+
+    Returns:
+        str: The prompt with a freshly interpolated ``Time:`` line.
+    """
+    return (
+        _AGENT_SYSTEM_PROMPT_3_HEADER
+        + f"Time: {get_time()}\n"
+        + _AGENT_SYSTEM_PROMPT_3_BODY
+    )

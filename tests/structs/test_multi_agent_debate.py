@@ -176,3 +176,33 @@ def test_expert_panel_discussion_output_types(
             f"Failed to test ExpertPanelDiscussion output types: {e}"
         )
         raise
+
+
+class _RecordingAgent(Agent):
+    def __init__(self, name, reply):
+        self.agent_name = name
+        self.reply = reply
+        self.tasks = []
+
+    def run(self, task=None, *args, **kwargs):
+        self.tasks.append(task)
+        return self.reply
+
+
+def test_moderator_synthesis_names_each_expert_and_is_not_a_list_repr():
+    moderator = _RecordingAgent("Moderator", "A follow-up question.")
+    experts = [
+        _RecordingAgent("Economist", "Rates will hold."),
+        _RecordingAgent("Historian", 'Precedent says "no".'),
+    ]
+
+    ExpertPanelDiscussion(
+        agents=experts, moderator=moderator, max_rounds=1
+    ).run(task="Where do rates go?")
+
+    synthesis = moderator.tasks[-1]
+
+    assert "Economist: Rates will hold." in synthesis
+    assert 'Historian: Precedent says "no".' in synthesis
+    assert "['" not in synthesis
+    assert "\\n" not in synthesis

@@ -81,12 +81,6 @@ Tests for utility functions and helpers:
 - `test_pdf_to_text.py` - PDF to text conversion
 - `test_try_except_wrapper.py` - Error handling wrappers
 
-#### 🎨 Artifacts Tests (`/artifacts/`)
-Tests for artifact management and versioning:
-
-- `test_artifact_main.py` - Core artifact functionality
-- `test_artifact_output_types.py` - Artifact output type handling
-
 #### 💬 Communication Tests (`/communication/`)
 Tests for communication and conversation management:
 
@@ -199,4 +193,3 @@ The test suite aims for comprehensive coverage of:
 - ✅ Error handling and edge cases
 - ✅ Performance and benchmarking
 - ✅ Communication and conversation management
-- ✅ Artifact management and versioning

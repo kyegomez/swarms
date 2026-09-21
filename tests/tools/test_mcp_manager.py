@@ -30,6 +30,7 @@ import pytest
 from swarms.schemas.agent_mcp_errors import AgentMCPConnectionError
 from swarms.schemas.mcp_schemas import MCPConnection, MCPOAuthConfig
 from swarms.tools.mcp_manager import (
+    MCP_IS_V2,
     MCPFileTokenStorage,
     MCPInMemoryTokenStorage,
     MCPManager,
@@ -527,7 +528,16 @@ class TestToolDiscovery:
         )
         with pytest.raises(AgentMCPConnectionError) as excinfo:
             manager.get_tools()
-        assert "401" in str(excinfo.value)
+        message = str(excinfo.value)
+        assert apikey_server.url in message
+        if MCP_IS_V2:
+            # 2.x collapses every non-404 non-2xx response into
+            # ErrorData(INTERNAL_ERROR, "Server returned an error
+            # response") (mcp/client/streamable_http.py), so the status
+            # is gone before it reaches us. Only the rejection survives.
+            assert "error response" in message
+        else:
+            assert "401" in message
 
     def test_bearer_server_accepts_authorization_token(
         self, bearer_server

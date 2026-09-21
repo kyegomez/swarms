@@ -245,8 +245,7 @@ class MCPFileTokenStorage:
                     os.write(fd, json.dumps(data, indent=2).encode())
                 finally:
                     os.close(fd)
-                # os.open's mode only applies on creation; tighten a file that
-                # already existed with looser permissions.
+                # os.open's mode only applies on creation
                 os.chmod(self.path, 0o600)
             except Exception as e:
                 logger.warning(
@@ -1084,7 +1083,11 @@ class MCPManager:
             "tool": name,
             "server": self.label(connection),
             "arguments": arguments,
-            "is_error": bool(getattr(result, "isError", False)),
+            # mcp 2.x renamed isError to is_error
+            "is_error": bool(
+                getattr(result, "isError", None)
+                or getattr(result, "is_error", None)
+            ),
             "result": self._extract_result(result),
         }
 
@@ -1144,7 +1147,10 @@ class MCPManager:
         if texts or others:
             return {"text": "\n".join(texts), "content": others}
 
-        structured = getattr(result, "structuredContent", None)
+        # mcp 2.x renamed `structuredContent` to `structured_content`.
+        structured = getattr(
+            result, "structuredContent", None
+        ) or getattr(result, "structured_content", None)
         if structured:
             return structured
 
@@ -1408,14 +1414,18 @@ class MCPManager:
                 callback_server.wait, float(oauth.callback_timeout)
             )
 
-        provider = OAuthClientProvider(
-            server_url=_server_origin(connection.url or ""),
-            client_metadata=client_metadata,
-            storage=storage,
-            redirect_handler=redirect_handler,
-            callback_handler=callback_handler,
-            timeout=float(oauth.callback_timeout),
-        )
+        provider_kwargs: Dict[str, Any] = {
+            "server_url": _server_origin(connection.url or ""),
+            "client_metadata": client_metadata,
+            "storage": storage,
+            "redirect_handler": redirect_handler,
+            "callback_handler": callback_handler,
+        }
+        # 2.x dropped the kwarg; callback_handler already bounds the wait.
+        if not MCP_IS_V2:
+            provider_kwargs["timeout"] = float(oauth.callback_timeout)
+
+        provider = OAuthClientProvider(**provider_kwargs)
 
         self._oauth_providers[key] = provider
         return provider
@@ -1561,8 +1571,7 @@ class MCPManager:
         except (asyncio.CancelledError, KeyboardInterrupt):
             raise
         except BaseException as e:
-            # anyio surfaces transport failures as (Base)ExceptionGroups whose
-            # str() is empty, so flatten them into something actionable.
+            # anyio's ExceptionGroups have an empty str(), flatten them
             raise AgentMCPConnectionError(
                 f"Failed to connect to MCP server '{label}' ({detail}): "
                 f"{_describe_exception(e)}"

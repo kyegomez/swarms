@@ -1,6 +1,10 @@
 import os
 import json
 import csv
+import threading
+import time
+from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -567,3 +571,373 @@ def test_reliability_check_verbose(temp_workspace):
     )
 
     assert swarm.verbose is True
+
+
+class RecordingAgent(Agent):
+    def __init__(self, name, registry):
+        self.agent_name = name
+        self.registry = registry
+        self.short_memory = []
+        self.concurrent_peak = 0
+        self._live = 0
+        self._lock = threading.Lock()
+
+    def short_memory_init(self):
+        return []
+
+    def run(self, task=None, *args, **kwargs):
+        with self._lock:
+            self._live += 1
+            self.concurrent_peak = max(
+                self.concurrent_peak, self._live
+            )
+        self.short_memory.append(task)
+        time.sleep(0.02)
+        self.registry.append(
+            (self.agent_name, list(self.short_memory))
+        )
+        with self._lock:
+            self._live -= 1
+        return f"{self.agent_name}:{task}"
+
+
+def _recording_swarm(names, max_loops, temp_workspace):
+    registry = []
+    agents = [RecordingAgent(name, registry) for name in names]
+    swarm = SpreadSheetSwarm(
+        agents=agents,
+        max_loops=max_loops,
+        autosave_on=False,
+    )
+    return swarm, agents, registry
+
+
+def test_no_agent_is_run_by_two_threads_at_once(temp_workspace):
+    swarm, agents, _ = _recording_swarm(
+        ["a", "b", "c"], 3, temp_workspace
+    )
+
+    swarm._run_tasks("shared task")
+
+    assert [agent.concurrent_peak for agent in agents] == [1, 1, 1]
+
+
+def test_each_loop_starts_from_a_fresh_memory(temp_workspace):
+    swarm, agents, registry = _recording_swarm(
+        ["a"], 3, temp_workspace
+    )
+
+    swarm._run_tasks("shared task")
+
+    assert [memory for _, memory in registry] == [
+        ["shared task"],
+        ["shared task"],
+        ["shared task"],
+    ]
+
+
+def test_every_agent_runs_once_per_loop(temp_workspace):
+    swarm, agents, registry = _recording_swarm(
+        ["a", "b", "c"], 2, temp_workspace
+    )
+
+    swarm._run_tasks("shared task")
+
+    names = sorted(name for name, _ in registry)
+    assert names == ["a", "a", "b", "b", "c", "c"]
+    assert swarm.tasks_completed == 6
+
+
+def test_each_output_is_tracked_against_its_own_agent(temp_workspace):
+    swarm, agents, _ = _recording_swarm(["a", "b"], 2, temp_workspace)
+
+    swarm._run_tasks("shared task")
+
+    pairs = sorted(
+        (output["agent_name"], output["result"])
+        for output in swarm.outputs
+    )
+    assert pairs == [
+        ("a", "a:shared task"),
+        ("a", "a:shared task"),
+        ("b", "b:shared task"),
+        ("b", "b:shared task"),
+    ]
+
+
+def test_a_single_loop_still_runs_every_agent_concurrently(
+    temp_workspace,
+):
+    swarm, agents, registry = _recording_swarm(
+        ["a", "b", "c"], 1, temp_workspace
+    )
+
+    swarm._run_tasks("shared task")
+
+    assert sorted(name for name, _ in registry) == ["a", "b", "c"]
+    assert swarm.tasks_completed == 3
+
+
+def _recording_config_swarm(agent_tasks, max_loops, temp_workspace):
+    registry = []
+    agents = [RecordingAgent(name, registry) for name in agent_tasks]
+    swarm = SpreadSheetSwarm(
+        agents=agents,
+        max_loops=max_loops,
+        autosave=False,
+    )
+    swarm.agent_tasks = dict(agent_tasks)
+    return swarm, agents, registry
+
+
+def test_run_from_config_never_runs_an_agent_in_two_threads(
+    temp_workspace,
+):
+    swarm, agents, _ = _recording_config_swarm(
+        {"a": "task a", "b": "task b", "c": "task c"},
+        3,
+        temp_workspace,
+    )
+
+    swarm.run_from_config()
+
+    assert [agent.concurrent_peak for agent in agents] == [1, 1, 1]
+
+
+def test_run_from_config_starts_each_loop_from_a_fresh_memory(
+    temp_workspace,
+):
+    swarm, _, registry = _recording_config_swarm(
+        {"a": "task a"}, 3, temp_workspace
+    )
+
+    swarm.run_from_config()
+
+    assert [memory for _, memory in registry] == [
+        ["task a"],
+        ["task a"],
+        ["task a"],
+    ]
+
+
+def test_run_from_config_runs_every_agent_once_per_loop(
+    temp_workspace,
+):
+    swarm, _, registry = _recording_config_swarm(
+        {"a": "task a", "b": "task b", "c": "task c"},
+        2,
+        temp_workspace,
+    )
+
+    swarm.run_from_config()
+
+    assert sorted(name for name, _ in registry) == [
+        "a",
+        "a",
+        "b",
+        "b",
+        "c",
+        "c",
+    ]
+    assert swarm.tasks_completed == 6
+
+
+def test_run_from_config_tracks_each_result_against_its_own_task(
+    temp_workspace,
+):
+    swarm, _, _ = _recording_config_swarm(
+        {"a": "task a", "b": "task b"}, 2, temp_workspace
+    )
+
+    swarm.run_from_config()
+
+    triples = sorted(
+        (output["agent_name"], output["task"], output["result"])
+        for output in swarm.outputs
+    )
+    assert triples == [
+        ("a", "task a", "a:task a"),
+        ("a", "task a", "a:task a"),
+        ("b", "task b", "b:task b"),
+        ("b", "task b", "b:task b"),
+    ]
+
+
+def test_run_from_config_skips_agents_with_no_configured_task(
+    temp_workspace,
+):
+    registry = []
+    agents = [RecordingAgent(name, registry) for name in ("a", "b")]
+    swarm = SpreadSheetSwarm(
+        agents=agents,
+        max_loops=2,
+        autosave=False,
+    )
+    swarm.agent_tasks = {"b": "task b"}
+
+    swarm.run_from_config()
+
+    assert [name for name, _ in registry] == ["b", "b"]
+    assert swarm.tasks_completed == 2
+    assert {output["agent_name"] for output in swarm.outputs} == {"b"}
+    assert [
+        (output["agent_name"], output["task"])
+        for output in swarm.outputs
+    ] == [("b", "task b"), ("b", "task b")]
+
+
+def test_track_output_timestamps_generated_at_call_time(
+    temp_workspace,
+):
+    """Test A: Output timestamps are generated dynamically at call time."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent])
+
+    times = [
+        "2026-09-01T12:00:00.000000",
+        "2026-09-01T12:00:05.000000",
+    ]
+    with patch(
+        "swarms.structs.spreadsheet_swarm._now", side_effect=times
+    ):
+        swarm._track_output("test_agent", "Task 1", "Result 1")
+        swarm._track_output("test_agent", "Task 2", "Result 2")
+
+    t1 = swarm.outputs[0]["timestamp"]
+    t2 = swarm.outputs[1]["timestamp"]
+
+    assert t1 == "2026-09-01T12:00:00.000000"
+    assert t2 == "2026-09-01T12:00:05.000000"
+    assert t1 != t2
+    assert datetime.fromisoformat(t1) < datetime.fromisoformat(t2)
+
+
+def test_separate_runs_get_separate_start_times(temp_workspace):
+    """Test B: Separate swarm runs receive distinct start times."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent], autosave=False)
+
+    times = [
+        # Run 1: start, output, end
+        "2026-09-01T10:00:00.000000",
+        "2026-09-01T10:00:01.000000",
+        "2026-09-01T10:00:02.000000",
+        # Run 2: start, output, end
+        "2026-09-01T11:00:00.000000",
+        "2026-09-01T11:00:01.000000",
+        "2026-09-01T11:00:02.000000",
+    ]
+
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["ok"],
+    ):
+        with patch(
+            "swarms.structs.spreadsheet_swarm._now", side_effect=times
+        ):
+            run1 = swarm.run("task 1")
+            run2 = swarm.run("task 2")
+
+    assert run1["start_time"] == "2026-09-01T10:00:00.000000"
+    assert run2["start_time"] == "2026-09-01T11:00:00.000000"
+    assert run1["start_time"] != run2["start_time"]
+
+
+def test_end_time_occurs_after_start_time(temp_workspace):
+    """Test C: Swarm run end_time is greater than start_time when work completes."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent], autosave=False)
+
+    times = [
+        "2026-09-01T12:00:00.000000",  # start_time
+        "2026-09-01T12:00:02.000000",  # output timestamp
+        "2026-09-01T12:00:05.000000",  # end_time
+    ]
+
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["done"],
+    ):
+        with patch(
+            "swarms.structs.spreadsheet_swarm._now", side_effect=times
+        ):
+            summary = swarm.run("test task")
+
+    start_dt = datetime.fromisoformat(summary["start_time"])
+    end_dt = datetime.fromisoformat(summary["end_time"])
+
+    assert end_dt > start_dt
+    assert (end_dt - start_dt).total_seconds() == 5.0
+
+
+def test_output_timestamp_persisted_to_csv(temp_workspace):
+    """Test D: Output timestamp is correctly saved to CSV and matches tracked output."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent])
+
+    expected_timestamp = "2026-09-01T15:30:45.123456"
+    with patch(
+        "swarms.structs.spreadsheet_swarm._now",
+        return_value=expected_timestamp,
+    ):
+        swarm._track_output("test_agent", "CSV task", "CSV result")
+        swarm._save_to_csv()
+
+    assert swarm.outputs[0]["timestamp"] == expected_timestamp
+
+    with open(swarm.save_file_path, "r", newline="") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    assert len(rows) == 1
+    assert rows[0]["Timestamp"] == expected_timestamp
+
+
+def test_multiple_outputs_have_independent_timestamps(temp_workspace):
+    """Test E: Multiple outputs tracked over time do not share an import-time timestamp."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(agents=[agent])
+
+    stamps = [
+        "2026-09-01T10:00:00",
+        "2026-09-01T10:05:00",
+        "2026-09-01T10:10:00",
+    ]
+    with patch(
+        "swarms.structs.spreadsheet_swarm._now", side_effect=stamps
+    ):
+        for i in range(3):
+            swarm._track_output(
+                "test_agent", f"Task {i}", f"Result {i}"
+            )
+
+    recorded_stamps = [
+        output["timestamp"] for output in swarm.outputs
+    ]
+    assert recorded_stamps == stamps
+    assert len(set(recorded_stamps)) == 3

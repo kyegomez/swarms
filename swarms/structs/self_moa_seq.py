@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from swarms.structs.serialization import SerializableMixin
 from swarms.structs.agent import Agent
+from swarms.telemetry.otel import capture_init, trace_run
 
 
 class SelfMoASeq(SerializableMixin):
@@ -84,6 +85,7 @@ class SelfMoASeq(SerializableMixin):
             max_loops=1,
             verbose=self.verbose,
             top_p=top_p,
+            output_type="final",
         )
 
         # Initialize aggregator agent (synthesizes outputs)
@@ -100,6 +102,7 @@ class SelfMoASeq(SerializableMixin):
             max_loops=1,
             verbose=self.verbose,
             top_p=top_p,
+            output_type="final",
         )
 
         # Metrics tracking
@@ -111,6 +114,7 @@ class SelfMoASeq(SerializableMixin):
         }
 
         self._log("info", "Self-MoA-Seq initialization complete")
+        capture_init(self)
 
     def setup(self) -> None:
         """
@@ -164,6 +168,9 @@ class SelfMoASeq(SerializableMixin):
             for i in range(num_samples):
                 self._log(
                     "debug", f"Generating sample {i+1}/{num_samples}"
+                )
+                self.proposer.short_memory = (
+                    self.proposer.short_memory_init()
                 )
                 sample = self.proposer.run(task)
                 samples.append(sample)
@@ -243,6 +250,9 @@ class SelfMoASeq(SerializableMixin):
                 best_so_far,
             )
 
+            self.aggregator.short_memory = (
+                self.aggregator.short_memory_init()
+            )
             aggregated = self.aggregator.run(prompt)
             self.metrics["total_aggregations"] += 1
 
@@ -255,6 +265,7 @@ class SelfMoASeq(SerializableMixin):
             )
             raise
 
+    @trace_run("SelfMoASeq.run")
     def run(
         self,
         task: str,

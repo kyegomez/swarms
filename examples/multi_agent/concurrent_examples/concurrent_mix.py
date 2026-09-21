@@ -18,15 +18,12 @@ delaware_ccorp_agent = Agent(
     corporate law and ensure that all hiring practices are in compliance with 
     state and federal regulations.
     """,
-    model_name="claude-sonnet-4-20250514",
+    model_name="claude-sonnet-5",
     max_loops=1,
     autosave=False,
     dashboard=False,
     verbose=True,
-    output_type="str",
-    artifacts_on=True,
-    artifacts_output_path="delaware_ccorp_hiring_description.md",
-    artifacts_file_extension=".md",
+    temperature=None,
 )
 
 indian_foreign_agent = Agent(
@@ -45,15 +42,12 @@ indian_foreign_agent = Agent(
     implications of hiring foreign nationals and the requirements for obtaining 
     necessary visas and work permits.
     """,
-    model_name="claude-sonnet-4-20250514",
+    model_name="claude-sonnet-5",
     max_loops=1,
     autosave=False,
     dashboard=False,
     verbose=True,
-    output_type="str",
-    artifacts_on=True,
-    artifacts_output_path="indian_foreign_hiring_description.md",
-    artifacts_file_extension=".md",
+    temperature=None,
 )
 
 # List of agents and corresponding tasks

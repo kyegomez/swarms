@@ -272,8 +272,7 @@ class WorkspaceManager:
 
         try:
             path = os.path.join(self.dir, filename)
-            # Written via temp+replace: config.json is rewritten every loop,
-            # so a crash mid-write would otherwise truncate it.
+            # temp+replace, a crash mid-write would otherwise truncate it
             temp_path = f"{path}.tmp"
             with open(temp_path, "w", encoding="utf-8") as f:
                 json.dump(

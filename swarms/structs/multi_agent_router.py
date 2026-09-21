@@ -199,22 +199,6 @@ class MultiAgentRouter:
         """
         return f"MultiAgentRouter(name={self.name}, agents={[a.agent_name for a in self.agents]})"
 
-    def query_ragent(self, task: str) -> str:
-        """
-        Query the shared memory / research-agent system attached to the router.
-
-        Args:
-            task (str): The query string to forward to ``shared_memory_system``.
-
-        Returns:
-            str: The response returned by the shared memory system.
-
-        Raises:
-            AttributeError: If no ``shared_memory_system`` was configured on the
-                router.
-        """
-        return self.shared_memory_system.query(task)
-
     def _create_boss_system_prompt(self) -> str:
         """
         Creates a system prompt for the boss agent that includes information about all available agents.
@@ -316,8 +300,7 @@ class MultiAgentRouter:
                 with this router.
         """
 
-        # Resolve every agent up front so an unknown name fails before any
-        # agent runs and is paid for.
+        # Resolve up front so an unknown name fails before anything is paid for
         resolved = []
         for handoff in boss_response_str["handoffs"]:
             try:
@@ -354,8 +337,7 @@ class MultiAgentRouter:
 
         # Execute agents only if there are valid tasks
         if selected_agents:
-            # The boss is prompted for non-overlapping tasks, so these are
-            # independent; running them in series cost the sum of their latencies.
+            # The tasks are independent, in series they cost the sum of their latencies
             with ContextThreadPoolExecutor(
                 max_workers=len(selected_agents)
             ) as executor:
@@ -492,8 +474,7 @@ class MultiAgentRouter:
                 executor.submit(self.route_task, task)
                 for task in tasks
             ]
-            # Read in submission order so element i belongs to tasks[i],
-            # matching batch_run.
+            # Read in submission order so element i belongs to tasks[i]
             for task, future in zip(tasks, futures):
                 try:
                     results.append(future.result())

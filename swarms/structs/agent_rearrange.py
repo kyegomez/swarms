@@ -54,8 +54,7 @@ def _split_steps(segments: List[str]) -> List[List[str]]:
     ]
 
 
-# Resolved at import time from the canonical Literal type so it stays in
-# sync if HistoryOutputType ever gains/loses members.
+# Derived from the Literal so it cannot drift from HistoryOutputType
 _VALID_OUTPUT_TYPES = set(get_args(OutputType))
 
 
@@ -196,8 +195,7 @@ class AgentRearrange(SerializableMixin):
         self.team_awareness = team_awareness
         self.collab_prompt = collab_prompt
 
-        # Seeds team awareness itself; seeding again here added the same
-        # system message twice, so every agent read it twice on every call.
+        # Seeds team awareness itself, seeding here too doubled the system message
         self._reset_conversation()
 
         self.reliability_check()
@@ -650,8 +648,7 @@ class AgentRearrange(SerializableMixin):
         for i, agent_name in enumerate(agent_names):
             result = results[i]
 
-            # `run` honours the agent's own output_type, which by default is
-            # its whole conversation; record the answer instead.
+            # run() returns the agent's whole conversation by default, record the answer
             if not isinstance(result, Exception):
                 result = agent_answer(
                     agents_to_run[i], fallback=result
@@ -781,14 +778,12 @@ class AgentRearrange(SerializableMixin):
             based on the flow syntax. It also supports custom task injection
             and multiple execution loops as configured.
         """
-        # A reused instance would otherwise serve the previous task's whole
-        # transcript as context for this one.
+        # A reused instance would otherwise carry the previous task's transcript
         self._reset_conversation()
 
         self.conversation.add("User", task)
 
-        # A raw copy, because custom_tasks splices new segments into it below;
-        # self.steps is the unmutated flow.
+        # A raw copy, custom_tasks splices into it and self.steps stays unmutated
         tasks = self.flow.split("->")
         response_dict = {}
 
@@ -1151,8 +1146,7 @@ class AgentRearrange(SerializableMixin):
         """
         agent = find_agent_by_name(self.agents, agent_name)
 
-        # Awareness is injected via a temporary system-prompt extension.
-        # See _run_sequential_workflow for rationale.
+        # Injected via a temporary system-prompt extension, see _run_sequential_workflow
         awareness_info = self._get_sequential_awareness(
             agent_name, steps, task_idx=task_idx
         )
@@ -1308,8 +1302,7 @@ class AgentRearrange(SerializableMixin):
         Not yet supported in streaming mode: ``max_loops > 1``,
         ``custom_tasks``. Use ``run()`` for those.
         """
-        # A reused instance would otherwise serve the previous task's whole
-        # transcript as context for this one.
+        # A reused instance would otherwise carry the previous task's transcript
         self._reset_conversation()
 
         self.conversation.add("User", task)

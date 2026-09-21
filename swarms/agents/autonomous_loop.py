@@ -28,9 +28,6 @@ from loguru import logger
 
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.structs.autonomous_loop_utils import (
-    MAX_PLANNING_ATTEMPTS,
-    MAX_SUBTASK_ITERATIONS,
-    MAX_SUBTASK_LOOPS,
     assign_task_tool,
     cancel_sub_agent_tasks_tool,
     check_sub_agent_status_tool,
@@ -42,6 +39,7 @@ from swarms.structs.autonomous_loop_utils import (
     get_planning_prompt,
     grep_tool,
     list_directory_tool,
+    glob_tool,
     read_file_tool,
     respond_to_user_tool,
     run_bash_tool,
@@ -145,11 +143,46 @@ class AutonomousAgentLoop:
             formatter=format_data_structure,
         )
 
+    def _maybe_compress_context(self) -> bool:
+        """Compress the conversation when it nears the context limit.
+
+        ``ContextCompressor`` measures and compacts
+        ``agent.short_memory``, but the request body actually sent to
+        the model is ``self._transcript`` — so after a compaction the
+        transcript is rebuilt around the summary. Compressing only the
+        mirror would leave the payload growing unbounded, which is the
+        failure the compressor exists to prevent.
+
+        Returns:
+            bool: True when a compression ran and the transcript was
+            re-seeded. The caller must then restore whatever immediate
+            instruction the model needs (e.g. the prompt for the
+            subtask in flight).
+        """
+        compressor = getattr(self.agent, "_context_compressor", None)
+        if compressor is None:
+            return False
+        summary = compressor.maybe_compress(self.agent)
+        if summary is None:
+            return False
+
+        # compact() already re-seeded short_memory, do not mirror the summary twice
+        self._transcript = Transcript()
+        self._say_user(
+            "[Compressed Memory Summary]\n"
+            "Earlier turns were compressed to stay within the "
+            "context window. Progress so far:\n\n"
+            f"{summary}",
+            mirror=False,
+        )
+        return True
+
     def _run_autonomous_loop(
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -163,15 +196,15 @@ class AutonomousAgentLoop:
         - Creates a detailed plan using the `create_plan` tool
         - Breaks down the task into subtasks with dependencies, priorities, and step IDs
         - Supports handoff delegation during planning if handoffs are configured
-        - Maximum planning attempts are controlled by MAX_PLANNING_ATTEMPTS
+        - Maximum planning attempts are controlled by Agent.max_planning_attempts
 
         **Phase 2: Execution**
         - Executes each subtask in dependency order
         - For each subtask, runs a thinking -> tool actions -> observation loop
         - Supports both planning tools (think, subtask_done, complete_task) and user-defined tools
         - Prevents infinite thinking loops with max_consecutive_thinks limit
-        - Each subtask has a maximum iteration limit (MAX_SUBTASK_LOOPS)
-        - Overall execution has a maximum iteration limit (MAX_SUBTASK_ITERATIONS)
+        - Each subtask has a maximum iteration limit (Agent.max_subtask_loops)
+        - Overall execution has a maximum iteration limit (Agent.max_subtask_iterations)
 
         **Phase 3: Summary**
         - Generates a comprehensive final summary when all subtasks are complete
@@ -190,6 +223,9 @@ class AutonomousAgentLoop:
             img (Optional[str]): Optional image path or data to be processed during execution.
             streaming_callback (Optional[Callable[[str], None]]): Optional callback function
                 to receive streaming tokens in real-time. Useful for dashboard integration.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format. When
+                given, the loop's transcript starts from them instead of empty; the agent
+                has already recorded them in ``short_memory``.
             *args: Additional positional arguments passed to LLM calls.
             **kwargs: Additional keyword arguments passed to LLM calls.
 
@@ -219,7 +255,7 @@ class AutonomousAgentLoop:
         try:
 
             # Cleared before seeding, or the opening turn is lost.
-            self._transcript = Transcript()
+            self._transcript = Transcript(list(messages or []))
             self.agent.autonomous_subtasks = []
             self.agent.current_subtask_index = 0
             self.agent.subtask_status = {}
@@ -371,6 +407,9 @@ class AutonomousAgentLoop:
                 "grep": lambda **kwargs: grep_tool(
                     self.agent, **kwargs
                 ),
+                "glob": lambda **kwargs: glob_tool(
+                    self.agent, **kwargs
+                ),
                 "create_sub_agent": lambda **kwargs: create_sub_agent_tool(
                     self.agent, **kwargs
                 ),
@@ -416,7 +455,7 @@ class AutonomousAgentLoop:
 
             plan_created = False
             planning_attempts = 0
-            max_planning_attempts = MAX_PLANNING_ATTEMPTS
+            max_planning_attempts = self.agent.max_planning_attempts
 
             while (
                 not plan_created
@@ -608,7 +647,7 @@ class AutonomousAgentLoop:
                     title="Autonomous Loop: Execution Phase",
                 )
 
-            max_subtask_iterations = MAX_SUBTASK_ITERATIONS
+            max_subtask_iterations = self.agent.max_subtask_iterations
             total_iterations = 0
 
             while not self._all_subtasks_complete():
@@ -654,7 +693,7 @@ class AutonomousAgentLoop:
 
                 # Subtask execution loop: thinking -> tool actions -> observation
                 subtask_iterations = 0
-                max_subtask_loops = MAX_SUBTASK_LOOPS
+                max_subtask_loops = self.agent.max_subtask_loops
                 subtask_done = False
 
                 # Consecutive across the subtask, not one response.
@@ -673,6 +712,11 @@ class AutonomousAgentLoop:
                     and subtask_iterations < max_subtask_loops
                 ):
                     subtask_iterations += 1
+
+                    # Every tool call is answered here, so replacing the transcript orphans nothing
+                    if self._maybe_compress_context():
+                        # The rebuilt transcript holds only the summary, restore the subtask
+                        self._say_user(execution_prompt)
 
                     try:
                         response = self.agent.call_llm(

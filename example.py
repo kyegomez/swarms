@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from swarms import Agent
+from swarms.structs.agent import Agent
 
 load_dotenv()
 
@@ -25,7 +25,7 @@ agent = Agent(
     max_loops=1,
     top_p=None,
     temperature=None,
-    reasoning_effort="medium",
+    reasoning_effort=None,
     persistent_memory=False,
 )
 

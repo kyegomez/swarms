@@ -9,6 +9,7 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import capture_init, trace_run
 
 
 logger = initialize_logger(log_folder="social_algorithms")
@@ -120,6 +121,8 @@ class SocialAlgorithms:
             logger.info(
                 f"Initialized {self.name} with {len(self.agents)} agents"
             )
+
+        capture_init(self)
 
     def _validate_inputs(self) -> None:
         """
@@ -273,8 +276,7 @@ class SocialAlgorithms:
         Returns:
             Callable: A drop-in replacement for ``agent.run``.
         """
-        # Whatever is bound now, so an instance override or an enclosing
-        # recorder still runs rather than being skipped for the class method.
+        # Whatever is bound now, so an instance override still runs
         original = agent.run
 
         def run(task, *args, **kwargs):
@@ -365,6 +367,7 @@ class SocialAlgorithms:
 
         return result
 
+    @trace_run("SocialAlgorithms.run")
     def run(
         self,
         task: str,
