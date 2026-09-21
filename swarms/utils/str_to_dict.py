@@ -79,10 +79,10 @@ def tool_call_arguments(tool_output: Any) -> Optional[Dict]:
     else:
         args = getattr(fn, "arguments", None)
 
-    if isinstance(args, str):
+    if isinstance(args, (str, bytes, bytearray)):
         try:
             args = json.loads(args)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, UnicodeDecodeError):
             return None
 
     return args if isinstance(args, dict) else None

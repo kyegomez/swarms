@@ -29,6 +29,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
+from swarms.utils.str_to_dict import tool_call_arguments
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
@@ -638,39 +639,21 @@ class PlannerWorkerSwarm:
                             item["content"], list
                         ):
                             for content_item in item["content"]:
-                                if (
-                                    isinstance(content_item, dict)
-                                    and "function" in content_item
-                                ):
-                                    function_data = content_item[
-                                        "function"
-                                    ]
-                                    if "arguments" in function_data:
-                                        try:
-                                            args = json.loads(
-                                                function_data[
-                                                    "arguments"
-                                                ]
-                                            )
-                                            return model_class(**args)
-                                        except (
-                                            json.JSONDecodeError,
-                                            TypeError,
-                                        ):
-                                            pass
+                                args = tool_call_arguments(
+                                    content_item
+                                )
+                                if args is not None:
+                                    try:
+                                        return model_class(**args)
+                                    except TypeError:
+                                        pass
                         # Direct function call format
                         elif "function" in item:
-                            function_data = item["function"]
-                            if "arguments" in function_data:
+                            args = tool_call_arguments(item)
+                            if args is not None:
                                 try:
-                                    args = json.loads(
-                                        function_data["arguments"]
-                                    )
                                     return model_class(**args)
-                                except (
-                                    json.JSONDecodeError,
-                                    TypeError,
-                                ):
+                                except TypeError:
                                     pass
                         # Try direct dict parse
                         try:
