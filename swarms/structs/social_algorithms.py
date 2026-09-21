@@ -1,5 +1,9 @@
+import signal
+import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
@@ -10,7 +14,6 @@ from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.telemetry.otel import capture_init, trace_run
-
 
 logger = initialize_logger(log_folder="social_algorithms")
 
@@ -306,6 +309,103 @@ class SocialAlgorithms:
 
         return talk_to
 
+    @staticmethod
+    def _alarm_timeout_available() -> bool:
+        """
+        Whether the SIGALRM timeout can be installed on this call.
+
+        Returns:
+            bool: True when the interpreter exposes the interval timer and
+                this is the main thread, which are the two conditions
+                signal.signal requires.
+        """
+        return (
+            hasattr(signal, "SIGALRM")
+            and hasattr(signal, "setitimer")
+            and threading.current_thread() is threading.main_thread()
+        )
+
+    def _timeout_message(self) -> str:
+        """
+        The message carried by every timeout this class raises.
+
+        Returns:
+            str: The timeout description, identical on both timeout paths.
+        """
+        return f"Algorithm execution exceeded {self.max_execution_time} seconds"
+
+    def _execute_with_alarm(
+        self, func: Callable, *args, **kwargs
+    ) -> Any:
+        """
+        Execute a function under a SIGALRM interval timer.
+
+        Args:
+            func (Callable): The function to execute.
+            *args: Positional arguments for the function.
+            **kwargs: Keyword arguments for the function.
+
+        Returns:
+            Any: The result of the function execution.
+
+        Raises:
+            TimeoutError: If the function execution exceeds max_execution_time.
+
+        Notes:
+            setitimer takes a float, so a sub-second budget is honoured;
+            signal.alarm truncates to whole seconds and alarm(0) cancels
+            the timeout outright.
+        """
+
+        def timeout_handler(signum, frame):
+            raise TimeoutError(self._timeout_message())
+
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        signal.setitimer(signal.ITIMER_REAL, self.max_execution_time)
+
+        try:
+            return func(*args, **kwargs)
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, old_handler)
+
+    def _execute_in_worker(
+        self, func: Callable, *args, **kwargs
+    ) -> Any:
+        """
+        Execute a function on a worker thread and wait for it with a timeout.
+
+        Args:
+            func (Callable): The function to execute.
+            *args: Positional arguments for the function.
+            **kwargs: Keyword arguments for the function.
+
+        Returns:
+            Any: The result of the function execution.
+
+        Raises:
+            TimeoutError: If the function execution exceeds max_execution_time.
+
+        Notes:
+            A thread cannot be killed, so an algorithm that overruns keeps
+            running after the TimeoutError is raised. The pool is shut down
+            without waiting so the caller is not blocked by it. SIGALRM has
+            the same limitation for any call that does not return to the
+            interpreter.
+        """
+        pool = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix=f"{self.name}-timeout"
+        )
+
+        try:
+            future = pool.submit(func, *args, **kwargs)
+            try:
+                return future.result(timeout=self.max_execution_time)
+            except FutureTimeoutError:
+                raise TimeoutError(self._timeout_message()) from None
+        finally:
+            pool.shutdown(wait=False)
+
     def _execute_with_timeout(
         self, func: Callable, *args, **kwargs
     ) -> Any:
@@ -322,25 +422,16 @@ class SocialAlgorithms:
 
         Raises:
             TimeoutError: If the function execution exceeds max_execution_time.
+
+        Notes:
+            signal.signal can only be called from the main thread and
+            SIGALRM does not exist on Windows, so off that path the budget
+            is enforced by waiting on a worker thread instead.
         """
-        import signal
+        if self._alarm_timeout_available():
+            return self._execute_with_alarm(func, *args, **kwargs)
 
-        def timeout_handler(signum, frame):
-            raise TimeoutError(
-                f"Algorithm execution exceeded {self.max_execution_time} seconds"
-            )
-
-        # Set up timeout
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(int(self.max_execution_time))
-
-        try:
-            result = func(*args, **kwargs)
-            return result
-        finally:
-            # Restore original handler
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
+        return self._execute_in_worker(func, *args, **kwargs)
 
     def _format_output(self, result: Any) -> Any:
         """

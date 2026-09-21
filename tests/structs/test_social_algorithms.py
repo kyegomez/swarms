@@ -1,3 +1,4 @@
+import signal
 import threading
 import time
 
@@ -459,7 +460,7 @@ class TestAlgorithmArgs:
 
 
 class TestTimeout:
-    """The timeout is SIGALRM-based, so it only works on the main thread."""
+    """The budget is enforced on the main thread and off it alike."""
 
     def test_a_generous_timeout_does_not_interfere(self):
         swarm = _swarm(_pipeline, max_execution_time=30)
@@ -472,10 +473,6 @@ class TestTimeout:
 
         assert swarm.run("t").total_steps == 2
 
-    @pytest.mark.xfail(
-        reason="signal.alarm truncates to int, so alarm(0) cancels the timeout",
-        strict=False,
-    )
     def test_a_sub_second_budget_still_times_out(self):
         def slow(agents, task, **kwargs):
             time.sleep(2)
@@ -486,10 +483,6 @@ class TestTimeout:
         with pytest.raises(TimeoutError):
             swarm.run("t")
 
-    @pytest.mark.xfail(
-        reason="signal.signal cannot be called off the main thread",
-        strict=False,
-    )
     def test_run_works_on_a_worker_thread(self):
         swarm = _swarm(_pipeline)
         outcome = {}
@@ -504,14 +497,59 @@ class TestTimeout:
         thread.start()
         thread.join()
 
+        assert outcome.get("error") is None
         assert outcome.get("steps") == 2
 
-    @pytest.mark.xfail(
-        reason="run_async runs on a worker thread, where SIGALRM is unavailable",
-        strict=False,
-    )
-    def test_run_async_works_on_the_default_configuration(self):
-        assert _swarm(_pipeline).run_async("t").total_steps == 2
+    def test_a_worker_thread_still_honours_the_budget(self):
+        def slow(agents, task, **kwargs):
+            time.sleep(2)
+            return "never"
+
+        swarm = _swarm(slow, max_execution_time=0.2)
+        outcome = {}
+
+        def worker():
+            try:
+                swarm.run("t")
+            except TimeoutError as exc:
+                outcome["error"] = exc
+
+        thread = threading.Thread(target=worker)
+        thread.start()
+        thread.join()
+
+        assert isinstance(outcome.get("error"), TimeoutError)
+
+    def test_the_main_thread_takes_the_alarm_path(self):
+        assert SocialAlgorithms._alarm_timeout_available() is True
+
+    def test_a_worker_thread_takes_the_pool_path(self):
+        seen = {}
+
+        def worker():
+            seen["available"] = (
+                SocialAlgorithms._alarm_timeout_available()
+            )
+
+        thread = threading.Thread(target=worker)
+        thread.start()
+        thread.join()
+
+        assert seen["available"] is False
+
+    def test_the_signal_handler_is_restored_after_a_timeout(self):
+        def slow(agents, task, **kwargs):
+            time.sleep(2)
+            return "never"
+
+        before = signal.getsignal(signal.SIGALRM)
+        swarm = _swarm(slow, max_execution_time=0.2)
+
+        with pytest.raises(TimeoutError):
+            swarm.run("t")
+
+        assert signal.getsignal(signal.SIGALRM) is before
+        assert signal.getitimer(signal.ITIMER_REAL)[0] == 0.0
 
 
 class TestAlgorithmInfo:
