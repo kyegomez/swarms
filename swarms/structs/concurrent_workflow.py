@@ -482,7 +482,7 @@ class ConcurrentWorkflow:
         with ContextThreadPoolExecutor(
             max_workers=self._resolve_max_workers()
         ) as executor:
-            future_to_agent = {
+            futures = [
                 executor.submit(
                     self._run_agent_with_streaming,
                     agent,
@@ -490,14 +490,11 @@ class ConcurrentWorkflow:
                     img,
                     imgs,
                     streaming_callback,
-                ): agent
+                )
                 for agent in self.agents
-            }
+            ]
 
-            for future in concurrent.futures.as_completed(
-                future_to_agent
-            ):
-                agent = future_to_agent[future]
+            for future, agent in zip(futures, self.agents):
                 try:
                     output = future.result()
                     self.conversation.add(

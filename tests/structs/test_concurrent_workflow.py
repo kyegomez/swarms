@@ -1,4 +1,6 @@
 import os
+import time
+
 import pytest
 
 from swarms import Agent
@@ -540,6 +542,40 @@ def test_concurrent_workflow_batch_run_leaves_the_instance_conversation_alone():
 
     assert workflow.conversation is conversation
     assert conversation.conversation_history == []
+
+
+class _SlowEchoAgent(_EchoAgent):
+    """Echoes like _EchoAgent, but only after a fixed delay."""
+
+    def __init__(self, agent_name: str, delay: float):
+        super().__init__(agent_name)
+        self.delay = delay
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        time.sleep(self.delay)
+        return super().run(task, img=img, imgs=imgs, **kwargs)
+
+
+def test_concurrent_workflow_returns_results_in_agent_order():
+    """Declared slowest first, so completion order is the reverse of agent order (#2317)."""
+    workflow = ConcurrentWorkflow(
+        name="Agent-Order-Workflow",
+        agents=[
+            _SlowEchoAgent("Alpha", 0.30),
+            _SlowEchoAgent("Beta", 0.15),
+            _SlowEchoAgent("Gamma", 0.01),
+        ],
+        output_type="dict",
+    )
+
+    result = workflow.run("rank these")
+
+    assert [message["role"] for message in result] == [
+        "User",
+        "Alpha",
+        "Beta",
+        "Gamma",
+    ]
 
 
 if __name__ == "__main__":
