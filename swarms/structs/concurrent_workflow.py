@@ -3,6 +3,7 @@ import time
 from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -418,7 +419,12 @@ class ConcurrentWorkflow:
                 for future, agent in zip(futures, self.agents):
                     try:
                         output = future.result()
-                        results.append((agent.agent_name, output))
+                        results.append(
+                            (
+                                agent.agent_name,
+                                agent_answer(agent, fallback=output),
+                            )
+                        )
                     except Exception as e:
                         # Same failure policy as _run: the dashboard must not revoke on_error.
                         if self.on_error == "raise":
@@ -498,7 +504,8 @@ class ConcurrentWorkflow:
                 try:
                     output = future.result()
                     self.conversation.add(
-                        role=agent.agent_name, content=output
+                        role=agent.agent_name,
+                        content=agent_answer(agent, fallback=output),
                     )
                 except Exception as e:
                     if self.on_error == "raise":
