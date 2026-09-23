@@ -3491,7 +3491,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Any extra kwargs forwarded to _run().
+            **kwargs: Any extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -3520,7 +3520,7 @@ Subtask Breakdown:
 
         def _run_thread():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
@@ -3561,7 +3561,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Extra kwargs forwarded to _run().
+            **kwargs: Extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -3595,7 +3595,7 @@ Subtask Breakdown:
 
         def _run_sync():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
