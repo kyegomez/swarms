@@ -544,6 +544,28 @@ def test_concurrent_workflow_batch_run_leaves_the_instance_conversation_alone():
     assert conversation.conversation_history == []
 
 
+def test_concurrent_workflow_run_twice_returns_only_each_task():
+    workflow = ConcurrentWorkflow(
+        name="Rerun-Workflow",
+        agents=[_EchoAgent("Alpha"), _EchoAgent("Beta")],
+        output_type="dict",
+    )
+
+    first = workflow.run("first filing")
+    second = workflow.run("second filing")
+
+    assert [m["content"] for m in first] == [
+        "first filing",
+        "Alpha answered: first filing",
+        "Beta answered: first filing",
+    ]
+    assert [m["content"] for m in second] == [
+        "second filing",
+        "Alpha answered: second filing",
+        "Beta answered: second filing",
+    ]
+
+
 class _SlowEchoAgent(_EchoAgent):
     """Echoes like _EchoAgent, but only after a fixed delay."""
 
