@@ -142,6 +142,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [crypto_price_server.py](mcp/servers/crypto_price_server.py) | FastMCP server exposing crypto prices |
 | [okx_crypto_server.py](mcp/servers/okx_crypto_server.py) | OKX price server (port 8001) |
 | [agent_as_tool_server.py](mcp/servers/agent_as_tool_server.py) | Expose a whole swarms Agent as one MCP tool |
+| [mcp_deployer/](mcp/mcp_deployer/) | `MCPDeployer`: serve any Agent or swarm as an MCP tool behind API-key, custom or token auth, over HTTP, SSE or stdio |
 | [streamable_http_server.py](mcp/servers/streamable_http_server.py) | Stateful vs stateless streamable-HTTP config |
 | [client/](mcp/client/) | **Call MCP directly with `MCPManager`, no Agent** |
 | [01_list_tools.py](mcp/client/01_list_tools.py) | Discover a server's tools; OpenAI vs MCP schema format |

@@ -1,4 +1,6 @@
 import os
+import time
+
 import pytest
 
 from swarms import Agent
@@ -488,6 +490,92 @@ def test_concurrent_workflow_autosave_saves_conversation_after_run(
     ), f"Expected conversation_history.json at {conversation_path}"
 
     get_workspace_dir.cache_clear()
+
+
+class _EchoAgent:
+    """Minimal stand-in for Agent: names itself and echoes the task it was given."""
+
+    def __init__(self, agent_name: str):
+        self.agent_name = agent_name
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        return f"{self.agent_name} answered: {task}"
+
+
+def test_concurrent_workflow_batch_run_scopes_each_task():
+    """batch_run must not carry an earlier task's messages into a later result (#2041)."""
+    workflow = ConcurrentWorkflow(
+        name="Batch-Scope-Workflow",
+        agents=[_EchoAgent("Alpha"), _EchoAgent("Beta")],
+        output_type="dict",
+    )
+
+    results = workflow.batch_run(
+        ["summarise the first filing", "summarise the second filing"]
+    )
+
+    assert len(results) == 2
+    for result, task in zip(
+        results,
+        ["summarise the first filing", "summarise the second filing"],
+    ):
+        assert len(result) == 3
+        assert result[0] == {"role": "User", "content": task}
+        assert {m["role"] for m in result[1:]} == {"Alpha", "Beta"}
+
+    assert all(
+        "first filing" not in message["content"]
+        for message in results[1]
+    )
+
+
+def test_concurrent_workflow_batch_run_leaves_the_instance_conversation_alone():
+    """The per-task scopes are temporary: batch_run restores the workflow's own conversation (#2041)."""
+    workflow = ConcurrentWorkflow(
+        name="Batch-Restore-Workflow",
+        agents=[_EchoAgent("Alpha"), _EchoAgent("Beta")],
+        output_type="dict",
+    )
+    conversation = workflow.conversation
+
+    workflow.batch_run(["one", "two"])
+
+    assert workflow.conversation is conversation
+    assert conversation.conversation_history == []
+
+
+class _SlowEchoAgent(_EchoAgent):
+    """Echoes like _EchoAgent, but only after a fixed delay."""
+
+    def __init__(self, agent_name: str, delay: float):
+        super().__init__(agent_name)
+        self.delay = delay
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        time.sleep(self.delay)
+        return super().run(task, img=img, imgs=imgs, **kwargs)
+
+
+def test_concurrent_workflow_returns_results_in_agent_order():
+    """Declared slowest first, so completion order is the reverse of agent order (#2317)."""
+    workflow = ConcurrentWorkflow(
+        name="Agent-Order-Workflow",
+        agents=[
+            _SlowEchoAgent("Alpha", 0.30),
+            _SlowEchoAgent("Beta", 0.15),
+            _SlowEchoAgent("Gamma", 0.01),
+        ],
+        output_type="dict",
+    )
+
+    result = workflow.run("rank these")
+
+    assert [message["role"] for message in result] == [
+        "User",
+        "Alpha",
+        "Beta",
+        "Gamma",
+    ]
 
 
 if __name__ == "__main__":

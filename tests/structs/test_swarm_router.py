@@ -1151,3 +1151,51 @@ def test_usage_counts_a_shared_agent_once():
     router._swarm_cache["fake"] = type("S", (), {"agents": [agent]})()
 
     assert router.usage["input_tokens"] == 100
+
+
+def _stub_council_run(agent, reply, calls):
+    def _run(task=None, messages=None, **kwargs):
+        calls.append(
+            {
+                "agent": agent.agent_name,
+                "task": task,
+                "messages": list(messages or []),
+            }
+        )
+        return reply
+
+    agent.run = _run
+
+
+def test_council_as_judge_aggregator_receives_typed_turns():
+    from swarms.structs.council_as_judge import CouncilAsAJudge
+
+    council = CouncilAsAJudge(
+        model_name="gpt-4o-mini",
+        random_model_name=False,
+        aggregation_model_name="gpt-4o-mini",
+        judge_agent_model_name="gpt-4o-mini",
+    )
+    calls = []
+    for agent in council.judge_agents.values():
+        _stub_council_run(
+            agent, f"{agent.agent_name}-rationale", calls
+        )
+    _stub_council_run(council.aggregator_agent, "final report", calls)
+
+    council.run(task="Evaluate this response for quality.")
+
+    call = next(
+        c
+        for c in calls
+        if c["agent"] == council.aggregator_agent.agent_name
+    )
+    contents = [m["content"] for m in call["messages"]] + [
+        str(call["task"])
+    ]
+    for agent in council.judge_agents.values():
+        assert any(
+            f"{agent.agent_name}: {agent.agent_name}-rationale"
+            in text
+            for text in contents
+        ), f"no turn attributed to {agent.agent_name}: {contents}"

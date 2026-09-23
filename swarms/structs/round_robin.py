@@ -2,7 +2,7 @@ from typing import List, Union
 
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
-from swarms.structs.context_utils import messages_for
+from swarms.structs.context_utils import agent_answer, messages_for
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -174,7 +174,9 @@ class RoundRobinSwarm(SerializableMixin):
                 "info",
                 f"Running Agent {agent.agent_name} on task: {task}",
             )
-            result = agent.run(task, *args, **kwargs)
+            result = agent_answer(
+                agent, fallback=agent.run(task, *args, **kwargs)
+            )
             self.conversation.add(
                 role=agent.agent_name,
                 content=result,
