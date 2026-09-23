@@ -338,6 +338,42 @@ async def main():
 asyncio.run(main())
 ```
 
+### Stream reasoning tokens (`stream_thinking`)
+
+Reasoning models emit "thinking" deltas before their answer. By default those are
+collected and shown as one panel; consumers only ever see content tokens. Set
+`stream_thinking=True` and the reasoning deltas travel down the same surface
+wrapped in `ThinkingToken`, so one `isinstance` check separates them from output.
+The console panel then grows delta-by-delta instead of appearing all at once.
+
+```python
+from swarms import Agent, ThinkingToken
+
+def handle_token(token) -> None:
+    if isinstance(token, ThinkingToken):
+        print(f"[thinking] {token.content}", end="", flush=True)
+    else:
+        print(token, end="", flush=True)
+
+agent = Agent(
+    agent_name="Reasoner",
+    model_name="claude-sonnet-4-6",
+    streaming_callback=handle_token,
+    stream_thinking=True,
+)
+agent.run("Prove that sqrt(2) is irrational.")
+```
+
+`run_stream` and `arun_stream` yield the same values, and take a per-call
+`stream_thinking` override:
+
+```python
+for token in agent.run_stream("Analyse NVDA", stream_thinking=True):
+    if isinstance(token, ThinkingToken):
+        continue
+    print(token, end="", flush=True)
+```
+
 ---
 
 ## Multi-Agent Structures

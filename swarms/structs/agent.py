@@ -63,6 +63,7 @@ from swarms.schemas.mcp_schemas import (
     MCPConnection,
     MCPOAuthConfig,
 )
+from swarms.schemas.stream_schemas import ThinkingToken
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
@@ -177,6 +178,7 @@ class Agent:
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
         streaming_callback (Optional[Callable[[str], None]]): Callback function to receive streaming tokens in real-time. Defaults to None.
+        stream_thinking (bool): Forward reasoning deltas to ``streaming_callback``, ``run_stream``, and ``arun_stream`` as ``ThinkingToken`` instances. Defaults to False.
         verbose (bool): Enable verbose mode
         stopping_func (Callable): The stopping function
         custom_exit_command (str): The custom exit command
@@ -353,6 +355,7 @@ class Agent:
         streaming_on: Optional[bool] = False,
         stream: Optional[bool] = False,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        stream_thinking: Optional[bool] = False,
         verbose: Optional[bool] = False,
         stopping_func: Optional[Callable] = None,
         custom_exit_command: Optional[str] = "exit",
@@ -461,6 +464,7 @@ class Agent:
         self.streaming_on = streaming_on
         self.stream = stream
         self.streaming_callback = streaming_callback
+        self.stream_thinking = stream_thinking
         self.verbose = verbose
         self.stopping_func = stopping_func
         self.custom_exit_command = custom_exit_command
@@ -3155,12 +3159,14 @@ Subtask Breakdown:
             stream, tool_calls_out
         )
 
-    def _extract_thinking_from_stream(self, stream):
+    def _extract_thinking_from_stream(self, stream, on_thinking=None):
         """Yield content chunks, flushing any reasoning chunks to a panel first.
 
         See :meth:`swarms.agents.llm_manager.LLMManager.extract_thinking_from_stream`.
         """
-        return self.llm_manager.extract_thinking_from_stream(stream)
+        return self.llm_manager.extract_thinking_from_stream(
+            stream, on_thinking
+        )
 
     def call_llm(
         self,
@@ -3465,6 +3471,7 @@ Subtask Breakdown:
         self,
         task: str,
         img: Optional[str] = None,
+        stream_thinking: Optional[bool] = None,
         **kwargs,
     ):
         """Run the agent and yield response tokens one-by-one as they are generated.
@@ -3480,10 +3487,14 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
+            stream_thinking: Override the agent's ``stream_thinking`` setting for
+                this call only. When on, reasoning deltas are yielded as
+                ``ThinkingToken`` instances interleaved with the content strings.
             **kwargs: Any extra kwargs forwarded to _run().
 
         Yields:
-            str: Individual token strings in generation order.
+            str: Individual token strings in generation order, plus
+                ``ThinkingToken`` instances when thinking is streamed.
 
         Example::
 
@@ -3497,7 +3508,10 @@ Subtask Breakdown:
         _exc: list = [None]
 
         def _on_token(token):
-            if isinstance(token, str) and token:
+            if isinstance(token, ThinkingToken):
+                if token.content:
+                    token_queue.put(token)
+            elif isinstance(token, str) and token:
                 token_queue.put(token)
             elif isinstance(token, dict):
                 t = token.get("token", "")
@@ -3505,7 +3519,11 @@ Subtask Breakdown:
                     token_queue.put(t)
 
         original_streaming_on = self.streaming_on
+        original_stream_thinking = self.stream_thinking
         self.streaming_on = True
+
+        if stream_thinking is not None:
+            self.stream_thinking = stream_thinking
 
         def _run_thread():
             try:
@@ -3519,6 +3537,7 @@ Subtask Breakdown:
                 _exc[0] = exc
             finally:
                 self.streaming_on = original_streaming_on
+                self.stream_thinking = original_stream_thinking
                 token_queue.put(_DONE)
 
         thread = threading.Thread(target=_run_thread, daemon=True)
@@ -3539,6 +3558,7 @@ Subtask Breakdown:
         self,
         task: str,
         img: Optional[str] = None,
+        stream_thinking: Optional[bool] = None,
         **kwargs,
     ):
         """Async generator version of run_stream — yields tokens as they arrive.
@@ -3550,10 +3570,14 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
+            stream_thinking: Override the agent's ``stream_thinking`` setting for
+                this call only. When on, reasoning deltas are yielded as
+                ``ThinkingToken`` instances interleaved with the content strings.
             **kwargs: Extra kwargs forwarded to _run().
 
         Yields:
-            str: Individual token strings in generation order.
+            str: Individual token strings in generation order, plus
+                ``ThinkingToken`` instances when thinking is streamed.
 
         Example::
 
@@ -3568,7 +3592,12 @@ Subtask Breakdown:
         _exc: list = [None]
 
         def _on_token(token):
-            if isinstance(token, str) and token:
+            if isinstance(token, ThinkingToken):
+                if token.content:
+                    loop.call_soon_threadsafe(
+                        token_queue.put_nowait, token
+                    )
+            elif isinstance(token, str) and token:
                 loop.call_soon_threadsafe(
                     token_queue.put_nowait, token
                 )
@@ -3580,7 +3609,11 @@ Subtask Breakdown:
                     )
 
         original_streaming_on = self.streaming_on
+        original_stream_thinking = self.stream_thinking
         self.streaming_on = True
+
+        if stream_thinking is not None:
+            self.stream_thinking = stream_thinking
 
         def _run_sync():
             try:
@@ -3594,6 +3627,7 @@ Subtask Breakdown:
                 _exc[0] = exc
             finally:
                 self.streaming_on = original_streaming_on
+                self.stream_thinking = original_stream_thinking
                 loop.call_soon_threadsafe(
                     token_queue.put_nowait, _DONE
                 )
