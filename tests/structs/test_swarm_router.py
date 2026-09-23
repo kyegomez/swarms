@@ -1199,3 +1199,15 @@ def test_council_as_judge_aggregator_receives_typed_turns():
             in text
             for text in contents
         ), f"no turn attributed to {agent.agent_name}: {contents}"
+
+
+def test_call_and_batch_run_do_not_send_an_absent_imgs():
+    router, built = _fallback_router()
+
+    router("go")
+    router.batch_run(["go"])
+
+    assert built["SequentialWorkflow"].calls == [
+        {"task": "go"},
+        {"task": "go"},
+    ]
