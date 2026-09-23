@@ -3401,7 +3401,18 @@ Subtask Breakdown:
                     **kwargs,
                 )
             elif n > 1:
-                output = [self.run(task=task) for _ in range(n)]
+                output = [
+                    self._run(
+                        task=task,
+                        img=img,
+                        imgs=imgs,
+                        streaming_callback=streaming_callback,
+                        messages=messages,
+                        *args,
+                        **kwargs,
+                    )
+                    for _ in range(n)
+                ]
             else:
                 output = self._run(
                     task=task,

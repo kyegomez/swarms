@@ -1709,3 +1709,38 @@ class TestSeededMessages:
         ]
         assert "My project is called Helios." in recorded
         assert "Noted: Helios." in recorded
+
+
+class TestRunSamples:
+    """Each of the ``n`` samples gets the same inputs as a single run."""
+
+    def test_every_sample_receives_the_image_and_callback(self):
+        agent = _patched_agent("Vision")
+        calls = []
+
+        def fake_call_llm(
+            task=None,
+            img=None,
+            imgs=None,
+            current_loop=0,
+            streaming_callback=None,
+            *args,
+            **kwargs,
+        ):
+            calls.append((img, streaming_callback))
+            return "A bar chart."
+
+        def on_token(token):
+            return None
+
+        agent.call_llm = fake_call_llm
+        agent.run(
+            "Describe the chart.",
+            img="https://example.com/chart.png",
+            streaming_callback=on_token,
+            n=2,
+        )
+
+        assert (
+            calls == [("https://example.com/chart.png", on_token)] * 2
+        )
