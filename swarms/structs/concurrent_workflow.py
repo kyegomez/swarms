@@ -418,13 +418,10 @@ class ConcurrentWorkflow:
 
                 for future, agent in zip(futures, self.agents):
                     try:
-                        output = future.result()
-                        results.append(
-                            (
-                                agent.agent_name,
-                                agent_answer(agent, fallback=output),
-                            )
+                        output = agent_answer(
+                            agent, fallback=future.result()
                         )
+                        results.append((agent.agent_name, output))
                     except Exception as e:
                         # Same failure policy as _run: the dashboard must not revoke on_error.
                         if self.on_error == "raise":
@@ -502,10 +499,11 @@ class ConcurrentWorkflow:
 
             for future, agent in zip(futures, self.agents):
                 try:
-                    output = future.result()
+                    output = agent_answer(
+                        agent, fallback=future.result()
+                    )
                     self.conversation.add(
-                        role=agent.agent_name,
-                        content=agent_answer(agent, fallback=output),
+                        role=agent.agent_name, content=output
                     )
                 except Exception as e:
                     if self.on_error == "raise":
