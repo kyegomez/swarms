@@ -1194,6 +1194,35 @@ class TestToolExecutionRetry:
             ), f"attempts={attempts!r} should still run once"
 
 
+class TestInteractiveFollowUp:
+    def test_follow_up_input_reaches_the_next_request(self):
+        agent = _patched_agent(
+            "InteractiveAgent",
+            model_name="gpt-5.4",
+            max_loops=2,
+            interactive=True,
+        )
+        requests = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            requests.append(list(kwargs["messages"]))
+            return "ok"
+
+        agent.call_llm = fake_call_llm
+        replies = iter(["What is the capital of Peru?", "exit"])
+        with patch(
+            "swarms.structs.agent.formatter.console.input",
+            lambda *a, **k: next(replies),
+        ):
+            agent.run("Name a prime number.")
+
+        assert len(requests) == 2
+        assert requests[1][-1] == {
+            "role": "user",
+            "content": "What is the capital of Peru?",
+        }
+
+
 class TestToolFailureIsNotAnLLMError:
     """#1924: a tool that exhausted its own retries raised into the generation
     handler, which logged it as Agent.llm_error and re-ran the model, so one
