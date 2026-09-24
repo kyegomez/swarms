@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Sequence, Union
 
 from loguru import logger
 
@@ -259,14 +259,23 @@ class DebateWithJudge:
 
     @trace_run(
         "DebateWithJudge.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img", "imgs"),
     )
-    def run(self, task: str) -> Union[str, List, dict]:
+    def run(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+    ) -> Union[str, List, dict]:
         """
         Execute the debate with judge refinement process.
 
         Args:
             task (str): The initial topic or question to debate.
+            img (Optional[str]): Optional image input forwarded to each
+                debate agent.
+            imgs (Optional[List[str]]): Optional image inputs forwarded to each
+                debate agent.
 
         Returns:
             Union[str, List, dict]: The formatted conversation history or final refined answer,
@@ -298,7 +307,9 @@ class DebateWithJudge:
             pro_prompt = self._create_pro_prompt(
                 current_topic, round_num
             )
-            pro_argument = self.pro_agent.run(task=pro_prompt)
+            pro_argument = self.pro_agent.run(
+                task=pro_prompt, img=img, imgs=imgs
+            )
             pro_argument = agent_answer(
                 self.pro_agent, fallback=pro_argument
             )
@@ -313,7 +324,9 @@ class DebateWithJudge:
             con_prompt = self._create_con_prompt(
                 current_topic, pro_argument, round_num
             )
-            con_argument = self.con_agent.run(task=con_prompt)
+            con_argument = self.con_agent.run(
+                task=con_prompt, img=img, imgs=imgs
+            )
             con_argument = agent_answer(
                 self.con_agent, fallback=con_argument
             )
@@ -328,7 +341,9 @@ class DebateWithJudge:
             judge_prompt = self._create_judge_prompt(
                 current_topic, pro_argument, con_argument, round_num
             )
-            judge_synthesis = self.judge_agent.run(task=judge_prompt)
+            judge_synthesis = self.judge_agent.run(
+                task=judge_prompt, img=img, imgs=imgs
+            )
             judge_synthesis = agent_answer(
                 self.judge_agent, fallback=judge_synthesis
             )
@@ -452,14 +467,22 @@ class DebateWithJudge:
 
         return prompt + JUDGE_INTERMEDIATE_ROUND_INSTRUCTIONS
 
-    def batched_run(self, tasks: List[str]) -> List[str]:
+    def batched_run(
+        self,
+        tasks: List[str],
+        img: Optional[Union[str, Sequence[Optional[str]]]] = None,
+        imgs: Optional[Sequence[Optional[str]]] = None,
+    ) -> List[str]:
         """
         Run the debate with judge refinement process for a batch of tasks.
 
         Args:
             tasks (List[str]): The list of tasks to run the debate with judge refinement process for.
+            img (Optional[Union[str, Sequence[Optional[str]]]]): One image
+                broadcast to every task, or a sequence paired one per task.
+            imgs (Optional[Sequence[Optional[str]]]): One image per task.
 
         Returns:
             List[str]: The list of final refined answers.
         """
-        return batched_run(self.run, tasks)
+        return batched_run(self.run, tasks, img=img, imgs=imgs)
