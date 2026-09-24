@@ -6,7 +6,7 @@ import pytest
 from swarms import Agent, PlannerGeneratorEvaluator
 from swarms.schemas.hs_schemas import OrderBatch
 from swarms.schemas.planner_worker_schemas import PlannerTask
-from swarms.structs.hiearchical_swarm import (
+from swarms.structs.hierarchical_swarm import (
     HierarchicalOrder,
     HierarchicalSwarm,
 )
@@ -501,7 +501,7 @@ def test_director_settings_are_forwarded(monkeypatch):
         return StubAgent(kwargs["agent_name"], [])
 
     monkeypatch.setattr(
-        "swarms.structs.hiearchical_swarm.Agent",
+        "swarms.structs.hierarchical_swarm.Agent",
         build_director,
     )
     worker = StubAgent("Worker", ["done"])
@@ -637,7 +637,7 @@ def test_batched_run_forwards_utility_options(monkeypatch):
         return ["first", "second"]
 
     monkeypatch.setattr(
-        "swarms.structs.hiearchical_swarm.batched_run",
+        "swarms.structs.hierarchical_swarm.batched_run",
         fake_batched_run,
     )
 

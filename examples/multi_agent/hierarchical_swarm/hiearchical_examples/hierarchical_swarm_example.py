@@ -1,5 +1,5 @@
 from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 
 # Initialize specialized financial analysis agents
 market_research_agent = Agent(

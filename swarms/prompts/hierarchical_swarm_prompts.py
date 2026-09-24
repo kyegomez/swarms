@@ -1,4 +1,4 @@
-"""Prompts for :mod:`swarms.structs.hiearchical_swarm`.
+"""Prompts for :mod:`swarms.structs.hierarchical_swarm`.
 
 Every prompt the hierarchical swarm sends to an LLM lives here: the
 director and judge system prompts, and the task templates used for
