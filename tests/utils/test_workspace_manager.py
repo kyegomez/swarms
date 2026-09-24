@@ -18,16 +18,13 @@ from swarms.utils.workspace_manager import (
     ensure_workspace_env,
     sanitize_name,
 )
-from swarms.utils.workspace_utils import get_workspace_dir
 
 
 @pytest.fixture(autouse=True)
 def workspace(tmp_path, monkeypatch):
     """Point WORKSPACE_DIR at a tmp dir and clear the lru_cache."""
     monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
-    get_workspace_dir.cache_clear()
     yield tmp_path
-    get_workspace_dir.cache_clear()
 
 
 class FakeConversation:
@@ -81,7 +78,6 @@ class TestEnsureWorkspaceEnv:
     def test_defaults_when_unset(self, monkeypatch, tmp_path):
         monkeypatch.delenv("WORKSPACE_DIR", raising=False)
         monkeypatch.chdir(tmp_path)
-        get_workspace_dir.cache_clear()
         resolved = ensure_workspace_env()
         assert resolved.endswith("agent_workspace")
         assert os.environ["WORKSPACE_DIR"] == resolved

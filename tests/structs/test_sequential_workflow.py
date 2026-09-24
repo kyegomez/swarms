@@ -8,7 +8,6 @@ from swarms.prompts.agent_acknowledgement_prompt import (
     AGENT_COLLAB_PROMPT,
 )
 from swarms.structs.sequential_workflow import DRIFT_DETECTION_PROMPT
-from swarms.utils.workspace_utils import get_workspace_dir
 
 
 def test_sequential_workflow_initialization_with_agents():
@@ -311,7 +310,6 @@ def test_sequential_workflow_autosave_creates_workspace_dir(
     monkeypatch, tmp_path
 ):
     """Test that SequentialWorkflow with autosave=True creates a workspace directory."""
-    get_workspace_dir.cache_clear()
     monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
 
     agent1 = Agent(
@@ -340,14 +338,11 @@ def test_sequential_workflow_autosave_creates_workspace_dir(
     assert "SequentialWorkflow" in workflow.swarm_workspace_dir
     assert "Autosave-Test-Workflow" in workflow.swarm_workspace_dir
 
-    get_workspace_dir.cache_clear()
-
 
 def test_sequential_workflow_autosave_saves_conversation_after_run(
     monkeypatch, tmp_path
 ):
     """Test that SequentialWorkflow saves conversation_history.json after run when autosave=True."""
-    get_workspace_dir.cache_clear()
     monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
 
     agent1 = Agent(
@@ -384,8 +379,6 @@ def test_sequential_workflow_autosave_saves_conversation_after_run(
     assert os.path.isfile(
         conversation_path
     ), f"Expected conversation_history.json at {conversation_path}"
-
-    get_workspace_dir.cache_clear()
 
 
 # ---------------------------------------------------------------------------
