@@ -271,7 +271,7 @@ print(final_post)
 | **[HeavySwarm](https://docs.swarms.world/api/heavy-swarm)** | 通过专门的智能体（研究、分析、备选方案、验证）实现五阶段工作流，进行全面的任务分析。 | 复杂的研究与分析任务、金融分析、战略规划和综合报告。 |
 | **[SwarmRouter](https://docs.swarms.world/api/swarm-router)** | 通用编排器，提供单一接口以动态选择并运行任意类型的 swarm。 | 简化复杂工作流、在 swarm 策略之间切换，以及统一的多智能体管理。 |
 
-我们提供了 60 多种多智能体结构，[点击这里](/docs/MULTI_AGENT_STRUCTURES.md)了解全部内容。
+我们提供了 60 多种多智能体结构，[点击这里](https://docs.swarms.world)了解全部内容。
 
 -----
 
