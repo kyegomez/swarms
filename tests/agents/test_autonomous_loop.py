@@ -1160,7 +1160,7 @@ class TestRunBashSteersFileWritesToTheFileTools:
     """
 
     def test_long_heredoc_is_pointed_at_create_file(self):
-        body = "line of report text\n" * 40
+        body = "line of report text\n" * (_BASH_MAX_LENGTH // 20 + 10)
         command = f"cat > /tmp/report.md << 'EOF'\n{body}EOF"
         assert len(command) > _BASH_MAX_LENGTH
 
@@ -1175,7 +1175,9 @@ class TestRunBashSteersFileWritesToTheFileTools:
         assert "create_file" in _check_bash_command(command)
 
     def test_long_plain_command_is_told_to_split(self):
-        command = "ls " + " ".join(f"dir{i}" for i in range(200))
+        command = "ls " + " ".join(
+            f"dir{i}" for i in range(_BASH_MAX_LENGTH // 4)
+        )
         assert len(command) > _BASH_MAX_LENGTH
 
         reason = _check_bash_command(command)
@@ -1295,6 +1297,40 @@ class TestGlobTool:
             "pattern",
             "path",
         }
+
+
+class TestBashBlocklistMatchesCommandsNotSubstrings:
+    """Substring matching blocked ordinary work and missed the real thing (#1969)."""
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "make test > /dev/null 2>&1",
+            "command -v jq > /dev/null",
+            "grep -r sudo config/",
+            "cat sudoers.md",
+            "ls printenv.txt",
+            "echo halted",
+        ],
+    )
+    def test_benign_commands_are_allowed(self, command):
+        assert _check_bash_command(command) is None
+
+    @pytest.mark.parametrize(
+        "command",
+        [
+            "sudo rm file",
+            "echo hi; sudo reboot",
+            "ls && sudo -i",
+            "mkfs.ext4 /dev/sda",
+            "rm -rf /tmp/x",
+        ],
+    )
+    def test_privileged_commands_are_still_blocked(self, command):
+        assert _check_bash_command(command) is not None
+
+    def test_a_long_command_is_not_rejected_for_length_alone(self):
+        assert _check_bash_command("echo " + "a" * 1000) is None
 
 
 class TestFinalSummaryShape:
