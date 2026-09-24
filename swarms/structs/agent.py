@@ -117,6 +117,7 @@ from swarms.utils.index import (
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.utils.output_types import OutputType
+from swarms.utils.str_to_dict import str_to_dict
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -140,6 +141,87 @@ def agent_id() -> str:
 
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
+
+TOOL_RETRY_RUNG_RETRY = "retry"
+TOOL_RETRY_RUNG_CORRECT_ARGUMENTS = "correct_arguments"
+TOOL_RETRY_RUNG_DIFFERENT_TOOL = "different_tool"
+
+TOOL_RETRY_LADDER_RUNGS = (
+    TOOL_RETRY_RUNG_RETRY,
+    TOOL_RETRY_RUNG_CORRECT_ARGUMENTS,
+    TOOL_RETRY_RUNG_DIFFERENT_TOOL,
+)
+
+TOOL_ERROR_ARGUMENT = "argument"
+TOOL_ERROR_NETWORK = "network"
+TOOL_ERROR_UNKNOWN = "unknown"
+
+TOOL_ERROR_NETWORK_TYPES = (ConnectionError, TimeoutError)
+
+TOOL_ERROR_NETWORK_TYPE_MARKERS = (
+    "apiconnection",
+    "connect",
+    "dns",
+    "http",
+    "network",
+    "protocolerror",
+    "ratelimit",
+    "socket",
+    "ssl",
+    "timeout",
+    "unavailable",
+)
+
+TOOL_ERROR_NETWORK_MESSAGE_MARKERS = (
+    "bad gateway",
+    "broken pipe",
+    "certificate",
+    "connection",
+    "dns",
+    "gateway timeout",
+    "max retries exceeded",
+    "name or service not known",
+    "network is unreachable",
+    "rate limit",
+    "read timed out",
+    "remote end closed",
+    "service unavailable",
+    "socket",
+    "ssl",
+    "temporarily unavailable",
+    "timed out",
+    "timeout",
+    "too many requests",
+    "unreachable",
+)
+
+TOOL_ERROR_ARGUMENT_TYPES = (TypeError, ValueError, KeyError)
+
+TOOL_ERROR_ARGUMENT_TYPE_MARKERS = (
+    "notfound",
+    "schemaerror",
+    "typehint",
+    "validation",
+)
+
+TOOL_ERROR_ARGUMENT_MESSAGE_MARKERS = (
+    "argument",
+    "expected",
+    "field required",
+    "input should be",
+    "invalid literal",
+    "invalid type",
+    "invalid value",
+    "missing",
+    "no function named",
+    "not a valid",
+    "not found",
+    "parameter",
+    "required property",
+    "takes no",
+    "unexpected keyword",
+    "validation error",
+)
 
 
 class Agent:
@@ -400,6 +482,8 @@ class Agent:
         llm_api_key: Optional[str] = None,
         tool_call_summary: bool = True,
         tool_retry_attempts: int = 3,
+        tool_retry_backoff: float = 0.0,
+        tool_retry_ladder: Optional[Union[str, Sequence[str]]] = None,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
@@ -513,6 +597,8 @@ class Agent:
         self.llm_api_key = llm_api_key
         self.tool_call_summary = tool_call_summary
         self.tool_retry_attempts = tool_retry_attempts
+        self.tool_retry_backoff = tool_retry_backoff
+        self.tool_retry_ladder = tool_retry_ladder
         self.reasoning_prompt_on = reasoning_prompt_on
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
@@ -4421,9 +4507,271 @@ Summary: {summary}
     def list_output_types(self):
         return OutputType
 
+    @staticmethod
+    def classify_tool_error(error: BaseException) -> str:
+        """Label a tool failure ``"argument"``, ``"network"``, or ``"unknown"``."""
+        if error is None:
+            return TOOL_ERROR_UNKNOWN
+
+        type_name = type(error).__name__.lower()
+        message = str(error).lower()
+
+        if any(
+            marker in message
+            for marker in TOOL_ERROR_NETWORK_MESSAGE_MARKERS
+        ):
+            return TOOL_ERROR_NETWORK
+
+        if any(
+            marker in type_name
+            for marker in TOOL_ERROR_NETWORK_TYPE_MARKERS
+        ):
+            return TOOL_ERROR_NETWORK
+
+        if isinstance(error, TOOL_ERROR_NETWORK_TYPES):
+            return TOOL_ERROR_NETWORK
+
+        if any(
+            marker in message
+            for marker in TOOL_ERROR_ARGUMENT_MESSAGE_MARKERS
+        ):
+            return TOOL_ERROR_ARGUMENT
+
+        if any(
+            marker in type_name
+            for marker in TOOL_ERROR_ARGUMENT_TYPE_MARKERS
+        ):
+            return TOOL_ERROR_ARGUMENT
+
+        if isinstance(error, TOOL_ERROR_ARGUMENT_TYPES):
+            return TOOL_ERROR_ARGUMENT
+
+        return TOOL_ERROR_UNKNOWN
+
+    def resolve_tool_retry_ladder(self) -> List[str]:
+        """The rungs this agent escalates through, cheapest first."""
+        configured = getattr(self, "tool_retry_ladder", None)
+
+        if not configured:
+            return [TOOL_RETRY_RUNG_RETRY]
+
+        if isinstance(configured, str):
+            configured = [configured]
+
+        ladder: List[str] = []
+        for rung in configured:
+            name = str(rung).strip().lower()
+            if name not in TOOL_RETRY_LADDER_RUNGS:
+                logger.warning(
+                    f"Agent '{self.agent_name}' ignoring unknown tool retry "
+                    f"rung {rung!r}. Known rungs: "
+                    f"{list(TOOL_RETRY_LADDER_RUNGS)}."
+                )
+                continue
+            if name not in ladder:
+                ladder.append(name)
+
+        return ladder or [TOOL_RETRY_RUNG_RETRY]
+
+    @staticmethod
+    def _repairable_tool_calls(response: any) -> List[dict]:
+        if isinstance(response, dict):
+            candidates = [response]
+        elif isinstance(response, list):
+            candidates = response
+        else:
+            return []
+
+        if not candidates:
+            return []
+
+        for call in candidates:
+            if not isinstance(call, dict) or not isinstance(
+                call.get("function"), dict
+            ):
+                return []
+
+        return list(candidates)
+
+    @staticmethod
+    def _tool_call_payload(calls: List[dict]) -> List[dict]:
+        payload = []
+        for call in calls:
+            function = call.get("function", {})
+            arguments = function.get("arguments")
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments or "{}")
+                except json.JSONDecodeError:
+                    pass
+            payload.append(
+                {
+                    "name": function.get("name"),
+                    "arguments": arguments,
+                }
+            )
+        return payload
+
+    @staticmethod
+    def _parse_corrected_tool_calls(
+        reply: any, expected: int
+    ) -> Optional[List[dict]]:
+        if isinstance(reply, dict):
+            data = reply
+        elif isinstance(reply, list):
+            data = {"tool_calls": reply}
+        elif isinstance(reply, str):
+            start = reply.find("{")
+            end = reply.rfind("}")
+            if start == -1 or end <= start:
+                return None
+            try:
+                data = str_to_dict(reply[start : end + 1])
+            except Exception:
+                return None
+        else:
+            return None
+
+        entries = (
+            data.get("tool_calls") if isinstance(data, dict) else None
+        )
+        if not isinstance(entries, list) or len(entries) != expected:
+            return None
+
+        for entry in entries:
+            if not isinstance(entry, dict) or not isinstance(
+                entry.get("arguments"), dict
+            ):
+                return None
+
+        return entries
+
+    def _model_corrected_tool_calls(
+        self,
+        calls: List[dict],
+        error: BaseException,
+        guidance: str,
+        loop_count: int,
+    ) -> Optional[List[dict]]:
+        payload = self._tool_call_payload(calls)
+
+        prompt = (
+            "A tool call you made failed. Produce a corrected call.\n\n"
+            f"Failed tool call(s):\n{json.dumps(payload, indent=2, default=str)}\n\n"
+            f"Error:\n{error}\n\n"
+            f"{guidance}"
+            "Reply with JSON only, no prose, in exactly this shape: "
+            '{"tool_calls": [{"name": "tool_name", "arguments": {}}]}\n'
+            f"Return exactly {len(calls)} tool call(s), in the same order."
+        )
+
+        try:
+            reply = self.temp_llm_instance_for_tool_summary().run(
+                prompt
+            )
+        except Exception as error_from_model:
+            logger.error(
+                f"Agent '{self.agent_name}' could not obtain a corrected tool "
+                f"call in loop {loop_count}: {error_from_model}"
+            )
+            return None
+
+        entries = self._parse_corrected_tool_calls(reply, len(calls))
+        if entries is None:
+            logger.error(
+                f"Agent '{self.agent_name}' got an unusable corrected tool "
+                f"call in loop {loop_count}: {reply!r}"
+            )
+            return None
+
+        corrected = []
+        for original, entry in zip(calls, entries):
+            updated = dict(original)
+            function = dict(original.get("function", {}))
+            function["name"] = entry.get("name") or function.get(
+                "name"
+            )
+            function["arguments"] = json.dumps(
+                entry["arguments"], default=str
+            )
+            updated["function"] = function
+            corrected.append(updated)
+
+        if self._tool_call_payload(corrected) == payload:
+            logger.info(
+                f"Agent '{self.agent_name}' received an unchanged tool call "
+                f"in loop {loop_count}; not re-running it."
+            )
+            return None
+
+        return corrected
+
+    def _escalate_tool_calls(
+        self,
+        response: any,
+        error: BaseException,
+        rung: str,
+        loop_count: int,
+    ) -> Optional[List[dict]]:
+        classification = self.classify_tool_error(error)
+        if classification != TOOL_ERROR_ARGUMENT:
+            logger.info(
+                f"Agent '{self.agent_name}' skipping retry rung '{rung}' in "
+                f"loop {loop_count}: the failure looks like a "
+                f"{classification} problem, which a new model turn cannot fix."
+            )
+            return None
+
+        calls = self._repairable_tool_calls(response)
+        if not calls:
+            return None
+
+        guidance = "Keep the same tool, fix the arguments to satisfy its schema.\n\n"
+
+        if rung == TOOL_RETRY_RUNG_DIFFERENT_TOOL:
+            loader = getattr(self, "tool_loader", None)
+            if loader is None:
+                logger.info(
+                    f"Agent '{self.agent_name}' skipping retry rung '{rung}' "
+                    f"in loop {loop_count}: dynamic tools are not enabled."
+                )
+                return None
+
+            failed_names = " ".join(
+                str(call.get("name") or "")
+                for call in self._tool_call_payload(calls)
+            )
+            listing = self._tool_search_tool(
+                query=f"{failed_names} {error}",
+                max_results=5,
+                min_score_ratio=0.34,
+            )
+            guidance = (
+                "The tool above failed, so use a different tool. These tools "
+                f"are now loaded and callable:\n{listing}\n\n"
+            )
+
+        corrected = self._model_corrected_tool_calls(
+            calls, error, guidance, loop_count
+        )
+        if corrected is None:
+            return None
+
+        memory = getattr(self, "short_memory", None)
+        if memory is not None:
+            memory.add(
+                role="Tool Executor",
+                content=(
+                    f"Tool call failed: {error}\nRetrying rung '{rung}' with: "
+                    f"{json.dumps(self._tool_call_payload(corrected), default=str)}"
+                ),
+            )
+
+        return corrected
+
     def tool_execution_retry(self, response: any, loop_count: int):
         """
-        Execute tools with retry logic for handling failures.
+        Execute tools with an escalating retry ladder for handling failures.
 
         This method provides a robust wrapper around tool execution with automatic
         retry on failure. It handles None responses gracefully and implements
@@ -4432,9 +4780,24 @@ Summary: {summary}
         **Retry Strategy:**
         - If tool execution fails, the method automatically retries
         - Maximum retry attempts are controlled by self.tool_retry_attempts (default: 3)
+        - self.tool_retry_backoff (default: 0.0 seconds) is the base of an
+          exponential sleep between those attempts; 0.0 never sleeps
         - Each retry is logged with detailed error information
-        - After all retries are exhausted, AgentToolExecutionError is raised,
+        - After the ladder is exhausted, AgentToolExecutionError is raised,
           chained from the last underlying error via `raise ... from`
+
+        **Escalating ladder:**
+        - self.tool_retry_ladder lists the rungs to climb, cheapest first, and
+          execution stops at the first rung that succeeds
+        - ``"retry"`` re-runs the identical call, the default and only rung
+        - ``"correct_arguments"`` asks the model for corrected arguments; it
+          costs one LLM turn, so it runs only when classify_tool_error() reads
+          the failure as an argument problem
+        - ``"different_tool"`` loads alternatives through tool_search and asks
+          the model to call one of them; requires dynamic_tools
+        - Unknown rung names are logged and dropped
+        - The call always runs once whatever the ladder starts with, since
+          every higher rung only reacts to a failure
 
         **Error Handling:**
         - None responses: Logs warning and skips execution (does not raise)
@@ -4460,7 +4823,8 @@ Summary: {summary}
                 - Debugging tool execution issues
 
         Returns:
-            None: This method modifies internal state but does not return a value.
+            The output of the tool call that succeeded, or None when there is
+            nothing to execute.
 
         Raises:
             AgentToolExecutionError: If tool execution fails after all retry attempts.
@@ -4491,27 +4855,54 @@ Summary: {summary}
 
         # Catch broadly: nothing raises AgentToolExecutionError, so that caught nothing.
         attempts = max(1, int(self.tool_retry_attempts or 1))
-        last_error: Optional[Exception] = None
+        backoff = float(
+            getattr(self, "tool_retry_backoff", 0.0) or 0.0
+        )
+        ladder = self.resolve_tool_retry_ladder()
+        plan = [
+            (rung, attempts if rung == TOOL_RETRY_RUNG_RETRY else 1)
+            for rung in ladder
+        ]
+        if ladder[0] != TOOL_RETRY_RUNG_RETRY:
+            plan.insert(0, (TOOL_RETRY_RUNG_RETRY, 1))
 
-        for attempt in range(1, attempts + 1):
-            try:
-                self.execute_tools(
-                    response=response,
-                    loop_count=loop_count,
+        calls = response
+        last_error: Optional[Exception] = None
+        executions = 0
+
+        for rung, rung_attempts in plan:
+            if rung != TOOL_RETRY_RUNG_RETRY:
+                if last_error is None:
+                    continue
+                escalated = self._escalate_tool_calls(
+                    calls, last_error, rung, loop_count
                 )
-                return getattr(self, "_last_tool_output", None)
-            except Exception as e:
-                last_error = e
-                logger.error(
-                    f"Agent '{self.agent_name}' tool execution failed on attempt "
-                    f"{attempt}/{attempts} in loop {loop_count}: {str(e)}. "
-                    f"Full traceback: {traceback.format_exc()}"
-                )
+                if escalated is None:
+                    continue
+                calls = escalated
+
+            for attempt in range(1, rung_attempts + 1):
+                executions += 1
+                try:
+                    self.execute_tools(
+                        response=calls,
+                        loop_count=loop_count,
+                    )
+                    return getattr(self, "_last_tool_output", None)
+                except Exception as e:
+                    last_error = e
+                    logger.error(
+                        f"Agent '{self.agent_name}' tool execution failed on attempt "
+                        f"{attempt}/{rung_attempts} in loop {loop_count}: {str(e)}. "
+                        f"Full traceback: {traceback.format_exc()}"
+                    )
+                    if backoff > 0 and attempt < rung_attempts:
+                        time.sleep(backoff * 2 ** (attempt - 1))
 
         # Attempts exhausted: raise, or the model reads a silent no-op as success.
         raise AgentToolExecutionError(
             f"Agent '{self.agent_name}' failed to execute tools in loop "
-            f"{loop_count} after {attempts} attempt(s): {last_error}"
+            f"{loop_count} after {executions} attempt(s): {last_error}"
         ) from last_error
 
     def _transcript_from_messages(

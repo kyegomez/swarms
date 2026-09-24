@@ -15,6 +15,7 @@ import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.tools.dynamic_tool_loader import DynamicToolLoader
 
 load_dotenv()
 
@@ -1192,6 +1193,329 @@ class TestToolExecutionRetry:
             assert (
                 len(calls) == 1
             ), f"attempts={attempts!r} should still run once"
+
+
+class TestToolRetryLadder:
+    """#1996: a failed tool call was only ever re-run identically, so a call
+    the model got wrong failed the same way on every attempt. The ladder
+    escalates instead — and must not spend an LLM turn on a failure no new
+    call can fix.
+    """
+
+    class _LLM:
+        def __init__(self, reply):
+            self.reply = reply
+            self.prompts = []
+
+        def run(self, task=None, *args, **kwargs):
+            self.prompts.append(task)
+            return self.reply
+
+    @staticmethod
+    def _agent(ladder=None, attempts=2, llm=None):
+        agent = Agent.__new__(Agent)
+        agent.agent_name = "A"
+        agent.tool_retry_attempts = attempts
+        agent.tool_retry_ladder = ladder
+        agent.verbose = False
+        agent.llm = None
+        agent.temp_llm_instance_for_tool_summary = lambda: llm
+        return agent
+
+    @staticmethod
+    def _call(name="get_weather", arguments='{"citty": "Paris"}'):
+        return [
+            {
+                "id": "call_1",
+                "function": {"name": name, "arguments": arguments},
+            }
+        ]
+
+    @staticmethod
+    def _weather_tool(response, loop_count):
+        """Fails until it is called with the argument it documents."""
+        args = json.loads(response[0]["function"]["arguments"])
+        if "city" not in args:
+            raise TypeError(
+                "get_weather() got an unexpected keyword argument 'citty'"
+            )
+        return f"sunny in {args['city']}"
+
+    @pytest.mark.parametrize(
+        "error, expected",
+        [
+            (
+                TypeError(
+                    "got an unexpected keyword argument 'citty'"
+                ),
+                "argument",
+            ),
+            (
+                ValueError("missing required argument: city"),
+                "argument",
+            ),
+            (
+                Exception(
+                    "Tool 'get_weathr' not found in the registry"
+                ),
+                "argument",
+            ),
+            (ConnectionError("Connection refused"), "network"),
+            (TimeoutError("read timed out"), "network"),
+            (
+                RuntimeError(
+                    "HTTPSConnectionPool(host='x'): Max retries exceeded"
+                ),
+                "network",
+            ),
+            (RuntimeError("the tool segfaulted"), "unknown"),
+        ],
+    )
+    def test_the_classification_gating_rung_two_is_inspectable(
+        self, error, expected
+    ):
+        """Rung 2 costs a completion, so what counts as an argument problem
+        must be callable and assertable, not a buried heuristic."""
+        assert Agent.classify_tool_error(error) == expected
+
+    def test_the_default_configuration_is_rung_one_only(self):
+        """An agent nobody configured must behave exactly as before: N
+        identical re-runs, then raise, and no LLM turn."""
+        agent = _patched_agent("LadderDefault")
+        assert agent.resolve_tool_retry_ladder() == ["retry"]
+
+        agent.tool_retry_attempts = 3
+        calls = []
+
+        def failing(response, loop_count):
+            calls.append(response)
+            raise TypeError(
+                "get_weather() got an unexpected keyword argument 'citty'"
+            )
+
+        def no_model_turn():
+            raise AssertionError("rung 1 must not call the model")
+
+        agent.execute_tools = failing
+        agent.temp_llm_instance_for_tool_summary = no_model_turn
+
+        with pytest.raises(AgentToolExecutionError):
+            Agent.tool_execution_retry(agent, self._call(), 1)
+
+        assert len(calls) == 3
+        assert all(call == self._call() for call in calls)
+
+    def test_an_argument_error_escalates_to_a_corrected_call(self):
+        agent = _patched_agent("LadderRungTwo")
+        agent.tool_retry_attempts = 2
+        agent.tool_retry_ladder = ["retry", "correct_arguments"]
+
+        llm = self._LLM(
+            json.dumps(
+                {
+                    "tool_calls": [
+                        {
+                            "name": "get_weather",
+                            "arguments": {"city": "Paris"},
+                        }
+                    ]
+                }
+            )
+        )
+        agent.temp_llm_instance_for_tool_summary = lambda: llm
+
+        executed = []
+
+        def execute(response, loop_count):
+            executed.append(response)
+            agent._last_tool_output = self._weather_tool(
+                response, loop_count
+            )
+
+        agent.execute_tools = execute
+
+        output = Agent.tool_execution_retry(agent, self._call(), 1)
+
+        assert output == "sunny in Paris"
+        assert len(executed) == 3
+        assert executed[-1][0]["function"]["name"] == "get_weather"
+        assert json.loads(
+            executed[-1][0]["function"]["arguments"]
+        ) == {"city": "Paris"}
+        assert executed[-1][0]["id"] == "call_1"
+        assert len(llm.prompts) == 1
+        assert "unexpected keyword argument 'citty'" in llm.prompts[0]
+        assert "citty" in agent.short_memory.get_str()
+
+    def test_a_network_error_does_not_burn_an_llm_turn(self):
+        llm = self._LLM("{}")
+        agent = self._agent(
+            ladder=["retry", "correct_arguments"], llm=llm
+        )
+        attempts = []
+
+        def unreachable(response, loop_count):
+            attempts.append(response)
+            raise ConnectionError(
+                "Connection refused by weather.example.com"
+            )
+
+        agent.execute_tools = unreachable
+
+        with pytest.raises(AgentToolExecutionError):
+            Agent.tool_execution_retry(agent, self._call(), 1)
+
+        assert len(attempts) == 2
+        assert llm.prompts == []
+
+    def test_a_ladder_without_retry_still_runs_the_call_once(self):
+        """A ladder that only escalates must not skip the call it escalates
+        from, and must not blind-retry it either."""
+        llm = self._LLM(
+            json.dumps(
+                {
+                    "tool_calls": [
+                        {
+                            "name": "get_weather",
+                            "arguments": {"city": "Paris"},
+                        }
+                    ]
+                }
+            )
+        )
+        agent = self._agent(
+            ladder=["correct_arguments"], attempts=3, llm=llm
+        )
+        executed = []
+
+        def execute(response, loop_count):
+            executed.append(response)
+            agent._last_tool_output = self._weather_tool(
+                response, loop_count
+            )
+
+        agent.execute_tools = execute
+
+        output = Agent.tool_execution_retry(agent, self._call(), 1)
+
+        assert output == "sunny in Paris"
+        assert len(executed) == 2
+
+    def test_an_unchanged_corrected_call_is_not_re_run(self):
+        """A model that echoes the broken arguments back must not cost
+        another tool execution."""
+        llm = self._LLM(
+            json.dumps(
+                {
+                    "tool_calls": [
+                        {
+                            "name": "get_weather",
+                            "arguments": {"citty": "Paris"},
+                        }
+                    ]
+                }
+            )
+        )
+        agent = self._agent(
+            ladder=["retry", "correct_arguments"], attempts=1, llm=llm
+        )
+        attempts = []
+
+        def execute(response, loop_count):
+            attempts.append(response)
+            self._weather_tool(response, loop_count)
+
+        agent.execute_tools = execute
+
+        with pytest.raises(AgentToolExecutionError):
+            Agent.tool_execution_retry(agent, self._call(), 1)
+
+        assert len(attempts) == 1
+        assert len(llm.prompts) == 1
+
+    def test_rung_three_calls_a_different_tool_found_by_tool_search(
+        self,
+    ):
+        def get_weather(city: str) -> str:
+            """Look up today's weather.
+
+            Args:
+                city: city name.
+            """
+            return "sunny"
+
+        def weather_forecast(location: str) -> str:
+            """Forecast the weather for a location.
+
+            Args:
+                location: place name.
+            """
+            return "rain tomorrow"
+
+        llm = self._LLM(
+            'sure: {"tool_calls": [{"name": "weather_forecast", '
+            '"arguments": {"location": "Paris"}}]}'
+        )
+        agent = self._agent(
+            ladder=["retry", "different_tool"], attempts=1, llm=llm
+        )
+        agent.tools_list_dictionary = []
+        agent.tool_loader = DynamicToolLoader(
+            tools=[get_weather, weather_forecast]
+        )
+
+        tried = []
+
+        def execute(response, loop_count):
+            name = response[0]["function"]["name"]
+            tried.append(name)
+            if name != "weather_forecast":
+                raise Exception(
+                    "Tool 'get_weather' not found in the registry"
+                )
+            agent._last_tool_output = "rain tomorrow"
+
+        agent.execute_tools = execute
+
+        output = Agent.tool_execution_retry(agent, self._call(), 1)
+
+        assert tried == ["get_weather", "weather_forecast"]
+        assert output == "rain tomorrow"
+        assert "weather_forecast" in agent.tool_loader.loaded_names
+
+    def test_rung_three_is_skipped_without_dynamic_tools(self):
+        """No loader means no alternatives to search, so the turn must not
+        be spent."""
+        llm = self._LLM("{}")
+        agent = self._agent(
+            ladder=["retry", "different_tool"], attempts=1, llm=llm
+        )
+        agent.tool_loader = None
+        agent.execute_tools = self._weather_tool
+
+        with pytest.raises(AgentToolExecutionError):
+            Agent.tool_execution_retry(agent, self._call(), 1)
+
+        assert llm.prompts == []
+
+    @pytest.mark.parametrize(
+        "configured, expected",
+        [
+            (None, ["retry"]),
+            ([], ["retry"]),
+            ("correct_arguments", ["correct_arguments"]),
+            (["retry", "teleport", "retry"], ["retry"]),
+            (
+                ("different_tool", "retry"),
+                ["different_tool", "retry"],
+            ),
+        ],
+    )
+    def test_the_ladder_configuration_resolves_to_known_rungs(
+        self, configured, expected
+    ):
+        agent = self._agent(ladder=configured)
+        assert agent.resolve_tool_retry_ladder() == expected
 
 
 class TestToolFailureIsNotAnLLMError:
