@@ -9,6 +9,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import capture_init, trace_run
 
 logger = initialize_logger(log_folder="broadcast")
 
@@ -108,7 +109,9 @@ class Broadcast:
         self.name = name
         self.description = description
         self.output_type = output_type
+        capture_init(self)
 
+    @trace_run("Broadcast.run")
     def run(self, task: str) -> Union[Dict[str, Any], List[str], str]:
         """
         Run the broadcast communication with the given task.
