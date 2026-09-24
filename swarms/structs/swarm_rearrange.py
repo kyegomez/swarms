@@ -8,6 +8,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.generate_id import generate_id
+from swarms.telemetry.otel import capture_init, trace_run
 
 logger = initialize_logger(log_folder="swarm_arange")
 
@@ -93,6 +94,8 @@ class SwarmRearrange:
 
         # Conversation
         self.conversation = Conversation()
+
+        capture_init(self)
 
     def reliability_checks(self):
         logger.info("Running reliability checks.")
@@ -188,6 +191,7 @@ class SwarmRearrange:
         logger.info("Flow is valid.")
         return True
 
+    @trace_run("SwarmRearrange.run")
     def run(
         self,
         task: str = None,
