@@ -23,11 +23,11 @@ def dict_to_xml(tag: str, d: dict) -> ET.Element:
     for key, val in d.items():
         child = ET.Element(str(key))
         if isinstance(val, dict):
-            child.append(dict_to_xml(str(key), val))
+            child.extend(dict_to_xml(str(key), val))
         elif isinstance(val, list):
             for item in val:
                 if isinstance(item, dict):
-                    child.append(dict_to_xml(str(key), item))
+                    child.append(dict_to_xml("item", item))
                 else:
                     item_elem = ET.Element("item")
                     item_elem.text = str(item)
