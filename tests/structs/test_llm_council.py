@@ -8,10 +8,11 @@ Tests core functionalities of the LLM Council including:
 - Output formatting
 """
 
+from unittest.mock import MagicMock
 import pytest
 from loguru import logger
 from dotenv import load_dotenv
-from swarms.structs.llm_council import LLMCouncil
+from swarms.structs.llm_council import LLMCouncil, get_synthesis_prompt
 from swarms.structs.agent import Agent
 
 load_dotenv()
@@ -312,6 +313,99 @@ def test_llm_council_output_types():
     except Exception as e:
         logger.error(f"✗ Output types test failed: {e}")
         raise
+
+
+def test_get_synthesis_prompt_no_interpolated_sections():
+    """Test that get_synthesis_prompt no longer interpolates monolithic response blobs."""
+    query = "What is quantum computing?"
+    id_to_member = {"A": "GPT-5.1-Councilor", "B": "Gemini-Councilor"}
+
+    prompt = get_synthesis_prompt(query=query, id_to_member=id_to_member)
+
+    assert "ORIGINAL QUERY:" in prompt
+    assert query in prompt
+    assert "ANONYMOUS ID MAPPING (for reference):" in prompt
+    assert "A = GPT-5.1-Councilor" in prompt
+    assert "B = Gemini-Councilor" in prompt
+
+    # Ensure monolithic concatenated sections are removed
+    assert "COUNCIL MEMBER RESPONSES:" not in prompt
+    assert "COUNCIL MEMBER EVALUATIONS AND RANKINGS:" not in prompt
+    assert "=== GPT-5.1-Councilor ===" not in prompt
+    assert "=== Evaluation by" not in prompt
+
+    # Verify backward compatibility with positional args
+    legacy_prompt = get_synthesis_prompt(
+        query,
+        {"GPT-5.1-Councilor": "legacy resp"},
+        {"GPT-5.1-Councilor": "legacy eval"},
+        id_to_member,
+    )
+    assert "A = GPT-5.1-Councilor" in legacy_prompt
+    assert "=== GPT-5.1-Councilor ===" not in legacy_prompt
+    assert "COUNCIL MEMBER RESPONSES:" not in legacy_prompt
+
+
+def test_chairman_receives_typed_turns_not_monolithic_blob():
+    """Test that Chairman receives conversation as typed turns rather than a single user string."""
+    member1 = MagicMock()
+    member1.agent_name = "MemberAlpha"
+    member1.run.return_value = "Alpha analysis on AI"
+
+    member2 = MagicMock()
+    member2.agent_name = "MemberBeta"
+    member2.run.return_value = "Beta perspective on AI"
+
+    chairman = MagicMock()
+    chairman.agent_name = "Chairman"
+    chairman.run.return_value = "Chairman synthesized answer"
+
+    council = LLMCouncil(
+        council_members=[member1, member2],
+        verbose=False,
+    )
+    council.chairman = chairman
+
+    query = "Explain quantum computing briefly."
+    result = council.run(query)
+
+    assert chairman.run.called, "Chairman.run should have been called"
+    call_kwargs = chairman.run.call_args.kwargs
+    assert "task" in call_kwargs, "Chairman should receive task"
+    assert "messages" in call_kwargs, "Chairman should receive messages"
+
+    task = call_kwargs["task"]
+    messages = call_kwargs["messages"]
+
+    # Task should be the synthesis prompt instruction, not the concatenated member responses
+    assert "ORIGINAL QUERY:" in task
+    assert "Explain quantum computing briefly." in task
+    assert "ANONYMOUS ID MAPPING (for reference):" in task
+    assert "=== MemberAlpha ===" not in task
+    assert "=== MemberBeta ===" not in task
+    assert "COUNCIL MEMBER RESPONSES:" not in task
+
+    # Messages should contain typed turns with role attribution
+    for msg in messages:
+        assert isinstance(msg, dict)
+        assert "role" in msg and "content" in msg
+        assert msg["role"] in ["user", "assistant", "system"]
+
+    contents = [m["content"] for m in messages]
+
+    # Query as user turn
+    assert any("Explain quantum computing briefly." in c for c in contents)
+
+    # Responses from members with role attribution
+    assert any("MemberAlpha: Alpha analysis on AI" in c for c in contents)
+    assert any("MemberBeta: Beta perspective on AI" in c for c in contents)
+
+    # Evaluations from members with role attribution
+    assert any("MemberAlpha-Evaluation:" in c for c in contents)
+    assert any("MemberBeta-Evaluation:" in c for c in contents)
+
+    # Final response should be returned
+    assert result is not None
 
 
 if __name__ == "__main__":
