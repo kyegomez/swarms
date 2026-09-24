@@ -15,6 +15,7 @@ import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.tools.base_tool import BaseTool
 
 load_dotenv()
 
@@ -1169,6 +1170,29 @@ class TestToolExecutionRetry:
 
         # Third attempt succeeded, so the fourth must not run.
         assert len(calls) == 3
+
+    def test_a_failing_tool_runs_once_per_attempt(self):
+        runs = []
+
+        def charge_card(amount: int) -> str:
+            runs.append(amount)
+            raise RuntimeError("gateway timeout")
+
+        agent = self._agent(attempts=3)
+        agent.print_on = False
+        agent.tool_struct = BaseTool(tools=[charge_card])
+        call = {
+            "id": "c1",
+            "type": "function",
+            "function": {
+                "name": "charge_card",
+                "arguments": json.dumps({"amount": 500}),
+            },
+        }
+
+        with pytest.raises(AgentToolExecutionError):
+            Agent.tool_execution_retry(agent, [call], 1)
+        assert len(runs) == 3
 
     def test_none_response_does_not_execute_or_raise(self):
         agent = self._agent()
