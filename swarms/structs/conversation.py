@@ -510,8 +510,7 @@ class Conversation:
         2. Concatenates the content of each category
         3. Counts tokens for each category using the specified tokenizer model
 
-        Args:
-            tokenizer_model_name (str): Name of the model to use for tokenization
+        Tokenization uses `self.tokenizer_model_name`.
 
         Returns:
             Dict[str, int]: A dictionary containing:
