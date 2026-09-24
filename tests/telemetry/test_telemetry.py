@@ -698,6 +698,7 @@ def _load_arch_classes():
     from swarms.structs.debate_with_judge import DebateWithJudge
     from swarms.structs.llm_council import LLMCouncil
     from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
+    from swarms.structs.auto_agent_builder import AutoAgentBuilder
 
     return {
         "Agent": Agent,
@@ -722,6 +723,7 @@ def _load_arch_classes():
         "SelfMoASeq": SelfMoASeq,
         "SpreadSheetSwarm": SpreadSheetSwarm,
         "AutoSwarmBuilder": AutoSwarmBuilder,
+        "AutoAgentBuilder": AutoAgentBuilder,
         "SocialAlgorithms": SocialAlgorithms,
     }
 
@@ -791,6 +793,12 @@ class TestConstructionEmitsInitSpan:
 
         MajorityVoting(agents=[_agent()])
         assert _by_name(spans, "MajorityVoting.init") is not None
+
+    def test_auto_agent_builder(self, spans):
+        from swarms.structs.auto_agent_builder import AutoAgentBuilder
+
+        AutoAgentBuilder()
+        assert _by_name(spans, "AutoAgentBuilder.init") is not None
 
 
 # ===========================================================================

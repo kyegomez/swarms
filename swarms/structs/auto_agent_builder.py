@@ -408,6 +408,7 @@ class AutoAgentBuilder:
             for config in self.build_configs(task)
         ]
 
+    @trace_run("AutoAgentBuilder.run")
     def run(
         self, task: str
     ) -> Union[List[Agent], List[Dict[str, str]]]:
