@@ -17,8 +17,11 @@ from swarms.prompts.operations_agent_prompt import (
 from swarms.prompts.product_agent_prompt import PRODUCT_AGENT_PROMPT
 from swarms.prompts.prompt import Prompt
 
+AUTONOMOUS_AGENT_SYSTEM_PROMPT = autonomous_agent_system_prompt
+
 __all__ = [
     "AUTO_AGENT_BUILDER_SYSTEM_PROMPT",
+    "AUTONOMOUS_AGENT_SYSTEM_PROMPT",
     "CODE_INTERPRETER",
     "FINANCE_AGENT_PROMPT",
     "GROWTH_AGENT_PROMPT",
