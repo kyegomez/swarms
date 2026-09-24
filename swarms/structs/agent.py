@@ -1802,6 +1802,8 @@ class Agent:
                     self.short_memory.add(
                         role=self.user_name, content=user_input
                     )
+                    if transcript is not None:
+                        transcript.append_user(user_input)
 
                 if self.loop_interval:
                     logger.info(
