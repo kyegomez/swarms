@@ -361,7 +361,7 @@ class AgentJudge:
                     )
                 )
                 self.conversation.add(
-                    role=self.agent.agent_name, content=verdicts[-1]
+                    role=self.agent_name, content=verdicts[-1]
                 )
 
             if self.return_score:
