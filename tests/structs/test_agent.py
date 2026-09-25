@@ -1194,6 +1194,35 @@ class TestToolExecutionRetry:
             ), f"attempts={attempts!r} should still run once"
 
 
+class TestInteractiveFollowUp:
+    def test_follow_up_input_reaches_the_next_request(self):
+        agent = _patched_agent(
+            "InteractiveAgent",
+            model_name="gpt-5.4",
+            max_loops=2,
+            interactive=True,
+        )
+        requests = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            requests.append(list(kwargs["messages"]))
+            return "ok"
+
+        agent.call_llm = fake_call_llm
+        replies = iter(["What is the capital of Peru?", "exit"])
+        with patch(
+            "swarms.structs.agent.formatter.console.input",
+            lambda *a, **k: next(replies),
+        ):
+            agent.run("Name a prime number.")
+
+        assert len(requests) == 2
+        assert requests[1][-1] == {
+            "role": "user",
+            "content": "What is the capital of Peru?",
+        }
+
+
 class TestToolFailureIsNotAnLLMError:
     """#1924: a tool that exhausted its own retries raised into the generation
     handler, which logged it as Agent.llm_error and re-ran the model, so one
@@ -1239,6 +1268,87 @@ class TestToolFailureIsNotAnLLMError:
         assert (
             len(llm_calls) == 1
         ), f"a tool failure re-ran the model {len(llm_calls)} times"
+
+
+class TestTextReplyFromAToolAgent:
+    """A tool-carrying agent that answers in plain text made no tool call,
+    yet execute_tools recorded "[] (empty list)" after the answer and, with
+    tool_call_summary on, summarised it under the agent's own name. The
+    answer was no longer the final message, so structures recording
+    agent_answer() and output_type="final" both lost it.
+    """
+
+    @staticmethod
+    def _price(ticker: str) -> str:
+        """Look up a price.
+
+        Args:
+            ticker: The ticker symbol.
+        """
+        return "100"
+
+    def _agent(self, reply, summary_calls, **kwargs):
+        agent = _patched_agent(
+            "ToolAgent",
+            model_name="gpt-5.4",
+            dynamic_tools=False,
+            tools=[self._price],
+            **kwargs,
+        )
+        agent.call_llm = lambda task=None, *a, **k: reply
+        agent.temp_llm_instance_for_tool_summary = (
+            lambda: SimpleNamespace(
+                run=lambda prompt: summary_calls.append(prompt)
+                or "SUMMARY"
+            )
+        )
+        return agent
+
+    @pytest.mark.parametrize("tool_call_summary", [True, False])
+    def test_a_text_reply_stays_the_final_message(
+        self, tool_call_summary
+    ):
+        from swarms.structs.context_utils import agent_answer
+
+        summary_calls = []
+        agent = self._agent(
+            "The answer is 42.",
+            summary_calls,
+            tool_call_summary=tool_call_summary,
+            output_type="final",
+        )
+
+        result = agent.run("What is 6*7?")
+
+        roles = [
+            m["role"] for m in agent.short_memory.conversation_history
+        ]
+        assert "Tool Executor" not in roles
+        assert summary_calls == []
+        assert agent_answer(agent) == "The answer is 42."
+        assert result == "The answer is 42."
+
+    def test_a_real_tool_call_is_still_recorded_and_summarised(self):
+        summary_calls = []
+        tool_call = {
+            "type": "function",
+            "id": "call-1",
+            "function": {
+                "name": "_price",
+                "arguments": '{"ticker": "X"}',
+            },
+        }
+        agent = self._agent([tool_call], summary_calls)
+
+        agent.run("price of X")
+
+        history = agent.short_memory.conversation_history
+        executor = [
+            m for m in history if m["role"] == "Tool Executor"
+        ]
+        assert len(executor) == 1 and "100" in executor[0]["content"]
+        assert len(summary_calls) == 1
+        assert history[-1]["content"] == "SUMMARY"
 
 
 class TestConcurrentExecutionPool:

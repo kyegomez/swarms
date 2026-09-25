@@ -181,7 +181,7 @@ class Agent:
         stopping_func (Callable): The stopping function
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
-        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
+        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
         output_cleaner (Callable): The output cleaner function
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
@@ -1341,7 +1341,6 @@ class Agent:
                 - "json": JSON string
                 - "dict": Dictionary
                 - "yaml": YAML string
-                - "xml": XML string
                 - "final": Comprehensive final summary (for autonomous loop)
                 - Other types: As configured
 
@@ -1802,6 +1801,8 @@ class Agent:
                     self.short_memory.add(
                         role=self.user_name, content=user_input
                     )
+                    if transcript is not None:
+                        transcript.append_user(user_input)
 
                 if self.loop_interval:
                     logger.info(
@@ -3491,7 +3492,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Any extra kwargs forwarded to _run().
+            **kwargs: Any extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -3520,7 +3521,7 @@ Subtask Breakdown:
 
         def _run_thread():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
@@ -3561,7 +3562,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Extra kwargs forwarded to _run().
+            **kwargs: Extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -3595,7 +3596,7 @@ Subtask Breakdown:
 
         def _run_sync():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
@@ -4314,6 +4315,11 @@ Summary: {summary}
             if output is None:
                 logger.error(f"Error executing tools: {e}")
                 raise e
+
+        # A reply with no tool calls parses to []; recording it would bury the answer under "[] (empty list)".
+        if not output:
+            self._last_tool_output = output
+            return
 
         self.short_memory.add(
             role="Tool Executor",

@@ -1,5 +1,6 @@
 import os
 import time
+from types import SimpleNamespace
 
 import pytest
 
@@ -542,6 +543,33 @@ def test_concurrent_workflow_batch_run_leaves_the_instance_conversation_alone():
 
     assert workflow.conversation is conversation
     assert conversation.conversation_history == []
+
+
+class _DraftingAgent(_EchoAgent):
+    def __init__(self, agent_name: str):
+        super().__init__(agent_name)
+        self.short_memory = SimpleNamespace(
+            get_final_message_content=lambda: "DRAFT 2"
+        )
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        return f"{task}\nDRAFT 1\nDRAFT 2"
+
+
+def test_concurrent_workflow_records_each_agents_answer_not_its_transcript():
+    workflow = ConcurrentWorkflow(
+        name="Answer-Workflow",
+        agents=[_DraftingAgent("Alpha"), _EchoAgent("Beta")],
+        output_type="dict",
+    )
+
+    result = workflow.run("summarise the filing")
+
+    assert [m["content"] for m in result] == [
+        "summarise the filing",
+        "DRAFT 2",
+        "Beta answered: summarise the filing",
+    ]
 
 
 def test_concurrent_workflow_run_twice_returns_only_each_task():

@@ -1199,3 +1199,28 @@ def test_council_as_judge_aggregator_receives_typed_turns():
             in text
             for text in contents
         ), f"no turn attributed to {agent.agent_name}: {contents}"
+
+
+def test_council_as_judge_judges_use_council_judge_model_name():
+    router = SwarmRouter(
+        swarm_type="CouncilAsAJudge",
+        agents=create_sample_agents(),
+        council_judge_model_name="gpt-4o-mini",
+    )
+    council = router._create_council_as_judge()
+
+    assert {
+        agent.model_name for agent in council.judge_agents.values()
+    } == {"gpt-4o-mini"}
+
+
+def test_call_and_batch_run_do_not_send_an_absent_imgs():
+    router, built = _fallback_router()
+
+    router("go")
+    router.batch_run(["go"])
+
+    assert built["SequentialWorkflow"].calls == [
+        {"task": "go"},
+        {"task": "go"},
+    ]
