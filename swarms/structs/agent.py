@@ -181,7 +181,7 @@ class Agent:
         stopping_func (Callable): The stopping function
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
-        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
+        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
         output_cleaner (Callable): The output cleaner function
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
@@ -1341,7 +1341,6 @@ class Agent:
                 - "json": JSON string
                 - "dict": Dictionary
                 - "yaml": YAML string
-                - "xml": XML string
                 - "final": Comprehensive final summary (for autonomous loop)
                 - Other types: As configured
 

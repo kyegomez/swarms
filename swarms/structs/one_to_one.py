@@ -88,7 +88,7 @@ class OneToOne:
             receiver: The receiver agent
             name: Name of the communication pattern
             description: Description of the communication pattern's purpose
-            output_type: Type of output format, one of 'dict', 'list', 'string', 'json', 'yaml', 'xml', etc.
+            output_type: Type of output format, one of 'dict', 'list', 'string', 'json', 'yaml', etc.
         """
         self.sender = sender
         self.receiver = receiver
