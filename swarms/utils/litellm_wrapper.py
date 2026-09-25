@@ -708,21 +708,31 @@ class LiteLLM:
                 continue
             base.append(m)
 
+        images = [
+            i for i in ([img] if img else []) + (imgs or []) if i
+        ]
+        if images:
+            self.check_if_model_supports_vision(img=images[0])
+
         # A prebuilt body is already structured, so only this instance's system prompt is added.
         if messages is not None:
             prepared = base + list(messages)
+            users = [
+                i
+                for i, m in enumerate(prepared)
+                if m.get("role") == "user"
+            ]
+            if images and users:
+                prepared[users[-1]] = self._build_vision_message(
+                    prepared[users[-1]]["content"], images
+                )
             if self.prompt_caching and prepared:
                 self._apply_prompt_caching(prepared)
             return prepared
 
         messages = base
 
-        # Check if model supports vision if any image is provided
-        images = [
-            i for i in ([img] if img else []) + (imgs or []) if i
-        ]
         if images:
-            self.check_if_model_supports_vision(img=images[0])
             # Handle vision case - this includes the task and every image
             messages = self.vision_processing(
                 task=task, image=images, messages=messages
