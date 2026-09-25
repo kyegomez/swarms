@@ -391,36 +391,39 @@ class LLMManager:
         assembled tool call list in the same format returned by output_for_tools, so
         the auto loop can handle it without any changes.
         """
-        accumulator: dict = {}
+        calls: list = []
+        current: dict = {}
 
         for chunk in stream:
             if hasattr(chunk, "choices") and chunk.choices:
                 delta = chunk.choices[0].delta
                 for tc in getattr(delta, "tool_calls", None) or []:
-                    idx = tc.index
-                    if idx not in accumulator:
-                        accumulator[idx] = {
+                    call = current.get(tc.index)
+                    if call is None or (
+                        tc.id and call["id"] and tc.id != call["id"]
+                    ):
+                        call = {
                             "id": "",
                             "type": "function",
                             "function": {"name": "", "arguments": ""},
                         }
+                        current[tc.index] = call
+                        calls.append(call)
                     if tc.id:
-                        accumulator[idx]["id"] = tc.id
+                        call["id"] = tc.id
                     if tc.function:
                         if tc.function.name:
-                            accumulator[idx]["function"][
+                            call["function"][
                                 "name"
                             ] += tc.function.name
                         if tc.function.arguments:
-                            accumulator[idx]["function"][
+                            call["function"][
                                 "arguments"
                             ] += tc.function.arguments
             yield chunk  # always forward; callers filter on delta.content
 
         # Populate the output list once the stream is exhausted
-        tool_calls_out.extend(
-            accumulator[i] for i in sorted(accumulator)
-        )
+        tool_calls_out.extend(calls)
 
     def extract_thinking_from_stream(self, stream):
         """Yield only content chunks from a stream, displaying thinking chunks as a panel first.

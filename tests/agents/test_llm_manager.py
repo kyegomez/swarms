@@ -584,6 +584,47 @@ class TestStreamWithToolCollection:
         ]
         assert [c["id"] for c in out] == ["c0", "c1"]
 
+    def test_splits_distinct_ids_streamed_at_same_index(self, agent):
+        chunks = [
+            FakeChunk(
+                choices=[
+                    FakeChoice(
+                        FakeDelta(
+                            tool_calls=[
+                                FakeToolCallDelta(
+                                    0,
+                                    id=call_id,
+                                    name="get_weather",
+                                    arguments=args,
+                                )
+                            ]
+                        )
+                    )
+                ]
+            )
+            for call_id, args in [
+                ("call_p", '{"city": "Paris"}'),
+                ("call_t", '{"city": "Tokyo"}'),
+            ]
+        ]
+        out = []
+        list(
+            agent.llm_manager.stream_with_tool_collection(
+                iter(chunks), out
+            )
+        )
+        assert [
+            (
+                c["id"],
+                c["function"]["name"],
+                c["function"]["arguments"],
+            )
+            for c in out
+        ] == [
+            ("call_p", "get_weather", '{"city": "Paris"}'),
+            ("call_t", "get_weather", '{"city": "Tokyo"}'),
+        ]
+
     def test_no_tool_calls_leaves_output_empty(self, agent):
         chunks = [content_chunk("hello"), content_chunk("world")]
         out = []
