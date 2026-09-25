@@ -16,6 +16,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.utils.litellm_wrapper import sum_agent_usage
 
 
 class ReasoningDuo:
@@ -81,6 +82,21 @@ class ReasoningDuo:
             dynamic_temperature_enabled=True,
             *args,
             **kwargs,
+        )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the reasoning and main agents.
+
+        Keys match :attr:`Agent.usage`: ``input_tokens``, ``output_tokens``,
+        ``cached_tokens``, ``reasoning_tokens``, ``total_tokens``. Totals are
+        lifetime totals, so they grow across ``run()`` calls.
+
+        Returns:
+            dict: A new usage dict.
+        """
+        return sum_agent_usage(
+            [self.reasoning_agent, self.main_agent]
         )
 
     def _run_agent(

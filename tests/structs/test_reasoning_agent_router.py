@@ -443,3 +443,151 @@ def test_self_consistency_samples_get_distinct_agents():
         router.run("What is 2 + 2?")
 
     assert len(set(agent_ids[:3])) == 3
+
+
+def _metered_call_llm(calls):
+    """An offline Agent.call_llm that reports fixed usage per call.
+
+    The reply clears IRE's 0.7 score threshold so its loop stays short.
+    """
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        calls.append(id(self))
+        self._add_usage(
+            {
+                "input_tokens": 10,
+                "output_tokens": 2,
+                "cached_tokens": 1,
+                "reasoning_tokens": 1,
+                "total_tokens": 12,
+            }
+        )
+        return "Score: 0.9"
+
+    return fake_call_llm
+
+
+def _expected_usage(call_count):
+    return {
+        "input_tokens": 10 * call_count,
+        "output_tokens": 2 * call_count,
+        "cached_tokens": call_count,
+        "reasoning_tokens": call_count,
+        "total_tokens": 12 * call_count,
+    }
+
+
+def test_usage_is_zero_before_any_run():
+    assert ReasoningAgentRouter().usage == _expected_usage(0)
+
+
+@pytest.mark.parametrize(
+    "swarm_type",
+    [
+        "reasoning-duo",
+        "self-consistency",
+        "ire",
+        "AgentJudge",
+        "ReflexionAgent",
+        "GKPAgent",
+    ],
+)
+def test_usage_counts_every_llm_call_of_each_swarm_type(swarm_type):
+    """#2342: the router's total equals every provider call its swarm made."""
+    from swarms.structs.agent import Agent
+
+    calls = []
+    router = ReasoningAgentRouter(
+        swarm_type=swarm_type,
+        model_name="gpt-5.4",
+        num_samples=2,
+        num_knowledge_items=2,
+    )
+
+    with patch.object(Agent, "call_llm", _metered_call_llm(calls)):
+        router.run("What is 2 + 2?")
+
+    assert calls
+    assert router.usage == _expected_usage(len(calls))
+
+
+def test_usage_counts_self_consistency_samples_and_aggregator():
+    """Samples and the aggregator are throwaway agents no attribute holds."""
+    from swarms.structs.agent import Agent
+
+    calls = []
+    router = ReasoningAgentRouter(
+        swarm_type="self-consistency",
+        model_name="gpt-5.4",
+        num_samples=3,
+    )
+
+    with patch.object(Agent, "call_llm", _metered_call_llm(calls)):
+        router.run("What is 2 + 2?")
+
+    assert len(set(calls)) == 4
+    assert router.usage == _expected_usage(len(calls))
+
+
+def test_usage_counts_gkp_nested_agents():
+    """GKP's knowledge generator and reasoner hold their agents one level down."""
+    from swarms.structs.agent import Agent
+
+    calls = []
+    router = ReasoningAgentRouter(
+        swarm_type="GKPAgent",
+        model_name="gpt-5.4",
+        num_knowledge_items=2,
+    )
+
+    with patch.object(Agent, "call_llm", _metered_call_llm(calls)):
+        router.run("What is 2 + 2?")
+
+    assert len(set(calls)) == 3
+    assert router.usage == _expected_usage(len(calls))
+
+
+def test_usage_grows_across_runs_and_batched_run():
+    from swarms.structs.agent import Agent
+
+    calls = []
+    router = ReasoningAgentRouter(swarm_type="reasoning-duo")
+
+    with patch.object(Agent, "call_llm", _metered_call_llm(calls)):
+        router.run("first")
+        after_one = len(calls)
+        router.batched_run(["second", "third"])
+
+    assert len(calls) == 3 * after_one
+    assert router.usage == _expected_usage(len(calls))
+
+
+def test_usage_kept_when_the_swarm_raises():
+    """Tokens spent before a failure were still billed by the provider."""
+    spent = MagicMock()
+    spent.usage = _expected_usage(3)
+    spent.run.side_effect = RuntimeError("boom")
+    router = ReasoningAgentRouter()
+
+    with patch.object(router, "select_swarm", return_value=spent):
+        with pytest.raises(ReasoningAgentExecutorError):
+            router.run("task")
+
+    assert router.usage == _expected_usage(3)
+
+
+def test_usage_ignores_a_swarm_without_usage():
+    router = ReasoningAgentRouter()
+    swarm = MagicMock()
+    swarm.run.return_value = "x"
+
+    with patch.object(router, "select_swarm", return_value=swarm):
+        router.run("task")
+
+    assert router.usage == _expected_usage(0)
+
+
+def test_usage_returns_a_copy():
+    router = ReasoningAgentRouter()
+    router.usage["input_tokens"] = 999
+    assert router.usage["input_tokens"] == 0
