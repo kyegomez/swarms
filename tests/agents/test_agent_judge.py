@@ -78,5 +78,19 @@ def test_a_single_loop_sends_only_the_instruction():
     assert "rate this answer" in calls[0]["messages"][0]["content"]
 
 
+def test_run_returns_only_this_runs_verdict_and_scores_it():
+    judge, _ = _judge(max_loops=1)
+    assert judge.run(task="first answer") == "verdict-1"
+    assert judge.run(task="second answer") == "verdict-2"
+
+    scorer = AgentJudge(
+        agent_name="Judge", model_name="gpt-5.4", return_score=True
+    )
+    Agent.call_llm = (
+        lambda self, task=None, *a, **k: "Not correct.\nSCORE: 0"
+    )
+    assert scorer.run(task="this is correct") == 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

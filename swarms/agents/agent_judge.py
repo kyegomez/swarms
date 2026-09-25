@@ -1,3 +1,4 @@
+import re
 import traceback
 from typing import Dict, List, Optional
 
@@ -14,35 +15,22 @@ from swarms.utils.generate_id import generate_id
 
 def get_reward(input: str) -> int:
     """
-    Determines whether the input contains any positive evaluation keywords and returns a reward.
-
-    This function checks if the input string contains any of the following words (case-insensitive):
-    "correct", "good", "excellent", or "perfect". If any of these words are present, the function
-    returns 1 as a reward, otherwise it returns 0.
+    Reads the judge's explicit score line and returns it as a reward.
 
     Args:
-        input (str): The input string to evaluate.
+        input (str): The judge's evaluation.
 
     Returns:
-        int: 1 if a positive evaluation keyword is found, 0 otherwise.
+        int: The value of the last ``SCORE: 0`` or ``SCORE: 1`` line, or 0 if there is none.
 
     Example:
-        >>> get_reward("That is correct!")
+        >>> get_reward("That is correct. SCORE: 1")
         1
-        >>> get_reward("Needs improvement.")
+        >>> get_reward("That is not correct. SCORE: 0")
         0
     """
-    words = [
-        "correct",
-        "good",
-        "excellent",
-        "perfect",
-    ]
-
-    if any(word in input.lower() for word in words):
-        return 1
-    else:
-        return 0
+    scores = re.findall(r"SCORE:\s*([01])\b", input)
+    return int(scores[-1]) if scores else 0
 
 
 def get_agent_judge_prompt() -> str:
@@ -247,6 +235,8 @@ class AgentJudge:
             for criterion, weight in self.evaluation_criteria.items():
                 criteria_str += f"- {criterion}: weight = {weight}\n"
             enhanced_prompt += criteria_str
+        if self.return_score:
+            enhanced_prompt += "\n\nEnd your response with a final line `SCORE: 1` if the output is correct and acceptable, or `SCORE: 0` if it is not."
 
         return enhanced_prompt
 
@@ -352,7 +342,9 @@ class AgentJudge:
         """
         try:
             # The agent will run in a loop, remembering and updating the conversation context at each step.
+            self.conversation = Conversation(time_enabled=False)
             self.conversation.add(role="user", content=task)
+            verdicts = []
             for _ in range(self.max_loops):
                 # Prior verdicts as assistant turns; [1:] drops the task, which step() re-sends.
                 prior = messages_for(
@@ -363,18 +355,18 @@ class AgentJudge:
                     img=img,
                     messages=prior,
                 )
-                self.conversation.add(
-                    role=self.agent.agent_name,
-                    content=agent_answer(
+                verdicts.append(
+                    agent_answer(
                         self.agent, fallback=current_response
-                    ),
+                    )
+                )
+                self.conversation.add(
+                    role=self.agent.agent_name, content=verdicts[-1]
                 )
 
-            # After all loops, return either the reward or the full conversation
             if self.return_score:
-                return get_reward(self.conversation.get_str())
-            else:
-                return self.conversation.get_str()
+                return get_reward(verdicts[-1])
+            return "\n\n".join(verdicts)
         except Exception as e:
             error_message = f"AgentJudge: {self.agent_name} encountered an error: {e}\n Traceback: {traceback.format_exc()}"
             raise AgentJudgeExecutionError(error_message)
