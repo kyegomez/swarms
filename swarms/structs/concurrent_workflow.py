@@ -631,6 +631,7 @@ class ConcurrentWorkflow:
             >>> workflow = ConcurrentWorkflow(agents=[agent1, agent2])
             >>> result = workflow.run("Analyze this data")
         """
+        self.conversation = self._new_conversation()
         try:
             if self.show_dashboard:
                 result = self.run_with_dashboard(
@@ -686,7 +687,6 @@ class ConcurrentWorkflow:
                 img = None
                 if imgs is not None and idx < len(imgs):
                     img = imgs[idx]
-                self.conversation = self._new_conversation()
                 results.append(
                     self.run(
                         task=task,
