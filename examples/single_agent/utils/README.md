@@ -12,7 +12,6 @@ This directory contains utility functions and helpers for single agent operation
 - [grok_4_agent.py](grok_4_agent.py) - Grok 4 agent implementation
 - [list_agent_output_types.py](list_agent_output_types.py) - Output type listing
 - [markdown_agent.py](markdown_agent.py) - Markdown processing agent
-- [xml_output_example.py](xml_output_example.py) - XML output example
 
 > Handoff and marketplace helpers moved: see [../autonomy/handoffs/](../autonomy/handoffs/) and [../integrations/marketplace/](../integrations/marketplace/).
 

@@ -1,6 +1,5 @@
 import yaml
 from typing import Any
-from swarms.utils.xml_utils import to_xml_string
 from swarms.utils.output_types import HistoryOutputType
 
 
@@ -25,7 +24,6 @@ def history_output_formatter(
                 - "list-final": Returns the final message as a list.
                 - "str-all-except-first": Returns all messages except the first as a string.
                 - "dict-final": Returns the final message as a dictionary.
-                - "xml": Returns the conversation as an XML string.
             Defaults to "list".
 
     Returns:
@@ -56,8 +54,5 @@ def history_output_formatter(
         return conversation.return_all_except_first_string()
     elif type == "dict-final":
         return conversation.return_dict_final()
-    elif type == "xml":
-        data = conversation.to_dict()
-        return to_xml_string(data, root_tag="conversation")
     else:
         raise ValueError(f"Invalid type: {type}")
