@@ -1,3 +1,4 @@
+import threading
 import traceback
 from typing import (
     List,
@@ -13,6 +14,7 @@ from swarms.agents.i_agent import (
     IterativeReflectiveExpansion as IREAgent,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.agents.agent_judge import AgentJudge
 
@@ -68,6 +70,10 @@ class ReasoningAgentRouter:
         random_models_on (bool): Enable random model selection for diversity.
         majority_voting_prompt (Optional[str]): Custom prompt for majority voting.
 
+    Attributes:
+        usage (dict): Provider token usage summed over every run. See
+            :attr:`usage`.
+
     Example:
         >>> router = ReasoningAgentRouter(swarm_type="reasoning-duo")
         >>> result = router.run("Explain quantum entanglement.")
@@ -110,8 +116,41 @@ class ReasoningAgentRouter:
         self.random_models_on = random_models_on
         self.majority_voting_prompt = majority_voting_prompt
         self.reasoning_model_name = reasoning_model_name
+        self._usage = empty_usage()
+        self._usage_lock = threading.Lock()
 
         self.reliability_check()
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every run of this router.
+
+        ``run()`` builds a new reasoning swarm per call and discards it, so
+        the swarm's ``usage`` is added to a running total when each run ends,
+        including a run that raises. ``batched_run()`` goes through ``run()``
+        and is counted the same way. Keys match :attr:`Agent.usage`:
+        ``input_tokens``, ``output_tokens``, ``cached_tokens``,
+        ``reasoning_tokens``, ``total_tokens``.
+
+        Returns:
+            dict: A new usage dict.
+        """
+        with self._usage_lock:
+            return dict(self._usage)
+
+    def _add_usage(self, swarm: object) -> None:
+        """Fold one finished swarm's usage into the router total.
+
+        Args:
+            swarm (object): The reasoning swarm a run used. Skipped when it
+                does not expose a ``usage`` dict.
+        """
+        swarm_usage = getattr(swarm, "usage", None)
+        if not isinstance(swarm_usage, dict):
+            return
+        with self._usage_lock:
+            for key in self._usage:
+                self._usage[key] += swarm_usage.get(key, 0)
 
     def reliability_check(self):
 
@@ -282,6 +321,7 @@ class ReasoningAgentRouter:
         Returns:
             The result of the reasoning process (format depends on agent and output_type).
         """
+        swarm = None
         try:
             swarm = self.select_swarm()
 
@@ -293,6 +333,9 @@ class ReasoningAgentRouter:
             raise ReasoningAgentExecutorError(
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
             )
+        finally:
+            if swarm is not None:
+                self._add_usage(swarm)
 
     def batched_run(self, tasks: List[str], *args, **kwargs):
         """

@@ -4,6 +4,7 @@ from datetime import datetime
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_wrapper import sum_agent_usage
 from swarms.prompts.reflexion_prompts import (
     REFLEXION_PROMPT,
     REFLEXION_EVALUATOR_PROMPT,
@@ -243,6 +244,21 @@ class ReflexionAgent:
 
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
+        )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the actor, evaluator and reflector agents.
+
+        Keys match :attr:`Agent.usage`: ``input_tokens``, ``output_tokens``,
+        ``cached_tokens``, ``reasoning_tokens``, ``total_tokens``. Totals are
+        lifetime totals, so they grow across ``run()`` calls.
+
+        Returns:
+            dict: A new usage dict.
+        """
+        return sum_agent_usage(
+            [self.actor, self.evaluator, self.reflector]
         )
 
     def act(
