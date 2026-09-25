@@ -1270,6 +1270,87 @@ class TestToolFailureIsNotAnLLMError:
         ), f"a tool failure re-ran the model {len(llm_calls)} times"
 
 
+class TestTextReplyFromAToolAgent:
+    """A tool-carrying agent that answers in plain text made no tool call,
+    yet execute_tools recorded "[] (empty list)" after the answer and, with
+    tool_call_summary on, summarised it under the agent's own name. The
+    answer was no longer the final message, so structures recording
+    agent_answer() and output_type="final" both lost it.
+    """
+
+    @staticmethod
+    def _price(ticker: str) -> str:
+        """Look up a price.
+
+        Args:
+            ticker: The ticker symbol.
+        """
+        return "100"
+
+    def _agent(self, reply, summary_calls, **kwargs):
+        agent = _patched_agent(
+            "ToolAgent",
+            model_name="gpt-5.4",
+            dynamic_tools=False,
+            tools=[self._price],
+            **kwargs,
+        )
+        agent.call_llm = lambda task=None, *a, **k: reply
+        agent.temp_llm_instance_for_tool_summary = (
+            lambda: SimpleNamespace(
+                run=lambda prompt: summary_calls.append(prompt)
+                or "SUMMARY"
+            )
+        )
+        return agent
+
+    @pytest.mark.parametrize("tool_call_summary", [True, False])
+    def test_a_text_reply_stays_the_final_message(
+        self, tool_call_summary
+    ):
+        from swarms.structs.context_utils import agent_answer
+
+        summary_calls = []
+        agent = self._agent(
+            "The answer is 42.",
+            summary_calls,
+            tool_call_summary=tool_call_summary,
+            output_type="final",
+        )
+
+        result = agent.run("What is 6*7?")
+
+        roles = [
+            m["role"] for m in agent.short_memory.conversation_history
+        ]
+        assert "Tool Executor" not in roles
+        assert summary_calls == []
+        assert agent_answer(agent) == "The answer is 42."
+        assert result == "The answer is 42."
+
+    def test_a_real_tool_call_is_still_recorded_and_summarised(self):
+        summary_calls = []
+        tool_call = {
+            "type": "function",
+            "id": "call-1",
+            "function": {
+                "name": "_price",
+                "arguments": '{"ticker": "X"}',
+            },
+        }
+        agent = self._agent([tool_call], summary_calls)
+
+        agent.run("price of X")
+
+        history = agent.short_memory.conversation_history
+        executor = [
+            m for m in history if m["role"] == "Tool Executor"
+        ]
+        assert len(executor) == 1 and "100" in executor[0]["content"]
+        assert len(summary_calls) == 1
+        assert history[-1]["content"] == "SUMMARY"
+
+
 class TestConcurrentExecutionPool:
     """#1793: both concurrent entry points referenced self.executor, which
     __init__ never assigned — run_concurrent_tasks swallowed the AttributeError

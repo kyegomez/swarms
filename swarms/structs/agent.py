@@ -4316,6 +4316,11 @@ Summary: {summary}
                 logger.error(f"Error executing tools: {e}")
                 raise e
 
+        # A reply with no tool calls parses to []; recording it would bury the answer under "[] (empty list)".
+        if not output:
+            self._last_tool_output = output
+            return
+
         self.short_memory.add(
             role="Tool Executor",
             content=format_data_structure(output),
