@@ -632,6 +632,159 @@ class TestQuestionAgentPerVariant:
         }
 
 
+class TestUsage:
+    """#2343: HeavySwarm.usage sums question generation, which runs on a
+    bare LiteLLM, and every worker and synthesis/captain Agent.
+    """
+
+    QUESTION_USAGE = {
+        "input_tokens": 30,
+        "output_tokens": 7,
+        "cached_tokens": 5,
+        "reasoning_tokens": 2,
+        "total_tokens": 37,
+    }
+
+    def _fake_question_llm(self, monkeypatch):
+        import json
+        from types import SimpleNamespace
+
+        usage = self.QUESTION_USAGE
+
+        class FakeLiteLLM:
+            def __init__(self, **kwargs):
+                self.usage_hook = kwargs.get("usage_hook")
+
+            def run(self, task, *args, **kwargs):
+                if self.usage_hook is not None:
+                    self.usage_hook(dict(usage))
+                arguments = {"thinking": "t"}
+                for role in ["research", "analysis", "alternatives"]:
+                    arguments[f"{role}_question"] = f"{role}?"
+                arguments["verification_question"] = "verify?"
+                for role in ["harper", "benjamin", "lucas"]:
+                    arguments[f"{role}_question"] = f"{role}?"
+                for role in HEAVY_WORKER_KEYS:
+                    arguments[f"{role}_question"] = f"{role}?"
+                return [
+                    SimpleNamespace(
+                        id="call-1",
+                        function=SimpleNamespace(
+                            name="generate_specialized_questions",
+                            arguments=json.dumps(arguments),
+                        ),
+                    )
+                ]
+
+        monkeypatch.setattr(
+            "swarms.structs.heavy_swarm.LiteLLM", FakeLiteLLM
+        )
+
+    @staticmethod
+    def _stub_agents(swarm, input_tokens=100, output_tokens=10):
+        for agent in swarm.agents.values():
+
+            def _run(task=None, *args, _agent=agent, **kwargs):
+                _agent._add_usage(
+                    {
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "total_tokens": input_tokens + output_tokens,
+                    }
+                )
+                return f"{_agent.agent_name} output"
+
+            agent.run = _run
+
+    @staticmethod
+    def _swarm(variant="default", max_loops=1):
+        return HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant=variant,
+            max_loops=max_loops,
+            output_type="string",
+        )
+
+    def test_usage_is_zero_before_any_run(self):
+        assert self._swarm().usage == {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+        }
+
+    @pytest.mark.parametrize(
+        "variant, agent_count",
+        [("default", 5), ("medium", 4), ("heavy", 16)],
+    )
+    def test_usage_after_run_counts_questions_and_every_agent(
+        self, monkeypatch, variant, agent_count
+    ):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm(variant=variant)
+        assert len(swarm.agents) == agent_count
+        self._stub_agents(swarm)
+
+        swarm.run("task")
+
+        assert swarm.usage == {
+            "input_tokens": 30 + 100 * agent_count,
+            "output_tokens": 7 + 10 * agent_count,
+            "cached_tokens": 5,
+            "reasoning_tokens": 2,
+            "total_tokens": 37 + 110 * agent_count,
+        }
+
+    def test_usage_grows_across_max_loops(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm(max_loops=2)
+        self._stub_agents(swarm)
+
+        swarm.run("task")
+
+        assert swarm.usage["input_tokens"] == 2 * (30 + 100 * 5)
+        assert swarm.usage["output_tokens"] == 2 * (7 + 10 * 5)
+
+    def test_usage_grows_across_runs(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+        self._stub_agents(swarm)
+
+        swarm.run("first")
+        after_one = swarm.usage["total_tokens"]
+        swarm.run("second")
+
+        assert swarm.usage["total_tokens"] == 2 * after_one
+
+    def test_question_generation_alone_is_counted(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+
+        swarm.get_questions_only("task")
+
+        assert swarm.usage == self.QUESTION_USAGE
+
+    def test_agent_under_two_keys_is_counted_once(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+        research = swarm.agents["research"]
+        research._add_usage({"input_tokens": 100})
+        swarm.agents["alias"] = research
+
+        assert swarm.usage["input_tokens"] == 100
+
+    def test_usage_returns_a_copy(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+        swarm.get_questions_only("task")
+
+        swarm.usage["input_tokens"] = 999
+
+        assert swarm.usage["input_tokens"] == 30
+
+
 class TestSwarmRouterGrokIntegration:
     """Verify SwarmRouter passes through grok flag."""
 
