@@ -47,8 +47,6 @@ Example:
     result = swarm.run("Translate this contract into plain English.")
 """
 
-import ast
-import json
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 from swarms.structs.execution_utils import batched_run
@@ -61,6 +59,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
+from swarms.utils.str_to_dict import tool_call_arguments
 
 BID_TOOL = {
     # Forced tool call, so every bid is a structured (confidence, estimated_cost) pair
@@ -128,35 +127,14 @@ def _extract_bid(tool_output: Any) -> Tuple[float, float]:
         treated as a no-confidence bid: ``(0.0, 1.0)``. Confidence is clamped
         into the ``0..1`` range and cost is clamped to be strictly positive.
     """
-    if isinstance(tool_output, str):
-        # The default output_type returns tool calls as str() of a list, not JSON
-        if len(tool_output) > MAX_TOOL_OUTPUT_LEN:
-            return 0.0, 1.0
-        try:
-            tool_output = ast.literal_eval(tool_output)
-        except (ValueError, SyntaxError):
-            return 0.0, 1.0
-
-    if isinstance(tool_output, list):
-        tool_output = tool_output[0] if tool_output else None
-    if not tool_output:
+    if (
+        isinstance(tool_output, str)
+        and len(tool_output) > MAX_TOOL_OUTPUT_LEN
+    ):
         return 0.0, 1.0
 
-    fn = (
-        tool_output.get("function")
-        if isinstance(tool_output, dict)
-        else None
-    )
-    if not fn:
-        return 0.0, 1.0
-
-    args = fn.get("arguments")
-    if isinstance(args, str):
-        try:
-            args = json.loads(args)
-        except json.JSONDecodeError:
-            return 0.0, 1.0
-    if not isinstance(args, dict):
+    args = tool_call_arguments(tool_output)
+    if args is None:
         return 0.0, 1.0
 
     try:

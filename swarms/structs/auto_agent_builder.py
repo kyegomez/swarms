@@ -1,4 +1,3 @@
-import json
 from typing import Any, Dict, List, Optional, Union
 
 from swarms.prompts.auto_agent_builder_prompt import (
@@ -8,6 +7,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.execution_utils import batched_run
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.str_to_dict import tool_call_arguments
 
 logger = initialize_logger(log_folder="auto_agent_builder")
 
@@ -105,40 +105,8 @@ def _extract_agents(tool_output: Any) -> List[Dict[str, str]]:
         Malformed or missing output yields an empty list rather than raising —
         the caller decides whether an empty roster is fatal.
     """
-    if isinstance(tool_output, list):
-        tool_output = tool_output[0] if tool_output else None
-    if not tool_output:
-        return []
-
-    if not isinstance(tool_output, dict) and hasattr(
-        tool_output, "model_dump"
-    ):
-        try:
-            tool_output = tool_output.model_dump()
-        except Exception:
-            pass
-
-    if isinstance(tool_output, dict):
-        fn = tool_output.get("function")
-    else:
-        fn = getattr(tool_output, "function", None)
-    if not fn:
-        return []
-
-    args = (
-        fn.get("arguments")
-        if isinstance(fn, dict)
-        else getattr(fn, "arguments", None)
-    )
-    if isinstance(args, str):
-        try:
-            args = json.loads(args)
-        except json.JSONDecodeError:
-            logger.error(
-                "build_agents returned arguments that are not valid JSON"
-            )
-            return []
-    if not isinstance(args, dict):
+    args = tool_call_arguments(tool_output)
+    if args is None:
         return []
 
     raw = args.get("agents")

@@ -1,5 +1,4 @@
 import concurrent.futures
-import json
 import os
 import traceback
 from typing import Dict, List, Optional
@@ -23,6 +22,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.str_to_dict import tool_call_arguments
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
@@ -1275,25 +1275,22 @@ class HeavySwarm(SerializableMixin):
         if not tool_calls:
             return {}
 
-        # Get the first tool call (should be the question generation)
         tool_call = tool_calls[0]
+        function = getattr(tool_call, "function", None)
+        identity = {
+            "tool_call_id": getattr(tool_call, "id", None),
+            "function_name": getattr(function, "name", None),
+        }
 
-        try:
-            # Parse the JSON arguments
-            arguments = json.loads(tool_call.function.arguments)
-
-            result = dict(arguments)
-            result["tool_call_id"] = tool_call.id
-            result["function_name"] = tool_call.function.name
-            return result
-
-        except json.JSONDecodeError as e:
+        arguments = tool_call_arguments(tool_call)
+        if arguments is None:
             return {
-                "error": f"Failed to parse tool call arguments: {str(e)}",
-                "raw_arguments": tool_call.function.arguments,
-                "tool_call_id": tool_call.id,
-                "function_name": tool_call.function.name,
+                "error": "Failed to parse tool call arguments",
+                "raw_arguments": getattr(function, "arguments", None),
+                **identity,
             }
+
+        return {**arguments, **identity}
 
     def execute_question_generation(
         self, task: str, img: Optional[str] = None
