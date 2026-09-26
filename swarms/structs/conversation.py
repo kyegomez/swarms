@@ -133,6 +133,8 @@ class Conversation:
         self._cache_hits: int = 0
         self._cache_misses: int = 0
         self._last_cached_tokens: int = 0
+        self._message_token_counts: Dict[str, int] = {}
+        self._separator_tokens: Optional[int] = None
 
         self.setup_file_path()
         self.setup()
@@ -801,7 +803,8 @@ class Conversation:
             return self.dynamic_auto_chunking()
         return self._return_history_as_string_worker()
 
-    def _return_history_as_string_worker(self):
+    def _formatted_messages(self) -> List[str]:
+        """One rendered line per message, in order."""
         formatted_messages = []
 
         for message in self.conversation_history:
@@ -815,7 +818,10 @@ class Conversation:
                     f"{message['role']}: {message['content']}"
                 )
 
-        return "\n\n".join(formatted_messages)
+        return formatted_messages
+
+    def _return_history_as_string_worker(self):
+        return "\n\n".join(self._formatted_messages())
 
     def get_str(self) -> str:
         """Alias for :meth:`return_history_as_string` (kept for compatibility).
@@ -1563,49 +1569,125 @@ class Conversation:
                 names.append(name)
         return sorted(names)
 
+    def _token_counts_for(self, formatted: List[str]) -> List[int]:
+        """Token count per rendered message, tokenizing only what is new.
+
+        Counts are memoised against the rendered text, so an unchanged message
+        is tokenized once for the life of the conversation no matter how many
+        times the history is read. The cache is rebuilt from the messages
+        present on each call, which keeps it the size of the history and drops
+        entries for messages that have been deleted or edited.
+
+        Args:
+            formatted (List[str]): Rendered messages, in order.
+
+        Returns:
+            List[int]: Token count for each message, in the same order.
+        """
+        previous = self._message_token_counts
+        current: Dict[str, int] = {}
+
+        for text in formatted:
+            count = previous.get(text)
+            if count is None:
+                count = current.get(text)
+            if count is None:
+                count = count_tokens(text, self.tokenizer_model_name)
+            current[text] = count
+
+        self._message_token_counts = current
+        return [current[text] for text in formatted]
+
+    def _separator_token_cost(self) -> int:
+        """Tokens contributed by the blank line joining two messages.
+
+        Measured by joining a probe rather than tokenizing ``"\n\n"`` on its
+        own, which the tokenizer rejects as whitespace-only.
+        """
+        if self._separator_tokens is None:
+            model = self.tokenizer_model_name
+            self._separator_tokens = max(
+                count_tokens("x\n\nx", model)
+                - 2 * count_tokens("x", model),
+                0,
+            )
+        return self._separator_tokens
+
     def _dynamic_auto_chunking_worker(self):
         """
         Dynamically chunk the conversation history to fit within the context length.
 
+        Whole messages are dropped from the front rather than characters. The
+        budget is the sum of the per-message counts plus one separator per
+        gap, which never tokenizes the transcript as a whole: under
+        ``context_length`` that is zero tokenizations after the first read,
+        and over it, still zero. Summing the parts slightly over-counts the
+        joined string, because tokens do not merge across the message
+        boundaries, so the estimate errs toward truncating rather than
+        overflowing.
+
+        A single message larger than ``context_length`` is kept and trimmed
+        from its front in proportion to the overshoot, since dropping it would
+        return an empty history.
+
         Returns:
             str: The chunked conversation history as a string that fits within context_length tokens.
         """
-        all_tokens = self._return_history_as_string_worker()
+        formatted = self._formatted_messages()
+        if not formatted:
+            return ""
 
-        total_tokens = count_tokens(
-            all_tokens, self.tokenizer_model_name
-        )
+        counts = self._token_counts_for(formatted)
+        separator = self._separator_token_cost()
+
+        total_tokens = sum(counts) + separator * (len(formatted) - 1)
 
         if total_tokens <= self.context_length:
-            return all_tokens
+            return "\n\n".join(formatted)
 
-        # Drop characters from the front until the string fits
-        target_tokens = self.context_length
-        current_string = all_tokens
+        start = 0
+        remaining = total_tokens
+        while (
+            start < len(formatted) - 1
+            and remaining > self.context_length
+        ):
+            remaining -= counts[start] + separator
+            start += 1
 
-        # Binary search approach to find the right cutoff point
-        left, right = 0, len(all_tokens)
+        kept = formatted[start:]
 
-        while left < right:
-            mid = (left + right) // 2
-            test_string = all_tokens[mid:]
+        if remaining > self.context_length and len(kept) == 1:
+            return self._trim_to_context(kept[0], remaining)
 
-            if not test_string:
-                break
+        return "\n\n".join(kept)
 
-            test_tokens = count_tokens(
-                test_string, self.tokenizer_model_name
+    def _trim_to_context(self, message: str, tokens: int) -> str:
+        """Cut a single oversized message from its front until it fits.
+
+        Reached only when one message on its own exceeds ``context_length``,
+        where dropping it would leave an empty history. Each pass removes the
+        overshoot in proportion to the string length, and at least one percent
+        of it so the loop always makes progress; it settles in a pass or two.
+
+        Args:
+            message (str): The rendered message.
+            tokens (int): Its current token count.
+
+        Returns:
+            str: The message, trimmed to fit ``context_length``.
+        """
+        while message and tokens > self.context_length:
+            overshoot = 1 - (self.context_length / tokens)
+            cut = max(
+                int(len(message) * overshoot), len(message) // 100, 1
             )
-
-            if test_tokens <= target_tokens:
-                # We can remove more from the beginning
-                right = mid
-                current_string = test_string
-            else:
-                # We need to keep more from the beginning
-                left = mid + 1
-
-        return current_string
+            message = message[cut:]
+            tokens = (
+                count_tokens(message, self.tokenizer_model_name)
+                if message
+                else 0
+            )
+        return message
 
     def dynamic_auto_chunking(self):
         """

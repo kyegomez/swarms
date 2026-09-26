@@ -10,6 +10,7 @@ from loguru import logger
 
 from swarms.structs import conversation as conversation_module
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 def setup_temp_conversations_dir():
@@ -1350,3 +1351,92 @@ def test_construction_does_not_create_a_conversations_dir(tmp_path):
         assert (tmp_path / "conversations").is_dir()
     finally:
         os.chdir(cwd)
+
+
+def _tokenization_counter(monkeypatch):
+    """Count calls into count_tokens as the conversation module sees it."""
+    calls = []
+    real = conversation_module.count_tokens
+
+    def counting(text, *args, **kwargs):
+        calls.append(text)
+        return real(text, *args, **kwargs)
+
+    monkeypatch.setattr(conversation_module, "count_tokens", counting)
+    return calls
+
+
+def _oversized_conversation(messages: int = 40) -> Conversation:
+    conv = Conversation(time_enabled=True, context_length=2048)
+    for index in range(messages):
+        conv.add("Agent", f"message {index} " + "y" * 2000)
+    return conv
+
+
+def test_repeat_reads_of_an_oversized_history_do_not_retokenize(
+    monkeypatch,
+):
+    """The binary search over character offsets ran ~16-19 full
+    tokenizations of the transcript on every read (#1746)."""
+    conv = _oversized_conversation()
+    conv.return_history_as_string()
+
+    calls = _tokenization_counter(monkeypatch)
+    conv.return_history_as_string()
+    conv.return_history_as_string()
+
+    assert calls == []
+
+
+def test_only_new_messages_are_tokenized_on_a_later_read(monkeypatch):
+    conv = _oversized_conversation()
+    conv.return_history_as_string()
+
+    calls = _tokenization_counter(monkeypatch)
+    conv.add("Agent", "a brand new message")
+    conv.return_history_as_string()
+
+    assert len(calls) == 1
+
+
+def test_truncation_keeps_whole_messages(monkeypatch):
+    """The character binary search cut at an arbitrary offset, so the oldest
+    surviving message started mid-word."""
+    conv = _oversized_conversation()
+
+    text = conv.return_history_as_string()
+
+    assert text.startswith("[")
+    assert count_tokens(text, conv.tokenizer_model_name) <= (
+        conv.context_length
+    )
+
+
+def test_a_single_oversized_message_is_trimmed_not_dropped():
+    conv = Conversation(context_length=100)
+    conv.add("Agent", "z" * 40000)
+
+    text = conv.return_history_as_string()
+
+    assert text
+    assert count_tokens(text, conv.tokenizer_model_name) <= 100
+
+
+def test_history_under_context_length_is_returned_whole():
+    conv = Conversation(time_enabled=False, context_length=8192)
+    conv.add("User", "first")
+    conv.add("Agent", "second")
+
+    assert conv.return_history_as_string() == (
+        "User: first\n\nAgent: second"
+    )
+
+
+def test_token_count_cache_drops_deleted_messages():
+    conv = _oversized_conversation(messages=5)
+    conv.return_history_as_string()
+    assert len(conv._message_token_counts) == 5
+
+    conv.delete(0)
+    conv.return_history_as_string()
+    assert len(conv._message_token_counts) == 4
