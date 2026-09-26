@@ -5,13 +5,13 @@ This example demonstrates using the LLM Council to provide comprehensive
 financial analysis and investment recommendations.
 """
 
-from swarms.structs.llm_council import LLMCouncil
+from swarms import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
-# Financial analysis query
-query = """
+# Financial analysis task
+task = """
 Provide a comprehensive financial analysis for investing in emerging markets 
 technology ETFs. Include:
 1. Risk assessment and volatility analysis
@@ -23,7 +23,7 @@ technology ETFs. Include:
 """
 
 # Run the council
-result = council.run(query)
+result = council.run(task=task)
 
 # Print final response
-print(result["final_response"])
+print(result)

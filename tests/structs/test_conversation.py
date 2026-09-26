@@ -1,12 +1,14 @@
 import json
 import concurrent.futures
 import os
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
 
+from swarms.structs import conversation as conversation_module
 from swarms.structs.conversation import Conversation
 
 
@@ -559,9 +561,9 @@ def test_save_and_load_json():
     file_path = temp_dir / "test_save.json"
 
     try:
-        conv = Conversation()
+        conv = Conversation(save_filepath=str(file_path))
         conv.add("user", "Hello")
-        conv.save_as_json(str(file_path))
+        conv.save_as_json(force=True)
 
         conv2 = Conversation()
         conv2.load_from_json(str(file_path))
@@ -1137,15 +1139,22 @@ class TestDefaultConversationDoesNotResumeFromDisk:
     """
     Regression for cross-contamination between unrelated conversations.
 
-    ``name`` defaults to "conversation-test", so every anonymous
+    ``name`` used to default to "conversation-test", so every anonymous
     ``Conversation()`` resolved to the same file under the conversations
     directory and silently loaded whatever a previous, unrelated run had left
     there. Every swarm in the process started with someone else's messages and
     re-sent them on every agent call.
     """
 
-    def test_anonymous_conversation_starts_empty(self, tmp_path):
-        stale = tmp_path / "conversation_conversation-test.json"
+    def test_anonymous_conversation_starts_empty(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.setattr(
+            conversation_module,
+            "generate_conversation_name",
+            lambda: "conversation-deadbeef",
+        )
+        stale = tmp_path / "conversation_conversation-deadbeef.json"
         stale.write_text(
             json.dumps(
                 [
@@ -1170,14 +1179,19 @@ class TestDefaultConversationDoesNotResumeFromDisk:
             conversations_dir=str(tmp_path), autosave=True
         )
         first.add("user", "private to the first conversation")
-        first.save_as_json(
-            str(tmp_path / "conversation_conversation-test.json")
-        )
+        first.save_as_json(force=True)
 
         second = Conversation(conversations_dir=str(tmp_path))
 
         contents = [m["content"] for m in second.conversation_history]
         assert "private to the first conversation" not in contents
+
+    def test_anonymous_conversations_get_distinct_names_and_ids(self):
+        first, second = Conversation(), Conversation()
+
+        assert re.fullmatch(r"conversation-[0-9a-f]{8}", first.name)
+        assert first.name != second.name
+        assert first.id != second.id
 
     def test_a_named_conversation_still_resumes(self, tmp_path):
         """Resume-by-name is deliberate and must keep working."""
@@ -1322,3 +1336,17 @@ def test_return_all_except_first_with_a_system_prompt():
     assert "You are helpful." not in text
     assert "Task" not in text
     assert "First answer" in text
+
+
+def test_construction_does_not_create_a_conversations_dir(tmp_path):
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        conv = Conversation()
+        assert not (tmp_path / "conversations").exists()
+
+        conv.add("User", "Task")
+        conv.save_as_json(force=True)
+        assert (tmp_path / "conversations").is_dir()
+    finally:
+        os.chdir(cwd)
