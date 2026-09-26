@@ -6,6 +6,10 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.conversation import Conversation
+from swarms.structs.execution_utils import (
+    batched_run,
+    run_concurrently,
+)
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -430,31 +434,27 @@ class MultiAgentRouter:
         """
         Route a batch of tasks sequentially.
 
-        Each task is independently routed; failures are logged with the task
-        that caused them and the corresponding result is omitted from the
-        returned list (the batch does not abort on a single failure).
+        The batch does not abort on a single failure: a task that raises
+        contributes the exception it raised to the result list, so
+        ``results[i]`` is always the outcome of ``tasks[i]``.
 
         Args:
             tasks (List[str]): Tasks to route in order.
 
         Returns:
-            List[Any]: Routed results for the tasks that succeeded, in input
-            order.
+            List[Any]: One entry per task, in input order. A failed task's
+            entry is the ``Exception`` it raised.
         """
-        results = []
-        for task in tasks:
-            try:
-                results.append(self.route_task(task))
-            except Exception as e:
-                logger.error(f"Error routing task {task!r}: {e}")
-        return results
+        return batched_run(
+            self.route_task, tasks, return_exceptions=True
+        )
 
     def concurrent_batch_run(self, tasks: List[str] = []):
         """
         Route a batch of tasks in parallel using a thread pool.
 
-        Tasks are dispatched to a ``ThreadPoolExecutor``. Failures are logged
-        with the task that caused them and omitted from the result list.
+        A task that raises contributes the exception it raised to the result
+        list, so ``results[i]`` is always the outcome of ``tasks[i]``.
 
         Note:
             All tasks share this router's ``Conversation``, so their histories
@@ -465,19 +465,9 @@ class MultiAgentRouter:
             tasks (List[str]): Tasks to route concurrently.
 
         Returns:
-            List[Any]: Routed results for the tasks that succeeded, in input
-            order.
+            List[Any]: One entry per task, in input order. A failed task's
+            entry is the ``Exception`` it raised.
         """
-        results = []
-        with ContextThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(self.route_task, task)
-                for task in tasks
-            ]
-            # Read in submission order so element i belongs to tasks[i]
-            for task, future in zip(tasks, futures):
-                try:
-                    results.append(future.result())
-                except Exception as e:
-                    logger.error(f"Error routing task {task!r}: {e}")
-        return results
+        return run_concurrently(
+            self.route_task, tasks, return_exceptions=True
+        )
