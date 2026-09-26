@@ -42,6 +42,8 @@ SEARCH_TOOL_NAME = "tool_search"
 # Names listed back when a search finds nothing.
 _MISS_LISTING_LIMIT = 30
 
+_MIN_RELEVANCE = 2
+
 SEARCH_TOOL_SCHEMA: Dict[str, Any] = {
     "type": "function",
     "function": {
@@ -49,9 +51,10 @@ SEARCH_TOOL_SCHEMA: Dict[str, Any] = {
         "description": (
             "Find and load tools you do not currently have. Most tools are "
             "deferred: their names and descriptions are searchable here, but "
-            "you cannot call one until this loads it, and a loaded tool only "
-            "becomes callable on your NEXT turn. So load everything you "
-            "expect to need in a SINGLE call. Pass a plain query to search by "
+            "you cannot call one until this loads it, and a loaded tool "
+            "becomes callable on your next tool call rather than in the same "
+            "one. So load everything you expect to need in a SINGLE call, "
+            "then carry on with the subtask. Pass a plain query to search by "
             "keyword, or 'select:name_one,name_two' to load exact names. "
             "Before concluding that you cannot do something, search here."
         ),
@@ -89,13 +92,16 @@ commands, searching, delegating - must be loaded first:
 
 1. Call `tool_search` with keywords describing what you need. Load everything
    you expect to need for the whole subtask in ONE call.
-2. The loaded tools become callable on your NEXT turn.
-3. Then do the work.
+2. The loaded tools become callable on your next tool call, not in the same
+   one. That is a one-call wait inside the subtask you are already on, not a
+   reason to stop.
+3. Then do the work, in the same subtask.
 
-Never say a task cannot be done, and never mark a subtask complete by merely
-describing what you would have done, without first searching for a tool.
-If you are unsure what exists, call `tool_search` with a broad query - a miss
-lists what is available.
+Loading a tool is never a blocking event and is never something to report to
+the user. Never say a task cannot be done, and never mark a subtask complete
+by merely describing what you would have done, without first searching for a
+tool. If you are unsure what exists, call `tool_search` with a broad query - a
+miss lists what is available.
 """
 
 
@@ -252,10 +258,20 @@ class DynamicToolLoader:
             query: Keywords, or ``select:name1,name2`` for exact names.
             limit: Maximum results.
             min_score_ratio: Drop results scoring below this fraction of the
-                best score. 0.0 keeps every match, which suits an explicit
-                search where the model said what it wanted. Speculative
-                callers should raise it: a long query contains enough common
-                words to give weak matches a nonzero score.
+                best score. 0.0 keeps every match that clears the absolute
+                relevance floor, which suits an explicit search where the
+                model said what it wanted. Speculative callers should raise
+                it: a long query contains enough common words to give weak
+                matches a nonzero score.
+
+        Results always have to clear ``_MIN_RELEVANCE``, a floor of 2. A name
+        token is worth 3 and a description token 1, so that floor means one
+        incidental description word is not a match. A single-term query is
+        exempt, since one word is all it has to match with.
+
+        The floor is what stops an unsatisfiable query from being answered.
+        ``min_score_ratio`` cannot do it: it is measured against the best
+        score, and when nothing matches well that score is itself weak.
         """
         query = (query or "").strip()
 
@@ -275,6 +291,8 @@ class DynamicToolLoader:
         if not terms:
             return []
 
+        floor = min(_MIN_RELEVANCE, len(terms))
+
         scored = []
         for tool in self._catalog.values():
             name_tokens = _tokenize(tool.name)
@@ -284,7 +302,7 @@ class DynamicToolLoader:
                 for term in terms
                 if term in haystack
             )
-            if score:
+            if score >= floor:
                 scored.append((score, tool.name, tool))
 
         # Sort by score, then name, so results are stable run to run.
@@ -348,7 +366,8 @@ class DynamicToolLoader:
             lines.append(
                 f"Loaded {len(fresh)}: "
                 f"{', '.join(t.name for t in fresh)}. "
-                "They are callable from your next turn."
+                "They are callable from your next tool call - carry on with "
+                "the subtask now."
             )
         else:
             lines.append("")
