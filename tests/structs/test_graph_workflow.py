@@ -1552,5 +1552,182 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
     assert "OUT_A" not in prompt and "OUT_B" not in prompt
 
 
+def _usage_agent(name, input_tokens=0, output_tokens=0):
+    """An offline Agent whose run() reports a fixed usage per call through the real hook."""
+    from unittest.mock import patch
+
+    with patch("swarms.structs.agent.LiteLLM"):
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-5.4",
+            max_loops=1,
+            autosave=False,
+            print_on=False,
+        )
+
+    def _run(task=None, *args, **kwargs):
+        agent._add_usage(
+            {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": input_tokens + output_tokens,
+            }
+        )
+        return f"output-{name}"
+
+    agent.run = _run
+    return agent
+
+
+def _zero_usage():
+    return {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 0,
+    }
+
+
+def test_usage_is_zero_for_an_empty_graph():
+    assert GraphWorkflow(auto_compile=False).usage == _zero_usage()
+
+
+def test_usage_is_zero_before_any_run():
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(_usage_agent("A", 100, 10))
+    wf.add_node(_usage_agent("B", 50, 5))
+    wf.add_edge("A", "B")
+    assert wf.usage == _zero_usage()
+
+
+def test_usage_sums_every_node_after_run():
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(_usage_agent("A", 100, 10))
+    wf.add_node(_usage_agent("B", 50, 5))
+    wf.add_edge("A", "B")
+
+    wf.run("task")
+
+    assert wf.usage == {
+        "input_tokens": 150,
+        "output_tokens": 15,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 165,
+    }
+
+
+def test_usage_grows_across_runs():
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(_usage_agent("A", 100, 10))
+
+    wf.run("first")
+    wf.run("second")
+
+    assert wf.usage["input_tokens"] == 200
+    assert wf.usage["total_tokens"] == 220
+
+
+def test_usage_after_arun():
+    import asyncio
+
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(_usage_agent("A", 7, 3))
+
+    asyncio.run(wf.arun("task"))
+
+    assert wf.usage["total_tokens"] == 10
+
+
+def test_usage_includes_agents_inside_subgraphs():
+    inner = GraphWorkflow(name="inner", auto_compile=False)
+    inner.add_node(_usage_agent("InnerA", 40, 4))
+    inner.add_node(_usage_agent("InnerB", 20, 2))
+    inner.add_edge("InnerA", "InnerB")
+
+    outer = GraphWorkflow(auto_compile=False)
+    outer.add_node(_usage_agent("Outer", 100, 10))
+    outer.add_node(inner)
+    outer.add_edge("Outer", "inner")
+
+    outer.run("task")
+
+    assert outer.nodes["inner"].type == NodeType.SUBGRAPH
+    assert outer.usage["input_tokens"] == 160
+    assert outer.usage["output_tokens"] == 16
+    assert inner.usage["input_tokens"] == 60
+
+
+def test_usage_includes_nested_subgraphs():
+    innermost = GraphWorkflow(name="innermost", auto_compile=False)
+    innermost.add_node(_usage_agent("Deep", 30, 3))
+    middle = GraphWorkflow(name="middle", auto_compile=False)
+    middle.add_node(innermost)
+    outer = GraphWorkflow(auto_compile=False)
+    outer.add_node(middle)
+
+    outer.run("task")
+
+    assert outer.usage["input_tokens"] == 30
+    assert outer.usage["output_tokens"] == 3
+
+
+def test_usage_counts_an_agent_shared_across_nodes_once():
+    shared = _usage_agent("Shared", 100, 10)
+    shared.run("spend")
+
+    inner = GraphWorkflow(name="inner", auto_compile=False)
+    inner.add_node(shared)
+
+    outer = GraphWorkflow(auto_compile=False)
+    outer.add_node(shared)
+    outer.nodes["shared-again"] = Node(
+        id="shared-again", agent=shared
+    )
+    outer.add_node(inner)
+
+    assert outer.usage["input_tokens"] == 100
+    assert outer.usage["output_tokens"] == 10
+
+
+def test_usage_survives_a_subgraph_embedded_twice():
+    inner = GraphWorkflow(name="inner", auto_compile=False)
+    inner.add_node(_usage_agent("A", 10, 1))
+    inner.nodes["A"].agent.run("spend")
+
+    outer = GraphWorkflow(auto_compile=False)
+    outer.nodes["first"] = Node.from_subgraph(inner, node_id="first")
+    outer.nodes["second"] = Node.from_subgraph(
+        inner, node_id="second"
+    )
+
+    assert outer.usage["input_tokens"] == 10
+
+
+def test_usage_skips_nodes_without_usage():
+    from unittest.mock import MagicMock
+
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(_usage_agent("A", 5, 5))
+    wf.nodes["callable"] = Node(
+        id="callable", agent=MagicMock(usage=None)
+    )
+    wf.nodes["empty"] = Node(id="empty", agent=None)
+    wf.nodes["A"].agent.run("spend")
+
+    assert wf.usage["input_tokens"] == 5
+
+
+def test_usage_returns_a_copy():
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(_usage_agent("A", 5, 5))
+    wf.run("task")
+
+    wf.usage["input_tokens"] = 999
+
+    assert wf.usage["input_tokens"] == 5
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
