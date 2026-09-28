@@ -3,6 +3,7 @@ import time
 from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -417,7 +418,9 @@ class ConcurrentWorkflow:
 
                 for future, agent in zip(futures, self.agents):
                     try:
-                        output = future.result()
+                        output = agent_answer(
+                            agent, fallback=future.result()
+                        )
                         results.append((agent.agent_name, output))
                     except Exception as e:
                         # Same failure policy as _run: the dashboard must not revoke on_error.
@@ -482,7 +485,7 @@ class ConcurrentWorkflow:
         with ContextThreadPoolExecutor(
             max_workers=self._resolve_max_workers()
         ) as executor:
-            future_to_agent = {
+            futures = [
                 executor.submit(
                     self._run_agent_with_streaming,
                     agent,
@@ -490,16 +493,15 @@ class ConcurrentWorkflow:
                     img,
                     imgs,
                     streaming_callback,
-                ): agent
+                )
                 for agent in self.agents
-            }
+            ]
 
-            for future in concurrent.futures.as_completed(
-                future_to_agent
-            ):
-                agent = future_to_agent[future]
+            for future, agent in zip(futures, self.agents):
                 try:
-                    output = future.result()
+                    output = agent_answer(
+                        agent, fallback=future.result()
+                    )
                     self.conversation.add(
                         role=agent.agent_name, content=output
                     )
@@ -629,6 +631,7 @@ class ConcurrentWorkflow:
             >>> workflow = ConcurrentWorkflow(agents=[agent1, agent2])
             >>> result = workflow.run("Analyze this data")
         """
+        self.conversation = self._new_conversation()
         try:
             if self.show_dashboard:
                 result = self.run_with_dashboard(
@@ -684,7 +687,6 @@ class ConcurrentWorkflow:
                 img = None
                 if imgs is not None and idx < len(imgs):
                     img = imgs[idx]
-                self.conversation = self._new_conversation()
                 results.append(
                     self.run(
                         task=task,

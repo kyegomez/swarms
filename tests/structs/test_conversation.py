@@ -1440,3 +1440,11 @@ def test_token_count_cache_drops_deleted_messages():
     conv.delete(0)
     conv.return_history_as_string()
     assert len(conv._message_token_counts) == 4
+
+
+def test_construction_does_not_touch_the_home_dir(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    Conversation(name="demo")
+    assert list(tmp_path.iterdir()) == []

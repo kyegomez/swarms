@@ -137,7 +137,7 @@ class Conversation:
         self._separator_tokens: Optional[int] = None
 
         self.setup_file_path()
-        self.setup()
+        self._initialize_new_conversation()
 
         # Prior MEMORY.md content becomes one System preamble message
         self._suppress_memory_md = False
@@ -215,35 +215,6 @@ class Conversation:
             logger.debug(
                 f"No existing conversation file found at: {self.save_filepath}"
             )
-
-    def setup(self):
-        # Set up conversations directory
-        self.conversations_dir = (
-            self.conversations_dir
-            or os.path.join(
-                os.path.expanduser("~"), ".swarms", "conversations"
-            )
-        )
-        os.makedirs(self.conversations_dir, exist_ok=True)
-
-        # Try to load existing conversation if it exists
-        conversation_file = os.path.join(
-            self.conversations_dir, f"{self.name}.json"
-        )
-        if os.path.exists(conversation_file):
-            with open(conversation_file, "r") as f:
-                saved_data = json.load(f)
-                # Update attributes from saved data
-                for key, value in saved_data.get(
-                    "metadata", {}
-                ).items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-                self.conversation_history = saved_data.get(
-                    "history", []
-                )
-        else:
-            self._initialize_new_conversation()
 
     def _initialize_new_conversation(self):
         """Initialize a new conversation with system prompt and rules."""

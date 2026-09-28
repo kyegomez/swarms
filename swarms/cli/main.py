@@ -503,7 +503,7 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
             )
 
             # Run the council
-            result = council.run(query=task)
+            result = council.run(task=task)
 
             # Update progress on completion
             progress.update(
