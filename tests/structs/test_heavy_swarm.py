@@ -1022,7 +1022,6 @@ class TestGrokHeavyFullPipeline:
 
 
 class TestParseToolCallsProviderShapes:
-    """_parse_tool_calls went through the shared unwrap, so every shape parses."""
 
     QUESTIONS = {"research_question": "What happened?"}
 
@@ -1030,7 +1029,6 @@ class TestParseToolCallsProviderShapes:
         return json.dumps(self.QUESTIONS)
 
     def test_dict_shaped_tool_call_parses_with_its_identity(self):
-        """Reaching through .function.arguments raised AttributeError on a dict."""
         call = {
             "id": "call_1",
             "function": {
