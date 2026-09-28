@@ -1386,3 +1386,11 @@ def test_history_string_does_not_re_render_earlier_messages():
 
     conv.delete(0)
     assert "edited" not in conv.get_str()
+
+
+def test_construction_does_not_touch_the_home_dir(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    Conversation(name="demo")
+    assert list(tmp_path.iterdir()) == []

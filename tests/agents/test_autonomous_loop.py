@@ -1421,3 +1421,41 @@ class TestIterationLimitsAreConfigurable:
     def test_a_budget_below_one_is_rejected(self, name):
         with pytest.raises(ValueError):
             build_agent(**{name: 0})
+
+
+class TestRunStreamUsesTheAutonomousLoop:
+    def test_run_stream_plans_and_completes_like_run(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        script = [
+            plan(("step1", [])),
+            [
+                tool_call(
+                    "subtask_done",
+                    task_id="step1",
+                    summary="done",
+                    success=True,
+                )
+            ],
+            [
+                tool_call(
+                    "complete_task",
+                    task_id="main",
+                    summary="all done",
+                    success=True,
+                )
+            ],
+        ]
+        calls = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            calls.append(task)
+            return script.pop(0)
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        list(agent.run_stream("test task"))
+
+        assert len(calls) == 3
+        assert status_of(agent, "step1") == "completed"
