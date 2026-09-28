@@ -1029,7 +1029,7 @@ class TestParseToolCallsProviderShapes:
     def _arguments(self):
         return json.dumps(self.QUESTIONS)
 
-    def test_dict_shaped_tool_call_parses(self):
+    def test_dict_shaped_tool_call_parses_with_its_identity(self):
         """Reaching through .function.arguments raised AttributeError on a dict."""
         call = {
             "id": "call_1",
