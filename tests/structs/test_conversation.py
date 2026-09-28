@@ -1350,3 +1350,11 @@ def test_construction_does_not_create_a_conversations_dir(tmp_path):
         assert (tmp_path / "conversations").is_dir()
     finally:
         os.chdir(cwd)
+
+
+def test_construction_does_not_touch_the_home_dir(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    Conversation(name="demo")
+    assert list(tmp_path.iterdir()) == []
