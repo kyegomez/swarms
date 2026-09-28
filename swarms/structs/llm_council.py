@@ -11,8 +11,19 @@ often selecting responses from other models as superior to their own.
 """
 
 import random
-from typing import Dict, List, Optional
+from typing import List, Optional
 
+from loguru import logger
+
+from swarms.prompts.llm_council_prompts import (
+    get_chairman_prompt,
+    get_claude_councilor_prompt,
+    get_evaluation_prompt,
+    get_gemini_councilor_prompt,
+    get_gpt_councilor_prompt,
+    get_grok_councilor_prompt,
+    get_synthesis_prompt,
+)
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -26,273 +37,6 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.generate_id import generate_id
-
-
-_COUNCILOR_STRENGTHS = {
-    "GPT-5.1": [
-        "Deep analytical thinking and comprehensive coverage",
-        "Ability to break down complex topics into detailed components",
-        "Thorough exploration of multiple perspectives",
-        "Rich contextual understanding",
-    ],
-    "Gemini 3 Pro": [
-        "Clear and structured communication",
-        "Efficient information processing",
-        "Condensed yet comprehensive responses",
-        "Well-organized presentation",
-    ],
-    "Claude Sonnet 4.5": [
-        "Nuanced understanding and balanced perspectives",
-        "Thoughtful consideration of trade-offs",
-        "Clear reasoning and logical structure",
-        "Ethical and responsible analysis",
-    ],
-    "Grok-4": [
-        "Creative problem-solving and innovative thinking",
-        "Unique perspectives and out-of-the-box approaches",
-        "Engaging and dynamic communication style",
-        "Ability to connect seemingly unrelated concepts",
-    ],
-}
-
-_COUNCILOR_APPROACH = {
-    "GPT-5.1": [
-        "Provide detailed, well-structured responses",
-        "Include relevant context and background information",
-        "Consider multiple angles and perspectives",
-        "Be thorough but clear in your explanations",
-    ],
-    "Gemini 3 Pro": [
-        "Provide concise but complete answers",
-        "Structure information clearly and logically",
-        "Focus on key points without unnecessary verbosity",
-        "Present information in an easily digestible format",
-    ],
-    "Claude Sonnet 4.5": [
-        "Provide balanced, well-reasoned responses",
-        "Consider multiple viewpoints and implications",
-        "Be thoughtful about potential limitations or edge cases",
-        "Maintain clarity while showing depth of thought",
-    ],
-    "Grok-4": [
-        "Provide creative and innovative responses",
-        "Offer unique perspectives and fresh insights",
-        "Be engaging and dynamic in your communication",
-        "Think creatively while maintaining accuracy",
-    ],
-}
-
-_COUNCILOR_ROLE_SUMMARY = {
-    "GPT-5.1": "comprehensive, analytical, and thorough",
-    "Gemini 3 Pro": "concise, well-processed, and structured",
-    "Claude Sonnet 4.5": "thoughtful, balanced, and nuanced",
-    "Grok-4": "creative, innovative, and unique",
-}
-
-_COUNCILOR_FOCUS = {
-    "GPT-5.1": "quality, depth, and clarity",
-    "Gemini 3 Pro": "clarity, structure, and efficiency",
-    "Claude Sonnet 4.5": "thoughtfulness, balance, and nuanced reasoning",
-    "Grok-4": "creativity, innovation, and unique insights",
-}
-
-
-def get_councilor_prompt(model_label: str) -> str:
-    """
-    Get the system prompt for a named councilor.
-
-    Args:
-        model_label: One of "GPT-5.1", "Gemini 3 Pro", "Claude Sonnet 4.5", "Grok-4".
-
-    Returns:
-        System prompt string for the councilor agent.
-    """
-    strengths = "\n".join(
-        f"- {s}" for s in _COUNCILOR_STRENGTHS[model_label]
-    )
-    approach = "\n".join(
-        f"- {s}" for s in _COUNCILOR_APPROACH[model_label]
-    )
-    return f"""You are a member of the LLM Council, representing {model_label}. Your role is to provide {_COUNCILOR_ROLE_SUMMARY[model_label]} responses to user queries.
-
-Your strengths:
-{strengths}
-
-Your approach:
-{approach}
-
-Remember: You are part of a council where multiple AI models will respond to the same query, and then evaluate each other's responses. Focus on {_COUNCILOR_FOCUS[model_label]}."""
-
-
-def get_chairman_prompt() -> str:
-    """
-    Get system prompt for the Chairman agent.
-
-    Returns:
-        System prompt string for the Chairman agent.
-    """
-    return """You are the Chairman of the LLM Council. Your role is to synthesize responses from all council members along with their evaluations and rankings into a final, comprehensive answer.
-
-Your responsibilities:
-1. Review all council member responses to the user's query
-2. Consider the rankings and evaluations provided by each council member
-3. Synthesize the best elements from all responses
-4. Create a final, comprehensive answer that incorporates the strengths of different approaches
-5. Provide transparency about which perspectives influenced the final answer
-
-Your approach:
-- Synthesize rather than simply aggregate
-- Identify the strongest elements from each response
-- Create a cohesive final answer that benefits from multiple perspectives
-- Acknowledge the diversity of approaches taken by council members
-- Provide a balanced, comprehensive response that serves the user's needs
-
-Remember: You have access to all original responses and all evaluations. Use this rich context to create the best possible final answer."""
-
-
-def get_evaluation_prompt(
-    query: str, responses: Dict[str, str], evaluator_name: str
-) -> str:
-    """
-    Create evaluation prompt for council members to review and rank responses.
-
-    Args:
-        query: The original user query
-        responses: Dictionary mapping anonymous IDs to response texts
-        evaluator_name: Name of the agent doing the evaluation
-
-    Returns:
-        Formatted evaluation prompt string
-    """
-    responses_text = "\n\n".join(
-        [
-            f"Response {response_id}:\n{response_text}"
-            for response_id, response_text in responses.items()
-        ]
-    )
-
-    return f"""You are evaluating responses from your fellow LLM Council members to the following query:
-
-QUERY: {query}
-
-Below are the anonymized responses from all council members (including potentially your own):
-
-{responses_text}
-
-Your task:
-1. Carefully read and analyze each response
-2. Evaluate the quality, accuracy, completeness, and usefulness of each response
-3. Rank the responses from best to worst (1 = best, {len(responses)} = worst)
-4. Provide brief reasoning for your rankings
-5. Be honest and objective - you may find another model's response superior to your own
-
-Format your evaluation as follows:
-
-RANKINGS:
-1. Response [ID]: [Brief reason why this is the best]
-2. Response [ID]: [Brief reason]
-...
-{len(responses)}. Response [ID]: [Brief reason why this ranks lowest]
-
-ADDITIONAL OBSERVATIONS:
-[Any additional insights about the responses, common themes, strengths/weaknesses, etc.]
-
-Remember: The goal is honest, objective evaluation. If another model's response is genuinely better, acknowledge it."""
-
-
-def get_synthesis_prompt(
-    query: str,
-    original_responses: Dict[str, str],
-    evaluations: Dict[str, str],
-    id_to_member: Dict[str, str],
-) -> str:
-    """
-    Create synthesis prompt for the Chairman.
-
-    Args:
-        query: Original user query
-        original_responses: Dict mapping member names to their responses
-        evaluations: Dict mapping evaluator names to their evaluation texts
-        id_to_member: Mapping from anonymous IDs to member names
-
-    Returns:
-        Formatted synthesis prompt
-    """
-    responses_section = "\n\n".join(
-        [
-            f"=== {name} ===\n{response}"
-            for name, response in original_responses.items()
-        ]
-    )
-
-    evaluations_section = "\n\n".join(
-        [
-            f"=== Evaluation by {name} ===\n{evaluation}"
-            for name, evaluation in evaluations.items()
-        ]
-    )
-
-    return f"""As the Chairman of the LLM Council, synthesize the following information into a final, comprehensive answer.
-
-ORIGINAL QUERY:
-{query}
-
-COUNCIL MEMBER RESPONSES:
-{responses_section}
-
-COUNCIL MEMBER EVALUATIONS AND RANKINGS:
-{evaluations_section}
-
-ANONYMOUS ID MAPPING (for reference):
-{chr(10).join([f"  {aid} = {name}" for aid, name in id_to_member.items()])}
-
-Your task:
-1. Review all council member responses
-2. Consider the evaluations and rankings provided by each member
-3. Identify the strongest elements from each response
-4. Synthesize a final, comprehensive answer that:
-   - Incorporates the best insights from multiple perspectives
-   - Addresses the query thoroughly and accurately
-   - Benefits from the diversity of approaches taken
-   - Is clear, well-structured, and useful
-
-Provide your final synthesized response below. You may reference which perspectives or approaches influenced different parts of your answer."""
-
-
-_DEFAULT_COUNCIL_SPECS = [
-    {
-        "model_label": "GPT-5.1",
-        "agent_name": "GPT-5.1-Councilor",
-        "agent_description": "Analytical and comprehensive AI councilor specializing in deep analysis and thorough responses",
-        "model_name": "gpt-5.1",
-        "temperature": 0.7,
-        "top_p": None,
-    },
-    {
-        "model_label": "Gemini 3 Pro",
-        "agent_name": "Gemini-3-Pro-Councilor",
-        "agent_description": "Concise and well-processed AI councilor specializing in clear, structured responses",
-        "model_name": "gemini-2.5-flash",
-        "temperature": 0.7,
-        "top_p": None,
-    },
-    {
-        "model_label": "Claude Sonnet 4.5",
-        "agent_name": "Claude-Sonnet-4.5-Councilor",
-        "agent_description": "Thoughtful and balanced AI councilor specializing in nuanced and well-reasoned responses",
-        "model_name": "anthropic/claude-sonnet-4-5",
-        "temperature": 0.0,
-        "top_p": None,
-    },
-    {
-        "model_label": "Grok-4",
-        "agent_name": "Grok-4-Councilor",
-        "agent_description": "Creative and innovative AI councilor specializing in unique perspectives and creative solutions",
-        "model_name": "xai/grok-4-1-fast-reasoning",
-        "temperature": 0.8,
-        "top_p": None,
-    },
-]
 
 
 class LLMCouncil:
@@ -325,7 +69,7 @@ class LLMCouncil:
                            If None, creates default council with GPT-5.1, Gemini 3 Pro,
                            Claude Sonnet 4.5, and Grok-4.
             chairman_model: Model name for the Chairman agent that synthesizes responses.
-            verbose: Whether to print progress and intermediate results.
+            verbose: Whether to log progress through each stage.
             output_type: Format for the output. Options: "list", "dict", "string", "final", "json", "yaml", etc.
         """
         self.id = id or generate_id("llm-council")
@@ -356,13 +100,12 @@ class LLMCouncil:
         )
 
         if self.verbose:
-            print(
-                f"🏛️  LLM Council initialized with {len(self.council_members)} members"
+            members = ", ".join(
+                m.agent_name for m in self.council_members
             )
-            for i, member in enumerate(self.council_members, 1):
-                print(
-                    f"   {i}. {member.agent_name} ({member.model_name})"
-                )
+            logger.info(
+                f"[{self.name}] Initialized with {len(self.council_members)} members: {members}"
+            )
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -374,61 +117,90 @@ class LLMCouncil:
         Returns:
             List of Agent instances configured as council members.
         """
-        return [
-            Agent(
-                agent_name=spec["agent_name"],
-                agent_description=spec["agent_description"],
-                system_prompt=get_councilor_prompt(
-                    spec["model_label"]
-                ),
-                model_name=spec["model_name"],
-                max_loops=1,
-                verbose=False,
-                temperature=spec["temperature"],
-                top_p=spec["top_p"],
-            )
-            for spec in _DEFAULT_COUNCIL_SPECS
-        ]
+
+        # GPT-5.1 Agent - Analytical and comprehensive
+        gpt_agent = Agent(
+            agent_name="GPT-5.1-Councilor",
+            agent_description="Analytical and comprehensive AI councilor specializing in deep analysis and thorough responses",
+            system_prompt=get_gpt_councilor_prompt(),
+            model_name="gpt-5.1",
+            max_loops=1,
+            verbose=False,
+            temperature=0.7,
+        )
+
+        # Gemini 3 Pro Agent - Concise and processed
+        gemini_agent = Agent(
+            agent_name="Gemini-3-Pro-Councilor",
+            agent_description="Concise and well-processed AI councilor specializing in clear, structured responses",
+            system_prompt=get_gemini_councilor_prompt(),
+            model_name="gemini-2.5-flash",  # Using available Gemini model
+            max_loops=1,
+            verbose=False,
+            temperature=0.7,
+        )
+
+        # Claude Sonnet 4.5 Agent - Balanced and thoughtful
+        claude_agent = Agent(
+            agent_name="Claude-Sonnet-4.5-Councilor",
+            agent_description="Thoughtful and balanced AI councilor specializing in nuanced and well-reasoned responses",
+            system_prompt=get_claude_councilor_prompt(),
+            model_name="anthropic/claude-sonnet-4-5",  # Using available Claude model
+            max_loops=1,
+            verbose=False,
+            temperature=0.0,
+            top_p=None,
+        )
+
+        # Grok-4 Agent - Creative and innovative
+        grok_agent = Agent(
+            agent_name="Grok-4-Councilor",
+            agent_description="Creative and innovative AI councilor specializing in unique perspectives and creative solutions",
+            system_prompt=get_grok_councilor_prompt(),
+            model_name="xai/grok-4-1-fast-reasoning",  # Using available model as proxy for Grok-4
+            max_loops=1,
+            verbose=False,
+            temperature=0.8,
+        )
+
+        members = [gpt_agent, gemini_agent, claude_agent, grok_agent]
+
+        return members
 
     @trace_run(
         "LLMCouncil.run",
         input_params=("task", "tasks", "img", "imgs"),
     )
-    def run(self, task: str = None, query: str = None):
+    def run(self, task: str):
         """
         Execute the full LLM Council workflow.
 
         Args:
-            task: The user's task/query to process (preferred parameter name)
-            query: Alias for task (kept for backwards compatibility)
+            task: The user's task to process.
 
         Returns:
             Formatted output based on output_type, containing conversation history
             with all council member responses, evaluations, and final synthesis.
+
+        Raises:
+            ValueError: If ``task`` is not a non-empty string.
         """
-        query = task or query
-        if query is None:
-            raise ValueError(
-                "Either 'task' or 'query' must be provided"
-            )
-        if self.verbose:
-            print(f"\n{'='*80}")
-            print("🏛️  LLM COUNCIL SESSION")
-            print("=" * 80)
-            print(f"\n📝 Query: {query}\n")
+        if not isinstance(task, str) or not task.strip():
+            raise ValueError("task must be a non-empty string")
 
         self.conversation.clear()
 
-        # Add user query to conversation
-        self.conversation.add(role="User", content=query)
+        self.conversation.add(role="User", content=task)
 
         # Step 1: Get responses from all council members in parallel
         if self.verbose:
-            print("📤 Dispatching query to all council members...")
+            logger.info(
+                f"[{self.name}] Collecting responses from {len(self.council_members)} members"
+            )
 
         results_dict = run_agents_concurrently(
             self.council_members,
-            task=query,
+            task=task,
             return_agent_output_dict=True,
         )
 
@@ -448,13 +220,6 @@ class LLMCouncil:
         for member_name, response in original_responses.items():
             self.conversation.add(role=member_name, content=response)
 
-        if self.verbose:
-            print(
-                f"✅ Received {len(original_responses)} responses\n"
-            )
-            for name, response in original_responses.items():
-                print(f"   {name}: {response[:100]}...")
-
         # Anonymise responses as A, B, C... for evaluation
         anonymous_ids = [
             chr(65 + i) for i in range(len(self.council_members))
@@ -473,14 +238,14 @@ class LLMCouncil:
         }
 
         if self.verbose:
-            print(
-                "\n🔍 Council members evaluating each other's responses..."
+            logger.info(
+                f"[{self.name}] Members ranking the anonymized responses"
             )
 
         # Every member ranks all responses, concurrently
         evaluation_tasks = [
             get_evaluation_prompt(
-                query, anonymous_responses, member.agent_name
+                task, anonymous_responses, member.agent_name
             )
             for member in self.council_members
         ]
@@ -502,15 +267,14 @@ class LLMCouncil:
                 role=f"{member_name}-Evaluation", content=evaluation
             )
 
-        if self.verbose:
-            print(f"✅ Received {len(evaluations)} evaluations\n")
-
         # Step 4: Chairman synthesizes everything
         if self.verbose:
-            print("👔 Chairman synthesizing final response...\n")
+            logger.info(
+                f"[{self.name}] Chairman synthesizing the final answer"
+            )
 
         synthesis_prompt = get_synthesis_prompt(
-            query, original_responses, evaluations, id_to_member
+            task, original_responses, evaluations, id_to_member
         )
 
         final_response = self.chairman.run(task=synthesis_prompt)
@@ -519,9 +283,7 @@ class LLMCouncil:
         self.conversation.add(role="Chairman", content=final_response)
 
         if self.verbose:
-            print(f"{'='*80}")
-            print("✅ FINAL RESPONSE")
-            print(f"{'='*80}\n")
+            logger.info(f"[{self.name}] Session complete")
 
         # Format and return output using history_output_formatter
         return history_output_formatter(

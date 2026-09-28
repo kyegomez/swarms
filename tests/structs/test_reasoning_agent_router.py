@@ -420,3 +420,26 @@ def test_reasoning_agent_initialization_error_subclass():
 def test_reasoning_agent_executor_error_subclass():
     """ReasoningAgentExecutorError is a subclass of Exception."""
     assert issubclass(ReasoningAgentExecutorError, Exception)
+
+
+def test_self_consistency_samples_get_distinct_agents():
+    """One shared agent let each sample read the answers of the samples before it."""
+    from swarms.structs.agent import Agent
+
+    agent_ids = []
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        agent_ids.append(id(self))
+        return "ANSWER"
+
+    router = ReasoningAgentRouter(
+        swarm_type="self-consistency",
+        agent_name="sc",
+        model_name="gpt-5.4",
+        num_samples=3,
+    )
+
+    with patch.object(Agent, "call_llm", fake_call_llm):
+        router.run("What is 2 + 2?")
+
+    assert len(set(agent_ids[:3])) == 3

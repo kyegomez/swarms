@@ -479,5 +479,35 @@ class TestGroupChatSilenceBias:
         assert roles(chat) == ["User", "AgentA"]
 
 
+class TestRunsAreIndependent:
+    @staticmethod
+    def _chat():
+        speaker = ScriptedAgent(
+            "AgentA", [(0.8, "about cats"), (0.8, "about dogs")]
+        )
+        silent = ScriptedAgent("AgentB", [(0.0, ""), (0.0, "")])
+        return make_chat(
+            [speaker, silent], threshold=0.5, max_loops=2
+        )
+
+    def test_a_second_run_does_not_inherit_the_first(self):
+        """The shared Conversation used to grow across runs."""
+        chat = self._chat()
+
+        chat.run("talk about cats")
+        chat.run("talk about dogs")
+
+        assert contents(chat) == ["talk about dogs", "about dogs"]
+
+    def test_run_batch_returns_one_transcript_per_task(self):
+        chat = self._chat()
+
+        outputs = chat.run_batch(
+            ["talk about cats", "talk about dogs"]
+        )
+
+        assert "cats" not in str(outputs[1])
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-q"])
