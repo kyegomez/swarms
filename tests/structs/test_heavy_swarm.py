@@ -1040,6 +1040,8 @@ class TestParseToolCallsProviderShapes:
         }
         result = HeavySwarm._parse_tool_calls(None, [call])
         assert result["research_question"] == "What happened?"
+        assert result["tool_call_id"] == "call_1"
+        assert result["function_name"] == "gen"
 
     def test_object_shaped_tool_call_parses_with_its_identity(self):
         call = SimpleNamespace(

@@ -1,7 +1,7 @@
 import concurrent.futures
 import os
 import traceback
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from swarms.agents.heavy_swarm_agents import (
     SwarmVariant,
@@ -1318,18 +1318,23 @@ class HeavySwarm(SerializableMixin):
         if not tool_calls:
             return {}
 
+        def field(obj: Any, key: str) -> Any:
+            if isinstance(obj, dict):
+                return obj.get(key)
+            return getattr(obj, key, None)
+
         tool_call = tool_calls[0]
-        function = getattr(tool_call, "function", None)
+        function = field(tool_call, "function")
         identity = {
-            "tool_call_id": getattr(tool_call, "id", None),
-            "function_name": getattr(function, "name", None),
+            "tool_call_id": field(tool_call, "id"),
+            "function_name": field(function, "name"),
         }
 
         arguments = tool_call_arguments(tool_call)
         if arguments is None:
             return {
                 "error": "Failed to parse tool call arguments",
-                "raw_arguments": getattr(function, "arguments", None),
+                "raw_arguments": field(function, "arguments"),
                 **identity,
             }
 
