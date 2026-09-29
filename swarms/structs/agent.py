@@ -65,6 +65,9 @@ from swarms.schemas.mcp_schemas import (
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.autonomous_loop_utils import (
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
+    MAX_SUBTASK_LOOPS,
     get_autonomous_loop_tool_names,
     get_summary_prompt,
 )
@@ -178,7 +181,7 @@ class Agent:
         stopping_func (Callable): The stopping function
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
-        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
+        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
         output_cleaner (Callable): The output cleaner function
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
@@ -203,6 +206,13 @@ class Agent:
             off unless asked for. Enable it for models that do not reason natively, or
             when an explicit analysis step is worth the extra turn. When False, the system
             prompt is adjusted to match so the model is not told to call a tool it lacks.
+        max_planning_attempts (int): Autonomous loop (max_loops="auto") only. How many
+            times to ask the model for a plan before giving up. Defaults to 5.
+        max_subtask_iterations (int): Autonomous loop only. Ceiling on execution
+            iterations across the whole run, which is also its worst-case number of
+            LLM calls. Defaults to 100.
+        max_subtask_loops (int): Autonomous loop only. Ceiling on iterations spent
+            inside any one subtask before moving on. Defaults to 20.
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
             "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
@@ -396,7 +406,10 @@ class Agent:
         reasoning_effort: Optional[ReasoningEffort] = None,
         thinking_tokens: int = 1024,
         think_tool: bool = False,
-        dynamic_tools: bool = True,
+        max_planning_attempts: int = MAX_PLANNING_ATTEMPTS,
+        max_subtask_iterations: int = MAX_SUBTASK_ITERATIONS,
+        max_subtask_loops: int = MAX_SUBTASK_LOOPS,
+        dynamic_tools: bool = False,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
@@ -408,6 +421,7 @@ class Agent:
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -512,6 +526,19 @@ class Agent:
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
         self.think_tool = think_tool
+        # A budget below 1 would silently make the phase it bounds do nothing.
+        for name, value in (
+            ("max_planning_attempts", max_planning_attempts),
+            ("max_subtask_iterations", max_subtask_iterations),
+            ("max_subtask_loops", max_subtask_loops),
+        ):
+            if value < 1:
+                raise ValueError(
+                    f"{name} must be at least 1, got {value}"
+                )
+        self.max_planning_attempts = max_planning_attempts
+        self.max_subtask_iterations = max_subtask_iterations
+        self.max_subtask_loops = max_subtask_loops
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
@@ -553,6 +580,9 @@ class Agent:
 
         # When False the agent does not read or write MEMORY.md across sessions.
         self.persistent_memory = persistent_memory
+
+        # Prior turns, seeded into short_memory and re-sent as context on every run.
+        self.messages = messages
 
         # Applies to auto and integer max_loops alike
         self.context_compression = context_compression
@@ -1011,6 +1041,7 @@ class Agent:
             tokenizer_model_name=self.model_name,
             context_length=self.context_length,
             memory_md_path=memory_md_path,
+            messages=self.messages,
         )
 
         return memory
@@ -1310,7 +1341,6 @@ class Agent:
                 - "json": JSON string
                 - "dict": Dictionary
                 - "yaml": YAML string
-                - "xml": XML string
                 - "final": Comprehensive final summary (for autonomous loop)
                 - Other types: As configured
 
@@ -1771,6 +1801,8 @@ class Agent:
                     self.short_memory.add(
                         role=self.user_name, content=user_input
                     )
+                    if transcript is not None:
+                        transcript.append_user(user_input)
 
                 if self.loop_interval:
                     logger.info(
@@ -1945,6 +1977,7 @@ class Agent:
         task: str,
         img: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -1959,6 +1992,8 @@ class Agent:
             img (Optional[str]): Optional image input for multimodal models.
             streaming_callback (Optional[Callable[[str], None]]): Callback
                 receiving streaming tokens in real time.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat
+                format that the loop's transcript starts from.
             *args: Passed through to the loop.
             **kwargs: Passed through to the loop.
 
@@ -1969,6 +2004,7 @@ class Agent:
             task=task,
             img=img,
             streaming_callback=streaming_callback,
+            messages=messages,
             *args,
             **kwargs,
         )
@@ -3246,6 +3282,7 @@ Subtask Breakdown:
         correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         n: int = 1,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -3273,6 +3310,10 @@ Subtask Breakdown:
             correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
             n (int): How many outputs to generate (number of runs). Defaults to 1.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
+                e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
+                They are added to the agent's conversation and sent as the context
+                this task continues from. Defaults to the agent's own ``messages``.
             *args: Additional positional arguments for extensibility.
             **kwargs: Additional keyword arguments passed to LLM/tool execution.
 
@@ -3296,6 +3337,10 @@ Subtask Breakdown:
             >>> with open("image.jpg", "rb") as f:
             ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
             >>> agent.run("Describe this image", img=img_base64)
+            >>> agent.run(
+            ...     "And what did I just ask you?",
+            ...     messages=[{"role": "user", "content": "Name three primes."}],
+            ... )
         """
 
         # Outside interactive mode, fail fast instead of blocking on stdin
@@ -3340,7 +3385,10 @@ Subtask Breakdown:
         if streaming_callback is None:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
-            # else: both are None, streaming_callback stays None
+
+        # Constructor messages are already in short_memory; per-call ones are not.
+        if messages:
+            self.short_memory.add_messages(messages)
 
         try:
             if self.max_loops == "auto":
@@ -3349,17 +3397,30 @@ Subtask Breakdown:
                     task=task,
                     img=img,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
             elif n > 1:
-                output = [self.run(task=task) for _ in range(n)]
+                output = [
+                    self._run(
+                        task=task,
+                        img=img,
+                        imgs=imgs,
+                        streaming_callback=streaming_callback,
+                        messages=messages,
+                        *args,
+                        **kwargs,
+                    )
+                    for _ in range(n)
+                ]
             else:
                 output = self._run(
                     task=task,
                     img=img,
                     imgs=imgs,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
@@ -3431,7 +3492,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Any extra kwargs forwarded to _run().
+            **kwargs: Any extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -3460,7 +3521,7 @@ Subtask Breakdown:
 
         def _run_thread():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
@@ -3501,7 +3562,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Extra kwargs forwarded to _run().
+            **kwargs: Extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -3535,7 +3596,7 @@ Subtask Breakdown:
 
         def _run_sync():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
@@ -4254,18 +4315,9 @@ Summary: {summary}
 
         success = True
         try:
-            try:
-                output = self.tool_struct.execute_function_calls_from_api_response(
-                    response
-                )
-            except Exception as e:
-                output = self.tool_struct.execute_function_calls_from_api_response(
-                    response
-                )
-
-                if output is None:
-                    logger.error(f"Error executing tools: {e}")
-                    raise e
+            output = self.tool_struct.execute_function_calls_from_api_response(
+                response
+            )
         except Exception:
             success = False
             raise
@@ -4274,6 +4326,11 @@ Summary: {summary}
             if loader is not None:
                 for name in tool_names:
                     loader.record_outcome(name, success)
+
+        # A reply with no tool calls parses to []; recording it would bury the answer under "[] (empty list)".
+        if not output:
+            self._last_tool_output = output
+            return
 
         self.short_memory.add(
             role="Tool Executor",
