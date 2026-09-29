@@ -135,7 +135,8 @@ class Conversation:
         self._last_cached_tokens: int = 0
 
         self.setup_file_path()
-        self._initialize_new_conversation()
+        if not self.conversation_history:
+            self._initialize_new_conversation()
 
         # Prior MEMORY.md content becomes one System preamble message
         self._suppress_memory_md = False
