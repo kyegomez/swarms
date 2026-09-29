@@ -4302,19 +4302,11 @@ Summary: {summary}
                         title=f"Agent: {self.agent_name} Function Call",
                     )
 
-        try:
-            output = self.tool_struct.execute_function_calls_from_api_response(
+        output = (
+            self.tool_struct.execute_function_calls_from_api_response(
                 response
             )
-        except Exception as e:
-            # Retry the tool call
-            output = self.tool_struct.execute_function_calls_from_api_response(
-                response
-            )
-
-            if output is None:
-                logger.error(f"Error executing tools: {e}")
-                raise e
+        )
 
         # A reply with no tool calls parses to []; recording it would bury the answer under "[] (empty list)".
         if not output:
