@@ -164,6 +164,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [example2_technical_evaluation.py](reasoning_agents/agent_judge_examples/example2_technical_evaluation.py) | Technical evaluation example |
 | [example3_creative_evaluation.py](reasoning_agents/agent_judge_examples/example3_creative_evaluation.py) | Creative evaluation example |
 | [reasoning_agent_router_examples/](reasoning_agents/reasoning_agent_router_examples/) | Reasoning agent router examples |
+| [tree_of_thoughts_examples/](reasoning_agents/tree_of_thoughts_examples/) | Tree of Thoughts search on mathematics, physics and reasoning problems |
 | [agent_judge_example.py](reasoning_agents/reasoning_agent_router_examples/agent_judge_example.py) | Agent judge example |
 | [gkp_agent_example.py](reasoning_agents/reasoning_agent_router_examples/gkp_agent_example.py) | GKP agent example |
 | [ire_example.py](reasoning_agents/reasoning_agent_router_examples/ire_example.py) | IRE example |
