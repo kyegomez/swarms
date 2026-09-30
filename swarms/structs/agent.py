@@ -364,7 +364,7 @@ class Agent:
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
         max_tokens: Optional[int] = None,
-        temperature: float = 0.5,
+        temperature: Optional[float] = None,
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
         plan_enabled: bool = False,

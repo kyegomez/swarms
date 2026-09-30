@@ -215,7 +215,7 @@ class LiteLLM:
         model_name: str = "gpt-5.4",
         system_prompt: str = None,
         stream: bool = False,
-        temperature: float = 0.5,
+        temperature: Optional[float] = None,
         max_tokens: int = 4000,
         ssl_verify: bool = False,
         max_completion_tokens: int = 4000,
@@ -1261,8 +1261,13 @@ class LiteLLM:
             "stream": self.stream,
             self._output_token_key(): self.max_tokens,
             "caching": self.caching,
-            "temperature": self.temperature,
         }
+
+        # Only include temperature if explicitly set (None = provider
+        # default) — some models (e.g. Claude Sonnet 5.5) reject any
+        # temperature value with HTTP 400 (issue #2390).
+        if self.temperature is not None:
+            completion_params["temperature"] = self.temperature
 
         # Only include top_p if explicitly set (not None)
         if self.top_p is not None:
