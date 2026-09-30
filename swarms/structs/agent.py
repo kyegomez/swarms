@@ -195,13 +195,11 @@ class Agent:
             When provided, the agent will automatically fetch and load the prompt from the marketplace
             as the system prompt. This enables one-line prompt loading from the Swarms marketplace.
             Requires the SWARMS_API_KEY environment variable to be set.
-        skills_dir (Union[str, List[str]]): Path, or list of paths, to directories containing Agent Skills in SKILL.md format.
+        skills_dir (str): Path to directory containing Agent Skills in SKILL.md format.
             Implements Anthropic's Agent Skills framework for modular, composable capabilities.
             Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
             and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
-            Example: skills_dir=["./team_skills", "./my_skills"] loads from both. When two directories
-            hold a skill with the same name, the later directory wins and a warning is logged.
         think_tool (bool): Whether the autonomous looper (max_loops="auto") offers the
             `think` tool. Defaults to False. A `think` call spends a full round-trip to
             produce reasoning the model could emit inline alongside its actions, so it is
@@ -419,7 +417,7 @@ class Agent:
         publish_to_marketplace: bool = False,
         use_cases: Optional[List[Dict[str, Any]]] = None,
         marketplace_prompt_id: Optional[str] = None,
-        skills_dir: Optional[Union[str, List[str]]] = None,
+        skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
@@ -737,14 +735,12 @@ class Agent:
         return self.marketplace.publish()
 
     @property
-    def skills_dir(self) -> Optional[Union[str, List[str]]]:
-        """Directory, or directories, the agent loads Agent Skills from."""
+    def skills_dir(self) -> Optional[str]:
+        """Directory the agent loads Agent Skills from."""
         return self.skills.skills_dir
 
     @skills_dir.setter
-    def skills_dir(
-        self, skills_dir: Optional[Union[str, List[str]]]
-    ) -> None:
+    def skills_dir(self, skills_dir: Optional[str]) -> None:
         self.skills.set_skills_dir(skills_dir)
 
     @property
@@ -3235,7 +3231,7 @@ Subtask Breakdown:
         logger.info("SOP Uploaded into the memory")
 
     def load_skills_metadata(
-        self, skills_dir: Optional[Union[str, List[str]]] = None
+        self, skills_dir: str = None
     ) -> List[Dict[str, str]]:
         """
         Load skill metadata from SKILL.md files in the skills directory.
@@ -3244,8 +3240,8 @@ Subtask Breakdown:
         loads skill name and description into memory for context-aware activation.
 
         Args:
-            skills_dir: Path, or list of paths, to directories containing skill
-                folders. Defaults to the agent's configured `skills_dir`.
+            skills_dir: Path to directory containing skill folders. Defaults to
+                the agent's configured `skills_dir`.
 
         Returns:
             List of skill metadata dicts with 'name', 'description', 'path', 'content'
