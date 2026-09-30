@@ -215,7 +215,7 @@ class SkillsManager:
         steps: List[str],
     ) -> Optional[str]:
         """
-        Write a skill to ``skills_dir`` so later runs can load it.
+        Write a skill to the last ``skills_dir`` so later runs load it.
 
         The file is a plan fragment, not executable code: it lists the steps a
         run took, and a later agent reads them through the same Tier 1/Tier 2
@@ -231,7 +231,7 @@ class SkillsManager:
             Path to the written ``SKILL.md``, or ``None`` when skills are
             disabled, the steps are empty, or the write failed.
         """
-        skills_dir = self.skills_dir
+        skills_dir = (skill_dirs(self.skills_dir) or [None])[-1]
 
         if not skills_dir or not steps:
             return None
