@@ -1380,3 +1380,588 @@ def test_resuming_a_named_conversation_keeps_one_system_prompt(
             "User",
             "Assistant",
         ]
+
+
+# Typed tool turns and the request body, folded in from the deleted Transcript class (#2386).
+
+
+def tool_call(name, call_id="call_1", **arguments):
+    return {
+        "id": call_id,
+        "type": "function",
+        "function": {
+            "name": name,
+            "arguments": json.dumps(arguments),
+        },
+    }
+
+
+def assert_calls_answered(messages):
+    """
+    Assert every tool-call turn is followed by its results.
+
+    Args:
+        messages (list): Chat-completions messages.
+    """
+    for index, message in enumerate(messages):
+        if message["role"] != "assistant" or not message.get(
+            "tool_calls"
+        ):
+            continue
+        expected = [c["id"] for c in message["tool_calls"]]
+        following = [
+            m.get("tool_call_id")
+            for m in messages[index + 1 : index + 1 + len(expected)]
+        ]
+        assert following == expected, (
+            f"assistant turn {index} left tool calls unanswered: "
+            f"expected {expected}, got {following}"
+        )
+
+
+class TestTypedToolTurns:
+    def test_records_a_tool_call_and_its_result(self):
+        conv = Conversation()
+        conv.add("Human", "read it")
+        calls = conv.record_assistant(
+            "Agent", [tool_call("read_file", file_path="a")]
+        )
+
+        assert len(calls) == 1 and calls[0]["name"] == "read_file"
+        conv.flush_tool_results(calls, {calls[0]["id"]: "contents"})
+
+        messages = conv.to_messages("Agent")
+        assert [m["role"] for m in messages] == [
+            "user",
+            "assistant",
+            "tool",
+        ]
+        assert messages[-1]["content"] == "contents"
+        assert_calls_answered(messages)
+
+    def test_text_only_response_is_an_assistant_turn(self):
+        conv = Conversation()
+        calls = conv.record_assistant("Agent", "just talking")
+
+        assert calls == []
+        assert conv.to_messages("Agent") == [
+            {"role": "assistant", "content": "just talking"}
+        ]
+
+    def test_missing_result_is_filled_in_the_request_not_the_history(
+        self,
+    ):
+        """A gap would make the next request invalid; an invented row would be the agent's answer."""
+        conv = Conversation()
+        calls = conv.record_assistant(
+            "Agent", [tool_call("grep", call_id="c9")]
+        )
+        conv.flush_tool_results(calls, {})
+
+        last = conv.to_messages("Agent")[-1]
+        assert last["role"] == "tool"
+        assert last["tool_call_id"] == "c9"
+        assert "no result recorded" in last["content"]
+        assert conv.conversation_history[-1].get("tool_calls")
+
+    def test_a_function_call_answer_is_read_back_as_recorded(self):
+        """Structures that ask for a function call as the answer read the final message."""
+        response = [tool_call("handoff", call_id="h1", task="x")]
+        conv = Conversation()
+        conv.record_assistant("Director", response)
+
+        assert conv.get_final_message_content() == response
+        assert conv.to_messages("Director")[0]["content"] is None
+
+    def test_multiple_calls_each_get_a_result(self):
+        conv = Conversation()
+        calls = conv.record_assistant(
+            "Agent",
+            [
+                tool_call("read_file", call_id="a"),
+                tool_call("grep", call_id="b"),
+            ],
+        )
+        conv.flush_tool_results(calls, {"a": "one", "b": "two"})
+
+        messages = conv.to_messages("Agent")
+        assert [m["role"] for m in messages] == [
+            "assistant",
+            "tool",
+            "tool",
+        ]
+        assert_calls_answered(messages)
+
+    def test_call_without_an_id_gets_a_synthesised_one(self):
+        """Written back, so a result keyed by the call's own id pairs with it."""
+        response = [{"function": {"name": "f", "arguments": "{}"}}]
+        conv = Conversation()
+        calls = conv.record_assistant("Agent", response)
+
+        assert calls and calls[0]["id"] == response[0]["id"]
+        conv.flush_tool_results(calls, {response[0]["id"]: "done"})
+        assert conv.to_messages("Agent")[-1]["content"] == "done"
+
+    def test_batch_output_maps_one_value_per_call(self):
+        results = {}
+        conversation_module.map_batch_results(
+            [{"id": "a"}, {"id": "b"}], ["one", "two"], results
+        )
+        assert results == {"a": "one", "b": "two"}
+
+    def test_combined_batch_output_is_recorded_against_every_call(
+        self,
+    ):
+        results = {}
+        conversation_module.map_batch_results(
+            [{"id": "a"}, {"id": "b"}], "combined", results
+        )
+        assert results == {"a": "combined", "b": "combined"}
+
+    def test_to_messages_returns_a_new_list(self):
+        conv = Conversation()
+        conv.add("Human", "x")
+        conv.to_messages("Agent").append(
+            {"role": "user", "content": "mutated"}
+        )
+        assert len(conv.to_messages("Agent")) == 1
+
+
+class TestToMessages:
+    def test_roles_map_to_chat_roles(self):
+        conv = Conversation(system_prompt="be brief")
+        conv.add("Human", "question")
+        conv.add("Agent", "answer")
+        conv.add("assistant", "a caller's assistant turn")
+        conv.add("Editor", "a note from someone else")
+
+        assert conv.to_messages("Agent") == [
+            {"role": "user", "content": "question"},
+            {"role": "assistant", "content": "answer"},
+            {
+                "role": "assistant",
+                "content": "a caller's assistant turn",
+            },
+            {"role": "user", "content": "a note from someone else"},
+        ]
+
+    def test_internal_rows_are_rendered_but_not_sent(self):
+        conv = Conversation()
+        conv.add("Human", "question")
+        conv.add(
+            "Agent",
+            "Current Internal Reasoning Loop: 1/2",
+            internal=True,
+        )
+
+        assert conv.to_messages("Agent") == [
+            {"role": "user", "content": "question"}
+        ]
+        assert "Current Internal Reasoning Loop" in (
+            conv.return_history_as_string()
+        )
+
+    def test_results_follow_their_call_despite_rows_in_between(self):
+        """Tool handlers write rows while their call is still unanswered."""
+        conv = Conversation()
+        calls = conv.record_assistant(
+            "Agent", [tool_call("create_file", call_id="f1")]
+        )
+        conv.add("File Operations", "Created file: a.txt")
+        conv.flush_tool_results(calls, {"f1": "ok"})
+
+        messages = conv.to_messages("Agent")
+        assert [m["role"] for m in messages] == [
+            "assistant",
+            "tool",
+            "user",
+        ]
+        assert_calls_answered(messages)
+
+    def test_a_call_that_was_never_answered_gets_a_placeholder(self):
+        conv = Conversation()
+        conv.record_assistant(
+            "Agent", [tool_call("grep", call_id="g1")]
+        )
+        conv.add("Human", "next")
+
+        messages = conv.to_messages("Agent")
+        assert messages[1]["tool_call_id"] == "g1"
+        assert "no result recorded for grep" in messages[1]["content"]
+        assert messages[2] == {"role": "user", "content": "next"}
+
+    def test_start_limits_the_request_to_a_window(self):
+        conv = Conversation()
+        conv.add("Human", "an earlier run")
+        start = len(conv.conversation_history)
+        conv.add("Human", "this run")
+
+        assert conv.to_messages("Agent", start=start) == [
+            {"role": "user", "content": "this run"}
+        ]
+
+    def test_caller_content_parts_are_sent_as_given(self):
+        parts = [
+            {"type": "text", "text": "what is this?"},
+            {
+                "type": "image_url",
+                "image_url": {"url": "https://x/y.png"},
+            },
+        ]
+        conv = Conversation()
+        conv.add_messages([{"role": "user", "content": parts}])
+
+        assert conv.to_messages("Agent") == [
+            {"role": "user", "content": parts}
+        ]
+
+    def test_caller_tool_turns_are_stored_typed(self):
+        conv = Conversation()
+        conv.add_messages(
+            [
+                {"role": "user", "content": "weather?"},
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [tool_call("get_weather", "w1")],
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": "w1",
+                    "content": "sunny",
+                },
+            ]
+        )
+
+        assert "metadata" not in conv.conversation_history[-1]
+        messages = conv.to_messages("Agent")
+        assert [m["role"] for m in messages] == [
+            "user",
+            "assistant",
+            "tool",
+        ]
+        assert messages[-1]["content"] == "sunny"
+
+
+class TestTypedRowsRenderAndPersist:
+    def _exchange(self, conv):
+        calls = conv.record_assistant(
+            "Agent", [tool_call("read_file", "r1", file_path="a.txt")]
+        )
+        conv.flush_tool_results(calls, {"r1": "file contents"})
+
+    def test_renderings_show_tool_results_as_prose(self):
+        conv = Conversation()
+        self._exchange(conv)
+
+        rendered = conv.return_history_as_string()
+        assert "Agent: [{" in rendered and "read_file" in rendered
+        assert (
+            "Tool Executor: read_file result: file contents"
+            in rendered
+        )
+        assert (
+            conv.get_final_message_content()
+            == "read_file result: file contents"
+        )
+
+    def test_a_call_with_no_content_renders_as_prose(self):
+        conv = Conversation()
+        conv.add_messages(
+            [
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        tool_call("read_file", "r1", file_path="a")
+                    ],
+                }
+            ]
+        )
+        assert conv.return_history_as_string() == (
+            'assistant: read_file({"file_path": "a"})'
+        )
+
+    def test_memory_md_logs_tool_results_as_prose(self, tmp_path):
+        memory_md = tmp_path / "MEMORY.md"
+        conv = Conversation(memory_md_path=str(memory_md))
+        self._exchange(conv)
+
+        assert "read_file result: file contents" in (
+            memory_md.read_text()
+        )
+
+    def test_a_saved_conversation_resumes_with_its_tool_turns(
+        self, tmp_path
+    ):
+        path = tmp_path / "conversation.json"
+        conv = Conversation(save_filepath=str(path))
+        conv.add("Human", "read it")
+        self._exchange(conv)
+        conv.save_as_json()
+
+        restored = Conversation(save_filepath=str(path))
+        restored.load_from_json(str(path))
+
+        assert restored.to_messages("Agent") == conv.to_messages(
+            "Agent"
+        )
+        assert_calls_answered(restored.to_messages("Agent"))
+
+    def test_compaction_keeps_the_summary_and_drops_tool_turns_together(
+        self,
+    ):
+        conv = Conversation(system_prompt="be brief")
+        conv.add("Human", "read it")
+        self._exchange(conv)
+
+        conv.compact(summary="SUMMARY", summary_role="Human")
+
+        assert conv.to_messages("Agent") == [
+            {"role": "user", "content": "SUMMARY"}
+        ]
+
+
+class TestIntegerMaxLoopsUsesShortMemory:
+    """The fixed-loop path sends a real conversation, built from short_memory."""
+
+    def _agent(self, **kwargs):
+        from swarms import Agent
+
+        return Agent(
+            agent_name="IntPathTest",
+            model_name="gpt-4o-mini",
+            persistent_memory=False,
+            print_on=False,
+            verbose=False,
+            autosave=False,
+            # Keeps the suite offline: the summariser would otherwise make a
+            # real provider call after each tool execution.
+            tool_call_summary=False,
+            **kwargs,
+        )
+
+    @staticmethod
+    def get_weather(city: str) -> str:
+        """Return the weather for a city.
+
+        Args:
+            city: The city name.
+        """
+        return f"{city}: sunny"
+
+    def test_call_llm_receives_messages_not_a_task_string(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=1)
+        seen = {}
+
+        def capture(task=None, *args, **kwargs):
+            seen["task"] = task
+            seen["messages"] = kwargs.get("messages")
+            return "done"
+
+        monkeypatch.setattr(agent, "call_llm", capture)
+        agent.run("find the bug")
+
+        assert seen["task"] is None
+        assert seen["messages"] == [
+            {"role": "user", "content": "find the bug"}
+        ]
+
+    def test_tool_results_are_paired_across_loops(self, monkeypatch):
+        agent = self._agent(max_loops=2, tools=[self.get_weather])
+        captured = []
+        turn = {"n": 0}
+
+        def scripted(task=None, *args, **kwargs):
+            captured.append(kwargs.get("messages"))
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return [tool_call("get_weather", "w1", city="Paris")]
+            return "It is sunny in Paris."
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        agent.run("weather in Paris?")
+
+        assert len(captured) == 2
+        assert any(m["role"] == "tool" for m in captured[1])
+        assert_calls_answered(captured[1])
+
+    def test_short_memory_holds_the_turns_once(self, monkeypatch):
+        """One store: no prose copy of the call or its result."""
+        agent = self._agent(max_loops=2, tools=[self.get_weather])
+        responses = [
+            [tool_call("get_weather", "w1", city="Paris")],
+            "It is sunny in Paris.",
+        ]
+        monkeypatch.setattr(
+            agent, "call_llm", lambda *a, **k: responses.pop(0)
+        )
+        agent.run("weather in Paris?")
+
+        rows = agent.short_memory.conversation_history
+        assert [r.get("tool_call_id") for r in rows].count("w1") == 1
+        call_rows = [r for r in rows if r.get("tool_calls")]
+        assert [r["tool_calls"][0]["id"] for r in call_rows] == ["w1"]
+        assert not any(
+            r.get("role") == "Tool Executor"
+            and not r.get("tool_call_id")
+            for r in rows
+        )
+
+    def test_a_tool_failure_reaches_the_model(self, monkeypatch):
+        """Changed on purpose: the model used to get a placeholder, not the reason."""
+
+        def broken(city: str) -> str:
+            """Always fails.
+
+            Args:
+                city: The city name.
+            """
+            raise RuntimeError("weather service down")
+
+        agent = self._agent(
+            max_loops=2, tools=[broken], tool_retry_attempts=1
+        )
+        captured = []
+        responses = [[tool_call("broken", "b1", city="Paris")], "ok"]
+
+        def scripted(task=None, *args, **kwargs):
+            captured.append(kwargs.get("messages"))
+            return responses.pop(0)
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        agent.run("weather?")
+
+        result = captured[1][-1]
+        assert result["tool_call_id"] == "b1"
+        assert "Tool execution failed" in result["content"]
+        assert "weather service down" in result["content"]
+
+    def test_the_tool_summary_is_recorded_after_the_results(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=2, tools=[self.get_weather])
+        agent.tool_call_summary = True
+
+        class FakeSummaryLLM:
+            def run(self, *args, **kwargs):
+                return "SUMMARY"
+
+        agent.temp_llm_instance_for_tool_summary = FakeSummaryLLM
+        captured = []
+        responses = [
+            [tool_call("get_weather", "w1", city="Paris")],
+            "done",
+        ]
+
+        def scripted(task=None, *args, **kwargs):
+            captured.append(kwargs.get("messages"))
+            return responses.pop(0)
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        agent.run("weather?")
+
+        rows = agent.short_memory.conversation_history
+        result_index = next(
+            i for i, r in enumerate(rows) if r.get("tool_call_id")
+        )
+        summary_index = next(
+            i
+            for i, r in enumerate(rows)
+            if r.get("content") == "SUMMARY"
+        )
+        assert summary_index > result_index
+        assert rows[summary_index]["internal"] is True
+        assert not any(
+            m.get("content") == "SUMMARY" for m in captured[1]
+        )
+
+    def test_mcp_output_answers_the_mcp_call(self, monkeypatch):
+        """Changed on purpose: the model used to get a placeholder, not the MCP result."""
+        agent = self._agent(max_loops=2)
+        monkeypatch.setattr(
+            type(agent), "mcp_enabled", property(lambda self: True)
+        )
+        monkeypatch.setattr(
+            agent,
+            "mcp_tool_handling",
+            lambda response, current_loop=0: {"posted": True},
+        )
+        captured = []
+        responses = [
+            [tool_call("slack_post", "m1", text="hi")],
+            "done",
+        ]
+
+        def scripted(task=None, *args, **kwargs):
+            captured.append(kwargs.get("messages"))
+            return responses.pop(0)
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        agent.run("post it")
+
+        result = captured[1][-1]
+        assert result["tool_call_id"] == "m1"
+        assert "posted" in result["content"]
+
+    def test_compaction_mid_run_sends_the_summary(self, monkeypatch):
+        agent = self._agent(max_loops=2, tools=[self.get_weather])
+
+        class CompactOnSecondLoop:
+            calls = 0
+
+            def maybe_compress(self, agent):
+                self.calls += 1
+                if self.calls < 2:
+                    return None
+                agent.short_memory.compact(
+                    summary="[Compressed Memory Summary]\n\nSUMMARY",
+                    summary_role=agent.user_name,
+                )
+                return "SUMMARY"
+
+        agent._context_compressor = CompactOnSecondLoop()
+        captured = []
+        responses = [
+            [tool_call("get_weather", "w1", city="Paris")],
+            "done",
+        ]
+
+        def scripted(task=None, *args, **kwargs):
+            captured.append(kwargs.get("messages"))
+            return responses.pop(0)
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        agent.run("weather?")
+
+        assert captured[1] == [
+            {
+                "role": "user",
+                "content": "[Compressed Memory Summary]\n\nSUMMARY",
+            }
+        ]
+
+    def test_transforms_keep_the_legacy_flattened_prompt(
+        self, monkeypatch
+    ):
+        """Transforms rewrite the history into a string by design."""
+        agent = self._agent(max_loops=1)
+        agent.transforms = object()
+        seen = {}
+
+        def capture(task=None, *args, **kwargs):
+            seen["task"] = task
+            seen["messages"] = kwargs.get("messages")
+            return "done"
+
+        monkeypatch.setattr(agent, "call_llm", capture)
+        monkeypatch.setattr(
+            "swarms.structs.agent.handle_transforms",
+            lambda **kw: "FLATTENED",
+        )
+        agent.run("hello")
+
+        assert seen["task"] == "FLATTENED"
+        assert seen["messages"] is None

@@ -71,9 +71,11 @@ from swarms.structs.autonomous_loop_utils import (
     get_autonomous_loop_tool_names,
     get_summary_prompt,
 )
-from swarms.structs.conversation import Conversation
+from swarms.structs.conversation import (
+    Conversation,
+    map_batch_results,
+)
 from swarms.structs.ma_utils import set_random_models_for_agents
-from swarms.structs.transcript import Transcript
 from swarms.tools.dynamic_tool_loader import (
     DYNAMIC_TOOLS_NOTICE,
     SEARCH_TOOL_NAME,
@@ -1270,6 +1272,7 @@ class Agent:
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
+        window_start: Optional[int] = None,
         **kwargs,
     ) -> Any:
         """
@@ -1383,6 +1386,15 @@ class Agent:
             ... )
         """
         try:
+            # The request covers the caller's messages onward, or the whole history.
+            if window_start is None:
+                window_start = (
+                    len(self.short_memory.conversation_history)
+                    - len(messages)
+                    if messages is not None
+                    else 0
+                )
+
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.check_model_supports_utilities(img=img)
@@ -1394,9 +1406,6 @@ class Agent:
 
             # Set the loop count
             loop_count = 0
-
-            # Built lazily so the transforms path can keep its flattened prompt
-            transcript: Optional[Transcript] = None
 
             # Clear the short memory
             response = None
@@ -1413,8 +1422,16 @@ class Agent:
             ):
                 loop_count += 1
 
-                if self._context_compressor is not None:
-                    self._context_compressor.maybe_compress(self)
+                if (
+                    self._context_compressor is not None
+                    and self._context_compressor.maybe_compress(self)
+                    is not None
+                ):
+                    # compact() left the summary last; earlier rows are static context.
+                    window_start = (
+                        len(self.short_memory.conversation_history)
+                        - 1
+                    )
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
@@ -1428,6 +1445,7 @@ class Agent:
                         self.short_memory.add(
                             role=self.agent_name,
                             content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
+                            internal=True,
                         )
 
                 # If it is the final loop, then add the final loop message
@@ -1440,6 +1458,7 @@ class Agent:
                         self.short_memory.add(
                             role=self.agent_name,
                             content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
+                            internal=True,
                         )
 
                 # Dynamic temperature
@@ -1448,17 +1467,12 @@ class Agent:
 
                 # Task prompt with optional transforms.
                 task_prompt = None
-                use_transcript = self.transforms is None
 
                 if self.transforms is not None:
                     task_prompt = handle_transforms(
                         transforms=self.transforms,
                         short_memory=self.short_memory,
                         model_name=self.model_name,
-                    )
-                elif transcript is None:
-                    transcript = self._transcript_from_messages(
-                        messages, task
                     )
 
                 # Parameters
@@ -1485,9 +1499,12 @@ class Agent:
 
                         with loading_ctx:
                             llm_kwargs = dict(kwargs)
-                            if use_transcript:
+                            if self.transforms is None:
                                 llm_kwargs["messages"] = (
-                                    transcript.messages
+                                    self.short_memory.to_messages(
+                                        self.agent_name,
+                                        start=window_start,
+                                    )
                                 )
 
                             response = self.call_llm(
@@ -1510,16 +1527,12 @@ class Agent:
                         # Parse the response from the agent with the output type
                         response = self.parse_llm_output(response)
 
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=response,
-                        )
-
                         # Every tool call in this turn needs a matching result before the next request.
-                        if use_transcript:
-                            turn_calls = transcript.record_assistant(
-                                response
+                        turn_calls = (
+                            self.short_memory.record_assistant(
+                                self.agent_name, response
                             )
+                        )
 
                         # Print
                         if self.print_on is True:
@@ -1569,10 +1582,6 @@ class Agent:
                                 result = self._tool_search_tool(
                                     **arguments
                                 )
-                                self.short_memory.add(
-                                    role="Tool Executor",
-                                    content=f"tool_search result: {result}",
-                                )
                                 turn_results[
                                     tool_call.get("id", "")
                                 ] = result
@@ -1584,10 +1593,9 @@ class Agent:
                             # Falling through with nothing left would log a misleading "no function calls found".
                             response = remaining
                             if not remaining:
-                                if use_transcript and turn_calls:
-                                    transcript.flush_tool_results(
-                                        turn_calls, turn_results
-                                    )
+                                self.short_memory.flush_tool_results(
+                                    turn_calls, turn_results
+                                )
                                 success = True
                                 continue
 
@@ -1619,11 +1627,6 @@ class Agent:
                                     result = self._handoff_task_tool(
                                         handoffs=handoffs_list
                                     )
-                                    # Add result to memory
-                                    self.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"Handoff Result:\n{result}",
-                                    )
                                     turn_results[
                                         tool_call.get("id", "")
                                     ] = result
@@ -1641,12 +1644,13 @@ class Agent:
                                         )
 
                         # Check and execute callable tools
+                        tool_output = None
                         if exists(self.tools):
                             tool_output = self.tool_execution_retry(
                                 response, loop_count
                             )
-                            if use_transcript and turn_calls:
-                                transcript.map_batch_results(
+                            if turn_calls:
+                                map_batch_results(
                                     [
                                         {"id": c["id"]}
                                         for c in turn_calls
@@ -1655,24 +1659,53 @@ class Agent:
                                     turn_results,
                                     formatter=format_data_structure,
                                 )
+                            elif tool_output:
+                                # No recorded call to answer, so it is kept for the record only.
+                                self.short_memory.add(
+                                    role="Tool Executor",
+                                    content=format_data_structure(
+                                        tool_output
+                                    ),
+                                    internal=True,
+                                )
 
                         # Handle MCP tools
                         if self.mcp_enabled:
                             # Only handle MCP tools if response is not None
                             if response is not None:
-                                self.mcp_tool_handling(
+                                mcp_output = self.mcp_tool_handling(
                                     response=response,
                                     current_loop=loop_count,
                                 )
+                                unanswered = [
+                                    {"id": c["id"]}
+                                    for c in turn_calls
+                                    if c["id"] not in turn_results
+                                ]
+                                if mcp_output and unanswered:
+                                    map_batch_results(
+                                        unanswered,
+                                        mcp_output,
+                                        turn_results,
+                                        formatter=format_data_structure,
+                                    )
                             else:
                                 logger.warning(
                                     f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
                                 )
 
                         # Answer every tool call just recorded; a gap makes the next request invalid.
-                        if use_transcript and turn_calls:
-                            transcript.flush_tool_results(
-                                turn_calls, turn_results
+                        self.short_memory.flush_tool_results(
+                            turn_calls, turn_results
+                        )
+
+                        # After the results, so the summary follows what it summarises.
+                        if (
+                            self.tool_call_summary is True
+                            and tool_output
+                        ):
+                            self._summarize_tool_output(
+                                tool_output, loop_count
                             )
 
                         success = True  # Mark as successful to exit the retry loop
@@ -1685,24 +1718,23 @@ class Agent:
 
                     except AgentToolExecutionError as e:
                         # A tool failure is not a provider failure, re-running the model cannot fix it
-                        if use_transcript and turn_calls:
-                            transcript.flush_tool_results(
-                                turn_calls, turn_results
+                        failure = (
+                            f"Tool execution failed after "
+                            f"{self.tool_retry_attempts} attempts: {e}"
+                        )
+                        for call in turn_calls:
+                            turn_results.setdefault(
+                                call["id"], failure
                             )
+                        self.short_memory.flush_tool_results(
+                            turn_calls, turn_results
+                        )
 
                         capture_error(
                             e,
                             self,
                             name="Agent.tool_error",
                             loop=loop_count,
-                        )
-
-                        self.short_memory.add(
-                            role="Tool Executor",
-                            content=(
-                                f"Tool execution failed after "
-                                f"{self.tool_retry_attempts} attempts: {e}"
-                            ),
                         )
 
                         # Exit the retry loop, not the run, so the model can read the failure
@@ -1716,10 +1748,9 @@ class Agent:
                     ) as e:
 
                         # Answer the recorded tool calls so the retried request is well formed
-                        if use_transcript and turn_calls:
-                            transcript.flush_tool_results(
-                                turn_calls, turn_results
-                            )
+                        self.short_memory.flush_tool_results(
+                            turn_calls, turn_results
+                        )
 
                         # The retry loop swallows this, so capture_run never sees it
                         capture_error(
@@ -1807,8 +1838,6 @@ class Agent:
                     self.short_memory.add(
                         role=self.user_name, content=user_input
                     )
-                    if transcript is not None:
-                        transcript.append_user(user_input)
 
                 if self.loop_interval:
                     logger.info(
@@ -1988,23 +2017,18 @@ class Agent:
         **kwargs,
     ):
         """
-        Run the plan-execute-summarize loop used when ``max_loops="auto"``.
-
-        Delegates to :class:`~swarms.agents.autonomous_loop.AutonomousAgentLoop`,
-        which owns the loop's planning, execution, and tool-dispatch logic.
+        Run the plan, execute and summarize loop used when max_loops is "auto".
 
         Args:
-            task (str): The task for the agent to work through autonomously.
-            img (Optional[str]): Optional image input for multimodal models.
-            streaming_callback (Optional[Callable[[str], None]]): Callback
-                receiving streaming tokens in real time.
-            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat
-                format that the loop's transcript starts from.
+            task (str): The task to complete.
+            img (Optional[str]): An image to send with the task.
+            streaming_callback (Optional[Callable[[str], None]]): Receives tokens.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns to continue from.
             *args: Passed through to the loop.
             **kwargs: Passed through to the loop.
 
         Returns:
-            The agent's final answer once it determines the task is complete.
+            Any: The agent's output.
         """
         return self.autonomous_loop._run_autonomous_loop(
             task=task,
@@ -2165,57 +2189,20 @@ class Agent:
             )
         return result
 
-    def _transcript_from_memory(self) -> Transcript:
-        """
-        Seed a structured transcript from ``short_memory``.
-
-        Conversation roles are free-form strings ("User", the agent name,
-        "Tool Executor", ...), so they are mapped onto chat roles here. The
-        system prompt is skipped because the LLM wrapper supplies it. Turns
-        added *during* a run are appended structurally on top of this prefix,
-        which is what preserves tool-call fidelity where it matters most.
-        """
-        transcript = Transcript()
-        for message in self.short_memory.conversation_history:
-            if not isinstance(message, dict):
-                continue
-            role = message.get("role")
-            content = message.get("content")
-            if content is None or str(role).lower() == "system":
-                continue
-            if role == self.agent_name:
-                transcript.append_assistant_text(content)
-            else:
-                transcript.append_user(content)
-        return transcript
-
-    def _memory_and_transcript(
-        self, role: str, content: Any, transcript: Transcript
-    ) -> None:
-        """Record a turn in both ``short_memory`` and the live transcript."""
-        self.short_memory.add(role=role, content=content)
-        if role == self.agent_name:
-            transcript.append_assistant_text(content)
-        else:
-            transcript.append_user(content)
-
     def _generate_final_summary(
         self,
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[dict]] = None,
     ) -> Any:
         """
-        Generate a comprehensive final summary of the autonomous task execution.
+        Ask the model for a final summary of the autonomous run.
 
         Args:
-            streaming_callback: Optional callback receiving streaming tokens.
-            messages: The autonomous loop's structured transcript. When given,
-                the summary is requested against the real conversation - with
-                its tool calls and tool results intact - rather than against a
-                flattened string rendering of it.
+            streaming_callback (Optional[Callable[[str], None]]): Receives tokens.
+            messages (Optional[List[dict]]): The run's conversation in chat format.
 
         Returns:
-            Any: The conversation shaped by ``output_type``, on every path.
+            Any: The conversation shaped by the output type.
         """
         summary_prompt = get_summary_prompt()
         self.short_memory.add(
@@ -2242,46 +2229,42 @@ class Agent:
 
             response = self.parse_llm_output(response)
 
-            # Add LLM response to memory
-            self.short_memory.add(
-                role=self.agent_name, content=str(response)
+            calls = self.short_memory.record_assistant(
+                self.agent_name, response
             )
 
             # Check if complete_task was called
-            if isinstance(response, list):
-                for tool_call in response:
-                    if (
-                        isinstance(tool_call, dict)
-                        and tool_call.get("function", {}).get("name")
-                        == "complete_task"
-                    ):
-                        arguments = json.loads(
-                            tool_call["function"]["arguments"]
-                        )
+            completion = next(
+                (c for c in calls if c["name"] == "complete_task"),
+                None,
+            )
+            if completion is not None:
+                arguments = json.loads(completion["arguments"])
 
-                        # Visualize final task completion
-                        self._visualize_function_call(
-                            "complete_task", arguments
-                        )
+                # Visualize final task completion
+                self._visualize_function_call(
+                    "complete_task", arguments
+                )
 
-                        result = self._complete_task_tool(**arguments)
+                result = self._complete_task_tool(**arguments)
 
-                        # Add result to memory
-                        self.short_memory.add(
-                            role="Tool Executor",
-                            content=f"complete_task result: {result}",
-                        )
+                self.short_memory.flush_tool_results(
+                    calls, {completion["id"]: result}
+                )
 
-                        # Show comprehensive summary
-                        if self.print_on:
-                            formatter.print_panel(
-                                result,
-                                title="Task Completion Summary",
-                            )
+                # Show comprehensive summary
+                if self.print_on:
+                    formatter.print_panel(
+                        result,
+                        title="Task Completion Summary",
+                    )
 
-                        return history_output_formatter(
-                            self.short_memory, type=self.output_type
-                        )
+                return history_output_formatter(
+                    self.short_memory, type=self.output_type
+                )
+
+            # Answered even when none completed the task, so the history stays sendable.
+            self.short_memory.flush_tool_results(calls, {})
 
             # If complete_task wasn't called, generate summary manually
             comprehensive_summary = f"""Task Execution Summary
@@ -3403,6 +3386,13 @@ Subtask Breakdown:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
 
+        # This run's request starts at the caller's messages, so record where they land.
+        window_start = (
+            len(self.short_memory.conversation_history)
+            if messages is not None
+            else 0
+        )
+
         # Constructor messages are already in short_memory; per-call ones are not.
         if messages:
             self.short_memory.add_messages(messages)
@@ -3427,6 +3417,7 @@ Subtask Breakdown:
                         streaming_callback=streaming_callback,
                         messages=messages,
                         *args,
+                        window_start=window_start,
                         **kwargs,
                     )
                     for _ in range(n)
@@ -3439,6 +3430,7 @@ Subtask Breakdown:
                     streaming_callback=streaming_callback,
                     messages=messages,
                     *args,
+                    window_start=window_start,
                     **kwargs,
                 )
 
@@ -3976,9 +3968,11 @@ Summary: {summary}
                     f"  Summary: {subtask['summary']}\n"
                 )
 
-        # Add to memory
+        # Written while the call is unanswered; the model reads the returned result instead.
         self.short_memory.add(
-            role=self.agent_name, content=comprehensive_summary
+            role=self.agent_name,
+            content=comprehensive_summary,
+            internal=True,
         )
 
         if self.verbose:
@@ -4005,43 +3999,14 @@ Summary: {summary}
         self, response: any, current_loop: Optional[int] = 0
     ):
         """
-        Execute the MCP tool calls contained in an LLM response.
-
-        All of the MCP mechanics — routing each tool call to the server that
-        owns it, authenticating (API key, bearer token, or OAuth), opening the
-        session and shaping the result — are handled by
-        :class:`swarms.tools.mcp_manager.MCPManager`. This method only wires
-        the result back into the agent's conversation.
-
-        **Post-Execution Processing:**
-        1. Formats the tool results as JSON
-        2. Adds them to conversation memory under the "Tool Executor" role
-        3. Generates a natural-language summary with a tool-free LLM instance
-        4. Displays the summary if ``print_on=True``
+        Run the MCP tool calls in a response.
 
         Args:
-            response (any): The LLM response containing MCP tool calls. Can be
-                a list of tool calls, a single tool call, a full assistant
-                message, or a JSON string of any of those.
-            current_loop (Optional[int]): The current loop iteration number,
-                used for logging and progress display. Defaults to 0.
+            response (Any): The model's response holding the calls.
+            current_loop (Optional[int]): The current loop, for display.
 
         Returns:
-            None: Modifies internal state (memory, printed output) only.
-
-        Raises:
-            AgentMCPConnectionError: If no MCP server could be reached.
-            AgentMCPToolError: If tool execution fails outright.
-
-        Examples:
-            >>> # Single MCP server secured with an API key
-            >>> agent = Agent(mcp_url="https://api.example.com/mcp", mcp_api_key="sk-...")
-            >>> response = [{"function": {"name": "mcp_tool", "arguments": "{}"}}]
-            >>> agent.mcp_tool_handling(response, current_loop=1)
-
-            >>> # Multiple MCP servers
-            >>> agent = Agent(mcp_urls=["https://a/mcp", "https://b/mcp"])
-            >>> agent.mcp_tool_handling(response, current_loop=2)
+            Any: The tool results, or None when there were no MCP calls.
         """
         try:
             tool_response = self.mcp_manager.execute_tool_calls(
@@ -4064,18 +4029,12 @@ Summary: {summary}
                     style="green",
                 )
 
-            # Add to the memory
-            self.short_memory.add(
-                role="Tool Executor",
-                content=text_content,
-            )
-
             # Create a temporary LLM instance without tools for the follow-up call
             try:
                 temp_llm = self.temp_llm_instance_for_tool_summary()
 
                 summary = temp_llm.run(
-                    task=self.short_memory.get_str()
+                    task=f"{self.short_memory.get_str()}\n\n{text_content}"
                 )
             except Exception as e:
                 logger.error(
@@ -4087,10 +4046,10 @@ Summary: {summary}
             if self.print_on is True:
                 self.pretty_print(summary, loop_count=current_loop)
 
-            # Add to the memory
             self.short_memory.add(
-                role=self.agent_name, content=summary
+                role=self.agent_name, content=summary, internal=True
             )
+            return tool_response
         except Exception as e:
             logger.error(
                 f"Error in MCP tool handling for {self.agent_name}: {e} Traceback: {traceback.format_exc()}"
@@ -4191,72 +4150,11 @@ Summary: {summary}
 
     def execute_tools(self, response: any, loop_count: int):
         """
-        Execute tools based on LLM response containing function calls.
-
-        This method processes tool calls from the LLM response, executes them,
-        and handles the results. It supports both single and multiple tool calls,
-        visualizes function calls before execution, and optionally summarizes
-        tool execution results.
-
-        **Process Flow:**
-        1. Validates response is not None
-        2. Visualizes function calls if print_on=True
-        3. Executes tools using tool_struct
-        4. Adds tool output to conversation memory
-        5. Displays execution results (detailed or brief based on show_tool_execution_output)
-        6. Optionally generates tool execution summary using LLM
-
-        **Tool Call Format:**
-        The method accepts tool calls in two formats:
-        - List of tool calls: [{"function": {"name": "...", "arguments": "..."}, "id": "..."}, ...]
-        - Single tool call dict: {"function": {"name": "...", "arguments": "..."}, "id": "..."}
-
-        **Visualization:**
-        If print_on=True, function calls are visualized with:
-        - Function name
-        - Call ID (if available)
-        - Arguments (truncated if >200 chars)
-
-        **Tool Execution Summary:**
-        If tool_call_summary=True, a temporary LLM instance is created to summarize
-        tool execution results. This helps the agent understand tool outputs better.
+        Run the tool calls in a response and keep their output for the caller.
 
         Args:
-            response (any): The LLM response containing tool calls. Can be:
-                - List of tool call dictionaries
-                - Single tool call dictionary
-                - None (will log warning and return early)
-            loop_count (int): The current loop iteration number. Used for logging
-                and progress tracking.
-
-        Returns:
-            None: This method modifies internal state (adds to memory, displays output)
-                but does not return a value.
-
-        Raises:
-            Exception: If tool execution fails after retry attempts. The error is
-                logged with full traceback before raising.
-
-        Note:
-            - Tool execution results are automatically formatted and added to memory
-            - If show_tool_execution_output=False, only brief confirmation is shown
-            - Tool execution summary uses a temporary LLM instance without tools
-            - The method handles both JSON string and dict format for arguments
-
-        Examples:
-            >>> # Single tool call
-            >>> response = [{
-            ...     "function": {"name": "search_web", "arguments": '{"query": "Python"}'},
-            ...     "id": "call_123"
-            ... }]
-            >>> agent.execute_tools(response, loop_count=1)
-
-            >>> # Multiple tool calls
-            >>> response = [
-            ...     {"function": {"name": "tool1", "arguments": "{}"}, "id": "call_1"},
-            ...     {"function": {"name": "tool2", "arguments": "{}"}, "id": "call_2"}
-            ... ]
-            >>> agent.execute_tools(response, loop_count=2)
+            response (Any): A tool call, or a list of them, from the model.
+            loop_count (int): The current loop, for display and logs.
         """
         # Handle None response gracefully
         if response is None:
@@ -4325,18 +4223,11 @@ Summary: {summary}
             )
         )
 
-        # A reply with no tool calls parses to []; recording it would bury the answer under "[] (empty list)".
-        if not output:
-            self._last_tool_output = output
-            return
-
-        self.short_memory.add(
-            role="Tool Executor",
-            content=format_data_structure(output),
-        )
-
-        # Stored so a transcript builder can map it to tool_call ids.
+        # The caller records it as the results of the calls it answers.
         self._last_tool_output = output
+
+        if not output:
+            return
 
         if self.print_on is True:
             # Extract tool names and details from response for better display
@@ -4407,8 +4298,18 @@ Summary: {summary}
                         title="Tool Execution",
                     )
 
-        # A temporary LLM instead of mutating the cached one.
-        if self.tool_call_summary is True:
+    def _summarize_tool_output(
+        self, output: Any, loop_count: int
+    ) -> None:
+        """
+        Summarize tool output for the record.
+
+        Args:
+            output (Any): What the tools returned.
+            loop_count (int): The current loop, for display.
+        """
+        try:
+            # A temporary LLM instead of mutating the cached one.
             temp_llm = self.temp_llm_instance_for_tool_summary()
 
             tool_response = temp_llm.run(
@@ -4421,17 +4322,25 @@ Summary: {summary}
                 {output}
                 """
             )
-
-            self.short_memory.add(
-                role=self.agent_name,
-                content=tool_response,
+        except Exception as e:
+            # Skipped, not retried: the tools it describes already ran.
+            logger.error(
+                f"Agent '{self.agent_name}' could not summarise tool output: {e}"
             )
+            return
 
-            if self.print_on is True:
-                self.pretty_print(
-                    tool_response,
-                    loop_count,
-                )
+        # Internal: the model reads the tool results themselves.
+        self.short_memory.add(
+            role=self.agent_name,
+            content=tool_response,
+            internal=True,
+        )
+
+        if self.print_on is True:
+            self.pretty_print(
+                tool_response,
+                loop_count,
+            )
 
     def list_output_types(self):
         return OutputType
@@ -4528,29 +4437,3 @@ Summary: {summary}
             f"Agent '{self.agent_name}' failed to execute tools in loop "
             f"{loop_count} after {attempts} attempt(s): {last_error}"
         ) from last_error
-
-    def _transcript_from_messages(
-        self,
-        messages: Optional[List[Dict[str, Any]]],
-        task: Optional[Any],
-    ) -> Transcript:
-        """
-        Build this run's transcript, preferring caller-supplied turns.
-
-        Args:
-            messages: Prior conversation as typed chat messages. When given,
-                these replace the memory-derived prefix and ``task`` is
-                appended as the new user turn. ``None`` falls back to
-                :meth:`_transcript_from_memory`.
-            task: The instruction for this turn.
-
-        Returns:
-            The transcript to send with the next request.
-        """
-        if messages is None:
-            return self._transcript_from_memory()
-
-        transcript = Transcript(list(messages))
-        if task is not None:
-            transcript.append_user(task)
-        return transcript

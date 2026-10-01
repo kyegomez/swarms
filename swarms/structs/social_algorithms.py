@@ -68,7 +68,7 @@ class SocialAlgorithms:
         verbose (bool): Whether to log progress.
 
     Attributes:
-        conversation (Conversation): Transcript of every agent message, kept
+        conversation (Conversation): Record of every agent message, kept
             across runs.
 
     Raises:

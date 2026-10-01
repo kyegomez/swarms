@@ -145,7 +145,11 @@ class ContextCompressor:
             "stay within the context window.\n\n"
             f"{summary}"
         )
-        agent.short_memory.compact(summary=summary_content)
+        # A user turn, not System: the request body leaves system rows out, so the model would lose it.
+        agent.short_memory.compact(
+            summary=summary_content,
+            summary_role=getattr(agent, "user_name", None) or "User",
+        )
 
         new_tokens = count_tokens(
             agent.short_memory.return_history_as_string()

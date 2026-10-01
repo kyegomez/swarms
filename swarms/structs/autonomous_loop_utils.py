@@ -685,6 +685,7 @@ def respond_to_user_tool(
     agent.short_memory.add(
         role="User Communication",
         content=f"[{message_type.upper()}] {message}",
+        internal=True,
     )
 
     if agent.verbose:
@@ -733,6 +734,7 @@ def create_file_tool(
         agent.short_memory.add(
             role="File Operations",
             content=f"Created file: {full_path}",
+            internal=True,
         )
 
         if agent.verbose:
@@ -745,6 +747,7 @@ def create_file_tool(
         agent.short_memory.add(
             role="File Operations",
             content=f"Error: {error_msg}",
+            internal=True,
         )
         return error_msg
 
@@ -795,6 +798,7 @@ def update_file_tool(
         agent.short_memory.add(
             role="File Operations",
             content=f"{action.capitalize()} file: {full_path}",
+            internal=True,
         )
 
         if agent.verbose:
@@ -807,6 +811,7 @@ def update_file_tool(
         agent.short_memory.add(
             role="File Operations",
             content=f"Error: {error_msg}",
+            internal=True,
         )
         return error_msg
 
@@ -848,6 +853,7 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         agent.short_memory.add(
             role="File Operations",
             content=f"Read file: {full_path} ({len(raw)} characters)",
+            internal=True,
         )
 
         if agent.verbose:
@@ -860,6 +866,7 @@ def read_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         agent.short_memory.add(
             role="File Operations",
             content=f"Error: {error_msg}",
+            internal=True,
         )
         return error_msg
 
@@ -917,6 +924,7 @@ def list_directory_tool(
         agent.short_memory.add(
             role="File Operations",
             content=f"Listed directory: {full_path} ({len(items)} items)",
+            internal=True,
         )
 
         if agent.verbose:
@@ -931,6 +939,7 @@ def list_directory_tool(
         agent.short_memory.add(
             role="File Operations",
             content=f"Error: {error_msg}",
+            internal=True,
         )
         return error_msg
 
@@ -972,6 +981,7 @@ def delete_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         agent.short_memory.add(
             role="File Operations",
             content=f"Deleted file: {full_path}",
+            internal=True,
         )
 
         if agent.verbose:
@@ -984,16 +994,15 @@ def delete_file_tool(agent: Any, file_path: str, **kwargs) -> str:
         agent.short_memory.add(
             role="File Operations",
             content=f"Error: {error_msg}",
+            internal=True,
         )
         return error_msg
 
 
 _BASH_BLOCKLIST = [
-    # Recursive/forced deletion
     ("rm", "-rf"),
     ("rm", "-fr"),
     ("rm", "-r"),
-    # Pipe command output into a shell interpreter
     ("| sh",),
     ("| bash",),
     ("| zsh",),
@@ -1003,51 +1012,40 @@ _BASH_BLOCKLIST = [
     ("| ruby",),
     ("| node",),
     ("| php",),
-    # Raw disk writes
     ("dd", "if="),
     ("mkfs",),
     ("> /dev/sd",),
     ("> /dev/nvme",),
     ("> /dev/mem",),
     ("> /dev/null",),
-    # Fork bomb pattern
     (":(){",),
-    # System shutdown / reboot
     ("shutdown",),
     ("reboot",),
     ("halt",),
     ("poweroff",),
-    # Privilege escalation
     ("chmod 777 /",),
     ("chown", "/etc"),
     ("chown", "/bin"),
     ("sudo",),
     ("su -",),
     ("pkexec",),
-    # Reading sensitive system files
     ("/etc/passwd",),
     ("/etc/shadow",),
     ("/etc/sudoers",),
-    # Network exfiltration primitives
     ("curl", "-d"),
     ("wget", "--post"),
     ("nc ", "-e"),
     ("ncat", "-e"),
-    # Environment/credential exposure
     ("printenv",),
     ("env |",),
     ("set |",),
-    # History manipulation
     ("history -c",),
     ("unset histfile",),
 ]
 
 _BASH_BLOCKLIST_REGEX = [
-    # Command substitution feeding into sensitive commands
     _re.compile(r"\$\([^)]*\)\s*\|"),
-    # Encoded commands (base64 decode piped to shell)
     _re.compile(r"base64\s+(-d|--decode).*\|\s*(ba)?sh"),
-    # Writing to /etc or /bin
     _re.compile(r">\s*/etc/"),
     _re.compile(r">\s*/bin/"),
     _re.compile(r">\s*/usr/"),
@@ -1107,6 +1105,7 @@ def run_bash_tool(
         agent.short_memory.add(
             role="Terminal",
             content=f"Blocked (security): {command[:100]}{'...' if len(command) > 100 else ''}",
+            internal=True,
         )
         return f"Error: {rejection}"
     try:
@@ -1142,6 +1141,7 @@ def run_bash_tool(
         agent.short_memory.add(
             role="Terminal",
             content=f"Executed: {command[:100]}{'...' if len(command) > 100 else ''} -> exit {result.returncode}",
+            internal=True,
         )
 
         if agent.verbose:
@@ -1158,6 +1158,7 @@ def run_bash_tool(
         agent.short_memory.add(
             role="Terminal",
             content=f"Timeout: {command[:80]}...",
+            internal=True,
         )
         return error_msg
     except Exception as e:
@@ -1166,6 +1167,7 @@ def run_bash_tool(
         agent.short_memory.add(
             role="Terminal",
             content=f"Error: {error_msg}",
+            internal=True,
         )
         return error_msg
 
@@ -1260,6 +1262,7 @@ def grep_tool(
         agent.short_memory.add(
             role="Grep",
             content=f"grep {pattern!r} in {full_path} -> {result.returncode}",
+            internal=True,
         )
 
         if agent.verbose:
@@ -1346,6 +1349,7 @@ def glob_tool(
                 f"glob {pattern!r} in {full_path} -> "
                 f"{len(matches)} files"
             ),
+            internal=True,
         )
 
         if agent.verbose:
@@ -1438,6 +1442,7 @@ def create_sub_agent_tool(
         agent.short_memory.add(
             role="Sub-Agent Management",
             content=result_msg,
+            internal=True,
         )
 
         return result_msg
@@ -1448,6 +1453,7 @@ def create_sub_agent_tool(
         agent.short_memory.add(
             role="Sub-Agent Management",
             content=f"Error: {error_msg}",
+            internal=True,
         )
         return error_msg
 
@@ -1554,6 +1560,7 @@ def assign_task_tool(
             agent.short_memory.add(
                 role="Sub-Agent Execution",
                 content=result_msg,
+                internal=True,
             )
 
             if agent.verbose:
@@ -1580,6 +1587,7 @@ def assign_task_tool(
         agent.short_memory.add(
             role="Sub-Agent Execution",
             content=f"Error: {error_msg}",
+            internal=True,
         )
         return error_msg
 
@@ -1682,6 +1690,7 @@ def check_sub_agent_status_tool(
     agent.short_memory.add(
         role="Sub-Agent Execution",
         content=result_msg,
+        internal=True,
     )
     if getattr(agent, "verbose", False):
         logger.info(result_msg)
@@ -1749,6 +1758,7 @@ def cancel_sub_agent_tasks_tool(
     agent.short_memory.add(
         role="Sub-Agent Execution",
         content=msg,
+        internal=True,
     )
     if getattr(agent, "verbose", False):
         logger.info(msg)

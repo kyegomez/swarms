@@ -415,7 +415,7 @@ class TestAutonomousLoopSubAgentTools:
         def __init__(self):
             self._entries = []
 
-        def add(self, role, content):
+        def add(self, role, content, **fields):
             self._entries.append({"role": role, "content": content})
 
     class _AgentWithRegistryStub:
@@ -528,7 +528,7 @@ class TestAutonomousLoopCreateAndAssignTools:
         def __init__(self):
             self.entries = []
 
-        def add(self, role, content):
+        def add(self, role, content, **fields):
             self.entries.append({"role": role, "content": content})
 
     def test_create_sub_agent_initializes_and_caches(self):
