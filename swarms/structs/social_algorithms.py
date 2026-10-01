@@ -49,43 +49,18 @@ class AgentNotFoundError(SocialAlgorithmError):
 
 class SocialAlgorithms:
     """
-    Run an arbitrary callable that decides how a group of agents talk to each other.
-
-    The algorithm receives ``(agents, task, **kwargs)`` and may call the agents in
-    any order. Every agent call made while it runs is recorded into
-    ``self.conversation``, so the transcript is available without the algorithm
-    having to report anything itself.
+    Run a callable that decides how a group of agents talk to each other.
 
     Args:
-        algorithm_id (str, optional): Unique identifier. Generated if omitted.
+        algorithm_id (str, optional): Unique identifier; generated if omitted.
         name (str): Human-readable name for the algorithm.
-        description (str): Description of what the algorithm does.
-        agents (List[AgentType]): Agents that participate in the algorithm.
-        social_algorithm (Callable): Callable defining the communication
-            sequence. Must accept ``(agents, task, **kwargs)``.
+        description (str): What the algorithm does.
+        agents (List[AgentType]): Agents that take part.
+        social_algorithm (Callable): Takes agents, task and keyword arguments
+            and calls the agents in any order.
         max_execution_time (float): Seconds allowed for execution.
-        output_type (OutputType): Format of ``final_outputs``.
+        output_type (OutputType): Format of the final outputs.
         verbose (bool): Whether to log progress.
-
-    Attributes:
-        conversation (Conversation): Record of every agent message, kept
-            across runs.
-
-    Raises:
-        InvalidAlgorithmError: If ``social_algorithm`` is not callable.
-        ValueError: If no agents are given, or ``max_execution_time`` is not positive.
-
-    Example:
-        >>> def pipeline(agents, task, **kwargs):
-        ...     research = agents[0].run(f"Research: {task}")
-        ...     return agents[1].run(f"Analyze: {research}")
-        >>>
-        >>> social_alg = SocialAlgorithms(
-        ...     agents=[researcher, analyst],
-        ...     social_algorithm=pipeline,
-        ... )
-        >>> result = social_alg.run("The impact of AI on healthcare")
-        >>> print(social_alg.conversation.get_str())
     """
 
     def __init__(
@@ -222,10 +197,7 @@ class SocialAlgorithms:
     @contextmanager
     def _recording_agents(self):
         """
-        Route every agent's ``run`` and ``talk_to`` through the conversation log.
-
-        Patches the agent instances rather than the ``Agent`` class, so agents
-        outside this swarm and concurrent runs elsewhere are unaffected.
+        Record every agent call made during the algorithm in the conversation.
 
         Yields:
             None: For the duration of the algorithm call.
@@ -268,13 +240,13 @@ class SocialAlgorithms:
 
     def _recorded_run(self, agent: Agent) -> Callable:
         """
-        Build a ``run`` replacement that logs the agent's output.
+        Build a run replacement that logs the agent's output.
 
         Args:
-            agent (Agent): The agent being wrapped, before it is patched.
+            agent (Agent): The agent being wrapped.
 
         Returns:
-            Callable: A drop-in replacement for ``agent.run``.
+            Callable: The replacement.
         """
         # Whatever is bound now, so an instance override still runs
         original = agent.run
@@ -288,13 +260,13 @@ class SocialAlgorithms:
 
     def _recorded_talk_to(self, agent: Agent) -> Callable:
         """
-        Build a ``talk_to`` replacement that logs the outgoing message.
+        Build a talk_to replacement that logs the outgoing message.
 
         Args:
-            agent (Agent): The agent being wrapped, before it is patched.
+            agent (Agent): The agent being wrapped.
 
         Returns:
-            Callable: A drop-in replacement for ``agent.talk_to``.
+            Callable: The replacement.
         """
         original = agent.talk_to
 

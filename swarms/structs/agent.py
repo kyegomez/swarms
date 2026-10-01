@@ -136,7 +136,12 @@ def parse_done_token(response: str) -> bool:
 
 # Agent ID generator
 def agent_id() -> str:
-    """Deprecated: use ``generate_id("agent")``."""
+    """
+    Deprecated: generate an agent id.
+
+    Returns:
+        str: A new agent id.
+    """
     return generate_id("agent")
 
 
@@ -146,8 +151,7 @@ ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 class Agent:
     """
-    Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
-    ingest any type of docs like PDFs, Txts, Markdown, Json, and etc for the agent. Here is a list of features.
+    Agent is the backbone to connect LLMs with tools and long term memory.
 
     Args:
         llm (Any): The language model to use
@@ -203,7 +207,7 @@ class Agent:
             and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
         think_tool (bool): Whether the autonomous looper (max_loops="auto") offers the
-            `think` tool. Defaults to False. A `think` call spends a full round-trip to
+            think tool. Defaults to False. A think call spends a full round-trip to
             produce reasoning the model could emit inline alongside its actions, so it is
             off unless asked for. Enable it for models that do not reason natively, or
             when an explicit analysis step is worth the extra turn. When False, the system
@@ -259,65 +263,6 @@ class Agent:
         mcp_transport (str): Force a transport for every MCP server: "streamable_http", "sse",
             "stdio", or "auto". Defaults to auto-detection from the URL.
         mcp_timeout (int): Request timeout in seconds for every MCP server. Defaults to 30.
-
-    Methods:
-        run: Run the agent
-        run_concurrent: Run the agent concurrently
-        bulk_run: Run the agent in bulk
-        save: Save the agent
-        load: Load the agent
-        validate_response: Validate the response
-        print_history_and_memory: Print the history and memory
-        step: Step through the agent
-        run_with_timeout: Run the agent with a timeout
-        load_skills_metadata: Load Agent Skills metadata from directory
-        load_full_skill: Load complete skill content (Tier 2 loading)
-        analyze_feedback: Analyze the feedback
-        interactive_run: Run the agent in interactive mode
-        streamed_generation: Stream the generation of the response
-        save_state: Save the state
-        truncate_history: Truncate the history
-        add_task_to_memory: Add the task to the memory
-        print_dashboard: Print the dashboard
-        loop_count_print: Print the loop count
-        streaming: Stream the content
-        _history: Generate the history
-        _dynamic_prompt_setup: Setup the dynamic prompt
-        run_async: Run the agent asynchronously
-        run_async_concurrent: Run the agent asynchronously and concurrently
-        run_async_concurrent: Run the agent asynchronously and concurrently
-        construct_dynamic_prompt: Construct the dynamic prompt
-
-
-    Examples:
-    >>> from swarms import Agent
-    >>> agent = Agent(model_name="gpt-5.4", max_loops=1)
-    >>> response = agent.run("Generate a report on the financials.")
-    >>> print(response)
-    >>> # Generate a report on the financials.
-
-    >>> # Detailed token streaming example
-    >>> agent = Agent(model_name="gpt-5.4", max_loops=1, stream=True)
-    >>> response = agent.run("Tell me a story.")  # Will stream each token with detailed metadata
-    >>> print(response)  # Final complete response
-
-    >>> # Fallback model example
-    >>> agent = Agent(
-    ...     fallback_models=["gpt-5.4", "gpt-5.4", "gpt-3.5-turbo"],
-    ...     max_loops=1
-    ... )
-    >>> response = agent.run("Generate a report on the financials.")
-    >>> # Will try gpt-4o first, then gpt-4o-mini, then gpt-3.5-turbo if each fails
-
-    >>> # Marketplace prompt example - load a prompt in one line
-    >>> agent = Agent(
-    ...     model_name="gpt-5.4",
-    ...     marketplace_prompt_id="550e8400-e29b-41d4-a716-446655440000",
-    ...     max_loops=1
-    ... )
-    >>> response = agent.run("Execute the marketplace prompt task")
-    >>> # The agent automatically loads the system prompt from the Swarms marketplace
-
     """
 
     def __init__(
@@ -732,8 +677,6 @@ class Agent:
     def handle_publish_to_marketplace(self):
         """
         Publish this agent's prompt and metadata to the Swarms Marketplace.
-
-        Requires `use_cases` to be set and SWARMS_API_KEY to be present.
         """
         return self.marketplace.publish()
 
@@ -759,24 +702,19 @@ class Agent:
         """
         Select the Agent Skills for this run.
 
-        The rendered section is sent with every LLM call by :meth:`call_llm`.
-        ``system_prompt`` is left unchanged: the LLM copies it once at
-        construction, so text appended to it here never reached the model,
-        and each run appended another copy.
-
         Args:
-            task: Optional task description. If provided, loads skills dynamically
-                  based on similarity to the task. If not provided, loads all skills statically.
+            task (Optional[str]): The task to match skills against; all skills
+                are loaded when None.
         """
         self._skills_prompt = self.skills.prompt_for_task(task)
 
     @property
     def workspace(self) -> "WorkspaceManager":
         """
-        This agent's workspace manager, created on first access.
+        Return this agent's workspace manager, created on first access.
 
         Returns:
-            WorkspaceManager: Rooted at ``{workspace}/agents/{name}-{uuid}``.
+            WorkspaceManager: Rooted at {workspace}/agents/{name}-{uuid}.
         """
         if self._workspace is None:
             self._workspace = WorkspaceManager.for_agent(
@@ -1076,11 +1014,10 @@ class Agent:
     @property
     def mcp_enabled(self) -> bool:
         """
-        Whether this agent has at least one MCP server configured.
+        Return whether at least one MCP server is configured.
 
-        Backed by the agent's :class:`MCPManager`, which normalizes
-        ``mcp_url``, ``mcp_urls``, ``mcp_config`` and ``mcp_configs`` into a
-        single list of connections.
+        Returns:
+            bool: True when the agent has an MCP connection.
         """
         manager = getattr(self, "mcp_manager", None)
         return manager is not None and manager.enabled
@@ -1089,16 +1026,8 @@ class Agent:
         """
         Fetch the tool schemas exposed by the configured MCP servers.
 
-        Connection handling, authentication (API key, bearer token, or OAuth)
-        and transport selection are all delegated to :class:`MCPManager`. The
-        returned schemas are OpenAI function-calling definitions, ready to be
-        passed straight to the LLM.
-
         Returns:
             List[Dict[str, Any]]: OpenAI tool schemas from every MCP server.
-
-        Raises:
-            AgentMCPConnectionError: If no server could be reached.
         """
         try:
             tools = self.mcp_manager.get_tools()
@@ -1117,21 +1046,7 @@ class Agent:
             raise e
 
     def _load_prompt_from_marketplace(self) -> None:
-        """
-        Load a prompt from the Swarms marketplace using the marketplace_prompt_id.
-
-        Appends the marketplace prompt to this agent's system prompt and
-        back-fills `agent_name` / `agent_description` when they are still at
-        their defaults.
-
-        Raises:
-            ValueError: If the prompt cannot be found in the marketplace.
-            Exception: If there's an error fetching the prompt from the API.
-
-        Note:
-            Requires the SWARMS_API_KEY environment variable to be set for
-            authenticated API access.
-        """
+        """Load this agent's prompt from the Swarms marketplace."""
         self.marketplace.load_prompt()
 
     def setup_config(self):
@@ -1871,16 +1786,11 @@ class Agent:
         self, loop_count: Optional[int] = None
     ) -> None:
         """
-        Write a config snapshot to the agent workspace, once per step.
+        Write a config snapshot to the agent workspace.
 
         Args:
-            loop_count (Optional[int]): Current loop, recorded in the
-                saved metadata and used only for logging. Defaults to None.
-
-        Note:
-            Writes ``config.json`` under
-            workspace_dir/agents/{name-of-agent}-{uuid}/. Never raises -
-            autosave must not interrupt a run.
+            loop_count (Optional[int]): The current loop, recorded in the
+                snapshot.
         """
         if not self.autosave:
             return
@@ -2043,20 +1953,13 @@ class Agent:
         self, always_loaded: Optional[List[dict]] = None
     ) -> DynamicToolLoader:
         """
-        Defer this agent's tool schemas behind a ``tool_search`` tool.
-
-        Tool definitions are re-sent on every request and sit in the cached
-        prefix, so a large tool set is paid for continuously. Deferring sends
-        only ``tool_search`` up front; the agent loads what it needs, and the
-        loaded schemas are included from the next request onwards.
+        Defer this agent's tool schemas behind a tool search tool.
 
         Args:
-            always_loaded: Schemas that must never be deferred. Control-flow
-                tools belong here - an agent that has to search for its own
-                ``complete_task`` cannot finish.
+            always_loaded (Optional[List[dict]]): Schemas that are never deferred.
 
         Returns:
-            The loader, also stored on ``self.tool_loader``.
+            DynamicToolLoader: The loader, also stored on the agent.
         """
         # Keep already-registered handoff and MCP tools: overwriting here is what broke handoffs.
         user_tool_names = {
@@ -2106,17 +2009,8 @@ class Agent:
         """
         Move this agent's MCP tool schemas into the deferred catalog.
 
-        MCP is the case dynamic tools exist for: a single server can expose
-        dozens of tools, and every one of them is otherwise re-sent with every
-        request. Deferring them makes them searchable instead, so the request
-        carries only what the agent actually loaded.
-
-        The fetch is a network call, and rebuilding the LLM after each
-        ``tool_search`` would repeat it, so it runs once per agent.
-
         Returns:
-            int: How many schemas were added to the catalog. 0 if MCP is not
-            configured, dynamic tools are off, or this already ran.
+            int: How many schemas were added; 0 when nothing was deferred.
         """
         if self.tool_loader is None or not self.mcp_enabled:
             return 0
@@ -2161,11 +2055,17 @@ class Agent:
         **kwargs,
     ) -> str:
         """
-        Handler for the ``tool_search`` tool.
+        Search the deferred tool catalog and load the matches.
 
-        Loading changes the tool list, so the LLM is rebuilt here - otherwise
-        the newly loaded schemas would not be sent and the model could not
-        call what it just found.
+        Args:
+            query (str): What to search for.
+            max_results (int): The most tools to load.
+            min_score_ratio (float): The lowest score to load, relative to the
+                best match.
+            **kwargs: Ignored.
+
+        Returns:
+            str: Which tools were loaded.
         """
         if self.tool_loader is None:
             return (
@@ -2495,19 +2395,10 @@ Subtask Breakdown:
 
     def _default_context_length(self) -> int:
         """
-        Returns the maximum input token window for the agent's underlying model.
-
-        Attempts to determine the input (context) window based on the current model name by checking
-        for the "max_input_tokens" property. If the value can't be determined (e.g., unknown model or
-        missing field), defaults to 16000.
+        Return the input token window of the agent's model.
 
         Returns:
-            int: The maximum number of input tokens for the model. Returns 16000 if undetermined.
-
-        Notes:
-            - Do NOT use ``get_max_tokens`` for context (input window). That reports max *output* tokens,
-              which may not correspond to available context for input (e.g., 32768 for gpt-4.1 output, but
-              over a million for certain input windows).
+            int: The window size, or 16000 when it cannot be determined.
         """
         try:
             return (
@@ -3137,18 +3028,29 @@ Subtask Breakdown:
     def _stream_with_tool_collection(
         self, stream, tool_calls_out: list
     ):
-        """Yield every chunk unchanged while assembling delta.tool_calls fragments.
+        """
+        Yield every chunk unchanged while assembling tool-call fragments.
 
-        See :meth:`swarms.agents.llm_manager.LLMManager.stream_with_tool_collection`.
+        Args:
+            stream: The streaming response.
+            tool_calls_out (list): Filled in place with the assembled calls.
+
+        Yields:
+            Any: Each chunk of the stream.
         """
         return self.llm_manager.stream_with_tool_collection(
             stream, tool_calls_out
         )
 
     def _extract_thinking_from_stream(self, stream):
-        """Yield content chunks, flushing any reasoning chunks to a panel first.
+        """
+        Yield content chunks, showing reasoning chunks in a panel first.
 
-        See :meth:`swarms.agents.llm_manager.LLMManager.extract_thinking_from_stream`.
+        Args:
+            stream: The streaming response.
+
+        Yields:
+            Any: Each content chunk.
         """
         return self.llm_manager.extract_thinking_from_stream(stream)
 
@@ -3163,36 +3065,19 @@ Subtask Breakdown:
         **kwargs,
     ) -> str:
         """
-        Calls the LLM with the given task, handling streaming and multimodal inputs.
-
-        Delegates to :meth:`swarms.agents.llm_manager.LLMManager.call`, which
-        handles detailed streaming, panel streaming, silent streaming, and
-        non-streaming calls, plus image input and tool-call collection.
+        Call the LLM with a task, handling streaming and images.
 
         Args:
-            task (str): The task or prompt to send to the LLM.
-            img (Optional[str]): Optional image input for multimodal processing. Can be a
-                file path, URL, data URI, or raw base64-encoded string.
-            current_loop (int): The current loop iteration number, used for streaming
-                panel titles and error logging context. Defaults to 0.
-            streaming_callback (Optional[Callable[[str], None]]): Optional callback
-                receiving streaming tokens in real time.
-            *args: Additional positional arguments passed directly to llm.run().
-            **kwargs: Additional keyword arguments passed directly to llm.run().
+            task (str): The prompt to send.
+            img (Optional[str]): An image path, URL, data URI or base64 string.
+            imgs (Optional[List[str]]): More images.
+            current_loop (int): The current loop, for display and logs.
+            streaming_callback (Optional[Callable[[str], None]]): Receives tokens.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
 
         Returns:
-            str: The complete response from the LLM, or the assembled tool-call
-                list when the model made tool calls mid-stream.
-
-        Raises:
-            AgentLLMError: If there's an issue with the language model.
-            BadRequestError: If the request is malformed or invalid.
-            InternalServerError: If the LLM service encounters an internal error.
-            AuthenticationError: If authentication fails with the LLM service.
-
-        Examples:
-            >>> response = agent.call_llm("What is Python?", current_loop=1)
-            >>> response = agent.call_llm("Describe this image", img="chart.png")
+            str: The response, or the tool calls the model made.
         """
         skills = self._skills_prompt.strip()
         if skills:
@@ -3234,21 +3119,13 @@ Subtask Breakdown:
         self, skills_dir: str = None
     ) -> List[Dict[str, str]]:
         """
-        Load skill metadata from SKILL.md files in the skills directory.
-
-        Implements Tier 1 loading from Anthropic's Agent Skills framework:
-        loads skill name and description into memory for context-aware activation.
+        Load skill metadata from the SKILL.md files in a skills directory.
 
         Args:
-            skills_dir: Path to directory containing skill folders. Defaults to
-                the agent's configured `skills_dir`.
+            skills_dir (str): The directory to scan; defaults to the agent's own.
 
         Returns:
-            List of skill metadata dicts with 'name', 'description', 'path', 'content'
-
-        Example:
-            >>> agent = Agent(skills_dir="./skills")
-            >>> # Loads all skills from ./skills/*/SKILL.md
+            List[Dict[str, str]]: Each skill's name, description, path and content.
         """
         return self.skills.load_metadata(skills_dir)
 
@@ -3287,60 +3164,22 @@ Subtask Breakdown:
         **kwargs,
     ) -> Any:
         """
-        Execute the agent's main reasoning/thinking flow (single or multi-step).
-
-        This is the primary entrypoint for running an agent on a given task, optionally with one or more images and with support for both interactive and autonomous flows.
-
-        Core Features:
-            - Handles both interactive (asks user) and autonomous (auto-plan/execute) operation modes.
-            - Supports passing a single image or batch of images.
-            - Supports streaming outputs via a callback for real-time token generation.
-            - Runs multiple outputs (n > 1), single or batched.
-            - Accepts an optional ground truth (correct_answer) for evals.
-            - Merges configuration and per-call streaming callback.
-            - Handles errors and device selection internally (but device_id is not used directly by this method).
+        Run the agent on a task.
 
         Args:
-            task (Optional[str|Any]): Task for the agent to process. If not a string, will be formatted. Defaults to None.
-            img (Optional[str]): Path, URL, data URI, or raw base64-encoded string for a single image input.
-                Supported formats: file paths (e.g., "image.jpg"), URLs (e.g., "https://example.com/image.png"),
-                data URIs (e.g., "data:image/jpeg;base64,..."), or raw base64 strings. Defaults to None.
-            imgs (Optional[List[str]]): List of multiple images if processing a batch. Each image can be a path,
-                URL, data URI, or raw base64 string. Defaults to None.
-            correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
-            streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
-            n (int): How many outputs to generate (number of runs). Defaults to 1.
-            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
-                e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
-                They are added to the agent's conversation and sent as the context
-                this task continues from. Defaults to the agent's own ``messages``.
-            *args: Additional positional arguments for extensibility.
-            **kwargs: Additional keyword arguments passed to LLM/tool execution.
+            task (Optional[Union[str, Any]]): The task to run.
+            img (Optional[str]): An image path, URL, data URI or base64 string.
+            imgs (Optional[List[str]]): More images.
+            correct_answer (Optional[str]): Stop once the output contains this.
+            streaming_callback (Optional[Callable[[str], None]]): Receives tokens.
+            n (int): How many times to run the task.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format
+                to continue from.
+            *args: Passed through to the loop.
+            **kwargs: Passed through to the LLM and tools.
 
         Returns:
-            Any: The agent's output. This can be:
-                - A string or structured dict (for single response).
-                - A list (if running multiple outputs/images).
-                - The final agent answer, streaming response, or summary (for autonomous "auto" mode).
-
-        Raises:
-            ValueError: If required arguments are invalid or missing (e.g. image input without actual image).
-            Exception: For any error that occurs during agent execution, LLM/tool call, or planning.
-
-        Examples:
-            >>> agent.run("Write a poem about the ocean")
-            >>> agent.run("Describe this image", img="cat.png")
-            >>> agent.run("Summarize", imgs=["a.png", "b.png"])
-            >>> agent.run(task="Who won the World Cup?", streaming_callback=print)
-            >>> # Using base64-encoded image
-            >>> import base64
-            >>> with open("image.jpg", "rb") as f:
-            ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
-            >>> agent.run("Describe this image", img=img_base64)
-            >>> agent.run(
-            ...     "And what did I just ask you?",
-            ...     messages=[{"role": "user", "content": "Name three primes."}],
-            ... )
+            Any: The agent's output, or a list of outputs when n is above 1.
         """
 
         # Outside interactive mode, fail fast instead of blocking on stdin
@@ -3643,24 +3482,20 @@ Subtask Breakdown:
         **kwargs,
     ) -> Any:
         """
-        Handles fallback execution when the primary model fails.
-
-        Delegates to :meth:`swarms.agents.llm_manager.LLMManager.handle_fallback_execution`,
-        which walks the fallback chain until the task succeeds or every model is
-        exhausted.
+        Run the task on the fallback models after the primary model fails.
 
         Args:
-            task (Optional[Union[str, Any]], optional): The task to be executed. Defaults to None.
-            img (Optional[str], optional): The image to be processed. Defaults to None.
-            imgs (Optional[List[str]], optional): The list of images to be processed. Defaults to None.
-            correct_answer (Optional[str], optional): The correct answer for continuous run mode. Defaults to None.
-            streaming_callback (Optional[Callable[[str], None]], optional): Callback function to receive streaming tokens in real-time. Defaults to None.
-            original_error (Exception): The original error that triggered the fallback. Defaults to None.
-            *args: Additional positional arguments to be passed to the execution method.
-            **kwargs: Additional keyword arguments to be passed to the execution method.
+            task (Optional[Union[str, Any]]): The task to run.
+            img (Optional[str]): An image to send with the task.
+            imgs (Optional[List[str]]): More images.
+            correct_answer (Optional[str]): Stop once the output contains this.
+            streaming_callback (Optional[Callable[[str], None]]): Receives tokens.
+            original_error (Exception): The primary model's error.
+            *args: Passed through to the run.
+            **kwargs: Passed through to the run.
 
         Returns:
-            Any: The result of the execution if successful.
+            Any: The output of the first model that succeeds.
         """
         return self.llm_manager.handle_fallback_execution(
             task=task,
@@ -4058,14 +3893,11 @@ Summary: {summary}
 
     @property
     def input_tokens(self) -> int:
-        """Tokens the agent's next request would carry, counted with its model's tokenizer.
+        """
+        Estimate the tokens the agent's next request would carry.
 
-        Covers everything the agent sends as input: the system prompt, the
-        whole conversation in ``short_memory``, and the tool schemas. Use it
-        to see how full the context window is before a run. It is an
-        estimate — the conversation is counted as rendered text, role labels
-        included — so it runs a little above what the provider bills. For the
-        billed figure, summed over past calls, see :attr:`usage`.
+        Returns:
+            int: Tokens in the system prompt, conversation and tool schemas.
         """
         parts = [self.short_memory.return_history_as_string()]
         if self.tools_list_dictionary:
@@ -4077,14 +3909,12 @@ Summary: {summary}
 
     @property
     def usage(self) -> dict:
-        """Token usage reported by the provider, summed over every LLM call this agent has made.
+        """
+        Return the provider-reported token usage summed over every call.
 
-        Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens`` (the
-        part of ``input_tokens`` served from the provider's prompt cache),
-        ``reasoning_tokens`` (the part of ``output_tokens`` the model spent
-        thinking, 0 when the provider does not report it), ``total_tokens``.
-        Streaming calls count once their stream has been consumed, since the
-        provider reports usage in the final chunk.
+        Returns:
+            dict: input_tokens, output_tokens, cached_tokens, reasoning_tokens
+                and total_tokens.
         """
         return dict(self._usage)
 
@@ -4347,64 +4177,14 @@ Summary: {summary}
 
     def tool_execution_retry(self, response: any, loop_count: int):
         """
-        Execute tools with retry logic for handling failures.
-
-        This method provides a robust wrapper around tool execution with automatic
-        retry on failure. It handles None responses gracefully and implements
-        retry logic using the configured tool_retry_attempts.
-
-        **Retry Strategy:**
-        - If tool execution fails, the method automatically retries
-        - Maximum retry attempts are controlled by self.tool_retry_attempts (default: 3)
-        - Each retry is logged with detailed error information
-        - After all retries are exhausted, AgentToolExecutionError is raised,
-          chained from the last underlying error via `raise ... from`
-
-        **Error Handling:**
-        - None responses: Logs warning and skips execution (does not raise)
-        - Any exception from execute_tools: Logs error with full traceback and
-          retries, since execute_tools re-raises the tool's own exception type
-
-        **Logging:**
-        All errors are logged with:
-        - Agent name for identification
-        - Loop count for context
-        - Full traceback for debugging
-        - Retry attempt number
+        Execute tools, retrying on failure.
 
         Args:
-            response (any): The response from the LLM that may contain tool calls to execute.
-                Can be:
-                - List of tool call dictionaries
-                - Single tool call dictionary
-                - None (will log warning and return without raising)
-            loop_count (int): The current iteration loop number. Used for:
-                - Logging context
-                - Error reporting
-                - Debugging tool execution issues
+            response (any): The tool calls from the model.
+            loop_count (int): The current loop, for logs.
 
         Returns:
-            None: This method modifies internal state but does not return a value.
-
-        Raises:
-            AgentToolExecutionError: If tool execution fails after all retry attempts.
-            Exception: Any other exception that occurs during tool execution after
-                retries are exhausted.
-
-        Note:
-            - Uses self.tool_retry_attempts (default: 3) for maximum retry attempts
-            - None responses are handled gracefully without raising exceptions
-            - Detailed error logging helps with debugging tool execution issues
-            - The method delegates actual tool execution to execute_tools()
-
-        Examples:
-            >>> # Normal execution
-            >>> response = [{"function": {"name": "my_tool", "arguments": "{}"}}]
-            >>> agent.tool_execution_retry(response, loop_count=1)
-
-            >>> # Handles None response gracefully
-            >>> agent.tool_execution_retry(None, loop_count=2)
-            >>> # Logs warning but does not raise exception
+            Any: The tool output, or None when the response was None.
         """
         if response is None:
             logger.warning(

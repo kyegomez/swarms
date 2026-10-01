@@ -1,24 +1,5 @@
 """
-Autonomous execution loop for :class:`~swarms.structs.agent.Agent`.
-
-When an agent is constructed with ``max_loops="auto"`` it does not run a fixed
-number of iterations. Instead it plans, executes its plan subtask by subtask,
-and decides for itself when the work is finished. That behaviour lives here
-rather than on ``Agent`` so the agent class stays readable: this is roughly a
-fifth of what ``agent.py`` used to be, and none of it is reachable unless
-``max_loops == "auto"``.
-
-The loop owns three phases:
-
-1. **Plan** -- ask the model to produce a subtask list via the ``create_plan`` tool.
-2. **Execute** -- walk the subtasks, dispatching tool calls until each is marked
-   done via ``subtask_done``.
-3. **Summarize** -- hand back a final answer (delegated to
-   ``Agent._generate_final_summary``).
-
-``AutonomousAgentLoop`` holds a back-reference to its owning agent and reads and
-writes agent state through it, mirroring the existing
-:class:`~swarms.agents.llm_manager.LLMManager` arrangement.
+The plan, execute and summarize loop agents run when max_loops is auto.
 """
 
 import json
@@ -92,16 +73,10 @@ ALWAYS_LOADED_TOOLS = frozenset(
 
 class AutonomousAgentLoop:
     """
-    Plan-execute-summarize loop used when ``max_loops="auto"``.
+    Plan, execute and summarize loop used when max_loops is auto.
 
     Args:
-        agent: The owning :class:`~swarms.structs.agent.Agent`. All agent
-            configuration and state is read and written through this
-            reference.
-
-    Example:
-        >>> agent = Agent(agent_name="Researcher", max_loops="auto")
-        >>> agent.run("Compare the top 3 vector databases")  # routes here
+        agent (Any): The agent whose state and configuration the loop uses.
     """
 
     def __init__(self, agent: Any):
@@ -1133,75 +1108,16 @@ class AutonomousAgentLoop:
         self, task_description: str, steps: List[Dict], **kwargs
     ) -> str:
         """
-        Create a detailed plan for task execution.
-
-        This tool is used by the autonomous loop to break down a complex task into
-        manageable subtasks with dependencies, priorities, and execution order.
-
-        **Plan Structure:**
-        Each step in the plan must contain:
-        - step_id (str): Unique identifier for the subtask
-        - description (str): Detailed description of what needs to be done
-        - priority (str, optional): Priority level (e.g., "high", "medium", "low")
-        - dependencies (List[str], optional): List of step_ids that must complete first
-
-        **Plan Storage:**
-        The plan is stored in:
-        - self.agent.autonomous_subtasks: List of all subtasks with their details
-        - self.agent.subtask_status: Dictionary mapping step_id to status ("pending", "completed", "failed")
-        - self.agent.plan_created: Boolean flag indicating plan creation
-
-        **Execution Order:**
-        Subtasks are executed based on:
-        1. Dependencies: Tasks with unmet dependencies are blocked
-        2. Priority: Higher priority tasks are preferred when multiple are available
-        3. Creation order: Used as tiebreaker
+        Store a plan of subtasks for the run.
 
         Args:
-            task_description (str): High-level description of the overall task to be completed.
-                This provides context for the subtask planning.
-            steps (List[Dict]): List of step dictionaries, each containing:
-                - step_id (str): Unique identifier for the subtask (required)
-                - description (str): What needs to be accomplished (required)
-                - priority (str): Priority level, e.g., "high", "medium", "low" (optional)
-                - dependencies (List[str]): List of step_ids that must complete first (optional)
-            **kwargs: Additional arguments (currently unused, reserved for future use).
+            task_description (str): The overall task.
+            steps (List[Dict]): Subtasks with step_id, description, priority
+                and dependencies.
+            **kwargs: Ignored.
 
         Returns:
-            str: Confirmation message indicating successful plan creation with the number
-                of subtasks created. Format: "Plan created successfully with {n} subtasks"
-
-        Note:
-            - Called during the planning phase, and again at any point during
-              execution when the model revises the plan.
-            - The call is idempotent, not destructive. Steps are merged by
-              ``step_id``: work that already finished keeps its status and
-              summary, still-pending steps are updated in place, unmentioned
-              steps that already finished are retained as history, and
-              unmentioned steps that are still pending are dropped. Only a
-              first call on an empty plan starts from scratch.
-            - If verbose=True, plan creation is logged with step details
-
-        Examples:
-            >>> steps = [
-            ...     {
-            ...         "step_id": "step1",
-            ...         "description": "Set up project structure",
-            ...         "priority": "high",
-            ...         "dependencies": []
-            ...     },
-            ...     {
-            ...         "step_id": "step2",
-            ...         "description": "Implement authentication",
-            ...         "priority": "high",
-            ...         "dependencies": ["step1"]
-            ...     }
-            ... ]
-            >>> result = agent._create_plan_tool(
-            ...     "Build a web application",
-            ...     steps
-            ... )
-            >>> # Returns: "Plan created successfully with 2 subtasks"
+            str: A confirmation the model reads.
         """
         if self.agent.verbose:
             logger.info(f"Creating plan for task: {task_description}")
@@ -1414,21 +1330,14 @@ class AutonomousAgentLoop:
         self, task_description: str, steps: List[Dict]
     ) -> List[str]:
         """
-        Load the tools a plan implies, before any subtask starts.
+        Load the tools a plan implies before any subtask starts.
 
-        With ``dynamic_tools`` the model otherwise discovers tools one subtask
-        at a time, because ``get_execution_prompt`` deliberately scopes each
-        turn to a single subtask - so it cannot know what later steps need and
-        searches again for each one, at a full round-trip each.
-
-        The plan is the best statement of what the whole run needs and it
-        exists before any subtask starts, so it is used as the query here.
-        This costs no extra turn: it happens inside the ``create_plan`` call
-        that just succeeded. If it misses nothing breaks - the model can still
-        search mid-run exactly as before.
+        Args:
+            task_description (str): The overall task.
+            steps (List[Dict]): The plan's subtasks.
 
         Returns:
-            Names of tools newly loaded, for reporting back to the model.
+            List[str]: The names of the tools that were loaded.
         """
         agent = self.agent
         if not getattr(agent, "dynamic_tools", False):

@@ -27,7 +27,12 @@ from swarms.utils.generate_id import generate_id
 
 
 def generate_conversation_id() -> str:
-    """Deprecated: use ``generate_id()``."""
+    """
+    Deprecated: generate a conversation id.
+
+    Returns:
+        str: A new id.
+    """
     return generate_id()
 
 
@@ -305,10 +310,8 @@ class Conversation:
                 )
 
     def _preload_memory_md(self) -> None:
-        """Preload prior MEMORY.md content as a System preamble message.
-
-        Appends directly to ``conversation_history`` to avoid re-writing the
-        preload back into MEMORY.md via ``add_in_memory``.
+        """
+        Load prior MEMORY.md content as a System preamble message.
         """
         try:
             with open(
@@ -343,18 +346,12 @@ class Conversation:
         summary: str,
         summary_role: str = "System",
     ) -> None:
-        """Collapse the interaction history into a single summary.
-
-        The agent's static context is preserved in order:
-        ``system_prompt`` -> ``rules`` -> ``custom_rules_prompt`` (skills) ->
-        ``summary`` (replaces the raw interaction history). If
-        ``memory_md_path`` is configured, MEMORY.md is wiped and re-seeded
-        with a fresh header so the on-disk log stops growing across
-        compressions.
+        """
+        Collapse the interaction history into a single summary message.
 
         Args:
-            summary: The compressed summary content.
-            summary_role: Role attached to the summary message.
+            summary (str): The summary that replaces the history.
+            summary_role (str): The role the summary is stored under.
         """
         self._suppress_memory_md = True
         try:
@@ -398,11 +395,8 @@ class Conversation:
         self.add(summary_role, summary)
 
     def _archive_memory_md(self) -> None:
-        """Copy the current MEMORY.md into an immutable archive file.
-
-        Called before a compaction wipes MEMORY.md so the raw chat logs
-        are never lost. Writes to
-        ``<agent_folder>/archive/history_<timestamp>.md``.
+        """
+        Copy the current MEMORY.md into a timestamped archive file.
         """
         if not self.memory_md_path or not os.path.exists(
             self.memory_md_path
@@ -864,14 +858,15 @@ class Conversation:
         roles: List[str],
         contents: List[Union[str, dict, list, any]],
     ):
-        """Add multiple messages to the conversation history, in order.
+        """
+        Add multiple messages to the history, in order.
 
         Args:
             roles (List[str]): One role per message.
             contents (List[Union[str, dict, list, any]]): One content per role.
 
         Returns:
-            list: The result of each :meth:`add`, in the order given.
+            list: The stored messages, in order.
         """
         if len(roles) != len(contents):
             raise ValueError(
@@ -1066,19 +1061,20 @@ class Conversation:
         return "\n\n".join(formatted_messages)
 
     def get_str(self) -> str:
-        """Alias for :meth:`return_history_as_string` (kept for compatibility).
+        """
+        Return the history as a string.
 
         Returns:
-            str: The conversation history formatted as a string.
+            str: The formatted history.
         """
         return self.return_history_as_string()
 
     def get_cache_stats(self) -> Dict[str, Any]:
-        """Return cache performance statistics for :meth:`return_history_as_string`.
+        """
+        Return cache statistics for the history string.
 
         Returns:
-            Dict[str, Any]: A dictionary with hits, misses, cached_tokens,
-                            and hit_rate.
+            Dict[str, Any]: Hits, misses, cached_tokens and hit_rate.
         """
         total_calls = self._cache_hits + self._cache_misses
         return {
@@ -1533,13 +1529,11 @@ class Conversation:
         return ""
 
     def return_messages_as_strings(self):
-        """Return the conversation messages as a list of formatted strings.
-
-        This is a rendering, not a message list. To build a request body use
-        :meth:`return_messages_as_dictionary`, which preserves roles.
+        """
+        Return each message formatted as role: content.
 
         Returns:
-            list: List of messages formatted as 'role: content'.
+            list: One string per message.
         """
         return [
             f"{message['role']}: {render_content(message)}"
@@ -1547,13 +1541,11 @@ class Conversation:
         ]
 
     def return_messages_as_list(self):
-        """Return the conversation as a list of message dictionaries.
-
-        For the ``'role: content'`` string rendering use
-        :meth:`return_messages_as_strings`.
+        """
+        Return the history as role and content dictionaries.
 
         Returns:
-            list: One ``{"role", "content"}`` dict per message.
+            list: One dict per message.
         """
         return [
             {
@@ -1613,13 +1605,11 @@ class Conversation:
         return ""
 
     def _index_after_first_message(self) -> int:
-        """Index of the first message after the system prompt and the input.
+        """
+        Return the index of the first message after the system prompt and input.
 
-        Neither fixed offset is right for both shapes. ``Agent.short_memory``
-        begins ``[System, User, ...]``, so a slice of 1 echoes the task back
-        in the agent's own output. Swarms like ``ConcurrentWorkflow`` begin
-        ``[User, agent, agent, ...]`` with no system row, so a slice of 2
-        drops the first agent's answer. Read the history instead of guessing.
+        Returns:
+            int: The index.
         """
         history = self.conversation_history
         start = (

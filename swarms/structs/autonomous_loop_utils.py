@@ -1287,24 +1287,13 @@ def glob_tool(
     Find files by name pattern, newest first.
 
     Args:
-        agent: The agent instance
-        pattern: Glob pattern matched against each path under the root,
-            e.g. ``*.py`` or ``test_*.json``. Matched recursively.
-        path: Directory to search (relative to workspace or absolute).
-            Defaults to the workspace root.
-        **kwargs: Additional arguments
+        agent (Any): The agent instance.
+        pattern (str): Glob pattern matched recursively, such as *.py.
+        path (str): Directory to search; defaults to the workspace root.
+        **kwargs: Ignored.
 
     Returns:
-        str: Matching paths relative to the search root, one per line, or a
-            message saying nothing matched
-
-    Notes:
-        Newest first, because a model looking for "the file I just wrote" or
-        "what changed" wants recency, and an alphabetical listing buries it.
-
-        Paths come back relative to the search root rather than absolute:
-        that is the form the other file tools accept back, so a result can be
-        passed straight to read_file without editing.
+        str: Matching paths, one per line, or a note that none matched.
     """
     try:
         if not path or not os.path.isabs(path):
@@ -1594,8 +1583,13 @@ def assign_task_tool(
 
 def _find_registry(agent: Any) -> SubagentRegistry:
     """
-    Helper to access or lazily create the sub-agent registry for an agent.
-    The registry instance is stored on the agent as `_subagent_registry`.
+    Return the agent's sub-agent registry, creating it if needed.
+
+    Args:
+        agent (Any): The agent instance.
+
+    Returns:
+        SubagentRegistry: The registry.
     """
     existing = getattr(agent, "_subagent_registry", None)
     if isinstance(existing, SubagentRegistry):
