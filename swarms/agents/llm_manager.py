@@ -17,9 +17,9 @@ inlined in ``swarms/structs/agent.py``:
 
 Configuration stays on the ``Agent``. The manager holds a reference to its
 owner and reads config live rather than snapshotting it, because agents mutate
-their own config at run time — ``system_prompt`` grows when skills load,
-``tools_list_dictionary`` changes when tools are registered, ``streaming_on``
-is toggled per call by ``run_stream``. Anything the manager writes
+their own config at run time — ``tools_list_dictionary`` changes when tools
+are registered, ``streaming_on`` is toggled per call by ``run_stream``.
+Anything the manager writes
 (``model_name``, ``current_model_index``, ``llm``) is written back to the agent,
 so serialization, ``save``/``load``, and every existing ``agent.llm`` reference
 keep working unchanged.
