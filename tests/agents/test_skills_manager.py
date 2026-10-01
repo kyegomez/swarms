@@ -10,10 +10,11 @@ Everything here runs against a real filesystem — no mocks:
 * The dynamic-loading path is exercised through the real
   :class:`swarms.structs.dynamic_skills_loader.DynamicSkillsLoader`, which
   computes actual cosine similarity over real skill descriptions.
-* The Agent-integration section constructs a real ``swarms.Agent`` (offline —
-  no ``.run()`` call is ever made, so no network/API key is required) to
+* The Agent-integration section constructs a real ``swarms.Agent`` to
   verify that ``skills_dir`` / ``skills_metadata`` / ``handle_skills`` wire
-  through to the underlying ``SkillsManager`` correctly.
+  through to the underlying ``SkillsManager`` correctly. The only stub is
+  ``litellm.completion`` in the request tests, which capture what would be
+  sent to the provider, so no network/API key is required.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -21,6 +22,8 @@ Run:
 """
 
 import os
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 
@@ -29,6 +32,7 @@ from swarms.agents.skills_manager import (
     SkillsManager,
 )
 from swarms.structs.dynamic_skills_loader import DynamicSkillsLoader
+from swarms.utils import litellm_wrapper
 
 
 ########################################################
@@ -538,7 +542,7 @@ class TestAgentIntegration:
         agent.skills_metadata = fake_metadata
         assert agent.skills.metadata == fake_metadata
 
-    def test_handle_skills_appends_to_system_prompt(
+    def test_handle_skills_selects_all_skills_without_task(
         self, skills_root
     ):
         from swarms import Agent
@@ -554,13 +558,12 @@ class TestAgentIntegration:
         before = agent.system_prompt
         agent.handle_skills(task=None)
 
-        assert agent.system_prompt.startswith(before)
-        assert len(agent.system_prompt) > len(before)
-        assert "pdf-processing" in agent.system_prompt
-        assert "web-search" in agent.system_prompt
-        assert SKILLS_PROMPT_HEADER in agent.system_prompt
+        assert agent.system_prompt == before
+        assert "pdf-processing" in agent._skills_prompt
+        assert "web-search" in agent._skills_prompt
+        assert SKILLS_PROMPT_HEADER in agent._skills_prompt
 
-    def test_handle_skills_with_task_appends_dynamic_prompt(
+    def test_handle_skills_with_task_selects_dynamic_skills(
         self, skills_root
     ):
         from swarms import Agent
@@ -578,8 +581,146 @@ class TestAgentIntegration:
             task="Search the web for up to date information right now."
         )
 
-        assert agent.system_prompt.startswith(before)
-        assert "web-search" in agent.system_prompt
+        assert agent.system_prompt == before
+        assert "web-search" in agent._skills_prompt
+
+    def test_handle_skills_replaces_the_previous_selection(
+        self, skills_root
+    ):
+        from swarms import Agent
+
+        agent = Agent(
+            agent_name="SkillsReplaceAgent",
+            model_name="gpt-4o-mini",
+            skills_dir=str(skills_root),
+            persistent_memory=False,
+            print_on=False,
+        )
+
+        agent.handle_skills(task=None)
+        agent.handle_skills(
+            task="Search the web for up to date information right now."
+        )
+
+        assert agent._skills_prompt.count(SKILLS_PROMPT_HEADER) == 1
+        assert "pdf-processing" not in agent._skills_prompt
+
+
+def _capture_requests():
+    """Stub ``completion`` and collect the messages of every request."""
+    requests = []
+    message = SimpleNamespace(
+        role="assistant", content="ok", tool_calls=None
+    )
+    response = SimpleNamespace(
+        choices=[
+            SimpleNamespace(message=message, finish_reason="stop")
+        ],
+        usage=None,
+    )
+
+    def fake_completion(**kwargs):
+        requests.append(kwargs["messages"])
+        return response
+
+    stub = patch.object(
+        litellm_wrapper, "completion", side_effect=fake_completion
+    )
+    return requests, stub
+
+
+def _system_text(request):
+    return "\n".join(
+        str(m["content"]) for m in request if m["role"] == "system"
+    )
+
+
+def _user_text(request):
+    return "\n".join(
+        str(m["content"]) for m in request if m["role"] == "user"
+    )
+
+
+class TestSkillsReachTheModel:
+    @pytest.fixture
+    def agent(self, skills_root):
+        from swarms import Agent
+
+        return Agent(
+            agent_name="SkillsRequestAgent",
+            model_name="gpt-4o-mini",
+            skills_dir=str(skills_root),
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+        )
+
+    def test_run_sends_selected_skill_as_system_message(self, agent):
+        requests, stub = _capture_requests()
+
+        with stub:
+            agent.run(
+                "Search the web for up to date information right now."
+            )
+
+        system = _system_text(requests[-1])
+        assert SKILLS_PROMPT_HEADER.strip() in system
+        assert "web-search" in system
+
+    def test_repeated_runs_send_the_skills_once(self, agent):
+        requests, stub = _capture_requests()
+        task = "Search the web for up to date information right now."
+
+        with stub:
+            agent.run(task)
+            agent.run(task)
+
+        system = _system_text(requests[-1])
+        assert system.count(SKILLS_PROMPT_HEADER.strip()) == 1
+
+    def test_call_llm_does_not_mutate_the_callers_messages(
+        self, agent
+    ):
+        agent.handle_skills(task=None)
+        messages = [{"role": "user", "content": "hi"}]
+        requests, stub = _capture_requests()
+
+        with stub:
+            agent.call_llm(task=None, messages=messages)
+
+        assert messages == [{"role": "user", "content": "hi"}]
+        assert "pdf-processing" in _system_text(requests[-1])
+
+    def test_call_llm_prefixes_a_plain_task(self, agent):
+        agent.handle_skills(task=None)
+        requests, stub = _capture_requests()
+
+        with stub:
+            agent.call_llm(task="Summarise the history.")
+
+        user = _user_text(requests[-1])
+        assert user.startswith(SKILLS_PROMPT_HEADER.strip())
+        assert user.endswith("Summarise the history.")
+
+    def test_no_skills_leaves_the_request_unchanged(self):
+        from swarms import Agent
+
+        agent = Agent(
+            agent_name="NoSkillsRequestAgent",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+        )
+        requests, stub = _capture_requests()
+
+        with stub:
+            agent.call_llm(task="hello")
+
+        assert _user_text(requests[-1]) == "hello"
+        assert SKILLS_PROMPT_HEADER.strip() not in _system_text(
+            requests[-1]
+        )
 
 
 class TestSaveSkill:

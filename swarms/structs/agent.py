@@ -433,6 +433,7 @@ class Agent:
         self.id = id or generate_id("agent")
         self.skills = SkillsManager(skills_dir=skills_dir)
         self.skill_accretion = skill_accretion
+        self._skills_prompt = ""
         self.selected_tools = selected_tools
         self.llm = llm
         self.max_loops = max_loops
@@ -759,13 +760,18 @@ class Agent:
 
     def handle_skills(self, task: Optional[str] = None):
         """
-        Load Agent Skills into the system prompt.
+        Select the Agent Skills for this run.
+
+        The rendered section is sent with every LLM call by :meth:`call_llm`.
+        ``system_prompt`` is left unchanged: the LLM copies it once at
+        construction, so text appended to it here never reached the model,
+        and each run appended another copy.
 
         Args:
             task: Optional task description. If provided, loads skills dynamically
                   based on similarity to the task. If not provided, loads all skills statically.
         """
-        self.system_prompt += self.skills.prompt_for_task(task)
+        self._skills_prompt = self.skills.prompt_for_task(task)
 
     @property
     def workspace(self) -> "WorkspaceManager":
@@ -3210,6 +3216,17 @@ Subtask Breakdown:
             >>> response = agent.call_llm("What is Python?", current_loop=1)
             >>> response = agent.call_llm("Describe this image", img="chart.png")
         """
+        skills = self._skills_prompt.strip()
+        if skills:
+            if kwargs.get("messages") is not None:
+                kwargs["messages"] = [
+                    {"role": "system", "content": skills},
+                    *kwargs["messages"],
+                ]
+            elif isinstance(task, str):
+                # Not converted to messages: that path drops img and imgs.
+                task = f"{skills}\n\n{task}"
+
         return self.llm_manager.call(
             task=task,
             img=img,
@@ -4128,7 +4145,7 @@ Summary: {summary}
             temperature=self.temperature,
             top_p=self.top_p,  # Anthropic rejects requests with both temperature and top_p
             max_tokens=self.max_tokens,
-            system_prompt=self.system_prompt,
+            system_prompt=self.system_prompt + self._skills_prompt,
             stream=False,  # Always disable streaming for tool summaries
             tools_list_dictionary=None,
             parallel_tool_calls=False,
