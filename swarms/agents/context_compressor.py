@@ -1,10 +1,5 @@
 """
-Context window compression for autonomous (``max_loops="auto"``) agent runs.
-
-When an agent's conversation history approaches its context window limit,
-this module summarizes the accumulated history and replaces it with a dense
-summary, preserving the system prompt and keeping the agent within its token
-budget for an unbounded run.
+Compress an agent's history into a summary near the context limit.
 """
 
 from typing import Any, Optional
@@ -39,13 +34,7 @@ Produce the compressed memory now."""
 
 class ContextCompressor:
     """
-    Monitors an agent's short-term memory token usage during
-    ``max_loops="auto"`` runs and compresses the history into a summary when
-    usage crosses a configurable fraction of the context window.
-
-    The agent's ``system_prompt`` is preserved because it is stored on the
-    ``Conversation`` object outside of ``conversation_history``; only the
-    turn-by-turn transcript is collapsed into a summary message.
+    Compress an agent's history into a summary when it nears the context limit.
     """
 
     def __init__(
@@ -56,13 +45,15 @@ class ContextCompressor:
         summarizer_max_tokens: int = 4000,
     ):
         """
+        Configure when and how to compress.
+
         Args:
-            threshold (float): Fraction of ``context_length`` at which to
-                trigger compression (e.g. ``0.9`` fires at 90% full).
-            summarizer_model (Optional[str]): Model used to produce the
-                summary. If ``None``, the agent's own ``model_name`` is used.
+            threshold (float): Fraction of the context length that triggers
+                compression.
+            summarizer_model (Optional[str]): Model for the summary; defaults to
+                the agent's own.
             summarizer_temperature (float): Temperature for the summary call.
-            summarizer_max_tokens (int): Max tokens for the summary output.
+            summarizer_max_tokens (int): Max tokens for the summary.
         """
         if not 0.0 < threshold <= 1.0:
             raise ValueError(
@@ -82,11 +73,14 @@ class ContextCompressor:
         return count_tokens(history) / float(context_length)
 
     def should_compress(self, agent: Any) -> bool:
-        """True once usage has crossed the threshold.
+        """
+        Return whether token usage has crossed the threshold.
 
-        Loop-mode gating (auto vs integer) is now handled by the agent's
-        ``context_compression`` flag at construction; this method just
-        measures the token budget.
+        Args:
+            agent (Any): The agent to measure.
+
+        Returns:
+            bool: True when the history should be compressed.
         """
         return self.usage_ratio(agent) >= self.threshold
 
@@ -119,9 +113,13 @@ class ContextCompressor:
 
     def compress(self, agent: Any) -> Optional[str]:
         """
-        Summarize the full conversation history and replace it in the
-        agent's ``short_memory``. Returns the summary string, or ``None`` if
-        there is nothing to compress.
+        Summarize the agent's history and replace it with the summary.
+
+        Args:
+            agent (Any): The agent whose history is compressed.
+
+        Returns:
+            Optional[str]: The summary, or None when there was nothing to compress.
         """
         history = agent.short_memory.return_history_as_string()
         if not history.strip():
@@ -145,7 +143,11 @@ class ContextCompressor:
             "stay within the context window.\n\n"
             f"{summary}"
         )
-        agent.short_memory.compact(summary=summary_content)
+        # A user turn, not System: the request body leaves system rows out, so the model would lose it.
+        agent.short_memory.compact(
+            summary=summary_content,
+            summary_role=getattr(agent, "user_name", None) or "User",
+        )
 
         new_tokens = count_tokens(
             agent.short_memory.return_history_as_string()

@@ -561,7 +561,7 @@ class TestAutonomousLoopIntegration:
         )
         agent.run("demo")
 
-        transcript = agent.autonomous_loop._transcript.messages
+        transcript = agent.autonomous_loop._messages()
         tool_results = [
             m["content"] for m in transcript if m["role"] == "tool"
         ]
@@ -710,7 +710,7 @@ class TestPlanPrewarming:
 
         results = [
             str(m["content"])
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._messages()
             if m["role"] == "tool"
         ]
         assert any(
@@ -1249,11 +1249,16 @@ class TestMCPInAutonomousLoop:
         )
         agent.run("post to slack")
 
-        transcript = agent.autonomous_loop._transcript.messages
-        assert any(
-            m["role"] == "tool" and m["tool_call_id"] == "mcp1"
+        transcript = agent.autonomous_loop._messages()
+        results = [
+            m["content"]
             for m in transcript
-        ), "the MCP call has no matching tool result"
+            if m["role"] == "tool" and m["tool_call_id"] == "mcp1"
+        ]
+        assert results, "the MCP call has no matching tool result"
+        # The MCP output itself, not a pointer to output the model never saw.
+        assert "ok" in results[0]
+        assert "See the tool output above" not in results[0]
 
     def test_a_failing_mcp_call_becomes_a_tool_error(
         self, mcp_auto_agent, monkeypatch
@@ -1299,7 +1304,7 @@ class TestMCPInAutonomousLoop:
 
         results = [
             str(m["content"])
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._messages()
             if m["role"] == "tool"
         ]
         assert any("unreachable" in r for r in results)

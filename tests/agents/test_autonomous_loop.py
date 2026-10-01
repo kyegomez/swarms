@@ -537,10 +537,7 @@ class TestStructuredTranscript:
 
     def test_transcript_uses_real_roles(self, monkeypatch, tmp_path):
         agent = self._run_simple(monkeypatch, tmp_path)
-        roles = [
-            m["role"]
-            for m in agent.autonomous_loop._transcript.messages
-        ]
+        roles = [m["role"] for m in agent.autonomous_loop._messages()]
 
         assert "assistant" in roles, "no assistant turn was recorded"
         assert (
@@ -554,7 +551,7 @@ class TestStructuredTranscript:
         agent = self._run_simple(monkeypatch, tmp_path)
         assistant = [
             m
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._messages()
             if m["role"] == "assistant"
         ]
         assert assistant, "no assistant turns"
@@ -575,7 +572,7 @@ class TestStructuredTranscript:
         next request fail outright, so this is the invariant that matters most.
         """
         agent = self._run_simple(monkeypatch, tmp_path)
-        transcript = agent.autonomous_loop._transcript.messages
+        transcript = agent.autonomous_loop._messages()
 
         for index, message in enumerate(transcript):
             if message["role"] != "assistant" or not message.get(
@@ -860,7 +857,7 @@ class TestThinkLoopContainment:
 
         nudges = [
             m
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._messages()
             if "times in a row" in str(m.get("content"))
         ]
         assert (
@@ -872,7 +869,7 @@ class TestThinkLoopContainment:
         agent, _ = self._thrashing_agent(monkeypatch)
         agent.run("demo")
 
-        transcript = agent.autonomous_loop._transcript.messages
+        transcript = agent.autonomous_loop._messages()
         assert any(
             "Take concrete action now" in str(m.get("content"))
             for m in transcript
@@ -1006,17 +1003,12 @@ class TestHandoffPromptIsNotReappended:
 
 
 class TestContextCompression:
-    """#1962 — ``maybe_compress`` was never called on the auto path.
-
-    The compressor measures and compacts ``short_memory``, but the body
-    sent to the model is the loop's ``Transcript`` — so the fix both
-    triggers the compressor between subtask iterations and rebuilds the
-    transcript from the summary it returns. Compressing only the mirror
-    would leave the request payload growing unbounded.
+    """
+    #1962: the auto loop compresses, and the next request starts at the summary.
     """
 
     class _StubCompressor:
-        """Always compresses, returning a fixed summary."""
+        """Always compresses to a fixed summary, as the real one does."""
 
         def __init__(self, summary):
             self.summary = summary
@@ -1024,6 +1016,10 @@ class TestContextCompression:
 
         def maybe_compress(self, agent):
             self.calls += 1
+            agent.short_memory.compact(
+                summary=f"[Compressed Memory Summary]\n\n{self.summary}",
+                summary_role=agent.user_name,
+            )
             return self.summary
 
     def test_no_compressor_is_a_no_op(self):
@@ -1032,9 +1028,9 @@ class TestContextCompression:
         loop._say_user("seed")
 
         assert loop._maybe_compress_context() is False
-        assert len(loop._transcript) == 1
+        assert [m["content"] for m in loop._messages()] == ["seed"]
 
-    def test_below_threshold_leaves_the_transcript_alone(self):
+    def test_below_threshold_leaves_the_request_alone(self):
         agent = build_agent(
             context_compression=True, context_length=1_000_000
         )
@@ -1042,32 +1038,29 @@ class TestContextCompression:
         loop._say_user("seed")
 
         assert loop._maybe_compress_context() is False
-        assert len(loop._transcript) == 1
+        assert [m["content"] for m in loop._messages()] == ["seed"]
 
-    def test_compression_rebuilds_the_transcript(self):
+    def test_compression_restarts_the_request_at_the_summary(self):
         agent = build_agent()
         stub = self._StubCompressor("CANNED SUMMARY")
         agent._context_compressor = stub
         loop = AutonomousAgentLoop(agent)
         for i in range(6):
             loop._say_user(f"turn {i}")
-        memory_before = history(agent)
 
         assert loop._maybe_compress_context() is True
         assert stub.calls == 1
 
         # The request body is now a single user turn holding the
         # summary, not the six accumulated turns.
-        assert len(loop._transcript) == 1
-        seeded = loop._transcript[0]
-        assert seeded["role"] == "user"
-        assert "[Compressed Memory Summary]" in seeded["content"]
-        assert "CANNED SUMMARY" in seeded["content"]
+        request = loop._messages()
+        assert len(request) == 1
+        assert request[0]["role"] == "user"
+        assert "[Compressed Memory Summary]" in request[0]["content"]
+        assert "CANNED SUMMARY" in request[0]["content"]
 
-        # The compressor owns the short_memory compaction; the
-        # transcript re-seed must not mirror the summary there a
-        # second time.
-        assert history(agent) == memory_before
+        # One store, so the summary is in short_memory exactly once.
+        assert history(agent).count("CANNED SUMMARY") == 1
 
     def test_compression_fires_during_a_run(self, monkeypatch):
         """End to end: a run over a tiny context budget compresses
@@ -1150,7 +1143,7 @@ class TestContextCompression:
         )
 
         assert loop._maybe_compress_context() is False
-        assert len(loop._transcript) == 1
+        assert len(loop._messages()) == 1
 
 
 class TestRunBashSteersFileWritesToTheFileTools:
@@ -1196,6 +1189,168 @@ class TestRunBashSteersFileWritesToTheFileTools:
             for t in get_autonomous_planning_tools()
         }
         assert "create_file" in tools["run_bash"]["description"]
+
+
+# --------------------------------------------------------------------------
+# #2386 — one store: short_memory is the request body
+# --------------------------------------------------------------------------
+
+
+def record_requests(agent, monkeypatch, responses):
+    """
+    Script the model's replies and return the messages of every request.
+
+    Args:
+        agent (Agent): The agent to script.
+        monkeypatch (pytest.MonkeyPatch): Used to replace the model call.
+        responses (list): Replies in order; an exception is raised instead.
+
+    Returns:
+        list: The messages of each request.
+    """
+    queue = list(responses)
+    bodies = []
+
+    def fake_call_llm(task=None, *args, **kwargs):
+        bodies.append(list(kwargs.get("messages") or []))
+        if queue:
+            item = queue.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return item
+        return "no further action"
+
+    monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+    return bodies
+
+
+def results_for(bodies, call_id):
+    return [
+        m["content"]
+        for body in bodies
+        for m in body
+        if m.get("tool_call_id") == call_id
+    ]
+
+
+DONE = [
+    [
+        tool_call(
+            "subtask_done", task_id="step1", summary="d", success=True
+        )
+    ],
+    [
+        tool_call(
+            "complete_task", task_id="main", summary="d", success=True
+        )
+    ],
+]
+
+
+class TestOneStore:
+    def test_unparseable_arguments_are_the_tool_result(
+        self, monkeypatch
+    ):
+        """Changed on purpose: the model used to get a placeholder, not the parse error."""
+        agent = build_agent()
+        bad = {
+            "id": "x1",
+            "type": "function",
+            "function": {"name": "think", "arguments": "{not json"},
+        }
+        bodies = record_requests(
+            agent, monkeypatch, [plan(("step1", [])), [bad], *DONE]
+        )
+        agent.run("demo")
+
+        results = results_for(bodies, "x1")
+        assert results, "the bad call was never answered"
+        assert "ERROR: think failed" in results[0]
+
+    def test_a_failure_mid_turn_answers_the_open_calls(
+        self, monkeypatch
+    ):
+        """An exception between recording calls and answering them used to orphan them."""
+
+        def broken(city: str) -> str:
+            """Always fails.
+
+            Args:
+                city: The city name.
+            """
+            raise RuntimeError("service down")
+
+        agent = build_agent(tools=[broken], tool_retry_attempts=1)
+        call = tool_call("broken", city="Paris")
+        call["id"] = "b1"
+        bodies = record_requests(
+            agent, monkeypatch, [plan(("step1", [])), [call], *DONE]
+        )
+        agent.run("demo")
+
+        results = results_for(bodies, "b1")
+        assert results, "the failed call was never answered"
+        assert "ERROR: the previous step failed" in results[0]
+
+    def test_a_failed_step_without_calls_is_shown_to_the_model(
+        self, monkeypatch
+    ):
+        """Changed on purpose: the note was in short_memory only, so the retry was identical."""
+        agent = build_agent()
+        bodies = record_requests(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                RuntimeError("provider hiccup"),
+                *DONE,
+            ],
+        )
+        agent.run("demo")
+
+        retry = bodies[2]
+        assert retry[-1]["role"] == "user"
+        assert "provider hiccup" in retry[-1]["content"]
+
+    def test_bookkeeping_rows_stay_out_of_the_request(
+        self, monkeypatch, tmp_path
+    ):
+        """File-operation and [THINKING] rows are written while their call is open."""
+        agent = build_agent()
+        target = tmp_path / "t.txt"
+        bodies = record_requests(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "think",
+                        current_state="s",
+                        analysis="a",
+                        next_actions=["b"],
+                        confidence=0.5,
+                    )
+                ],
+                [
+                    tool_call(
+                        "create_file",
+                        file_path=str(target),
+                        content="x",
+                    )
+                ],
+                *DONE,
+            ],
+        )
+        agent.run("demo")
+
+        sent = " ".join(
+            str(m.get("content")) for b in bodies for m in b
+        )
+        assert "[THINKING]" not in sent
+        assert "Created file:" not in sent
+        assert "[THINKING]" in history(agent)
+        assert "Created file:" in history(agent)
 
 
 if __name__ == "__main__":

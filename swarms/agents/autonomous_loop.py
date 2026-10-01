@@ -1,24 +1,5 @@
 """
-Autonomous execution loop for :class:`~swarms.structs.agent.Agent`.
-
-When an agent is constructed with ``max_loops="auto"`` it does not run a fixed
-number of iterations. Instead it plans, executes its plan subtask by subtask,
-and decides for itself when the work is finished. That behaviour lives here
-rather than on ``Agent`` so the agent class stays readable: this is roughly a
-fifth of what ``agent.py`` used to be, and none of it is reachable unless
-``max_loops == "auto"``.
-
-The loop owns three phases:
-
-1. **Plan** -- ask the model to produce a subtask list via the ``create_plan`` tool.
-2. **Execute** -- walk the subtasks, dispatching tool calls until each is marked
-   done via ``subtask_done``.
-3. **Summarize** -- hand back a final answer (delegated to
-   ``Agent._generate_final_summary``).
-
-``AutonomousAgentLoop`` holds a back-reference to its owning agent and reads and
-writes agent state through it, mirroring the existing
-:class:`~swarms.agents.llm_manager.LLMManager` arrangement.
+The plan, execute and summarize loop agents run when max_loops is auto.
 """
 
 import json
@@ -49,7 +30,7 @@ from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
-from swarms.structs.transcript import Transcript
+from swarms.structs.conversation import map_batch_results
 from swarms.tools.dynamic_tool_loader import SEARCH_TOOL_NAME
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists, format_data_structure
@@ -92,88 +73,57 @@ ALWAYS_LOADED_TOOLS = frozenset(
 
 class AutonomousAgentLoop:
     """
-    Plan-execute-summarize loop used when ``max_loops="auto"``.
+    Plan, execute and summarize loop used when max_loops is auto.
 
     Args:
-        agent: The owning :class:`~swarms.structs.agent.Agent`. All agent
-            configuration and state is read and written through this
-            reference.
-
-    Example:
-        >>> agent = Agent(agent_name="Researcher", max_loops="auto")
-        >>> agent.run("Compare the top 3 vector databases")  # routes here
+        agent (Any): The agent whose state and configuration the loop uses.
     """
 
     def __init__(self, agent: Any):
         self.agent = agent
-        # The real body sent to the model; short_memory mirrors it.
-        self._transcript = Transcript()
+        # Index of this run's first row in short_memory; the request starts there.
+        self._window_start = 0
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
 
-    def _say_user(self, content: str, mirror: bool = True) -> None:
-        """Add a user turn to the transcript (and to short_memory)."""
-        self._transcript.append_user(content)
-        if mirror:
-            self.agent.short_memory.add(
-                role=self.agent.user_name, content=content
-            )
+    def _say_user(self, content: str) -> None:
+        """
+        Add a user turn.
 
-    def _record_assistant(self, parsed: Any) -> List[Dict[str, Any]]:
-        """Add the model's turn; return the tool calls it made."""
-        return self._transcript.record_assistant(parsed)
+        Args:
+            content (str): The message.
+        """
+        self.agent.short_memory.add(
+            role=self.agent.user_name, content=content
+        )
 
-    def _flush_tool_results(
-        self, calls: List[Dict[str, Any]], results: Dict[str, Any]
-    ) -> None:
-        """Answer every tool call in the preceding assistant turn."""
-        self._transcript.flush_tool_results(calls, results)
+    def _messages(self) -> List[Dict[str, Any]]:
+        """
+        Return this run's conversation as the request body.
 
-    def _map_batch_results(
-        self,
-        tool_calls: List[Dict[str, Any]],
-        output: Any,
-        results: Dict[str, Any],
-    ) -> None:
-        """Attribute a batched tool execution back to individual call ids."""
-        self._transcript.map_batch_results(
-            tool_calls,
-            output,
-            results,
-            formatter=format_data_structure,
+        Returns:
+            List[Dict[str, Any]]: Chat-completions messages.
+        """
+        return self.agent.short_memory.to_messages(
+            self.agent.agent_name, start=self._window_start
         )
 
     def _maybe_compress_context(self) -> bool:
-        """Compress the conversation when it nears the context limit.
-
-        ``ContextCompressor`` measures and compacts
-        ``agent.short_memory``, but the request body actually sent to
-        the model is ``self._transcript`` — so after a compaction the
-        transcript is rebuilt around the summary. Compressing only the
-        mirror would leave the payload growing unbounded, which is the
-        failure the compressor exists to prevent.
+        """
+        Compress the conversation when it nears the context limit.
 
         Returns:
-            bool: True when a compression ran and the transcript was
-            re-seeded. The caller must then restore whatever immediate
-            instruction the model needs (e.g. the prompt for the
-            subtask in flight).
+            bool: True when it compressed, so the current instruction can be resent.
         """
         compressor = getattr(self.agent, "_context_compressor", None)
         if compressor is None:
             return False
-        summary = compressor.maybe_compress(self.agent)
-        if summary is None:
+        if compressor.maybe_compress(self.agent) is None:
             return False
 
-        # compact() already re-seeded short_memory, do not mirror the summary twice
-        self._transcript = Transcript()
-        self._say_user(
-            "[Compressed Memory Summary]\n"
-            "Earlier turns were compressed to stay within the "
-            "context window. Progress so far:\n\n"
-            f"{summary}",
-            mirror=False,
+        # compact() leaves the summary last; the rows before it are static context.
+        self._window_start = (
+            len(self.agent.short_memory.conversation_history) - 1
         )
         return True
 
@@ -187,75 +137,25 @@ class AutonomousAgentLoop:
         **kwargs,
     ) -> Any:
         """
-        Execute the autonomous loop structure: plan -> execute subtasks -> summary.
-
-        This method implements the optimized autonomous looping when max_loops="auto"
-        and interactive=False. It follows a three-phase structure:
-
-        **Phase 1: Planning**
-        - Creates a detailed plan using the `create_plan` tool
-        - Breaks down the task into subtasks with dependencies, priorities, and step IDs
-        - Supports handoff delegation during planning if handoffs are configured
-        - Maximum planning attempts are controlled by Agent.max_planning_attempts
-
-        **Phase 2: Execution**
-        - Executes each subtask in dependency order
-        - For each subtask, runs a thinking -> tool actions -> observation loop
-        - Supports both planning tools (think, subtask_done, complete_task) and user-defined tools
-        - Prevents infinite thinking loops with max_consecutive_thinks limit
-        - Each subtask has a maximum iteration limit (Agent.max_subtask_loops)
-        - Overall execution has a maximum iteration limit (Agent.max_subtask_iterations)
-
-        **Phase 3: Summary**
-        - Generates a comprehensive final summary when all subtasks are complete
-        - Uses the `complete_task` tool or generates summary manually
-        - Returns formatted output based on output_type configuration
-
-        The method automatically integrates:
-        - Planning tools (create_plan, think, subtask_done, complete_task, file operations)
-        - Handoff tools (if handoffs are configured)
-        - User-defined tools (added after planning phase)
-        - MCP tools (if configured)
+        Plan the task, execute each subtask, then summarize.
 
         Args:
-            task (Optional[Union[str, Any]]): The task or prompt for the agent to process.
-                This is the main objective that will be broken down into subtasks.
-            img (Optional[str]): Optional image path or data to be processed during execution.
-            streaming_callback (Optional[Callable[[str], None]]): Optional callback function
-                to receive streaming tokens in real-time. Useful for dashboard integration.
-            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format. When
-                given, the loop's transcript starts from them instead of empty; the agent
-                has already recorded them in ``short_memory``.
-            *args: Additional positional arguments passed to LLM calls.
-            **kwargs: Additional keyword arguments passed to LLM calls.
+            task (Optional[Union[str, Any]]): The task to complete.
+            img (Optional[str]): An image to send with the task.
+            streaming_callback (Optional[Callable[[str], None]]): Receives tokens.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns to continue from.
+            *args: Passed through to the model calls.
+            **kwargs: Passed through to the model calls.
 
         Returns:
-            Any: The agent's output with comprehensive summary. Format depends on output_type:
-                - "final": Returns comprehensive task completion summary
-                - Other types: Returns formatted conversation history based on output_type
-
-        Raises:
-            Exception: If planning phase fails after maximum attempts.
-            Exception: If execution exceeds maximum iteration limits.
-
-        Note:
-            - This method is automatically called when max_loops="auto" and interactive=False
-            - The method resets autonomous loop state at the start of each execution
-            - Tool execution results are automatically added to conversation memory
-            - Progress visualization is shown if print_on=True
-
-        Examples:
-            >>> agent = Agent(max_loops="auto", interactive=False)
-            >>> result = agent.run("Build a web application with authentication")
-            >>> # The agent will:
-            >>> # 1. Create a plan with subtasks
-            >>> # 2. Execute each subtask with tool calls
-            >>> # 3. Generate a comprehensive summary
+            Any: The agent's output, shaped by its output type.
         """
         try:
 
-            # Cleared before seeding, or the opening turn is lost.
-            self._transcript = Transcript(list(messages or []))
+            # run() has just added the caller's messages; the request starts with them.
+            self._window_start = len(
+                self.agent.short_memory.conversation_history
+            ) - len(messages or [])
             self.agent.autonomous_subtasks = []
             self.agent.current_subtask_index = 0
             self.agent.subtask_status = {}
@@ -468,16 +368,17 @@ class AutonomousAgentLoop:
                         img=img,
                         current_loop=0,
                         streaming_callback=streaming_callback,
-                        messages=self._transcript.messages,
+                        messages=self._messages(),
                         *args,
                         **kwargs,
                     )
 
                     response = self.agent.parse_llm_output(response)
-                    self.agent.short_memory.add(
-                        role=self.agent.agent_name, content=response
+                    planning_calls = (
+                        self.agent.short_memory.record_assistant(
+                            self.agent.agent_name, response
+                        )
                     )
-                    planning_calls = self._record_assistant(response)
                     planning_results: Dict[str, Any] = {}
 
                     # Check if response contains create_plan or handoff_task tool call
@@ -504,12 +405,6 @@ class AutonomousAgentLoop:
                                     result = planning_tool_handlers[
                                         "create_plan"
                                     ](**arguments)
-
-                                    # Add result to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"create_plan result: {result}",
-                                    )
                                     planning_results[
                                         tool_call.get("id", "")
                                     ] = result
@@ -539,12 +434,6 @@ class AutonomousAgentLoop:
                                             handoffs=handoffs_list
                                         )
                                     )
-
-                                    # Add result to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"handoff_task result: {result}",
-                                    )
                                     planning_results[
                                         tool_call.get("id", "")
                                     ] = result
@@ -572,7 +461,7 @@ class AutonomousAgentLoop:
                                 break
 
                     # Answer every tool_call before the next request.
-                    self._flush_tool_results(
+                    self.agent.short_memory.flush_tool_results(
                         planning_calls, planning_results
                     )
 
@@ -718,13 +607,16 @@ class AutonomousAgentLoop:
                         # The rebuilt transcript holds only the summary, restore the subtask
                         self._say_user(execution_prompt)
 
+                    # Before the try, so the except can answer calls left open.
+                    turn_calls: List[Dict[str, Any]] = []
+                    turn_results: Dict[str, Any] = {}
                     try:
                         response = self.agent.call_llm(
                             task=None,
                             img=img,
                             current_loop=subtask_iterations,
                             streaming_callback=streaming_callback,
-                            messages=self._transcript.messages,
+                            messages=self._messages(),
                             *args,
                             **kwargs,
                         )
@@ -732,14 +624,13 @@ class AutonomousAgentLoop:
                         response = self.agent.parse_llm_output(
                             response
                         )
-                        self.agent.short_memory.add(
-                            role=self.agent.agent_name,
-                            content=response,
-                        )
 
                         # Answer every call before the next request.
-                        turn_calls = self._record_assistant(response)
-                        turn_results: Dict[str, Any] = {}
+                        turn_calls = (
+                            self.agent.short_memory.record_assistant(
+                                self.agent.agent_name, response
+                            )
+                        )
 
                         # Handle tool calls
                         if isinstance(response, list):
@@ -769,12 +660,11 @@ class AutonomousAgentLoop:
                                         TypeError,
                                     ) as parse_error:
                                         # Report back, do not abort.
-                                        self.agent.short_memory.add(
-                                            role="Tool Executor",
-                                            content=_format_tool_error(
-                                                function_name,
-                                                parse_error,
-                                            ),
+                                        turn_results[
+                                            tool_call.get("id", "")
+                                        ] = _format_tool_error(
+                                            function_name,
+                                            parse_error,
                                         )
                                         if self.agent.verbose:
                                             logger.warning(
@@ -845,11 +735,6 @@ class AutonomousAgentLoop:
                                                     tool_error,
                                                 )
 
-                                        # Add result to memory
-                                        self.agent.short_memory.add(
-                                            role="Tool Executor",
-                                            content=f"{function_name} result: {result}",
-                                        )
                                         turn_results[
                                             tool_call.get("id", "")
                                         ] = result
@@ -937,6 +822,7 @@ class AutonomousAgentLoop:
                                         subtask_iterations,
                                     )
 
+                            tool_output = None
                             if regular_tool_calls and exists(
                                 self.agent.tools
                             ):
@@ -971,18 +857,11 @@ class AutonomousAgentLoop:
                                     tool_output = self.agent.tool_struct.execute_function_calls_from_api_response(
                                         regular_tool_calls
                                     )
-
-                                    # Add to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=format_data_structure(
-                                            tool_output
-                                        ),
-                                    )
-                                    self._map_batch_results(
+                                    map_batch_results(
                                         regular_tool_calls,
                                         tool_output,
                                         turn_results,
+                                        formatter=format_data_structure,
                                     )
 
                                     # Display tool execution results using formatter
@@ -1001,53 +880,41 @@ class AutonomousAgentLoop:
                                             title="Tool Execution Results",
                                         )
 
-                                    # Handle tool call summary if enabled
-                                    if (
-                                        self.agent.tool_call_summary
-                                        is True
-                                    ):
-                                        temp_llm = (
-                                            self.agent.temp_llm_instance_for_tool_summary()
-                                        )
-                                        tool_response = temp_llm.run(
-                                            f"""
-                                            Please analyze and summarize the following tool execution output in a clear and concise way. 
-                                            Focus on the key information and insights that would be most relevant to the user's original request.
-                                            If there are any errors or issues, highlight them prominently.
-                                            
-                                            Tool Output:
-                                            {tool_output}
-                                            """
-                                        )
-                                        self.agent.short_memory.add(
-                                            role=self.agent.agent_name,
-                                            content=tool_response,
-                                        )
-
                                 except Exception as e:
                                     # Fallback to tool_execution_retry if direct execution fails
                                     if self.agent.verbose:
                                         logger.warning(
                                             f"Direct tool execution failed, using retry mechanism: {e}"
                                         )
-                                    self.agent.tool_execution_retry(
+                                    tool_output = self.agent.tool_execution_retry(
                                         regular_tool_calls,
                                         subtask_iterations,
                                     )
-                                    self._map_batch_results(
+                                    map_batch_results(
                                         regular_tool_calls,
-                                        f"tool execution failed: {e}",
+                                        tool_output,
                                         turn_results,
+                                        formatter=format_data_structure,
                                     )
 
-                            self._flush_tool_results(
+                            self.agent.short_memory.flush_tool_results(
                                 turn_calls, turn_results
                             )
+                            turn_calls = []
+
+                            # After the results, so the summary follows what it summarises.
+                            if (
+                                self.agent.tool_call_summary is True
+                                and tool_output
+                            ):
+                                self.agent._summarize_tool_output(
+                                    tool_output, subtask_iterations
+                                )
 
                             if task_complete:
                                 return self.agent._generate_final_summary(
                                     streaming_callback=streaming_callback,
-                                    messages=self._transcript.messages,
+                                    messages=self._messages(),
                                 )
                         else:
                             # Handle regular tool execution
@@ -1091,17 +958,10 @@ class AutonomousAgentLoop:
                                                 )
 
                                 # Execute tools and capture output for display
+                                tool_output = None
                                 try:
                                     tool_output = self.agent.tool_struct.execute_function_calls_from_api_response(
                                         response
-                                    )
-
-                                    # Add to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=format_data_structure(
-                                            tool_output
-                                        ),
                                     )
 
                                     # Display tool execution results using formatter
@@ -1112,42 +972,38 @@ class AutonomousAgentLoop:
                                             title="Tool Execution Results",
                                         )
 
-                                    # Handle tool call summary if enabled
-                                    if (
-                                        self.agent.tool_call_summary
-                                        is True
-                                    ):
-                                        temp_llm = (
-                                            self.agent.temp_llm_instance_for_tool_summary()
-                                        )
-                                        tool_response = temp_llm.run(
-                                            f"""
-                                            Please analyze and summarize the following tool execution output in a clear and concise way. 
-                                            Focus on the key information and insights that would be most relevant to the user's original request.
-                                            If there are any errors or issues, highlight them prominently.
-                                            
-                                            Tool Output:
-                                            {tool_output}
-                                            """
-                                        )
-                                        self.agent.short_memory.add(
-                                            role=self.agent.agent_name,
-                                            content=tool_response,
-                                        )
-
                                 except Exception as e:
                                     # Fallback to tool_execution_retry if direct execution fails
                                     if self.agent.verbose:
                                         logger.warning(
                                             f"Direct tool execution failed, using retry mechanism: {e}"
                                         )
-                                    self.agent.tool_execution_retry(
+                                    tool_output = self.agent.tool_execution_retry(
                                         response, subtask_iterations
                                     )
 
-                            self._flush_tool_results(
+                                # No recorded call to answer, so it is kept for the record only.
+                                if tool_output:
+                                    self.agent.short_memory.add(
+                                        role="Tool Executor",
+                                        content=format_data_structure(
+                                            tool_output
+                                        ),
+                                        internal=True,
+                                    )
+                                    if (
+                                        self.agent.tool_call_summary
+                                        is True
+                                    ):
+                                        self.agent._summarize_tool_output(
+                                            tool_output,
+                                            subtask_iterations,
+                                        )
+
+                            self.agent.short_memory.flush_tool_results(
                                 turn_calls, turn_results
                             )
+                            turn_calls = []
 
                         # Check if subtask status changed
                         if (
@@ -1179,10 +1035,7 @@ class AutonomousAgentLoop:
                                 "action now using the available tools, and call "
                                 "subtask_done when the work is finished."
                             )
-                            self.agent.short_memory.add(
-                                role="system", content=nudge
-                            )
-                            self._transcript.append_user(nudge)
+                            self._say_user(nudge)
 
                             # Give the nudge a chance before refiring.
                             self.agent.think_call_count = 0
@@ -1193,14 +1046,23 @@ class AutonomousAgentLoop:
                                 f"Error in subtask execution loop: {e}"
                             )
                         # Without this the next prompt is identical.
-                        self.agent.short_memory.add(
-                            role="Tool Executor",
-                            content=(
-                                f"ERROR: the previous step failed with "
-                                f"{type(e).__name__}: {e}. Adjust your "
-                                "approach before retrying."
-                            ),
+                        error = (
+                            f"ERROR: the previous step failed with "
+                            f"{type(e).__name__}: {e}. Adjust your "
+                            "approach before retrying."
                         )
+                        if turn_calls:
+                            for call in turn_calls:
+                                turn_results.setdefault(
+                                    call["id"], error
+                                )
+                            self.agent.short_memory.flush_tool_results(
+                                turn_calls, turn_results
+                            )
+                        else:
+                            self.agent.short_memory.add(
+                                role="Tool Executor", content=error
+                            )
 
                 if not subtask_done:
                     # Failed, not pending; pending would re-run it.
@@ -1235,7 +1097,8 @@ class AutonomousAgentLoop:
                 )
 
             return self.agent._generate_final_summary(
-                streaming_callback=streaming_callback
+                streaming_callback=streaming_callback,
+                messages=self._messages(),
             )
 
         except Exception as error:
@@ -1245,75 +1108,16 @@ class AutonomousAgentLoop:
         self, task_description: str, steps: List[Dict], **kwargs
     ) -> str:
         """
-        Create a detailed plan for task execution.
-
-        This tool is used by the autonomous loop to break down a complex task into
-        manageable subtasks with dependencies, priorities, and execution order.
-
-        **Plan Structure:**
-        Each step in the plan must contain:
-        - step_id (str): Unique identifier for the subtask
-        - description (str): Detailed description of what needs to be done
-        - priority (str, optional): Priority level (e.g., "high", "medium", "low")
-        - dependencies (List[str], optional): List of step_ids that must complete first
-
-        **Plan Storage:**
-        The plan is stored in:
-        - self.agent.autonomous_subtasks: List of all subtasks with their details
-        - self.agent.subtask_status: Dictionary mapping step_id to status ("pending", "completed", "failed")
-        - self.agent.plan_created: Boolean flag indicating plan creation
-
-        **Execution Order:**
-        Subtasks are executed based on:
-        1. Dependencies: Tasks with unmet dependencies are blocked
-        2. Priority: Higher priority tasks are preferred when multiple are available
-        3. Creation order: Used as tiebreaker
+        Store a plan of subtasks for the run.
 
         Args:
-            task_description (str): High-level description of the overall task to be completed.
-                This provides context for the subtask planning.
-            steps (List[Dict]): List of step dictionaries, each containing:
-                - step_id (str): Unique identifier for the subtask (required)
-                - description (str): What needs to be accomplished (required)
-                - priority (str): Priority level, e.g., "high", "medium", "low" (optional)
-                - dependencies (List[str]): List of step_ids that must complete first (optional)
-            **kwargs: Additional arguments (currently unused, reserved for future use).
+            task_description (str): The overall task.
+            steps (List[Dict]): Subtasks with step_id, description, priority
+                and dependencies.
+            **kwargs: Ignored.
 
         Returns:
-            str: Confirmation message indicating successful plan creation with the number
-                of subtasks created. Format: "Plan created successfully with {n} subtasks"
-
-        Note:
-            - Called during the planning phase, and again at any point during
-              execution when the model revises the plan.
-            - The call is idempotent, not destructive. Steps are merged by
-              ``step_id``: work that already finished keeps its status and
-              summary, still-pending steps are updated in place, unmentioned
-              steps that already finished are retained as history, and
-              unmentioned steps that are still pending are dropped. Only a
-              first call on an empty plan starts from scratch.
-            - If verbose=True, plan creation is logged with step details
-
-        Examples:
-            >>> steps = [
-            ...     {
-            ...         "step_id": "step1",
-            ...         "description": "Set up project structure",
-            ...         "priority": "high",
-            ...         "dependencies": []
-            ...     },
-            ...     {
-            ...         "step_id": "step2",
-            ...         "description": "Implement authentication",
-            ...         "priority": "high",
-            ...         "dependencies": ["step1"]
-            ...     }
-            ... ]
-            >>> result = agent._create_plan_tool(
-            ...     "Build a web application",
-            ...     steps
-            ... )
-            >>> # Returns: "Plan created successfully with 2 subtasks"
+            str: A confirmation the model reads.
         """
         if self.agent.verbose:
             logger.info(f"Creating plan for task: {task_description}")
@@ -1498,10 +1302,12 @@ class AutonomousAgentLoop:
         current_loop: int,
     ) -> None:
         """
-        Run MCP tool calls through the agent's MCP manager.
+        Run MCP tool calls and record each outcome as its result.
 
-        Failures become the tool's result rather than propagating, so the model
-        sees what went wrong and the transcript keeps one result per call id.
+        Args:
+            mcp_calls (List[Dict[str, Any]]): The MCP calls to run.
+            results (Dict[str, Any]): Filled in place, keyed by call id.
+            current_loop (int): The current loop, for display.
         """
         for call in mcp_calls:
             name = call.get("function", {}).get("name", "unknown")
@@ -1509,39 +1315,29 @@ class AutonomousAgentLoop:
                 self.agent._visualize_function_call(name, {})
 
             try:
-                self.agent.mcp_tool_handling(
+                output = self.agent.mcp_tool_handling(
                     response=[call], current_loop=current_loop
                 )
-                outcome = f"{name} executed via MCP. See the tool output above."
+                outcome = format_data_structure(output)
             except Exception as error:
                 outcome = _format_tool_error(name, error)
                 if self.agent.verbose:
                     logger.error(outcome)
 
-            self.agent.short_memory.add(
-                role="Tool Executor", content=f"{name}: {outcome}"
-            )
             results[call.get("id", "")] = outcome
 
     def _prewarm_tools_from_plan(
         self, task_description: str, steps: List[Dict]
     ) -> List[str]:
         """
-        Load the tools a plan implies, before any subtask starts.
+        Load the tools a plan implies before any subtask starts.
 
-        With ``dynamic_tools`` the model otherwise discovers tools one subtask
-        at a time, because ``get_execution_prompt`` deliberately scopes each
-        turn to a single subtask - so it cannot know what later steps need and
-        searches again for each one, at a full round-trip each.
-
-        The plan is the best statement of what the whole run needs and it
-        exists before any subtask starts, so it is used as the query here.
-        This costs no extra turn: it happens inside the ``create_plan`` call
-        that just succeeded. If it misses nothing breaks - the model can still
-        search mid-run exactly as before.
+        Args:
+            task_description (str): The overall task.
+            steps (List[Dict]): The plan's subtasks.
 
         Returns:
-            Names of tools newly loaded, for reporting back to the model.
+            List[str]: The names of the tools that were loaded.
         """
         agent = self.agent
         if not getattr(agent, "dynamic_tools", False):
@@ -1642,6 +1438,7 @@ class AutonomousAgentLoop:
         self.agent.short_memory.add(
             role=self.agent.agent_name,
             content=f"[THINKING] {analysis}\nNext actions: {', '.join(next_actions)}\nConfidence: {confidence}",
+            internal=True,
         )
 
         return result
@@ -1733,6 +1530,7 @@ class AutonomousAgentLoop:
         self.agent.short_memory.add(
             role=self.agent.agent_name,
             content=f"[SUBTASK DONE] {task_id}: {summary} (Success: {success})",
+            internal=True,
         )
 
         return f"Subtask {task_id} marked as {'completed' if success else 'failed'}"

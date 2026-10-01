@@ -27,7 +27,12 @@ from swarms.utils.generate_id import generate_id
 
 
 def generate_conversation_id() -> str:
-    """Deprecated: use ``generate_id()``."""
+    """
+    Deprecated: generate a conversation id.
+
+    Returns:
+        str: A new id.
+    """
     return generate_id()
 
 
@@ -43,6 +48,59 @@ def get_conversation_dir():
 def generate_conversation_name() -> str:
     """Name an unnamed conversation, uniquely per instance."""
     return f"conversation-{secrets.token_hex(4)}"
+
+
+# Chat roles whose content is sent as given, so caller-supplied content parts survive.
+_CHAT_ROLES = ("user", "assistant")
+
+
+def render_content(message: Dict[str, Any]) -> Any:
+    """
+    Return the text a rendering shows for one message.
+
+    Args:
+        message (Dict[str, Any]): One message from the history.
+
+    Returns:
+        Any: The content, or a prose line for a tool call or tool result.
+    """
+    content = message.get("content")
+    tool_calls = message.get("tool_calls")
+    if content is None and tool_calls:
+        return "\n".join(
+            f"{(call.get('function') or {}).get('name')}"
+            f"({(call.get('function') or {}).get('arguments', '')})"
+            for call in tool_calls
+        )
+    if message.get("tool_call_id") is not None and message.get(
+        "name"
+    ):
+        return f"{message['name']} result: {content}"
+    return content
+
+
+def map_batch_results(
+    tool_calls: List[Dict[str, Any]],
+    output: Any,
+    results: Dict[str, Any],
+    formatter=str,
+) -> None:
+    """
+    Record a batched tool execution's output against each call id.
+
+    Args:
+        tool_calls (List[Dict[str, Any]]): The executed calls, each with an id.
+        output (Any): One value per call, or one value for all of them.
+        results (Dict[str, Any]): Filled in place, keyed by call id.
+        formatter (Callable[[Any], str]): Turns one value into result text.
+    """
+    if isinstance(output, list) and len(output) == len(tool_calls):
+        pairs = zip(tool_calls, output)
+    else:
+        pairs = ((call, output) for call in tool_calls)
+
+    for call, value in pairs:
+        results[call.get("id", "")] = formatter(value)
 
 
 class Conversation:
@@ -98,11 +156,9 @@ class Conversation:
 
         # Initialize all attributes first
         self.id = id or generate_id()
-        # Only an explicitly chosen name resumes from disk
         self._explicit_name = name is not None
         self.name = name or generate_conversation_name()
         self.save_filepath = save_filepath
-        # Only an explicitly chosen file resumes from disk
         self._explicit_save_filepath = save_filepath is not None
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
@@ -254,10 +310,8 @@ class Conversation:
                 )
 
     def _preload_memory_md(self) -> None:
-        """Preload prior MEMORY.md content as a System preamble message.
-
-        Appends directly to ``conversation_history`` to avoid re-writing the
-        preload back into MEMORY.md via ``add_in_memory``.
+        """
+        Load prior MEMORY.md content as a System preamble message.
         """
         try:
             with open(
@@ -292,18 +346,12 @@ class Conversation:
         summary: str,
         summary_role: str = "System",
     ) -> None:
-        """Collapse the interaction history into a single summary.
-
-        The agent's static context is preserved in order:
-        ``system_prompt`` -> ``rules`` -> ``custom_rules_prompt`` (skills) ->
-        ``summary`` (replaces the raw interaction history). If
-        ``memory_md_path`` is configured, MEMORY.md is wiped and re-seeded
-        with a fresh header so the on-disk log stops growing across
-        compressions.
+        """
+        Collapse the interaction history into a single summary message.
 
         Args:
-            summary: The compressed summary content.
-            summary_role: Role attached to the summary message.
+            summary (str): The summary that replaces the history.
+            summary_role (str): The role the summary is stored under.
         """
         self._suppress_memory_md = True
         try:
@@ -347,11 +395,8 @@ class Conversation:
         self.add(summary_role, summary)
 
     def _archive_memory_md(self) -> None:
-        """Copy the current MEMORY.md into an immutable archive file.
-
-        Called before a compaction wipes MEMORY.md so the raw chat logs
-        are never lost. Writes to
-        ``<agent_folder>/archive/history_<timestamp>.md``.
+        """
+        Copy the current MEMORY.md into a timestamped archive file.
         """
         if not self.memory_md_path or not os.path.exists(
             self.memory_md_path
@@ -427,20 +472,41 @@ class Conversation:
         content: Union[str, dict, list, Any],
         metadata: Optional[dict] = None,
         category: Optional[str] = None,
+        tool_calls: Optional[List[Dict[str, Any]]] = None,
+        tool_call_id: Optional[str] = None,
+        name: Optional[str] = None,
+        internal: bool = False,
     ):
-        """Add a message to the conversation history.
+        """
+        Add a message to the history.
 
         Args:
-            role (str): The role of the speaker (e.g., 'User', 'System').
-            content (Union[str, dict, list]): The content of the message to be added.
-            metadata (Optional[dict]): Optional metadata for the message.
-            category (Optional[str]): Optional category for the message.
+            role (str): The speaker.
+            content (Any): The message content.
+            metadata (Optional[dict]): Extra data stored with the message.
+            category (Optional[str]): A label such as input or output.
+            tool_calls (Optional[List[Dict[str, Any]]]): Calls an assistant turn made.
+            tool_call_id (Optional[str]): The call a tool result answers.
+            name (Optional[str]): The tool a result came from.
+            internal (bool): Keep the message out of the request to the model.
+
+        Returns:
+            dict: The stored message.
         """
         # Base message with role and timestamp
         message = {
             "role": role,
             "content": content,
         }
+
+        if tool_calls:
+            message["tool_calls"] = tool_calls
+        if tool_call_id is not None:
+            message["tool_call_id"] = tool_call_id
+        if name is not None:
+            message["name"] = name
+        if internal:
+            message["internal"] = True
 
         if self.time_enabled:
             message["timestamp"] = datetime.datetime.now().isoformat()
@@ -460,17 +526,204 @@ class Conversation:
 
         # Persist to MEMORY.md if enabled
         if self.memory_md_path:
-            self._append_to_memory_md(role, content)
+            self._append_to_memory_md(role, render_content(message))
 
         # Handle token counting in a separate thread if enabled
         if self.token_count is True:
             tokens = count_tokens(
-                text=any_to_str(content),
+                text=any_to_str(render_content(message)),
                 model=self.tokenizer_model_name,
             )
             message["token_count"] = tokens
 
         return message
+
+    def record_assistant(
+        self, role: str, parsed: Any
+    ) -> List[Dict[str, Any]]:
+        """
+        Add the model's turn and return the tool calls it made.
+
+        Args:
+            role (str): The agent name the turn is stored under.
+            parsed (Any): The parsed response, a list of tool calls or text.
+
+        Returns:
+            List[Dict[str, Any]]: The calls as id, name and arguments; empty for text.
+        """
+        calls: List[Dict[str, Any]] = []
+        tool_calls: List[Dict[str, Any]] = []
+
+        if isinstance(parsed, list):
+            for index, item in enumerate(parsed):
+                if not isinstance(item, dict):
+                    continue
+                function = item.get("function") or {}
+                name = function.get("name")
+                if not name:
+                    continue
+                # Result pairing needs an id; one synthesised here is written back so callers key results by it.
+                if not item.get("id"):
+                    item["id"] = (
+                        f"call_{len(self.conversation_history)}_{index}"
+                    )
+                call_id = item["id"]
+                arguments = function.get("arguments", "{}")
+                tool_calls.append(
+                    {
+                        "id": call_id,
+                        "type": "function",
+                        "function": {
+                            "name": name,
+                            "arguments": arguments,
+                        },
+                    }
+                )
+                calls.append(
+                    {
+                        "id": call_id,
+                        "name": name,
+                        "arguments": arguments,
+                    }
+                )
+
+        # The response stays the content: callers that ask for a function call read it back.
+        self.add(role=role, content=parsed, tool_calls=tool_calls)
+        return calls
+
+    def flush_tool_results(
+        self,
+        calls: List[Dict[str, Any]],
+        results: Dict[str, Any],
+        role: str = "Tool Executor",
+    ) -> None:
+        """
+        Add the result of each tool call that has one.
+
+        Args:
+            calls (List[Dict[str, Any]]): The calls from the assistant turn.
+            results (Dict[str, Any]): Results keyed by call id.
+            role (str): The speaker the results are stored under.
+        """
+        for call in calls:
+            # No row for a missing result: the request fills a placeholder, the history stays true.
+            if call["id"] not in results:
+                continue
+            self.add(
+                role=role,
+                content=str(results[call["id"]]),
+                tool_call_id=call["id"],
+                name=call["name"],
+            )
+
+    def to_messages(
+        self, agent_name: str, start: int = 0
+    ) -> List[Dict[str, Any]]:
+        """
+        Build the chat-completions request body from the history.
+
+        Args:
+            agent_name (str): The agent the request is for.
+            start (int): Index of the first message to include.
+
+        Returns:
+            List[Dict[str, Any]]: The messages, oldest first.
+        """
+        # Internal rows are bookkeeping the model never sees.
+        rows = [
+            message
+            for message in self.conversation_history[start:]
+            if isinstance(message, dict)
+            and not message.get("internal")
+        ]
+
+        messages: List[Dict[str, Any]] = []
+        for index, message in enumerate(rows):
+            role = message.get("role")
+
+            # The LLM wrapper sends the system prompt; tool rows are emitted with their call.
+            if (
+                str(role).lower() == "system"
+                or message.get("tool_call_id") is not None
+            ):
+                continue
+
+            tool_calls = message.get("tool_calls")
+            if tool_calls:
+                content = message.get("content")
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": (
+                            content
+                            if isinstance(content, str)
+                            else None
+                        ),
+                        "tool_calls": tool_calls,
+                    }
+                )
+                # Results follow their call even when rows were written in between.
+                messages.extend(
+                    self._results_for(tool_calls, rows[index + 1 :])
+                )
+                continue
+
+            content = message.get("content")
+            if content is None:
+                continue
+            if role not in _CHAT_ROLES or not isinstance(
+                content, (str, list)
+            ):
+                content = str(content)
+            messages.append(
+                {
+                    "role": (
+                        "assistant"
+                        if role in (agent_name, "assistant")
+                        else "user"
+                    ),
+                    "content": content,
+                }
+            )
+        return messages
+
+    @staticmethod
+    def _results_for(
+        tool_calls: List[Dict[str, Any]],
+        following: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """
+        Return one tool message per call, in call order.
+
+        Args:
+            tool_calls (List[Dict[str, Any]]): The calls to answer.
+            following (List[Dict[str, Any]]): The messages after the call turn.
+
+        Returns:
+            List[Dict[str, Any]]: Tool messages, with a placeholder for a gap.
+        """
+        found: Dict[str, Any] = {}
+        for message in following:
+            if message.get("tool_calls"):
+                break
+            call_id = message.get("tool_call_id")
+            if call_id is not None and call_id not in found:
+                found[call_id] = message.get("content")
+
+        results = []
+        for call in tool_calls:
+            name = (call.get("function") or {}).get("name")
+            content = found.get(
+                call.get("id"), f"(no result recorded for {name})"
+            )
+            results.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": call.get("id"),
+                    "content": str(content),
+                }
+            )
+        return results
 
     def export_and_count_categories(
         self,
@@ -552,20 +805,36 @@ class Conversation:
         content: Union[str, dict, list, Any],
         metadata: Optional[dict] = None,
         category: Optional[str] = None,
+        tool_calls: Optional[List[Dict[str, Any]]] = None,
+        tool_call_id: Optional[str] = None,
+        name: Optional[str] = None,
+        internal: bool = False,
     ):
-        """Add a message to the conversation history.
+        """
+        Add a message to the history, then autosave if enabled.
 
         Args:
-            role (str): The role of the speaker (e.g., 'User', 'System').
-            content (Union[str, dict, list]): The content of the message to be added.
-            metadata (Optional[dict]): Optional metadata for the message.
-            category (Optional[str]): Optional category for the message.
+            role (str): The speaker.
+            content (Any): The message content.
+            metadata (Optional[dict]): Extra data stored with the message.
+            category (Optional[str]): A label such as input or output.
+            tool_calls (Optional[List[Dict[str, Any]]]): Calls an assistant turn made.
+            tool_call_id (Optional[str]): The call a tool result answers.
+            name (Optional[str]): The tool a result came from.
+            internal (bool): Keep the message out of the request to the model.
+
+        Returns:
+            dict: The stored message.
         """
         result = self.add_in_memory(
             role=role,
             content=content,
             metadata=metadata,
             category=category,
+            tool_calls=tool_calls,
+            tool_call_id=tool_call_id,
+            name=name,
+            internal=internal,
         )
 
         # Ensure autosave happens after the message is added
@@ -589,14 +858,15 @@ class Conversation:
         roles: List[str],
         contents: List[Union[str, dict, list, any]],
     ):
-        """Add multiple messages to the conversation history, in order.
+        """
+        Add multiple messages to the history, in order.
 
         Args:
             roles (List[str]): One role per message.
             contents (List[Union[str, dict, list, any]]): One content per role.
 
         Returns:
-            list: The result of each :meth:`add`, in the order given.
+            list: The stored messages, in order.
         """
         if len(roles) != len(contents):
             raise ValueError(
@@ -609,16 +879,14 @@ class Conversation:
         ]
 
     def add_messages(self, messages: List[Dict[str, Any]]):
-        """Add chat-format messages to the conversation history, in order.
+        """
+        Add chat-format messages to the history, in order.
 
         Args:
-            messages (List[Dict[str, Any]]): Messages shaped like
-                ``{"role": ..., "content": ...}``. Any other keys - ``name``,
-                ``tool_calls``, ``tool_call_id`` - are kept as metadata so a
-                tool exchange survives the round trip.
+            messages (List[Dict[str, Any]]): Messages with a role and content.
 
         Returns:
-            list: The result of each :meth:`add`, in the order given.
+            list: The stored messages.
         """
         added = []
         for message in messages:
@@ -631,16 +899,20 @@ class Conversation:
                     f"Message is missing a 'role' key: {message}"
                 )
 
+            typed = ("tool_calls", "tool_call_id", "name")
             extra = {
                 key: value
                 for key, value in message.items()
-                if key not in ("role", "content")
+                if key not in ("role", "content", *typed)
             }
             added.append(
                 self.add(
                     role=message["role"],
                     content=message.get("content"),
                     metadata=extra or None,
+                    tool_calls=message.get("tool_calls"),
+                    tool_call_id=message.get("tool_call_id"),
+                    name=message.get("name"),
                 )
             )
         return added
@@ -690,7 +962,7 @@ class Conversation:
         return [
             message
             for message in self.conversation_history
-            if keyword in str(message["content"])
+            if keyword in str(render_content(message))
         ]
 
     def export_conversation(self, filename: str, *args, **kwargs):
@@ -707,7 +979,7 @@ class Conversation:
             with open(filename, "w", encoding="utf-8") as f:
                 for message in self.conversation_history:
                     f.write(
-                        f"{message['role']}: {message['content']}\n"
+                        f"{message['role']}: {render_content(message)}\n"
                     )
 
     def import_conversation(self, filename: str):
@@ -744,11 +1016,10 @@ class Conversation:
         return counts
 
     def return_history_as_string(self) -> str:
-        """Return the conversation history as a string.
+        """
+        Return the conversation history as a string.
+        Memoizes result when caching; resets on history change.
 
-        When caching is enabled the result is memoised and returned on
-        subsequent calls until the history is mutated (any add / delete /
-        update operation sets ``_str_cache`` back to ``None``).
 
         Returns:
             str: The conversation history formatted as a string.
@@ -780,29 +1051,30 @@ class Conversation:
             timestamp = message.get("timestamp")
             if timestamp:
                 formatted_messages.append(
-                    f"[{timestamp}] {message['role']}: {message['content']}"
+                    f"[{timestamp}] {message['role']}: {render_content(message)}"
                 )
             else:
                 formatted_messages.append(
-                    f"{message['role']}: {message['content']}"
+                    f"{message['role']}: {render_content(message)}"
                 )
 
         return "\n\n".join(formatted_messages)
 
     def get_str(self) -> str:
-        """Alias for :meth:`return_history_as_string` (kept for compatibility).
+        """
+        Return the history as a string.
 
         Returns:
-            str: The conversation history formatted as a string.
+            str: The formatted history.
         """
         return self.return_history_as_string()
 
     def get_cache_stats(self) -> Dict[str, Any]:
-        """Return cache performance statistics for :meth:`return_history_as_string`.
+        """
+        Return cache statistics for the history string.
 
         Returns:
-            Dict[str, Any]: A dictionary with hits, misses, cached_tokens,
-                            and hit_rate.
+            Dict[str, Any]: Hits, misses, cached_tokens and hit_rate.
         """
         total_calls = self._cache_hits + self._cache_misses
         return {
@@ -953,17 +1225,12 @@ class Conversation:
             raise  # Re-raise to ensure the error is visible
 
     def _restore(self, data: Union[dict, list]):
-        """Apply a loaded save file to this conversation.
-
-        Accepts both shapes a save file can have. ``save_as_json`` and
-        ``save_as_yaml`` write ``to_dict()``, which is the bare list of
-        messages, while this loader only understood a
-        ``{"metadata": ..., "conversation_history": ...}`` wrapper — so
-        reloading a file this class had just written raised
-        ``AttributeError: 'list' object has no attribute 'get'``.
+        """
+        Load the parsed contents of a save file into this conversation.
 
         Args:
-            data (Union[dict, list]): Parsed contents of a save file.
+            data (Union[dict, list]): A list of messages, or a dict with metadata
+                and conversation_history.
         """
         if isinstance(data, list):
             self.conversation_history = data
@@ -1258,36 +1525,32 @@ class Conversation:
             str: The last message formatted as 'role: content'.
         """
         if self.conversation_history:
-            return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
+            return f"{self.conversation_history[-1]['role']}: {render_content(self.conversation_history[-1])}"
         return ""
 
     def return_messages_as_strings(self):
-        """Return the conversation messages as a list of formatted strings.
-
-        This is a rendering, not a message list. To build a request body use
-        :meth:`return_messages_as_dictionary`, which preserves roles.
+        """
+        Return each message formatted as role: content.
 
         Returns:
-            list: List of messages formatted as 'role: content'.
+            list: One string per message.
         """
         return [
-            f"{message['role']}: {message['content']}"
+            f"{message['role']}: {render_content(message)}"
             for message in self.conversation_history
         ]
 
     def return_messages_as_list(self):
-        """Return the conversation as a list of message dictionaries.
-
-        For the ``'role: content'`` string rendering use
-        :meth:`return_messages_as_strings`.
+        """
+        Return the history as role and content dictionaries.
 
         Returns:
-            list: One ``{"role", "content"}`` dict per message.
+            list: One dict per message.
         """
         return [
             {
                 "role": message["role"],
-                "content": message["content"],
+                "content": render_content(message),
             }
             for message in self.conversation_history
         ]
@@ -1327,7 +1590,7 @@ class Conversation:
             str: The final message formatted as 'role: content'.
         """
         if self.conversation_history:
-            return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
+            return f"{self.conversation_history[-1]['role']}: {render_content(self.conversation_history[-1])}"
         return ""
 
     def get_final_message_content(self):
@@ -1337,18 +1600,16 @@ class Conversation:
             str: The content of the final message.
         """
         if self.conversation_history:
-            output = self.conversation_history[-1]["content"]
+            output = render_content(self.conversation_history[-1])
             return output
         return ""
 
     def _index_after_first_message(self) -> int:
-        """Index of the first message after the system prompt and the input.
+        """
+        Return the index of the first message after the system prompt and input.
 
-        Neither fixed offset is right for both shapes. ``Agent.short_memory``
-        begins ``[System, User, ...]``, so a slice of 1 echoes the task back
-        in the agent's own output. Swarms like ``ConcurrentWorkflow`` begin
-        ``[User, agent, agent, ...]`` with no system row, so a slice of 2
-        drops the first agent's answer. Read the history instead of guessing.
+        Returns:
+            int: The index.
         """
         history = self.conversation_history
         start = (
@@ -1374,7 +1635,7 @@ class Conversation:
         """
         return "\n".join(
             [
-                f"{msg['content']}"
+                f"{render_content(msg)}"
                 for msg in self.conversation_history[
                     self._index_after_first_message() :
                 ]
@@ -1439,14 +1700,14 @@ class Conversation:
     def return_dict_final(self):
         """Return the final message as a dictionary."""
         return (
-            self.conversation_history[-1]["content"],
-            self.conversation_history[-1]["content"],
+            render_content(self.conversation_history[-1]),
+            render_content(self.conversation_history[-1]),
         )
 
     def return_list_final(self):
         """Return the final message as a list."""
         return [
-            self.conversation_history[-1]["content"],
+            render_content(self.conversation_history[-1]),
         ]
 
     @classmethod
