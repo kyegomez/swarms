@@ -1527,6 +1527,7 @@ class TestEmptyToolsList:
 
     @staticmethod
     def _agent(**kwargs):
+        kwargs.setdefault("dynamic_tools", True)
         return Agent(
             agent_name="empty_tools_agent",
             model_name="gpt-4o-mini",

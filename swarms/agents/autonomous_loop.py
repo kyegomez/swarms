@@ -504,12 +504,6 @@ class AutonomousAgentLoop:
                                     result = planning_tool_handlers[
                                         "create_plan"
                                     ](**arguments)
-
-                                    # Add result to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"create_plan result: {result}",
-                                    )
                                     planning_results[
                                         tool_call.get("id", "")
                                     ] = result
@@ -538,12 +532,6 @@ class AutonomousAgentLoop:
                                         self.agent._handoff_task_tool(
                                             handoffs=handoffs_list
                                         )
-                                    )
-
-                                    # Add result to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"handoff_task result: {result}",
                                     )
                                     planning_results[
                                         tool_call.get("id", "")
@@ -769,12 +757,11 @@ class AutonomousAgentLoop:
                                         TypeError,
                                     ) as parse_error:
                                         # Report back, do not abort.
-                                        self.agent.short_memory.add(
-                                            role="Tool Executor",
-                                            content=_format_tool_error(
-                                                function_name,
-                                                parse_error,
-                                            ),
+                                        turn_results[
+                                            tool_call.get("id", "")
+                                        ] = _format_tool_error(
+                                            function_name,
+                                            parse_error,
                                         )
                                         if self.agent.verbose:
                                             logger.warning(
@@ -845,11 +832,6 @@ class AutonomousAgentLoop:
                                                     tool_error,
                                                 )
 
-                                        # Add result to memory
-                                        self.agent.short_memory.add(
-                                            role="Tool Executor",
-                                            content=f"{function_name} result: {result}",
-                                        )
                                         turn_results[
                                             tool_call.get("id", "")
                                         ] = result
@@ -972,13 +954,6 @@ class AutonomousAgentLoop:
                                         regular_tool_calls
                                     )
 
-                                    # Add to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=format_data_structure(
-                                            tool_output
-                                        ),
-                                    )
                                     self._map_batch_results(
                                         regular_tool_calls,
                                         tool_output,
@@ -1095,14 +1070,12 @@ class AutonomousAgentLoop:
                                     tool_output = self.agent.tool_struct.execute_function_calls_from_api_response(
                                         response
                                     )
-
-                                    # Add to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=format_data_structure(
-                                            tool_output
-                                        ),
-                                    )
+                                    if turn_calls:
+                                        self._map_batch_results(
+                                            turn_calls,
+                                            tool_output,
+                                            turn_results,
+                                        )
 
                                     # Display tool execution results using formatter
                                     if self.agent.print_on:
@@ -1144,6 +1117,12 @@ class AutonomousAgentLoop:
                                     self.agent.tool_execution_retry(
                                         response, subtask_iterations
                                     )
+                                    if turn_calls:
+                                        self._map_batch_results(
+                                            turn_calls,
+                                            f"tool execution failed: {e}",
+                                            turn_results,
+                                        )
 
                             self._flush_tool_results(
                                 turn_calls, turn_results
@@ -1193,13 +1172,10 @@ class AutonomousAgentLoop:
                                 f"Error in subtask execution loop: {e}"
                             )
                         # Without this the next prompt is identical.
-                        self.agent.short_memory.add(
-                            role="Tool Executor",
-                            content=(
-                                f"ERROR: the previous step failed with "
-                                f"{type(e).__name__}: {e}. Adjust your "
-                                "approach before retrying."
-                            ),
+                        self._say_user(
+                            f"ERROR: the previous step failed with "
+                            f"{type(e).__name__}: {e}. Adjust your "
+                            "approach before retrying."
                         )
 
                 if not subtask_done:
@@ -1518,9 +1494,6 @@ class AutonomousAgentLoop:
                 if self.agent.verbose:
                     logger.error(outcome)
 
-            self.agent.short_memory.add(
-                role="Tool Executor", content=f"{name}: {outcome}"
-            )
             results[call.get("id", "")] = outcome
 
     def _prewarm_tools_from_plan(
