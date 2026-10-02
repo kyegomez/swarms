@@ -688,7 +688,7 @@ class Edge:
         self,
         source: str = None,
         target: str = None,
-        metadata: Dict[str, Any] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         condition: Optional[
             Callable[[Any, Dict[str, Any]], bool]
         ] = None,
@@ -755,6 +755,7 @@ class Edge:
             tgt = target_node
 
         condition = kwargs.pop("condition", None)
+        # Put all kwargs into metadata dict
         metadata = kwargs if kwargs else None
         return cls(
             source=src,
@@ -1842,7 +1843,7 @@ class GraphWorkflow:
     def _eligible_layer(
         self,
         layer: List[Tuple[Any, ...]],
-        task: str,
+        task: Optional[str],
         prev_outputs: Dict[str, Any],
         layer_idx: int,
         loop_idx: int,
