@@ -294,6 +294,126 @@ def test_each_request_runs_on_fresh_agent_state():
     )
 
 
+def tool_agent(**kwargs):
+    from swarms import Agent
+
+    barrier = kwargs.pop("barrier", None)
+
+    def lookup(key: str) -> str:
+        """Return the stored value for a key.
+
+        Args:
+            key: The key to look up.
+
+        Returns:
+            The stored value.
+        """
+        if barrier is not None:
+            barrier.wait()
+        return f"value-for-{key}"
+
+    agent = Agent(
+        agent_name="Lookup",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        print_on=False,
+        tools=[lookup],
+        tool_call_summary=False,
+        **kwargs,
+    )
+
+    def fake_call_llm(task=None, *args, **kwargs):
+        seen = str(task) + str(kwargs.get("messages"))
+        key = "A" if "CLIENT-A" in seen else "B"
+        return [
+            {
+                "id": "call-1",
+                "type": "function",
+                "function": {
+                    "name": "lookup",
+                    "arguments": f'{{"key": "{key}"}}',
+                },
+            }
+        ]
+
+    agent.call_llm = fake_call_llm
+    return agent
+
+
+def test_tool_results_stay_in_the_request_that_produced_them():
+    agent = tool_agent()
+    history_before = len(agent.short_memory.conversation_history)
+    deployer = MCPDeployer(agent, api_keys=["k"], show_banner=False)
+
+    reply = anyio.run(deployer._call, deployer.tool_name, "CLIENT-A")
+
+    assert "value-for-A" in reply
+    assert (
+        len(agent.short_memory.conversation_history) == history_before
+    )
+
+
+def test_concurrent_requests_get_only_their_own_tool_output():
+    agent = tool_agent(barrier=threading.Barrier(2, timeout=5))
+    deployer = MCPDeployer(agent, api_keys=["k"], show_banner=False)
+    replies = {}
+
+    async def both():
+        async def one(task):
+            replies[task] = await deployer._call(
+                deployer.tool_name, task
+            )
+
+        async with anyio.create_task_group() as group:
+            group.start_soon(one, "CLIENT-A")
+            group.start_soon(one, "CLIENT-B")
+
+    anyio.run(both)
+
+    assert "value-for-A" in replies["CLIENT-A"]
+    assert "value-for-B" not in replies["CLIENT-A"]
+    assert "value-for-B" in replies["CLIENT-B"]
+    assert "value-for-A" not in replies["CLIENT-B"]
+
+
+def test_autonomous_loop_runs_on_the_request_copy(monkeypatch):
+    from swarms.agents.autonomous_loop import AutonomousAgentLoop
+
+    def fake_loop(self, task=None, *args, **kwargs):
+        self.agent.autonomous_subtasks = [{"task": task}]
+        self.agent.short_memory.add(role="Lookup", content="planned")
+        return "done"
+
+    monkeypatch.setattr(
+        AutonomousAgentLoop, "_run_autonomous_loop", fake_loop
+    )
+    agent = tool_agent()
+    agent.max_loops = "auto"
+    history_before = len(agent.short_memory.conversation_history)
+    deployer = MCPDeployer(agent, api_keys=["k"], show_banner=False)
+
+    anyio.run(deployer._call, deployer.tool_name, "CLIENT-A")
+
+    assert not getattr(agent, "autonomous_subtasks", None)
+    assert (
+        len(agent.short_memory.conversation_history) == history_before
+    )
+
+
+def test_requests_neither_read_nor_write_memory_md(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    agent = tool_agent(persistent_memory=True)
+    memory_md = agent.short_memory.memory_md_path
+    before = open(memory_md, encoding="utf-8").read()
+    deployer = MCPDeployer(agent, api_keys=["k"], show_banner=False)
+
+    anyio.run(deployer._call, deployer.tool_name, "CLIENT-A")
+
+    assert open(memory_md, encoding="utf-8").read() == before
+
+
 def test_call_times_out_while_a_blocking_target_is_still_running():
     release = threading.Event()
 

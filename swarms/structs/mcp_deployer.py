@@ -530,7 +530,20 @@ class MCPDeployer:
         target = self.tools[name].target
         if callable(getattr(target, "short_memory_init", None)):
             target = copy.copy(target)
+            target.persistent_memory = False
             target.short_memory = target.short_memory_init()
+            for helper_name in (
+                "llm_manager",
+                "tool_manager",
+                "autonomous_loop",
+            ):
+                helper = getattr(target, helper_name, None)
+                if helper is not None:
+                    setattr(
+                        target,
+                        helper_name,
+                        type(helper)(agent=target),
+                    )
         run = getattr(target, "run", None)
         if callable(run):
             if img:
