@@ -14,7 +14,10 @@ from dotenv import load_dotenv
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.schemas.agent_errors import (
+    AgentLLMError,
+    AgentToolExecutionError,
+)
 from swarms.tools.base_tool import BaseTool
 
 load_dotenv()
@@ -1878,3 +1881,110 @@ class TestRunSamples:
         assert (
             calls == [("https://example.com/chart.png", on_token)] * 2
         )
+
+
+class TestLLMFailureRaises:
+    """#2408: once its retries ran out, _run broke out of the loop and
+    returned the formatted history, so run() returned '' with no error and
+    fallback_models was never tried.
+    """
+
+    TASK = "What is 2+2?"
+
+    @staticmethod
+    def _completion(calls, down):
+        def fake_completion(**params):
+            calls.append(params["model"])
+            if params["model"] in down:
+                raise RuntimeError(f"{params['model']} is down")
+            message = SimpleNamespace(
+                content=f"answer from {params['model']}",
+                tool_calls=None,
+                reasoning_content=None,
+            )
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=message, finish_reason="stop"
+                    )
+                ],
+                usage=None,
+            )
+
+        return fake_completion
+
+    @staticmethod
+    def _agent(**kwargs):
+        return Agent(
+            agent_name="FallbackAgent",
+            max_loops=1,
+            retry_attempts=2,
+            print_on=False,
+            verbose=False,
+            persistent_memory=False,
+            **kwargs,
+        )
+
+    def test_raises_when_retries_run_out(self):
+        agent = self._agent(model_name="gpt-5.4")
+        history_before = len(agent.short_memory.conversation_history)
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, {"gpt-5.4"}),
+        ):
+            with pytest.raises(AgentLLMError):
+                agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "gpt-5.4"]
+        assert (
+            len(agent.short_memory.conversation_history)
+            == history_before
+        )
+
+    def test_falls_back_to_the_next_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, {"gpt-5.4"}),
+        ):
+            output = agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "gpt-5.4", "claude-sonnet-4-6"]
+        assert "answer from claude-sonnet-4-6" in str(output)
+        task_turns = [
+            m
+            for m in agent.short_memory.conversation_history
+            if m["content"] == self.TASK
+        ]
+        assert len(task_turns) == 1
+
+    def test_raises_once_every_fallback_fails(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(
+                calls, {"gpt-5.4", "claude-sonnet-4-6"}
+            ),
+        ):
+            with pytest.raises(AgentLLMError):
+                agent.run(self.TASK)
+
+        assert calls == [
+            "gpt-5.4",
+            "gpt-5.4",
+            "claude-sonnet-4-6",
+            "claude-sonnet-4-6",
+        ]
