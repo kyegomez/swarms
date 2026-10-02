@@ -464,12 +464,14 @@ class LLMManager:
 
                     continue
 
+                # First non-thinking chunk — flush accumulated thinking
                 if thinking_parts and not thinking_displayed:
                     self._flush_thinking(thinking_parts, live)
                     thinking_displayed = True
 
                 yield chunk
 
+            # Edge case: stream ended with only thinking and no content chunks
             if thinking_parts and not thinking_displayed:
                 self._flush_thinking(thinking_parts, live)
         finally:
