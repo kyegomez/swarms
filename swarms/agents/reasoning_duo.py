@@ -138,6 +138,8 @@ class ReasoningDuo:
         Returns:
             str: The output from the main agent after processing the task.
         """
+        self.conversation = Conversation()
+
         logger.info(
             f"Running task: {task} with max_loops: {self.max_loops}"
         )

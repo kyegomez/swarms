@@ -305,7 +305,7 @@ class TestAgentIntegration:
         agent = build(
             max_loops=1, tools=[get_weather], dynamic_tools=True
         )
-        agent._tool_search_tool(query="weather")
+        agent.tool_manager.tool_search_tool(query="weather")
         assert "get_weather" in exposed(agent)
 
     def test_the_prompt_says_tools_need_loading(self):
@@ -342,7 +342,7 @@ class TestAgentIntegration:
         agent = build(
             max_loops=1, tools=[get_weather], dynamic_tools=False
         )
-        result = agent._tool_search_tool(query="weather")
+        result = agent.tool_manager.tool_search_tool(query="weather")
         assert "dynamic_tools=True" in result
 
     def test_fixed_loop_dispatches_tool_search(self, monkeypatch):
@@ -940,9 +940,11 @@ def mcp_agent(request):
 
     agent = build(max_loops=1, tools=[], dynamic_tools=dynamic)
     Agent.mcp_enabled = property(lambda self: True)
-    agent.add_mcp_tools_to_memory = lambda: list(MCP_SCHEMAS)
+    agent.tool_manager.add_mcp_tools_to_memory = lambda: list(
+        MCP_SCHEMAS
+    )
     if dynamic:
-        agent.setup_dynamic_tools()
+        agent.tool_manager.setup_dynamic_tools()
 
     yield agent
     Agent.mcp_enabled = original
@@ -971,7 +973,9 @@ class TestMCPDeferral:
         self, mcp_agent
     ):
         mcp_agent.llm = mcp_agent.llm_handling()
-        mcp_agent._tool_search_tool(query="post a slack message")
+        mcp_agent.tool_manager.tool_search_tool(
+            query="post a slack message"
+        )
 
         sent = [
             t["function"]["name"]
@@ -993,7 +997,7 @@ class TestMCPDeferral:
             calls["n"] += 1
             return list(MCP_SCHEMAS)
 
-        mcp_agent.add_mcp_tools_to_memory = counted
+        mcp_agent.tool_manager.add_mcp_tools_to_memory = counted
         for _ in range(3):
             mcp_agent.llm = mcp_agent.llm_handling()
 
@@ -1007,8 +1011,8 @@ class TestMCPDeferral:
         def explode():
             raise ConnectionError("server unreachable")
 
-        mcp_agent.add_mcp_tools_to_memory = explode
-        assert mcp_agent.defer_mcp_tools() == 0
+        mcp_agent.tool_manager.add_mcp_tools_to_memory = explode
+        assert mcp_agent.tool_manager.defer_mcp_tools() == 0
         mcp_agent.llm = mcp_agent.llm_handling()  # must not raise
 
     @pytest.mark.parametrize("mcp_agent", [False], indirect=True)
@@ -1050,11 +1054,13 @@ def mcp_auto_agent():
 
     Agent.mcp_enabled = property(lambda self: True)
     agent.mcp_manager = manager
-    agent.add_mcp_tools_to_memory = lambda: list(MCP_SCHEMAS)
-    agent.setup_dynamic_tools()
+    agent.tool_manager.add_mcp_tools_to_memory = lambda: list(
+        MCP_SCHEMAS
+    )
+    agent.tool_manager.setup_dynamic_tools()
     # Deferral normally happens inside llm_handling(); prime it here so the
     # catalog is populated before the run, as it would be in real use.
-    agent.defer_mcp_tools()
+    agent.tool_manager.defer_mcp_tools()
 
     yield agent, manager
     Agent.mcp_enabled = original
@@ -1093,9 +1099,11 @@ class TestMCPOnlyAgent:
         try:
             agent = build(max_loops=1, dynamic_tools=True)
             Agent.mcp_enabled = property(lambda self: True)
-            agent.add_mcp_tools_to_memory = lambda: list(MCP_SCHEMAS)
-            agent.setup_dynamic_tools()
-            agent.defer_mcp_tools()
+            agent.tool_manager.add_mcp_tools_to_memory = lambda: list(
+                MCP_SCHEMAS
+            )
+            agent.tool_manager.setup_dynamic_tools()
+            agent.tool_manager.defer_mcp_tools()
 
             assert agent.tool_loader is not None
             assert (
@@ -1115,10 +1123,10 @@ class TestMCPOnlyAgent:
             def explode():
                 raise ConnectionError("server unreachable")
 
-            agent.add_mcp_tools_to_memory = explode
-            agent.setup_dynamic_tools()
+            agent.tool_manager.add_mcp_tools_to_memory = explode
+            agent.tool_manager.setup_dynamic_tools()
 
-            assert agent.defer_mcp_tools() == 0
+            assert agent.tool_manager.defer_mcp_tools() == 0
             agent.llm = agent.llm_handling()  # must not raise
             assert exposed(agent) == [SEARCH_TOOL_NAME]
         finally:
