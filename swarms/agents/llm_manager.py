@@ -237,7 +237,7 @@ class LLMManager:
                 agent.mcp_enabled
                 and getattr(agent, "tool_loader", None) is not None
             ):
-                agent.defer_mcp_tools()
+                agent.tool_manager.defer_mcp_tools()
                 deferred_mcp = True
 
             # Initialize tools_list_dictionary, if applicable
@@ -253,7 +253,9 @@ class LLMManager:
                         f"Adding MCP tools to memory for {agent.agent_name}"
                     )
 
-                mcp_tools = agent.add_mcp_tools_to_memory()
+                mcp_tools = (
+                    agent.tool_manager.add_mcp_tools_to_memory()
+                )
 
                 if agent.verbose:
                     logger.info(f"MCP tools: {mcp_tools}")
