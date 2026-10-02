@@ -17,9 +17,9 @@ inlined in ``swarms/structs/agent.py``:
 
 Configuration stays on the ``Agent``. The manager holds a reference to its
 owner and reads config live rather than snapshotting it, because agents mutate
-their own config at run time — ``system_prompt`` grows when skills load,
-``tools_list_dictionary`` changes when tools are registered, ``streaming_on``
-is toggled per call by ``run_stream``. Anything the manager writes
+their own config at run time — ``tools_list_dictionary`` changes when tools
+are registered, ``streaming_on`` is toggled per call by ``run_stream``.
+Anything the manager writes
 (``model_name``, ``current_model_index``, ``llm``) is written back to the agent,
 so serialization, ``save``/``load``, and every existing ``agent.llm`` reference
 keep working unchanged.
@@ -238,7 +238,7 @@ class LLMManager:
                 agent.mcp_enabled
                 and getattr(agent, "tool_loader", None) is not None
             ):
-                agent.defer_mcp_tools()
+                agent.tool_manager.defer_mcp_tools()
                 deferred_mcp = True
 
             # Initialize tools_list_dictionary, if applicable
@@ -254,7 +254,9 @@ class LLMManager:
                         f"Adding MCP tools to memory for {agent.agent_name}"
                     )
 
-                mcp_tools = agent.add_mcp_tools_to_memory()
+                mcp_tools = (
+                    agent.tool_manager.add_mcp_tools_to_memory()
+                )
 
                 if agent.verbose:
                     logger.info(f"MCP tools: {mcp_tools}")
