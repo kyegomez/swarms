@@ -315,14 +315,14 @@ class LiveThinkingPanel:
     close it at the content boundary and again from a ``finally``.
     """
 
-    def __init__(self, console: "Console", title: str = "Thinking"):
+    def __init__(self, console: Any, title: str = "Thinking"):
         self.console = console
         self.title = title
         self._text = Text(style="dim italic")
         self._live = None
         self._closed = False
 
-    def _panel(self) -> Panel:
+    def _panel(self) -> Any:
         return Panel(
             self._text,
             title=f"[bold magenta]{self.title}[/bold magenta]",

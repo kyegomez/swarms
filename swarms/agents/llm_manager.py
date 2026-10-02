@@ -508,8 +508,10 @@ class LLMManager:
         ):
             return None
 
+        callback: Callable[[str], None] = streaming_callback
+
         def forward(reasoning: str) -> None:
-            streaming_callback(ThinkingToken(reasoning))
+            callback(ThinkingToken(reasoning))
 
         return forward
 
