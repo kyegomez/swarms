@@ -429,3 +429,61 @@ class TestIntegration:
             f.startswith("history_") and f.endswith(".md")
             for f in archives
         )
+
+
+class TestShouldCompressSkipsTokenizing:
+    """should_compress tokenized the whole history on every loop, even when
+    it was nowhere near the context window, which was most of a tool turn.
+    """
+
+    @staticmethod
+    def _agent(contents, context_length):
+        history = [
+            {
+                "role": "User",
+                "content": text,
+                "timestamp": "2026-10-02T12:00:00.000000",
+            }
+            for text in contents
+        ]
+        short_memory = MagicMock()
+        short_memory.conversation_history = history
+        short_memory.return_history_as_string.return_value = (
+            "\n\n".join(
+                f"[{m['timestamp']}] {m['role']}: {m['content']}"
+                for m in history
+            )
+        )
+        return SimpleNamespace(
+            short_memory=short_memory, context_length=context_length
+        )
+
+    def test_far_below_the_limit_counts_nothing(self):
+        agent = self._agent(["hello"] * 10, context_length=100_000)
+        with patch(
+            "swarms.agents.context_compressor.count_tokens"
+        ) as counter:
+            assert ContextCompressor().should_compress(agent) is False
+        counter.assert_not_called()
+        agent.short_memory.return_history_as_string.assert_not_called()
+
+    def test_near_the_limit_uses_the_exact_count(self):
+        agent = self._agent(["word " * 200], context_length=1_000)
+        with patch(
+            "swarms.agents.context_compressor.count_tokens",
+            return_value=950,
+        ) as counter:
+            assert ContextCompressor().should_compress(agent) is True
+        counter.assert_called_once()
+
+    def test_byte_size_bounds_the_real_token_count(self):
+        from swarms.utils.litellm_tokenizer import count_tokens
+
+        agent = self._agent(
+            ["plain ascii text " * 50, "naïve café 東京 🚀 " * 50],
+            context_length=1,
+        )
+        text = agent.short_memory.return_history_as_string()
+        assert ContextCompressor._history_bytes(
+            agent.short_memory.conversation_history
+        ) >= count_tokens(text)
