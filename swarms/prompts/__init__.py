@@ -1,5 +1,5 @@
 from swarms.prompts.autonomous_agent_prompt import (
-    AUTONOMOUS_AGENT_SYSTEM_PROMPT,
+    autonomous_agent_system_prompt,
     get_autonomous_agent_prompt,
     get_autonomous_agent_prompt_with_context,
 )
@@ -27,7 +27,7 @@ __all__ = [
     "PRODUCT_AGENT_PROMPT",
     "DOCUMENTATION_WRITER_SOP",
     "Prompt",
-    "AUTONOMOUS_AGENT_SYSTEM_PROMPT",
+    "autonomous_agent_system_prompt",
     "get_autonomous_agent_prompt",
     "get_autonomous_agent_prompt_with_context",
 ]

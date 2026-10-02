@@ -245,8 +245,7 @@ class MCPFileTokenStorage:
                     os.write(fd, json.dumps(data, indent=2).encode())
                 finally:
                     os.close(fd)
-                # os.open's mode only applies on creation; tighten a file that
-                # already existed with looser permissions.
+                # os.open's mode only applies on creation
                 os.chmod(self.path, 0o600)
             except Exception as e:
                 logger.warning(
@@ -1084,8 +1083,7 @@ class MCPManager:
             "tool": name,
             "server": self.label(connection),
             "arguments": arguments,
-            # mcp 2.x renamed `isError` to `is_error`; reading only the
-            # old name reports every failed call as a success.
+            # mcp 2.x renamed isError to is_error
             "is_error": bool(
                 getattr(result, "isError", None)
                 or getattr(result, "is_error", None)
@@ -1573,8 +1571,7 @@ class MCPManager:
         except (asyncio.CancelledError, KeyboardInterrupt):
             raise
         except BaseException as e:
-            # anyio surfaces transport failures as (Base)ExceptionGroups whose
-            # str() is empty, so flatten them into something actionable.
+            # anyio's ExceptionGroups have an empty str(), flatten them
             raise AgentMCPConnectionError(
                 f"Failed to connect to MCP server '{label}' ({detail}): "
                 f"{_describe_exception(e)}"

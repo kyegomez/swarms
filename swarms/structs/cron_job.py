@@ -183,8 +183,7 @@ class CronJob:
             number = int(match.group(1))
             unit = match.group(2)
 
-            # "0second" parsed fine and then scheduled a job that never fired:
-            # no error, no log line, just a cron job that silently does nothing.
+            # "0second" used to schedule a job that silently never fired
             if number == 0:
                 raise CronJobConfigError(
                     f"Interval must be greater than zero, got {interval!r}. "
@@ -380,10 +379,10 @@ class CronJob:
                      (e.g., img=image_path, streaming_callback=callback_func)
 
         Returns:
-            Any: The result of the task execution (original or customized by callback)
-
-        Raises:
-            CronJobExecutionError: If task execution fails
+            Any: The result of the task execution (original or customized
+            by callback), or ``None`` when the execution failed. A failure
+            is recorded in the error counters rather than raised, so the
+            scheduler still moves the job to its next interval.
         """
         try:
             logger.debug(f"Executing task for job {self.job_id}")
@@ -397,6 +396,7 @@ class CronJob:
 
             # Increment execution count
             self.execution_count += 1
+            self.consecutive_errors = 0
 
             # Prepare metadata for callback
             metadata = {
@@ -429,12 +429,30 @@ class CronJob:
             return original_output
 
         except Exception as e:
+            self.error_count += 1
+            self.consecutive_errors += 1
+            self.last_error = e
             logger.error(
-                f"Task execution failed for job {self.job_id}: {str(e)}"
+                f"Execution failed for job {self.job_id} "
+                f"(failure {self.consecutive_errors} in a row, "
+                f"{self.error_count} total): {str(e)}\n"
+                f"{traceback.format_exc()}"
             )
-            raise CronJobExecutionError(
-                f"Task execution failed: {str(e)}"
-            )
+
+            if (
+                self.max_consecutive_errors is not None
+                and self.consecutive_errors
+                >= self.max_consecutive_errors
+            ):
+                logger.error(
+                    f"Job {self.job_id} stopping: "
+                    f"{self.consecutive_errors} consecutive failures "
+                    f"reached max_consecutive_errors="
+                    f"{self.max_consecutive_errors}"
+                )
+                self._stopped_due_to_error = True
+                self.is_running = False
+            return None
 
     def every_seconds(self, seconds: int, task: str, **kwargs):
         """Schedule the job to run every specified number of seconds.
@@ -534,36 +552,7 @@ class CronJob:
         """Internal method to run the schedule loop."""
         logger.debug(f"Starting schedule loop for job {self.job_id}")
         while self.is_running:
-            try:
-                self.schedule.run_pending()
-                self.consecutive_errors = 0
-            except Exception as e:
-                # Log and keep going: one failed execution must not kill the scheduler.
-                self.error_count += 1
-                self.consecutive_errors += 1
-                self.last_error = e
-                logger.error(
-                    f"Execution failed for job {self.job_id} "
-                    f"(failure {self.consecutive_errors} in a row, "
-                    f"{self.error_count} total): {str(e)}\n"
-                    f"{traceback.format_exc()}"
-                )
-
-                if (
-                    self.max_consecutive_errors is not None
-                    and self.consecutive_errors
-                    >= self.max_consecutive_errors
-                ):
-                    logger.error(
-                        f"Job {self.job_id} stopping: "
-                        f"{self.consecutive_errors} consecutive failures "
-                        f"reached max_consecutive_errors="
-                        f"{self.max_consecutive_errors}"
-                    )
-                    self._stopped_due_to_error = True
-                    self.is_running = False
-                    return
-
+            self.schedule.run_pending()
             time.sleep(1)
 
     def set_callback(self, callback: Callable[[Any, str, dict], Any]):
@@ -681,8 +670,7 @@ class CronJob:
                     "max_consecutive_errors"
                 ),
             )
-            # _run schedules the task and starts this job's own thread; it
-            # does not block, which is what lets the fleet run together.
+            # _run starts the job's own thread without blocking
             job._run(spec["task"], **(spec.get("kwargs") or {}))
             jobs.append(job)
 

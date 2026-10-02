@@ -127,10 +127,10 @@ Configuration, output formats, and misc helpers.
 - [async_agent.py](utils/async_agent.py) — Async agent
 - [custom_agent_base_url.py](utils/custom_agent_base_url.py) — Custom base URL
 - [dynamic_context_window.py](utils/dynamic_context_window.py) — Dynamic context window
+- [agent_usage.py](utils/agent_usage.py) — Token usage and cost
 - [fallback_test.py](utils/fallback_test.py) — Model fallback
 - [grok_4_agent.py](utils/grok_4_agent.py) — Grok 4 agent
 - [list_agent_output_types.py](utils/list_agent_output_types.py) — Output types
 - [markdown_agent.py](utils/markdown_agent.py) — Markdown output
-- [xml_output_example.py](utils/xml_output_example.py) — XML output
 - **autosaving_examples/** — [autosave_basic_example.py](utils/autosaving_examples/autosave_basic_example.py), [autosave_config_access_example.py](utils/autosaving_examples/autosave_config_access_example.py), [autosave_directory_structure_example.py](utils/autosaving_examples/autosave_directory_structure_example.py), [autosave_recovery_example.py](utils/autosaving_examples/autosave_recovery_example.py)
 - **transform_prompts/** — [transforms_agent_example.py](utils/transform_prompts/transforms_agent_example.py), [transforms_examples.py](utils/transform_prompts/transforms_examples.py)
