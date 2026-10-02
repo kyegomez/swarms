@@ -537,10 +537,12 @@ class LiteLLM:
                 # Return all tool calls if there are multiple
                 return [
                     {
+                        "id": tool_call.id,
+                        "type": "function",
                         "function": {
                             "name": tool_call.function.name,
                             "arguments": tool_call.function.arguments,
-                        }
+                        },
                     }
                     for tool_call in tool_calls
                 ]
@@ -548,10 +550,12 @@ class LiteLLM:
                 # Single tool call
                 out = tool_calls[0].function
                 output = {
+                    "id": tool_calls[0].id,
+                    "type": "function",
                     "function": {
                         "name": out.name,
                         "arguments": out.arguments,
-                    }
+                    },
                 }
                 return output
         else:

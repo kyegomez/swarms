@@ -447,7 +447,6 @@ class ToolManager:
         agent = self.agent
         turn_results = {} if turn_results is None else turn_results
         local_calls = mcp_calls = response
-        local_turn_calls = turn_calls
 
         if isinstance(response, list):
             if agent.tool_loader:
@@ -467,7 +466,6 @@ class ToolManager:
                 getattr(tool, "__name__", None)
                 for tool in agent.tools or []
             }
-            not_local = {"handoff_task"}
             local_calls, mcp_calls = [], []
             for call in response:
                 name = _name(call)
@@ -477,24 +475,11 @@ class ToolManager:
                     local_calls.append(call)
                 else:
                     mcp_calls.append(call)
-                    not_local.add(name)
-            local_turn_calls = [
-                call
-                for call in turn_calls or []
-                if call["name"] not in not_local
-            ]
 
         if exists(agent.tools):
-            output = self.tool_execution_retry(
-                local_calls, loop_count
+            self.tool_execution_retry(
+                local_calls, loop_count, turn_results
             )
-            if transcript is not None and local_turn_calls:
-                transcript.map_batch_results(
-                    [{"id": call["id"]} for call in local_turn_calls],
-                    output,
-                    turn_results,
-                    formatter=format_data_structure,
-                )
 
         if agent.mcp_enabled:
             if response is None:
@@ -753,7 +738,10 @@ class ToolManager:
                 )
 
     def tool_execution_retry(
-        self, response: Any, loop_count: int
+        self,
+        response: Any,
+        loop_count: int,
+        turn_results: Optional[dict] = None,
     ) -> Any:
         """
         Execute tools, retrying up to agent.tool_retry_attempts times.
@@ -783,19 +771,30 @@ class ToolManager:
             if isinstance(response, list)
             else [response]
         )
+        turn_results = {} if turn_results is None else turn_results
         output = []
         failed = False
 
         for batch in batches:
+            call_id = (
+                batch[0].get("id", "")
+                if isinstance(response, list)
+                else ""
+            )
             for attempt in range(1, attempts + 1):
                 try:
                     self.execute_tools(
                         response=batch, loop_count=loop_count
                     )
-                    output.extend(
+                    result = (
                         getattr(agent, "_last_tool_output", None)
                         or []
                     )
+                    output.extend(result)
+                    if result:
+                        turn_results[call_id] = format_data_structure(
+                            result
+                        )
                     break
                 except Exception as e:
                     last_error = e
@@ -806,6 +805,10 @@ class ToolManager:
                     )
             else:
                 failed = True
+                turn_results[call_id] = (
+                    f"Tool execution failed after {attempts} "
+                    f"attempt(s): {last_error}"
+                )
 
         if failed:
             raise AgentToolExecutionError(

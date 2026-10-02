@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 from dotenv import load_dotenv
+from litellm import ModelResponse
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
@@ -19,6 +20,7 @@ from swarms.schemas.agent_errors import (
     AgentLLMError,
     AgentToolExecutionError,
 )
+from swarms.structs.transcript import Transcript
 from swarms.tools.base_tool import BaseTool
 
 load_dotenv()
@@ -1273,25 +1275,128 @@ class TestToolExecutionRetry:
         agent.tool_manager.temp_llm_instance_for_tool_summary = (
             lambda: SimpleNamespace(run=lambda **kw: "summary")
         )
-        agent.call_llm = lambda *a, **kw: [
-            {
-                "id": "m1",
-                "type": "function",
-                "function": {"name": "lookup", "arguments": "{}"},
-            },
-            {
-                "id": "w1",
-                "type": "function",
-                "function": {
-                    "name": "write_note",
-                    "arguments": json.dumps({"text": "hi"}),
-                },
-            },
-        ]
+        response = ModelResponse(
+            choices=[
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "m1",
+                                "type": "function",
+                                "function": {
+                                    "name": "lookup",
+                                    "arguments": "{}",
+                                },
+                            },
+                            {
+                                "id": "w1",
+                                "type": "function",
+                                "function": {
+                                    "name": "write_note",
+                                    "arguments": json.dumps(
+                                        {"text": "hi"}
+                                    ),
+                                },
+                            },
+                        ],
+                    }
+                }
+            ]
+        )
+        llm = litellm_wrapper.LiteLLM(
+            model_name="gpt-5.4", mcp_call=True
+        )
+        agent.call_llm = lambda *a, **kw: llm.output_for_tools(
+            response
+        )
 
         agent.run("go")
         assert notes == ["hi"]
         assert mcp_batches == [["lookup"]]
+
+    @staticmethod
+    def _tool_agent(tools, attempts=1):
+        agent = TestToolExecutionRetry._agent(attempts=attempts)
+        agent.tools = tools
+        agent.tool_struct = BaseTool(tools=tools)
+        agent.tool_loader = None
+        agent.print_on = False
+        agent.tool_call_summary = False
+        agent.short_memory = SimpleNamespace(add=lambda **kw: None)
+        return agent
+
+    def test_a_call_with_no_output_gets_no_other_calls_result(self):
+        def note(text: str) -> str:
+            return "noted"
+
+        def search(query: str) -> str:
+            return "found"
+
+        agent = self._tool_agent([note, search])
+        calls = [
+            {
+                "id": "n1",
+                "type": "function",
+                "function": {
+                    "name": "note",
+                    "arguments": json.dumps({"text": "hi"}),
+                },
+            },
+            {
+                "id": "s1",
+                "function": {
+                    "name": "search",
+                    "arguments": json.dumps({"query": "q"}),
+                },
+            },
+        ]
+        transcript = Transcript()
+        results = {}
+        agent.tool_manager.handle_tool_calls(
+            calls,
+            1,
+            transcript=transcript,
+            turn_calls=transcript.record_assistant(calls),
+            turn_results=results,
+        )
+        assert results == {"n1": "Function 'note' result:\nnoted"}
+
+    def test_a_failed_call_keeps_the_other_results(self):
+        def send_email(to: str) -> str:
+            return "sent"
+
+        def charge_card(amount: int) -> str:
+            raise RuntimeError("gateway timeout")
+
+        agent = self._tool_agent([send_email, charge_card])
+        calls = [
+            {
+                "id": "e1",
+                "type": "function",
+                "function": {
+                    "name": "send_email",
+                    "arguments": json.dumps({"to": "a@b.c"}),
+                },
+            },
+            {
+                "id": "c1",
+                "type": "function",
+                "function": {
+                    "name": "charge_card",
+                    "arguments": json.dumps({"amount": 500}),
+                },
+            },
+        ]
+        results = {}
+        with pytest.raises(AgentToolExecutionError):
+            agent.tool_manager.handle_tool_calls(
+                calls, 1, turn_results=results
+            )
+        assert results["e1"] == "Function 'send_email' result:\nsent"
+        assert results["c1"].startswith("Tool execution failed")
+        assert "gateway timeout" in results["c1"]
 
     def test_none_response_does_not_execute_or_raise(self):
         agent = self._agent()
