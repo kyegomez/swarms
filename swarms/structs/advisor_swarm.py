@@ -32,6 +32,7 @@ from swarms.prompts.advisor_swarm_prompts import (
     EXECUTOR_SYSTEM_PROMPT,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer, messages_for
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -211,17 +212,23 @@ class AdvisorSwarm:
 
             # --- Advisor guidance (if budget allows) ---
             if advisor_uses < self.max_advisor_uses:
-                context = self.conversation.get_str()
                 advisor_prompt = (
-                    f"Read the shared conversation context below and "
-                    f"provide strategic guidance for the Executor.\n\n"
-                    f"--- SHARED CONTEXT ---\n{context}\n"
-                    f"--- END SHARED CONTEXT ---"
+                    "Read the shared conversation above and provide "
+                    "strategic guidance for the Executor."
                 )
 
-                advice = self.advisor_agent.run(task=advisor_prompt)
+                advice = self.advisor_agent.run(
+                    task=advisor_prompt,
+                    messages=messages_for(
+                        self.advisor_agent.agent_name or "Advisor",
+                        self.conversation,
+                    ),
+                )
                 advisor_uses += 1
-                self.conversation.add(role="Advisor", content=advice)
+                self.conversation.add(
+                    role="Advisor",
+                    content=agent_answer(self.advisor_agent, advice),
+                )
 
                 if self.verbose:
                     logger.info(
@@ -230,19 +237,24 @@ class AdvisorSwarm:
                     )
 
             # --- Executor turn ---
-            context = self.conversation.get_str()
             executor_prompt = (
-                f"Read the shared conversation context below — it "
-                f"includes the task and any Advisor guidance — then "
-                f"produce your output.\n\n"
-                f"--- SHARED CONTEXT ---\n{context}\n"
-                f"--- END SHARED CONTEXT ---"
+                "Read the shared conversation above, which includes the "
+                "task and any Advisor guidance, then produce your output."
             )
 
             output = self.executor_agent.run(
-                task=executor_prompt, img=img, imgs=imgs
+                task=executor_prompt,
+                img=img,
+                imgs=imgs,
+                messages=messages_for(
+                    self.executor_agent.agent_name or "Executor",
+                    self.conversation,
+                ),
             )
-            self.conversation.add(role="Executor", content=output)
+            self.conversation.add(
+                role="Executor",
+                content=agent_answer(self.executor_agent, output),
+            )
 
             if self.verbose:
                 logger.info(
