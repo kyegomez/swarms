@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
+from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.schemas.agent_errors import (
     AgentLLMError,
@@ -46,7 +47,7 @@ def _patched_agent(name, **kwargs):
     """An Agent with the model client stubbed, so __init__ makes no calls."""
     # setdefault, not a keyword: callers override max_loops (notably "auto").
     kwargs.setdefault("max_loops", 1)
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         return Agent(
             agent_name=name,
             print_on=False,
@@ -494,7 +495,7 @@ class TestAgentToolUsage:
                 max_loops=1,
                 **kwargs,
             )
-            tools = agent.add_mcp_tools_to_memory()
+            tools = agent.tool_manager.add_mcp_tools_to_memory()
 
         assert len(tools) == len(names)
         assert get_tools.called
@@ -1107,6 +1108,7 @@ class TestToolExecutionRetry:
         agent = Agent.__new__(Agent)
         agent.agent_name = name
         agent.tool_retry_attempts = attempts
+        agent.tool_manager = ToolManager(agent)
         return agent
 
     @pytest.mark.parametrize("attempts", [3, 5])
@@ -1118,9 +1120,11 @@ class TestToolExecutionRetry:
             calls.append(loop_count)
             raise RuntimeError("simulated tool failure")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
 
         # The regression: this was 1 regardless of tool_retry_attempts.
         assert len(calls) == attempts
@@ -1133,9 +1137,11 @@ class TestToolExecutionRetry:
         def failing(response, loop_count):
             raise RuntimeError("simulated tool failure")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError) as excinfo:
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
 
         # The underlying error is chained, not discarded.
         assert isinstance(excinfo.value.__cause__, RuntimeError)
@@ -1154,9 +1160,11 @@ class TestToolExecutionRetry:
             calls.append(1)
             raise ValueError("a tool's own error type")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
         assert len(calls) == 2
 
     def test_stops_retrying_once_a_attempt_succeeds(self):
@@ -1168,8 +1176,8 @@ class TestToolExecutionRetry:
             if len(calls) < 3:
                 raise RuntimeError("transient")
 
-        agent.execute_tools = flaky
-        Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+        agent.tool_manager.execute_tools = flaky
+        agent.tool_manager.tool_execution_retry([{"function": {}}], 1)
 
         # Third attempt succeeded, so the fourth must not run.
         assert len(calls) == 3
@@ -1194,15 +1202,17 @@ class TestToolExecutionRetry:
         }
 
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [call], 1)
+            agent.tool_manager.tool_execution_retry([call], 1)
         assert len(runs) == 3
 
     def test_none_response_does_not_execute_or_raise(self):
         agent = self._agent()
         called = []
-        agent.execute_tools = lambda **kw: called.append(1)
+        agent.tool_manager.execute_tools = lambda **kw: called.append(
+            1
+        )
 
-        Agent.tool_execution_retry(agent, None, 1)
+        agent.tool_manager.tool_execution_retry(None, 1)
         assert called == []
 
     def test_a_zero_or_none_attempt_count_still_runs_once(self):
@@ -1212,10 +1222,12 @@ class TestToolExecutionRetry:
         for attempts in (0, None):
             agent = self._agent(attempts=attempts)
             calls = []
-            agent.execute_tools = (
+            agent.tool_manager.execute_tools = (
                 lambda response, loop_count: calls.append(1)
             )
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
             assert (
                 len(calls) == 1
             ), f"attempts={attempts!r} should still run once"
@@ -1323,7 +1335,7 @@ class TestTextReplyFromAToolAgent:
             **kwargs,
         )
         agent.call_llm = lambda task=None, *a, **k: reply
-        agent.temp_llm_instance_for_tool_summary = (
+        agent.tool_manager.temp_llm_instance_for_tool_summary = (
             lambda: SimpleNamespace(
                 run=lambda prompt: summary_calls.append(prompt)
                 or "SUMMARY"

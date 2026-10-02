@@ -1556,7 +1556,7 @@ def _usage_agent(name, input_tokens=0, output_tokens=0):
     """An offline Agent whose run() reports a fixed usage per call through the real hook."""
     from unittest.mock import patch
 
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         agent = Agent(
             agent_name=name,
             model_name="gpt-5.4",
