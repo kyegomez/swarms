@@ -25,6 +25,7 @@ Example:
     ``MCPConnection(api_key="sk-local-dev")``.
 """
 
+import copy
 import hmac
 import inspect
 import json
@@ -525,8 +526,11 @@ class MCPDeployer:
     def _invoke(
         self, name: str, task: str, img: Optional[str] = None
     ) -> str:
-        """Run one tool's target synchronously and render its output."""
+        """Run one tool's target on per-request state and render its output."""
         target = self.tools[name].target
+        if callable(getattr(target, "short_memory_init", None)):
+            target = copy.copy(target)
+            target.short_memory = target.short_memory_init()
         run = getattr(target, "run", None)
         if callable(run):
             if img:

@@ -261,6 +261,39 @@ def test_invoke_forwards_img_and_renders_non_string_output():
     assert deployer._invoke("lambda", "x") == '{\n  "a": 1\n}'
 
 
+def test_each_request_runs_on_fresh_agent_state():
+    from swarms import Agent
+
+    agent = Agent(
+        agent_name="Researcher",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        print_on=False,
+    )
+    prompts = []
+
+    def fake_call_llm(task=None, *args, **kwargs):
+        prompts.append(str(task) + str(kwargs.get("messages")))
+        return f"answer-{len(prompts)}"
+
+    agent.call_llm = fake_call_llm
+    history_before = len(agent.short_memory.conversation_history)
+    deployer = MCPDeployer(agent, api_keys=["k"], show_banner=False)
+
+    anyio.run(
+        deployer._call, deployer.tool_name, "CLIENT-A 123-45-6789"
+    )
+    reply = anyio.run(
+        deployer._call, deployer.tool_name, "CLIENT-B 2+2"
+    )
+
+    assert "123-45-6789" not in prompts[-1]
+    assert "answer-1" not in reply
+    assert (
+        len(agent.short_memory.conversation_history) == history_before
+    )
+
+
 def test_call_times_out_while_a_blocking_target_is_still_running():
     release = threading.Event()
 
