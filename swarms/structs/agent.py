@@ -1383,6 +1383,10 @@ class Agent:
             ... )
         """
         try:
+            history_start = len(
+                self.short_memory.conversation_history
+            )
+
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.check_model_supports_utilities(img=img)
@@ -1464,6 +1468,7 @@ class Agent:
                 # Parameters
                 attempt = 0
                 success = False
+                last_error: Optional[Exception] = None
                 while attempt < self.retry_attempts and not success:
                     # Outside the try: except must answer tool calls.
                     turn_calls = []
@@ -1714,6 +1719,7 @@ class Agent:
                         AuthenticationError,
                         Exception,
                     ) as e:
+                        last_error = e
 
                         # Answer the recorded tool calls so the retried request is well formed
                         if use_transcript and turn_calls:
@@ -1742,19 +1748,23 @@ class Agent:
                         attempt += 1
 
                 if not success:
-
-                    if self.autosave is True:
-                        log_agent_data(self.to_dict())
-                        self.save()
-                        self._autosave_config_step(
-                            loop_count=loop_count
+                    # Drop this run's turns so a fallback model starts from clean history.
+                    while (
+                        len(self.short_memory.conversation_history)
+                        > history_start
+                    ):
+                        self.short_memory.delete(
+                            len(
+                                self.short_memory.conversation_history
+                            )
+                            - 1
                         )
 
-                    logger.error(
-                        "Failed to generate a valid response after"
-                        " retry attempts."
-                    )
-                    break  # Exit the loop if all retry attempts fail
+                    raise AgentLLMError(
+                        f"Agent '{self.agent_name}' got no response from "
+                        f"'{self.model_name}' after {self.retry_attempts} "
+                        f"attempt(s): {last_error}"
+                    ) from last_error
 
                 # Check stopping conditions
                 if (
