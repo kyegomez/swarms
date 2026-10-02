@@ -1046,7 +1046,7 @@ class TestAgentIntegration:
         assert agent.mcp_enabled is True
         assert isinstance(agent.mcp_manager, MCPManager)
 
-        tools = agent.add_mcp_tools_to_memory()
+        tools = agent.tool_manager.add_mcp_tools_to_memory()
         assert {t["function"]["name"] for t in tools} >= {
             "add",
             "greet",
@@ -1081,7 +1081,7 @@ class TestAgentIntegration:
             print_on=False,
             llm=object(),
         )
-        assert agent.add_mcp_tools_to_memory()
+        assert agent.tool_manager.add_mcp_tools_to_memory()
 
     def test_agent_mcp_tool_handling_executes(self, open_server):
         from swarms import Agent
