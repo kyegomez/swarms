@@ -1645,16 +1645,49 @@ class Agent:
                                             loop_count,
                                         )
 
+                        local_calls = mcp_calls = response
+                        local_turn_calls = turn_calls
+                        if isinstance(response, list):
+                            owned = {
+                                getattr(tool, "__name__", None)
+                                for tool in self.tools or []
+                            }
+                            not_local = {"handoff_task"}
+                            local_calls, mcp_calls = [], []
+                            for tool_call in response:
+                                name = (
+                                    tool_call.get("function", {}).get(
+                                        "name"
+                                    )
+                                    if isinstance(tool_call, dict)
+                                    else None
+                                )
+                                if name == "handoff_task":
+                                    continue
+                                if (
+                                    name in owned
+                                    or not self.mcp_enabled
+                                ):
+                                    local_calls.append(tool_call)
+                                else:
+                                    mcp_calls.append(tool_call)
+                                    not_local.add(name)
+                            local_turn_calls = [
+                                c
+                                for c in turn_calls
+                                if c["name"] not in not_local
+                            ]
+
                         # Check and execute callable tools
                         if exists(self.tools):
                             tool_output = self.tool_execution_retry(
-                                response, loop_count
+                                local_calls, loop_count
                             )
-                            if use_transcript and turn_calls:
+                            if use_transcript and local_turn_calls:
                                 transcript.map_batch_results(
                                     [
                                         {"id": c["id"]}
-                                        for c in turn_calls
+                                        for c in local_turn_calls
                                     ],
                                     tool_output,
                                     turn_results,
@@ -1666,7 +1699,7 @@ class Agent:
                             # Only handle MCP tools if response is not None
                             if response is not None:
                                 self.mcp_tool_handling(
-                                    response=response,
+                                    response=mcp_calls,
                                     current_loop=loop_count,
                                 )
                             else:
@@ -4417,32 +4450,6 @@ Summary: {summary}
                         title="Tool Execution",
                     )
 
-        # A temporary LLM instead of mutating the cached one.
-        if self.tool_call_summary is True:
-            temp_llm = self.temp_llm_instance_for_tool_summary()
-
-            tool_response = temp_llm.run(
-                f"""
-                Please analyze and summarize the following tool execution output in a clear and concise way. 
-                Focus on the key information and insights that would be most relevant to the user's original request.
-                If there are any errors or issues, highlight them prominently.
-                
-                Tool Output:
-                {output}
-                """
-            )
-
-            self.short_memory.add(
-                role=self.agent_name,
-                content=tool_response,
-            )
-
-            if self.print_on is True:
-                self.pretty_print(
-                    tool_response,
-                    loop_count,
-                )
-
     def list_output_types(self):
         return OutputType
 
@@ -4517,27 +4524,65 @@ Summary: {summary}
         # Catch broadly: nothing raises AgentToolExecutionError, so that caught nothing.
         attempts = max(1, int(self.tool_retry_attempts or 1))
         last_error: Optional[Exception] = None
+        batches = (
+            [[call] for call in response]
+            if isinstance(response, list)
+            else [response]
+        )
+        output = []
+        failed = False
 
-        for attempt in range(1, attempts + 1):
+        for batch in batches:
+            for attempt in range(1, attempts + 1):
+                try:
+                    self.execute_tools(
+                        response=batch,
+                        loop_count=loop_count,
+                    )
+                    output.extend(
+                        getattr(self, "_last_tool_output", None) or []
+                    )
+                    break
+                except Exception as e:
+                    last_error = e
+                    logger.error(
+                        f"Agent '{self.agent_name}' tool execution failed on attempt "
+                        f"{attempt}/{attempts} in loop {loop_count}: {str(e)}. "
+                        f"Full traceback: {traceback.format_exc()}"
+                    )
+            else:
+                failed = True
+
+        if failed:
+            raise AgentToolExecutionError(
+                f"Agent '{self.agent_name}' failed to execute tools in loop "
+                f"{loop_count} after {attempts} attempt(s): {last_error}"
+            ) from last_error
+
+        if output and self.tool_call_summary is True:
             try:
-                self.execute_tools(
-                    response=response,
-                    loop_count=loop_count,
+                tool_response = self.temp_llm_instance_for_tool_summary().run(
+                    f"""
+                Please analyze and summarize the following tool execution output in a clear and concise way.
+                Focus on the key information and insights that would be most relevant to the user's original request.
+                If there are any errors or issues, highlight them prominently.
+
+                Tool Output:
+                {output}
+                """
                 )
-                return getattr(self, "_last_tool_output", None)
+                self.short_memory.add(
+                    role=self.agent_name,
+                    content=tool_response,
+                )
+                if self.print_on is True:
+                    self.pretty_print(tool_response, loop_count)
             except Exception as e:
-                last_error = e
                 logger.error(
-                    f"Agent '{self.agent_name}' tool execution failed on attempt "
-                    f"{attempt}/{attempts} in loop {loop_count}: {str(e)}. "
-                    f"Full traceback: {traceback.format_exc()}"
+                    f"Agent '{self.agent_name}' tool summary failed in loop {loop_count}: {e}"
                 )
 
-        # Attempts exhausted: raise, or the model reads a silent no-op as success.
-        raise AgentToolExecutionError(
-            f"Agent '{self.agent_name}' failed to execute tools in loop "
-            f"{loop_count} after {attempts} attempt(s): {last_error}"
-        ) from last_error
+        return output
 
     def _transcript_from_messages(
         self,

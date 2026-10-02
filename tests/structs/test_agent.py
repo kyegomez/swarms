@@ -1197,6 +1197,94 @@ class TestToolExecutionRetry:
             Agent.tool_execution_retry(agent, [call], 1)
         assert len(runs) == 3
 
+    def test_only_the_failing_call_is_retried(self):
+        runs = []
+
+        def send_email(to: str) -> str:
+            runs.append("send_email")
+            return "sent"
+
+        def charge_card(amount: int) -> str:
+            runs.append("charge_card")
+            raise RuntimeError("gateway timeout")
+
+        agent = self._agent(attempts=3)
+        agent.print_on = False
+        agent.short_memory = SimpleNamespace(add=lambda **kw: None)
+        agent.tool_struct = BaseTool(tools=[send_email, charge_card])
+        calls = [
+            {
+                "id": "e1",
+                "type": "function",
+                "function": {
+                    "name": "send_email",
+                    "arguments": json.dumps({"to": "a@b.c"}),
+                },
+            },
+            {
+                "id": "c1",
+                "type": "function",
+                "function": {
+                    "name": "charge_card",
+                    "arguments": json.dumps({"amount": 500}),
+                },
+            },
+        ]
+
+        with pytest.raises(AgentToolExecutionError):
+            Agent.tool_execution_retry(agent, calls, 1)
+        assert runs.count("send_email") == 1
+        assert runs.count("charge_card") == 3
+
+    def test_mcp_and_local_calls_reach_their_own_executor(self):
+        notes = []
+        mcp_batches = []
+
+        def write_note(text: str) -> str:
+            notes.append(text)
+            return "written"
+
+        def fake_mcp(response, output_type="dict"):
+            mcp_batches.append(
+                [c["function"]["name"] for c in response]
+            )
+            return [{"tool": "lookup", "result": "ok"}]
+
+        with patch.object(
+            Agent, "add_mcp_tools_to_memory", return_value=[]
+        ):
+            agent = _patched_agent(
+                "Router",
+                model_name="gpt-5.4",
+                mcp_url="http://localhost:9/mcp",
+                tool_call_summary=False,
+            )
+        agent.tools = [write_note]
+        agent.tool_struct = BaseTool(tools=[write_note])
+        agent.mcp_manager.execute_tool_calls = fake_mcp
+        agent.temp_llm_instance_for_tool_summary = (
+            lambda: SimpleNamespace(run=lambda **kw: "summary")
+        )
+        agent.call_llm = lambda *a, **kw: [
+            {
+                "id": "m1",
+                "type": "function",
+                "function": {"name": "lookup", "arguments": "{}"},
+            },
+            {
+                "id": "w1",
+                "type": "function",
+                "function": {
+                    "name": "write_note",
+                    "arguments": json.dumps({"text": "hi"}),
+                },
+            },
+        ]
+
+        agent.run("go")
+        assert notes == ["hi"]
+        assert mcp_batches == [["lookup"]]
+
     def test_none_response_does_not_execute_or_raise(self):
         agent = self._agent()
         called = []
