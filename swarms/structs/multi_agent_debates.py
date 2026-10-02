@@ -17,7 +17,7 @@ class OneOnOneDebate:
         max_loops: int = 1,
         agents: list[Union[Agent, Callable]] = None,
         img: str = None,
-        output_type: str = "str-all-except-first",
+        output_type: str = "str",
     ):
         """
         Initialize the one-on-one debate structure.
@@ -26,7 +26,7 @@ class OneOnOneDebate:
             max_loops (int): The number of conversational turns (each agent speaks per loop).
             agents (list[Agent]): A list containing exactly two Agent instances who will debate.
             img (str, optional): An optional image input to be passed to each agent's run method.
-            output_type (str): The format for the output conversation history.
+            output_type (str): The format for the output conversation history. Defaults to "str".
         """
         self.max_loops = max_loops
         self.agents = agents
