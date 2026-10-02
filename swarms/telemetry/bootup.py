@@ -29,8 +29,7 @@ def _prepare_workspace() -> None:
         Path(workspace).mkdir(parents=True, exist_ok=True)
         return
     except OSError as e:
-        # Covers unwritable paths and a WORKSPACE_DIR that already exists as a
-        # file, which exist_ok does not suppress.
+        # Unwritable paths, or WORKSPACE_DIR existing as a file
         logger.warning(
             f"WORKSPACE_DIR={workspace!r} could not be created ({e}); "
             f"falling back to {fallback}"
@@ -61,8 +60,7 @@ def bootup():
         # Silence wandb
         os.environ["WANDB_SILENT"] = "true"
 
-        # Only default it. Assigning unconditionally discarded whatever the
-        # caller had exported, so WORKSPACE_DIR never survived `import swarms`.
+        # Only default it, assigning unconditionally discarded the caller's value
         _prepare_workspace()
 
         # Suppress deprecation warnings

@@ -188,6 +188,11 @@ class HierarchicalSwarm:
         )
         self.swarm_workspace_dir = self.workspace.dir
 
+        # How much of the shared conversation each agent has already seen.
+        self._delivered: Dict[str, int] = {}
+
+        self.conversation = Conversation(time_enabled=False)
+
         self.initialize_swarm()
 
         capture_init(self)
@@ -226,11 +231,6 @@ class HierarchicalSwarm:
 
     def init_swarm(self):
         """Initialize conversation state and validate the swarm."""
-        # How much of the shared conversation each agent has already seen.
-        self._delivered = {}
-
-        self.conversation = Conversation(time_enabled=False)
-
         # Reliability checks
         self.reliability_checks()
 
@@ -587,11 +587,17 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
+            self.conversation.clear()
+            self._delivered = {}
+            self.add_context_to_director()
+
             if task is not None:
                 self.conversation.add(role="User", content=task)
 
             current_loop = 0
             last_output = None
+            last_error = None
+            any_loop_succeeded = False
 
             while current_loop < self.max_loops:
                 if current_loop == 0:
@@ -612,8 +618,11 @@ class HierarchicalSwarm:
                         ),
                         **kwargs,
                     )
+                    any_loop_succeeded = True
 
                 except Exception as e:
+                    last_error = e
+                    last_output = None
                     logger.error(
                         f"[ERROR] Loop execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
                     )
@@ -623,8 +632,16 @@ class HierarchicalSwarm:
                 # Add loop completion marker to conversation
                 self.conversation.add(
                     role="System",
-                    content=f"--- Loop {current_loop}/{self.max_loops} completed ---",
+                    content=(
+                        f"--- Loop {current_loop}/{self.max_loops} failed: {last_error} ---"
+                        if last_output is None
+                        and last_error is not None
+                        else f"--- Loop {current_loop}/{self.max_loops} completed ---"
+                    ),
                 )
+
+            if not any_loop_succeeded and last_error is not None:
+                raise last_error
 
             result = history_output_formatter(
                 conversation=self.conversation, type=self.output_type

@@ -49,6 +49,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.utils.litellm_wrapper import empty_usage
 
 logger = initialize_logger(log_folder="graph_workflow")
 
@@ -233,8 +234,7 @@ class NetworkXBackend(GraphBackend):
             NetworkXBackend: A new backend instance with reversed edges.
         """
         reversed_backend = NetworkXBackend()
-        # copy=False avoids deepcopy of node attributes, which fails for
-        # Agent objects that hold unpicklable thread locks.
+        # copy=False, deepcopy fails on Agents holding thread locks
         reversed_backend.graph = self.graph.reverse(copy=False)
         return reversed_backend
 
@@ -250,8 +250,7 @@ class NetworkXBackend(GraphBackend):
         try:
             return list(nx.topological_generations(self.graph))
         except nx.NetworkXUnfeasible:
-            # Cyclic graph: layer what we can with Kahn's algorithm and append
-            # the cyclic remainder so callers still get an execution order.
+            # Cyclic graph, layer what Kahn's algorithm can and append the rest
             graph = self.graph
             indegree = dict(graph.in_degree())
             frontier = [n for n, d in indegree.items() if d == 0]
@@ -274,8 +273,7 @@ class NetworkXBackend(GraphBackend):
             return layers
 
     def simple_cycles(self) -> List[List[str]]:
-        # Enumerating simple cycles is exponential in the number of cycles, so
-        # short-circuit on the overwhelmingly common acyclic case first.
+        # Enumerating cycles is exponential, short-circuit the acyclic case
         if nx.is_directed_acyclic_graph(self.graph):
             return []
         return list(nx.simple_cycles(self.graph))
@@ -401,8 +399,7 @@ class RustworkxBackend(GraphBackend):
             return iter([])
         target_index = self._node_id_to_index[node_id]
         index_to_id = self._index_to_node_id
-        # predecessor_indices is O(in-degree); scanning the full edge list
-        # would make this O(E) per node.
+        # O(in-degree) rather than O(E) per node
         return iter(
             [
                 index_to_id[idx]
@@ -515,8 +512,7 @@ class RustworkxBackend(GraphBackend):
 
     def simple_cycles(self) -> List[List[str]]:
         try:
-            # Enumerating cycles is exponential in their count; the acyclic
-            # check is O(V+E) and covers the common case.
+            # Enumerating cycles is exponential, short-circuit the acyclic case
             if rx.is_directed_acyclic_graph(self.graph):
                 return []
             index_to_id = self._index_to_node_id
@@ -535,8 +531,7 @@ class RustworkxBackend(GraphBackend):
             return set()
         node_index = self._node_id_to_index[node_id]
         index_to_id = self._index_to_node_id
-        # Native Rust traversal; the previous hand-rolled BFS also used
-        # list.pop(0), which is O(n) per dequeue.
+        # Native traversal, the hand-rolled BFS used list.pop(0)
         return {
             index_to_id[idx]
             for idx in rx.descendants(self.graph, node_index)
@@ -763,6 +758,8 @@ class GraphWorkflow:
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
         _max_workers (int): Maximum nodes executed concurrently. Set from max_parallel_nodes if provided, otherwise int(get_cpu_cores() * 0.95) with a minimum of 1.
         verbose (bool): Whether to enable verbose logging.
+        usage (dict): Provider token usage summed over every distinct agent in
+            the graph, subgraphs included. See :attr:`usage`.
     """
 
     def __init__(
@@ -985,8 +982,7 @@ class GraphWorkflow:
             )
             self._sorted_layers = sorted_layers
 
-            # Build the adjacency maps once and reuse them for validation and
-            # for per-node predecessor lookups during execution.
+            # Built once, reused for validation and per-node predecessor lookups
             succ, pred = self.graph_backend.adjacency()
             self._successors_map = succ
             self._predecessors_cache = {
@@ -1010,8 +1006,7 @@ class GraphWorkflow:
                         + "; ".join(warnings)
                     )
 
-            # Freeze the per-layer execution plan so run() does no dictionary
-            # lookups or attribute resolution in its hot loop.
+            # Frozen so run() does no lookups in its hot loop
             self._execution_plan = [
                 [
                     (
@@ -1797,8 +1792,7 @@ class GraphWorkflow:
                     "Your goal is to collaborate and create a comprehensive response that builds on all previous work."
                 )
             elif loop_idx > 0 and layer_idx == 0 and prev_outputs:
-                # Entry-point nodes in subsequent loops receive end-point
-                # outputs from the previous loop as refinement context.
+                # Later loops seed entry points with the previous loop's end outputs
                 messages += [
                     {
                         "role": "user",
@@ -1868,6 +1862,64 @@ class GraphWorkflow:
         except Exception as e:
             logger.exception(f"Error in GraphWorkflow.arun: {e}")
             raise e
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every agent in the graph.
+
+        Adds up :attr:`Agent.usage` for every ``AGENT`` node, including the
+        agents inside nested ``SUBGRAPH`` workflows at any depth. An agent that
+        backs several nodes, or appears in both this graph and a subgraph, is
+        counted once. Keys: ``input_tokens``, ``output_tokens``,
+        ``cached_tokens``, ``reasoning_tokens``, ``total_tokens``.
+
+        Agent totals are lifetime totals, so the value grows across repeated
+        ``run()`` / ``arun()`` calls, and an agent shared with another
+        workflow contributes what it spent there too. Streamed calls count
+        once their stream has been consumed, the same rule as
+        :attr:`Agent.usage`.
+
+        Returns:
+            dict: A new usage dict; mutating it does not affect the workflow.
+        """
+        total = empty_usage()
+        for agent in self._usage_agents():
+            for key, value in agent.usage.items():
+                if key in total:
+                    total[key] += value
+        return total
+
+    def _usage_agents(
+        self, _seen_graphs: Optional[Set[int]] = None
+    ) -> List[Any]:
+        """Every distinct agent in this graph and its subgraphs.
+
+        Args:
+            _seen_graphs: ``id()`` of workflows already walked, so a subgraph
+                embedded twice, or embedded in itself, is walked once.
+
+        Returns:
+            List[Any]: Agents exposing a ``usage`` dict, deduplicated by ``id()``.
+        """
+        seen_graphs = (
+            _seen_graphs if _seen_graphs is not None else set()
+        )
+        seen_graphs.add(id(self))
+        agents: Dict[int, Any] = {}
+        for node in self.nodes.values():
+            member = node.agent
+            if member is None:
+                continue
+            if node.type == NodeType.SUBGRAPH:
+                if id(member) in seen_graphs or not hasattr(
+                    member, "_usage_agents"
+                ):
+                    continue
+                for agent in member._usage_agents(seen_graphs):
+                    agents.setdefault(id(agent), agent)
+            elif isinstance(getattr(member, "usage", None), dict):
+                agents.setdefault(id(member), member)
+        return list(agents.values())
 
     @staticmethod
     def _task_key(task: str) -> str:
@@ -2028,8 +2080,7 @@ class GraphWorkflow:
                     else None
                 )
 
-                # Seed entry-point nodes with end-point outputs from the
-                # previous loop so agents can refine iteratively.
+                # Later loops seed entry points with the previous loop's end outputs
                 if prior_loop_end_outputs:
                     prev_outputs.update(prior_loop_end_outputs)
 
@@ -2052,8 +2103,7 @@ class GraphWorkflow:
                                 )
                                 prev_outputs.update(saved)
                                 execution_results.update(saved)
-                                # Replay into conversation so workflow state
-                                # is identical to a non-checkpoint run.
+                                # Replayed so state matches a non-checkpoint run
                                 for node_id, output in saved.items():
                                     agent_name = (
                                         getattr(
@@ -2243,8 +2293,7 @@ class GraphWorkflow:
                                 )
 
                     if len(layer_data) == 1:
-                        # Single-node layer: run inline. Dispatching to a
-                        # worker thread would only add handoff latency.
+                        # Single-node layer, a worker thread would only add latency
                         (
                             node_id,
                             agent,
@@ -2886,8 +2935,7 @@ class GraphWorkflow:
 
         return {
             "id": node.id,
-            # ``.value``, not ``str(node.type)``: the latter renders as
-            # "NodeType.AGENT", which NodeType() then refuses to parse back.
+            # .value, str(node.type) renders as "NodeType.AGENT" and will not parse back
             "type": node.type.value,
             "metadata": node.metadata,
             "agent": self._agent_payload(node),
@@ -2915,8 +2963,7 @@ class GraphWorkflow:
             The serialized workflow.
         """
         if shallow:
-            # Sorted for deterministic output — two equivalent workflows
-            # built in different insertion orders produce identical specs.
+            # Sorted so insertion order does not change the spec
             return {
                 "name": self.name,
                 "description": self.description,
