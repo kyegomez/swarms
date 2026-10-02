@@ -10,7 +10,6 @@ from unittest.mock import patch
 import pytest
 import yaml
 from dotenv import load_dotenv
-from litellm import ModelResponse
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
@@ -1275,34 +1274,26 @@ class TestToolExecutionRetry:
         agent.tool_manager.temp_llm_instance_for_tool_summary = (
             lambda: SimpleNamespace(run=lambda **kw: "summary")
         )
-        response = ModelResponse(
+        tool_calls = [
+            SimpleNamespace(
+                id="m1",
+                function=SimpleNamespace(
+                    name="lookup", arguments="{}"
+                ),
+            ),
+            SimpleNamespace(
+                id="w1",
+                function=SimpleNamespace(
+                    name="write_note",
+                    arguments=json.dumps({"text": "hi"}),
+                ),
+            ),
+        ]
+        response = SimpleNamespace(
             choices=[
-                {
-                    "message": {
-                        "role": "assistant",
-                        "content": None,
-                        "tool_calls": [
-                            {
-                                "id": "m1",
-                                "type": "function",
-                                "function": {
-                                    "name": "lookup",
-                                    "arguments": "{}",
-                                },
-                            },
-                            {
-                                "id": "w1",
-                                "type": "function",
-                                "function": {
-                                    "name": "write_note",
-                                    "arguments": json.dumps(
-                                        {"text": "hi"}
-                                    ),
-                                },
-                            },
-                        ],
-                    }
-                }
+                SimpleNamespace(
+                    message=SimpleNamespace(tool_calls=tool_calls)
+                )
             ]
         )
         llm = litellm_wrapper.LiteLLM(
