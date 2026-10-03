@@ -57,9 +57,7 @@ Example:
     result = chat.run("Discuss the tradeoffs of autonomous multi-agent systems.")
 """
 
-import ast
 import asyncio
-import json
 from collections import deque
 from typing import Any, Callable, List, Optional, Tuple
 
@@ -74,6 +72,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
+from swarms.utils.str_to_dict import tool_call_arguments
 from swarms.telemetry.otel import capture_init, trace_run
 
 logger = initialize_logger(log_folder="groupchat")
@@ -120,44 +119,8 @@ def _extract_args(tool_output: Any) -> Tuple[float, str]:
         silent decision: ``(0.0, "")``. Scores are clamped into the ``0..1``
         range and messages are stripped of surrounding whitespace.
     """
-    # An agent whose output_type renders to text hands back the repr of the tool-call list, not the list.
-    if isinstance(tool_output, str):
-        try:
-            tool_output = ast.literal_eval(tool_output)
-        except (ValueError, SyntaxError):
-            return 0.0, ""
-
-    if isinstance(tool_output, list):
-        tool_output = tool_output[0] if tool_output else None
-    if not tool_output:
-        return 0.0, ""
-
-    # Providers return either a plain dict or a pydantic object whose function/arguments are attributes.
-    if not isinstance(tool_output, dict) and hasattr(
-        tool_output, "model_dump"
-    ):
-        try:
-            tool_output = tool_output.model_dump()
-        except Exception:
-            pass
-
-    if isinstance(tool_output, dict):
-        fn = tool_output.get("function")
-    else:
-        fn = getattr(tool_output, "function", None)
-    if not fn:
-        return 0.0, ""
-
-    if isinstance(fn, dict):
-        args = fn.get("arguments")
-    else:
-        args = getattr(fn, "arguments", None)
-    if isinstance(args, str):
-        try:
-            args = json.loads(args)
-        except json.JSONDecodeError:
-            return 0.0, ""
-    if not isinstance(args, dict):
+    args = tool_call_arguments(tool_output)
+    if args is None:
         return 0.0, ""
 
     try:
