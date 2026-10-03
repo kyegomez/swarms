@@ -49,6 +49,7 @@ from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
+from swarms.structs.conversation import MEMORY_MD_PREAMBLE
 from swarms.structs.transcript import Transcript
 from swarms.tools.dynamic_tool_loader import SEARCH_TOOL_NAME
 from swarms.utils.formatter import formatter
@@ -118,6 +119,24 @@ class AutonomousAgentLoop:
             self.agent.short_memory.add(
                 role=self.agent.user_name, content=content
             )
+
+    def _loaded_memory(self) -> List[Dict[str, Any]]:
+        """
+        Turns the agent loaded at construction, which run() does not pass in.
+
+        Returns:
+            List[Dict[str, Any]]: The MEMORY.md preamble (as a user turn)
+            followed by the constructor ``messages``.
+        """
+        seed = [
+            {"role": "user", "content": message["content"]}
+            for message in self.agent.short_memory.conversation_history
+            if isinstance(message, dict)
+            and str(message.get("content", "")).startswith(
+                MEMORY_MD_PREAMBLE
+            )
+        ]
+        return seed + list(self.agent.messages or [])
 
     def _record_assistant(self, parsed: Any) -> List[Dict[str, Any]]:
         """Add the model's turn; return the tool calls it made."""
@@ -255,7 +274,9 @@ class AutonomousAgentLoop:
         try:
 
             # Cleared before seeding, or the opening turn is lost.
-            self._transcript = Transcript(list(messages or []))
+            self._transcript = Transcript(
+                self._loaded_memory() + list(messages or [])
+            )
             self.agent.autonomous_subtasks = []
             self.agent.current_subtask_index = 0
             self.agent.subtask_status = {}
@@ -554,38 +575,60 @@ class AutonomousAgentLoop:
                                     planning_results[
                                         tool_call.get("id", "")
                                     ] = result
+                                    # Delegating the task stands in for a plan.
+                                    plan_created = True
 
-                                # Show plan creation result
-                                if self.agent.print_on:
-                                    plan_summary = f"Plan created with {len(self.agent.autonomous_subtasks)} subtasks:\n\n"
-                                    for i, subtask in enumerate(
-                                        self.agent.autonomous_subtasks,
-                                        1,
-                                    ):
-                                        plan_summary += f"{i}. {subtask['step_id']}: {subtask['description']}\n"
-                                        plan_summary += f"   Priority: {subtask['priority']}\n"
-                                        if subtask.get(
-                                            "dependencies"
-                                        ):
-                                            plan_summary += f"   Dependencies: {', '.join(subtask['dependencies'])}\n"
-
-                                    formatter.print_panel(
-                                        plan_summary,
-                                        title="Plan Created",
+                                elif (
+                                    function_name == "complete_task"
+                                    and function_name
+                                    in planning_tool_handlers
+                                ):
+                                    planning_results[
+                                        tool_call.get("id", "")
+                                    ] = planning_tool_handlers[
+                                        "complete_task"
+                                    ](
+                                        **json.loads(
+                                            tool_call["function"][
+                                                "arguments"
+                                            ]
+                                        )
                                     )
+                                    # Finishing outright needs no plan.
+                                    plan_created = True
 
-                                plan_created = True
-                                break
+                                else:
+                                    planning_results[
+                                        tool_call.get("id", "")
+                                    ] = (
+                                        f"{function_name} was not run: only "
+                                        "create_plan, handoff_task and "
+                                        "complete_task run during planning. "
+                                        "Call create_plan."
+                                    )
 
                     # Answer every tool_call before the next request.
                     self._flush_tool_results(
                         planning_calls, planning_results
                     )
 
-                    # Also check if plan was created via tool execution
+                    # Set by _create_plan_tool, so only a real plan ends planning.
                     if self.agent.plan_created:
+                        if self.agent.print_on:
+                            plan_summary = f"Plan created with {len(self.agent.autonomous_subtasks)} subtasks:\n\n"
+                            for i, subtask in enumerate(
+                                self.agent.autonomous_subtasks, 1
+                            ):
+                                plan_summary += f"{i}. {subtask['step_id']}: {subtask['description']}\n"
+                                plan_summary += f"   Priority: {subtask['priority']}\n"
+                                if subtask.get("dependencies"):
+                                    plan_summary += f"   Dependencies: {', '.join(subtask['dependencies'])}\n"
+
+                            formatter.print_panel(
+                                plan_summary,
+                                title="Plan Created",
+                            )
                         plan_created = True
-                        break
 
                 except Exception as e:
                     if self.agent.verbose:
@@ -1519,18 +1562,23 @@ class AutonomousAgentLoop:
                 )
 
             try:
-                self.agent.tool_manager.mcp_tool_handling(
+                output = self.agent.tool_manager.mcp_tool_handling(
                     response=[call], current_loop=current_loop
                 )
-                outcome = f"{name} executed via MCP. See the tool output above."
+                outcome = (
+                    format_data_structure(output)
+                    if output
+                    else f"{name} returned no output."
+                )
             except Exception as error:
                 outcome = _format_tool_error(name, error)
                 if self.agent.verbose:
                     logger.error(outcome)
+                # On success mcp_tool_handling already recorded the output.
+                self.agent.short_memory.add(
+                    role="Tool Executor", content=f"{name}: {outcome}"
+                )
 
-            self.agent.short_memory.add(
-                role="Tool Executor", content=f"{name}: {outcome}"
-            )
             results[call.get("id", "")] = outcome
 
     def _prewarm_tools_from_plan(
