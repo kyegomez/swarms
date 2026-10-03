@@ -485,7 +485,6 @@ def handle_transforms(
     original message history as a string if no transforms are enabled.
 
     Args:
-        messages: List of message dictionaries to process.
         transforms: MessageTransforms instance to apply.
         short_memory: Object with methods to return messages as dictionary or string.
         model_name: Name of the model for context.
