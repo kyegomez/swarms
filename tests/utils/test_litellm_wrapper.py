@@ -578,3 +578,26 @@ class TestGeminiProvider:
         )
         result = agent.run(SIMPLE_TASK)
         assert result is not None
+
+
+def test_prepare_messages_attaches_images_to_prebuilt_body():
+    llm = LiteLLM(
+        model_name=OPENAI_MODEL, system_prompt=SIMPLE_PROMPT
+    )
+    urls = ["https://example.com/a.png", "https://example.com/b.png"]
+    messages = llm._prepare_messages(
+        img=urls[0],
+        imgs=urls[1:],
+        messages=[
+            {"role": "user", "content": SIMPLE_TASK},
+            {"role": "assistant", "content": "ok"},
+        ],
+    )
+    assert messages[-1] == {"role": "assistant", "content": "ok"}
+    assert messages[1]["content"][0] == {
+        "type": "text",
+        "text": SIMPLE_TASK,
+    }
+    assert [
+        p["image_url"]["url"] for p in messages[1]["content"][1:]
+    ] == urls
