@@ -17,6 +17,7 @@ The main class `LiteLLM` provides a simple interface for running LLM tasks with 
 for various input modalities and output formats.
 """
 
+import copy
 import socket
 import traceback
 from functools import lru_cache
@@ -229,7 +230,7 @@ class LiteLLM:
         prompt_caching: bool = False,
         cache_config: dict = None,
         mcp_call: bool = False,
-        top_p: float = 1.0,
+        top_p: Optional[float] = None,
         functions: List[dict] = None,
         return_all: bool = False,
         base_url: str = None,
@@ -303,7 +304,7 @@ class LiteLLM:
             mcp_call (bool, optional): Whether this is an MCP (Model Context Protocol) call.
                 Affects how tool calls are formatted in the response. Defaults to False.
             top_p (float, optional): Top-p (nucleus) sampling parameter. Controls diversity
-                via nucleus sampling. Defaults to 1.0.
+                via nucleus sampling. Defaults to None, so the provider's default applies.
             functions (List[dict], optional): Legacy function definitions (deprecated in
                 favor of tools_list_dictionary). Defaults to None.
             return_all (bool, optional): Whether to return the complete response object
@@ -896,13 +897,15 @@ class LiteLLM:
 
         # Cache the system prompt — the largest stable prefix of the request.
         if self._cache_opt("cache_system_prompt", True):
-            for m in messages:
+            for i, m in enumerate(messages):
                 if isinstance(m, dict) and m.get("role") == "system":
-                    self._add_cache_control(m)
+                    messages[i] = copy.deepcopy(m)
+                    self._add_cache_control(messages[i])
                     break
 
         # Cache through the final message for incremental multi-turn caching.
         if self._cache_opt("cache_messages", True):
+            messages[-1] = copy.deepcopy(messages[-1])
             self._add_cache_control(messages[-1])
 
     def _maybe_cache_tools(self, tools: list) -> list:
