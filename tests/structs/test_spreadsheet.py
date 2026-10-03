@@ -941,3 +941,35 @@ def test_multiple_outputs_have_independent_timestamps(temp_workspace):
     ]
     assert recorded_stamps == stamps
     assert len(set(recorded_stamps)) == 3
+
+
+def test_a_second_run_reports_only_its_own_outputs(temp_workspace):
+    """Both summaries listed both tasks: one list, appended to forever."""
+    swarm, _, _ = _recording_swarm(["a", "b"], 1, temp_workspace)
+
+    first = swarm.run("summarise Q3")
+    second = swarm.run("draft the email")
+
+    assert second["tasks_completed"] == 2
+    assert [output["task"] for output in second["outputs"]] == [
+        "draft the email",
+        "draft the email",
+    ]
+    assert [output["task"] for output in first["outputs"]] == [
+        "summarise Q3",
+        "summarise Q3",
+    ]
+
+
+def test_a_second_run_from_config_reports_only_its_own_outputs(
+    temp_workspace,
+):
+    swarm, _, _ = _recording_config_swarm(
+        {"a": "task a"}, 1, temp_workspace
+    )
+
+    swarm.run_from_config()
+    second = swarm.run_from_config()
+
+    assert second["tasks_completed"] == 1
+    assert len(second["outputs"]) == 1

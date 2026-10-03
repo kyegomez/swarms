@@ -202,6 +202,9 @@ class SpreadSheetSwarm:
         if not self.agents and self.load_path:
             self.load_from_csv()
 
+        self.outputs = []
+        self.tasks_completed = 0
+
         start_time = _now()
 
         agent_task_pairs = [
@@ -263,6 +266,8 @@ class SpreadSheetSwarm:
         if task is None and self.agent_tasks:
             return self.run_from_config()
         else:
+            self.outputs = []
+            self.tasks_completed = 0
             start_time = _now()
             self._run_tasks(task, *args, **kwargs)
             end_time = _now()
