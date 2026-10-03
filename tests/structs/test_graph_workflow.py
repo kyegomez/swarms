@@ -703,6 +703,48 @@ def test_graph_workflow_checkpoint_conversation_replay(tmp_path):
     assert "CV-Beta" in history_roles
 
 
+def test_graph_workflow_interrupt_before_and_resume_with_override():
+    from unittest.mock import MagicMock
+
+    def make_agent(name):
+        a = MagicMock()
+        a.agent_name = name
+        a.run = MagicMock(return_value=f"output-{name}")
+        return a
+
+    a1 = make_agent("IR-Alpha")
+    a2 = make_agent("IR-Beta")
+    a3 = make_agent("IR-Gamma")
+
+    wf = GraphWorkflow(name="IR-Test", interrupt_before=["IR-Beta"])
+    wf.add_nodes([a1, a2, a3])
+    wf.add_edge("IR-Alpha", "IR-Beta")
+    wf.add_edge("IR-Beta", "IR-Gamma")
+    wf.compile()
+
+    paused = wf.run("interrupt test task")
+
+    assert a1.run.call_count == 1
+    assert a2.run.call_count == 0
+    assert a3.run.call_count == 0
+    assert paused["interrupted"] is True
+    assert paused["pending_nodes"] == ["IR-Beta"]
+    assert paused["IR-Alpha"] == "output-IR-Alpha"
+
+    final = wf.resume(overrides={"IR-Beta": "override-beta"})
+
+    assert a2.run.call_count == 0
+    assert a3.run.call_count == 1
+    assert "interrupted" not in final
+    assert final["IR-Beta"] == "override-beta"
+    assert final["IR-Gamma"] == "output-IR-Gamma"
+
+    gamma_messages = a3.run.call_args.kwargs["messages"]
+    assert any(
+        "override-beta" in m["content"] for m in gamma_messages
+    )
+
+
 def test_graph_workflow_to_spec_round_trip():
     """to_spec / from_topology_spec round-trip preserves topology and metadata."""
     a = create_test_agent("Alpha", "First agent")
