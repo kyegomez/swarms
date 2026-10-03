@@ -8,6 +8,7 @@ from swarms.structs.context_utils import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.utils.generate_id import generate_id
+from swarms.utils.litellm_wrapper import sum_agent_usage
 
 # Prompt functions.
 
@@ -225,6 +226,19 @@ class AgentJudge:
         )
 
         self.reliability_check()
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the judge agent.
+
+        Keys match :attr:`Agent.usage`: ``input_tokens``, ``output_tokens``,
+        ``cached_tokens``, ``reasoning_tokens``, ``total_tokens``. Totals are
+        lifetime totals, so they grow across ``run()`` calls.
+
+        Returns:
+            dict: A new usage dict.
+        """
+        return sum_agent_usage([self.agent])
 
     def reliability_check(self):
         if self.max_loops == 0 or self.max_loops is None:

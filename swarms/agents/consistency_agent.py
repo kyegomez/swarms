@@ -21,8 +21,9 @@ Author: Swarms Team
 License: MIT
 """
 
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Optional, Union, Dict, Any
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 
@@ -31,6 +32,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.utils.output_types import OutputType
 from swarms.utils.any_to_str import any_to_str
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -72,6 +74,7 @@ def aggregation_agent(
     responses: List[str],
     prompt: str = majority_voting_prompt,
     model_name: str = "gpt-5.4",
+    usage_hook: Optional[Callable[[dict], None]] = None,
 ) -> str:
     """
     Aggregates a list of responses into a single final answer using an AI-powered aggregation agent.
@@ -86,6 +89,9 @@ def aggregation_agent(
                                Defaults to the majority_voting_prompt.
         model_name (str, optional): Model to use for aggregation.
                                    Defaults to "gpt-5.4".
+        usage_hook (Callable[[dict], None], optional): Called once with the
+            aggregation agent's usage after it runs, including when the run
+            raises. Defaults to None.
 
     Returns:
         str: The aggregated final answer
@@ -106,7 +112,11 @@ def aggregation_agent(
         max_loops=1,
     )
 
-    final_answer = agent.run(task)
+    try:
+        final_answer = agent.run(task)
+    finally:
+        if usage_hook is not None:
+            usage_hook(agent.usage)
 
     return final_answer
 
@@ -214,6 +224,50 @@ class SelfConsistencyAgent:
         self.conversation = Conversation()
         self.args = args
         self.kwargs = kwargs
+        self._usage = empty_usage()
+        self._usage_lock = threading.Lock()
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every agent this swarm has run.
+
+        Each ``run()`` builds a fresh agent per sample plus an aggregation
+        agent and discards them afterwards, so their usage is added to a
+        running total as each one finishes. Keys match :attr:`Agent.usage`:
+        ``input_tokens``, ``output_tokens``, ``cached_tokens``,
+        ``reasoning_tokens``, ``total_tokens``.
+
+        Returns:
+            dict: A new usage dict.
+        """
+        with self._usage_lock:
+            return dict(self._usage)
+
+    def _add_usage(self, call_usage: dict) -> None:
+        """Fold one agent's usage into the running total.
+
+        Args:
+            call_usage (dict): A usage dict in the :attr:`Agent.usage` shape.
+        """
+        with self._usage_lock:
+            for key in self._usage:
+                self._usage[key] += call_usage.get(key, 0)
+
+    def _run_sample(self, *args, **kwargs) -> Any:
+        """Run one fresh reasoning agent and record what it spent.
+
+        Args:
+            *args: Forwarded to the agent's ``run``.
+            **kwargs: Forwarded to the agent's ``run``.
+
+        Returns:
+            Any: The agent's response.
+        """
+        agent = self._create_reasoning_agent()
+        try:
+            return agent.run(*args, **kwargs)
+        finally:
+            self._add_usage(agent.usage)
 
     def run(
         self,
@@ -262,7 +316,7 @@ class SelfConsistencyAgent:
         with ThreadPoolExecutor() as executor:
             futures = {
                 executor.submit(
-                    self._create_reasoning_agent().run,
+                    self._run_sample,
                     task=task,
                     img=img,
                     *args,
@@ -290,7 +344,9 @@ class SelfConsistencyAgent:
                     return None
 
         # Aggregate responses using AI-powered aggregation
-        final_answer = aggregation_agent(responses)
+        final_answer = aggregation_agent(
+            responses, usage_hook=self._add_usage
+        )
 
         self.conversation.add(
             role="Majority Voting Agent", content=final_answer
