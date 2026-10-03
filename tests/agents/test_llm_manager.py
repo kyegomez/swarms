@@ -30,11 +30,13 @@ No test makes a network call or requires an API key. Run with:
     cd swarms && PYTHONPATH=. python3 -m pytest tests/agents/test_llm_manager.py -q
 """
 
+import asyncio
 from unittest.mock import Mock
 
 import pytest
 
-from swarms import Agent
+from swarms import Agent, ThinkingToken
+from swarms.utils.formatter import formatter
 from swarms.utils.litellm_wrapper import LiteLLM
 
 ########################################################
@@ -636,6 +638,217 @@ class TestExtractThinkingFromStream:
         )
         assert result[0] is marker
         assert result[1].choices[0].delta.content == "hi"
+
+    def test_on_thinking_receives_every_delta_in_order(self, agent):
+        chunks = [
+            reasoning_chunk("step "),
+            reasoning_chunk("by step"),
+            content_chunk("answer"),
+        ]
+        deltas = []
+        result = list(
+            agent.llm_manager.extract_thinking_from_stream(
+                iter(chunks), deltas.append
+            )
+        )
+        assert deltas == ["step ", "by step"]
+        assert len(result) == 1
+        assert result[0].choices[0].delta.content == "answer"
+
+
+class RecordingThinkingPanel:
+    """Stands in for ``formatter.live_thinking_panel()``'s return value."""
+
+    def __init__(self):
+        self.appended = []
+        self.closed = 0
+
+    def append(self, delta):
+        self.appended.append(delta)
+
+    def close(self):
+        self.closed += 1
+
+
+class TestStreamThinking:
+    def _chunks(self):
+        return [
+            reasoning_chunk("first "),
+            reasoning_chunk("second"),
+            content_chunk("A"),
+            content_chunk("B", finish_reason="stop"),
+        ]
+
+    def test_defaults_to_off(self, agent):
+        assert agent.stream_thinking is False
+
+    def test_panel_callback_receives_thinking_tokens_in_order(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = self._chunks()
+        agent.streaming_on = True
+        agent.print_on = False
+        agent.stream_thinking = True
+        received = []
+
+        result = agent.llm_manager.call(
+            "hi",
+            current_loop=0,
+            streaming_callback=received.append,
+        )
+
+        assert result == "AB"
+        assert received == [
+            ThinkingToken("first "),
+            ThinkingToken("second"),
+            "A",
+            "B",
+        ]
+
+    def test_opted_out_callback_sees_content_only(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = self._chunks()
+        agent.streaming_on = True
+        agent.print_on = False
+        received = []
+
+        result = agent.llm_manager.call(
+            "hi",
+            current_loop=0,
+            streaming_callback=received.append,
+        )
+
+        assert result == "AB"
+        assert received == ["A", "B"]
+
+    def test_detailed_streaming_interleaves_thinking_with_token_info(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = self._chunks()
+        agent.stream = True
+        agent.print_on = False
+        agent.stream_thinking = True
+        received = []
+
+        result = agent.llm_manager.call(
+            "hi", streaming_callback=received.append
+        )
+
+        assert result == "AB"
+        assert received[0] == ThinkingToken("first ")
+        assert received[1] == ThinkingToken("second")
+        assert [t["token"] for t in received[2:]] == ["A", "B"]
+
+    def test_batched_console_panel_gets_the_whole_thinking_text(
+        self, agent, fake_llm, monkeypatch
+    ):
+        fake_llm.stream_return = self._chunks()
+        agent.streaming_on = True
+        agent.print_on = True
+        panels = Mock()
+        monkeypatch.setattr(formatter, "print_thinking_panel", panels)
+
+        agent.llm_manager.call("hi", current_loop=0)
+
+        panels.assert_called_once()
+        assert panels.call_args.args[0] == "first second"
+
+    def test_console_panel_grows_per_delta_when_streaming_thinking(
+        self, agent, fake_llm, monkeypatch
+    ):
+        fake_llm.stream_return = self._chunks()
+        agent.streaming_on = True
+        agent.print_on = True
+        agent.stream_thinking = True
+        live = RecordingThinkingPanel()
+        batched = Mock()
+        monkeypatch.setattr(
+            formatter,
+            "live_thinking_panel",
+            lambda title="Thinking": live,
+        )
+        monkeypatch.setattr(
+            formatter, "print_thinking_panel", batched
+        )
+
+        agent.llm_manager.call("hi", current_loop=0)
+
+        assert live.appended == ["first ", "second"]
+        assert live.closed >= 1
+        batched.assert_not_called()
+
+    def test_no_reasoning_never_opens_a_thinking_panel(
+        self, agent, fake_llm, monkeypatch
+    ):
+        fake_llm.stream_return = [content_chunk("A")]
+        agent.streaming_on = True
+        agent.print_on = False
+        agent.stream_thinking = True
+        opened = Mock(return_value=RecordingThinkingPanel())
+        monkeypatch.setattr(formatter, "live_thinking_panel", opened)
+        received = []
+
+        agent.llm_manager.call(
+            "hi", current_loop=0, streaming_callback=received.append
+        )
+
+        assert received == ["A"]
+        opened.assert_not_called()
+
+    def test_run_stream_yields_thinking_tokens_when_opted_in(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = self._chunks()
+        agent.print_on = False
+        agent._run = lambda task=None, streaming_callback=None, **kwargs: agent.llm_manager.call(
+            task, streaming_callback=streaming_callback
+        )
+
+        received = list(agent.run_stream("hi", stream_thinking=True))
+
+        assert received == [
+            ThinkingToken("first "),
+            ThinkingToken("second"),
+            "A",
+            "B",
+        ]
+        assert agent.stream_thinking is False
+
+    def test_run_stream_default_yields_content_strings_only(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = self._chunks()
+        agent.print_on = False
+        agent._run = lambda task=None, streaming_callback=None, **kwargs: agent.llm_manager.call(
+            task, streaming_callback=streaming_callback
+        )
+
+        assert list(agent.run_stream("hi")) == ["A", "B"]
+
+    def test_arun_stream_yields_thinking_tokens_when_opted_in(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = self._chunks()
+        agent.print_on = False
+        agent._run = lambda task=None, streaming_callback=None, **kwargs: agent.llm_manager.call(
+            task, streaming_callback=streaming_callback
+        )
+
+        async def collect():
+            return [
+                item
+                async for item in agent.arun_stream(
+                    "hi", stream_thinking=True
+                )
+            ]
+
+        assert asyncio.run(collect()) == [
+            ThinkingToken("first "),
+            ThinkingToken("second"),
+            "A",
+            "B",
+        ]
 
 
 ########################################################
