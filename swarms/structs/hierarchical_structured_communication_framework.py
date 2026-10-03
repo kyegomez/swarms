@@ -35,6 +35,7 @@ from rich.table import Table
 from swarms.structs.agent import Agent
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import capture_init, trace_run
 
 # Initialize rich console for enhanced output
 console = Console()
@@ -1082,6 +1083,7 @@ class HierarchicalStructuredCommunicationFramework:
             all_agents.append(self.evaluation_supervisor)
 
         self.agents = all_agents
+        capture_init(self)
 
     def init_swarm(self):
         """Initialize the swarm components"""
@@ -1686,6 +1688,7 @@ Please refine the content to address the feedback while maintaining its core str
             logger.error(f"Error in content refinement: {e}")
             return original_content
 
+    @trace_run("HierarchicalStructuredCommunicationFramework.run")
     def run(self, task: str, img: str = None, *args, **kwargs):
         """
         Run the complete HierarchicalStructuredComm workflow
