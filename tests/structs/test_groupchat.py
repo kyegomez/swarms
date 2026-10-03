@@ -535,3 +535,87 @@ class TestRunsAreIndependent:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-q"])
+
+
+# --------------------------------------------------------------------------
+# before_post / after_post hooks (#2415)
+# --------------------------------------------------------------------------
+
+
+class TestPostHooks:
+    def test_before_post_can_edit_the_reply(self):
+        chat = make_chat(
+            [
+                ScriptedAgent("A", [(0.9, "secret")]),
+                ScriptedAgent("B"),
+            ],
+            before_post=lambda sender, reply: reply.replace(
+                "secret", "[redacted]"
+            ),
+        )
+        chat.run("go")
+        assert contents(chat) == ["go", "[redacted]"]
+
+    def test_dropped_reply_falls_to_the_next_best_bid(self):
+        seen = []
+
+        def block_a(sender, reply):
+            seen.append(sender)
+            return None if sender == "A" else reply
+
+        chat = make_chat(
+            [
+                ScriptedAgent("A", [(0.9, "from A")]),
+                ScriptedAgent("B", [(0.7, "from B")]),
+            ],
+            before_post=block_a,
+        )
+        chat.run("go")
+        assert roles(chat) == ["User", "B"]
+        assert contents(chat) == ["go", "from B"]
+        assert seen == ["A", "B"]
+
+    def test_dropping_every_reply_is_a_lull(self):
+        a = ScriptedAgent("A", [(0.9, "a"), (0.9, "a2")])
+        b = ScriptedAgent("B", [(0.8, "b"), (0.8, "b2")])
+        chat = make_chat([a, b], before_post=lambda s, r: None)
+        chat.run("go")
+        assert roles(chat) == ["User"]
+        assert a.calls == 1 and b.calls == 1
+
+    def test_dropped_bid_below_threshold_is_not_posted(self):
+        chat = make_chat(
+            [
+                ScriptedAgent("A", [(0.9, "from A")]),
+                ScriptedAgent("B", [(0.4, "from B")]),
+            ],
+            threshold=0.5,
+            before_post=lambda s, r: None if s == "A" else r,
+        )
+        chat.run("go")
+        assert roles(chat) == ["User"]
+
+    def test_after_post_sees_each_posted_reply(self):
+        posted = []
+        chat = make_chat(
+            [
+                ScriptedAgent("A", [(0.9, "one")]),
+                ScriptedAgent("B", [(0.0, ""), (0.9, "two")]),
+            ],
+            before_post=lambda s, r: r.upper(),
+            after_post=lambda s, r: posted.append((s, r)),
+        )
+        chat.run("go")
+        assert posted == [("A", "ONE"), ("B", "TWO")]
+        assert contents(chat) == ["go", "ONE", "TWO"]
+
+    def test_no_hooks_leaves_behavior_unchanged(self):
+        chat = make_chat(
+            [
+                ScriptedAgent("A", [(0.9, "from A")]),
+                ScriptedAgent("B", [(0.7, "from B")]),
+            ]
+        )
+        assert chat.before_post is None and chat.after_post is None
+        chat.run("go")
+        assert roles(chat) == ["User", "A"]

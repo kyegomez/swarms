@@ -202,6 +202,10 @@ class GroupChat(SerializableMixin):
         output_type: str = "str-all-except-first",
         verbose: bool = False,
         auto_equip: bool = True,
+        before_post: Optional[
+            Callable[[str, str], Optional[str]]
+        ] = None,
+        after_post: Optional[Callable[[str, str], None]] = None,
     ):
         """Initialize the turn-based groupchat runtime.
 
@@ -229,6 +233,14 @@ class GroupChat(SerializableMixin):
                 so every agent can produce a machine-readable speaking bid.
                 Set to ``False`` if your agents already declare the tool
                 themselves.
+            before_post: Optional ``(sender, reply) -> Optional[str]`` hook
+                called after a speaker is selected and before its reply is
+                posted. Return the reply, edited or not, to post it, or
+                ``None`` to drop it; the turn then falls to the next-best bid
+                that clears ``threshold``, or counts as a lull. Not called for
+                the initial user task.
+            after_post: Optional ``(sender, reply)`` callback invoked after an
+                agent's reply is posted, for logging or moderation.
 
         Raises:
             ValueError: If fewer than two agents are provided.
@@ -244,6 +256,8 @@ class GroupChat(SerializableMixin):
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
+        self.before_post = before_post
+        self.after_post = after_post
 
         self.conversation = Conversation(time_enabled=False)
 
@@ -498,7 +512,20 @@ class GroupChat(SerializableMixin):
         while message_count < self.max_loops:
             bids = await self._collect_bids(last_sender, last_message)
 
-            selection = self._select_speaker(bids, set(recent))
+            candidates = bids
+            selection = self._select_speaker(candidates, set(recent))
+            while selection is not None and self.before_post:
+                agent, score, reply = selection
+                reply = self.before_post(agent.agent_name, reply)
+                if reply is not None:
+                    selection = (agent, score, reply)
+                    break
+                candidates = [
+                    b for b in candidates if b[0] is not agent
+                ]
+                selection = self._select_speaker(
+                    candidates, set(recent)
+                )
             if selection is None:
                 # No reply at all on the first turn is almost never a lull; it is a bad model name or missing key.
                 if message_count == 1 and not any(
@@ -526,6 +553,8 @@ class GroupChat(SerializableMixin):
                 score=score,
                 streaming_callback=streaming_callback,
             )
+            if self.after_post:
+                self.after_post(agent.agent_name, reply)
             recent.append(agent.agent_name)
             last_sender, last_message = agent.agent_name, reply
             message_count += 1
