@@ -19,6 +19,7 @@ from swarms.schemas.agent_errors import (
     AgentLLMError,
     AgentToolExecutionError,
 )
+from swarms.structs.transcript import Transcript
 from swarms.tools.base_tool import BaseTool
 
 load_dotenv()
@@ -1204,6 +1205,189 @@ class TestToolExecutionRetry:
         with pytest.raises(AgentToolExecutionError):
             agent.tool_manager.tool_execution_retry([call], 1)
         assert len(runs) == 3
+
+    def test_only_the_failing_call_is_retried(self):
+        runs = []
+
+        def send_email(to: str) -> str:
+            runs.append("send_email")
+            return "sent"
+
+        def charge_card(amount: int) -> str:
+            runs.append("charge_card")
+            raise RuntimeError("gateway timeout")
+
+        agent = self._agent(attempts=3)
+        agent.print_on = False
+        agent.short_memory = SimpleNamespace(add=lambda **kw: None)
+        agent.tool_struct = BaseTool(tools=[send_email, charge_card])
+        calls = [
+            {
+                "id": "e1",
+                "type": "function",
+                "function": {
+                    "name": "send_email",
+                    "arguments": json.dumps({"to": "a@b.c"}),
+                },
+            },
+            {
+                "id": "c1",
+                "type": "function",
+                "function": {
+                    "name": "charge_card",
+                    "arguments": json.dumps({"amount": 500}),
+                },
+            },
+        ]
+
+        with pytest.raises(AgentToolExecutionError):
+            agent.tool_manager.tool_execution_retry(calls, 1)
+        assert runs.count("send_email") == 1
+        assert runs.count("charge_card") == 3
+
+    def test_mcp_and_local_calls_reach_their_own_executor(self):
+        notes = []
+        mcp_batches = []
+
+        def write_note(text: str) -> str:
+            notes.append(text)
+            return "written"
+
+        def fake_mcp(response, output_type="dict"):
+            mcp_batches.append(
+                [c["function"]["name"] for c in response]
+            )
+            return [{"tool": "lookup", "result": "ok"}]
+
+        with patch.object(
+            ToolManager, "add_mcp_tools_to_memory", return_value=[]
+        ):
+            agent = _patched_agent(
+                "Router",
+                model_name="gpt-5.4",
+                mcp_url="http://localhost:9/mcp",
+                tool_call_summary=False,
+            )
+        agent.tools = [write_note]
+        agent.tool_struct = BaseTool(tools=[write_note])
+        agent.mcp_manager.execute_tool_calls = fake_mcp
+        agent.tool_manager.temp_llm_instance_for_tool_summary = (
+            lambda: SimpleNamespace(run=lambda **kw: "summary")
+        )
+        tool_calls = [
+            SimpleNamespace(
+                id="m1",
+                function=SimpleNamespace(
+                    name="lookup", arguments="{}"
+                ),
+            ),
+            SimpleNamespace(
+                id="w1",
+                function=SimpleNamespace(
+                    name="write_note",
+                    arguments=json.dumps({"text": "hi"}),
+                ),
+            ),
+        ]
+        response = SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(tool_calls=tool_calls)
+                )
+            ]
+        )
+        llm = litellm_wrapper.LiteLLM(
+            model_name="gpt-5.4", mcp_call=True
+        )
+        agent.call_llm = lambda *a, **kw: llm.output_for_tools(
+            response
+        )
+
+        agent.run("go")
+        assert notes == ["hi"]
+        assert mcp_batches == [["lookup"]]
+
+    @staticmethod
+    def _tool_agent(tools, attempts=1):
+        agent = TestToolExecutionRetry._agent(attempts=attempts)
+        agent.tools = tools
+        agent.tool_struct = BaseTool(tools=tools)
+        agent.tool_loader = None
+        agent.print_on = False
+        agent.tool_call_summary = False
+        agent.short_memory = SimpleNamespace(add=lambda **kw: None)
+        return agent
+
+    def test_a_call_with_no_output_gets_no_other_calls_result(self):
+        def note(text: str) -> str:
+            return "noted"
+
+        def search(query: str) -> str:
+            return "found"
+
+        agent = self._tool_agent([note, search])
+        calls = [
+            {
+                "id": "n1",
+                "type": "function",
+                "function": {
+                    "name": "note",
+                    "arguments": json.dumps({"text": "hi"}),
+                },
+            },
+            {
+                "id": "s1",
+                "function": {
+                    "name": "search",
+                    "arguments": json.dumps({"query": "q"}),
+                },
+            },
+        ]
+        transcript = Transcript()
+        results = {}
+        agent.tool_manager.handle_tool_calls(
+            calls,
+            1,
+            transcript=transcript,
+            turn_calls=transcript.record_assistant(calls),
+            turn_results=results,
+        )
+        assert results == {"n1": "Function 'note' result:\nnoted"}
+
+    def test_a_failed_call_keeps_the_other_results(self):
+        def send_email(to: str) -> str:
+            return "sent"
+
+        def charge_card(amount: int) -> str:
+            raise RuntimeError("gateway timeout")
+
+        agent = self._tool_agent([send_email, charge_card])
+        calls = [
+            {
+                "id": "e1",
+                "type": "function",
+                "function": {
+                    "name": "send_email",
+                    "arguments": json.dumps({"to": "a@b.c"}),
+                },
+            },
+            {
+                "id": "c1",
+                "type": "function",
+                "function": {
+                    "name": "charge_card",
+                    "arguments": json.dumps({"amount": 500}),
+                },
+            },
+        ]
+        results = {}
+        with pytest.raises(AgentToolExecutionError):
+            agent.tool_manager.handle_tool_calls(
+                calls, 1, turn_results=results
+            )
+        assert results["e1"] == "Function 'send_email' result:\nsent"
+        assert results["c1"].startswith("Tool execution failed")
+        assert "gateway timeout" in results["c1"]
 
     def test_none_response_does_not_execute_or_raise(self):
         agent = self._agent()
