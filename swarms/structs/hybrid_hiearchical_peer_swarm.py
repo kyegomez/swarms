@@ -97,7 +97,6 @@ class HybridHierarchicalClusterSwarm:
         swarms (List[SwarmRouter]): A list of available swarm routers.
         max_loops (int): The maximum number of loops for task processing.
         output_type (str): The format of the output (e.g., list).
-        conversation (Conversation): An instance of the Conversation class to manage interactions.
         router_agent (Agent): An instance of the Agent class responsible for routing tasks.
     """
 
@@ -117,8 +116,6 @@ class HybridHierarchicalClusterSwarm:
         self.swarms = swarms
         self.max_loops = max_loops
         self.output_type = output_type
-
-        self.conversation = Conversation()
 
         self.router_agent = Agent(
             agent_name="Router Agent",
@@ -146,7 +143,8 @@ class HybridHierarchicalClusterSwarm:
         if not task:
             raise ValueError("Task cannot be empty.")
 
-        self.conversation.add(role="User", content=task)
+        conversation = Conversation()
+        conversation.add(role="User", content=task)
 
         response = self.router_agent.run(task=task)
 
@@ -167,10 +165,10 @@ class HybridHierarchicalClusterSwarm:
                 f"Please check the response format from the model: {self.router_agent.model_name}."
             )
 
-        self.route_task(swarm_name, task_description)
+        self.route_task(swarm_name, task_description, conversation)
 
         return history_output_formatter(
-            self.conversation, self.output_type
+            conversation, self.output_type
         )
 
     def find_swarm_by_name(self, swarm_name: str):
@@ -188,13 +186,19 @@ class HybridHierarchicalClusterSwarm:
                 return swarm
         return None
 
-    def route_task(self, swarm_name: str, task_description: str):
+    def route_task(
+        self,
+        swarm_name: str,
+        task_description: str,
+        conversation: Conversation,
+    ):
         """
         Routes the task to the specified swarm.
 
         Args:
             swarm_name (str): The name of the swarm to route the task to.
             task_description (str): The description of the task to be executed.
+            conversation (Conversation): The conversation to record the output in.
 
         Raises:
             ValueError: If the swarm is not found.
@@ -203,7 +207,7 @@ class HybridHierarchicalClusterSwarm:
 
         if swarm:
             output = swarm.run(task_description)
-            self.conversation.add(role=swarm.name, content=output)
+            conversation.add(role=swarm.name, content=output)
         else:
             raise ValueError(f"Swarm '{swarm_name}' not found.")
 

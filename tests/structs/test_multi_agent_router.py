@@ -1,3 +1,4 @@
+import json
 import os
 
 import time
@@ -6,6 +7,7 @@ import pytest
 
 from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.conversation import Conversation
 
 
 def _minimal_agents():
@@ -462,7 +464,9 @@ def test_skip_null_tasks_actually_skips_on_the_single_path():
     router, ran = _local_router()
 
     router.handle_single_handoff(
-        {"handoffs": [{"agent_name": "A1", "task": None}]}, ""
+        {"handoffs": [{"agent_name": "A1", "task": None}]},
+        "",
+        Conversation(),
     )
 
     assert ran == [], f"the agent ran despite a null task: {ran}"
@@ -473,7 +477,9 @@ def test_a_handoff_without_a_task_key_falls_back_to_the_original():
     router, ran = _local_router()
 
     router.handle_single_handoff(
-        {"handoffs": [{"agent_name": "A1"}]}, "the original task"
+        {"handoffs": [{"agent_name": "A1"}]},
+        "the original task",
+        Conversation(),
     )
 
     assert ran == [("A1", "the original task")]
@@ -485,6 +491,7 @@ def test_multiple_handoffs_without_a_task_key_fall_back():
     router.handle_multiple_handoffs(
         {"handoffs": [{"agent_name": "A1"}, {"agent_name": "A2"}]},
         "the original task",
+        Conversation(),
     )
 
     assert [task for _, task in ran] == [
@@ -503,7 +510,7 @@ def test_selected_agents_run_concurrently():
     }
 
     started = time.time()
-    router.handle_multiple_handoffs(handoffs, "x")
+    router.handle_multiple_handoffs(handoffs, "x", Conversation())
     elapsed = time.time() - started
 
     assert len(ran) == 3
@@ -524,6 +531,7 @@ def test_an_unknown_agent_raises_before_any_agent_runs():
                 ]
             },
             "x",
+            Conversation(),
         )
 
     assert ran == [], f"an agent ran before validation failed: {ran}"
@@ -548,3 +556,28 @@ def test_concurrent_batch_run_returns_results_in_input_order():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_concurrent_batch_run_keeps_each_task_history_separate():
+    router, ran = _local_router(agents=["A1"], delay=0.05)
+
+    class Boss:
+        def run(self, task):
+            return json.dumps(
+                {"handoffs": [{"agent_name": "A1", "task": task}]}
+            )
+
+    router.function_caller = Boss()
+    router.print_on = False
+    router.output_type = "str"
+
+    tasks = ["alpha", "beta", "gamma"]
+    results = router.concurrent_batch_run(tasks)
+
+    assert len(results) == 3
+    for task, result in zip(tasks, results):
+        assert task in result
+        for other in set(tasks) - {task}:
+            assert (
+                other not in result
+            ), f"{task!r} history leaked {other!r}: {result!r}"
