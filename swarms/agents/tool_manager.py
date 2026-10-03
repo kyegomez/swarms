@@ -778,7 +778,10 @@ class ToolManager:
         self, response: Any, current_loop: Optional[int] = 0
     ) -> None:
         """
-        Execute the MCP tool calls in a response and record a summary.
+        Execute the MCP tool calls in a response and record the result.
+
+        A model-written summary follows the result only when
+        ``agent.tool_call_summary`` is True, as for local tools.
 
         Args:
             response: The model response holding MCP tool calls.
@@ -808,6 +811,9 @@ class ToolManager:
                     style="green",
                 )
             agent.short_memory.add(role="Tool Executor", content=text)
+
+            if agent.tool_call_summary is not True:
+                return
 
             try:
                 summary = (
