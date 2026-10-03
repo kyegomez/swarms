@@ -1352,6 +1352,42 @@ def test_construction_does_not_create_a_conversations_dir(tmp_path):
         os.chdir(cwd)
 
 
+class _WatchedMessage(dict):
+    def __init__(self, message, reads):
+        super().__init__(message)
+        self._reads = reads
+
+    def __getitem__(self, key):
+        self._reads.append(key)
+        return super().__getitem__(key)
+
+
+def test_history_string_does_not_re_render_earlier_messages():
+    conv = Conversation(dynamic_context_window=False)
+    conv.add("User", "first")
+    assert "first" in conv.get_str()
+
+    reads = []
+    conv.conversation_history[0] = _WatchedMessage(
+        conv.conversation_history[0], reads
+    )
+
+    conv.add("Assistant", "second")
+    text = conv.get_str()
+
+    assert reads == []
+    assert "User: first" in text
+    assert "Assistant: second" in text
+
+    conv.update(0, "User", "edited")
+    edited = conv.get_str()
+    assert "edited" in edited
+    assert "first" not in edited
+
+    conv.delete(0)
+    assert "edited" not in conv.get_str()
+
+
 def test_construction_does_not_touch_the_home_dir(
     tmp_path, monkeypatch
 ):
