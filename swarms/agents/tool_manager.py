@@ -1,13 +1,3 @@
-"""
-Tool handling for an Agent.
-
-ToolManager owns what an agent does with tools: building tool schemas,
-executing the model's tool calls (local callables, MCP servers, handoffs and
-tool search), retrying failed executions, and printing tool activity. The
-agent keeps its tool state (tools, tool_struct, tools_list_dictionary,
-tool_loader); the manager reads and writes it through self.agent.
-"""
-
 import json
 import time
 import traceback
