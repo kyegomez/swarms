@@ -184,7 +184,7 @@ class ModelRouter:
         self,
         system_prompt: str = model_router_system_prompt,
         max_tokens: int = 4000,
-        temperature: float = 0.5,
+        temperature: Optional[float] = None,
         max_workers: int = 10,
         api_key: str = None,
         max_loops: int = 1,

@@ -54,7 +54,7 @@ class TestInit:
     def test_default_values(self):
         cc = ContextCompressor()
         assert cc.threshold == 0.9
-        assert cc.summarizer_temperature == 0.2
+        assert cc.summarizer_temperature is None
         assert cc.summarizer_max_tokens == 4000
         assert cc.summarizer_model is None
 
