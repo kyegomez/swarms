@@ -53,7 +53,7 @@ swarms/
 │   │   ├── graph_workflow.py
 │   │   ├── swarm_router.py      # Single-entry-point router
 │   │   ├── mixture_of_agents.py
-│   │   ├── hiearchical_swarm.py
+│   │   ├── hierarchical_swarm.py
 │   │   ├── groupchat.py
 │   │   ├── majority_voting.py
 │   │   ├── council_as_judge.py

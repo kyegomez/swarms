@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 
 # Swarm imports
 from swarms.structs.agent import Agent
-from swarms.structs.hiearchical_swarm import (
+from swarms.structs.hierarchical_swarm import (
     HierarchicalSwarm,
     SwarmSpec,
 )
