@@ -1410,6 +1410,31 @@ class TestIterationLimitsAreConfigurable:
 
         assert len(calls) == 2
 
+    def test_the_total_budget_counts_llm_calls_not_subtasks(
+        self, monkeypatch
+    ):
+        """
+        max_subtask_iterations is documented as the run's worst-case number
+        of LLM calls. It used to be incremented once per subtask selection,
+        so the real ceiling was that many times max_subtask_loops. One
+        planning call and one summary call bracket the execution budget.
+        """
+        agent = build_agent(
+            max_subtask_iterations=3, max_subtask_loops=20
+        )
+        turn = {"n": 0}
+
+        def never_finishes(task=None, *args, **kwargs):
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return plan(("s1", []), ("s2", []), ("s3", []))
+            return "no action taken"
+
+        monkeypatch.setattr(agent, "call_llm", never_finishes)
+        agent.run("demo")
+
+        assert turn["n"] == agent.max_subtask_iterations + 2
+
     @pytest.mark.parametrize(
         "name",
         [
