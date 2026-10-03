@@ -6,6 +6,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.omni_agent_types import AgentType
+from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="agent_router")
@@ -45,6 +46,8 @@ class AgentRouter:
         # Add agents if provided during initialization
         if agents:
             self.add_agents(agents)
+
+        capture_init(self)
 
     def _generate_embedding(self, text: str) -> List[float]:
         """
@@ -264,6 +267,7 @@ class AgentRouter:
             logger.error(f"Error finding best agent: {str(e)}")
             raise
 
+    @trace_run("AgentRouter.run")
     def run(self, task: str) -> Optional[AgentType]:
         """
         Run the agent router on a given task.
