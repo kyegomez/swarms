@@ -1390,6 +1390,116 @@ class TestTextReplyFromAToolAgent:
         assert history[-1]["content"] == "SUMMARY"
 
 
+class TestListTools:
+    """#2426: Agent.list_tools names every tool the agent can call."""
+
+    @staticmethod
+    def _weather(city: str) -> str:
+        """Get the weather.
+
+        Args:
+            city: The city.
+        """
+        return "sunny"
+
+    @staticmethod
+    def _agent(**kwargs):
+        kwargs.setdefault("max_loops", 1)
+        return Agent(
+            agent_name="ListToolsAgent",
+            model_name="gpt-5.4",
+            print_on=False,
+            **kwargs,
+        )
+
+    @staticmethod
+    def _mcp_agent(get_tools, **kwargs):
+        agent = TestListTools._agent(
+            mcp_url="http://localhost:9/mcp", llm=object(), **kwargs
+        )
+        agent.mcp_manager.get_tools = get_tools
+        return agent
+
+    @staticmethod
+    def _stock_schemas(*args, **kwargs):
+        return [
+            {"type": "function", "function": {"name": "lookup_stock"}}
+        ]
+
+    def test_local_tools_only(self):
+        agent = self._agent(
+            tools=[self._weather], dynamic_tools=False
+        )
+        assert agent.list_tools() == ["_weather"]
+
+    def test_mcp_tools_only(self):
+        agent = self._mcp_agent(
+            self._stock_schemas, dynamic_tools=False
+        )
+        assert agent.list_tools() == ["lookup_stock"]
+
+    def test_local_tools_come_before_mcp_tools(self):
+        agent = self._mcp_agent(
+            self._stock_schemas,
+            tools=[self._weather],
+            dynamic_tools=False,
+        )
+        assert agent.list_tools() == ["_weather", "lookup_stock"]
+
+    def test_handoffs_add_handoff_task_last(self):
+        agent = self._agent(
+            tools=[self._weather],
+            dynamic_tools=False,
+            handoffs=[self._agent()],
+        )
+        assert agent.list_tools() == ["_weather", "handoff_task"]
+
+    def test_dynamic_tools_include_deferred_tools_and_tool_search(
+        self,
+    ):
+        agent = self._agent(tools=[self._weather], dynamic_tools=True)
+        assert agent.tool_loader.deferred_names == ["_weather"]
+        assert agent.list_tools() == ["_weather", "tool_search"]
+
+    def test_autonomous_loop_tools_follow_local_tools(self):
+        from swarms.structs.autonomous_loop_utils import (
+            get_autonomous_loop_tool_names,
+        )
+
+        agent = self._agent(
+            tools=[self._weather],
+            dynamic_tools=False,
+            max_loops="auto",
+        )
+        loop_tools = [
+            name
+            for name in get_autonomous_loop_tool_names()
+            if name != "think"
+        ]
+        assert agent.list_tools() == ["_weather", *loop_tools]
+
+    def test_an_unreachable_mcp_server_leaves_the_other_names(self):
+        def unreachable(*args, **kwargs):
+            raise ConnectionError("server down")
+
+        agent = self._mcp_agent(
+            unreachable, tools=[self._weather], dynamic_tools=False
+        )
+        assert agent.list_tools() == ["_weather"]
+
+    def test_mcp_tools_are_fetched_once(self):
+        calls = []
+
+        def get_tools(*args, **kwargs):
+            calls.append(1)
+            return self._stock_schemas()
+
+        agent = self._mcp_agent(get_tools, dynamic_tools=False)
+        agent.list_tools()
+        agent.list_tools()
+        assert len(calls) == 1
+
+
 class TestConcurrentExecutionPool:
     """#1793: both concurrent entry points referenced self.executor, which
     __init__ never assigned — run_concurrent_tasks swallowed the AttributeError
