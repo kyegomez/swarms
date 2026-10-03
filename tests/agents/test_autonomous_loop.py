@@ -1398,17 +1398,28 @@ class TestIterationLimitsAreConfigurable:
     def test_the_planning_budget_bounds_planning_retries(
         self, monkeypatch
     ):
-        agent = build_agent(max_planning_attempts=2)
-        calls = script_llm(
-            agent,
-            monkeypatch,
-            ["not a plan", "still not a plan", "nor this one"],
+        agent = build_agent(
+            max_planning_attempts=2,
+            max_subtask_loops=1,
+            max_subtask_iterations=1,
         )
+        planning_calls = []
 
-        with pytest.raises(Exception):
-            agent.run("demo")
+        def never_plans(task=None, *args, **kwargs):
+            if not agent.plan_created:
+                planning_calls.append(task)
+            return "not a plan"
 
-        assert len(calls) == 2
+        monkeypatch.setattr(agent, "call_llm", never_plans)
+
+        agent.run("demo")
+
+        assert len(planning_calls) == 2
+        assert [
+            subtask["step_id"]
+            for subtask in agent.autonomous_subtasks
+        ] == ["task"]
+        assert agent.autonomous_subtasks[0]["description"] == "demo"
 
     @pytest.mark.parametrize(
         "name",
