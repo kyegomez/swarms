@@ -141,7 +141,7 @@ class ToolManager:
 
     def tool_handling(self) -> None:
         """
-        Add the agent's callable tools to its schema list and memory.
+        Add the agent's callable tools to its schema list.
         """
         agent = self.agent
         if agent.tools_list_dictionary is None:
@@ -161,10 +161,6 @@ class ToolManager:
             if name not in seen:
                 seen.add(name)
                 agent.tools_list_dictionary.append(schema)
-
-        agent.short_memory.add(
-            role=agent.agent_name, content=agent.tools_list_dictionary
-        )
 
     def get_agent_registry(self) -> Dict[str, Any]:
         """
