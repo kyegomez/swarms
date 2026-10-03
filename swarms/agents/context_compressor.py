@@ -52,7 +52,7 @@ class ContextCompressor:
         self,
         threshold: float = 0.9,
         summarizer_model: Optional[str] = None,
-        summarizer_temperature: float = 0.2,
+        summarizer_temperature: Optional[float] = None,
         summarizer_max_tokens: int = 4000,
     ):
         """
