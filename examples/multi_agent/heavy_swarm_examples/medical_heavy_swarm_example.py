@@ -15,7 +15,7 @@ def main():
         worker_model_name="claude-sonnet-4-20250514",
         show_dashboard=True,
         question_agent_model_name="gpt-5.4",
-        loops_per_agent=1,
+        max_loops=1,
     )
 
     prompt = (
