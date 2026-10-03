@@ -792,6 +792,35 @@ class TestToolExecution:
         )
         assert results[0]["result"] == "42"
 
+    def test_session_reused_across_turns(
+        self, open_manager, monkeypatch
+    ):
+        open_manager.get_tools()
+        opened = []
+        original = MCPManager._session
+
+        def counting(self, connection):
+            opened.append(connection)
+            return original(self, connection)
+
+        monkeypatch.setattr(MCPManager, "_session", counting)
+        call = [
+            {
+                "function": {
+                    "name": "add",
+                    "arguments": '{"a": 1, "b": 2}',
+                }
+            }
+        ]
+        for _ in range(2):
+            assert (
+                open_manager.execute_tool_calls(call)[0]["result"]
+                == "3"
+            )
+
+        assert len(opened) == 1
+        open_manager.close()
+
     def test_calls_routed_to_owning_server(
         self, open_server, second_open_server
     ):

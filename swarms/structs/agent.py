@@ -2775,6 +2775,9 @@ Subtask Breakdown:
             )
             raise KeyboardInterrupt
 
+        finally:
+            self.mcp_manager.close()
+
     def run_stream(
         self,
         task: str,
