@@ -383,7 +383,7 @@ class Agent:
         top_p: Optional[float] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
-        tool_call_summary: bool = True,
+        tool_call_summary: bool = False,
         tool_retry_attempts: int = 3,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,

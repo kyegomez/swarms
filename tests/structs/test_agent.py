@@ -1377,7 +1377,9 @@ class TestTextReplyFromAToolAgent:
                 "arguments": '{"ticker": "X"}',
             },
         }
-        agent = self._agent([tool_call], summary_calls)
+        agent = self._agent(
+            [tool_call], summary_calls, tool_call_summary=True
+        )
 
         agent.run("price of X")
 
@@ -1388,6 +1390,26 @@ class TestTextReplyFromAToolAgent:
         assert len(executor) == 1 and "100" in executor[0]["content"]
         assert len(summary_calls) == 1
         assert history[-1]["content"] == "SUMMARY"
+
+    def test_a_tool_turn_makes_no_summary_call_by_default(self):
+        summary_calls = []
+        tool_call = {
+            "type": "function",
+            "id": "call-1",
+            "function": {
+                "name": "_price",
+                "arguments": '{"ticker": "X"}',
+            },
+        }
+        agent = self._agent([tool_call], summary_calls)
+
+        agent.run("price of X")
+
+        history = agent.short_memory.conversation_history
+        assert agent.tool_call_summary is False
+        assert summary_calls == []
+        assert history[-1]["role"] == "Tool Executor"
+        assert "100" in history[-1]["content"]
 
 
 class TestConcurrentExecutionPool:
@@ -1701,7 +1723,9 @@ class TestAgentUsage:
                 return response
             return self._response(100 * n, n)
 
-        agent = self._agent(tools=[add], dynamic_tools=False)
+        agent = self._agent(
+            tools=[add], dynamic_tools=False, tool_call_summary=True
+        )
         agent.max_loops = 3
         with patch(
             "swarms.utils.litellm_wrapper.completion",
