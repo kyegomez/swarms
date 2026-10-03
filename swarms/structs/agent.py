@@ -68,12 +68,14 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
+    get_autonomous_planning_tools,
     get_summary_prompt,
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.transcript import Transcript
 from swarms.tools.dynamic_tool_loader import (
+    SEARCH_TOOL_NAME,
     DynamicToolLoader,
 )
 from swarms.structs.safe_loading import (
@@ -819,6 +821,61 @@ class Agent:
         """
         manager = getattr(self, "mcp_manager", None)
         return manager is not None and manager.enabled
+
+    def list_tools(self) -> List[str]:
+        """
+        Names of every tool this agent can call.
+
+        Local tools come first, then MCP tools, then built-ins. Tools
+        deferred behind ``tool_search`` are included, since the agent can
+        load and call them. MCP names come from the MCP manager's cache, so
+        repeated calls do not reconnect.
+
+        Returns:
+            List[str]: Tool names from tools=, tools_list_dictionary=, MCP
+            servers, handoffs, tool search and the autonomous loop.
+        """
+        builtins = []
+        if exists(self.handoffs):
+            builtins.append("handoff_task")
+        if self.tool_loader is not None:
+            builtins.append(SEARCH_TOOL_NAME)
+        if self.max_loops == "auto":
+            # Same filters the autonomous loop applies to its planning tools.
+            for schema in get_autonomous_planning_tools():
+                name = schema["function"]["name"]
+                if name == "think" and not self.think_tool:
+                    continue
+                if self.selected_tools not in (
+                    "all",
+                    None,
+                ) and (name not in self.selected_tools):
+                    continue
+                builtins.append(name)
+
+        mcp_names = []
+        if self.mcp_enabled:
+            try:
+                mcp_names = self.mcp_manager.list_tool_names()
+            except Exception as error:
+                logger.error(
+                    f"Could not list MCP tools for {self.agent_name}: {error}"
+                )
+
+        local = [
+            schema.get("function", {}).get("name")
+            for schema in self.tools_list_dictionary or []
+            if isinstance(schema, dict)
+        ]
+        if self.tool_loader is not None:
+            local += (
+                self.tool_loader.loaded_names
+                + self.tool_loader.deferred_names
+            )
+        skip = set(mcp_names) | set(builtins)
+        local = [name for name in local if name and name not in skip]
+
+        return list(dict.fromkeys(local + mcp_names + builtins))
 
     def _load_prompt_from_marketplace(self) -> None:
         """
