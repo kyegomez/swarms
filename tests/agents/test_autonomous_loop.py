@@ -1298,10 +1298,6 @@ class TestEditFileTool:
         assert "replace_all" in schema["parameters"]["properties"]
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-q", "-p", "no:randomly"])
-
-
 # --------------------------------------------------------------------------
 # #1983 — glob tool
 # --------------------------------------------------------------------------
@@ -1559,3 +1555,7 @@ class TestRunStreamUsesTheAutonomousLoop:
 
         assert len(calls) == 3
         assert status_of(agent, "step1") == "completed"
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-q", "-p", "no:randomly"])
