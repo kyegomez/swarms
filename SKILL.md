@@ -81,7 +81,7 @@ result = agent.run("Summarize the state of the semiconductor market.")
 | `mode` | `str` | `"standard"` | `"standard"`, `"fast"`, `"interactive"` |
 | `fallback_models` | `list[str]` | `None` | Models to try if the primary fails |
 
-**`output_type` options**: `"str"`, `"list"`, `"dict"`, `"json"`, `"yaml"`, `"xml"`, `"final"`, `"last"`, `"all"`, `"basemodel"`, `"str-all-except-first"`, `"dict-all-except-first"`, `"dict-final"`, `"list-final"`.
+**`output_type` options**: `"str"`, `"list"`, `"dict"`, `"json"`, `"yaml"`, `"final"`, `"last"`, `"all"`, `"basemodel"`, `"str-all-except-first"`, `"dict-all-except-first"`, `"dict-final"`, `"list-final"`.
 
 ### Running
 

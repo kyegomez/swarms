@@ -13,8 +13,13 @@ from dotenv import load_dotenv
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
+from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.schemas.agent_errors import (
+    AgentLLMError,
+    AgentToolExecutionError,
+)
+from swarms.tools.base_tool import BaseTool
 
 load_dotenv()
 
@@ -42,7 +47,7 @@ def _patched_agent(name, **kwargs):
     """An Agent with the model client stubbed, so __init__ makes no calls."""
     # setdefault, not a keyword: callers override max_loops (notably "auto").
     kwargs.setdefault("max_loops", 1)
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         return Agent(
             agent_name=name,
             print_on=False,
@@ -490,7 +495,7 @@ class TestAgentToolUsage:
                 max_loops=1,
                 **kwargs,
             )
-            tools = agent.add_mcp_tools_to_memory()
+            tools = agent.tool_manager.add_mcp_tools_to_memory()
 
         assert len(tools) == len(names)
         assert get_tools.called
@@ -1103,6 +1108,7 @@ class TestToolExecutionRetry:
         agent = Agent.__new__(Agent)
         agent.agent_name = name
         agent.tool_retry_attempts = attempts
+        agent.tool_manager = ToolManager(agent)
         return agent
 
     @pytest.mark.parametrize("attempts", [3, 5])
@@ -1114,9 +1120,11 @@ class TestToolExecutionRetry:
             calls.append(loop_count)
             raise RuntimeError("simulated tool failure")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
 
         # The regression: this was 1 regardless of tool_retry_attempts.
         assert len(calls) == attempts
@@ -1129,9 +1137,11 @@ class TestToolExecutionRetry:
         def failing(response, loop_count):
             raise RuntimeError("simulated tool failure")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError) as excinfo:
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
 
         # The underlying error is chained, not discarded.
         assert isinstance(excinfo.value.__cause__, RuntimeError)
@@ -1150,9 +1160,11 @@ class TestToolExecutionRetry:
             calls.append(1)
             raise ValueError("a tool's own error type")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
         assert len(calls) == 2
 
     def test_stops_retrying_once_a_attempt_succeeds(self):
@@ -1164,18 +1176,43 @@ class TestToolExecutionRetry:
             if len(calls) < 3:
                 raise RuntimeError("transient")
 
-        agent.execute_tools = flaky
-        Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+        agent.tool_manager.execute_tools = flaky
+        agent.tool_manager.tool_execution_retry([{"function": {}}], 1)
 
         # Third attempt succeeded, so the fourth must not run.
         assert len(calls) == 3
 
+    def test_a_failing_tool_runs_once_per_attempt(self):
+        runs = []
+
+        def charge_card(amount: int) -> str:
+            runs.append(amount)
+            raise RuntimeError("gateway timeout")
+
+        agent = self._agent(attempts=3)
+        agent.print_on = False
+        agent.tool_struct = BaseTool(tools=[charge_card])
+        call = {
+            "id": "c1",
+            "type": "function",
+            "function": {
+                "name": "charge_card",
+                "arguments": json.dumps({"amount": 500}),
+            },
+        }
+
+        with pytest.raises(AgentToolExecutionError):
+            agent.tool_manager.tool_execution_retry([call], 1)
+        assert len(runs) == 3
+
     def test_none_response_does_not_execute_or_raise(self):
         agent = self._agent()
         called = []
-        agent.execute_tools = lambda **kw: called.append(1)
+        agent.tool_manager.execute_tools = lambda **kw: called.append(
+            1
+        )
 
-        Agent.tool_execution_retry(agent, None, 1)
+        agent.tool_manager.tool_execution_retry(None, 1)
         assert called == []
 
     def test_a_zero_or_none_attempt_count_still_runs_once(self):
@@ -1185,13 +1222,44 @@ class TestToolExecutionRetry:
         for attempts in (0, None):
             agent = self._agent(attempts=attempts)
             calls = []
-            agent.execute_tools = (
+            agent.tool_manager.execute_tools = (
                 lambda response, loop_count: calls.append(1)
             )
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
             assert (
                 len(calls) == 1
             ), f"attempts={attempts!r} should still run once"
+
+
+class TestInteractiveFollowUp:
+    def test_follow_up_input_reaches_the_next_request(self):
+        agent = _patched_agent(
+            "InteractiveAgent",
+            model_name="gpt-5.4",
+            max_loops=2,
+            interactive=True,
+        )
+        requests = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            requests.append(list(kwargs["messages"]))
+            return "ok"
+
+        agent.call_llm = fake_call_llm
+        replies = iter(["What is the capital of Peru?", "exit"])
+        with patch(
+            "swarms.structs.agent.formatter.console.input",
+            lambda *a, **k: next(replies),
+        ):
+            agent.run("Name a prime number.")
+
+        assert len(requests) == 2
+        assert requests[1][-1] == {
+            "role": "user",
+            "content": "What is the capital of Peru?",
+        }
 
 
 class TestToolFailureIsNotAnLLMError:
@@ -1239,6 +1307,109 @@ class TestToolFailureIsNotAnLLMError:
         assert (
             len(llm_calls) == 1
         ), f"a tool failure re-ran the model {len(llm_calls)} times"
+
+
+class TestTextReplyFromAToolAgent:
+    """A tool-carrying agent that answers in plain text made no tool call,
+    yet execute_tools recorded "[] (empty list)" after the answer and, with
+    tool_call_summary on, summarised it under the agent's own name. The
+    answer was no longer the final message, so structures recording
+    agent_answer() and output_type="final" both lost it.
+    """
+
+    @staticmethod
+    def _price(ticker: str) -> str:
+        """Look up a price.
+
+        Args:
+            ticker: The ticker symbol.
+        """
+        return "100"
+
+    def _agent(self, reply, summary_calls, **kwargs):
+        agent = _patched_agent(
+            "ToolAgent",
+            model_name="gpt-5.4",
+            dynamic_tools=False,
+            tools=[self._price],
+            **kwargs,
+        )
+        agent.call_llm = lambda task=None, *a, **k: reply
+        agent.tool_manager.temp_llm_instance_for_tool_summary = (
+            lambda: SimpleNamespace(
+                run=lambda prompt: summary_calls.append(prompt)
+                or "SUMMARY"
+            )
+        )
+        return agent
+
+    @pytest.mark.parametrize("tool_call_summary", [True, False])
+    def test_a_text_reply_stays_the_final_message(
+        self, tool_call_summary
+    ):
+        from swarms.structs.context_utils import agent_answer
+
+        summary_calls = []
+        agent = self._agent(
+            "The answer is 42.",
+            summary_calls,
+            tool_call_summary=tool_call_summary,
+            output_type="final",
+        )
+
+        result = agent.run("What is 6*7?")
+
+        roles = [
+            m["role"] for m in agent.short_memory.conversation_history
+        ]
+        assert "Tool Executor" not in roles
+        assert summary_calls == []
+        assert agent_answer(agent) == "The answer is 42."
+        assert result == "The answer is 42."
+
+    def test_a_real_tool_call_is_still_recorded_and_summarised(self):
+        summary_calls = []
+        tool_call = {
+            "type": "function",
+            "id": "call-1",
+            "function": {
+                "name": "_price",
+                "arguments": '{"ticker": "X"}',
+            },
+        }
+        agent = self._agent(
+            [tool_call], summary_calls, tool_call_summary=True
+        )
+
+        agent.run("price of X")
+
+        history = agent.short_memory.conversation_history
+        executor = [
+            m for m in history if m["role"] == "Tool Executor"
+        ]
+        assert len(executor) == 1 and "100" in executor[0]["content"]
+        assert len(summary_calls) == 1
+        assert history[-1]["content"] == "SUMMARY"
+
+    def test_a_tool_turn_makes_no_summary_call_by_default(self):
+        summary_calls = []
+        tool_call = {
+            "type": "function",
+            "id": "call-1",
+            "function": {
+                "name": "_price",
+                "arguments": '{"ticker": "X"}',
+            },
+        }
+        agent = self._agent([tool_call], summary_calls)
+
+        agent.run("price of X")
+
+        history = agent.short_memory.conversation_history
+        assert agent.tool_call_summary is False
+        assert summary_calls == []
+        assert history[-1]["role"] == "Tool Executor"
+        assert "100" in history[-1]["content"]
 
 
 class TestConcurrentExecutionPool:
@@ -1471,6 +1642,7 @@ class TestAgentUsage:
             "input_tokens": 0,
             "output_tokens": 0,
             "cached_tokens": 0,
+            "reasoning_tokens": 0,
             "total_tokens": 0,
         }
         usage["input_tokens"] = 999
@@ -1488,6 +1660,7 @@ class TestAgentUsage:
             "input_tokens": 120,
             "output_tokens": 30,
             "cached_tokens": 100,
+            "reasoning_tokens": 0,
             "total_tokens": 150,
         }
 
@@ -1550,7 +1723,9 @@ class TestAgentUsage:
                 return response
             return self._response(100 * n, n)
 
-        agent = self._agent(tools=[add], dynamic_tools=False)
+        agent = self._agent(
+            tools=[add], dynamic_tools=False, tool_call_summary=True
+        )
         agent.max_loops = 3
         with patch(
             "swarms.utils.litellm_wrapper.completion",
@@ -1564,5 +1739,288 @@ class TestAgentUsage:
             "input_tokens": sum(100 * i for i in range(1, 7)),
             "output_tokens": sum(range(1, 7)),
             "cached_tokens": 0,
+            "reasoning_tokens": 0,
             "total_tokens": sum(100 * i + i for i in range(1, 7)),
         }
+
+    def test_a_streaming_run_is_counted_from_the_final_chunk(self):
+        """Streaming usage arrives in a trailing usage-only chunk; the
+        agent's streaming consumer must drain it into agent.usage."""
+        from types import SimpleNamespace
+
+        def chunk(text):
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        delta=SimpleNamespace(content=text)
+                    )
+                ],
+                usage=None,
+            )
+
+        usage_chunk = SimpleNamespace(
+            choices=[],
+            usage=SimpleNamespace(
+                prompt_tokens=40,
+                completion_tokens=7,
+                total_tokens=47,
+                prompt_tokens_details=None,
+            ),
+        )
+
+        agent = self._agent(streaming_on=True)
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=iter(
+                [
+                    chunk("SMH "),
+                    chunk("vs "),
+                    chunk("SOXX"),
+                    usage_chunk,
+                ]
+            ),
+        ) as fake:
+            agent.run("Compare them.")
+
+        assert fake.call_args.kwargs["stream_options"] == {
+            "include_usage": True
+        }
+        assert agent.usage == {
+            "input_tokens": 40,
+            "output_tokens": 7,
+            "cached_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 47,
+        }
+
+
+class TestAgentInputTokens:
+    """``agent.input_tokens`` is the size of the next request, not a bill."""
+
+    def test_counts_the_system_prompt_before_any_run(self):
+        agent = _patched_agent(
+            "CtxAgent", system_prompt="You are terse."
+        )
+        assert agent.input_tokens > 0
+
+    def test_grows_as_the_conversation_grows(self):
+        agent = _patched_agent("CtxAgent", system_prompt="Short.")
+        before = agent.input_tokens
+        agent.short_memory.add("User", "word " * 200)
+        assert agent.input_tokens > before + 100
+
+    def test_counts_tool_schemas_too(self):
+        bare = _patched_agent("CtxAgent", system_prompt="Short.")
+        with_tool = _patched_agent(
+            "CtxAgent",
+            system_prompt="Short.",
+            dynamic_tools=False,
+            tools=[_math_tool],
+        )
+        assert with_tool.input_tokens > bare.input_tokens
+
+    def test_is_independent_of_usage(self):
+        """usage is what the provider charged; input_tokens is a size."""
+        agent = _patched_agent("CtxAgent", system_prompt="Short.")
+        assert agent.usage["input_tokens"] == 0
+        assert agent.input_tokens > 0
+
+
+class TestSeededMessages:
+    """``messages`` seeds the conversation and is sent as context."""
+
+    PRIOR = [
+        {"role": "user", "content": "My project is called Helios."},
+        {"role": "assistant", "content": "Noted: Helios."},
+    ]
+
+    def test_constructor_messages_land_in_short_memory(self):
+        agent = _patched_agent("SeedAgent", messages=self.PRIOR)
+
+        contents = [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+        ]
+        assert "My project is called Helios." in contents
+        assert "Noted: Helios." in contents
+
+    def test_constructor_messages_are_sent_as_context(self):
+        agent = _patched_agent("SeedAgent", messages=self.PRIOR)
+        sent = {}
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            sent["messages"] = kwargs.get("messages")
+            return "Helios"
+
+        agent.call_llm = fake_call_llm
+        agent.run("What is my project called?")
+
+        contents = [m["content"] for m in sent["messages"]]
+        assert "My project is called Helios." in contents
+        assert "What is my project called?" in contents
+
+    def test_run_messages_are_recorded_and_sent(self):
+        agent = _patched_agent("SeedAgent")
+        sent = {}
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            sent["messages"] = kwargs.get("messages")
+            return "Helios"
+
+        agent.call_llm = fake_call_llm
+        agent.run("What is my project called?", messages=self.PRIOR)
+
+        assert [m["role"] for m in sent["messages"]] == [
+            "user",
+            "assistant",
+            "user",
+        ]
+
+        recorded = [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+        ]
+        assert "My project is called Helios." in recorded
+        assert "Noted: Helios." in recorded
+
+
+class TestRunSamples:
+    """Each of the ``n`` samples gets the same inputs as a single run."""
+
+    def test_every_sample_receives_the_image_and_callback(self):
+        agent = _patched_agent("Vision")
+        calls = []
+
+        def fake_call_llm(
+            task=None,
+            img=None,
+            imgs=None,
+            current_loop=0,
+            streaming_callback=None,
+            *args,
+            **kwargs,
+        ):
+            calls.append((img, streaming_callback))
+            return "A bar chart."
+
+        def on_token(token):
+            return None
+
+        agent.call_llm = fake_call_llm
+        agent.run(
+            "Describe the chart.",
+            img="https://example.com/chart.png",
+            streaming_callback=on_token,
+            n=2,
+        )
+
+        assert (
+            calls == [("https://example.com/chart.png", on_token)] * 2
+        )
+
+
+class TestLLMFailureRaises:
+    """#2408: once its retries ran out, _run broke out of the loop and
+    returned the formatted history, so run() returned '' with no error and
+    fallback_models was never tried.
+    """
+
+    TASK = "What is 2+2?"
+
+    @staticmethod
+    def _completion(calls, down):
+        def fake_completion(**params):
+            calls.append(params["model"])
+            if params["model"] in down:
+                raise RuntimeError(f"{params['model']} is down")
+            message = SimpleNamespace(
+                content=f"answer from {params['model']}",
+                tool_calls=None,
+                reasoning_content=None,
+            )
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=message, finish_reason="stop"
+                    )
+                ],
+                usage=None,
+            )
+
+        return fake_completion
+
+    @staticmethod
+    def _agent(**kwargs):
+        return Agent(
+            agent_name="FallbackAgent",
+            max_loops=1,
+            retry_attempts=2,
+            print_on=False,
+            verbose=False,
+            persistent_memory=False,
+            **kwargs,
+        )
+
+    def test_raises_when_retries_run_out(self):
+        agent = self._agent(model_name="gpt-5.4")
+        history_before = len(agent.short_memory.conversation_history)
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, {"gpt-5.4"}),
+        ):
+            with pytest.raises(AgentLLMError):
+                agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "gpt-5.4"]
+        assert (
+            len(agent.short_memory.conversation_history)
+            == history_before
+        )
+
+    def test_falls_back_to_the_next_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, {"gpt-5.4"}),
+        ):
+            output = agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "gpt-5.4", "claude-sonnet-4-6"]
+        assert "answer from claude-sonnet-4-6" in str(output)
+        task_turns = [
+            m
+            for m in agent.short_memory.conversation_history
+            if m["content"] == self.TASK
+        ]
+        assert len(task_turns) == 1
+
+    def test_raises_once_every_fallback_fails(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(
+                calls, {"gpt-5.4", "claude-sonnet-4-6"}
+            ),
+        ):
+            with pytest.raises(AgentLLMError):
+                agent.run(self.TASK)
+
+        assert calls == [
+            "gpt-5.4",
+            "gpt-5.4",
+            "claude-sonnet-4-6",
+            "claude-sonnet-4-6",
+        ]
