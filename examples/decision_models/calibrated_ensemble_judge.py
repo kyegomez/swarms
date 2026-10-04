@@ -14,8 +14,6 @@ TASK = (
 WORD_LIMIT = 120
 RERUNS = 3
 LLM_JUDGE_MODEL = "gpt-5.4"
-# TypeSafe bills input tokens only; output tokens are free.
-DECISION_PRICE_PER_MTOK = 0.042
 
 ENSEMBLE = {
     "A": "gpt-5.4-mini",
@@ -90,11 +88,7 @@ def decision_judge(model: DecisionModel, answers: dict) -> tuple:
         }
         for label in answers
     }
-    cost = (
-        response["usage"]["input_tokens"]
-        * DECISION_PRICE_PER_MTOK
-        / 1_000_000
-    )
+    cost = model.calculate_cost(response["usage"])["total_cost"]
     return weighted_scores(ratings, answers), cost
 
 

@@ -5,7 +5,11 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from swarms import DecisionModel, get_decision_models
+from swarms import (
+    DecisionModel,
+    get_decision_model_prices,
+    get_decision_models,
+)
 from swarms.env import load_swarms_env
 from swarms.structs import decision_model
 from swarms.telemetry.otel import init_config
@@ -329,6 +333,157 @@ def test_list_models_returns_every_provider(
 
     assert DecisionModel().list_models() == get_decision_models()
     assert "clef-2" in DecisionModel().list_models()
+
+
+def _cloudflare_price(input_price, output_price=None):
+    value = [{"unit": "per M input tokens", "price": input_price}]
+    if output_price is not None:
+        value.append(
+            {"unit": "per M output tokens", "price": output_price}
+        )
+    return [
+        {"property_id": "context_window", "value": "65536"},
+        {"property_id": "price", "value": value},
+    ]
+
+
+def test_builtin_prices_cover_every_builtin_model():
+    prices = get_decision_model_prices()
+
+    assert list(prices) == BUILTIN_MODELS
+    assert prices["jev-latest"] == {"input": 0.042, "output": 0.0}
+    assert prices["clef"] == {"input": 0.24, "output": 0.0}
+    assert prices["clef-flash"] == {"input": 0.09, "output": 0.0}
+
+
+def test_live_cloudflare_prices_override_the_builtin_ones(
+    monkeypatch, typesafe_key, cloudflare_env
+):
+    monkeypatch.setattr(
+        decision_model.httpx,
+        "get",
+        lambda url, **kwargs: _listing(
+            url,
+            typesafe=[{"name": "jev-2.0.0"}],
+            cloudflare=[
+                {
+                    "name": "@cf/cloudflare/clef",
+                    "properties": _cloudflare_price(0.3, 0.01),
+                },
+                {
+                    "name": "@cf/cloudflare/clef-2",
+                    "properties": _cloudflare_price(0.5),
+                },
+                {"name": "@cf/cloudflare/clef-flash"},
+            ],
+        ),
+    )
+
+    prices = get_decision_model_prices()
+
+    assert prices["clef"] == {"input": 0.3, "output": 0.01}
+    assert prices["clef-2"] == {"input": 0.5, "output": 0.0}
+    assert prices["clef-flash"] == {"input": 0.09, "output": 0.0}
+    assert prices["jev-latest"] == {"input": 0.042, "output": 0.0}
+    assert "jev-2.0.0" not in prices
+
+
+@pytest.mark.parametrize(
+    "properties",
+    [
+        [
+            {
+                "property_id": "price",
+                "value": [{"unit": "per M input tokens"}],
+            }
+        ],
+        [
+            {
+                "property_id": "price",
+                "value": [
+                    {"unit": "per M input tokens", "price": "free"}
+                ],
+            }
+        ],
+        [{"property_id": "price", "value": "0.3"}],
+        ["price"],
+        "price",
+    ],
+)
+def test_malformed_live_prices_keep_the_builtin_price(
+    monkeypatch, cloudflare_env, properties
+):
+    monkeypatch.setattr(
+        decision_model.httpx,
+        "get",
+        lambda url, **kwargs: _listing(
+            url,
+            cloudflare=[
+                {
+                    "name": "@cf/cloudflare/clef",
+                    "properties": properties,
+                }
+            ],
+        ),
+    )
+
+    assert get_decision_model_prices()["clef"] == {
+        "input": 0.24,
+        "output": 0.0,
+    }
+
+
+def test_get_price_returns_the_model_price(typesafe_key):
+    assert DecisionModel().get_price() == {
+        "input": 0.042,
+        "output": 0.0,
+    }
+
+
+def test_typesafe_prices_need_no_network_call(
+    monkeypatch, typesafe_key
+):
+    seen = []
+    monkeypatch.setattr(
+        decision_model.httpx,
+        "get",
+        lambda url, **kwargs: seen.append(url) or _listing(url),
+    )
+
+    DecisionModel().get_price()
+    get_decision_model_prices()
+
+    assert seen == []
+
+
+def test_get_price_fetches_only_its_own_provider_once(
+    monkeypatch, typesafe_key, cloudflare_env
+):
+    seen = []
+
+    def fake_get(url, **kwargs):
+        seen.append(url)
+        return _listing(
+            url,
+            cloudflare=[
+                {
+                    "name": "@cf/cloudflare/clef-flash",
+                    "properties": _cloudflare_price(0.1),
+                }
+            ],
+        )
+
+    monkeypatch.setattr(decision_model.httpx, "get", fake_get)
+    model = DecisionModel(model_name="clef-flash")
+
+    assert model.get_price() == {"input": 0.1, "output": 0.0}
+    assert model.get_price() == {"input": 0.1, "output": 0.0}
+    assert seen == [CLOUDFLARE_MODELS_URL]
+
+
+def test_get_price_raises_for_an_unpriced_model(typesafe_key):
+    with pytest.raises(ValueError, match="jev-9"):
+        DecisionModel(model_name="jev-9").get_price()
 
 
 def test_defaults_to_typesafe_jev_latest(typesafe_key):
@@ -886,6 +1041,125 @@ async def test_arun_supports_concurrent_calls(api, typesafe_key):
     assert sent == [f"ticket {i}" for i in range(5)]
 
 
+def test_usage_starts_at_zero(typesafe_key):
+    assert DecisionModel().usage == {
+        "input_tokens": 0,
+        "output_tokens": 0,
+    }
+
+
+async def test_usage_sums_every_request(api, typesafe_key):
+    model = DecisionModel()
+
+    model.run("text", QUESTIONS)
+    model.noul("text", "Is this urgent?")
+    await asyncio.gather(
+        *[model.arun("text", QUESTIONS) for _ in range(3)]
+    )
+
+    assert model.usage == {"input_tokens": 60, "output_tokens": 15}
+
+
+def test_usage_reads_cloudflare_results(api, cloudflare_env):
+    model = DecisionModel(model_name="clef")
+
+    model.run("text", QUESTIONS)
+
+    assert model.usage == {"input_tokens": 12, "output_tokens": 3}
+
+
+def test_usage_returns_a_copy(api, typesafe_key):
+    model = DecisionModel()
+
+    model.usage["input_tokens"] = 99
+
+    assert model.usage["input_tokens"] == 0
+
+
+def test_responses_without_usage_are_counted_as_zero(
+    api, typesafe_key
+):
+    api.queue.append(
+        httpx.Response(
+            200,
+            json={
+                "model": "jev-latest",
+                "answers": {"q": {"type": "noul", "noul": 0.5}},
+            },
+        )
+    )
+    model = DecisionModel()
+
+    model.run("text", {"q": {"type": "noul", "instructions": "?"}})
+
+    assert model.usage == {"input_tokens": 0, "output_tokens": 0}
+
+
+def test_failed_requests_add_no_usage(api, typesafe_key):
+    api.queue.append(httpx.Response(422, json={"detail": "bad"}))
+    model = DecisionModel()
+
+    with pytest.raises(httpx.HTTPStatusError):
+        model.run("text", QUESTIONS)
+
+    assert model.usage == {"input_tokens": 0, "output_tokens": 0}
+
+
+def test_calculate_cost_prices_one_response(api, typesafe_key):
+    model = DecisionModel()
+
+    response = model.run("text", QUESTIONS)
+    cost = model.calculate_cost(response["usage"])
+
+    assert cost == {
+        "input_tokens": 12,
+        "output_tokens": 3,
+        "input_cost": pytest.approx(12 * 0.042 / 1_000_000),
+        "output_cost": 0.0,
+        "total_cost": pytest.approx(12 * 0.042 / 1_000_000),
+    }
+
+
+def test_calculate_cost_defaults_to_the_summed_usage(
+    api, cloudflare_env
+):
+    model = DecisionModel(model_name="clef-flash")
+
+    model.run("text", QUESTIONS)
+    model.run("text", QUESTIONS)
+
+    cost = model.calculate_cost()
+    assert cost["input_tokens"] == 24
+    assert cost["total_cost"] == pytest.approx(24 * 0.09 / 1_000_000)
+
+
+def test_calculate_cost_bills_output_tokens_when_priced(
+    monkeypatch, cloudflare_env
+):
+    monkeypatch.setattr(
+        decision_model.httpx,
+        "get",
+        lambda url, **kwargs: _listing(
+            url,
+            cloudflare=[
+                {
+                    "name": "@cf/cloudflare/clef",
+                    "properties": _cloudflare_price(1.0, 2.0),
+                }
+            ],
+        ),
+    )
+    model = DecisionModel(model_name="clef")
+
+    cost = model.calculate_cost(
+        {"input_tokens": 1_000_000, "output_tokens": 500_000}
+    )
+
+    assert cost["input_cost"] == pytest.approx(1.0)
+    assert cost["output_cost"] == pytest.approx(1.0)
+    assert cost["total_cost"] == pytest.approx(2.0)
+
+
 class PlainProvider(DecisionModel):
     """Decision model for a provider with its own wire format."""
 
@@ -973,6 +1247,22 @@ async def test_subclass_hooks_apply_to_arun(plain_api):
     result = await model.arun("text", {"q": {"type": "noul"}})
 
     assert result == {"answers": {"q": {"type": "noul", "value": 1}}}
+
+
+def test_subclass_may_parse_responses_into_any_shape(
+    api, typesafe_key
+):
+    class AnswersOnly(DecisionModel):
+        def parse_response(self, data, questions):
+            return list(data["answers"].values())
+
+    model = AnswersOnly()
+
+    assert model.run("text", QUESTIONS)[2] == {
+        "type": "noul",
+        "noul": 0.95,
+    }
+    assert model.usage == {"input_tokens": 0, "output_tokens": 0}
 
 
 def test_subclass_can_extend_question_types(api, typesafe_key):

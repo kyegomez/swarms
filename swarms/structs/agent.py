@@ -383,7 +383,7 @@ class Agent:
         top_p: Optional[float] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
-        tool_call_summary: bool = True,
+        tool_call_summary: bool = False,
         tool_retry_attempts: int = 3,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
@@ -2226,6 +2226,17 @@ Subtask Breakdown:
         except Exception as error:
             logger.info(f"Error sending agent message: {error}")
             raise error
+
+    def list_tools(self) -> List[str]:
+        """
+        Names of every tool this agent can call.
+
+        See :meth:`swarms.agents.tool_manager.ToolManager.list_tools`.
+
+        Returns:
+            List[str]: Tool names, without duplicates, in a stable order.
+        """
+        return self.tool_manager.list_tools()
 
     def add_tool(self, tool: Callable):
         """Add a single tool to the agent's tools list.
