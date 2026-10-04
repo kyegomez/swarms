@@ -658,6 +658,18 @@ def test_extra_body_and_headers_are_sent(api, typesafe_key):
     assert api.requests[-1].headers["x-trace"] == "abc"
 
 
+@pytest.mark.parametrize("key", ["model", "state", "questions"])
+def test_extra_body_cannot_replace_a_validated_field(
+    api, typesafe_key, key
+):
+    model = DecisionModel(extra_body={key: "replacement"})
+
+    with pytest.raises(ValueError, match=key):
+        model.run("text", QUESTIONS)
+
+    assert api.requests == []
+
+
 @pytest.mark.parametrize("model_name", ["clef", "clef-flash"])
 def test_cloudflare_run_unwraps_the_result_envelope(
     api, cloudflare_env, model_name
