@@ -1034,7 +1034,7 @@ _BASH_BLOCKLIST = [
 
 _BASH_COMMAND_WORDS = (
     "sudo",
-    "su",
+    r"su(?![\w.-])",
     "pkexec",
     "shutdown",
     "reboot",
@@ -1046,9 +1046,8 @@ _BASH_COMMAND_WORDS = (
 
 _BASH_COMMAND_WORD_REGEX = _re.compile(
     r"(?:^|[\n;&|({!`]|\b(?:if|then|elif|else|while|until|do"
-    r"|time|env|exec|nohup|xargs)\s)\s*(?:\w+=\S*\s+)*(?:\S*/)?(?:"
-    + "|".join(_BASH_COMMAND_WORDS)
-    + r")\b"
+    r"|time|env|exec|nohup|xargs)\s)\s*(?:\w+=\S*\s+)*"
+    r"[\\\"']*(?:\S*/)?(?:" + "|".join(_BASH_COMMAND_WORDS) + r")\b"
 )
 
 _BASH_BLOCKLIST_REGEX = [

@@ -1311,6 +1311,8 @@ class TestBashBlocklistMatchesCommandsNotSubstrings:
             "cat sudoers.md",
             "ls printenv.txt",
             "echo halted",
+            "su-exec nobody ls",
+            "./su.sh",
         ],
     )
     def test_benign_commands_are_allowed(self, command):
@@ -1335,6 +1337,8 @@ class TestBashBlocklistMatchesCommandsNotSubstrings:
             "env sudo id",
             "time sudo id",
             "echo a | xargs sudo rm",
+            "\\sudo id",
+            '"sudo" id',
         ],
     )
     def test_privileged_commands_are_still_blocked(self, command):
