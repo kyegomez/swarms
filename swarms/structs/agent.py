@@ -80,6 +80,7 @@ from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
+from swarms.structs.serialization import SerializableMixin
 from swarms.structs.transforms import (
     MessageTransforms,
     TransformConfig,
@@ -127,7 +128,7 @@ def agent_id() -> str:
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
-class Agent:
+class Agent(SerializableMixin):
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
     ingest any type of docs like PDFs, Txts, Markdown, Json, and etc for the agent. Here is a list of features.
@@ -302,6 +303,17 @@ class Agent:
     >>> # The agent automatically loads the system prompt from the Swarms marketplace
 
     """
+
+    _to_dict_exclude = (
+        "llm",
+        "llm_manager",
+        "tool_manager",
+        "tool_struct",
+        "skills",
+        "marketplace",
+        "autonomous_loop",
+        "_context_compressor",
+    )
 
     def __init__(
         self,
@@ -2315,69 +2327,6 @@ Subtask Breakdown:
                 f"Tokens available: {limit} You have {tokens_used} tokens used"
             )
         return limit
-
-    def _serialize_callable(
-        self, attr_value: Callable
-    ) -> Dict[str, Any]:
-        """
-        Serializes callable attributes by extracting their name and docstring.
-
-        Args:
-            attr_value (Callable): The callable to serialize.
-
-        Returns:
-            Dict[str, Any]: Dictionary with name and docstring of the callable.
-        """
-        return {
-            "name": getattr(
-                attr_value, "__name__", type(attr_value).__name__
-            ),
-            "doc": getattr(attr_value, "__doc__", None),
-        }
-
-    def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
-        """
-        Serializes an individual attribute, handling non-serializable objects.
-
-        Args:
-            attr_name (str): The name of the attribute.
-            attr_value (Any): The value of the attribute.
-
-        Returns:
-            Any: The serialized value of the attribute.
-        """
-        try:
-            if callable(attr_value):
-                return self._serialize_callable(attr_value)
-            elif hasattr(attr_value, "to_dict"):
-                return (
-                    attr_value.to_dict()
-                )  # Recursive serialization for nested objects
-            else:
-                json.dumps(
-                    attr_value
-                )  # Attempt to serialize to catch non-serializable objects
-                return attr_value
-        except (TypeError, ValueError):
-            return f"<Non-serializable: {type(attr_value).__name__}>"
-
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Converts all attributes of the class, including callables, into a dictionary.
-        Handles non-serializable attributes by converting them or skipping them.
-
-        Returns:
-            Dict[str, Any]: A dictionary representation of the class attributes.
-        """
-
-        # The llm object is not serializable
-        dict_copy = self.__dict__.copy()
-        dict_copy.pop("llm", None)
-
-        return {
-            attr_name: self._serialize_attr(attr_name, attr_value)
-            for attr_name, attr_value in dict_copy.items()
-        }
 
     def to_json(self, indent: int = 4, *args, **kwargs):
         return json.dumps(

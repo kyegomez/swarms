@@ -1,7 +1,9 @@
 import json
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple
 
 from swarms.utils.loguru_logger import logger
+
+_warned: Set[str] = set()
 
 
 class SerializableMixin:
@@ -78,7 +80,9 @@ class SerializableMixin:
             "doc": getattr(attr_value, "__doc__", None),
         }
 
-    def _serialize_attr(self, attr_name: str, attr_value: Any) -> Any:
+    def _serialize_attr(
+        self, attr_name: str, attr_value: Any, strict: bool = False
+    ) -> Any:
         """
         Serialize a single attribute by attempting the following:
         - If it's callable, serialize its name and docstring.
@@ -101,10 +105,22 @@ class SerializableMixin:
             # Test if JSON serializable
             json.dumps(attr_value)
             return attr_value
-        except (TypeError, ValueError):
-            return f"<Non-serializable: {type(attr_value).__name__}>"
+        except (TypeError, ValueError) as error:
+            name = f"{type(self).__name__}.{attr_name}"
+            type_name = type(attr_value).__name__
+            if strict:
+                raise TypeError(
+                    f"{name} ({type_name}) is not serializable"
+                ) from error
+            if name not in _warned:
+                _warned.add(name)
+                logger.warning(
+                    f"{name} ({type_name}) is not serializable,"
+                    " replaced with a placeholder"
+                )
+            return f"<Non-serializable: {type_name}>"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, strict: bool = False) -> Dict[str, Any]:
         """
         Serialize the __dict__ of the current object, respecting
         the exclusion list. Each attribute is processed to maximize
@@ -115,7 +131,9 @@ class SerializableMixin:
         """
         excluded: Iterable[str] = set(self._to_dict_exclude)
         return {
-            attr_name: self._serialize_attr(attr_name, attr_value)
+            attr_name: self._serialize_attr(
+                attr_name, attr_value, strict
+            )
             for attr_name, attr_value in self.__dict__.items()
             if attr_name not in excluded
         }
