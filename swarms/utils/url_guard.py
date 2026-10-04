@@ -21,7 +21,6 @@ def ip_is_blocked(addr: ipaddress._BaseAddress) -> bool:
     addresses embedded in IPv6 (``::ffff:a.b.c.d`` and 6to4) are unwrapped and
     re-checked, so a mapped metadata address cannot slip through.
     """
-    # Unwrap IPv4-in-IPv6 so ::ffff:169.254.169.254 is judged as the v4 address.
     mapped = getattr(addr, "ipv4_mapped", None)
     if mapped is not None:
         addr = mapped
@@ -64,14 +63,11 @@ def is_safe_url(url: str) -> bool:
         if not host or host.lower() == "localhost":
             return False
 
-        # If the host is already a literal IP (in any notation ipaddress
-        # accepts — decimal, hex, dotted), judge it directly.
         try:
             return not ip_is_blocked(ipaddress.ip_address(host))
         except ValueError:
             pass  # a hostname — resolve it below.
 
-        # Resolve the hostname and require EVERY answer to be public.
         try:
             infos = socket.getaddrinfo(host, None)
         except socket.gaierror:

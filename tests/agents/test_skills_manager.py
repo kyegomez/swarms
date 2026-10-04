@@ -723,11 +723,6 @@ class TestSkillsReachTheModel:
         )
 
 
-########################################################
-# Remote skills: Agent(skill_urls=[...]) (#2127)
-########################################################
-
-
 REMOTE_SKILL = """---
 id: 162975eb-61f7-4416-ac01-7d87ea67761f
 name: Yuki
