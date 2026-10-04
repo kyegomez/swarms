@@ -22,13 +22,17 @@ decides what to do with it. That keeps prompt mutation in one visible place in
 import os
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Union
 
 import requests
 import yaml
 from loguru import logger
 
-from swarms.structs.dynamic_skills_loader import DynamicSkillsLoader
+from swarms.structs.dynamic_skills_loader import (
+    DynamicSkillsLoader,
+    load_skill_dirs,
+    skill_dirs,
+)
 from swarms.utils.url_guard import is_safe_url
 
 SKILL_FILENAME = "SKILL.md"
@@ -83,9 +87,11 @@ class SkillsManager:
     actually needed.
 
     Args:
-        skills_dir: Directory containing skill folders. Each folder should hold
-            a ``SKILL.md`` file with YAML frontmatter. ``None`` disables local
-            skills.
+        skills_dir: Directory, or list of directories, containing skill
+            folders. Each folder should hold a ``SKILL.md`` file with YAML
+            frontmatter. Directories are read in order, and when two of them
+            hold a skill with the same name the later directory wins and a
+            warning is logged. ``None`` disables local skills.
         skill_urls: Marketplace ``.md`` URLs, each serving one skill in the
             same frontmatter format. Fetched concurrently and rendered in the
             order given. Composes with ``skills_dir``.
@@ -93,7 +99,8 @@ class SkillsManager:
             selected during dynamic loading.
 
     Attributes:
-        skills_dir (Optional[str]): The configured skills directory.
+        skills_dir (Optional[Union[str, List[str]]]): The configured skills
+            directory or directories.
         skill_urls (List[str]): The configured remote skill URLs.
         metadata (List[Dict[str, str]]): Metadata for the skills loaded so far.
 
@@ -105,7 +112,7 @@ class SkillsManager:
 
     def __init__(
         self,
-        skills_dir: Optional[str] = None,
+        skills_dir: Optional[Union[str, List[str]]] = None,
         skill_urls: Optional[Sequence[str]] = None,
         similarity_threshold: float = 0.3,
     ):
@@ -115,7 +122,9 @@ class SkillsManager:
         self.metadata: List[Dict[str, str]] = []
         self.dynamic_loader: Optional[DynamicSkillsLoader] = None
 
-    def set_skills_dir(self, skills_dir: Optional[str]) -> None:
+    def set_skills_dir(
+        self, skills_dir: Optional[Union[str, List[str]]]
+    ) -> None:
         """
         Point the manager at a different skills directory.
 
@@ -141,8 +150,9 @@ class SkillsManager:
         """True when a usable skill source is configured, local or remote."""
         if self.skill_urls:
             return True
-        return bool(self.skills_dir) and os.path.exists(
-            self.skills_dir
+        return any(
+            os.path.exists(directory)
+            for directory in skill_dirs(self.skills_dir)
         )
 
     def prompt_for_task(self, task: Optional[str] = None) -> str:
@@ -288,20 +298,27 @@ class SkillsManager:
             return None
 
     def load_metadata(
-        self, skills_dir: Optional[str] = None
+        self, skills_dir: Optional[Union[str, List[str]]] = None
     ) -> List[Dict[str, str]]:
         """
         Load skill metadata from ``SKILL.md`` files (Tier 1 loading).
 
         Args:
-            skills_dir: Directory to scan. Defaults to the configured
-                ``skills_dir``.
+            skills_dir: Directory, or list of directories, to scan.
+                Defaults to the configured ``skills_dir``.
 
         Returns:
             List of dicts with ``name``, ``description``, ``path`` and
-            ``content`` keys. Empty when the directory is missing.
+            ``content`` keys. Empty when no directory exists.
         """
-        skills_dir = skills_dir or self.skills_dir
+        return load_skill_dirs(
+            skills_dir or self.skills_dir, self._load_dir_metadata
+        )
+
+    def _load_dir_metadata(
+        self, skills_dir: str
+    ) -> List[Dict[str, str]]:
+        """Load the metadata of every skill in one directory."""
         skills: List[Dict[str, str]] = []
 
         if not skills_dir or not os.path.exists(skills_dir):
