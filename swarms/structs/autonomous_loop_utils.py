@@ -1010,7 +1010,6 @@ _BASH_BLOCKLIST = [
     ("> /dev/mem",),
     # Fork bomb pattern
     (":(){",),
-    # System shutdown / reboot
     # Privilege escalation
     ("chmod 777 /",),
     ("chown", "/etc"),
@@ -1034,6 +1033,7 @@ _BASH_BLOCKLIST = [
 
 _BASH_COMMAND_WORDS = (
     "sudo",
+    "sudoedit",
     r"su(?![\w.-])",
     "pkexec",
     "shutdown",
@@ -1047,7 +1047,8 @@ _BASH_COMMAND_WORDS = (
 _BASH_COMMAND_WORD_REGEX = _re.compile(
     r"(?:^|[\n;&|({!`]|\b(?:if|then|elif|else|while|until|do"
     r"|time|env|exec|nohup|xargs)\s)\s*(?:\w+=\S*\s+)*"
-    r"[\\\"']*(?:\S*/)?(?:" + "|".join(_BASH_COMMAND_WORDS) + r")\b"
+    r"[\\\"']*(?:\S*/)?(?:" + "|".join(_BASH_COMMAND_WORDS) + r")\b",
+    _re.IGNORECASE,
 )
 
 _BASH_BLOCKLIST_REGEX = [
@@ -1085,7 +1086,7 @@ def _check_bash_command(command: str) -> str | None:
     for pattern in _BASH_BLOCKLIST:
         if all(token in cmd_lower for token in pattern):
             return f"Command blocked: matches dangerous pattern {pattern!r}."
-    if _BASH_COMMAND_WORD_REGEX.search(cmd_lower):
+    if _BASH_COMMAND_WORD_REGEX.search(command):
         return "Command blocked: runs a privileged or system-level command."
     for regex in _BASH_BLOCKLIST_REGEX:
         if regex.search(command):

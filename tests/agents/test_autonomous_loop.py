@@ -1339,6 +1339,11 @@ class TestBashBlocklistMatchesCommandsNotSubstrings:
             "echo a | xargs sudo rm",
             "\\sudo id",
             '"sudo" id',
+            "SUDO id",
+            "sudoedit /etc/hosts",
+            "su -",
+            "su root -c id",
+            "echo hi; su",
         ],
     )
     def test_privileged_commands_are_still_blocked(self, command):
