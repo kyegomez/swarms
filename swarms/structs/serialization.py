@@ -102,6 +102,8 @@ class SerializableMixin:
         try:
             if callable(attr_value):
                 return self._serialize_callable(attr_value)
+            if isinstance(attr_value, SerializableMixin):
+                return attr_value.to_dict(strict)
             if hasattr(attr_value, "to_dict"):
                 return attr_value.to_dict()
             # Test if JSON serializable
