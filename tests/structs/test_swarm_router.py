@@ -578,7 +578,7 @@ class TestConcurrentRun:
 
         from swarms import Agent, SwarmRouter
 
-        with patch("swarms.structs.agent.LiteLLM"):
+        with patch("swarms.agents.tool_manager.LiteLLM"):
             agent = Agent(
                 agent_name="A",
                 model_name="gpt-5.4",
@@ -862,7 +862,7 @@ def _fallback_router(primary_error=None, fallbacks=None, **outcomes):
     ``outcomes`` maps swarm type -> exception to raise from ``run()`` (or
     ``None`` to succeed). Types not named succeed.
     """
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         agent = Agent(
             agent_name="A",
             model_name="gpt-5.4",
@@ -1074,7 +1074,7 @@ def test_config_model_accepts_fallback_swarms():
 
 def _agent_with_usage(name, input_tokens, output_tokens):
     """An offline agent whose lifetime usage is set directly."""
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         agent = Agent(
             agent_name=name,
             model_name="gpt-5.4",
@@ -1093,7 +1093,7 @@ def _agent_with_usage(name, input_tokens, output_tokens):
 
 
 def _usage_router(agents):
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         return SwarmRouter(
             name="usage-router",
             agents=agents,
@@ -1199,3 +1199,28 @@ def test_council_as_judge_aggregator_receives_typed_turns():
             in text
             for text in contents
         ), f"no turn attributed to {agent.agent_name}: {contents}"
+
+
+def test_council_as_judge_judges_use_council_judge_model_name():
+    router = SwarmRouter(
+        swarm_type="CouncilAsAJudge",
+        agents=create_sample_agents(),
+        council_judge_model_name="gpt-4o-mini",
+    )
+    council = router._create_council_as_judge()
+
+    assert {
+        agent.model_name for agent in council.judge_agents.values()
+    } == {"gpt-4o-mini"}
+
+
+def test_call_and_batch_run_do_not_send_an_absent_imgs():
+    router, built = _fallback_router()
+
+    router("go")
+    router.batch_run(["go"])
+
+    assert built["SequentialWorkflow"].calls == [
+        {"task": "go"},
+        {"task": "go"},
+    ]

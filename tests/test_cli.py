@@ -163,6 +163,20 @@ class TestSetupArgumentParser:
         )
         assert args.loops_per_agent == 3
 
+    def test_heavy_swarm_model_help_states_the_real_default(self):
+        from swarms.cli.main import DEFAULT_HEAVY_SWARM_MODEL
+
+        parser = self.setup_argument_parser()
+        args = parser.parse_args(["heavy-swarm"])
+        actions = {action.dest: action for action in parser._actions}
+
+        for dest in (
+            "question_agent_model_name",
+            "worker_model_name",
+        ):
+            assert getattr(args, dest) == DEFAULT_HEAVY_SWARM_MODEL
+            assert DEFAULT_HEAVY_SWARM_MODEL in actions[dest].help
+
 
 # ===========================================================================
 # 2. route_command

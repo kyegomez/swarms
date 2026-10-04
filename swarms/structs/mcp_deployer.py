@@ -547,7 +547,9 @@ class MCPDeployer:
         fn = partial(self._invoke, name, task, img)
         if self.timeout:
             with anyio.fail_after(self.timeout):
-                return await anyio.to_thread.run_sync(fn)
+                return await anyio.to_thread.run_sync(
+                    fn, abandon_on_cancel=True
+                )
         return await anyio.to_thread.run_sync(fn)
 
     def _build_server(self):
