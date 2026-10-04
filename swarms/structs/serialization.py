@@ -1,9 +1,11 @@
 import json
+import threading
 from typing import Any, Callable, Dict, Iterable, Optional, Set, Tuple
 
 from swarms.utils.loguru_logger import logger
 
 _warned: Set[str] = set()
+_warned_lock = threading.Lock()
 
 
 class SerializableMixin:
@@ -112,12 +114,13 @@ class SerializableMixin:
                 raise TypeError(
                     f"{name} ({type_name}) is not serializable"
                 ) from error
-            if name not in _warned:
-                _warned.add(name)
-                logger.warning(
-                    f"{name} ({type_name}) is not serializable,"
-                    " replaced with a placeholder"
-                )
+            with _warned_lock:
+                if name not in _warned:
+                    _warned.add(name)
+                    logger.warning(
+                        f"{name} ({type_name}) is not serializable,"
+                        " replaced with a placeholder"
+                    )
             return f"<Non-serializable: {type_name}>"
 
     def to_dict(self, strict: bool = False) -> Dict[str, Any]:

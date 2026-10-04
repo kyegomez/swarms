@@ -10,7 +10,6 @@ from unittest.mock import patch
 import pytest
 import yaml
 from dotenv import load_dotenv
-from loguru import logger
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
@@ -2029,29 +2028,25 @@ class TestLLMFailureRaises:
 
 class TestToDictPlaceholder:
     def test_warns_once_skips_excluded_and_raises_when_strict(self):
+        from swarms.structs import serialization as _serialization
+
+        _serialization._warned.clear()
         agent = Agent.__new__(Agent)
         vars(agent).update(
             agent_name="placeholder-agent",
             llm_manager=threading.Lock(),
             placeholder_lock=threading.Lock(),
         )
-        logged = []
-        sink = logger.add(
-            lambda m: logged.append(m.record["message"]),
-            level="WARNING",
-        )
-        try:
+        with patch.object(_serialization, "logger") as mock_logger:
             results = [agent.to_dict() for _ in range(3)]
-        finally:
-            logger.remove(sink)
 
         assert results[-1] == {
             "agent_name": "placeholder-agent",
             "placeholder_lock": "<Non-serializable: lock>",
         }
-        assert [m for m in logged if "serializable" in m] == [
+        mock_logger.warning.assert_called_once_with(
             "Agent.placeholder_lock (lock) is not serializable,"
             " replaced with a placeholder"
-        ]
+        )
         with pytest.raises(TypeError, match="Agent.placeholder_lock"):
             agent.to_dict(strict=True)
