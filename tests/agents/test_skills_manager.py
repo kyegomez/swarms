@@ -946,5 +946,5 @@ def test_agent_with_only_skill_urls_reaches_handle_skills(
 
     before = agent.system_prompt
     agent.handle_skills()
-    assert "## Yuki" in agent.system_prompt
-    assert len(agent.system_prompt) > len(before)
+    assert agent.system_prompt == before
+    assert "## Yuki" in agent._skills_prompt
