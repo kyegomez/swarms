@@ -1048,7 +1048,7 @@ _BASH_COMMAND_WORD_REGEX = _re.compile(
     r"(?:^|[\n;&|({!`]|\b(?:if|then|elif|else|while|until|do"
     r"|time|env|exec|nohup|xargs|nice|timeout|ionice|setsid|stdbuf"
     r"|sh|bash|zsh)\s)\s*(?:\w+=\S*\s+|-\S*\s+|\d\S*\s+)*"
-    r"[\\\"']*(?:\S*/)?(?:" + "|".join(_BASH_COMMAND_WORDS) + r")\b",
+    r"[\\\"']*(?:\S*/)?(" + "|".join(_BASH_COMMAND_WORDS) + r")\b",
     _re.IGNORECASE,
 )
 
@@ -1087,8 +1087,12 @@ def _check_bash_command(command: str) -> str | None:
     for pattern in _BASH_BLOCKLIST:
         if all(token in cmd_lower for token in pattern):
             return f"Command blocked: matches dangerous pattern {pattern!r}."
-    if _BASH_COMMAND_WORD_REGEX.search(command):
-        return "Command blocked: runs a privileged or system-level command."
+    match = _BASH_COMMAND_WORD_REGEX.search(command)
+    if match:
+        return (
+            "Command blocked: runs the privileged or system-level "
+            f"command {match.group(1)!r}."
+        )
     for regex in _BASH_BLOCKLIST_REGEX:
         if regex.search(command):
             return "Command blocked: matches dangerous regex pattern."
