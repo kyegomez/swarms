@@ -1,4 +1,6 @@
+import asyncio
 import os
+import threading
 from typing import Any
 
 import pytest
@@ -739,6 +741,127 @@ def test_one_failed_worker_does_not_stop_other_orders():
     assert outputs[0]["status"] == "failed"
     assert outputs[1] == "completed"
     assert healthy_worker.calls == 1
+
+
+@pytest.mark.parametrize("parallel_execution", [True, False])
+async def test_arun_matches_run_through_retry_and_reassignment(
+    parallel_execution,
+):
+    def build():
+        director = StubAgent(
+            "Director",
+            [
+                {
+                    "plan": "Split the work.",
+                    "orders": [
+                        {
+                            "agent_name": "Failed Worker",
+                            "task": "one",
+                        },
+                        {
+                            "agent_name": "Healthy Worker",
+                            "task": "two",
+                        },
+                    ],
+                },
+                {
+                    "plan": "Move the failed task.",
+                    "orders": [
+                        {
+                            "agent_name": "Healthy Worker",
+                            "task": "one",
+                        }
+                    ],
+                },
+            ],
+        )
+        failed = StubAgent(
+            "Failed Worker",
+            [RuntimeError("offline"), RuntimeError("offline")],
+        )
+        healthy = StubAgent(
+            "Healthy Worker", ["two done", "one done"]
+        )
+        swarm = make_recovery_swarm(
+            director,
+            [failed, healthy],
+            max_agent_retries=1,
+            max_reassignment_attempts=1,
+            parallel_execution=parallel_execution,
+            print_on=False,
+        )
+        return swarm, [director, failed, healthy]
+
+    sync_swarm, sync_agents = build()
+    async_swarm, async_agents = build()
+
+    expected = sync_swarm.run("task")
+    result = await async_swarm.arun("task")
+
+    assert [agent.calls for agent in sync_agents] == [2, 2, 2]
+    assert [agent.calls for agent in async_agents] == [2, 2, 2]
+    assert "[RECOVERY STARTED]" in async_swarm.conversation.get_str()
+    assert result == expected
+    assert (
+        async_swarm.conversation.conversation_history
+        == sync_swarm.conversation.conversation_history
+    )
+
+
+async def test_arun_leaves_the_event_loop_free_and_caps_parallel_orders():
+    ticked = threading.Event()
+    running = 0
+    peak = 0
+
+    class WaitingDirector(StubAgent):
+        def run(self, *args, **kwargs):
+            if not ticked.wait(timeout=5):
+                raise RuntimeError("event loop was blocked")
+            return super().run(*args, **kwargs)
+
+    class AsyncWorker(StubAgent):
+        async def arun(self, *args, **kwargs):
+            nonlocal running, peak
+            running += 1
+            peak = max(peak, running)
+            await asyncio.sleep(0)
+            running -= 1
+            return self.run(*args, **kwargs)
+
+    names = [f"Worker {index}" for index in range(4)]
+    director = WaitingDirector(
+        "Director",
+        [
+            {
+                "plan": "Fan out.",
+                "orders": [
+                    {"agent_name": name, "task": "work"}
+                    for name in names
+                ],
+            }
+        ],
+    )
+    swarm = make_recovery_swarm(
+        director,
+        [AsyncWorker(name, [f"{name} done"]) for name in names],
+        max_workers=2,
+        print_on=False,
+    )
+
+    async def tick():
+        await asyncio.sleep(0)
+        ticked.set()
+
+    ticker = asyncio.create_task(tick())
+    await swarm.arun("task")
+    await ticker
+
+    assert peak == 2
+    assert [
+        message["content"]
+        for message in swarm.conversation.conversation_history
+        if message["role"] in names
+    ] == [f"{name} done" for name in names]
 
 
 ##############################################################################

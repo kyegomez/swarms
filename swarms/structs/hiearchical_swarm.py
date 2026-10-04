@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 import json
 import traceback
@@ -54,6 +55,14 @@ from swarms.utils.workspace_manager import WorkspaceManager
 
 _ORDER_BATCH_SCHEMA = BaseTool().base_model_to_dict(OrderBatch)
 _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
+
+
+async def _arun_agent(agent: Any, *args, **kwargs) -> Any:
+    """Await ``agent.arun`` when it is async, else run ``agent.run`` in a thread."""
+    arun = getattr(agent, "arun", None)
+    if inspect.iscoroutinefunction(arun):
+        return await arun(*args, **kwargs)
+    return await asyncio.to_thread(agent.run, *args, **kwargs)
 
 
 class HierarchicalSwarm:
@@ -468,12 +477,7 @@ class HierarchicalSwarm:
         try:
             if self.planning_enabled is True:
                 out = self.setup_director_with_planning(
-                    task=AGENT_TASK_TEMPLATE.format(
-                        history=self._context_for(
-                            self.director.agent_name
-                        ),
-                        task=task,
-                    ),
+                    task=self._director_task(task),
                     img=img,
                 )
                 self.conversation.add(
@@ -482,22 +486,10 @@ class HierarchicalSwarm:
 
             # Run the director with the context
             function_call = self.director.run(
-                task=AGENT_TASK_TEMPLATE.format(
-                    history=self._context_for(
-                        self.director.agent_name
-                    ),
-                    task=task,
-                ),
+                task=self._director_task(task),
                 img=img,
             )
-            self.conversation.add(
-                role="Director",
-                content=(
-                    function_call
-                    if isinstance(function_call, str)
-                    else any_to_str(function_call)
-                ),
-            )
+            self._record_director_output(function_call)
 
             return function_call
 
@@ -506,6 +498,55 @@ class HierarchicalSwarm:
                 f"Hiearchical Swarm: Failed to run director: {e}"
             )
             raise
+
+    async def arun_director(
+        self,
+        task: str,
+        img: str = None,
+    ) -> OrderBatch:
+        """Async :meth:`run_director`."""
+        try:
+            if self.planning_enabled is True:
+                out = await _arun_agent(
+                    self._get_planning_director(),
+                    task=self._director_task(task),
+                    img=img,
+                )
+                self.conversation.add(
+                    role=self.director.agent_name, content=out
+                )
+
+            function_call = await _arun_agent(
+                self.director,
+                task=self._director_task(task),
+                img=img,
+            )
+            self._record_director_output(function_call)
+
+            return function_call
+
+        except Exception as e:
+            logger.error(
+                f"Hiearchical Swarm: Failed to run director: {e}"
+            )
+            raise
+
+    def _director_task(self, task: str) -> str:
+        """Wrap a task with the history the director has not seen yet."""
+        return AGENT_TASK_TEMPLATE.format(
+            history=self._context_for(self.director.agent_name),
+            task=task,
+        )
+
+    def _record_director_output(self, function_call: Any) -> None:
+        self.conversation.add(
+            role="Director",
+            content=(
+                function_call
+                if isinstance(function_call, str)
+                else any_to_str(function_call)
+            ),
+        )
 
     def step(
         self,
@@ -557,6 +598,42 @@ class HierarchicalSwarm:
 
         return outputs
 
+    async def astep(
+        self,
+        task: str,
+        img: str = None,
+        *args,
+        is_final_loop: bool = False,
+        **kwargs,
+    ):
+        """Async :meth:`step`."""
+        director_output = await self.arun_director(task=task, img=img)
+        plan, orders = self.parse_orders(director_output)
+
+        if self.print_on:
+            formatter.print_director_task_distribution(
+                director_name=self.director_name,
+                orders=orders,
+                plan=plan,
+            )
+
+        if not orders:
+            return []
+
+        outputs = await self.aexecute_orders(orders)
+
+        if self.agent_as_judge:
+            return await self.arun_judge_agent(outputs)
+
+        if (
+            self.director_feedback_on
+            and self.max_loops > 1
+            and not is_final_loop
+        ):
+            return await self.afeedback_director(outputs)
+
+        return outputs
+
     @trace_run(
         "HierarchicalSwarm.run",
         input_params=("task", "tasks", "img", "imgs"),
@@ -587,12 +664,7 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
-            self.conversation.clear()
-            self._delivered = {}
-            self.add_context_to_director()
-
-            if task is not None:
-                self.conversation.add(role="User", content=task)
+            self._start_run(task)
 
             current_loop = 0
             last_output = None
@@ -600,17 +672,11 @@ class HierarchicalSwarm:
             any_loop_succeeded = False
 
             while current_loop < self.max_loops:
-                if current_loop == 0:
-                    loop_task = task
-                else:
-                    loop_task = LOOP_CONTINUATION_PROMPT.format(
-                        last_output=last_output, task=task
-                    )
-
-                # Execute one step of the swarm
                 try:
                     last_output = self.step(
-                        task=loop_task,
+                        task=self._loop_task(
+                            current_loop, task, last_output
+                        ),
                         img=img,
                         *args,
                         is_final_loop=(
@@ -628,34 +694,119 @@ class HierarchicalSwarm:
                     )
 
                 current_loop += 1
-
-                # Add loop completion marker to conversation
-                self.conversation.add(
-                    role="System",
-                    content=(
-                        f"--- Loop {current_loop}/{self.max_loops} failed: {last_error} ---"
-                        if last_output is None
-                        and last_error is not None
-                        else f"--- Loop {current_loop}/{self.max_loops} completed ---"
-                    ),
-                )
+                self._end_loop(current_loop, last_output, last_error)
 
             if not any_loop_succeeded and last_error is not None:
                 raise last_error
 
-            result = history_output_formatter(
-                conversation=self.conversation, type=self.output_type
-            )
-
-            self.workspace.save_conversation()
-
-            return result
+            return self._finish_run()
 
         except Exception as e:
 
             self.workspace.save_conversation()
             logger.error(f"Hiearchical Swarm: Swarm run failed: {e}")
             raise
+
+    async def arun(
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        *args,
+        **kwargs,
+    ):
+        """Async :meth:`run`: agent calls are awaited, so the event loop stays free.
+
+        Interactive mode reads the task through ``asyncio.to_thread``.
+        """
+        try:
+            if task is None and self.interactive:
+                task = await asyncio.to_thread(
+                    self._get_interactive_task
+                )
+
+            self._start_run(task)
+
+            current_loop = 0
+            last_output = None
+            last_error = None
+            any_loop_succeeded = False
+
+            while current_loop < self.max_loops:
+                try:
+                    last_output = await self.astep(
+                        task=self._loop_task(
+                            current_loop, task, last_output
+                        ),
+                        img=img,
+                        *args,
+                        is_final_loop=(
+                            current_loop == self.max_loops - 1
+                        ),
+                        **kwargs,
+                    )
+                    any_loop_succeeded = True
+
+                except Exception as e:
+                    last_error = e
+                    last_output = None
+                    logger.error(
+                        f"[ERROR] Loop execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+                    )
+
+                current_loop += 1
+                self._end_loop(current_loop, last_output, last_error)
+
+            if not any_loop_succeeded and last_error is not None:
+                raise last_error
+
+            return self._finish_run()
+
+        except Exception as e:
+
+            self.workspace.save_conversation()
+            logger.error(f"Hiearchical Swarm: Swarm run failed: {e}")
+            raise
+
+    def _start_run(self, task: Optional[str]) -> None:
+        """Reset per-run state and record the task."""
+        self.conversation.clear()
+        self._delivered = {}
+        self.add_context_to_director()
+
+        if task is not None:
+            self.conversation.add(role="User", content=task)
+
+    def _loop_task(
+        self, current_loop: int, task: Optional[str], last_output: Any
+    ) -> Optional[str]:
+        if current_loop == 0:
+            return task
+        return LOOP_CONTINUATION_PROMPT.format(
+            last_output=last_output, task=task
+        )
+
+    def _end_loop(
+        self,
+        current_loop: int,
+        last_output: Any,
+        last_error: Optional[Exception],
+    ) -> None:
+        """Add the loop completion marker to the conversation."""
+        self.conversation.add(
+            role="System",
+            content=(
+                f"--- Loop {current_loop}/{self.max_loops} failed: {last_error} ---"
+                if last_output is None and last_error is not None
+                else f"--- Loop {current_loop}/{self.max_loops} completed ---"
+            ),
+        )
+
+    def _finish_run(self):
+        result = history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )
+        self.workspace.save_conversation()
+        return result
 
     def _get_interactive_task(self) -> str:
         """Read and return an interactive task."""
@@ -695,6 +846,28 @@ class HierarchicalSwarm:
                 f"Hiearchical Swarm: Feedback director failed: {e}"
             )
 
+    async def afeedback_director(self, outputs: list):
+        """Async :meth:`feedback_director`."""
+        try:
+            output = await _arun_agent(
+                self._get_feedback_director(),
+                task=DIRECTOR_FEEDBACK_PROMPT.format(
+                    worker_responses=self._format_worker_responses(
+                        outputs
+                    )
+                ),
+            )
+            self.conversation.add(
+                role=self.director.agent_name, content=output
+            )
+
+            return output
+
+        except Exception as e:
+            logger.error(
+                f"Hiearchical Swarm: Feedback director failed: {e}"
+            )
+
     def run_judge_agent(self, outputs: list) -> str:
         """Score worker outputs with the cached judge.
 
@@ -719,6 +892,28 @@ class HierarchicalSwarm:
         except Exception as e:
             logger.error(
                 f"[ERROR] run_judge_agent failed: {e} | Traceback: {traceback.format_exc()}"
+            )
+            return str(outputs)
+
+    async def arun_judge_agent(self, outputs: list) -> str:
+        """Async :meth:`run_judge_agent`."""
+        try:
+            logger.info(
+                "Running judge agent to score worker outputs..."
+            )
+            judge = self._get_judge_agent()
+
+            prior, judge_task = self._messages_for(judge.agent_name)
+            result = await _arun_agent(
+                judge, task=judge_task, messages=prior
+            )
+            self.conversation.add(role="JudgeAgent", content=result)
+            logger.info(f"Judge agent completed scoring: {result}")
+            return result
+
+        except Exception as e:
+            logger.error(
+                f"[ERROR] arun_judge_agent failed: {e} | Traceback: {traceback.format_exc()}"
             )
             return str(outputs)
 
@@ -753,6 +948,42 @@ class HierarchicalSwarm:
             )
 
             output = agent.run(
+                *args,
+                task=worker_task,
+                **worker_extra,
+                **kwargs,
+            )
+            if _add_to_conversation:
+                self.conversation.add(role=agent_name, content=output)
+
+            return output
+
+        except Exception as e:
+
+            logger.error(
+                f"Hiearchical Swarm: Failed to call agent {agent_name}: {e}"
+            )
+            if _raise_on_failure:
+                raise
+
+    async def acall_single_agent(
+        self,
+        agent_name: str,
+        task: str,
+        _add_to_conversation: bool = True,
+        _raise_on_failure: bool = False,
+        *args,
+        **kwargs,
+    ):
+        """Async :meth:`call_single_agent`."""
+        try:
+            agent = self._find_worker(agent_name)
+            worker_task, worker_extra = self._worker_run_payload(
+                agent, agent_name, task
+            )
+
+            output = await _arun_agent(
+                agent,
                 *args,
                 task=worker_task,
                 **worker_extra,
@@ -812,6 +1043,39 @@ class HierarchicalSwarm:
         for attempt in range(1, attempts + 1):
             try:
                 output = self.call_single_agent(
+                    order.agent_name,
+                    order.task,
+                    _add_to_conversation=add_to_conversation,
+                    _raise_on_failure=True,
+                )
+                return output, None
+            except Exception as error:
+                last_error = error
+                if attempt < attempts:
+                    logger.warning(
+                        f"Retrying worker {order.agent_name} for task "
+                        f"{order.task!r} ({attempt}/{attempts})"
+                    )
+
+        failure = self._record_agent_failure(
+            order=order,
+            error=last_error,
+            attempts=attempts,
+        )
+        return failure, failure
+
+    async def _aexecute_order_with_retries(
+        self,
+        order: HierarchicalOrder,
+        add_to_conversation: bool = True,
+    ):
+        """Async :meth:`_execute_order_with_retries`."""
+        attempts = self.max_agent_retries + 1
+        last_error = None
+
+        for attempt in range(1, attempts + 1):
+            try:
+                output = await self.acall_single_agent(
                     order.agent_name,
                     order.task,
                     _add_to_conversation=add_to_conversation,
@@ -895,15 +1159,7 @@ class HierarchicalSwarm:
                     if failure is not None:
                         failures.append(failure)
 
-            for index, order in enumerate(orders):
-                if results[index] is not None and not (
-                    isinstance(results[index], dict)
-                    and results[index].get("status") == "failed"
-                ):
-                    self.conversation.add(
-                        role=order.agent_name,
-                        content=results[index],
-                    )
+            self._add_parallel_results(orders, results)
         else:
             for index, order in enumerate(orders):
                 output, failure = self._execute_order_with_retries(
@@ -915,12 +1171,127 @@ class HierarchicalSwarm:
 
         return results, failures
 
+    async def _aexecute_orders_once(
+        self,
+        orders: List[HierarchicalOrder],
+    ):
+        """Async :meth:`_execute_orders_once`; at most ``max_workers`` orders run at once."""
+        if not self.parallel_execution:
+            pairs = [
+                await self._aexecute_order_with_retries(order)
+                for order in orders
+            ]
+        else:
+            semaphore = asyncio.Semaphore(self.max_workers)
+
+            async def run_order(order):
+                async with semaphore:
+                    return await self._aexecute_order_with_retries(
+                        order, False
+                    )
+
+            pairs = await asyncio.gather(
+                *(run_order(order) for order in orders)
+            )
+            self._add_parallel_results(
+                orders, [output for output, _ in pairs]
+            )
+
+        results = [output for output, _ in pairs]
+        failures = [
+            failure for _, failure in pairs if failure is not None
+        ]
+        return results, failures
+
+    def _add_parallel_results(
+        self, orders: List[HierarchicalOrder], results: list
+    ) -> None:
+        """Add parallel outputs in order so history does not depend on timing."""
+        for order, result in zip(orders, results):
+            if result is not None and not (
+                isinstance(result, dict)
+                and result.get("status") == "failed"
+            ):
+                self.conversation.add(
+                    role=order.agent_name,
+                    content=result,
+                )
+
     def _request_reassignment(
         self,
         failures: List[Dict[str, Any]],
         unavailable_agents: set,
     ) -> List[HierarchicalOrder]:
         """Ask the director to move failed work to available workers."""
+        available_agents, recovery_task = self._reassignment_task(
+            failures, unavailable_agents
+        )
+        if not available_agents:
+            return []
+
+        try:
+            output = self.director.run(
+                task=recovery_task,
+                messages=messages_for(
+                    getattr(
+                        self.director,
+                        "agent_name",
+                        self.director_name,
+                    ),
+                    self.conversation,
+                ),
+            )
+            self.conversation.add(role="Director", content=output)
+            _, orders = self.parse_orders(output)
+        except Exception as error:
+            self._record_reassignment_failure(error)
+            return []
+
+        return self._valid_reassignment_orders(
+            orders, available_agents
+        )
+
+    async def _arequest_reassignment(
+        self,
+        failures: List[Dict[str, Any]],
+        unavailable_agents: set,
+    ) -> List[HierarchicalOrder]:
+        """Async :meth:`_request_reassignment`."""
+        available_agents, recovery_task = self._reassignment_task(
+            failures, unavailable_agents
+        )
+        if not available_agents:
+            return []
+
+        try:
+            output = await _arun_agent(
+                self.director,
+                task=recovery_task,
+                messages=messages_for(
+                    getattr(
+                        self.director,
+                        "agent_name",
+                        self.director_name,
+                    ),
+                    self.conversation,
+                ),
+            )
+            self.conversation.add(role="Director", content=output)
+            _, orders = self.parse_orders(output)
+        except Exception as error:
+            self._record_reassignment_failure(error)
+            return []
+
+        return self._valid_reassignment_orders(
+            orders, available_agents
+        )
+
+    def _reassignment_task(
+        self,
+        failures: List[Dict[str, Any]],
+        unavailable_agents: set,
+    ) -> tuple:
+        """Return the healthy worker names and the director's recovery prompt."""
         available_agents = [
             self._agent_display_name(agent)
             for agent in self.agents
@@ -935,41 +1306,30 @@ class HierarchicalSwarm:
                     "for reassignment."
                 ),
             )
-            return []
+            return available_agents, None
 
-        recovery_task = WORKER_RECOVERY_PROMPT.format(
+        return available_agents, WORKER_RECOVERY_PROMPT.format(
             failures=json.dumps(failures, default=str),
             unavailable_agents=sorted(unavailable_agents),
             available_agents=available_agents,
         )
-        try:
-            director_name = getattr(
-                self.director, "agent_name", self.director_name
-            )
 
-            output = self.director.run(
-                task=recovery_task,
-                messages=messages_for(
-                    director_name, self.conversation
-                ),
-            )
+    def _record_reassignment_failure(self, error: Exception) -> None:
+        self.conversation.add(
+            role="System",
+            content=(
+                "[RECOVERY FAILED] The director could not produce "
+                f"replacement orders: {error}"
+            ),
+        )
+        logger.error(f"Director reassignment failed: {error}")
 
-            self.conversation.add(
-                role="Director",
-                content=output,
-            )
-            _, orders = self.parse_orders(output)
-        except Exception as error:
-            self.conversation.add(
-                role="System",
-                content=(
-                    "[RECOVERY FAILED] The director could not produce "
-                    f"replacement orders: {error}"
-                ),
-            )
-            logger.error(f"Director reassignment failed: {error}")
-            return []
-
+    def _valid_reassignment_orders(
+        self,
+        orders: List[HierarchicalOrder],
+        available_agents: List[str],
+    ) -> List[HierarchicalOrder]:
+        """Drop replacement orders for unavailable or unknown workers."""
         valid_agent_names = set(available_agents)
         valid_orders = [
             order
@@ -1036,14 +1396,8 @@ class HierarchicalSwarm:
                 < self.max_reassignment_attempts
             ):
                 reassignment_attempt += 1
-                self.conversation.add(
-                    role="System",
-                    content=(
-                        "[RECOVERY STARTED] Asking the director to reassign "
-                        f"{len(failures)} failed task(s). Recovery attempt "
-                        f"{reassignment_attempt}/"
-                        f"{self.max_reassignment_attempts}."
-                    ),
+                self._record_recovery_started(
+                    failures, reassignment_attempt
                 )
                 replacement_orders = self._request_reassignment(
                     failures=failures,
@@ -1063,28 +1417,97 @@ class HierarchicalSwarm:
                 )
 
             if failures:
-                self.conversation.add(
-                    role="System",
-                    content=(
-                        "[RECOVERY INCOMPLETE] The swarm continued, but "
-                        f"{len(failures)} task(s) could not be completed."
-                    ),
-                )
+                self._record_recovery_incomplete(failures)
 
             return outputs
 
         except Exception as e:
-            logger.error(
-                f"[ERROR] Order execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+            return self._record_order_execution_error(e)
+
+    async def aexecute_orders(
+        self,
+        orders: list,
+    ):
+        """Async :meth:`execute_orders`."""
+        try:
+            outputs, failures = await self._aexecute_orders_once(
+                orders=orders
             )
-            self.conversation.add(
-                role="System",
-                content=(
-                    "[ORDER EXECUTION ERROR] The swarm continued after an "
-                    f"unexpected orchestration error: {e}"
-                ),
-            )
-            return []
+            unavailable_agents = {
+                failure["agent_name"] for failure in failures
+            }
+            reassignment_attempt = 0
+
+            while (
+                failures
+                and reassignment_attempt
+                < self.max_reassignment_attempts
+            ):
+                reassignment_attempt += 1
+                self._record_recovery_started(
+                    failures, reassignment_attempt
+                )
+                replacement_orders = (
+                    await self._arequest_reassignment(
+                        failures=failures,
+                        unavailable_agents=unavailable_agents,
+                    )
+                )
+                if not replacement_orders:
+                    break
+
+                replacement_outputs, failures = (
+                    await self._aexecute_orders_once(
+                        orders=replacement_orders,
+                    )
+                )
+                outputs.extend(replacement_outputs)
+                unavailable_agents.update(
+                    failure["agent_name"] for failure in failures
+                )
+
+            if failures:
+                self._record_recovery_incomplete(failures)
+
+            return outputs
+
+        except Exception as e:
+            return self._record_order_execution_error(e)
+
+    def _record_recovery_started(
+        self, failures: list, reassignment_attempt: int
+    ) -> None:
+        self.conversation.add(
+            role="System",
+            content=(
+                "[RECOVERY STARTED] Asking the director to reassign "
+                f"{len(failures)} failed task(s). Recovery attempt "
+                f"{reassignment_attempt}/"
+                f"{self.max_reassignment_attempts}."
+            ),
+        )
+
+    def _record_recovery_incomplete(self, failures: list) -> None:
+        self.conversation.add(
+            role="System",
+            content=(
+                "[RECOVERY INCOMPLETE] The swarm continued, but "
+                f"{len(failures)} task(s) could not be completed."
+            ),
+        )
+
+    def _record_order_execution_error(self, error: Exception) -> list:
+        logger.error(
+            f"[ERROR] Order execution failed: {error} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
+        )
+        self.conversation.add(
+            role="System",
+            content=(
+                "[ORDER EXECUTION ERROR] The swarm continued after an "
+                f"unexpected orchestration error: {error}"
+            ),
+        )
+        return []
 
     def batched_run(
         self,
