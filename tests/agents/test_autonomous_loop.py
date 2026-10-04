@@ -1458,11 +1458,6 @@ class TestRunStreamUsesTheAutonomousLoop:
         assert status_of(agent, "step1") == "completed"
 
 
-# --------------------------------------------------------------------------
-# #1998 — a task's lessons reach MEMORY.md's own section
-# --------------------------------------------------------------------------
-
-
 class TestLessonsReachMemory:
     """
     complete_task collects lessons_learned. They already land in MEMORY.md as

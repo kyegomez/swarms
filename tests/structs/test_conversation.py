@@ -1294,11 +1294,6 @@ def test_return_messages_as_dictionary_preserves_roles():
     assert messages[1]["content"] == "Hello, user!"
 
 
-# ==========================================================================
-# #1998 — lessons get their own bounded section in MEMORY.md
-# ==========================================================================
-
-
 def _memory_conversation(tmp_path, **kwargs):
     """A Conversation writing to a MEMORY.md under tmp_path."""
     return Conversation(
@@ -1329,7 +1324,6 @@ def test_record_lesson_writes_an_attributed_entry(tmp_path):
 
     section = _lessons_section(conv.memory_md_path)
     assert "Authentication should be implemented early" in section
-    # A lesson without its context is noise, so the task travels with it.
     assert "task: Build a web app" in section
     assert "succeeded" in section
 
@@ -1358,7 +1352,6 @@ def test_a_multiline_lesson_stays_one_entry(tmp_path):
 
     section = _lessons_section(conv.memory_md_path)
     assert "line one line two" in section
-    # One bullet, not two.
     assert section.count("\n- ") == 1
 
 
@@ -1383,7 +1376,6 @@ def test_the_list_is_capped_and_drops_the_oldest(tmp_path):
 
     section = _lessons_section(conv.memory_md_path)
     assert section.count("\n- ") == MAX_MEMORY_LESSONS
-    # The three oldest fell off; the newest is still there.
     assert "lesson number 0 " not in section + " "
     assert f"lesson number {MAX_MEMORY_LESSONS + 2}" in section
 

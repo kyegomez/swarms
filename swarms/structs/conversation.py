@@ -46,13 +46,8 @@ def generate_conversation_name() -> str:
     return f"conversation-{secrets.token_hex(4)}"
 
 
-# Lessons are kept newest-first and capped, because MEMORY.md is preloaded in
-# full as a system preamble: an uncapped list of every lesson the agent has
-# ever drawn eventually crowds out the task it was given.
 MAX_MEMORY_LESSONS = 25
 
-# The marker the lessons section lives under, between the file header and the
-# interaction log. Matched exactly when the section is rewritten.
 LESSONS_HEADING = "## Lessons Learned"
 
 
@@ -457,7 +452,6 @@ class Conversation:
         if not lesson_text:
             return False
 
-        # One list entry, so a multi-line lesson does not break the section.
         lesson_text = " ".join(lesson_text.split())
         stamp = datetime.datetime.now().isoformat(timespec="seconds")
         label = (
@@ -519,7 +513,6 @@ class Conversation:
         end = content.find("\n---", body_at)
         if end == -1:
             return content[:start], content[body_at:], ""
-        # Keep the separator with the tail; it belongs to the log below.
         return (
             content[:start],
             content[body_at:end],
