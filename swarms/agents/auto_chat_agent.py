@@ -18,17 +18,13 @@ def auto_chat_agent(
     Runs the autonomous loop on each task, then prompts for the next task
     when done. Continues until the user types an exit command.
     """
-    temperature = 1.0
-
     agent = Agent(
         agent_name=name,
         agent_description=description,
         system_prompt=system_prompt,
         model_name=model_name,
         dynamic_context_window=True,
-        dynamic_temperature_enabled=True,
         max_loops="auto",
-        temperature=temperature,
     )
 
     current_task = task
