@@ -2874,7 +2874,7 @@ class TestHeavySwarm:
                 1  # override hard-coded "auto" for workers
             )
 
-        def fake_question_generation(task):
+        def fake_question_generation(task, img=None):
             return {
                 "thinking": "straightforward task",
                 "research_question": "What are the facts?",
