@@ -623,6 +623,12 @@ class ToolManager:
                 text += f"  Summary: {subtask['summary']}\n"
 
         agent.short_memory.add(role=agent.agent_name, content=text)
+        if lessons_learned and agent.persistent_memory:
+            agent.short_memory.record_lesson(
+                lesson=lessons_learned,
+                task=summary,
+                outcome=success,
+            )
         if agent.verbose:
             logger.info(
                 "Main task marked as completed with comprehensive summary"
