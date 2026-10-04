@@ -24,6 +24,9 @@ from swarms.structs.groupchat import RESPOND_TOOL
 
 from swarms.utils.workspace_utils import get_workspace_dir
 from swarms.structs.tree_swarm import ForestSwarm, Tree, TreeAgent
+from swarms.structs.planner_generator_evaluator import (
+    PlannerGeneratorEvaluator,
+)
 
 load_dotenv()
 
@@ -871,3 +874,164 @@ def run_all_tests():
 
 if __name__ == "__main__":
     run_all_tests()
+
+
+def _pge_record(agent, calls):
+    """Replace an agent's run() with a stub that records the context it got."""
+    name = agent.agent_name
+    turns = [0]
+
+    def _run(task=None, messages=None, **kwargs):
+        turns[0] += 1
+        answer = f"{name}-answer-{turns[0]}"
+        calls.append(
+            {
+                "agent": name,
+                "task": task,
+                "messages": list(messages or []),
+                "answer": answer,
+            }
+        )
+        agent.short_memory.add(role=name, content=answer)
+        return answer
+
+    agent.run = _run
+    return agent
+
+
+def _pge_agent(name):
+    """A real, offline agent that makes no network call."""
+    return Agent(
+        agent_name=name,
+        agent_description=f"Recording {name}",
+        model_name="gpt-4o",
+        max_loops=1,
+        persistent_memory=False,
+        print_on=False,
+        autosave=False,
+    )
+
+
+def _pge_harness(tmp_path):
+    """A harness whose three agents all record what they were sent."""
+    calls = []
+    planner = _pge_record(_pge_agent("Planner"), calls)
+    generator = _pge_record(_pge_agent("Generator"), calls)
+    evaluator = _pge_record(_pge_agent("Evaluator"), calls)
+
+    harness = PlannerGeneratorEvaluator(
+        planner_agent=planner,
+        generator_agent=generator,
+        evaluator_agent=evaluator,
+        working_directory=str(tmp_path),
+        shared_state_path=str(tmp_path / "shared_state.md"),
+        max_steps=1,
+        max_retries_per_step=1,
+        verbose=False,
+    )
+    return harness, calls
+
+
+def _pge_for(calls, name):
+    """Every recorded call made by one agent, in order."""
+    return [c for c in calls if c["agent"] == name]
+
+
+def test_no_call_pastes_the_shared_state_file_into_its_task(tmp_path):
+    """The audit log stops being the prompt."""
+    harness, calls = _pge_harness(tmp_path)
+    harness.run("build a small thing")
+
+    assert calls, "no agent was called"
+    for call in calls:
+        assert "--- SHARED STATE ---" not in str(call["task"])
+        assert "PGE Harness Shared State" not in str(call["task"])
+
+
+def test_every_call_receives_typed_turns(tmp_path):
+    """History arrives as chat turns rather than one interpolated blob."""
+    harness, calls = _pge_harness(tmp_path)
+    harness.run("build a small thing")
+
+    for call in calls:
+        assert isinstance(call["messages"], list)
+        for message in call["messages"]:
+            assert isinstance(message, dict)
+            assert message["role"] in ("user", "assistant")
+            assert isinstance(message["content"], str)
+
+
+def test_the_planner_reads_the_user_task_as_a_turn(tmp_path):
+    """The task reaches the planner from the conversation, not the prompt."""
+    harness, calls = _pge_harness(tmp_path)
+    harness.run("a very distinctive task about tungsten")
+
+    first = _pge_for(calls, "Planner")[0]
+    turns = "\n".join(m["content"] for m in first["messages"])
+
+    assert "a very distinctive task about tungsten" in turns
+    assert "a very distinctive task about tungsten" not in str(
+        first["task"]
+    )
+
+
+def test_the_generator_reads_the_plan_as_a_turn(tmp_path):
+    """The plan is attributed to the Planner instead of pasted anonymously."""
+    harness, calls = _pge_harness(tmp_path)
+    harness.run("build a small thing")
+
+    plan = _pge_for(calls, "Planner")[0]["answer"]
+    generator = _pge_for(calls, "Generator")[0]
+    turns = "\n".join(m["content"] for m in generator["messages"])
+
+    assert f"Planner: {plan}" in turns
+    assert plan not in str(generator["task"])
+
+
+def test_the_evaluator_reads_the_generator_output_as_a_turn(tmp_path):
+    """The evaluator scores a turn it can attribute to the generator."""
+    harness, calls = _pge_harness(tmp_path)
+    harness.run("build a small thing")
+
+    generator_answers = [
+        c["answer"] for c in _pge_for(calls, "Generator")
+    ]
+    evaluator_turns = "\n".join(
+        m["content"]
+        for c in _pge_for(calls, "Evaluator")
+        for m in c["messages"]
+    )
+
+    assert any(
+        answer in evaluator_turns for answer in generator_answers
+    )
+
+
+def test_an_agent_sees_its_own_prior_output_as_assistant(tmp_path):
+    """An agent's own output must not come back labelled as the user's."""
+    harness, calls = _pge_harness(tmp_path)
+    harness.run("build a small thing")
+
+    generator_calls = _pge_for(calls, "Generator")
+    assert len(generator_calls) >= 2
+
+    assistant = "\n".join(
+        m["content"]
+        for m in generator_calls[-1]["messages"]
+        if m["role"] == "assistant"
+    )
+    assert generator_calls[0]["answer"] in assistant
+
+
+def test_the_shared_state_file_is_still_written(tmp_path):
+    """The file stays as an on-disk audit log."""
+    harness, calls = _pge_harness(tmp_path)
+    harness.run("build a small thing")
+
+    path = tmp_path / "shared_state.md"
+    assert path.exists()
+
+    text = path.read_text()
+    assert "PGE Harness Shared State" in text
+    assert "PLANNER OUTPUT" in text
+    assert os.path.getsize(path) > 0
