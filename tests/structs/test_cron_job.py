@@ -207,6 +207,18 @@ def test_stats_expose_the_failure_picture():
     assert stats["stopped_due_to_error"] is False
 
 
+def test_a_failed_execution_waits_for_the_next_interval():
+    agent = FailingAgent(fail_times=99)
+    job = CronJob(agent=agent, interval="1hour")
+    job._interval_method("t")
+
+    job.schedule.run_all()
+
+    assert agent.attempts == 1
+    assert job.error_count == 1
+    assert job.schedule.idle_seconds > 3000
+
+
 # ---------------------------------------------------------------------------
 # Configuration validation
 # ---------------------------------------------------------------------------
