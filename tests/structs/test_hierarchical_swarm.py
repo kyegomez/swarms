@@ -744,7 +744,7 @@ def test_one_failed_worker_does_not_stop_other_orders():
 
 
 @pytest.mark.parametrize("parallel_execution", [True, False])
-async def test_arun_matches_run_through_retry_and_reassignment(
+def test_arun_matches_run_through_retry_and_reassignment(
     parallel_execution,
 ):
     def build():
@@ -796,7 +796,7 @@ async def test_arun_matches_run_through_retry_and_reassignment(
     async_swarm, async_agents = build()
 
     expected = sync_swarm.run("task")
-    result = await async_swarm.arun("task")
+    result = asyncio.run(async_swarm.arun("task"))
 
     assert [agent.calls for agent in sync_agents] == [2, 2, 2]
     assert [agent.calls for agent in async_agents] == [2, 2, 2]
@@ -808,7 +808,7 @@ async def test_arun_matches_run_through_retry_and_reassignment(
     )
 
 
-async def test_arun_leaves_the_event_loop_free_and_caps_parallel_orders():
+def test_arun_leaves_the_event_loop_free_and_caps_parallel_orders():
     ticked = threading.Event()
     running = 0
     peak = 0
@@ -852,9 +852,12 @@ async def test_arun_leaves_the_event_loop_free_and_caps_parallel_orders():
         await asyncio.sleep(0)
         ticked.set()
 
-    ticker = asyncio.create_task(tick())
-    await swarm.arun("task")
-    await ticker
+    async def run_with_ticker():
+        ticker = asyncio.create_task(tick())
+        await swarm.arun("task")
+        await ticker
+
+    asyncio.run(run_with_ticker())
 
     assert peak == 2
     assert [
