@@ -1,4 +1,7 @@
+import asyncio
 import re
+import threading
+
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.agent import Agent
 
@@ -508,3 +511,92 @@ def test_aggregator_can_tell_which_layer_produced_each_answer():
         assert (
             f"layer {layer}/3" in contents
         ), f"layer {layer} not attributed: {contents}"
+
+
+def _failing_agent(name):
+    agent = _scripted_agent(name)
+
+    def _raise(task=None, *a, **k):
+        raise RuntimeError(f"{name} failed")
+
+    agent.run = _raise
+    return agent
+
+
+def test_arun_returns_what_run_returns():
+    def build(layers, failing=None):
+        workers = [_scripted_agent("W1"), _scripted_agent("W2")]
+        if failing == "worker":
+            workers.append(_failing_agent("W3"))
+        aggregator = (
+            _failing_agent("Aggregator")
+            if failing == "aggregator"
+            else _scripted_agent("Aggregator")
+        )
+        return MixtureOfAgents(
+            agents=workers,
+            aggregator_agent=aggregator,
+            layers=layers,
+            output_type="all",
+        )
+
+    cases = ((1, None), (2, None), (1, "worker"), (1, "aggregator"))
+    for layers, failing in cases:
+        expected = build(layers, failing).run("Question?")
+        result = asyncio.run(build(layers, failing).arun("Question?"))
+        assert (
+            result == expected
+        ), f"layers={layers} failing={failing}"
+
+    assert expected == "Error: Aggregator failed"
+
+
+def test_arun_caps_workers_and_leaves_the_event_loop_free():
+    lock = threading.Lock()
+    active, peak = [0], [0]
+    paired = threading.Barrier(2, timeout=5)
+    loop_ticked = threading.Event()
+    checks = []
+
+    def _make_run(agent):
+        def _run(task=None, img=None, *args, **kwargs):
+            with lock:
+                active[0] += 1
+                peak[0] = max(peak[0], active[0])
+            checks.append(loop_ticked.wait(timeout=5))
+            paired.wait()
+            with lock:
+                active[0] -= 1
+            agent.short_memory.add(
+                role=agent.agent_name, content="answer"
+            )
+            return "answer"
+
+        return _run
+
+    workers = [_scripted_agent(f"W{i}") for i in range(4)]
+    for worker in workers:
+        worker.run = _make_run(worker)
+
+    moa = MixtureOfAgents(
+        agents=workers,
+        aggregator_agent=_scripted_agent("Aggregator"),
+        layers=1,
+        max_workers=2,
+    )
+
+    async def main():
+        pending = asyncio.ensure_future(moa.arun("Question?"))
+        ticks = 0
+        while not pending.done():
+            ticks += 1
+            if ticks == 3:
+                loop_ticked.set()
+            await asyncio.sleep(0)
+        return await pending
+
+    result = asyncio.run(main())
+
+    assert not str(result).startswith("Error"), result
+    assert checks == [True] * 4
+    assert peak[0] == 2

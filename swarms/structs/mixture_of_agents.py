@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict, List, Optional
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
@@ -20,6 +21,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -232,57 +234,139 @@ class MixtureOfAgents:
         """
 
         self._reset_conversation()
-
         self.conversation.add(role="User", content=task)
 
-        # Task plus the previous layer's synthesis, rather than the full growing transcript.
         worker_input = task
-        prev_layer_output: Optional[str] = None
-
         for i in range(self.layers):
-            if prev_layer_output is not None:
-                worker_input = (
-                    f"Original task: {task}\n\n"
-                    f"Previous layer synthesis:\n{prev_layer_output}"
-                )
-
             step_output = self.step(task=worker_input, img=img)
+            worker_input = self._record_layer(task, i, step_output)
 
-            for agent_name, agent_output in step_output.items():
-                self.conversation.add(
-                    role=(
-                        f"{agent_name} (layer {i + 1}/{self.layers})"
-                        if self.layers > 1
-                        else agent_name
-                    ),
-                    content=agent_output,
-                )
+        prior, aggregator_task = self._aggregator_turn()
+        aggregator_output = self.aggregator_agent.run(
+            task=aggregator_task, messages=prior
+        )
+        return self._finish(aggregator_output)
 
-            # Summarize this layer by concatenating worker outputs for the next layer's input.
-            prev_layer_output = "\n\n".join(
-                f"{name}: {out}" for name, out in step_output.items()
+    def _record_layer(
+        self, task: str, layer: int, step_output: Dict[str, Any]
+    ) -> str:
+        """Add one layer's answers to the conversation.
+
+        Returns:
+            The next layer's input: the original task plus this layer's
+            answers, rather than the full growing transcript.
+        """
+        for agent_name, agent_output in step_output.items():
+            self.conversation.add(
+                role=(
+                    f"{agent_name} (layer {layer + 1}/{self.layers})"
+                    if self.layers > 1
+                    else agent_name
+                ),
+                content=agent_output,
             )
 
-        prior, aggregator_task = split_last_turn(
+        layer_output = "\n\n".join(
+            f"{name}: {out}" for name, out in step_output.items()
+        )
+        return (
+            f"Original task: {task}\n\n"
+            f"Previous layer synthesis:\n{layer_output}"
+        )
+
+    def _aggregator_turn(self):
+        """Split the conversation into the aggregator's prior turns and task."""
+        return split_last_turn(
             messages_for(
                 self.aggregator_agent.agent_name, self.conversation
             )
         )
-        aggregator_output = self.aggregator_agent.run(
-            task=aggregator_task, messages=prior
-        )
+
+    def _finish(self, aggregator_output: Any):
+        """Record the aggregator's answer and format the conversation."""
         aggregator_output = agent_answer(
             self.aggregator_agent, fallback=aggregator_output
         )
-
         self.conversation.add(
             role=self.aggregator_agent.agent_name,
             content=aggregator_output,
         )
-
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
         )
+
+    async def astep(
+        self,
+        task: str,
+        img: Optional[str] = None,
+    ):
+        """Async version of :meth:`step`.
+
+        Awaits each worker's ``arun`` with at most ``max_workers`` in flight.
+        A worker that raises contributes its exception as its output, as in
+        :meth:`step`.
+        """
+        semaphore = asyncio.Semaphore(
+            self.max_workers or max_workers_95_percent()
+        )
+
+        async def run_worker(agent):
+            async with semaphore:
+                try:
+                    return await agent.arun(task=task, img=img)
+                except Exception as e:
+                    return e
+
+        outputs = await asyncio.gather(
+            *(run_worker(agent) for agent in self.agents)
+        )
+        return get_final_agent_answer(
+            agents=self.agents,
+            agent_outputs={
+                agent.agent_name: output
+                for agent, output in zip(self.agents, outputs)
+            },
+        )
+
+    async def arun(
+        self,
+        task: str,
+        img: Optional[str] = None,
+    ):
+        """Async version of :meth:`run`.
+
+        Layers run one after another, since each needs the previous layer's
+        answers; the workers within a layer run concurrently.
+
+        Args:
+            task: User task for the mixture.
+            img: Optional image input forwarded to worker agents.
+
+        Returns:
+            The formatted mixture output, or an error string if execution
+            fails.
+        """
+        try:
+            self._reset_conversation()
+            self.conversation.add(role="User", content=task)
+
+            worker_input = task
+            for i in range(self.layers):
+                step_output = await self.astep(
+                    task=worker_input, img=img
+                )
+                worker_input = self._record_layer(
+                    task, i, step_output
+                )
+
+            prior, aggregator_task = self._aggregator_turn()
+            aggregator_output = await self.aggregator_agent.arun(
+                task=aggregator_task, messages=prior
+            )
+            return self._finish(aggregator_output)
+        except Exception as e:
+            logger.error(f"Error running Mixture of Agents: {e}")
+            return f"Error: {e}"
 
     @trace_run(
         "MixtureOfAgents.run",
