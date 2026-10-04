@@ -137,9 +137,6 @@ class DebateWithJudge:
         # Initialize conversation history
         self.conversation = Conversation()
 
-        # Each agent's system prompt as the caller supplied it, so the
-        # per-run role framing in _initialize_agents replaces the previous
-        # run's framing instead of accumulating on top of it.
         self._base_system_prompts: dict[int, str] = {}
 
         if self.verbose:
@@ -351,10 +348,6 @@ class DebateWithJudge:
                 logger.debug(
                     f"Judge synthesis: {judge_synthesis[:100]}..."
                 )
-
-            # current_topic stays the debate's motion. The synthesis is what
-            # the next loop refines, and every agent now reads it as its own
-            # turn -- restating it as the "topic" would send it twice.
 
         # Return formatted output
         return history_output_formatter(

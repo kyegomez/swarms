@@ -33,8 +33,6 @@ def _record(agent, calls):
                 "system_prompt": agent.system_prompt,
             }
         )
-        # agent_answer reads the answer back out of short_memory, not out of
-        # the return value, so the stub has to write it there too.
         agent.short_memory.add(role=name, content=answer)
         return answer
 
@@ -116,7 +114,6 @@ def test_every_turn_is_a_typed_message():
             assert message["role"] in ("user", "assistant")
             assert isinstance(message["content"], str)
 
-    # The opening Pro turn has nothing before it, so it carries no history.
     assert _for(calls, "Pro-Debater")[0]["messages"] == []
 
 
@@ -146,7 +143,6 @@ def test_the_topic_stays_the_motion_across_loops():
     for call in calls:
         if call["agent"] == "Pro-Debater":
             assert motion in str(call["task"])
-        # The second-loop prompts must not carry the synthesis text as well.
         assert judge_first["answer"] not in str(call["task"])
 
 
@@ -155,7 +151,6 @@ def test_role_framing_costs_no_llm_call_and_does_not_stack():
     debate, calls = _debate(max_loops=1)
 
     debate.run("Motion: open models will win")
-    # one Pro, one Con, one Judge -- no discarded intro calls
     assert len(calls) == 3
 
     first_pro_prompt = _for(calls, "Pro-Debater")[0]["system_prompt"]
