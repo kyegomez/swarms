@@ -1115,12 +1115,7 @@ class MCPManager:
             return await self._acall_tool(session, connection, call)
 
     def _route(self, name: str) -> Optional[MCPConnection]:
-        if name in self._tool_routes:
-            return self._tool_routes[name]
-        # Single-server setups do not need a discovery round-trip.
-        if len(self.connections) == 1:
-            return self.connections[0]
-        return None
+        return self._tool_routes.get(name)
 
     @staticmethod
     def _extract_result(result: Any) -> Any:

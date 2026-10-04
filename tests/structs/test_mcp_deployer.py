@@ -1,6 +1,9 @@
 import asyncio
 import socket
+import threading
+import time
 
+import anyio
 import httpx
 import pytest
 from starlette.datastructures import Headers
@@ -256,6 +259,28 @@ def test_invoke_forwards_img_and_renders_non_string_output():
 
     deployer = MCPDeployer(lambda task: {"a": 1}, api_keys=["k"])
     assert deployer._invoke("lambda", "x") == '{\n  "a": 1\n}'
+
+
+def test_call_times_out_while_a_blocking_target_is_still_running():
+    release = threading.Event()
+
+    def stuck(task: str) -> str:
+        """Block until released."""
+        release.wait(5)
+        return "late"
+
+    deployer = MCPDeployer(stuck, api_keys=["k"], timeout=0.05)
+
+    async def call():
+        start = time.monotonic()
+        with pytest.raises(TimeoutError):
+            await deployer._call("stuck", "x")
+        return time.monotonic() - start
+
+    try:
+        assert anyio.run(call) < 1
+    finally:
+        release.set()
 
 
 # ----------------------------------------------------------------------

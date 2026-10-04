@@ -1145,9 +1145,9 @@ class SwarmRouter(SerializableMixin):
         Returns:
             Any: Result returned by :meth:`run`.
         """
-        result = self.run(
-            task=task, img=img, imgs=imgs, *args, **kwargs
-        )
+        if imgs is not None:
+            kwargs["imgs"] = imgs
+        result = self.run(task=task, img=img, *args, **kwargs)
         return result
 
     def batch_run(
@@ -1175,13 +1175,13 @@ class SwarmRouter(SerializableMixin):
             RuntimeError: If any task execution fails.
         """
         self._log("info", f"Executing batch of tasks: {tasks}")
+        if imgs is not None:
+            kwargs["imgs"] = imgs
         try:
             results = []
             for task in tasks:
                 try:
-                    result = self.run(
-                        task, img=img, imgs=imgs, *args, **kwargs
-                    )
+                    result = self.run(task, img=img, *args, **kwargs)
                     results.append(result)
                 except Exception as e:
                     raise RuntimeError(

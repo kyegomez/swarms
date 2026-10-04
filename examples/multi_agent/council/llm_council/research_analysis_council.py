@@ -5,13 +5,13 @@ This example demonstrates using the LLM Council to conduct comprehensive
 research analysis on complex topics.
 """
 
-from swarms.structs.llm_council import LLMCouncil
+from swarms import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
-# Research analysis query
-query = """
+# Research analysis task
+task = """
 Conduct a comprehensive analysis of the potential impact of climate change 
 on global food security over the next 20 years. Include:
 1. Key climate factors affecting agriculture (temperature, precipitation, extreme weather)
@@ -25,7 +25,7 @@ on global food security over the next 20 years. Include:
 """
 
 # Run the council
-result = council.run(query)
+result = council.run(task=task)
 
 # Print final response
-print(result["final_response"])
+print(result)
