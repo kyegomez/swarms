@@ -314,11 +314,6 @@ def test_llm_council_output_types():
         raise
 
 
-# --------------------------------------------------------------------------
-# #2053 — councillors must contribute answers, not transcripts
-# --------------------------------------------------------------------------
-
-
 class _EchoCouncillor:
     """A councillor whose transcript names itself, the way a real one does."""
 
