@@ -313,6 +313,7 @@ class Agent(SerializableMixin):
         "marketplace",
         "autonomous_loop",
         "_context_compressor",
+        "_workspace",
     )
 
     def __init__(
