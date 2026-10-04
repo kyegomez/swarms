@@ -872,10 +872,6 @@ def run_all_tests():
         logger.success("All tests passed successfully!")
 
 
-if __name__ == "__main__":
-    run_all_tests()
-
-
 def _pge_record(agent, calls):
     """Replace an agent's run() with a stub that records the context it got."""
     name = agent.agent_name
@@ -1035,3 +1031,7 @@ def test_the_shared_state_file_is_still_written(tmp_path):
     assert "PGE Harness Shared State" in text
     assert "PLANNER OUTPUT" in text
     assert os.path.getsize(path) > 0
+
+
+if __name__ == "__main__":
+    run_all_tests()
