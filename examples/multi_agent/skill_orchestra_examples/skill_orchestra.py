@@ -35,7 +35,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
-from swarms.utils.swarm_autosave import get_swarm_workspace_dir
+from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.generate_id import generate_id
 
 
@@ -730,10 +730,7 @@ class SkillOrchestra:
     def _setup_autosave(self):
         """Set up autosave workspace directory."""
         try:
-            self.swarm_workspace_dir = get_swarm_workspace_dir(
-                class_name="SkillOrchestra",
-                swarm_name=self.name,
-            )
+            self.swarm_workspace_dir = WorkspaceManager(self).dir
         except Exception as e:
             logger.warning(
                 f"Failed to set up autosave workspace: {e}"

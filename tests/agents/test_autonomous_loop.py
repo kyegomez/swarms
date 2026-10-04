@@ -21,6 +21,8 @@ Covers four fixed defects:
 * #1962 — ``ContextCompressor.maybe_compress`` was never called on the
   ``max_loops="auto"`` path, so history grew unbounded in exactly the mode
   that needs compression most.
+* #1752 — the loop's three iteration budgets were module constants, so a
+  caller could not bound a run's cost without monkeypatching the module.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -37,6 +39,8 @@ from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     _BASH_MAX_LENGTH,
     _check_bash_command,
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     get_autonomous_planning_tools,
     get_execution_prompt,
@@ -1195,10 +1199,6 @@ class TestRunBashSteersFileWritesToTheFileTools:
         assert "create_file" in tools["run_bash"]["description"]
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-q", "-p", "no:randomly"])
-
-
 # --------------------------------------------------------------------------
 # #1983 — glob tool
 # --------------------------------------------------------------------------
@@ -1330,9 +1330,132 @@ class TestFinalSummaryShape:
         assert isinstance(result, list)
 
 
-# --------------------------------------------------------------------------
-# #1985 — a plan step can declare how it will be checked
-# --------------------------------------------------------------------------
+class TestIterationLimitsAreConfigurable:
+    """The three budgets bound a run's cost, so they must be settable per agent."""
+
+    def _thinks_forever(self, agent, monkeypatch, *steps):
+        """Script a model that plans, then only ever calls `think`."""
+        turn = {"n": 0}
+
+        def scripted(task=None, *args, **kwargs):
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return plan(*steps)
+            return [
+                tool_call(
+                    "think",
+                    current_state=f"state {turn['n']}",
+                    analysis="pondering",
+                    next_actions=["keep thinking"],
+                    confidence=0.5,
+                )
+            ]
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        return turn
+
+    def test_the_defaults_are_the_module_constants(self):
+        agent = build_agent()
+
+        assert agent.max_planning_attempts == MAX_PLANNING_ATTEMPTS
+        assert agent.max_subtask_iterations == MAX_SUBTASK_ITERATIONS
+        assert agent.max_subtask_loops == MAX_SUBTASK_LOOPS
+
+    def test_the_subtask_budget_is_per_agent(self, monkeypatch):
+        capped = build_agent(think_tool=True, max_subtask_loops=3)
+        capped_turns = self._thinks_forever(
+            capped, monkeypatch, ("s1", [])
+        )
+        capped.run("demo")
+
+        default = build_agent(think_tool=True)
+        default_turns = self._thinks_forever(
+            default, monkeypatch, ("s1", [])
+        )
+        default.run("demo")
+
+        assert status_of(capped, "s1") == "failed"
+        assert capped_turns["n"] < default_turns["n"]
+
+    def test_the_run_budget_stops_the_outer_loop(self, monkeypatch):
+        agent = build_agent(
+            think_tool=True,
+            max_subtask_loops=2,
+            max_subtask_iterations=1,
+        )
+        self._thinks_forever(
+            agent, monkeypatch, ("s1", []), ("s2", []), ("s3", [])
+        )
+
+        agent.run("demo")
+
+        assert status_of(agent, "s2") == "pending"
+        assert status_of(agent, "s3") == "pending"
+
+    def test_the_planning_budget_bounds_planning_retries(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_planning_attempts=2)
+        calls = script_llm(
+            agent,
+            monkeypatch,
+            ["not a plan", "still not a plan", "nor this one"],
+        )
+
+        with pytest.raises(Exception):
+            agent.run("demo")
+
+        assert len(calls) == 2
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "max_planning_attempts",
+            "max_subtask_iterations",
+            "max_subtask_loops",
+        ],
+    )
+    def test_a_budget_below_one_is_rejected(self, name):
+        with pytest.raises(ValueError):
+            build_agent(**{name: 0})
+
+
+class TestRunStreamUsesTheAutonomousLoop:
+    def test_run_stream_plans_and_completes_like_run(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        script = [
+            plan(("step1", [])),
+            [
+                tool_call(
+                    "subtask_done",
+                    task_id="step1",
+                    summary="done",
+                    success=True,
+                )
+            ],
+            [
+                tool_call(
+                    "complete_task",
+                    task_id="main",
+                    summary="all done",
+                    success=True,
+                )
+            ],
+        ]
+        calls = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            calls.append(task)
+            return script.pop(0)
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        list(agent.run_stream("test task"))
+
+        assert len(calls) == 3
+        assert status_of(agent, "step1") == "completed"
 
 
 class TestPlanVerification:
@@ -1359,7 +1482,6 @@ class TestPlanVerification:
             agent.autonomous_subtasks[0]["verification"]
             == "pytest tests/test_auth.py exits 0"
         )
-        # A step with nothing checkable is allowed, and is not None.
         assert agent.autonomous_subtasks[1]["verification"] == ""
 
     def test_a_revision_can_sharpen_a_pending_step_s_criterion(self):
@@ -1416,7 +1538,6 @@ class TestPlanVerification:
 
         assert "Not accepted" in result
         assert "pytest exits 0" in result
-        # Nothing moved: not the status, not the cursor.
         assert status_of(agent, "a") == "pending"
         assert agent.current_subtask_index == 0
 
@@ -1439,8 +1560,6 @@ class TestPlanVerification:
             agent.autonomous_subtasks[0]["verification_result"]
             == "pytest tests/test_auth.py -> exit 0"
         )
-        # The summary is written against what was observed, so it has to be
-        # in the transcript the summary is generated from.
         assert "[VERIFIED] a: pytest tests/test_auth.py" in history(
             agent
         )
@@ -1509,7 +1628,6 @@ class TestPlanVerification:
             with_check
         )
         assert "will be refused" in with_check
-        # A step with nothing to check is not told about a check.
         assert "Verification for this subtask" not in without
         assert "will be refused" not in without
 
@@ -1571,3 +1689,7 @@ class TestPlanVerification:
         assert "Not accepted" in text
         assert status_of(agent, "step1") == "completed"
         assert "[VERIFIED] step1: pytest -> exit 0" in text
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-q", "-p", "no:randomly"])

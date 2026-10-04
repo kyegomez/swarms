@@ -386,6 +386,36 @@ class TestTransportResolution:
             == expected
         )
 
+    def test_connection_defaults_to_auto(self):
+        assert MCPConnection(url="https://x/mcp").transport == "auto"
+
+    @pytest.mark.parametrize(
+        "url,expected",
+        [
+            ("http://localhost:8000/sse", "sse"),
+            ("https://x/mcp", "streamable_http"),
+            ("python server.py", "stdio"),
+        ],
+    )
+    def test_url_detected_without_explicit_transport(
+        self, url, expected
+    ):
+        manager = MCPManager(mcp_url=url)
+        assert (
+            manager._resolve_transport(manager.connections[0])
+            == expected
+        )
+
+    def test_explicit_transport_still_wins_over_url(self):
+        manager = MCPManager(
+            mcp_url="http://localhost:8000/sse",
+            transport="streamable_http",
+        )
+        assert (
+            manager._resolve_transport(manager.connections[0])
+            == "streamable_http"
+        )
+
 
 ########################################################
 # Tool call normalization
@@ -695,6 +725,29 @@ class TestToolExecution:
         )
         assert results[0]["is_error"] is True
         assert "does_not_exist" in results[0]["error"]
+
+    def test_unknown_tool_on_single_server_is_not_sent(
+        self, open_manager
+    ):
+        results = open_manager.execute_tool_calls(
+            [
+                {
+                    "function": {
+                        "name": "get_weather",
+                        "arguments": "{}",
+                    }
+                },
+                {
+                    "function": {
+                        "name": "add",
+                        "arguments": '{"a": 2, "b": 3}',
+                    }
+                },
+            ]
+        )
+        assert results[0]["server"] is None
+        assert "get_weather" in results[0]["error"]
+        assert results[1]["result"] == "5"
 
     def test_no_tool_calls_returns_empty(self, open_manager):
         assert open_manager.execute_tool_calls("just text") == []
@@ -1046,7 +1099,7 @@ class TestAgentIntegration:
         assert agent.mcp_enabled is True
         assert isinstance(agent.mcp_manager, MCPManager)
 
-        tools = agent.add_mcp_tools_to_memory()
+        tools = agent.tool_manager.add_mcp_tools_to_memory()
         assert {t["function"]["name"] for t in tools} >= {
             "add",
             "greet",
@@ -1081,7 +1134,7 @@ class TestAgentIntegration:
             print_on=False,
             llm=object(),
         )
-        assert agent.add_mcp_tools_to_memory()
+        assert agent.tool_manager.add_mcp_tools_to_memory()
 
     def test_agent_mcp_tool_handling_executes(self, open_server):
         from swarms import Agent
