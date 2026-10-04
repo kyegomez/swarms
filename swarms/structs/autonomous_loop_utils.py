@@ -881,10 +881,6 @@ def read_file_tool(
         with open(full_path, "r", encoding="utf-8") as f:
             raw = f.read()
 
-        # Only "\n" separates lines, which is what grep -n counts. splitlines()
-        # also breaks on form feed, vertical tab, \x1c-\x1e and \x85, so a file
-        # with a ^L page break would number every later line one higher than
-        # grep does -- the exact citation mismatch this function exists to fix.
         lines = raw.split("\n")
         if lines and lines[-1] == "":
             lines.pop()
