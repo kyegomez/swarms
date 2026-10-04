@@ -1045,7 +1045,8 @@ _BASH_COMMAND_WORDS = (
 )
 
 _BASH_COMMAND_WORD_REGEX = _re.compile(
-    r"(?:^|[\n;&|(]|\|\||&&)\s*(?:"
+    r"(?:^|[\n;&|({!`]|\b(?:if|then|elif|else|while|until|do"
+    r"|time|env|exec|nohup|xargs)\s)\s*(?:\w+=\S*\s+)*(?:\S*/)?(?:"
     + "|".join(_BASH_COMMAND_WORDS)
     + r")\b"
 )

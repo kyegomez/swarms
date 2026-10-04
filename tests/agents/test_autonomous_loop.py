@@ -1324,6 +1324,17 @@ class TestBashBlocklistMatchesCommandsNotSubstrings:
             "ls && sudo -i",
             "mkfs.ext4 /dev/sda",
             "rm -rf /tmp/x",
+            "`sudo id`",
+            "{ sudo reboot; }",
+            "if true; then sudo id; fi",
+            "while true; do reboot; done",
+            "! sudo id",
+            "FOO=1 sudo id",
+            "/usr/bin/sudo id",
+            "/sbin/reboot",
+            "env sudo id",
+            "time sudo id",
+            "echo a | xargs sudo rm",
         ],
     )
     def test_privileged_commands_are_still_blocked(self, command):
