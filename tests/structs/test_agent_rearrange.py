@@ -621,6 +621,27 @@ def test_agent_error_raises():
         r.run("test")
 
 
+def test_agent_error_in_a_parallel_step_raises():
+    """A comma step must raise like a sequential one, not pass the error on."""
+    agents = create_sample_agents()
+    r = _make_rearrange(
+        agents, "ResearchAgent, WriterAgent -> ReviewerAgent"
+    )
+    reviewed = []
+
+    def bad_run(*args, **kwargs):
+        raise TypeError("unexpected error in agent")
+
+    by_name = {agent.agent_name: agent for agent in r.agents}
+    by_name["ResearchAgent"].run = lambda *a, **k: "research"
+    by_name["WriterAgent"].run = bad_run
+    by_name["ReviewerAgent"].run = lambda *a, **k: reviewed.append(a)
+
+    with pytest.raises(TypeError, match="unexpected error in agent"):
+        r.run("test")
+    assert reviewed == []
+
+
 def test_callable_propagates():
     """__call__ must raise, not return the exception object."""
     agents = create_sample_agents()
