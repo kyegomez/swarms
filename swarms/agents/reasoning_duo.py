@@ -67,7 +67,6 @@ class ReasoningDuo:
             system_prompt=REASONING_PROMPT,
             max_loops=1,
             model_name=self.reasoning_model_name,
-            dynamic_temperature_enabled=True,
             *args,
             **kwargs,
         )
@@ -78,7 +77,6 @@ class ReasoningDuo:
             system_prompt=system_prompt,
             max_loops=1,
             model_name=model_names[1],
-            dynamic_temperature_enabled=True,
             *args,
             **kwargs,
         )
@@ -138,6 +136,8 @@ class ReasoningDuo:
         Returns:
             str: The output from the main agent after processing the task.
         """
+        self.conversation = Conversation()
+
         logger.info(
             f"Running task: {task} with max_loops: {self.max_loops}"
         )
