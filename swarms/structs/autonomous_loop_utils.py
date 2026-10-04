@@ -99,6 +99,11 @@ def get_planning_prompt(task: str) -> str:
 {task}
 
 Use the create_plan tool to break down this task into manageable subtasks. Each subtask should be specific and actionable.
+
+For each subtask, also give a `verification`: the observable check that
+proves it worked - a command and the result it must produce, or a file and
+what must be true of it. Commit to it now, while you have no stake in the
+answer. Omit it only for a step with genuinely nothing to check.
 """
 
 
@@ -106,6 +111,7 @@ def get_execution_prompt(
     subtask_id: str,
     subtask_desc: str,
     all_subtasks: List[Dict[str, Any]],
+    verification: str = "",
 ) -> str:
     """
     Get the execution phase prompt for a specific subtask.
@@ -114,6 +120,9 @@ def get_execution_prompt(
         subtask_id: The ID of the current subtask
         subtask_desc: The description of the current subtask
         all_subtasks: List of all subtasks with their status
+        verification: The check this subtask declared at planning time, if
+            any. Restated here because the model has to run it before
+            ``subtask_done`` will accept ``success=True``.
 
     Returns:
         str: Execution prompt
@@ -125,9 +134,22 @@ def get_execution_prompt(
         ]
     )
 
+    verification_block = (
+        f"\nVerification for this subtask: {verification}\n"
+        if verification
+        else ""
+    )
+    verification_instruction = (
+        "- Before calling subtask_done with success=true, actually run the "
+        "verification above and pass what you observed as "
+        "verification_result. A subtask_done without it will be refused.\n"
+        if verification
+        else ""
+    )
+
     return f"""You are currently working on subtask: {subtask_id}
 Description: {subtask_desc}
-
+{verification_block}
 Current status of all subtasks:
 {subtask_status_list}
 
@@ -135,7 +157,7 @@ Instructions:
 - Call all required tools for this subtask in a SINGLE response — do not split them across multiple turns.
 - When the subtask is complete, include the subtask_done call in that same response.
 - Only call subtask_done once the work is ACTUALLY DONE, not before.
-"""
+{verification_instruction}"""
 
 
 def get_summary_prompt() -> str:
@@ -152,7 +174,8 @@ def get_summary_prompt() -> str:
         "- Restate the original task and confirm completion.\n"
         "- Outline major accomplishments and deliverables.\n"
         "- Present key results and findings (including important data or insights).\n"
-        "- Briefly summarize each subtask's status (including any failures).\n"
+        "- Briefly summarize each subtask's status (including any failures),\n"
+        "  and for each one that declared a verification, what was observed.\n"
         "- Capture notable lessons learned, challenges, and future recommendations.\n"
         "Clearly state the task's overall success or any limitations.\n"
         "Use the `complete_task` tool with: task_id, summary, success (true/false), results (optional), and lessons_learned (optional).\n"
@@ -209,6 +232,24 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
                                     "dependencies": {
                                         "type": "array",
                                         "items": {"type": "string"},
+                                    },
+                                    "verification": {
+                                        "type": "string",
+                                        "description": (
+                                            "How this step will be checked, "
+                                            "as something observable: a "
+                                            "command and the result it must "
+                                            "produce, or a file and what must "
+                                            "be true of it. For example "
+                                            "'pytest tests/test_auth.py "
+                                            "exits 0' or 'report.md exists "
+                                            "and is over 500 words'. Omit it "
+                                            "only when the step genuinely "
+                                            "has nothing checkable. You will "
+                                            "be asked to report what you "
+                                            "observed before this step can "
+                                            "be marked successful."
+                                        ),
                                     },
                                 },
                                 "required": [
@@ -279,6 +320,18 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
                         "success": {
                             "type": "boolean",
                             "description": "Whether the subtask was completed successfully",
+                        },
+                        "verification_result": {
+                            "type": "string",
+                            "description": (
+                                "What you actually ran or looked at to check "
+                                "this step's `verification` criterion, and "
+                                "what you observed - the command and its exit "
+                                "code, or the file and what it contained. "
+                                "Required to mark a step with a criterion "
+                                "successful; a step that declared no "
+                                "criterion does not need one."
+                            ),
                         },
                     },
                     "required": ["task_id", "summary", "success"],
