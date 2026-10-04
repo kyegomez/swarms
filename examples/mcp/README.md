@@ -11,6 +11,7 @@ These examples are split by what you're trying to do:
 | **[`agents/`](agents/)** | Give an agent tools from an MCP server | [`01_deepwiki_repo_qa.py`](agents/01_deepwiki_repo_qa.py) |
 | **[`servers/`](servers/)** | Build an MCP server that agents connect to | [`crypto_price_server.py`](servers/crypto_price_server.py) |
 | **[`client/`](client/)** | Call MCP directly with `MCPManager`, without an Agent | [`01_list_tools.py`](client/01_list_tools.py) |
+| **[`mcp_deployer/`](mcp_deployer/)** | Serve an Agent or swarm *as* an MCP server, with auth | [`single_agent_api_key.py`](mcp_deployer/single_agent_api_key.py) |
 
 ## 30-second version
 
