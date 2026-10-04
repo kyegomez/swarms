@@ -116,9 +116,10 @@ class SerializableMixin:
                 raise TypeError(
                     f"{name} ({type_name}) is not serializable"
                 ) from error
+            key = f"{name}:{type_name}"
             with _warned_lock:
-                if name not in _warned:
-                    _warned.add(name)
+                if key not in _warned:
+                    _warned.add(key)
                     logger.warning(
                         f"{name} ({type_name}) is not serializable,"
                         " replaced with a placeholder"
