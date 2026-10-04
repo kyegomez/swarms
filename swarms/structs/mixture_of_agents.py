@@ -250,7 +250,11 @@ class MixtureOfAgents:
 
             for agent_name, agent_output in step_output.items():
                 self.conversation.add(
-                    role=agent_name,
+                    role=(
+                        f"{agent_name} (layer {i + 1}/{self.layers})"
+                        if self.layers > 1
+                        else agent_name
+                    ),
                     content=agent_output,
                 )
 

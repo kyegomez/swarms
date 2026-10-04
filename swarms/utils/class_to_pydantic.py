@@ -218,8 +218,7 @@ def class_init_to_pydantic_model(
     for name, param in signature.parameters.items():
         if name == "self":
             continue
-        # *args / **kwargs have no fixed name or arity, so they cannot map to
-        # a field. Skipping them silently matches how the signature reads.
+        # *args / **kwargs have no fixed name or arity, so they cannot be fields
         if param.kind in (
             inspect.Parameter.VAR_POSITIONAL,
             inspect.Parameter.VAR_KEYWORD,

@@ -4,6 +4,7 @@ This directory contains utility functions and helpers for single agent operation
 
 ## Examples
 
+- [agent_usage.py](agent_usage.py) - `agent.usage`: provider token counts and cost per run
 - [async_agent.py](async_agent.py) - Async agent implementation
 - [custom_agent_base_url.py](custom_agent_base_url.py) - Custom base URL configuration
 - [dynamic_context_window.py](dynamic_context_window.py) - Dynamic context window management
@@ -11,7 +12,6 @@ This directory contains utility functions and helpers for single agent operation
 - [grok_4_agent.py](grok_4_agent.py) - Grok 4 agent implementation
 - [list_agent_output_types.py](list_agent_output_types.py) - Output type listing
 - [markdown_agent.py](markdown_agent.py) - Markdown processing agent
-- [xml_output_example.py](xml_output_example.py) - XML output example
 
 > Handoff and marketplace helpers moved: see [../autonomy/handoffs/](../autonomy/handoffs/) and [../integrations/marketplace/](../integrations/marketplace/).
 

@@ -12,6 +12,8 @@
   <a href="https://docs.swarms.world">Documentation</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
   <a href="https://swarms.world">Swarms Marketplace</a>
+  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+  <a href="./README_zh.md">中文</a>
 </p>
 
 
@@ -193,6 +195,50 @@ print(
     )
 )
 ```
+
+### Serve an Agent as an MCP Server
+
+The reverse direction works too. `MCPDeployer` turns any agent, or any swarm, into an MCP server that other agents and MCP hosts can call, with an auth layer in front of it. Each target becomes one tool; pass a list or a dict to serve several from one server. [See the MCPDeployer examples](examples/mcp/mcp_deployer/)
+
+```python
+from swarms import Agent, MCPDeployer
+
+researcher = Agent(
+    agent_name="Researcher",
+    agent_description="Answers research questions with a short summary.",
+    model_name="gpt-5.4",
+    max_loops=1,
+)
+
+# Serves http://127.0.0.1:8000/mcp as the tool "researcher".
+MCPDeployer(researcher, api_keys=["sk-local-dev"], port=8000).run()
+```
+
+Any other agent can then use it by pointing at the URL with the key:
+
+```python
+from swarms import Agent
+from swarms.schemas.mcp_schemas import MCPConnection
+
+client = Agent(
+    agent_name="Client",
+    model_name="gpt-5.4",
+    mcp_url=MCPConnection(url="http://127.0.0.1:8000/mcp", api_key="sk-local-dev"),
+    max_loops=2,
+)
+client.run("Use the researcher tool to summarise the state of solid-state batteries.")
+```
+
+Auth can be static API keys, your own `auth` callable that reads the request headers, or an `mcp` `TokenVerifier` with required scopes. A server with no auth configured refuses to start unless you pass `allow_anonymous=True`. Transports: streamable HTTP (default), SSE, or stdio for desktop MCP hosts.
+
+| Example | What it shows |
+|---|---|
+| [single_agent_api_key.py](examples/mcp/mcp_deployer/single_agent_api_key.py) | One agent behind a static key |
+| [multiple_agents_one_server.py](examples/mcp/mcp_deployer/multiple_agents_one_server.py) | Two agents, a `SequentialWorkflow` and two functions as separate tools |
+| [custom_auth_per_tenant.py](examples/mcp/mcp_deployer/custom_auth_per_tenant.py) | Your own async auth callable reading an `x-tenant` header |
+| [token_verifier_with_scopes.py](examples/mcp/mcp_deployer/token_verifier_with_scopes.py) | `TokenVerifier` with required scopes |
+| [background_server_and_client_agent.py](examples/mcp/mcp_deployer/background_server_and_client_agent.py) | Serve, call from a second agent, and stop, all in one process |
+| [All MCPDeployer examples](examples/mcp/mcp_deployer/) | Every target kind, auth mode and transport |
 
 ### Your First Swarm: Multi-Agent Collaboration
 
@@ -804,6 +850,8 @@ We've made it easy to start contributing. Here's how you can help:
 3. **Understand Our Workflow and Standards:** Before submitting your work, please review our complete [**Contribution Guidelines**](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md). To help maintain code quality, we also encourage you to read our guide on [**Code Cleanliness**](https://docs.swarms.world/community/contributing-to-docs).
 
 4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
+
+5. **Use WARP for Every Commit, PR and Issue:** All contributors, people and AI agents alike, must write commit messages, PR titles and issue titles in the WARP (Warp Speed Protocol) shorthand: `[TYPE][Function/FileName][Short Description]`, for example `[FIX][Agent._run][Raise AgentLLMError after retry exhaustion]`. The full spec is the [**WARP Git Message Skill**](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1). Issues and PRs that skip WARP are triaged after the ones that use it, so expect a delay without it.
 
 ### Thank You to Our Contributors
 

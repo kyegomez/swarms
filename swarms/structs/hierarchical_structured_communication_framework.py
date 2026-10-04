@@ -20,6 +20,7 @@ Key Features:
 - Flexible model support (OpenAI and Ollama)
 """
 
+import re
 import traceback
 from typing import Any, Callable, Dict, List, Optional, Union
 from dataclasses import dataclass
@@ -99,6 +100,31 @@ class HierarchicalOrder(BaseModel):
     )
     intermediate_output: str = Field(
         default="", description="Intermediate output to pass along"
+    )
+
+
+def _parse_evaluation(response: str) -> tuple:
+    text = response if isinstance(response, str) else str(response)
+    text = re.sub(
+        r"\(\s*\d+(?:\.\d+)?\s*-\s*\d+(?:\.\d+)?\s*\)", " ", text
+    )
+
+    def _last_in_range(label, low, high, default):
+        for found in reversed(
+            re.findall(
+                rf"{label}\D{{0,20}}?(\d+(?:\.\d+)?)",
+                text,
+                re.IGNORECASE,
+            )
+        ):
+            value = float(found)
+            if low <= value <= high:
+                return value
+        return default
+
+    return (
+        _last_in_range("score", 0.0, 10.0, 7.5),
+        _last_in_range("confidence", 0.0, 1.0, 0.8),
     )
 
 
@@ -942,125 +968,6 @@ Reasoning: [Why this decision was made]
 Focus on efficient coordination and high-quality outcomes.
 """
 
-    def coordinate_workflow(
-        self, task: str, current_state: Dict[str, Any], **kwargs
-    ) -> Dict[str, Any]:
-        """
-        Coordinate the workflow and determine next actions
-
-        Args:
-            task: Current task being processed
-            current_state: Current state of the workflow
-
-        Returns:
-            Dictionary with coordination decisions
-        """
-        try:
-            # Construct coordination prompt
-            prompt = self._construct_coordination_prompt(
-                task, current_state
-            )
-
-            # Get coordination response
-            response = self.run(prompt, **kwargs)
-
-            # Parse and structure response
-            return self._parse_coordination_response(response)
-
-        except Exception as e:
-            logger.error(f"Error in workflow coordination: {e}")
-            return {
-                "next_action": "error",
-                "target_agent": "none",
-                "structured_message": f"Error in coordination: {e}",
-                "background_context": "",
-                "intermediate_output": "",
-                "reasoning": "Error occurred during coordination",
-            }
-
-    def _construct_coordination_prompt(
-        self, task: str, current_state: Dict[str, Any]
-    ) -> str:
-        """Construct a coordination prompt"""
-        state_summary = "\n".join(
-            [
-                f"- {key}: {value}"
-                for key, value in current_state.items()
-            ]
-        )
-
-        return f"""
-**Current Task:**
-{task}
-
-**Current State:**
-{state_summary}
-
-Please coordinate the workflow and determine the next action.
-
-Provide your coordination decision following the structured response format.
-"""
-
-    def _parse_coordination_response(
-        self, response: str
-    ) -> Dict[str, Any]:
-        """Parse the coordination response"""
-        try:
-            lines = response.split("\n")
-            result = {
-                "next_action": "continue",
-                "target_agent": "generator",
-                "structured_message": "",
-                "background_context": "",
-                "intermediate_output": "",
-                "reasoning": "",
-            }
-
-            current_section = None
-
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-
-                if line.lower().startswith("next action:"):
-                    result["next_action"] = line[12:].strip()
-                elif line.lower().startswith("target agent:"):
-                    result["target_agent"] = line[13:].strip()
-                elif line.lower().startswith("structured message:"):
-                    current_section = "message"
-                    result["structured_message"] = line[19:].strip()
-                elif line.lower().startswith("background context:"):
-                    current_section = "background"
-                    result["background_context"] = line[19:].strip()
-                elif line.lower().startswith("intermediate output:"):
-                    current_section = "output"
-                    result["intermediate_output"] = line[20:].strip()
-                elif line.lower().startswith("reasoning:"):
-                    current_section = "reasoning"
-                    result["reasoning"] = line[10:].strip()
-                elif current_section == "message":
-                    result["structured_message"] += " " + line
-                elif current_section == "background":
-                    result["background_context"] += " " + line
-                elif current_section == "output":
-                    result["intermediate_output"] += " " + line
-                elif current_section == "reasoning":
-                    result["reasoning"] += " " + line
-
-            return result
-
-        except Exception as e:
-            logger.error(f"Error parsing coordination response: {e}")
-            return {
-                "next_action": "error",
-                "target_agent": "none",
-                "structured_message": "Error parsing response",
-                "background_context": "",
-                "intermediate_output": "",
-                "reasoning": "Error occurred during parsing",
-            }
-
 
 # Main swarm orchestrator.
 
@@ -1559,7 +1466,9 @@ Always explain your refinements and how they address the evaluation feedback.
                         f"Evaluate this content for {criterion}:\n{content}\n\nProvide: 1) Score (0-10), 2) Detailed feedback, 3) Confidence (0-1)"
                     )
 
-                    # Parse evaluation result (simplified parsing)
+                    score, confidence = _parse_evaluation(
+                        eval_response
+                    )
                     result = EvaluationResult(
                         evaluator_name=(
                             evaluator.agent_name
@@ -1567,9 +1476,9 @@ Always explain your refinements and how they address the evaluation feedback.
                             else f"Evaluator_{i}"
                         ),
                         criterion=criterion,
-                        score=7.5,  # Default score, would need proper parsing
+                        score=score,
                         feedback=eval_response,
-                        confidence=0.8,  # Default confidence
+                        confidence=confidence,
                     )
                     results.append(result)
 

@@ -21,6 +21,11 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [batched_grid_workflow_example.py](batched_grid_workflow/batched_grid_workflow_example.py) - Complete workflow example
 - [README.md](batched_grid_workflow/README.md) - Detailed documentation
 
+## Broadcast
+- [broadcast_class_example.py](broadcast_examples/broadcast_class_example.py) - `Broadcast`: one sender, many receivers, synchronous `run()`
+- [broadcast_function_example.py](broadcast_examples/broadcast_function_example.py) - `broadcast()`: the async functional form
+- [README.md](broadcast_examples/README.md) - Detailed documentation
+
 ## Caching Examples
 - [example_multi_agent_caching.py](caching_examples/example_multi_agent_caching.py) - Multi-agent caching implementation
 - [quick_start_agent_caching.py](caching_examples/quick_start_agent_caching.py) - Quick start guide for caching
@@ -116,6 +121,16 @@ This directory contains comprehensive examples demonstrating various multi-agent
 
 ## Spreadsheet Examples
 - [spreadsheet_examples/](spreadsheet_examples/) - Spreadsheet-based agent examples and swarm usage
+
+## One-to-One
+- [one_to_one_class_example.py](one_to_one_examples/one_to_one_class_example.py) - `OneToOne`: a sender and receiver exchange messages for `max_loops` turns
+- [one_to_one_function_example.py](one_to_one_examples/one_to_one_function_example.py) - `one_to_one()`: the functional form
+- [README.md](one_to_one_examples/README.md) - Detailed documentation
+
+## One-to-Three
+- [one_to_three_class_example.py](one_to_three_examples/one_to_three_class_example.py) - `OneToThree`: one sender, exactly three receivers
+- [one_to_three_function_example.py](one_to_three_examples/one_to_three_function_example.py) - `one_to_three()`: the functional form
+- [README.md](one_to_three_examples/README.md) - Detailed documentation
 
 ## Orchestration
 - [orchestration_examples/](orchestration_examples/) - Workflow orchestration patterns
