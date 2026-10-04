@@ -1463,11 +1463,6 @@ class TestRunStreamUsesTheAutonomousLoop:
         assert status_of(agent, "step1") == "completed"
 
 
-# --------------------------------------------------------------------------
-# #1986 — interrupt and mid-run steering
-# --------------------------------------------------------------------------
-
-
 class TestCancellation:
     """A cancelled run must wind down, not blow up.
 
