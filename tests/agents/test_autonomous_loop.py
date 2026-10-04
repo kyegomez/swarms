@@ -1344,6 +1344,11 @@ class TestBashBlocklistMatchesCommandsNotSubstrings:
             "su -",
             "su root -c id",
             "echo hi; su",
+            "nice reboot",
+            "timeout 5 sudo id",
+            "sh -c 'sudo id'",
+            "bash -lc reboot",
+            "echo a | xargs -0 sudo rm",
         ],
     )
     def test_privileged_commands_are_still_blocked(self, command):

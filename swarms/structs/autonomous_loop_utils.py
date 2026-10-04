@@ -1046,7 +1046,8 @@ _BASH_COMMAND_WORDS = (
 
 _BASH_COMMAND_WORD_REGEX = _re.compile(
     r"(?:^|[\n;&|({!`]|\b(?:if|then|elif|else|while|until|do"
-    r"|time|env|exec|nohup|xargs)\s)\s*(?:\w+=\S*\s+)*"
+    r"|time|env|exec|nohup|xargs|nice|timeout|ionice|setsid|stdbuf"
+    r"|sh|bash|zsh)\s)\s*(?:\w+=\S*\s+|-\S*\s+|\d\S*\s+)*"
     r"[\\\"']*(?:\S*/)?(?:" + "|".join(_BASH_COMMAND_WORDS) + r")\b",
     _re.IGNORECASE,
 )
