@@ -2045,8 +2045,8 @@ class TestToDictPlaceholder:
             "placeholder_lock": "<Non-serializable: lock>",
         }
         mock_logger.warning.assert_called_once_with(
-            "Agent.placeholder_lock (lock) is not serializable,"
-            " replaced with a placeholder"
+            "swarms.structs.agent.Agent.placeholder_lock (lock)"
+            " is not serializable, replaced with a placeholder"
         )
         with pytest.raises(TypeError, match="Agent.placeholder_lock"):
             agent.to_dict(strict=True)

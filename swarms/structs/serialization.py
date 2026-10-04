@@ -110,7 +110,7 @@ class SerializableMixin:
             json.dumps(attr_value)
             return attr_value
         except (TypeError, ValueError) as error:
-            name = f"{type(self).__name__}.{attr_name}"
+            name = f"{type(self).__module__}.{type(self).__qualname__}.{attr_name}"
             type_name = type(attr_value).__name__
             if strict:
                 raise TypeError(
