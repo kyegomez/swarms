@@ -1483,7 +1483,7 @@ class TestLessonsReachMemory:
     ):
         agent = self._agent(monkeypatch, tmp_path)
 
-        agent._complete_task_tool(
+        agent.tool_manager.complete_task_tool(
             task_id="main",
             summary="Build the auth service",
             success=True,
@@ -1500,7 +1500,7 @@ class TestLessonsReachMemory:
     ):
         agent = self._agent(monkeypatch, tmp_path)
 
-        agent._complete_task_tool(
+        agent.tool_manager.complete_task_tool(
             task_id="main", summary="did it", success=True
         )
 
@@ -1512,7 +1512,7 @@ class TestLessonsReachMemory:
         """The section is additional, not a replacement."""
         agent = self._agent(monkeypatch, tmp_path)
 
-        out = agent._complete_task_tool(
+        out = agent.tool_manager.complete_task_tool(
             task_id="main",
             summary="did it",
             success=True,
@@ -1531,7 +1531,7 @@ class TestLessonsReachMemory:
         )
         agent = build_agent(persistent_memory=False)
 
-        agent._complete_task_tool(
+        agent.tool_manager.complete_task_tool(
             task_id="main",
             summary="did it",
             success=True,
