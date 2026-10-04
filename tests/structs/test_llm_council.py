@@ -314,10 +314,6 @@ def test_llm_council_output_types():
         raise
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
-
-
 def _record(agent, calls):
     """Replace an agent's run() with a stub that records the context it got."""
     name = agent.agent_name
@@ -426,3 +422,7 @@ def test_everything_the_chairman_reads_is_a_typed_turn():
         assert isinstance(message, dict)
         assert message["role"] in ("user", "assistant")
         assert isinstance(message["content"], str)
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
