@@ -467,11 +467,6 @@ class AutonomousAgentLoop:
             else:
                 planning_tool_handlers = all_planning_tool_handlers
 
-            # Gate the tools that touch the world. Control flow (create_plan,
-            # think, subtask_done, complete_task, respond_to_user, the
-            # tool_search loader, sub-agent and handoff calls) is the loop's
-            # own bookkeeping: denying it would strand the run rather than
-            # protect anything.
             if not self._permission_policy.is_permissive:
                 planning_tool_handlers = {
                     name: (

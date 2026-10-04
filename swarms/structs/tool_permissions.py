@@ -47,9 +47,6 @@ ASK = "ask"
 _DEFAULT_VALUES = (ALLOW, DENY, ASK)
 _POLICY_VALUES = (ALLOW, DENY, ASK)
 
-# Value returned to the model when a call is refused. Prefixed so the model can
-# recognise a policy refusal rather than reading it as a tool failure it should
-# retry with different arguments.
 _DENIAL_TEMPLATE = (
     "Permission denied for {tool_name}: {reason} "
     "Do not retry this call; choose a different approach or ask the user."
@@ -236,7 +233,6 @@ class ToolPermissionPolicy:
                 source=source,
             )
 
-        # rule == ASK
         if self.permission_callback is None:
             return PermissionDecision(
                 tool_name=tool_name,

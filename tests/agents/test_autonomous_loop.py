@@ -1457,11 +1457,6 @@ class TestRunStreamUsesTheAutonomousLoop:
         assert status_of(agent, "step1") == "completed"
 
 
-# --------------------------------------------------------------------------
-# #2163 — per-tool permission policy
-# --------------------------------------------------------------------------
-
-
 def _finish(*extra_calls):
     """A scripted run that does `extra_calls`, then closes out the task."""
     return [
@@ -1514,7 +1509,6 @@ class TestToolPermissions:
         assert not target.exists()
         text = history(agent)
         assert "Permission denied for create_file" in text
-        # The loop carried on rather than aborting on the refusal.
         assert status_of(agent, "step1") == "completed"
 
     def test_an_allowed_tool_still_runs(self, monkeypatch, tmp_path):
