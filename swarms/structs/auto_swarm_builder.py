@@ -352,7 +352,6 @@ class AutoSwarmBuilder:
         return LiteLLM(
             model_name=self.model_name,
             system_prompt=self.system_prompt,
-            temperature=0.5,
             response_format=config,
             max_tokens=self.max_tokens,
             **self.additional_llm_args,

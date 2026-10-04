@@ -17,6 +17,7 @@ The main class `LiteLLM` provides a simple interface for running LLM tasks with 
 for various input modalities and output formats.
 """
 
+import copy
 import socket
 import traceback
 from functools import lru_cache
@@ -238,7 +239,7 @@ class LiteLLM:
         model_name: str = "gpt-5.4",
         system_prompt: str = None,
         stream: bool = False,
-        temperature: float = 0.5,
+        temperature: Optional[float] = None,
         max_tokens: int = 4000,
         ssl_verify: bool = False,
         max_completion_tokens: int = 4000,
@@ -252,7 +253,7 @@ class LiteLLM:
         prompt_caching: bool = False,
         cache_config: dict = None,
         mcp_call: bool = False,
-        top_p: float = 1.0,
+        top_p: Optional[float] = None,
         functions: List[dict] = None,
         return_all: bool = False,
         base_url: str = None,
@@ -326,7 +327,7 @@ class LiteLLM:
             mcp_call (bool, optional): Whether this is an MCP (Model Context Protocol) call.
                 Affects how tool calls are formatted in the response. Defaults to False.
             top_p (float, optional): Top-p (nucleus) sampling parameter. Controls diversity
-                via nucleus sampling. Defaults to 1.0.
+                via nucleus sampling. Defaults to None, so the provider's default applies.
             functions (List[dict], optional): Legacy function definitions (deprecated in
                 favor of tools_list_dictionary). Defaults to None.
             return_all (bool, optional): Whether to return the complete response object
@@ -919,13 +920,15 @@ class LiteLLM:
 
         # Cache the system prompt — the largest stable prefix of the request.
         if self._cache_opt("cache_system_prompt", True):
-            for m in messages:
+            for i, m in enumerate(messages):
                 if isinstance(m, dict) and m.get("role") == "system":
-                    self._add_cache_control(m)
+                    messages[i] = copy.deepcopy(m)
+                    self._add_cache_control(messages[i])
                     break
 
         # Cache through the final message for incremental multi-turn caching.
         if self._cache_opt("cache_messages", True):
+            messages[-1] = copy.deepcopy(messages[-1])
             self._add_cache_control(messages[-1])
 
     def _maybe_cache_tools(self, tools: list) -> list:
@@ -1284,8 +1287,13 @@ class LiteLLM:
             "stream": self.stream,
             self._output_token_key(): self.max_tokens,
             "caching": self.caching,
-            "temperature": self.temperature,
         }
+
+        # Only include temperature if explicitly set (None = provider
+        # default) — some models (e.g. Claude Sonnet 5.5) reject any
+        # temperature value with HTTP 400 (issue #2390).
+        if self.temperature is not None:
+            completion_params["temperature"] = self.temperature
 
         # Only include top_p if explicitly set (not None)
         if self.top_p is not None:

@@ -75,7 +75,6 @@ class IterativeReflectiveExpansion:
             system_prompt=self.system_prompt,
             model_name=model_name,
             max_loops=1,
-            dynamic_temperature_enabled=True,
         )
 
     @property
