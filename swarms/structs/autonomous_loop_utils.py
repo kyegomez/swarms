@@ -641,6 +641,20 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
     ]
 
 
+PERMISSIONED_TOOLS = frozenset(
+    {
+        "create_file",
+        "update_file",
+        "read_file",
+        "list_directory",
+        "delete_file",
+        "run_bash",
+        "grep",
+        "glob",
+    }
+)
+
+
 def get_autonomous_loop_tool_names() -> List[str]:
     """
     Return a list of all autonomous loop tool names.
