@@ -2227,6 +2227,17 @@ Subtask Breakdown:
             logger.info(f"Error sending agent message: {error}")
             raise error
 
+    def list_tools(self) -> List[str]:
+        """
+        Names of every tool this agent can call.
+
+        See :meth:`swarms.agents.tool_manager.ToolManager.list_tools`.
+
+        Returns:
+            List[str]: Tool names, without duplicates, in a stable order.
+        """
+        return self.tool_manager.list_tools()
+
     def add_tool(self, tool: Callable):
         """Add a single tool to the agent's tools list.
 
