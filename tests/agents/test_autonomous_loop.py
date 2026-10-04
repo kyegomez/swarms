@@ -1200,11 +1200,6 @@ class TestRunBashSteersFileWritesToTheFileTools:
         assert "create_file" in tools["run_bash"]["description"]
 
 
-# --------------------------------------------------------------------------
-# #1979 — edit_file exact-string replacement
-# --------------------------------------------------------------------------
-
-
 class TestEditFileTool:
     """
     Without an exact-string edit the model rewrites whole files through
