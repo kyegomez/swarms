@@ -1897,7 +1897,6 @@ class GraphWorkflow:
                 logger.exception(
                     f"Error building prompt for node {node_id}: {e}"
                 )
-                # Continue with an error prompt as fallback
                 prompt = f"Error building prompt: {e}"
                 prior_messages = []
             layer_data.append(
@@ -1944,7 +1943,6 @@ class GraphWorkflow:
         messages = messages or []
 
         if node_type == NodeType.SUBGRAPH:
-            # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
             inner: GraphWorkflow = agent
             _prev_cp = inner.checkpoint_dir
             if self.checkpoint_dir and not inner.checkpoint_dir:
@@ -1972,7 +1970,7 @@ class GraphWorkflow:
             return _run_inner
 
         if streaming_callback is None:
-            # Common path: no per-node kwargs copy needed.
+
             def _run_agent(
                 _agent=agent,
                 _prompt=prompt,
@@ -2126,7 +2124,6 @@ class GraphWorkflow:
             on_node_complete (Optional[Callable[[str, Any], None]]): Fired as
                 soon as this node finishes, before its layer completes.
         """
-        # SUBGRAPH nodes only, so an agent returning a dict is not silently flattened.
         if node_type == NodeType.SUBGRAPH and isinstance(
             output, dict
         ):
@@ -2191,7 +2188,6 @@ class GraphWorkflow:
 
         prev_outputs.update(saved)
         execution_results.update(saved)
-        # Replayed so state matches a non-checkpoint run
         for node_id, output in saved.items():
             agent_name = (
                 getattr(
