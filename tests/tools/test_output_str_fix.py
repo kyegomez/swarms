@@ -108,9 +108,9 @@ def test_agent_integration():
         )
 
         # This should not raise an error anymore
-        agent.handle_tool_schema_ops()
+        agent.tool_manager.handle_tool_schema_ops()
         print(
-            "✓ Agent.handle_tool_schema_ops() completed successfully"
+            "✓ ToolManager.handle_tool_schema_ops() completed successfully"
         )
 
     except Exception as e:

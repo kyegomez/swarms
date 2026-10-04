@@ -17,6 +17,11 @@ from swarms.agents.reasoning_agent_router import (
 from swarms.agents.llm_manager import LLMManager
 from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.agents.skills_manager import SkillsManager
+from swarms.agents.tree_of_thoughts import (
+    TreeOfThoughts,
+    TreeOfThoughtsResult,
+    ThoughtNode,
+)
 
 __all__ = [
     "create_agents_from_yaml",
@@ -32,4 +37,7 @@ __all__ = [
     "SkillsManager",
     "LLMManager",
     "AgentMarketplaceHandler",
+    "TreeOfThoughts",
+    "TreeOfThoughtsResult",
+    "ThoughtNode",
 ]
