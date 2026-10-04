@@ -903,13 +903,6 @@ class AutonomousAgentLoop:
                                                 )
                                                 == subtask_id
                                             ):
-                                                # Read what the handler did,
-                                                # not what the model asked
-                                                # for: subtask_done refuses a
-                                                # success claim on a step
-                                                # with an unmet verification,
-                                                # and a refusal has to leave
-                                                # the loop running.
                                                 subtask_done = self.agent.subtask_status.get(
                                                     subtask_id
                                                 ) in (
@@ -1380,9 +1373,6 @@ class AutonomousAgentLoop:
                 "priority": step.get("priority", "medium"),
                 "dependencies": dependencies,
                 "status": "pending",
-                # Declared at planning time, before there is any incentive to
-                # call the step done. A revision may add or sharpen it; a
-                # finished step keeps whatever it was checked against.
                 "verification": str(
                     step.get("verification", "") or ""
                 ),
@@ -1756,9 +1746,6 @@ class AutonomousAgentLoop:
         declared = (subtask or {}).get("verification", "")
         verification_result = str(verification_result or "").strip()
 
-        # A success claim on a step with a criterion has to carry the check.
-        # Refused as a tool result, not raised: the loop continues and the
-        # model gets another turn to actually run it.
         if success and declared and not verification_result:
             logger.info(
                 f"Refused subtask_done for {task_id}: no verification_result "
@@ -1800,8 +1787,6 @@ class AutonomousAgentLoop:
                 f"Subtask {task_id} marked as {'completed' if success else 'failed'}. Moving to next subtask."
             )
 
-        # Add to memory. The observation goes in too, so the final summary is
-        # written against what was checked rather than what was claimed.
         verified_line = (
             f"\n[VERIFIED] {task_id}: {verification_result}"
             if verification_result
