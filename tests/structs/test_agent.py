@@ -1309,6 +1309,36 @@ class TestToolFailureIsNotAnLLMError:
         ), f"a tool failure re-ran the model {len(llm_calls)} times"
 
 
+def test_failed_worker_keeps_its_error_instead_of_its_prompt():
+    from swarms.structs.context_utils import get_final_agent_answer
+    from swarms.structs.multi_agent_exec import (
+        run_agents_concurrently,
+    )
+
+    def _down(*args, **kwargs):
+        raise RuntimeError("provider down")
+
+    ok = _patched_agent("Ok", retry_attempts=1, retry_interval=0)
+    ok.call_llm = lambda task=None, *a, **k: "4"
+    failed = _patched_agent(
+        "Failed", retry_attempts=1, retry_interval=0
+    )
+    failed.call_llm = _down
+
+    outputs = run_agents_concurrently(
+        agents=[ok, failed],
+        task="What is 2+2?",
+        return_agent_output_dict=True,
+    )
+    answers = get_final_agent_answer([ok, failed], outputs)
+
+    assert isinstance(outputs["Failed"], Exception)
+    assert answers == {
+        "Ok": "4",
+        "Failed": f"Error: {outputs['Failed']}",
+    }
+
+
 class TestTextReplyFromAToolAgent:
     """A tool-carrying agent that answers in plain text made no tool call,
     yet execute_tools recorded "[] (empty list)" after the answer and, with
