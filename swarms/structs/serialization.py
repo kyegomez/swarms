@@ -134,7 +134,7 @@ class SerializableMixin:
             attr_name: self._serialize_attr(
                 attr_name, attr_value, strict
             )
-            for attr_name, attr_value in self.__dict__.items()
+            for attr_name, attr_value in self.__dict__.copy().items()
             if attr_name not in excluded
         }
 
