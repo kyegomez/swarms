@@ -58,7 +58,6 @@ _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
 
 
 async def _arun_agent(agent: Any, *args, **kwargs) -> Any:
-    """Await ``agent.arun`` when it is async, else run ``agent.run`` in a thread."""
     arun = getattr(agent, "arun", None)
     if inspect.iscoroutinefunction(arun):
         return await arun(*args, **kwargs)
@@ -504,7 +503,6 @@ class HierarchicalSwarm:
         task: str,
         img: str = None,
     ) -> OrderBatch:
-        """Async :meth:`run_director`."""
         try:
             if self.planning_enabled is True:
                 out = await _arun_agent(
@@ -532,7 +530,6 @@ class HierarchicalSwarm:
             raise
 
     def _director_task(self, task: str) -> str:
-        """Wrap a task with the history the director has not seen yet."""
         return AGENT_TASK_TEMPLATE.format(
             history=self._context_for(self.director.agent_name),
             task=task,
@@ -606,7 +603,6 @@ class HierarchicalSwarm:
         is_final_loop: bool = False,
         **kwargs,
     ):
-        """Async :meth:`step`."""
         director_output = await self.arun_director(task=task, img=img)
         plan, orders = self.parse_orders(director_output)
 
@@ -714,10 +710,6 @@ class HierarchicalSwarm:
         *args,
         **kwargs,
     ):
-        """Async :meth:`run`: agent calls are awaited, so the event loop stays free.
-
-        Interactive mode reads the task through ``asyncio.to_thread``.
-        """
         try:
             if task is None and self.interactive:
                 task = await asyncio.to_thread(
@@ -768,7 +760,6 @@ class HierarchicalSwarm:
             raise
 
     def _start_run(self, task: Optional[str]) -> None:
-        """Reset per-run state and record the task."""
         self.conversation.clear()
         self._delivered = {}
         self.add_context_to_director()
@@ -791,7 +782,6 @@ class HierarchicalSwarm:
         last_output: Any,
         last_error: Optional[Exception],
     ) -> None:
-        """Add the loop completion marker to the conversation."""
         self.conversation.add(
             role="System",
             content=(
@@ -847,7 +837,6 @@ class HierarchicalSwarm:
             )
 
     async def afeedback_director(self, outputs: list):
-        """Async :meth:`feedback_director`."""
         try:
             output = await _arun_agent(
                 self._get_feedback_director(),
@@ -896,7 +885,6 @@ class HierarchicalSwarm:
             return str(outputs)
 
     async def arun_judge_agent(self, outputs: list) -> str:
-        """Async :meth:`run_judge_agent`."""
         try:
             logger.info(
                 "Running judge agent to score worker outputs..."
@@ -975,7 +963,6 @@ class HierarchicalSwarm:
         *args,
         **kwargs,
     ):
-        """Async :meth:`call_single_agent`."""
         try:
             agent = self._find_worker(agent_name)
             worker_task, worker_extra = self._worker_run_payload(
@@ -1069,7 +1056,6 @@ class HierarchicalSwarm:
         order: HierarchicalOrder,
         add_to_conversation: bool = True,
     ):
-        """Async :meth:`_execute_order_with_retries`."""
         attempts = self.max_agent_retries + 1
         last_error = None
 
@@ -1175,7 +1161,6 @@ class HierarchicalSwarm:
         self,
         orders: List[HierarchicalOrder],
     ):
-        """Async :meth:`_execute_orders_once`; at most ``max_workers`` orders run at once."""
         if not self.parallel_execution:
             pairs = [
                 await self._aexecute_order_with_retries(order)
@@ -1206,7 +1191,6 @@ class HierarchicalSwarm:
     def _add_parallel_results(
         self, orders: List[HierarchicalOrder], results: list
     ) -> None:
-        """Add parallel outputs in order so history does not depend on timing."""
         for order, result in zip(orders, results):
             if result is not None and not (
                 isinstance(result, dict)
@@ -1256,7 +1240,6 @@ class HierarchicalSwarm:
         failures: List[Dict[str, Any]],
         unavailable_agents: set,
     ) -> List[HierarchicalOrder]:
-        """Async :meth:`_request_reassignment`."""
         available_agents, recovery_task = self._reassignment_task(
             failures, unavailable_agents
         )
@@ -1291,7 +1274,6 @@ class HierarchicalSwarm:
         failures: List[Dict[str, Any]],
         unavailable_agents: set,
     ) -> tuple:
-        """Return the healthy worker names and the director's recovery prompt."""
         available_agents = [
             self._agent_display_name(agent)
             for agent in self.agents
@@ -1329,7 +1311,6 @@ class HierarchicalSwarm:
         orders: List[HierarchicalOrder],
         available_agents: List[str],
     ) -> List[HierarchicalOrder]:
-        """Drop replacement orders for unavailable or unknown workers."""
         valid_agent_names = set(available_agents)
         valid_orders = [
             order
@@ -1428,7 +1409,6 @@ class HierarchicalSwarm:
         self,
         orders: list,
     ):
-        """Async :meth:`execute_orders`."""
         try:
             outputs, failures = await self._aexecute_orders_once(
                 orders=orders
