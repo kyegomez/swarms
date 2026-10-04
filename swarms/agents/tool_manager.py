@@ -8,6 +8,9 @@ from pydantic import BaseModel
 
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.structs.autonomous_loop_utils import (
+    get_autonomous_loop_tool_names,
+)
 from swarms.structs.transcript import Transcript
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.dynamic_tool_loader import (
@@ -317,6 +320,78 @@ class ToolManager:
                 f"{[_name(schema) for schema in cached]}"
             )
         return len(cached)
+
+    def list_tools(self) -> List[str]:
+        """
+        Names of every tool the agent can call.
+
+        Local tools from ``tools=`` and ``tools_list_dictionary=`` come
+        first, then tools from MCP servers, then the built-ins:
+        ``handoff_task``, ``tool_search`` and the autonomous-loop tools.
+        Tools deferred behind ``tool_search`` are included, since the
+        agent can load and call them. MCP schemas are fetched at most
+        once per agent; if no server can be reached the error is logged
+        and the other names are still returned.
+
+        Returns:
+            List[str]: Tool names, without duplicates, in a stable order.
+        """
+        agent = self.agent
+        builtins = []
+        if exists(agent.handoffs):
+            builtins.extend(
+                _name(schema) for schema in get_handoff_tool_schema()
+            )
+        if agent.tool_loader is not None:
+            builtins.append(SEARCH_TOOL_NAME)
+        if agent.max_loops == "auto":
+            loop_names = get_autonomous_loop_tool_names()
+            if (
+                agent.selected_tools != "all"
+                and agent.selected_tools is not None
+            ):
+                loop_names = [
+                    name
+                    for name in loop_names
+                    if name in agent.selected_tools
+                ]
+            if not getattr(agent, "think_tool", False):
+                loop_names = [
+                    name for name in loop_names if name != "think"
+                ]
+            builtins.extend(loop_names)
+
+        mcp_schemas = []
+        if agent.mcp_enabled:
+            if agent._mcp_schemas_cache is None:
+                try:
+                    agent._mcp_schemas_cache = (
+                        agent.mcp_manager.get_tools()
+                    )
+                except Exception as error:
+                    logger.error(
+                        f"Could not list MCP tools for {agent.agent_name}: {error}"
+                    )
+            mcp_schemas = agent._mcp_schemas_cache or []
+        mcp_names = [_name(schema) for schema in mcp_schemas]
+
+        local_names = [
+            _name(schema)
+            for schema in agent.tools_list_dictionary or []
+        ]
+        if agent.tool_loader is not None:
+            local_names.extend(agent.tool_loader.loaded_names)
+            local_names.extend(agent.tool_loader.deferred_names)
+
+        reserved = set(mcp_names) | set(builtins)
+        ordered = [
+            name for name in local_names if name not in reserved
+        ]
+        return [
+            name
+            for name in dict.fromkeys(ordered + mcp_names + builtins)
+            if name
+        ]
 
     def tool_search_tool(
         self,

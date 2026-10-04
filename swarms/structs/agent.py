@@ -68,17 +68,14 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
-    get_autonomous_loop_tool_names,
     get_summary_prompt,
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.transcript import Transcript
 from swarms.tools.dynamic_tool_loader import (
-    SEARCH_TOOL_NAME,
     DynamicToolLoader,
 )
-from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
@@ -2234,89 +2231,12 @@ Subtask Breakdown:
         """
         Names of every tool this agent can call.
 
-        Local tools from ``tools=`` and ``tools_list_dictionary=`` come
-        first, then tools from MCP servers, then the built-ins:
-        ``handoff_task``, ``tool_search`` and the autonomous-loop tools.
-        Tools deferred behind ``tool_search`` are included, since the
-        agent can load and call them. MCP schemas are fetched at most
-        once per agent; if no server can be reached the error is logged
-        and the other names are still returned.
+        See :meth:`swarms.agents.tool_manager.ToolManager.list_tools`.
 
         Returns:
             List[str]: Tool names, without duplicates, in a stable order.
         """
-        builtins: List[str] = []
-        if exists(self.handoffs):
-            builtins.extend(
-                schema["function"]["name"]
-                for schema in get_handoff_tool_schema()
-            )
-        if self.tool_loader is not None:
-            builtins.append(SEARCH_TOOL_NAME)
-        if self.max_loops == "auto":
-            loop_names = get_autonomous_loop_tool_names()
-            if (
-                self.selected_tools != "all"
-                and self.selected_tools is not None
-            ):
-                loop_names = [
-                    name
-                    for name in loop_names
-                    if name in self.selected_tools
-                ]
-            if not getattr(self, "think_tool", False):
-                loop_names = [
-                    name for name in loop_names if name != "think"
-                ]
-            builtins.extend(loop_names)
-
-        mcp_names = [
-            schema.get("function", {}).get("name")
-            for schema in self._mcp_tool_schemas()
-            if isinstance(schema, dict)
-        ]
-
-        local_names = [
-            schema.get("function", {}).get("name")
-            for schema in self.tools_list_dictionary or []
-            if isinstance(schema, dict)
-        ]
-        if self.tool_loader is not None:
-            local_names.extend(self.tool_loader.loaded_names)
-            local_names.extend(self.tool_loader.deferred_names)
-
-        reserved = set(mcp_names) | set(builtins)
-        ordered = [
-            name for name in local_names if name not in reserved
-        ]
-        ordered.extend(mcp_names)
-        ordered.extend(builtins)
-
-        names: List[str] = []
-        for name in ordered:
-            if name and name not in names:
-                names.append(name)
-        return names
-
-    def _mcp_tool_schemas(self) -> List[dict]:
-        """
-        The MCP servers' tool schemas, fetched once and then reused.
-
-        Returns:
-            List[dict]: The schemas, or an empty list when MCP is off or
-            no server could be reached.
-        """
-        if not self.mcp_enabled:
-            return []
-        if self._mcp_schemas_cache is None:
-            try:
-                self._mcp_schemas_cache = self.mcp_manager.get_tools()
-            except Exception as error:
-                logger.error(
-                    f"Could not list MCP tools for {self.agent_name}: {error}"
-                )
-                return []
-        return self._mcp_schemas_cache
+        return self.tool_manager.list_tools()
 
     def add_tool(self, tool: Callable):
         """Add a single tool to the agent's tools list.
