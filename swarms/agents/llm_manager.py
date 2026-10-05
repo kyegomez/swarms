@@ -531,7 +531,9 @@ class LLMManager:
                     task, img, streaming_callback, *args, **kwargs
                 )
 
-            if agent.streaming_on and hasattr(agent.llm, "stream"):
+            if (
+                agent.streaming_on or streaming_callback is not None
+            ) and hasattr(agent.llm, "stream"):
                 return self._call_panel_streaming(
                     task,
                     img,
