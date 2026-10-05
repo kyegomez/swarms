@@ -65,6 +65,7 @@ class ConcurrentWorkflow:
 
     Methods:
         run: Execute all agents concurrently on a given task
+        arun: Execute all agents concurrently on the event loop
         batch_run: Execute workflow on multiple tasks sequentially
         run_with_dashboard: Execute agents with real-time dashboard monitoring
         cleanup: Clean up resources and connections
@@ -214,7 +215,8 @@ class ConcurrentWorkflow:
 
     def _resolve_max_workers(self) -> int:
         """
-        Determine the thread pool size for concurrent agent execution.
+        Determine how many agents run at once: the thread pool size for
+        :meth:`run`, and the semaphore limit for :meth:`arun`.
 
         Each submitted task is one agent's LLM call, which is network-bound, so
         CPU count is not the limiting factor. The pool never receives more than
