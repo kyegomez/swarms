@@ -367,6 +367,14 @@ class HierarchicalSwarm:
 
         if self.director is None:
             self.director = self.setup_director()
+        elif (
+            isinstance(self.director, Agent)
+            and not self.director.tools_list_dictionary
+        ):
+            self.director.tools_list_dictionary = [
+                _ORDER_BATCH_SCHEMA
+            ]
+            self.director.llm_handling()
 
     def agents_no_print(self):
         for agent in self.agents:

@@ -529,6 +529,53 @@ def test_director_settings_are_forwarded(monkeypatch):
     assert swarm.director.output_type == "final"
 
 
+def test_caller_director_agent_gets_the_order_schema(monkeypatch):
+    import json
+
+    import litellm
+
+    import swarms.utils.litellm_wrapper as litellm_wrapper
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-mock")
+    real_completion = litellm.completion
+    orders = {
+        "plan": "Delegate.",
+        "orders": [{"agent_name": "Worker", "task": "do it"}],
+    }
+
+    def fake_completion(**params):
+        if not params.get("tools"):
+            return real_completion(
+                **params, mock_response="Prose plan."
+            )
+        name = params["tools"][0]["function"]["name"]
+        call = {
+            "id": "call_1",
+            "type": "function",
+            "function": {
+                "name": name,
+                "arguments": json.dumps(orders),
+            },
+        }
+        return real_completion(
+            **params, mock_response="", mock_tool_calls=[call]
+        )
+
+    monkeypatch.setattr(
+        litellm_wrapper, "completion", fake_completion
+    )
+    director = Agent(
+        agent_name="Director", model_name="gpt-5.4", print_on=False
+    )
+    worker = StubAgent("Worker", ["done"])
+
+    make_recovery_swarm(director, [worker], print_on=False).run(
+        "task"
+    )
+
+    assert worker.calls == 1
+
+
 def test_custom_director_and_workers_are_forced_to_final_output():
     director = StubAgent("Director", [])
     worker = StubAgent("Worker", ["done"])
