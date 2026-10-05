@@ -496,8 +496,8 @@ class LLMManager:
         1. **Detailed streaming** (``agent.stream``): streams tokens with full
            metadata (citations, usage, logprobs, …), passing a ``token_info``
            dict to ``streaming_callback`` per token.
-        2. **Panel streaming** (``agent.streaming_on``): streams with formatted
-           panels, a real-time callback, or silently when ``print_on`` is False.
+        2. **Panel streaming** (``agent.streaming_on`` or a ``streaming_callback``):
+           formatted panels, a real-time callback, or silent when ``print_on`` is False.
         3. **Non-streaming**: a direct ``llm.run()`` returning the full string.
 
         Args:
