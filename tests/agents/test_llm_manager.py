@@ -313,6 +313,8 @@ class TestResetModelIndex:
         agent.fallback_model_name = "gpt-4o"
 
         assert agent.llm_manager.switch_to_next_model() is True
+        assert agent.fallback_models == ["gpt-4o-mini", "gpt-4o"]
+        assert agent.current_model_index == 1
         assert agent.llm.model_name == "gpt-4o"
         assert agent.llm_manager.is_fallback_available() is True
 
