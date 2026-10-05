@@ -1176,7 +1176,10 @@ class Agent:
                 self.short_memory.conversation_history
             )
 
-            self.check_if_no_prompt_then_autogenerate(task)
+            if self.auto_generate_prompt is True:
+                yield partial(
+                    self.check_if_no_prompt_then_autogenerate, task
+                )
 
             self.check_model_supports_utilities(img=img)
 
@@ -1741,8 +1744,9 @@ Subtask Breakdown:
         Model calls are awaited through the llm's ``arun``, so many agents
         can wait on their providers at once without holding a thread each.
         Tool calls, planning, the autonomous loop and fallback models still
-        run in a worker thread. An interactive agent, or a call with extra
-        positional arguments, runs :meth:`run` in a thread instead.
+        run in a worker thread. An interactive agent, a call with extra
+        positional arguments, or an agent whose :meth:`run` is overridden
+        runs :meth:`run` in a thread instead.
 
         Args:
             task (Optional[str]): The task to be performed. Defaults to None.
@@ -1758,7 +1762,9 @@ Subtask Breakdown:
             Exception: If an error occurs during the asynchronous operation.
         """
         try:
-            if not (args or self.interactive):
+            if getattr(
+                self.run, "__func__", None
+            ) is Agent.run and not (args or self.interactive):
                 return await self._adrive(
                     self._run_flow(task, img, **kwargs)
                 )

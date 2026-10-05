@@ -1068,12 +1068,11 @@ class TestArunForwarding:
         )
 
         agent = self._bare_agent()
-        agent.interactive = False
 
         def boom(*args, **kwargs):
             raise ValueError("boom")
 
-        agent._run_flow = boom
+        agent.run = boom
 
         # The original error surfaces — not a TypeError from awaiting None.
         with pytest.raises(ValueError, match="boom"):

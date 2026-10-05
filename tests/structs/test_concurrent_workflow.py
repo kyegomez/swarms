@@ -640,6 +640,7 @@ def test_concurrent_workflow_arun_awaits_agents_up_to_max_workers():
             if state["in_flight"] == 2:
                 state["full"].set()
             await state["full"].wait()
+            await asyncio.sleep(0)
             state["in_flight"] -= 1
             return self.run(task)
 
