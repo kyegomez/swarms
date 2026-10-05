@@ -1592,7 +1592,7 @@ class GraphWorkflow:
                     raise ValueError(error_msg)
 
             for node in node_objs:
-                wf.add_node(node.agent)
+                wf.add_node(node)
 
             for i, e in enumerate(edges):
                 if isinstance(e, Edge):

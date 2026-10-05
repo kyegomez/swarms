@@ -73,6 +73,22 @@ def test_add_node_accepts_a_prebuilt_node():
     assert results["second"] == "output-B"
 
 
+def test_from_spec_keeps_node_ids():
+    from unittest.mock import MagicMock
+
+    nodes = [
+        Node(id=i, type=NodeType.AGENT, agent=MagicMock(agent_name=n))
+        for i, n in (("first", "A"), ("second", "B"))
+    ]
+
+    wf = GraphWorkflow.from_spec(nodes, edges=[("first", "second")])
+
+    assert set(wf.nodes) == {"first", "second"}
+    assert [(e.source, e.target) for e in wf.edges] == [
+        ("first", "second")
+    ]
+
+
 def test_graph_workflow_multi_agent_collaboration():
     """Test GraphWorkflow with multiple agents in a collaboration scenario"""
     # Create specialized agents for a business analysis workflow
