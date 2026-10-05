@@ -194,7 +194,9 @@ class Conversation:
             or self._explicit_name
         )
 
-        path = self.load_filepath or self.save_filepath
+        path = self.load_filepath
+        if not path or not os.path.exists(path):
+            path = self.save_filepath
         if wants_persistence and os.path.exists(path):
             logger.debug(
                 f"Found existing conversation file at: {path}"
