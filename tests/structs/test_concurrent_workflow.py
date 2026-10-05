@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 from types import SimpleNamespace
@@ -626,6 +627,36 @@ def test_concurrent_workflow_returns_results_in_agent_order():
         "Beta",
         "Gamma",
     ]
+
+
+def test_concurrent_workflow_arun_awaits_agents_up_to_max_workers():
+    """arun awaits each agent's arun, max_workers at a time, and records answers in agent order (#2392)."""
+    state = {"in_flight": 0, "peak": 0, "full": asyncio.Event()}
+
+    class _AsyncEchoAgent(_EchoAgent):
+        async def arun(self, task: str, img=None, **kwargs) -> str:
+            state["in_flight"] += 1
+            state["peak"] = max(state["peak"], state["in_flight"])
+            if state["in_flight"] == 2:
+                state["full"].set()
+            await state["full"].wait()
+            state["in_flight"] -= 1
+            return self.run(task)
+
+    names = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"]
+    workflow = ConcurrentWorkflow(
+        name="Async-Workflow",
+        agents=[_AsyncEchoAgent(name) for name in names],
+        output_type="dict",
+        max_workers=2,
+    )
+
+    result = asyncio.run(
+        asyncio.wait_for(workflow.arun("rank these"), timeout=5)
+    )
+
+    assert state["peak"] == 2
+    assert [message["role"] for message in result] == ["User", *names]
 
 
 if __name__ == "__main__":

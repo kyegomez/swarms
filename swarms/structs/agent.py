@@ -5,6 +5,7 @@ import threading
 import time
 import traceback
 from contextlib import nullcontext
+from functools import partial
 from typing import (
     Any,
     Callable,
@@ -968,7 +969,85 @@ class Agent:
         )
 
     # Main function
-    def _run(
+    def _run(self, *args, **kwargs) -> Any:
+        """
+        Execute the agent's main loop for a given task.
+
+        Drives :meth:`_run_steps` to completion, making each blocking call
+        inline. Takes the same arguments.
+        """
+        return self._drive(self._run_steps(*args, **kwargs))
+
+    def _drive(self, steps):
+        """
+        Run a step generator to completion, making each blocking call inline.
+
+        Args:
+            steps: A generator from :meth:`_run_flow` or :meth:`_run_steps`.
+                It yields each blocking call as a ``functools.partial`` and
+                receives the call's result, or its exception.
+
+        Returns:
+            Any: The generator's return value.
+        """
+        result, error = None, None
+        while True:
+            try:
+                work = (
+                    steps.throw(error)
+                    if error is not None
+                    else steps.send(result)
+                )
+            except StopIteration as done:
+                return done.value
+            try:
+                result, error = work(), None
+            except BaseException as e:
+                result, error = None, e
+
+    async def _adrive(self, steps):
+        """
+        Run a step generator on the event loop.
+
+        Model calls are awaited through :meth:`acall_llm`, and a fixed-loop
+        run is driven the same way instead of in a thread. Every other
+        blocking call (tools, planning, the autonomous loop, fallback models),
+        and a ``call_llm`` or ``_run`` that a subclass or instance overrides,
+        runs in a worker thread.
+
+        Args:
+            steps: A generator from :meth:`_run_flow` or :meth:`_run_steps`.
+
+        Returns:
+            Any: The generator's return value.
+        """
+        result, error = None, None
+        while True:
+            try:
+                work = (
+                    steps.throw(error)
+                    if error is not None
+                    else steps.send(result)
+                )
+            except StopIteration as done:
+                return done.value
+            method = getattr(work.func, "__func__", None)
+            try:
+                if method is Agent._run:
+                    result = await self._adrive(
+                        self._run_steps(*work.args, **work.keywords)
+                    )
+                elif method is Agent.call_llm:
+                    result = await self.acall_llm(
+                        *work.args, **work.keywords
+                    )
+                else:
+                    result = await asyncio.to_thread(work)
+                error = None
+            except BaseException as e:
+                result, error = None, e
+
+    def _run_steps(
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
@@ -980,6 +1059,10 @@ class Agent:
     ) -> Any:
         """
         Execute the agent's main loop for a given task.
+
+        A generator: each blocking call (the model, tools, planning, context
+        compression, the loop interval) is yielded as a ``functools.partial``
+        for :meth:`_drive` or :meth:`_adrive` to make.
 
         This is the core execution method that manages the agent's reasoning and action loop.
         It handles the complete lifecycle of task execution, from initialization to completion.
@@ -1100,7 +1183,7 @@ class Agent:
             self.short_memory.add(role=self.user_name, content=task)
 
             if self.plan_enabled is True:
-                self.plan(task)
+                yield partial(self.plan, task)
 
             # Set the loop count
             loop_count = 0
@@ -1124,7 +1207,9 @@ class Agent:
                 loop_count += 1
 
                 if self._context_compressor is not None:
-                    self._context_compressor.maybe_compress(self)
+                    yield partial(
+                        self._context_compressor.maybe_compress, self
+                    )
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
@@ -1201,13 +1286,14 @@ class Agent:
                                     transcript.messages
                                 )
 
-                            response = self.call_llm(
+                            response = yield partial(
+                                self.call_llm,
+                                *args,
                                 task=task_prompt,
                                 img=img,
                                 imgs=imgs,
                                 current_loop=loop_count,
                                 streaming_callback=streaming_callback,
-                                *args,
                                 **llm_kwargs,
                             )
 
@@ -1241,7 +1327,8 @@ class Agent:
                                     response, loop_count
                                 )
 
-                        self.tool_manager.handle_tool_calls(
+                        yield partial(
+                            self.tool_manager.handle_tool_calls,
                             response,
                             loop_count,
                             transcript=(
@@ -1395,7 +1482,7 @@ class Agent:
                     logger.info(
                         f"Sleeping for {self.loop_interval} seconds"
                     )
-                    time.sleep(self.loop_interval)
+                    yield partial(time.sleep, self.loop_interval)
 
             if self.autosave is True:
                 log_agent_data(self.to_dict())
@@ -1651,6 +1738,12 @@ Subtask Breakdown:
         """
         Asynchronously runs the agent with the specified parameters.
 
+        Model calls are awaited through the llm's ``arun``, so many agents
+        can wait on their providers at once without holding a thread each.
+        Tool calls, planning, the autonomous loop and fallback models still
+        run in a worker thread. An interactive agent, or a call with extra
+        positional arguments, runs :meth:`run` in a thread instead.
+
         Args:
             task (Optional[str]): The task to be performed. Defaults to None.
             img (Optional[str]): The image to be processed. Defaults to None.
@@ -1665,6 +1758,10 @@ Subtask Breakdown:
             Exception: If an error occurs during the asynchronous operation.
         """
         try:
+            if not (args or self.interactive):
+                return await self._adrive(
+                    self._run_flow(task, img, **kwargs)
+                )
             # Positional, in run()'s order: keywords plus *args made every extra positional collide with task.
             return await asyncio.to_thread(
                 self.run,
@@ -2507,6 +2604,55 @@ Subtask Breakdown:
             >>> response = agent.call_llm("What is Python?", current_loop=1)
             >>> response = agent.call_llm("Describe this image", img="chart.png")
         """
+        return self.llm_manager.call(
+            task=self._prepend_skills(task, kwargs),
+            img=img,
+            imgs=imgs,
+            current_loop=current_loop,
+            streaming_callback=streaming_callback,
+            *args,
+            **kwargs,
+        )
+
+    async def acall_llm(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Async :meth:`call_llm`.
+
+        See :meth:`swarms.agents.llm_manager.LLMManager.acall`.
+        """
+        return await self.llm_manager.acall(
+            task=self._prepend_skills(task, kwargs),
+            img=img,
+            imgs=imgs,
+            current_loop=current_loop,
+            streaming_callback=streaming_callback,
+            *args,
+            **kwargs,
+        )
+
+    def _prepend_skills(self, task: str, kwargs: dict) -> str:
+        """
+        Put the loaded skills ahead of the request.
+
+        Args:
+            task (str): The task sent to the model.
+            kwargs (dict): The call's keyword arguments. A ``messages``
+                list in it gets the skills as a leading system turn.
+
+        Returns:
+            str: The task, with the skills in front when there are no
+                ``messages`` to carry them. The task is not converted to
+                messages, since that path drops ``img`` and ``imgs``.
+        """
         skills = self._skills_prompt.strip()
         if skills:
             if kwargs.get("messages") is not None:
@@ -2515,18 +2661,8 @@ Subtask Breakdown:
                     *kwargs["messages"],
                 ]
             elif isinstance(task, str):
-                # Not converted to messages: that path drops img and imgs.
                 task = f"{skills}\n\n{task}"
-
-        return self.llm_manager.call(
-            task=task,
-            img=img,
-            imgs=imgs,
-            current_loop=current_loop,
-            streaming_callback=streaming_callback,
-            *args,
-            **kwargs,
-        )
+        return task
 
     def handle_sop_ops(self):
         # If the user inputs a list of strings for the sop then join them and set the sop
@@ -2655,6 +2791,36 @@ Subtask Breakdown:
             ...     messages=[{"role": "user", "content": "Name three primes."}],
             ... )
         """
+        return self._drive(
+            self._run_flow(
+                task,
+                img,
+                imgs,
+                correct_answer,
+                streaming_callback,
+                n,
+                messages,
+                *args,
+                **kwargs,
+            )
+        )
+
+    def _run_flow(
+        self,
+        task: Optional[Union[str, Any]] = None,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        correct_answer: Optional[str] = None,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        n: int = 1,
+        messages: Optional[List[Dict[str, Any]]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        The body of :meth:`run` as a generator, for :meth:`_drive` and
+        :meth:`_adrive`. Takes the same arguments as :meth:`run`.
+        """
 
         # Outside interactive mode, fail fast instead of blocking on stdin
         if task is None or (
@@ -2706,35 +2872,41 @@ Subtask Breakdown:
         try:
             if self.max_loops == "auto":
                 # Use autonomous loop structure: plan -> execute subtasks -> summary
-                output = self._run_autonomous_loop(
+                output = yield partial(
+                    self._run_autonomous_loop,
+                    *args,
                     task=task,
                     img=img,
                     streaming_callback=streaming_callback,
                     messages=messages,
-                    *args,
                     **kwargs,
                 )
             elif n > 1:
-                output = [
-                    self._run(
-                        task=task,
-                        img=img,
-                        imgs=imgs,
-                        streaming_callback=streaming_callback,
-                        messages=messages,
-                        *args,
-                        **kwargs,
+                output = []
+                for _ in range(n):
+                    output.append(
+                        (
+                            yield partial(
+                                self._run,
+                                *args,
+                                task=task,
+                                img=img,
+                                imgs=imgs,
+                                streaming_callback=streaming_callback,
+                                messages=messages,
+                                **kwargs,
+                            )
+                        )
                     )
-                    for _ in range(n)
-                ]
             else:
-                output = self._run(
+                output = yield partial(
+                    self._run,
+                    *args,
                     task=task,
                     img=img,
                     imgs=imgs,
                     streaming_callback=streaming_callback,
                     messages=messages,
-                    *args,
                     **kwargs,
                 )
 
@@ -2751,15 +2923,18 @@ Subtask Breakdown:
 
             # Try fallback models if available
             if self.is_fallback_available():
-                return self._handle_fallback_execution(
-                    task=task,
-                    img=img,
-                    imgs=imgs,
-                    correct_answer=correct_answer,
-                    streaming_callback=streaming_callback,
-                    original_error=e,
-                    *args,
-                    **kwargs,
+                return (
+                    yield partial(
+                        self._handle_fallback_execution,
+                        *args,
+                        task=task,
+                        img=img,
+                        imgs=imgs,
+                        correct_answer=correct_answer,
+                        streaming_callback=streaming_callback,
+                        original_error=e,
+                        **kwargs,
+                    )
                 )
             else:
                 if self.verbose:
