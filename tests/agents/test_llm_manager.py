@@ -821,6 +821,25 @@ class TestCallPanelStreaming:
         assert result == "AB"
         assert tokens == ["A", "B"]
 
+    def test_callback_streams_without_streaming_on(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = self._chunks()
+        tokens = []
+
+        result = agent.llm_manager.call(
+            "hi", current_loop=0, streaming_callback=tokens.append
+        )
+
+        assert result == "AB"
+        assert tokens == ["A", "B"]
+        assert "imgs" not in fake_llm.calls[-1]["kwargs"]
+
+        agent.llm_manager.call(
+            "hi", imgs=["a.png"], streaming_callback=tokens.append
+        )
+        assert fake_llm.calls[-1]["kwargs"]["imgs"] == ["a.png"]
+
     def test_silent_path_when_print_on_false(self, agent, fake_llm):
         fake_llm.stream_return = self._chunks()
         agent.streaming_on = True
