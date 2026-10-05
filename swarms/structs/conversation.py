@@ -194,25 +194,25 @@ class Conversation:
             or self._explicit_name
         )
 
-        # Check if file exists and load it
-        if wants_persistence and os.path.exists(self.save_filepath):
+        path = self.load_filepath or self.save_filepath
+        if wants_persistence and os.path.exists(path):
             logger.debug(
-                f"Found existing conversation file at: {self.save_filepath}"
+                f"Found existing conversation file at: {path}"
             )
             try:
-                self.load(self.save_filepath)
+                self.load(path)
                 logger.info(
-                    f"Loaded existing conversation from {self.save_filepath}"
+                    f"Loaded existing conversation from {path}"
                 )
             except Exception as e:
                 logger.error(
-                    f"Failed to load existing conversation from {self.save_filepath}: {str(e)}"
+                    f"Failed to load existing conversation from {path}: {str(e)}"
                 )
                 # Keep the empty conversation_history initialized in __init__
 
         else:
             logger.debug(
-                f"No existing conversation file found at: {self.save_filepath}"
+                f"No existing conversation file found at: {path}"
             )
 
     def _initialize_new_conversation(self):
