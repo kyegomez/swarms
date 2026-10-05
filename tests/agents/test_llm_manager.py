@@ -304,6 +304,23 @@ class TestResetModelIndex:
         assert isinstance(agent.llm, LiteLLM)
         assert agent.llm.model_name == "gpt-4o-mini"
 
+    def test_returns_to_primary_after_fallback_model_name_switch(
+        self, agent, fake_llm
+    ):
+        agent.fallback_models = []
+        agent.current_model_index = 0
+        agent.model_name = "gpt-4o-mini"
+        agent.fallback_model_name = "gpt-4o"
+
+        assert agent.llm_manager.switch_to_next_model() is True
+        assert agent.llm.model_name == "gpt-4o"
+        assert agent.llm_manager.is_fallback_available() is True
+
+        agent.llm_manager.reset_model_index()
+
+        assert agent.model_name == "gpt-4o-mini"
+        assert agent.llm.model_name == "gpt-4o-mini"
+
 
 class TestIsFallbackAvailable:
     def test_true_with_multiple_models(self, agent):
