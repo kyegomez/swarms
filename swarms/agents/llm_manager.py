@@ -147,6 +147,7 @@ class LLMManager:
         )
 
         # Update the model name and reinitialize LLM
+        agent.fallback_models = available_models
         agent.model_name = new_model
         agent.llm = self.build()
 
