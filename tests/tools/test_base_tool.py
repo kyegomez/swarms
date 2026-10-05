@@ -100,6 +100,16 @@ def test_convert_funcs_into_tools():
     print("convert_funcs_into_tools test passed")
 
 
+def test_multiple_functions_to_dict_on_one_cpu(monkeypatch):
+    monkeypatch.setattr("os.cpu_count", lambda: 1)
+
+    result = BaseTool().multiple_functions_to_dict([sample_function])
+
+    assert [r["function"]["name"] for r in result] == [
+        "sample_function"
+    ]
+
+
 def run_all_tests():
     print("Starting all tests")
 
