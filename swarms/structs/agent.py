@@ -36,11 +36,11 @@ from swarms.agents.agent_marketplace_handler import (
     AgentMarketplaceHandler,
 )
 from swarms.agents.ape_agent import auto_generate_prompt
-from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.llm_manager import LLMManager
-from swarms.agents.tool_manager import ToolManager
 from swarms.agents.skills_manager import SkillsManager
+from swarms.agents.tool_manager import ToolManager
 from swarms.prompts.agent_system_prompts import (
     build_agent_system_prompt,
 )
@@ -72,14 +72,11 @@ from swarms.structs.autonomous_loop_utils import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
-from swarms.structs.transcript import Transcript
-from swarms.tools.dynamic_tool_loader import (
-    DynamicToolLoader,
-)
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
+from swarms.structs.transcript import Transcript
 from swarms.structs.transforms import (
     MessageTransforms,
     TransformConfig,
@@ -91,6 +88,9 @@ from swarms.telemetry.otel import (
     capture_init,
     log_agent_data,
     trace_run,
+)
+from swarms.tools.dynamic_tool_loader import (
+    DynamicToolLoader,
 )
 from swarms.tools.mcp_manager import MCPManager
 from swarms.utils.file_processing import create_file_in_folder
@@ -320,7 +320,6 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: Optional[bool] = False,
         dashboard: Optional[bool] = False,
-        # TODO: Change to callable, then parse the callable to a string
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
@@ -341,7 +340,6 @@ class Agent:
         verbose: Optional[bool] = False,
         stopping_func: Optional[Callable] = None,
         custom_exit_command: Optional[str] = "exit",
-        # [Tools]
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
         output_cleaner: Optional[Callable] = None,
