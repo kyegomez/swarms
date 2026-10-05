@@ -576,6 +576,16 @@ def test_caller_director_agent_gets_the_order_schema(monkeypatch):
     assert worker.calls == 1
 
 
+def test_caller_director_keeps_its_own_llm():
+    llm = StubAgent("LLM", [])
+    director = Agent(agent_name="Director", llm=llm, print_on=False)
+
+    make_recovery_swarm(director, [StubAgent("Worker", [])])
+
+    assert director.llm is llm
+    assert not director.tools_list_dictionary
+
+
 def test_custom_director_and_workers_are_forced_to_final_output():
     director = StubAgent("Director", [])
     worker = StubAgent("Worker", ["done"])
