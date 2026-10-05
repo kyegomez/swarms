@@ -525,6 +525,9 @@ class LLMManager:
         if "is_last" in kwargs:
             del kwargs["is_last"]
 
+        if imgs:
+            kwargs["imgs"] = imgs
+
         try:
             if agent.stream and hasattr(agent.llm, "stream"):
                 return self._call_detailed_streaming(
@@ -547,8 +550,6 @@ class LLMManager:
 
             if img is not None:
                 run_args["img"] = img
-            if imgs:
-                run_args["imgs"] = imgs
 
             return agent.llm.run(**run_args, **kwargs)
 
