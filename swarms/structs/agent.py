@@ -1133,24 +1133,27 @@ class Agent:
                 if (
                     isinstance(self.max_loops, int)
                     and self.max_loops >= 2
+                    and self.reasoning_prompt_on is True
                 ):
-                    if self.reasoning_prompt_on is True:
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
+                    notes = [
+                        f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}"
+                    ]
+                    if (
+                        loop_count >= 2
+                        and loop_count == self.max_loops
+                    ):
+                        notes.append(
+                            f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response."
                         )
-
-                # If it is the final loop, then add the final loop message
-                if (
-                    loop_count >= 2
-                    and isinstance(self.max_loops, int)
-                    and loop_count == self.max_loops
-                ):
-                    if self.reasoning_prompt_on is True:
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
-                        )
+                    for note in notes:
+                        if transcript is None:
+                            self.short_memory.add(
+                                role=self.user_name, content=note
+                            )
+                        else:
+                            self._memory_and_transcript(
+                                self.user_name, note, transcript
+                            )
 
                 # Dynamic temperature
                 if self.dynamic_temperature_enabled is True:
