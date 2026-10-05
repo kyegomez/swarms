@@ -815,6 +815,25 @@ class TestCallPanelStreaming:
         assert result == "AB"
         assert tokens == ["A", "B"]
 
+    def test_callback_path_forwards_imgs(self, agent, fake_llm):
+        fake_llm.stream_return = self._chunks()
+
+        agent.llm_manager.call(
+            "hi", imgs=["a.png"], streaming_callback=lambda _: None
+        )
+
+        assert fake_llm.calls[0]["kwargs"]["imgs"] == ["a.png"]
+
+    def test_callback_path_restores_stream_on_error(self, agent):
+        agent.llm = RaisingRunLLM(ValueError("boom"))
+
+        with pytest.raises(ValueError):
+            agent.llm_manager.call(
+                "hi", streaming_callback=lambda _: None
+            )
+
+        assert agent.llm.stream is False
+
     def test_silent_path_when_print_on_false(self, agent, fake_llm):
         fake_llm.stream_return = self._chunks()
         agent.streaming_on = True
