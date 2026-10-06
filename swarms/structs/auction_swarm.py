@@ -375,6 +375,9 @@ class AuctionSwarm(SerializableMixin):
 
         Returns:
             Formatted conversation output from ``history_output_formatter``.
+
+        Raises:
+            RuntimeError: If every winning agent fails.
         """
         self._log("info", f"[{self.name}] auctioning task: {task}")
 
