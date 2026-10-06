@@ -1430,3 +1430,36 @@ if __name__ == "__main__":
     logger.success(
         "Test execution completed. Results saved to test_results.md"
     )
+
+
+def test_to_chat_messages_keeps_tool_turns_and_round_trips():
+    calls = [
+        {
+            "id": f"call_{i}",
+            "type": "function",
+            "function": {"name": "lookup", "arguments": "{}"},
+        }
+        for i in (1, 2)
+    ]
+    messages = [
+        {"role": "system", "content": "Be brief."},
+        {"role": "user", "content": "Look up two things."},
+        {"role": "assistant", "content": None, "tool_calls": calls},
+        {"role": "tool", "tool_call_id": "call_1", "content": "one"},
+        {"role": "tool", "tool_call_id": "call_2", "content": "two"},
+        {"role": "assistant", "content": "Done."},
+    ]
+    conv = Conversation(time_enabled=True)
+    conv.add_messages(messages)
+
+    exported = conv.to_chat_messages()
+    copy = Conversation(time_enabled=False)
+    copy.add_messages(exported)
+
+    assert exported == messages
+    assert copy.to_chat_messages() == messages
+
+    note = {"role": "user", "content": "Loop 2/2"}
+    conv.conversation_history.append({**note, "internal": True})
+    assert conv.to_chat_messages() == messages
+    assert conv.to_chat_messages(include_internal=True)[-1] == note

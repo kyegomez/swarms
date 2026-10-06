@@ -1321,6 +1321,32 @@ class Conversation:
             for message in self.conversation_history
         ]
 
+    def to_chat_messages(
+        self,
+        include_internal: bool = False,
+        include_swarms_fields: bool = False,
+    ) -> List[Dict[str, Any]]:
+        messages = []
+        for row in self.conversation_history:
+            if row.get("internal") and not include_internal:
+                continue
+            metadata = row.get("metadata") or {}
+            message = {"role": row["role"], "content": row["content"]}
+            for key in (
+                "tool_calls",
+                "tool_call_id",
+                "name",
+                "function_call",
+            ):
+                if key in row or key in metadata:
+                    message[key] = row.get(key, metadata.get(key))
+            if include_swarms_fields:
+                message.update(
+                    {k: v for k, v in row.items() if k not in message}
+                )
+            messages.append(message)
+        return messages
+
     def return_messages_as_list(self):
         """Return the conversation as a list of message dictionaries.
 
