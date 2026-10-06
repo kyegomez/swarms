@@ -1,3 +1,5 @@
+import importlib as _importlib
+
 from swarms.env import load_swarms_env
 
 load_swarms_env()
@@ -6,13 +8,15 @@ from swarms.telemetry.bootup import bootup  # noqa: E402, F403
 
 bootup()
 
-from swarms.agents import *  # noqa: E402, F403
-from swarms.prompts import *  # noqa: E402, F403
-from swarms.schemas import *  # noqa: E402, F403
-from swarms.structs import *  # noqa: E402, F403
-from swarms.telemetry import *  # noqa: E402, F403
-from swarms.tools import *  # noqa: E402, F403
-from swarms.utils import *  # noqa: E402, F403
+_SUBPACKAGES = (
+    "agents",
+    "prompts",
+    "schemas",
+    "structs",
+    "telemetry",
+    "tools",
+    "utils",
+)
 
 
 def __getattr__(name: str) -> str:
@@ -37,6 +41,14 @@ def __getattr__(name: str) -> str:
 
         globals()["__version__"] = resolved
         return resolved
+
+    for package in _SUBPACKAGES:
+        module = _importlib.import_module(f"swarms.{package}")
+        globals().update(
+            {n: getattr(module, n) for n in module.__all__}
+        )
+    if name in globals():
+        return globals()[name]
 
     raise AttributeError(
         f"module {__name__!r} has no attribute {name!r}"

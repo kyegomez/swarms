@@ -1,8 +1,5 @@
-from swarms.utils.agent_loader_markdown import (
-    MarkdownAgentLoader,
-    load_agent_from_markdown,
-    load_agents_from_markdown,
-)
+import importlib
+
 from swarms.utils.file_processing import (
     create_file_in_folder,
     load_json,
@@ -19,11 +16,6 @@ from swarms.utils.index import (
     format_dict_to_string,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import (
-    LiteLLM,
-    LiteLLMException,
-    NetworkConnectionError,
-)
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import HistoryOutputType
 from swarms.utils.workspace_manager import WorkspaceManager
@@ -49,3 +41,20 @@ __all__ = [
     "initialize_logger",
     "WorkspaceManager",
 ]
+
+_LAZY = {
+    "MarkdownAgentLoader": "swarms.utils.agent_loader_markdown",
+    "load_agent_from_markdown": "swarms.utils.agent_loader_markdown",
+    "load_agents_from_markdown": "swarms.utils.agent_loader_markdown",
+    "LiteLLM": "swarms.utils.litellm_wrapper",
+    "LiteLLMException": "swarms.utils.litellm_wrapper",
+    "NetworkConnectionError": "swarms.utils.litellm_wrapper",
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY:
+        return getattr(importlib.import_module(_LAZY[name]), name)
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}"
+    )

@@ -1,3 +1,4 @@
+from swarms import agents as agents
 from swarms.structs.advisor_swarm import AdvisorSwarm
 from swarms.structs.agent import Agent
 from swarms.structs.agent_loader import AgentLoader

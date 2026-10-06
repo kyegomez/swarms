@@ -75,3 +75,23 @@ def test_falls_back_when_distribution_is_absent(monkeypatch):
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_import_loads_no_subpackage_until_an_export_is_used():
+    lazy = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys, swarms; print(sys.modules)",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    alone = subprocess.run(
+        [sys.executable, "-c", "from swarms.structs import Agent"],
+        capture_output=True,
+        text=True,
+    )
+
+    assert "'litellm'" not in lazy.stdout, lazy.stderr
+    assert alone.returncode == 0, alone.stderr
