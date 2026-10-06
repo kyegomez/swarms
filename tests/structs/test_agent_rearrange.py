@@ -635,7 +635,9 @@ def test_agent_error_in_a_parallel_step_raises():
     by_name = {agent.agent_name: agent for agent in r.agents}
     by_name["ResearchAgent"].run = lambda *a, **k: "research"
     by_name["WriterAgent"].run = bad_run
-    by_name["ReviewerAgent"].run = lambda *a, **k: reviewed.append(a)
+    by_name["ReviewerAgent"].run = lambda *a, **k: (
+        reviewed.append("ran") or "review"
+    )
 
     with pytest.raises(TypeError, match="unexpected error in agent"):
         r.run("test")
