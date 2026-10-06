@@ -1,4 +1,3 @@
-from litellm import encode, model_list
 from loguru import logger
 from typing import Optional
 from functools import lru_cache
@@ -26,6 +25,8 @@ def count_tokens(
     Raises:
         ValueError: If text is empty or if both primary and fallback models fail
     """
+    from litellm import encode
+
     if not text or not text.strip():
         logger.warning("Empty or whitespace-only text provided")
         return 0
@@ -74,6 +75,8 @@ def count_tokens(
 def get_supported_models() -> list:
     """Get list of supported models from litellm."""
     try:
+        from litellm import model_list
+
         return model_list
     except Exception as e:
         logger.warning(f"Could not retrieve model list: {e}")
