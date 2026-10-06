@@ -1037,17 +1037,12 @@ class MCPManager:
 
         async def _run_group(items):
             connection = self._route(items[0][1]["name"])
-
-            async def _one(index, call):
-                results[index] = await self._acall_tool(
-                    session, connection, call
-                )
-
             try:
                 session = await self._shared_session(connection)
-                await asyncio.gather(
-                    *[_one(index, call) for index, call in items]
-                )
+                for index, call in items:
+                    results[index] = await self._acall_tool(
+                        session, connection, call
+                    )
             except (asyncio.CancelledError, KeyboardInterrupt):
                 raise
             except BaseException as e:
