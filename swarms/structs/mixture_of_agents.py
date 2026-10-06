@@ -307,7 +307,9 @@ class MixtureOfAgents:
         :meth:`step`.
         """
         semaphore = asyncio.Semaphore(
-            self.max_workers or max_workers_95_percent()
+            self.max_workers
+            if self.max_workers is not None and self.max_workers > 0
+            else max_workers_95_percent()
         )
 
         async def run_worker(agent):
@@ -323,7 +325,7 @@ class MixtureOfAgents:
         return get_final_agent_answer(
             agents=self.agents,
             agent_outputs={
-                agent.agent_name: output
+                agent.agent_name or str(agent): output
                 for agent, output in zip(self.agents, outputs)
             },
         )

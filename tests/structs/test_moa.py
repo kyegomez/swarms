@@ -600,3 +600,18 @@ def test_arun_caps_workers_and_leaves_the_event_loop_free():
     assert not str(result).startswith("Error"), result
     assert checks == [True] * 4
     assert peak[0] == 2
+
+
+def test_arun_falls_back_when_max_workers_is_not_positive():
+    for max_workers in (0, -1):
+        moa = MixtureOfAgents(
+            agents=[_scripted_agent("W1"), _scripted_agent("W2")],
+            aggregator_agent=_scripted_agent("Aggregator"),
+            layers=1,
+            max_workers=max_workers,
+        )
+        result = asyncio.run(moa.arun("Question?"))
+        assert not str(result).startswith("Error"), (
+            max_workers,
+            result,
+        )
