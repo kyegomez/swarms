@@ -461,6 +461,15 @@ class DecisionModel:
                     f"Score {question_id!r} needs criteria as a list of at least two levels."
                 )
 
+        reserved = sorted(
+            self.extra_body.keys() & {"model", "state", "questions"}
+        )
+        if reserved:
+            raise ValueError(
+                f"extra_body cannot set {reserved}; they come from "
+                "model_name and the state and questions of each call."
+            )
+
         return {
             "model": self.model_name,
             "state": state,
