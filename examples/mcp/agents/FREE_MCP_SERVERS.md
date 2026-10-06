@@ -60,6 +60,7 @@ streamable-HTTP endpoint; prefer it when available.
 | **Cloudflare Docs** | `https://docs.mcp.cloudflare.com/mcp` | Cloudflare product documentation |
 | **Hugging Face** | `https://huggingface.co/mcp` | Search models / datasets / Spaces (optional HF token unlocks more) |
 | **Context7** | `https://mcp.context7.com/mcp` | Up-to-date docs for thousands of libraries (rate-limited without a free key) |
+| **FXMacroData** | `https://mcp.fxmacrodata.com` | Official macro releases, release calendars and indicator histories (USD without a key, 15-minute delay; a key unlocks other currencies and FX) |
 
 ```python
 # Example: repo-scoped documentation assistant via GitMCP
@@ -183,6 +184,7 @@ The numbered examples in this folder:
 | [`10_firecrawl_web_scraping.py`](10_firecrawl_web_scraping.py) | Firecrawl | API key in URL path |
 | [`12_semgrep_security_scan.py`](12_semgrep_security_scan.py) | Semgrep | free token |
 | [`13_mcp_sequential_workflow.py`](13_mcp_sequential_workflow.py) | DeepWiki + Context7 (multi-agent) | none |
+| [`14_fxmacrodata_macro_releases.py`](14_fxmacrodata_macro_releases.py) | FXMacroData | none for USD (optional key) |
 
 ```bash
 export OPENAI_API_KEY=...        # or ANTHROPIC_API_KEY, etc.
