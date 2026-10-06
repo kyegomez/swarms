@@ -691,10 +691,9 @@ class CronJob:
 
         try:
             # Wait while the per-job threads work; exit once every job has stopped.
-            while any(job.is_running for job in jobs):
-                next(
-                    job for job in jobs if job.is_running
-                )._stop_event.wait(1)
+            for job in jobs:
+                while job.is_running:
+                    job._stop_event.wait(1)
         except KeyboardInterrupt:
             logger.info(
                 "run_many received keyboard interrupt, stopping all jobs"
