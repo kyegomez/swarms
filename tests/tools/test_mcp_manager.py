@@ -30,11 +30,11 @@ import pytest
 from swarms.schemas.agent_mcp_errors import AgentMCPConnectionError
 from swarms.schemas.mcp_schemas import MCPConnection, MCPOAuthConfig
 from swarms.tools.mcp_manager import (
-    MCP_IS_V2,
     MCPFileTokenStorage,
     MCPInMemoryTokenStorage,
     MCPManager,
     _describe_exception,
+    _mcp_is_v2,
     _OAuthCallbackServer,
     _resolve_secret,
     run_async,
@@ -560,7 +560,7 @@ class TestToolDiscovery:
             manager.get_tools()
         message = str(excinfo.value)
         assert apikey_server.url in message
-        if MCP_IS_V2:
+        if _mcp_is_v2():
             # 2.x collapses every non-404 non-2xx response into
             # ErrorData(INTERNAL_ERROR, "Server returned an error
             # response") (mcp/client/streamable_http.py), so the status
@@ -725,6 +725,29 @@ class TestToolExecution:
         )
         assert results[0]["is_error"] is True
         assert "does_not_exist" in results[0]["error"]
+
+    def test_unknown_tool_on_single_server_is_not_sent(
+        self, open_manager
+    ):
+        results = open_manager.execute_tool_calls(
+            [
+                {
+                    "function": {
+                        "name": "get_weather",
+                        "arguments": "{}",
+                    }
+                },
+                {
+                    "function": {
+                        "name": "add",
+                        "arguments": '{"a": 2, "b": 3}',
+                    }
+                },
+            ]
+        )
+        assert results[0]["server"] is None
+        assert "get_weather" in results[0]["error"]
+        assert results[1]["result"] == "5"
 
     def test_no_tool_calls_returns_empty(self, open_manager):
         assert open_manager.execute_tool_calls("just text") == []

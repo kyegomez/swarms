@@ -147,6 +147,7 @@ class LLMManager:
         )
 
         # Update the model name and reinitialize LLM
+        agent.fallback_models = available_models
         agent.model_name = new_model
         agent.llm = self.build()
 
@@ -496,8 +497,8 @@ class LLMManager:
         1. **Detailed streaming** (``agent.stream``): streams tokens with full
            metadata (citations, usage, logprobs, …), passing a ``token_info``
            dict to ``streaming_callback`` per token.
-        2. **Panel streaming** (``agent.streaming_on``): streams with formatted
-           panels, a real-time callback, or silently when ``print_on`` is False.
+        2. **Panel streaming** (``agent.streaming_on`` or a ``streaming_callback``):
+           formatted panels, a real-time callback, or silent when ``print_on`` is False.
         3. **Non-streaming**: a direct ``llm.run()`` returning the full string.
 
         Args:
@@ -525,13 +526,18 @@ class LLMManager:
         if "is_last" in kwargs:
             del kwargs["is_last"]
 
+        if imgs:
+            kwargs["imgs"] = imgs
+
         try:
             if agent.stream and hasattr(agent.llm, "stream"):
                 return self._call_detailed_streaming(
                     task, img, streaming_callback, *args, **kwargs
                 )
 
-            if agent.streaming_on and hasattr(agent.llm, "stream"):
+            if (
+                agent.streaming_on or streaming_callback is not None
+            ) and hasattr(agent.llm, "stream"):
                 return self._call_panel_streaming(
                     task,
                     img,
@@ -545,8 +551,6 @@ class LLMManager:
 
             if img is not None:
                 run_args["img"] = img
-            if imgs:
-                run_args["imgs"] = imgs
 
             return agent.llm.run(**run_args, **kwargs)
 
