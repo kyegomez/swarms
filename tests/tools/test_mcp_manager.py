@@ -22,7 +22,9 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -843,6 +845,57 @@ class TestToolExecution:
 
         assert len(opened) == 1
         open_manager.close()
+
+    def test_ending_one_run_keeps_another_runs_session(
+        self, open_manager, monkeypatch
+    ):
+        open_manager.get_tools()
+        entered = threading.Event()
+        gate = threading.Event()
+        original = MCPManager._acall_tool
+
+        async def gated(self, session, connection, call):
+            if call["name"] == "greet":
+                entered.set()
+                await asyncio.to_thread(gate.wait, 10)
+            return await original(self, session, connection, call)
+
+        monkeypatch.setattr(MCPManager, "_acall_tool", gated)
+        greet = [
+            {
+                "function": {
+                    "name": "greet",
+                    "arguments": '{"name": "A"}',
+                }
+            }
+        ]
+        add = [
+            {
+                "function": {
+                    "name": "add",
+                    "arguments": '{"a": 1, "b": 2}',
+                }
+            }
+        ]
+
+        open_manager.begin_run()
+        open_manager.begin_run()
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            run_a = pool.submit(
+                open_manager.execute_tool_calls, greet
+            )
+            assert entered.wait(10)
+            assert (
+                open_manager.execute_tool_calls(add)[0]["result"]
+                == "3"
+            )
+            open_manager.end_run()
+            gate.set()
+            result_a = run_a.result(timeout=30)
+        open_manager.end_run()
+
+        assert result_a[0]["is_error"] is False
+        assert result_a[0]["result"] == "Hello, A!"
 
     def test_calls_routed_to_owning_server(
         self, open_server, second_open_server

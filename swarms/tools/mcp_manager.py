@@ -645,6 +645,7 @@ class MCPManager:
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._loop_lock = threading.Lock()
         self._sessions: Dict[str, Tuple[Any, Any, Any]] = {}
+        self._runs = 0
 
     # Config normalization.
 
@@ -1572,7 +1573,7 @@ class MCPManager:
         key = self._connection_key(connection)
         held = self._sessions.get(key)
         if held and not held[1].done():
-            return held[0]
+            return await held[0]
 
         ready = asyncio.get_running_loop().create_future()
         stop = asyncio.Event()
@@ -1586,25 +1587,49 @@ class MCPManager:
                 if not ready.done():
                     ready.set_exception(e)
 
-        task = asyncio.ensure_future(_hold())
-        session = await ready
-        self._sessions[key] = (session, task, stop)
-        return session
+        self._sessions[key] = (
+            ready,
+            asyncio.ensure_future(_hold()),
+            stop,
+        )
+        return await ready
+
+    def begin_run(self) -> None:
+        """Mark an agent run as using the reused sessions."""
+        with self._loop_lock:
+            self._runs += 1
+
+    def end_run(self) -> None:
+        """End an agent run, closing the sessions once no run is left."""
+        with self._loop_lock:
+            self._runs = max(0, self._runs - 1)
+            if self._runs:
+                return
+            loop, self._loop = self._loop, None
+            sessions, self._sessions = self._sessions, {}
+        self._shutdown(loop, sessions)
 
     def close(self) -> None:
         """Close every reused session and stop the background loop."""
         with self._loop_lock:
             loop, self._loop = self._loop, None
+            sessions, self._sessions = self._sessions, {}
+        self._shutdown(loop, sessions)
+
+    @staticmethod
+    def _shutdown(
+        loop: Optional[asyncio.AbstractEventLoop],
+        sessions: Dict[str, Tuple[Any, Any, Any]],
+    ) -> None:
+        """Stop the given sessions, then the loop that holds them."""
         if loop is None:
             return
 
         async def _close():
-            held = list(self._sessions.values())
-            self._sessions.clear()
-            for _, _, stop in held:
+            for _, _, stop in sessions.values():
                 stop.set()
             await asyncio.gather(
-                *[task for _, task, _ in held],
+                *[task for _, task, _ in sessions.values()],
                 return_exceptions=True,
             )
 
