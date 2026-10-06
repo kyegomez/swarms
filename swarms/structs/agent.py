@@ -18,17 +18,6 @@ from typing import (
 
 import toml
 import yaml
-from litellm import model_list
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    get_max_tokens,
-    get_model_info,
-    supports_function_calling,
-)
 from loguru import logger
 from pydantic import BaseModel
 
@@ -1282,12 +1271,7 @@ class Agent:
                         # Exit the retry loop, not the run, so the model can read the failure
                         success = True
 
-                    except (
-                        BadRequestError,
-                        InternalServerError,
-                        AuthenticationError,
-                        Exception,
-                    ) as e:
+                    except Exception as e:
                         last_error = e
 
                         # Answer the recorded tool calls so the retried request is well formed
@@ -1839,6 +1823,8 @@ Subtask Breakdown:
               which may not correspond to available context for input (e.g., 32768 for gpt-4.1 output, but
               over a million for certain input windows).
         """
+        from litellm.utils import get_model_info
+
         try:
             return (
                 get_model_info(self.model_name).get(
@@ -1860,6 +1846,8 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
+        from litellm.utils import get_model_info
+
         # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
         try:
             return (
@@ -1872,6 +1860,11 @@ Subtask Breakdown:
             return 16000
 
     def reliability_check(self):
+        from litellm import model_list
+        from litellm.utils import (
+            get_max_tokens,
+            supports_function_calling,
+        )
 
         if self.system_prompt is None:
             logger.warning(
@@ -2741,9 +2734,6 @@ Subtask Breakdown:
         except (
             AgentRunError,
             AgentLLMError,
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
             Exception,
         ) as e:
 

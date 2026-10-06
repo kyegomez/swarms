@@ -9,7 +9,6 @@ budget for an unbounded run.
 
 from typing import Any, Optional
 
-from litellm import completion
 from loguru import logger
 
 from swarms.utils.litellm_tokenizer import count_tokens
@@ -126,6 +125,8 @@ class ContextCompressor:
         )
 
     def _summarize(self, agent: Any, history: str) -> str:
+        from litellm import completion
+
         model = self.summarizer_model or getattr(
             agent, "model_name", None
         )

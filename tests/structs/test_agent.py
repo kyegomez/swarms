@@ -819,7 +819,7 @@ class TestFunctionCallingWarning:
     @staticmethod
     def _warnings_for(**kwargs):
         with patch(
-            "swarms.structs.agent.supports_function_calling",
+            "litellm.utils.supports_function_calling",
             return_value=False,
         ), patch("swarms.structs.agent.logger") as log:
             _patched_agent(
