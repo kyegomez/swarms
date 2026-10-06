@@ -449,6 +449,10 @@ class AuctionSwarm(SerializableMixin):
                     f"Awarded to {best_agent.agent_name}",
                     title=f"{self.name} - Award",
                 )
+        else:
+            raise RuntimeError(
+                f"[{self.name}] every winning agent failed"
+            ) from results.get(winners[0][0].agent_name)
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
