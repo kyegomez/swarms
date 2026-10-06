@@ -30,11 +30,11 @@ import pytest
 from swarms.schemas.agent_mcp_errors import AgentMCPConnectionError
 from swarms.schemas.mcp_schemas import MCPConnection, MCPOAuthConfig
 from swarms.tools.mcp_manager import (
-    MCP_IS_V2,
     MCPFileTokenStorage,
     MCPInMemoryTokenStorage,
     MCPManager,
     _describe_exception,
+    _mcp_is_v2,
     _OAuthCallbackServer,
     _resolve_secret,
     run_async,
@@ -560,7 +560,7 @@ class TestToolDiscovery:
             manager.get_tools()
         message = str(excinfo.value)
         assert apikey_server.url in message
-        if MCP_IS_V2:
+        if _mcp_is_v2():
             # 2.x collapses every non-404 non-2xx response into
             # ErrorData(INTERNAL_ERROR, "Server returned an error
             # response") (mcp/client/streamable_http.py), so the status

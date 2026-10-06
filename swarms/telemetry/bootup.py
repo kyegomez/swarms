@@ -47,31 +47,22 @@ def _prepare_workspace() -> None:
 
 def bootup():
     """Super-fast initialization of swarms environment"""
-    try:
-        # Cache env vars
-        verbose = os.getenv("SWARMS_VERBOSE_GLOBAL", "False").lower()
+    # Cache env vars
+    verbose = os.getenv("SWARMS_VERBOSE_GLOBAL", "False").lower()
 
-        # Configure logging early
-        if verbose == "false":
-            logger.disable("CRITICAL")
-        else:
-            logger.enable("")
+    # Configure logging early
+    if verbose == "false":
+        logger.disable("CRITICAL")
+    else:
+        logger.enable("")
 
-        # Silence wandb
-        os.environ["WANDB_SILENT"] = "true"
+    # Silence wandb
+    os.environ["WANDB_SILENT"] = "true"
 
-        # Only default it, assigning unconditionally discarded the caller's value
-        _prepare_workspace()
+    # Only default it, assigning unconditionally discarded the caller's value
+    _prepare_workspace()
 
-        # Suppress deprecation warnings
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+    # Suppress deprecation warnings
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # Run lightweight telemetry
-        try:
-            disable_logging()
-        except Exception as e:
-            logger.error(f"Telemetry error: {e}")
-
-    except Exception as e:
-        logger.error(f"Bootup error: {str(e)}")
-        raise
+    disable_logging()
