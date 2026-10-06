@@ -19,8 +19,8 @@ _SUBPACKAGES = (
 )
 
 
-def __getattr__(name: str) -> str:
-    """Resolve ``swarms.__version__`` on first access.
+def __getattr__(name: str):
+    """Resolve ``__version__`` or load every export on first access.
 
     The version comes from the installed distribution's metadata rather
     than a literal here, so it cannot drift from ``pyproject.toml``.
