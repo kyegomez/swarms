@@ -25,10 +25,10 @@ def get_reasoning_efforts() -> Tuple[str, ...]:
     values: Tuple[str, ...] = ()
 
     try:
-        import litellm
+        from litellm import completion
 
         annotation = (
-            inspect.signature(litellm.completion)
+            inspect.signature(completion)
             .parameters["reasoning_effort"]
             .annotation
         )
