@@ -93,8 +93,14 @@ def test_import_reads_the_bundled_litellm_cost_map(tmp_path):
         for key, value in os.environ.items()
         if key != "LITELLM_LOCAL_MODEL_COST_MAP"
     }
-    env["PYTHONPATH"] = str(
-        Path(swarms.__file__).resolve().parents[1]
+    env["PYTHONPATH"] = os.pathsep.join(
+        filter(
+            None,
+            [
+                str(Path(swarms.__file__).resolve().parents[1]),
+                env.get("PYTHONPATH"),
+            ],
+        )
     )
     result = subprocess.run(
         [sys.executable, "-c", probe],

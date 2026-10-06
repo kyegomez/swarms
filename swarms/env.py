@@ -11,8 +11,7 @@ def load_swarms_env(*, override: bool = False) -> bool:
     Also defaults ``LITELLM_LOCAL_MODEL_COST_MAP`` to ``"True"``, so importing
     litellm reads the model-cost map bundled with it instead of downloading
     one. A value already in the environment or the ``.env`` file wins. To use
-    litellm's remote map, set the variable to an empty string: litellm treats
-    any non-empty value, including ``"False"``, as on.
+    litellm's remote map, set the variable to an empty string.
     """
     dotenv_path = find_dotenv(".env", usecwd=True)
     loaded = (
