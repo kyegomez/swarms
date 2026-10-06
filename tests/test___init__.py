@@ -1,6 +1,8 @@
+import os
 import re
 import subprocess
 import sys
+from pathlib import Path
 from importlib.metadata import PackageNotFoundError
 
 import pytest
@@ -75,3 +77,33 @@ def test_falls_back_when_distribution_is_absent(monkeypatch):
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_import_reads_the_bundled_litellm_cost_map(tmp_path):
+    """Importing swarms makes litellm skip its model-cost download (#2480)."""
+    probe = (
+        "import httpx\n"
+        "fetched = []\n"
+        "httpx.get = lambda url, *args, **kwargs: fetched.append(str(url))\n"
+        "import swarms\n"
+        "print(sum('model_prices' in url for url in fetched))\n"
+    )
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key != "LITELLM_LOCAL_MODEL_COST_MAP"
+    }
+    env["PYTHONPATH"] = str(
+        Path(swarms.__file__).resolve().parents[1]
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", probe],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        env=env,
+    )
+
+    assert (
+        result.stdout.strip().splitlines()[-1] == "0"
+    ), result.stderr
