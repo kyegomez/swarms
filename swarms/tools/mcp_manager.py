@@ -1613,6 +1613,12 @@ class MCPManager:
             sessions, self._sessions = self._sessions, {}
         self._shutdown(loop, sessions)
 
+    def __enter__(self) -> "MCPManager":
+        return self
+
+    def __exit__(self, *exc_info: Any) -> None:
+        self.close()
+
     def close(self) -> None:
         """Close every reused session and stop the background loop."""
         with self._loop_lock:

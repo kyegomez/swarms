@@ -134,11 +134,12 @@ def second_open_server():
 
 @pytest.fixture
 def open_manager(open_server):
-    return MCPManager(
+    with MCPManager(
         mcp_url=open_server.url,
         agent_name="test-agent",
         retry_attempts=1,
-    )
+    ) as manager:
+        yield manager
 
 
 ########################################################
@@ -1230,14 +1231,15 @@ class TestAgentIntegration:
             tool_call_summary=False,
             llm=object(),
         )
-        results = agent.mcp_manager.execute_tool_calls(
-            {
-                "function": {
-                    "name": "add",
-                    "arguments": '{"a": 21, "b": 21}',
+        with agent.mcp_manager as manager:
+            results = manager.execute_tool_calls(
+                {
+                    "function": {
+                        "name": "add",
+                        "arguments": '{"a": 21, "b": 21}',
+                    }
                 }
-            }
-        )
+            )
         assert results[0]["result"] == "42"
 
 
