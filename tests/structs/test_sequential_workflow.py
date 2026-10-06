@@ -740,6 +740,10 @@ def test_collab_prompt_is_delivered_as_a_system_turn_at_run_time():
         assert agent.system_prompt == original
 
 
+@pytest.mark.skipif(
+    (os.cpu_count() or 1) < 2,
+    reason="run_concurrent sizes its pool with os.cpu_count(); needs >= 2 workers",
+)
 def test_run_concurrent_returns_results_in_task_order():
     tasks = ["task-0", "task-1", "task-2"]
     finished = []
@@ -750,7 +754,10 @@ def test_run_concurrent_returns_results_in_task_order():
         text = str(task) + " ".join(
             str(m["content"]) for m in kwargs.get("messages") or []
         )
-        current = next(t for t in tasks if t in text)
+        current = next((t for t in tasks if t in text), None)
+        assert (
+            current is not None
+        ), f"no task found in prompt: {text!r}"
         if current == "task-0":
             later_tasks_done.wait(timeout=5)
         with lock:
