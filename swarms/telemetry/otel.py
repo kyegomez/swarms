@@ -1,5 +1,7 @@
+import atexit
 import logging
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import lru_cache
@@ -14,12 +16,6 @@ from typing import (
 )
 
 from opentelemetry import context, trace
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-    OTLPSpanExporter,
-)
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import Status, StatusCode
 from loguru import logger
 
@@ -36,6 +32,8 @@ MAX_PAYLOAD_CHARS = int(os.getenv("SWARMS_OTEL_MAX_CHARS", "16000"))
 MAX_CONFIG_CHARS = int(
     os.getenv("SWARMS_OTEL_MAX_CONFIG_CHARS", "65536")
 )
+
+EXIT_FLUSH_TIMEOUT = float(os.getenv("SWARMS_OTEL_EXIT_TIMEOUT", "1"))
 
 
 TELEMETRY_OFF_VALUES = frozenset(
@@ -413,6 +411,23 @@ class ContextThreadPoolExecutor(ThreadPoolExecutor):
         return super().submit(bind_context(fn), *args, **kwargs)
 
 
+def _flush_on_exit(provider: Any) -> None:
+    """Flush queued spans at exit, waiting at most EXIT_FLUSH_TIMEOUT seconds.
+
+    Args:
+        provider (Any): The tracer provider whose spans to flush.
+
+    Returns:
+        None
+    """
+    # A daemon thread, since newer SDKs ignore force_flush's timeout and export inline
+    flusher = threading.Thread(
+        target=provider.force_flush, daemon=True
+    )
+    flusher.start()
+    flusher.join(EXIT_FLUSH_TIMEOUT)
+
+
 class SwarmTelemetry:
     """Fail-safe OpenTelemetry wrapper. Never raises into the caller.
 
@@ -441,6 +456,15 @@ class SwarmTelemetry:
             return
 
         try:
+            from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+                OTLPSpanExporter,
+            )
+            from opentelemetry.sdk.resources import Resource
+            from opentelemetry.sdk.trace import TracerProvider
+            from opentelemetry.sdk.trace.export import (
+                BatchSpanProcessor,
+            )
+
             provider = TracerProvider(
                 resource=Resource.create(
                     {
@@ -448,7 +472,8 @@ class SwarmTelemetry:
                             "OTEL_SERVICE_NAME", "swarms"
                         ),
                     }
-                )
+                ),
+                shutdown_on_exit=False,
             )
             provider.add_span_processor(
                 BatchSpanProcessor(
@@ -468,6 +493,8 @@ class SwarmTelemetry:
                 "opentelemetry.exporter.otlp.proto.http.trace_exporter",
             ):
                 logging.getLogger(_name).setLevel(logging.CRITICAL)
+
+            atexit.register(_flush_on_exit, provider)
 
             self._provider = provider
             self._tracer = trace.get_tracer(
