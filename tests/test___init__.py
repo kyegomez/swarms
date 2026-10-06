@@ -110,6 +110,5 @@ def test_import_reads_the_bundled_litellm_cost_map(tmp_path):
         env=env,
     )
 
-    assert (
-        result.stdout.strip().splitlines()[-1] == "0"
-    ), result.stderr
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip().splitlines()[-1] == "0"
