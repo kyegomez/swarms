@@ -1310,7 +1310,10 @@ class TestToolFailureIsNotAnLLMError:
 
 
 def test_failed_worker_keeps_its_error_instead_of_its_prompt():
-    from swarms.structs.context_utils import get_final_agent_answer
+    from swarms.structs.context_utils import (
+        agent_answer,
+        get_final_agent_answer,
+    )
     from swarms.structs.multi_agent_exec import (
         run_agents_concurrently,
     )
@@ -1337,6 +1340,12 @@ def test_failed_worker_keeps_its_error_instead_of_its_prompt():
         "Ok": "4",
         "Failed": f"Error: {outputs['Failed']}",
     }
+
+    failed.short_memory.add(role="Failed", content="partial answer")
+    assert (
+        agent_answer(failed, outputs["Failed"])
+        == f"Error: {outputs['Failed']}"
+    )
 
 
 class TestTextReplyFromAToolAgent:
