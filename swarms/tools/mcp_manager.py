@@ -25,6 +25,7 @@ import threading
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -1548,12 +1549,20 @@ class MCPManager:
     def _owner_loop(self) -> asyncio.AbstractEventLoop:
         """The background event loop that owns the reused sessions."""
         with self._loop_lock:
-            if self._loop is None:
-                self._loop = asyncio.new_event_loop()
+            loop = self._loop
+            if loop is None:
+                loop = asyncio.new_event_loop()
+                self._loop = loop
                 threading.Thread(
-                    target=self._loop.run_forever, daemon=True
+                    target=self._serve, args=(loop,), daemon=True
                 ).start()
-            return self._loop
+            return loop
+
+    @staticmethod
+    def _serve(loop: asyncio.AbstractEventLoop) -> None:
+        """Run the loop until it is stopped, then close it."""
+        loop.run_forever()
+        loop.close()
 
     async def _shared_session(
         self, connection: MCPConnection
@@ -1623,12 +1632,23 @@ class MCPManager:
         async def _close():
             for _, _, stop in sessions.values():
                 stop.set()
-            await asyncio.gather(
-                *[task for _, task, _ in sessions.values()],
-                return_exceptions=True,
-            )
+            held = [task for _, task, _ in sessions.values()]
+            if held:
+                await asyncio.wait(held, timeout=5)
+            left = asyncio.all_tasks() - {asyncio.current_task()}
+            for task in left:
+                task.cancel()
+            if left:
+                await asyncio.wait(left, timeout=1)
 
-        asyncio.run_coroutine_threadsafe(_close(), loop).result()
+        try:
+            asyncio.run_coroutine_threadsafe(_close(), loop).result(
+                timeout=10
+            )
+        except FutureTimeoutError:
+            logger.warning(
+                "MCP: sessions did not close within 10s; stopping the loop anyway."
+            )
         loop.call_soon_threadsafe(loop.stop)
 
     @asynccontextmanager
