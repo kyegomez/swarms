@@ -1561,7 +1561,7 @@ class MCPManager:
 
     async def _shared_session(
         self, connection: MCPConnection
-    ) -> ClientSession:
+    ) -> "ClientSession":
         """
         Return the open session for a server, connecting on first use.
 
