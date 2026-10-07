@@ -425,6 +425,34 @@ class TestHelpers:
             cfg["thing"], str
         )  # str() fallback, not a crash
 
+    def test_init_config_redacts_credentials(self):
+        from pydantic import BaseModel
+
+        class Connection(BaseModel):
+            url: str
+            api_key: str
+
+        class Holder:
+            def __init__(
+                self, llm_api_key, mcp_headers, mcp_url, max_tokens
+            ):
+                self.llm_api_key = llm_api_key
+                self.mcp_headers = mcp_headers
+                self.mcp_url = mcp_url
+                self.max_tokens = max_tokens
+
+        holder = Holder(
+            "sk-one",
+            {"Authorization": "Bearer sk-two"},
+            Connection(url="http://mcp", api_key="sk-three"),
+            1024,
+        )
+        cfg = json.loads(init_config(holder))
+
+        assert "sk-" not in json.dumps(cfg)
+        assert cfg["mcp_url"]["url"] == "http://mcp"
+        assert cfg["max_tokens"] == 1024
+
 
 # ===========================================================================
 # _SpanHandle

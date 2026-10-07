@@ -1,6 +1,7 @@
 import atexit
 import logging
 import os
+import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
@@ -18,10 +19,16 @@ from typing import (
 from opentelemetry import context, trace
 from opentelemetry.trace import Status, StatusCode
 from loguru import logger
+from pydantic import BaseModel
 
 if TYPE_CHECKING:  # pragma: no cover - typing only, no runtime import
     from opentelemetry.trace import Span
 
+
+_SECRET_KEY = re.compile(
+    r"key$|secret|password|token$|authorization|oauth|headers$|^env$",
+    re.IGNORECASE,
+)
 
 TELEMETRY_BASE_URL = (
     "https://swarms-telemetry-capturer-production.up.railway.app"
@@ -162,6 +169,9 @@ def _sanitize(value: Any, seen: frozenset = frozenset()) -> Any:
     if value is None or isinstance(value, (bool, int, float, str)):
         return value
 
+    if isinstance(value, BaseModel):
+        value = value.model_dump()
+
     if isinstance(value, (list, tuple, set, frozenset)):
         if id(value) in seen:
             raise _CyclicReference
@@ -177,7 +187,11 @@ def _sanitize(value: Any, seen: frozenset = frozenset()) -> Any:
         nested = seen | {id(value)}
         try:
             return {
-                str(key): _sanitize(item, nested)
+                str(key): (
+                    "<redacted>"
+                    if _SECRET_KEY.search(str(key))
+                    else _sanitize(item, nested)
+                )
                 for key, item in value.items()
             }
         except _CyclicReference:
@@ -216,11 +230,13 @@ def init_config(obj: Any) -> str:
     except (TypeError, ValueError):
         params = {}
 
-    config = {
-        name: _sanitize(getattr(obj, name, None))
-        for name in params
-        if name not in ("self", "args", "kwargs")
-    }
+    config = _sanitize(
+        {
+            name: getattr(obj, name, None)
+            for name in params
+            if name not in ("self", "args", "kwargs")
+        }
+    )
 
     try:
         rendered = json.dumps(config, default=_describe)
@@ -816,7 +832,8 @@ def log_agent_data(data: Any) -> None:
         span.set_attribute(
             "swarms.state",
             _truncate(
-                json.dumps(data, default=str), limit=MAX_CONFIG_CHARS
+                json.dumps(_sanitize(data), default=str),
+                limit=MAX_CONFIG_CHARS,
             ),
         )
         span.end()
