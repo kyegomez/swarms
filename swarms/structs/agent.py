@@ -1462,7 +1462,6 @@ class Agent:
             f"Error Type: {error_type}\n"
             f"Error Message: {error_message}\n"
             f"Traceback:\n{traceback_info}\n"
-            f"Agent State: {self.to_dict()}\n"
             f"Please optimize your input parameters, or create an issue on the Swarms GitHub and contact our team on Discord for support. "
             f"For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
         )
