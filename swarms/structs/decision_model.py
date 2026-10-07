@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import random
 import re
@@ -44,6 +45,17 @@ DECISION_MODEL_PROVIDERS = {
         "endpoint": "/@cf/cloudflare/{model_name}",
         "api_key_env": "CLOUDFLARE_AUTH_TOKEN",
         "models_url": "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/models/search?search=clef",
+    },
+    "openai": {
+        "prefix": "gpt-6-luna",
+        "models": ["gpt-6-luna"],
+        "prices": {
+            "gpt-6-luna": {"input": 0.10, "output": 0.0},
+        },
+        "base_url": "https://api.openai.com/v1",
+        "endpoint": "/decisions",
+        "api_key_env": "OPENAI_API_KEY",
+        "models_url": "https://api.openai.com/v1/models",
     },
 }
 
@@ -127,12 +139,17 @@ def _fetch_provider_models(
         )
         response.raise_for_status()
         data = response.json()
-        # TypeSafe lists under models; Cloudflare under result, as @cf/cloudflare/<name>.
-        entries = data.get("models") or data.get("result") or []
+        # TypeSafe lists under models; Cloudflare under result, as @cf/cloudflare/<name>; OpenAI under data, by id.
+        entries = (
+            data.get("models")
+            or data.get("result")
+            or data.get("data")
+            or []
+        )
         models = {
-            str(entry.get("name", "")).removeprefix(
-                "@cf/cloudflare/"
-            ): entry
+            str(
+                entry.get("name") or entry.get("id") or ""
+            ).removeprefix("@cf/cloudflare/"): entry
             for entry in entries
             if isinstance(entry, dict)
         }
@@ -165,6 +182,108 @@ def _fill_from_env(template: str) -> str:
     return template.format(
         **{name: os.environ[name] for name in names}
     )
+
+
+def _as_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _openai_input(state: State) -> Union[str, List[Any]]:
+    # A list of user messages passes through so it can carry input_image parts.
+    if (
+        isinstance(state, list)
+        and state
+        and all(
+            isinstance(message, dict)
+            and message.get("role") == "user"
+            for message in state
+        )
+    ):
+        return state
+    return _as_text(state)
+
+
+def _openai_question(
+    question_id: str, question: Dict[str, Any]
+) -> Dict[str, Any]:
+    question_type = question["type"]
+    criteria = question.get("criteria")
+    converted = {
+        "type": (
+            "predicate" if question_type == "noul" else question_type
+        ),
+        "name": question_id,
+        "instructions": _as_text(question.get("instructions", "")),
+    }
+    if question_type == "choice":
+        converted["choices"] = [
+            (
+                {"value": value}
+                if description is None
+                else {
+                    "value": value,
+                    "description": _as_text(description),
+                }
+            )
+            for value, description in criteria.items()
+        ]
+    elif question_type == "score":
+        converted["levels"] = [
+            {"label": _as_text(level)} for level in criteria
+        ]
+    elif criteria is not None:
+        # Predicates have no criteria field, so noul criteria join the instructions.
+        converted[
+            "instructions"
+        ] += f"\nCriteria: {_as_text(criteria)}"
+    return converted
+
+
+def _openai_answers(
+    answers: List[Dict[str, Any]],
+) -> Dict[str, Dict[str, Any]]:
+    converted = {}
+    for answer in answers:
+        name = answer.get("name")
+        answer_type = answer.get("type")
+        if answer_type == "refusal":
+            raise RuntimeError(
+                f"OpenAI refused to answer question {name!r}."
+            )
+        if answer_type == "predicate":
+            converted[name] = {
+                "type": "noul",
+                "noul": answer["probability"],
+            }
+        elif answer_type == "choice":
+            converted[name] = {
+                "type": "choice",
+                "choice": answer["choice"],
+                "probabilities": {
+                    p["value"]: p["probability"]
+                    for p in answer["probabilities"]
+                },
+                "confidence": answer["confidence"],
+            }
+        elif answer_type == "score":
+            converted[name] = {
+                "type": "score",
+                "score": answer["score"],
+                "legend": {
+                    str(p["value"]): p["label"]
+                    for p in answer["probabilities"]
+                },
+                "probabilities": {
+                    str(p["value"]): p["probability"]
+                    for p in answer["probabilities"]
+                },
+                "confidence": answer["confidence"],
+            }
+        else:
+            converted[name] = answer
+    return converted
 
 
 class DecisionModel:
@@ -238,7 +357,7 @@ class DecisionModel:
         Ask every question about the state in one request.
 
         Args:
-            state: Text, JSON object or list the questions are asked about.
+            state: Text, JSON object or list the questions are asked about. OpenAI models also take a list of user messages with input_image parts.
             questions: Question dictionaries keyed by an id of your choosing.
 
         Returns:
@@ -257,7 +376,7 @@ class DecisionModel:
         Ask every question about the state in one asynchronous request.
 
         Args:
-            state: Text, JSON object or list the questions are asked about.
+            state: Text, JSON object or list the questions are asked about. OpenAI models also take a list of user messages with input_image parts.
             questions: Question dictionaries keyed by an id of your choosing.
 
         Returns:
@@ -461,6 +580,16 @@ class DecisionModel:
                     f"Score {question_id!r} needs criteria as a list of at least two levels."
                 )
 
+        if self._provider_name == "openai":
+            return {
+                "model": self.model_name,
+                "input": _openai_input(state),
+                "questions": [
+                    _openai_question(question_id, question)
+                    for question_id, question in questions.items()
+                ],
+                **self.extra_body,
+            }
         return {
             "model": self.model_name,
             "state": state,
@@ -472,7 +601,7 @@ class DecisionModel:
         self, data: Dict[str, Any], questions: Questions
     ) -> Dict[str, Any]:
         """
-        Check that every question came back with an answer of its own type.
+        Key the answers by question id and check that each has its question's type.
 
         Args:
             data: Decoded JSON response.
@@ -486,6 +615,11 @@ class DecisionModel:
             data.get("result"), dict
         ):
             data = data["result"]
+        if self._provider_name == "openai":
+            data = {
+                **data,
+                "answers": _openai_answers(data.get("answers") or []),
+            }
 
         answers = data.get("answers") or {}
         for question_id, question in questions.items():
