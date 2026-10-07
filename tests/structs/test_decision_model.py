@@ -18,6 +18,7 @@ CREDENTIAL_VARS = (
     "TYPESAFE_API_KEY",
     "CLOUDFLARE_AUTH_TOKEN",
     "CLOUDFLARE_ACCOUNT_ID",
+    "OPENAI_API_KEY",
 )
 
 BUILTIN_MODELS = [
@@ -26,6 +27,7 @@ BUILTIN_MODELS = [
     "jev-1.13.0",
     "clef",
     "clef-flash",
+    "gpt-6-luna",
 ]
 
 TYPESAFE_MODELS_URL = "https://api.typesafe.ai/v1/models"
@@ -33,6 +35,7 @@ CLOUDFLARE_MODELS_URL = (
     "https://api.cloudflare.com/client/v4/accounts/acct-1"
     "/ai/models/search?search=clef"
 )
+OPENAI_MODELS_URL = "https://api.openai.com/v1/models"
 
 QUESTIONS = {
     "department": {
@@ -83,6 +86,38 @@ def _answer(question):
     return {"type": "noul", "noul": 0.95}
 
 
+def _openai_answer(question):
+    name = question["name"]
+    if question["type"] == "choice":
+        values = [choice["value"] for choice in question["choices"]]
+        return {
+            "type": "choice",
+            "name": name,
+            "choice": values[0],
+            "probabilities": [
+                {"value": value, "probability": float(i == 0)}
+                for i, value in enumerate(values)
+            ],
+            "confidence": 0.8,
+        }
+    if question["type"] == "score":
+        return {
+            "type": "score",
+            "name": name,
+            "score": 1.0,
+            "probabilities": [
+                {
+                    "value": i,
+                    "label": level["label"],
+                    "probability": float(i == 1),
+                }
+                for i, level in enumerate(question["levels"])
+            ],
+            "confidence": 0.9,
+        }
+    return {"type": "predicate", "name": name, "probability": 0.92}
+
+
 class FakeAPI:
     """Stand-in decision model API that records every request."""
 
@@ -99,6 +134,29 @@ class FakeAPI:
             return item
 
         body = json.loads(request.content)
+        if request.url.host == "api.openai.com":
+            return httpx.Response(
+                200,
+                json={
+                    "model": body["model"],
+                    "answers": [
+                        _openai_answer(question)
+                        for question in body["questions"]
+                    ],
+                    "usage": {
+                        "input_tokens": 40,
+                        "input_tokens_details": {
+                            "cache_write_tokens": 0,
+                            "cached_tokens": 0,
+                        },
+                        "output_tokens": 0,
+                        "output_tokens_details": {
+                            "reasoning_tokens": 0
+                        },
+                        "total_tokens": 40,
+                    },
+                },
+            )
         result = {
             "model": body["model"],
             "answers": {
@@ -121,11 +179,17 @@ class FakeAPI:
         return json.loads(self.requests[-1].content)
 
 
-def _listing(url, typesafe=None, cloudflare=None):
+def _listing(url, typesafe=None, cloudflare=None, openai=None):
     request = httpx.Request("GET", url)
     if "typesafe" in url:
         return httpx.Response(
             200, request=request, json={"models": typesafe or []}
+        )
+    if "openai" in url:
+        return httpx.Response(
+            200,
+            request=request,
+            json={"object": "list", "data": openai or []},
         )
     return httpx.Response(
         200,
@@ -198,12 +262,17 @@ def cloudflare_env(monkeypatch):
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct-1")
 
 
+@pytest.fixture
+def openai_key(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-openai")
+
+
 def test_builtin_models_are_listed_without_credentials():
     assert get_decision_models() == BUILTIN_MODELS
 
 
 def test_live_models_from_every_provider_are_merged(
-    monkeypatch, typesafe_key, cloudflare_env
+    monkeypatch, typesafe_key, cloudflare_env, openai_key
 ):
     seen = []
 
@@ -216,6 +285,7 @@ def test_live_models_from_every_provider_are_merged(
                 {"name": "@cf/cloudflare/clef"},
                 {"name": "@cf/cloudflare/clef-2"},
             ],
+            openai=[{"id": "gpt-6-luna"}, {"id": "gpt-6-luna-2"}],
         )
 
     monkeypatch.setattr(decision_model.httpx, "get", fake_get)
@@ -225,10 +295,13 @@ def test_live_models_from_every_provider_are_merged(
         "clef",
         "clef-flash",
         "clef-2",
+        "gpt-6-luna",
+        "gpt-6-luna-2",
     ]
     assert seen == [
         (TYPESAFE_MODELS_URL, "Bearer ts-key"),
         (CLOUDFLARE_MODELS_URL, "Bearer cf-token"),
+        (OPENAI_MODELS_URL, "Bearer sk-openai"),
     ]
 
 
@@ -354,6 +427,7 @@ def test_builtin_prices_cover_every_builtin_model():
     assert prices["jev-latest"] == {"input": 0.042, "output": 0.0}
     assert prices["clef"] == {"input": 0.24, "output": 0.0}
     assert prices["clef-flash"] == {"input": 0.09, "output": 0.0}
+    assert prices["gpt-6-luna"] == {"input": 0.10, "output": 0.0}
 
 
 def test_live_cloudflare_prices_override_the_builtin_ones(
@@ -553,6 +627,7 @@ def test_explicit_base_url_does_not_need_a_cloudflare_account_id(
     [
         ("jev-latest", "TYPESAFE_API_KEY"),
         ("clef", "CLOUDFLARE_AUTH_TOKEN"),
+        ("gpt-6-luna", "OPENAI_API_KEY"),
     ],
 )
 def test_missing_api_key_names_the_variable(
@@ -1158,6 +1233,277 @@ def test_calculate_cost_bills_output_tokens_when_priced(
     assert cost["input_cost"] == pytest.approx(1.0)
     assert cost["output_cost"] == pytest.approx(1.0)
     assert cost["total_cost"] == pytest.approx(2.0)
+
+
+def test_gpt_6_luna_routes_to_openai_decisions(openai_key):
+    model = DecisionModel(model_name="gpt-6-luna")
+
+    assert model.base_url == "https://api.openai.com/v1"
+    assert model.endpoint == "/decisions"
+    assert model.api_key_env == "OPENAI_API_KEY"
+    assert model._api_key == "sk-openai"
+
+
+def test_openai_listing_keeps_only_decision_models(
+    monkeypatch, openai_key
+):
+    seen = []
+
+    def fake_get(url, headers=None, timeout=None):
+        seen.append((url, headers["Authorization"]))
+        return _listing(
+            url,
+            openai=[
+                {"id": "gpt-5.4", "object": "model"},
+                {"id": "gpt-6-luna", "object": "model"},
+                {"id": "gpt-6-luna-2026-10-01", "object": "model"},
+            ],
+        )
+
+    monkeypatch.setattr(decision_model.httpx, "get", fake_get)
+
+    assert get_decision_models() == BUILTIN_MODELS + [
+        "gpt-6-luna-2026-10-01"
+    ]
+    assert seen == [(OPENAI_MODELS_URL, "Bearer sk-openai")]
+
+
+def test_openai_run_sends_the_decisions_format(api, openai_key):
+    DecisionModel(model_name="gpt-6-luna").run(
+        {"message": "Help!"}, QUESTIONS
+    )
+
+    request = api.requests[-1]
+    assert str(request.url) == "https://api.openai.com/v1/decisions"
+    assert request.headers["authorization"] == "Bearer sk-openai"
+    assert api.body == {
+        "model": "gpt-6-luna",
+        "input": '{"message": "Help!"}',
+        "questions": [
+            {
+                "type": "choice",
+                "name": "department",
+                "instructions": "Which team should handle this?",
+                "choices": [
+                    {
+                        "value": "billing",
+                        "description": "Payments and refunds",
+                    },
+                    {
+                        "value": "technical",
+                        "description": "Bugs and outages",
+                    },
+                ],
+            },
+            {
+                "type": "score",
+                "name": "frustration",
+                "instructions": "How frustrated is the customer?",
+                "levels": [
+                    {"label": "Calm"},
+                    {"label": "Frustrated"},
+                    {"label": "Angry"},
+                ],
+            },
+            {
+                "type": "predicate",
+                "name": "is_urgent",
+                "instructions": "The message conveys urgency.",
+            },
+        ],
+    }
+
+
+def test_openai_answers_come_back_keyed_by_question_id(
+    api, openai_key
+):
+    result = DecisionModel(model_name="gpt-6-luna").run(
+        "text", QUESTIONS
+    )
+
+    assert result["model"] == "gpt-6-luna"
+    assert result["answers"] == {
+        "department": {
+            "type": "choice",
+            "choice": "billing",
+            "probabilities": {"billing": 1.0, "technical": 0.0},
+            "confidence": 0.8,
+        },
+        "frustration": {
+            "type": "score",
+            "score": 1.0,
+            "legend": {"0": "Calm", "1": "Frustrated", "2": "Angry"},
+            "probabilities": {"0": 0.0, "1": 1.0, "2": 0.0},
+            "confidence": 0.9,
+        },
+        "is_urgent": {"type": "noul", "noul": 0.92},
+    }
+
+
+@pytest.mark.parametrize(
+    "state, sent",
+    [
+        ("plain text", "plain text"),
+        (
+            {"ticket": {"id": 1, "body": None}},
+            '{"ticket": {"id": 1, "body": null}}',
+        ),
+        (["first", "second"], '["first", "second"]'),
+        ({"note": "café"}, '{"note": "café"}'),
+        (
+            [
+                {"role": "user", "content": "hi"},
+                {"role": "assistant", "content": "hello"},
+            ],
+            '[{"role": "user", "content": "hi"}, '
+            '{"role": "assistant", "content": "hello"}]',
+        ),
+    ],
+)
+def test_openai_state_is_sent_as_text(api, openai_key, state, sent):
+    DecisionModel(model_name="gpt-6-luna").run(state, QUESTIONS)
+
+    assert api.body["input"] == sent
+
+
+def test_openai_user_messages_pass_through_with_images(
+    api, openai_key
+):
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": "Inspect the product in this photo.",
+                },
+                {
+                    "type": "input_image",
+                    "image_url": "data:image/png;base64,iVBORw0KGgo=",
+                },
+            ],
+        }
+    ]
+
+    DecisionModel(model_name="gpt-6-luna").noul(
+        messages, "The product has visible damage."
+    )
+
+    assert api.body["input"] == messages
+
+
+def test_openai_helpers_return_the_answer(api, openai_key):
+    model = DecisionModel(model_name="gpt-6-luna")
+
+    assert model.noul("text", "Urgent?") == 0.92
+    assert model.score("text", "How bad?", ["low", "high"])[
+        "legend"
+    ] == {"0": "low", "1": "high"}
+    assert (
+        model.choice("text", "Which team?", {"a": None, "b": None})[
+            "choice"
+        ]
+        == "a"
+    )
+    assert api.body["questions"][0]["choices"] == [
+        {"value": "a"},
+        {"value": "b"},
+    ]
+
+
+def test_openai_noul_criteria_join_the_instructions(api, openai_key):
+    DecisionModel(model_name="gpt-6-luna").noul(
+        "text",
+        "Urgent?",
+        criteria={"true": "Time-sensitive", "false": "Can wait"},
+    )
+
+    assert api.body["questions"] == [
+        {
+            "type": "predicate",
+            "name": "answer",
+            "instructions": (
+                "Urgent?\nCriteria: "
+                '{"true": "Time-sensitive", "false": "Can wait"}'
+            ),
+        }
+    ]
+
+
+def test_openai_structured_instructions_are_sent_as_json(
+    api, openai_key
+):
+    instructions = {
+        "candidate": {"name": "John Smith"},
+        "question": "Is the resume for candidate?",
+    }
+
+    DecisionModel(model_name="gpt-6-luna").noul(
+        "resume text", instructions
+    )
+
+    sent = api.body["questions"][0]["instructions"]
+    assert json.loads(sent) == instructions
+
+
+def test_openai_extra_body_is_sent(api, openai_key):
+    DecisionModel(
+        model_name="gpt-6-luna",
+        extra_body={"safety_identifier": "user-123"},
+    ).noul("text", "?")
+
+    assert api.body["safety_identifier"] == "user-123"
+
+
+def test_openai_refusal_raises(api, openai_key):
+    api.queue.append(
+        httpx.Response(
+            200,
+            json={
+                "model": "gpt-6-luna",
+                "answers": [{"type": "refusal", "name": "is_urgent"}],
+            },
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="refused.*'is_urgent'"):
+        DecisionModel(model_name="gpt-6-luna").run(
+            "text", {"is_urgent": QUESTIONS["is_urgent"]}
+        )
+
+
+def test_openai_missing_answer_raises(api, openai_key):
+    api.queue.append(
+        httpx.Response(
+            200, json={"model": "gpt-6-luna", "answers": []}
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="No answer.*'is_urgent'"):
+        DecisionModel(model_name="gpt-6-luna").run(
+            "text", {"is_urgent": QUESTIONS["is_urgent"]}
+        )
+
+
+def test_openai_usage_and_cost(api, openai_key):
+    model = DecisionModel(model_name="gpt-6-luna")
+
+    model.run("text", QUESTIONS)
+    model.noul("text", "Urgent?")
+
+    assert model.usage == {"input_tokens": 80, "output_tokens": 0}
+    assert model.calculate_cost()["total_cost"] == pytest.approx(
+        80 * 0.10 / 1_000_000
+    )
+
+
+async def test_openai_arun_matches_run(api, openai_key):
+    model = DecisionModel(model_name="gpt-6-luna")
+
+    result = await model.arun("text", QUESTIONS)
+
+    assert result == model.run("text", QUESTIONS)
+    assert api.requests[0].url == api.requests[1].url
 
 
 class PlainProvider(DecisionModel):
