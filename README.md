@@ -83,23 +83,22 @@ $ cd swarms
 $ pip install -r requirements.txt
 ```
 
-<!-- ### Using Docker
+### Using Docker
 
-The easiest way to get started with Swarms is using our pre-built Docker image:
+The official image, [`swarmscorp/swarms`](https://hub.docker.com/r/swarmscorp/swarms) on Docker Hub, has swarms and its CLI installed on Python 3.13, for `linux/amd64` and `linux/arm64`.
 
 ```bash
-# Pull and run the latest image
-$ docker pull kyegomez/swarms:latest
-$ docker run --rm kyegomez/swarms:latest python -c "import swarms; print('Swarms is ready!')"
+# Pull the image
+$ docker pull swarmscorp/swarms:latest
 
-# Run interactively for development
-$ docker run -it --rm -v $(pwd):/app kyegomez/swarms:latest bash
+# Run a script from the current directory, passing your API key from the shell
+$ docker run --rm -e OPENAI_API_KEY -v "$PWD:/app" swarmscorp/swarms python agent.py
 
-# Using docker-compose (recommended for development)
-$ docker-compose up -d
+# Open a Python shell with swarms installed
+$ docker run -it --rm -e OPENAI_API_KEY swarmscorp/swarms
 ```
 
-For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md). -->
+To build the image yourself, run `docker build -t swarms .` from the repository root.
 
 ---
 
