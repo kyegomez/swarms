@@ -581,6 +581,23 @@ def test_save_and_load_json():
         shutil.rmtree(temp_dir)
 
 
+def test_load_filepath_restores_the_saved_history(tmp_path):
+    saved = tmp_path / "saved.json"
+    conv = Conversation(save_filepath=str(saved))
+    conv.add("user", "remember Helios")
+    conv.save_as_json(force=True)
+
+    restored = Conversation(
+        load_filepath=str(saved),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+
+    assert [
+        message["content"]
+        for message in restored.conversation_history
+    ] == ["remember Helios"]
+
+
 # ── memory_md_path initialization ──
 
 
