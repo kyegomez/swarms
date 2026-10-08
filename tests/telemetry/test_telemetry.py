@@ -1138,6 +1138,7 @@ class TestDisabledPath:
 # ===========================================================================
 def _load_arch_classes():
     from swarms import (
+        AdvisorSwarm,
         Agent,
         AgentRearrange,
         AutoSwarmBuilder,
@@ -1166,6 +1167,7 @@ def _load_arch_classes():
     from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 
     return {
+        "AdvisorSwarm": AdvisorSwarm,
         "Agent": Agent,
         "SwarmRouter": SwarmRouter,
         "ConcurrentWorkflow": ConcurrentWorkflow,
@@ -1257,6 +1259,12 @@ class TestConstructionEmitsInitSpan:
 
         MajorityVoting(agents=[_agent()])
         assert _by_name(spans, "MajorityVoting.init") is not None
+
+    def test_advisor_swarm(self, spans):
+        from swarms import AdvisorSwarm
+
+        AdvisorSwarm(executor_agent=_agent(), advisor_agent=_agent())
+        assert _by_name(spans, "AdvisorSwarm.init") is not None
 
 
 # ===========================================================================
