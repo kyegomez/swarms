@@ -11,6 +11,7 @@ from swarms.utils.history_output_formatter import (
 from typing import Union, Callable
 from swarms.utils.history_output_formatter import HistoryOutputType
 from swarms.utils.str_to_dict import str_to_dict
+from swarms.telemetry.otel import capture_init, trace_run
 
 tools = [
     {
@@ -129,7 +130,9 @@ class HybridHierarchicalClusterSwarm:
             max_loops=1,
             output_type="final",
         )
+        capture_init(self)
 
+    @trace_run("HybridHierarchicalClusterSwarm.run")
     def run(self, task: str, *args, **kwargs):
         """
         Runs the routing process for a given task.

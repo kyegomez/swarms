@@ -1164,6 +1164,9 @@ def _load_arch_classes():
     from swarms.structs.debate_with_judge import DebateWithJudge
     from swarms.structs.llm_council import LLMCouncil
     from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
+    from swarms.structs.hybrid_hiearchical_peer_swarm import (
+        HybridHierarchicalClusterSwarm,
+    )
 
     return {
         "Agent": Agent,
@@ -1189,6 +1192,7 @@ def _load_arch_classes():
         "SpreadSheetSwarm": SpreadSheetSwarm,
         "AutoSwarmBuilder": AutoSwarmBuilder,
         "SocialAlgorithms": SocialAlgorithms,
+        "HybridHierarchicalClusterSwarm": HybridHierarchicalClusterSwarm,
     }
 
 
@@ -1257,6 +1261,17 @@ class TestConstructionEmitsInitSpan:
 
         MajorityVoting(agents=[_agent()])
         assert _by_name(spans, "MajorityVoting.init") is not None
+
+    def test_hybrid_hierarchical_cluster_swarm(self, spans):
+        from swarms.structs.hybrid_hiearchical_peer_swarm import (
+            HybridHierarchicalClusterSwarm,
+        )
+
+        HybridHierarchicalClusterSwarm(swarms=[])
+        assert (
+            _by_name(spans, "HybridHierarchicalClusterSwarm.init")
+            is not None
+        )
 
 
 # ===========================================================================
