@@ -224,7 +224,7 @@ class SwarmRouterConfig(BaseModel):
     )
     rearrange_flow: Optional[str] = Field(
         None,
-        description="Flow configuration string. Only to be used if you you use the AgentRearrange multi-agent structure",
+        description="Flow configuration string. Only to be used if you use the AgentRearrange multi-agent structure",
     )
     rules: Optional[str] = Field(
         None,
