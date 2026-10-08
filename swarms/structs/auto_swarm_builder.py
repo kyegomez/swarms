@@ -12,6 +12,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.telemetry.otel import capture_init, trace_run
 
 load_dotenv()
 
@@ -308,6 +309,8 @@ class AutoSwarmBuilder:
 
         self.reliability_check()
 
+        capture_init(self)
+
     def reliability_check(self):
         """Validate the AutoSwarmBuilder configuration.
 
@@ -349,7 +352,6 @@ class AutoSwarmBuilder:
         return LiteLLM(
             model_name=self.model_name,
             system_prompt=self.system_prompt,
-            temperature=0.5,
             response_format=config,
             max_tokens=self.max_tokens,
             **self.additional_llm_args,
@@ -796,6 +798,7 @@ class AutoSwarmBuilder:
         """
         return swarm_types
 
+    @trace_run("AutoSwarmBuilder.run")
     def run(
         self,
         task: str,

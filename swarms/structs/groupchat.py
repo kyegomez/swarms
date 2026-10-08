@@ -79,8 +79,7 @@ from swarms.telemetry.otel import capture_init, trace_run
 logger = initialize_logger(log_folder="groupchat")
 
 RESPOND_TOOL = {
-    # The LLM is forced to call this function for every decision. This keeps
-    # speaking decisions machine-readable and avoids parsing natural language.
+    # Forced tool call, so every speaking decision is machine-readable
     "type": "function",
     "function": {
         "name": "respond",
@@ -248,7 +247,8 @@ class GroupChat(SerializableMixin):
 
         self.conversation = Conversation(time_enabled=False)
 
-        if len(self.agents) < 2:
+        # agents may be None, the documented error is ValueError not TypeError
+        if self.agents is None or len(self.agents) < 2:
             raise ValueError("GroupChat requires at least 2 agents.")
 
         if self.auto_equip:
@@ -307,6 +307,8 @@ class GroupChat(SerializableMixin):
             sender=sender,
             message=message,
         )
+        previous_output_type = getattr(agent, "output_type", None)
+        agent.output_type = "final"
         try:
             # Typed turns let the agent tell its own prior speech from a peer's.
             tool_output = agent.run(
@@ -323,6 +325,8 @@ class GroupChat(SerializableMixin):
                 f"{type(e).__name__}: {e}"
             )
             return 0.0, ""
+        finally:
+            agent.output_type = previous_output_type
         return _extract_args(tool_output)
 
     def _post(
@@ -476,6 +480,8 @@ class GroupChat(SerializableMixin):
         """
         self._log("info", f"[{self.name}] initial task: {task}")
 
+        self.conversation.clear()
+
         self._post(
             sender="User",
             content=task,
@@ -501,9 +507,10 @@ class GroupChat(SerializableMixin):
                     logger.warning(
                         f"[{self.name}] No agent produced a reply on the first "
                         "turn. The chat will end immediately. Likely causes: an "
-                        "invalid model_name, a missing/invalid API key, or a "
-                        "model without function-calling support. Run with "
-                        "verbose=True to see each agent's bid."
+                        "invalid model_name, a missing/invalid API key, a "
+                        "model without function-calling support, or replies "
+                        "that are not a parseable respond() tool call. Run "
+                        "with verbose=True to see each agent's bid."
                     )
                 else:
                     self._log(

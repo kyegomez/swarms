@@ -1,9 +1,8 @@
 import inspect
 from functools import lru_cache
-from typing import Tuple, get_args
+from typing import Literal, Tuple, get_args
 
-# Fallback set, unioned with installed litellm's values so supported efforts are never reduced.
-REASONING_EFFORTS: Tuple[str, ...] = (
+ReasoningEffort = Literal[
     "none",
     "minimal",
     "low",
@@ -13,7 +12,9 @@ REASONING_EFFORTS: Tuple[str, ...] = (
     "ultra",
     "max",
     "None",
-)
+]
+
+REASONING_EFFORTS: Tuple[str, ...] = get_args(ReasoningEffort)
 
 
 @lru_cache(maxsize=1)
@@ -24,10 +25,10 @@ def get_reasoning_efforts() -> Tuple[str, ...]:
     values: Tuple[str, ...] = ()
 
     try:
-        import litellm
+        from litellm import completion
 
         annotation = (
-            inspect.signature(litellm.completion)
+            inspect.signature(completion)
             .parameters["reasoning_effort"]
             .annotation
         )

@@ -1,6 +1,7 @@
 from typing import Callable, Union
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -53,10 +54,11 @@ def one_on_one_debate(
     for i in range(max_loops):
         # Current speaker responds
         response = speaker.run(task=message, img=img)
-        conversation.add(speaker.agent_name, response)
+        answer = agent_answer(speaker, fallback=response)
+        conversation.add(speaker.agent_name, answer)
 
         # Swap roles
-        message = response
+        message = answer
         speaker, other = other, speaker
 
     return history_output_formatter(

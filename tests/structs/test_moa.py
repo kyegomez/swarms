@@ -1,3 +1,4 @@
+import re
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.agent import Agent
 
@@ -449,7 +450,8 @@ def test_aggregator_receives_typed_turns_per_worker():
     contents = [m["content"] for m in turns]
     for worker in ("W1", "W2"):
         assert any(
-            text.startswith(f"{worker}: ") for text in contents
+            re.match(rf"^{worker}(?: \(layer \d+/\d+\))?: ", text)
+            for text in contents
         ), f"no turn attributed to {worker}: {contents}"
 
     # Four worker outputs across two layers, plus the task - not one blob.
@@ -484,3 +486,25 @@ def test_team_roster_does_not_reach_aggregator_as_user_prose():
             "These are the agents in your team"
             not in message["content"]
         )
+
+
+def test_aggregator_can_tell_which_layer_produced_each_answer():
+    agents, _ = _recording_agents(["W1", "W2"])
+    aggregator, agg_calls = _recording_agents(["Agg"])
+
+    MixtureOfAgents(
+        agents=agents,
+        aggregator_agent=aggregator[0],
+        layers=3,
+    ).run("Question?")
+
+    assert agg_calls, "aggregator was never invoked"
+    turns = agg_calls[0]["messages"] + [
+        {"role": "user", "content": agg_calls[0]["task"]}
+    ]
+    contents = " ".join(m["content"] for m in turns)
+
+    for layer in (1, 2, 3):
+        assert (
+            f"layer {layer}/3" in contents
+        ), f"layer {layer} not attributed: {contents}"

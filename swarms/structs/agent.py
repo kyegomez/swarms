@@ -36,15 +36,17 @@ from swarms.agents.agent_marketplace_handler import (
     AgentMarketplaceHandler,
 )
 from swarms.agents.ape_agent import auto_generate_prompt
-from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.llm_manager import LLMManager
 from swarms.agents.skills_manager import SkillsManager
-from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
+from swarms.agents.tool_manager import ToolManager
+from swarms.prompts.agent_system_prompts import (
+    build_agent_system_prompt,
+)
 from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
-from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
@@ -63,21 +65,18 @@ from swarms.schemas.mcp_schemas import (
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.autonomous_loop_utils import (
-    get_autonomous_loop_tool_names,
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
+    MAX_SUBTASK_LOOPS,
     get_summary_prompt,
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
-from swarms.structs.transcript import Transcript
-from swarms.tools.dynamic_tool_loader import (
-    DYNAMIC_TOOLS_NOTICE,
-    SEARCH_TOOL_NAME,
-    DynamicToolLoader,
-)
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
+from swarms.structs.transcript import Transcript
 from swarms.structs.transforms import (
     MessageTransforms,
     TransformConfig,
@@ -90,18 +89,15 @@ from swarms.telemetry.otel import (
     log_agent_data,
     trace_run,
 )
-from swarms.tools.base_tool import BaseTool
-from swarms.tools.handoffs_tool import handoff_task
-from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
-from swarms.tools.mcp_manager import MCPManager
-from swarms.tools.py_func_to_openai_func_str import (
-    convert_multiple_functions_to_openai_function_schema,
+from swarms.tools.dynamic_tool_loader import (
+    DynamicToolLoader,
 )
+from swarms.tools.mcp_manager import MCPManager
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.generate_id import generate_id
 from swarms.utils.generate_keys import generate_api_key
-from swarms.utils.get_reasoning_efforts import get_reasoning_efforts
+from swarms.utils.get_reasoning_efforts import ReasoningEffort
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -110,7 +106,7 @@ from swarms.utils.index import (
     format_data_structure,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -119,12 +115,6 @@ from swarms.utils.workspace_utils import get_workspace_dir
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
     return "stop" in response.lower()
-
-
-# Parse done token
-def parse_done_token(response: str) -> bool:
-    """Parse the response to see if the done token is present"""
-    return "<DONE>" in response
 
 
 # Agent ID generator
@@ -176,7 +166,7 @@ class Agent:
         stopping_func (Callable): The stopping function
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
-        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
+        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
         output_cleaner (Callable): The output cleaner function
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
@@ -201,6 +191,13 @@ class Agent:
             off unless asked for. Enable it for models that do not reason natively, or
             when an explicit analysis step is worth the extra turn. When False, the system
             prompt is adjusted to match so the model is not told to call a tool it lacks.
+        max_planning_attempts (int): Autonomous loop (max_loops="auto") only. How many
+            times to ask the model for a plan before giving up. Defaults to 5.
+        max_subtask_iterations (int): Autonomous loop only. Ceiling on execution
+            iterations across the whole run, which is also its worst-case number of
+            LLM calls. Defaults to 100.
+        max_subtask_loops (int): Autonomous loop only. Ceiling on iterations spent
+            inside any one subtask before moving on. Defaults to 20.
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
             "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
@@ -313,7 +310,7 @@ class Agent:
         agent_description: Optional[
             str
         ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
-        system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
+        system_prompt: Optional[str] = None,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -323,7 +320,6 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: Optional[bool] = False,
         dashboard: Optional[bool] = False,
-        # TODO: Change to callable, then parse the callable to a string
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
@@ -344,7 +340,6 @@ class Agent:
         verbose: Optional[bool] = False,
         stopping_func: Optional[Callable] = None,
         custom_exit_command: Optional[str] = "exit",
-        # [Tools]
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
         output_cleaner: Optional[Callable] = None,
@@ -352,7 +347,7 @@ class Agent:
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
         max_tokens: Optional[int] = None,
-        temperature: float = 0.5,
+        temperature: Optional[float] = None,
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
         plan_enabled: bool = False,
@@ -386,15 +381,18 @@ class Agent:
         top_p: Optional[float] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
-        tool_call_summary: bool = True,
+        tool_call_summary: bool = False,
         tool_retry_attempts: int = 3,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
-        reasoning_effort: Literal[get_reasoning_efforts()] = None,
+        reasoning_effort: Optional[ReasoningEffort] = None,
         thinking_tokens: int = 1024,
         think_tool: bool = False,
-        dynamic_tools: bool = True,
+        max_planning_attempts: int = MAX_PLANNING_ATTEMPTS,
+        max_subtask_iterations: int = MAX_SUBTASK_ITERATIONS,
+        max_subtask_loops: int = MAX_SUBTASK_LOOPS,
+        dynamic_tools: bool = False,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
@@ -406,12 +404,14 @@ class Agent:
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
         persistent_memory: bool = False,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
         # super().__init__(*args, **kwargs)
         self.id = id or generate_id("agent")
         self.skills = SkillsManager(skills_dir=skills_dir)
+        self._skills_prompt = ""
         self.selected_tools = selected_tools
         self.llm = llm
         self.max_loops = max_loops
@@ -429,6 +429,8 @@ class Agent:
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
+        if system_prompt is None:
+            system_prompt = build_agent_system_prompt()
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -454,11 +456,9 @@ class Agent:
         self.rules = rules
         self.max_tokens = max_tokens
         self.temperature = temperature
-        # Always use environment variable for workspace_dir, ignore user input
-        # Fallback to default if environment variable is not set
+        # The environment wins over the argument, with a default when unset
         self.workspace_dir = get_workspace_dir()
-        # Built on first use: file tools need the dir even without
-        # autosave, but constructing every agent must not create one.
+        # Built on first use, constructing an agent must not create a directory
         self._workspace = None
         self.tags = tags
         self.use_cases = use_cases
@@ -506,9 +506,23 @@ class Agent:
         self.dynamic_tools = dynamic_tools
         self.tool_loader: Optional[DynamicToolLoader] = None
         self._mcp_tools_deferred = False
+        self._usage = empty_usage()
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
         self.think_tool = think_tool
+        # A budget below 1 would silently make the phase it bounds do nothing.
+        for name, value in (
+            ("max_planning_attempts", max_planning_attempts),
+            ("max_subtask_iterations", max_subtask_iterations),
+            ("max_subtask_loops", max_subtask_loops),
+        ):
+            if value < 1:
+                raise ValueError(
+                    f"{name} must be at least 1, got {value}"
+                )
+        self.max_planning_attempts = max_planning_attempts
+        self.max_subtask_iterations = max_subtask_iterations
+        self.max_subtask_loops = max_subtask_loops
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
@@ -540,8 +554,7 @@ class Agent:
             self.max_tokens = self._default_max_tokens() or 16000
 
         if self.max_loops == "auto":
-            # The prompt must agree with the tool list: without this the model
-            # is instructed to call a `think` tool it was never given.
+            # Without this the prompt tells the model to call a think tool it lacks
             self.system_prompt += (
                 "\n\n"
                 + get_autonomous_agent_prompt(
@@ -552,8 +565,10 @@ class Agent:
         # When False the agent does not read or write MEMORY.md across sessions.
         self.persistent_memory = persistent_memory
 
-        # Context compression is available for both max_loops="auto" and
-        # integer max_loops runs. Gated purely on the user-facing boolean.
+        # Prior turns, seeded into short_memory and re-sent as context on every run.
+        self.messages = messages
+
+        # Applies to auto and integer max_loops alike
         self.context_compression = context_compression
         if self.context_compression:
             self._context_compressor = ContextCompressor(
@@ -604,9 +619,9 @@ class Agent:
         if self.fallback_models and not self.model_name:
             self.model_name = self.fallback_models[0]
 
-        # Owns model rotation, LiteLLM construction, and LLM invocation.
-        # Reads config off this agent, so it must be built after config is set.
+        # Reads config off this agent, so it must come after the config is set
         self.llm_manager = LLMManager(agent=self)
+        self.tool_manager = ToolManager(agent=self)
         self.autonomous_loop = AutonomousAgentLoop(agent=self)
 
         # self.init_handling()
@@ -616,10 +631,7 @@ class Agent:
         self.short_memory = self.short_memory_init()
 
         # Initialize the tools
-        self.tool_struct = self.setup_tools()
-
-        if exists(self.tool_schema) or exists(self.list_base_models):
-            self.handle_tool_schema_ops()
+        self.tool_manager.setup_tools()
 
         if exists(self.sop) or exists(self.sop_list):
             self.handle_sop_ops()
@@ -641,37 +653,15 @@ class Agent:
         if self.autosave is True:
             log_agent_data(self.to_dict())
 
-        # Add handoff tool if handoffs are configured
-        if exists(self.handoffs):
-            handoff_tool_schema = get_handoff_tool_schema()
-            if self.tools_list_dictionary is None:
-                self.tools_list_dictionary = []
-            self.tools_list_dictionary.extend(handoff_tool_schema)
-
-            # Add handoff prompt to system prompt
-            agent_registry = self._get_agent_registry()
-            if agent_registry:
-                handoff_prompt = get_handoffs_prompt(
-                    list(agent_registry.values())
-                )
-                self.system_prompt += "\n\n" + handoff_prompt
-
-        # Not exists(): exists([]) is True, so tools=[] deferred.
-        defers_tools = self.dynamic_tools and (
-            bool(self.tools)
-            or self.mcp_enabled
-            or self.max_loops == "auto"
-        )
-
-        # Appended once here, not per run.
-        if defers_tools:
-            self.system_prompt += DYNAMIC_TOOLS_NOTICE
-            self.setup_dynamic_tools()
-        elif self.tools:
-            self.tool_handling()
+        self.tool_manager.load_tools()
 
         if self.llm is None:
             self.llm = self.llm_handling()
+        elif getattr(
+            self.llm, "usage_hook", None
+        ) is None and hasattr(self.llm, "usage_hook"):
+            # A caller-supplied LiteLLM reports into this agent too.
+            self.llm.usage_hook = self._add_usage
 
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
@@ -719,13 +709,18 @@ class Agent:
 
     def handle_skills(self, task: Optional[str] = None):
         """
-        Load Agent Skills into the system prompt.
+        Select the Agent Skills for this run.
+
+        The rendered section is sent with every LLM call by :meth:`call_llm`.
+        ``system_prompt`` is left unchanged: the LLM copies it once at
+        construction, so text appended to it here never reached the model,
+        and each run appended another copy.
 
         Args:
             task: Optional task description. If provided, loads skills dynamically
                   based on similarity to the task. If not provided, loads all skills statically.
         """
-        self.system_prompt += self.skills.prompt_for_task(task)
+        self._skills_prompt = self.skills.prompt_for_task(task)
 
     @property
     def workspace(self) -> "WorkspaceManager":
@@ -752,225 +747,6 @@ class Agent:
             str: The full path to the agent-specific workspace directory.
         """
         return self.workspace.dir
-
-    def _get_agent_registry(self) -> Dict[str, Any]:
-        """
-        Get the agent registry from handoffs configuration.
-
-        Returns:
-            Dict mapping agent names to agent instances.
-        """
-        agent_registry = {}
-        if self.handoffs:
-            if isinstance(self.handoffs, (list, tuple)):
-                for agent in self.handoffs:
-                    agent_name = getattr(
-                        agent, "agent_name", str(agent)
-                    )
-                    agent_registry[agent_name] = agent
-            elif isinstance(self.handoffs, dict):
-                agent_registry = self.handoffs
-        return agent_registry
-
-    def _handoff_task_tool(
-        self, handoffs: List[Dict[str, str]]
-    ) -> str:
-        """
-        Tool handler for handoff_task function calls.
-
-        This method processes handoff requests from the LLM and delegates tasks
-        to other agents in the handoffs registry. It supports delegating to
-        multiple agents concurrently and aggregates their responses.
-
-        **Handoff Process:**
-        1. Retrieves agent registry from handoffs configuration
-        2. Validates that requested agents exist in the registry
-        3. Delegates tasks to specified agents using handoff_task function
-        4. Returns aggregated responses from all delegated agents
-
-        **Handoff Request Format:**
-        Each handoff request must contain:
-        - agent_name (str): The name of the agent to delegate to (must exist in registry)
-        - task (str): The specific task to be delegated to that agent
-        - reasoning (str): Explanation of why this agent was selected for the task
-
-        **Agent Registry:**
-        The agent registry is built from:
-        - List of Agent instances: Uses agent_name attribute
-        - Dictionary: Uses keys as agent names
-        - Empty if handoffs is not configured
-
-        Args:
-            handoffs (List[Dict[str, str]]): List of handoff requests. Each request
-                is a dictionary containing:
-                - agent_name (str): The name of the agent to delegate to.
-                    Must match an agent in the handoffs registry.
-                - task (str): The task to be delegated to that agent.
-                - reasoning (str): Explanation of why this agent was selected.
-
-        Returns:
-            str: Aggregated response from all delegated agents. The format depends
-                on the handoff_task implementation, typically a concatenated string
-                of responses from each agent.
-
-        Raises:
-            KeyError: If an agent_name in handoffs doesn't exist in the registry.
-            Exception: If handoff_task execution fails for any agent.
-
-        Note:
-            - Requires handoffs to be configured during agent initialization
-            - Agent names must match exactly (case-sensitive)
-            - Multiple agents can be delegated to concurrently
-            - Handoff results are automatically added to conversation memory
-
-        Examples:
-            >>> # Configure handoffs
-            >>> agent1 = Agent(agent_name="researcher")
-            >>> agent2 = Agent(agent_name="writer")
-            >>> main_agent = Agent(handoffs=[agent1, agent2])
-            >>>
-            >>> # LLM can now call handoff_task
-            >>> handoffs = [
-            ...     {
-            ...         "agent_name": "researcher",
-            ...         "task": "Research the topic",
-            ...         "reasoning": "This agent specializes in research"
-            ...     }
-            ... ]
-            >>> result = main_agent._handoff_task_tool(handoffs)
-        """
-        agent_registry = self._get_agent_registry()
-        return handoff_task(
-            handoffs=handoffs,
-            agent_registry=agent_registry,
-        )
-
-    def setup_tools(self):
-        """
-        Initialize the BaseTool structure for tool execution.
-
-        This method creates a BaseTool instance that handles tool execution,
-        validation, and management. The BaseTool structure is used throughout
-        the agent's lifecycle for executing function calls from LLM responses.
-
-        **BaseTool Functionality:**
-        - Converts tool functions to executable format
-        - Validates tool calls from LLM responses
-        - Executes tools with proper error handling
-        - Formats tool execution results
-        - Supports parallel tool execution
-
-        Args:
-            None: Uses self.tools and self.verbose from instance.
-
-        Returns:
-            BaseTool: An initialized BaseTool instance configured with:
-                - tools: List of user-provided tool functions
-                - verbose: Verbosity setting for tool execution logging
-
-        Note:
-            - This method is called automatically during agent initialization
-            - The BaseTool instance is stored in self.tool_struct
-            - Tools must be callable Python functions
-            - Tool functions should have proper type hints for schema generation
-
-        Examples:
-            >>> agent = Agent(tools=[my_function])
-            >>> # setup_tools() is called automatically
-            >>> # agent.tool_struct is now ready to execute tools
-        """
-        return BaseTool(
-            tools=self.tools,
-            verbose=self.verbose,
-        )
-
-    def tool_handling(self):
-        """
-        Process and integrate user-defined tools into the agent's tool system.
-
-        This method converts user-provided tools (callable functions) into OpenAI
-        function schema format and adds them to the agent's tools_list_dictionary.
-        It preserves existing tools (e.g., handoff tools) and avoids duplicates.
-
-        **Process:**
-        1. Converts user tools to OpenAI function schema format
-        2. Initializes tools_list_dictionary if None
-        3. Tracks existing tool names to prevent duplicates
-        4. Adds new tools that don't already exist
-        5. Adds tools to conversation memory for LLM context
-
-        **Tool Schema Format:**
-        Tools are converted to OpenAI function calling format:
-        {
-            "type": "function",
-            "function": {
-                "name": "function_name",
-                "description": "Function description",
-                "parameters": {
-                    "type": "object",
-                    "properties": {...},
-                    "required": [...]
-                }
-            }
-        }
-
-        **Duplicate Prevention:**
-        The method checks tool names before adding to prevent duplicate tools.
-        This is important when handoff tools or other system tools are already
-        present in tools_list_dictionary.
-
-        Args:
-            None: Uses self.tools and self.tools_list_dictionary from instance.
-
-        Returns:
-            None: Modifies self.tools_list_dictionary and self.short_memory.
-
-        Note:
-            - This method is called automatically during agent initialization if tools are provided
-            - Tools are added to conversation memory so the LLM knows what tools are available
-            - The method preserves existing tools in tools_list_dictionary (e.g., handoff tools)
-            - Tool names are case-sensitive for duplicate detection
-
-        Raises:
-            Exception: If tool conversion fails or tools cannot be added to memory.
-
-        Examples:
-            >>> def my_tool(query: str) -> str:
-            ...     return f"Searching for {query}"
-            >>> agent = Agent(tools=[my_tool])
-            >>> # tool_handling() is called automatically during initialization
-            >>> # The tool is now available for the LLM to use
-        """
-        # Convert all the tools into a list of dictionaries
-        user_tools = (
-            convert_multiple_functions_to_openai_function_schema(
-                self.tools
-            )
-        )
-
-        # Preserve existing tools in tools_list_dictionary (e.g., handoff tools)
-        if self.tools_list_dictionary is None:
-            self.tools_list_dictionary = []
-
-        # Get existing tool names to avoid duplicates
-        existing_tool_names = set()
-        for tool in self.tools_list_dictionary:
-            if isinstance(tool, dict) and "function" in tool:
-                existing_tool_names.add(
-                    tool["function"].get("name", "")
-                )
-
-        # Add user tools, avoiding duplicates
-        for tool in user_tools:
-            tool_name = tool.get("function", {}).get("name", "")
-            if tool_name not in existing_tool_names:
-                self.tools_list_dictionary.append(tool)
-                existing_tool_names.add(tool_name)
-
-        self.short_memory.add(
-            role=self.agent_name,
-            content=self.tools_list_dictionary,
-        )
 
     def short_memory_init(self):
         # Compactly assemble initial prompt as a string with available fields
@@ -1006,6 +782,7 @@ class Agent:
             tokenizer_model_name=self.model_name,
             context_length=self.context_length,
             memory_md_path=memory_md_path,
+            messages=self.messages,
         )
 
         return memory
@@ -1040,37 +817,6 @@ class Agent:
         """
         manager = getattr(self, "mcp_manager", None)
         return manager is not None and manager.enabled
-
-    def add_mcp_tools_to_memory(self) -> List[Dict[str, Any]]:
-        """
-        Fetch the tool schemas exposed by the configured MCP servers.
-
-        Connection handling, authentication (API key, bearer token, or OAuth)
-        and transport selection are all delegated to :class:`MCPManager`. The
-        returned schemas are OpenAI function-calling definitions, ready to be
-        passed straight to the LLM.
-
-        Returns:
-            List[Dict[str, Any]]: OpenAI tool schemas from every MCP server.
-
-        Raises:
-            AgentMCPConnectionError: If no server could be reached.
-        """
-        try:
-            tools = self.mcp_manager.get_tools()
-
-            if self.print_on:
-                self.pretty_print(
-                    f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
-                    loop_count=0,
-                )
-
-            return tools
-        except Exception as e:
-            logger.error(
-                f"Error Adding MCP Tools to Agent: {self.agent_name} Error: {e} Traceback: {traceback.format_exc()}"
-            )
-            raise e
 
     def _load_prompt_from_marketplace(self) -> None:
         """
@@ -1305,7 +1051,6 @@ class Agent:
                 - "json": JSON string
                 - "dict": Dictionary
                 - "yaml": YAML string
-                - "xml": XML string
                 - "final": Comprehensive final summary (for autonomous loop)
                 - Other types: As configured
 
@@ -1342,6 +1087,10 @@ class Agent:
             ... )
         """
         try:
+            history_start = len(
+                self.short_memory.conversation_history
+            )
+
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.check_model_supports_utilities(img=img)
@@ -1354,8 +1103,7 @@ class Agent:
             # Set the loop count
             loop_count = 0
 
-            # Structured conversation for this run. Built lazily below so the
-            # transforms path can keep its flattened prompt.
+            # Built lazily so the transforms path can keep its flattened prompt
             transcript: Optional[Transcript] = None
 
             # Clear the short memory
@@ -1373,8 +1121,6 @@ class Agent:
             ):
                 loop_count += 1
 
-                # Compress short-term memory if an auto-loop run has
-                # crossed the configured fraction of the context window.
                 if self._context_compressor is not None:
                     self._context_compressor.maybe_compress(self)
 
@@ -1426,6 +1172,7 @@ class Agent:
                 # Parameters
                 attempt = 0
                 success = False
+                last_error: Optional[Exception] = None
                 while attempt < self.retry_attempts and not success:
                     # Outside the try: except must answer tool calls.
                     turn_calls = []
@@ -1462,15 +1209,9 @@ class Agent:
                                 **llm_kwargs,
                             )
 
-                        # If streaming is enabled, then don't print the response
-
-                        # Parse the response from the agent with the output type
-                        if exists(self.tools_list_dictionary):
-                            if isinstance(response, BaseModel):
-                                response = response.model_dump()
-
-                        # Parse the response from the agent with the output type
-                        response = self.parse_llm_output(response)
+                        response = self.tool_manager.parse_response(
+                            response
+                        )
 
                         self.short_memory.add(
                             role=self.agent_name,
@@ -1485,8 +1226,7 @@ class Agent:
 
                         # Print
                         if self.print_on is True:
-                            # Skip printing structured output (list of tool calls) here
-                            # Function call visualization is handled in execute_tools
+                            # Tool calls are visualised in execute_tools
                             if isinstance(response, list):
                                 # Tool calls will be visualized in execute_tools, skip here
                                 pass
@@ -1499,144 +1239,15 @@ class Agent:
                                     response, loop_count
                                 )
 
-                        # Dispatched here rather than through tool_struct: it is an agent method, not a user callable.
-                        if (
-                            isinstance(response, list)
-                            and self.tool_loader
-                        ):
-                            remaining = []
-                            for tool_call in response:
-                                name = (
-                                    tool_call.get("function", {}).get(
-                                        "name"
-                                    )
-                                    if isinstance(tool_call, dict)
-                                    else None
-                                )
-                                if name != SEARCH_TOOL_NAME:
-                                    remaining.append(tool_call)
-                                    continue
-
-                                try:
-                                    arguments = json.loads(
-                                        tool_call["function"][
-                                            "arguments"
-                                        ]
-                                    )
-                                except (
-                                    json.JSONDecodeError,
-                                    TypeError,
-                                ):
-                                    arguments = {}
-
-                                result = self._tool_search_tool(
-                                    **arguments
-                                )
-                                self.short_memory.add(
-                                    role="Tool Executor",
-                                    content=f"tool_search result: {result}",
-                                )
-                                turn_results[
-                                    tool_call.get("id", "")
-                                ] = result
-                                if self.print_on:
-                                    formatter.print_panel(
-                                        result, title="Tool Search"
-                                    )
-
-                            # Falling through with nothing left would log a misleading "no function calls found".
-                            response = remaining
-                            if not remaining:
-                                if use_transcript and turn_calls:
-                                    transcript.flush_tool_results(
-                                        turn_calls, turn_results
-                                    )
-                                success = True
-                                continue
-
-                        # Handle handoff tool calls
-                        if isinstance(response, list):
-                            for tool_call in response:
-                                if (
-                                    isinstance(tool_call, dict)
-                                    and tool_call.get(
-                                        "function", {}
-                                    ).get("name")
-                                    == "handoff_task"
-                                ):
-                                    arguments = json.loads(
-                                        tool_call["function"][
-                                            "arguments"
-                                        ]
-                                    )
-                                    handoffs_list = arguments.get(
-                                        "handoffs", []
-                                    )
-
-                                    # Visualize handoff tool call
-                                    if self.print_on:
-                                        self._visualize_handoff_call(
-                                            handoffs_list, tool_call
-                                        )
-
-                                    result = self._handoff_task_tool(
-                                        handoffs=handoffs_list
-                                    )
-                                    # Add result to memory
-                                    self.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"Handoff Result:\n{result}",
-                                    )
-                                    turn_results[
-                                        tool_call.get("id", "")
-                                    ] = result
-                                    if self.print_on:
-                                        delegated_agents = ", ".join(
-                                            agent.get(
-                                                "agent_name",
-                                                "<unknown>",
-                                            )
-                                            for agent in handoffs_list
-                                        )
-                                        self.pretty_print(
-                                            f"[Handoff] Delegated tasks to {len(handoffs_list)} agent(s): {delegated_agents}\nSuccessfully executed handoff_task function.",
-                                            loop_count,
-                                        )
-
-                        # Check and execute callable tools
-                        if exists(self.tools):
-                            tool_output = self.tool_execution_retry(
-                                response, loop_count
-                            )
-                            if use_transcript and turn_calls:
-                                transcript.map_batch_results(
-                                    [
-                                        {"id": c["id"]}
-                                        for c in turn_calls
-                                    ],
-                                    tool_output,
-                                    turn_results,
-                                    formatter=format_data_structure,
-                                )
-
-                        # Handle MCP tools
-                        if self.mcp_enabled:
-                            # Only handle MCP tools if response is not None
-                            if response is not None:
-                                self.mcp_tool_handling(
-                                    response=response,
-                                    current_loop=loop_count,
-                                )
-                            else:
-                                logger.warning(
-                                    f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
-                                )
-
-                        # Answer every tool call just recorded; a gap makes the next request invalid.
-                        if use_transcript and turn_calls:
-                            transcript.flush_tool_results(
-                                turn_calls, turn_results
-                            )
+                        self.tool_manager.handle_tool_calls(
+                            response,
+                            loop_count,
+                            transcript=(
+                                transcript if use_transcript else None
+                            ),
+                            turn_calls=turn_calls,
+                            turn_results=turn_results,
+                        )
 
                         success = True  # Mark as successful to exit the retry loop
 
@@ -1646,22 +1257,46 @@ class Agent:
                                 loop_count=loop_count
                             )
 
+                    except AgentToolExecutionError as e:
+                        # A tool failure is not a provider failure, re-running the model cannot fix it
+                        if use_transcript and turn_calls:
+                            transcript.flush_tool_results(
+                                turn_calls, turn_results
+                            )
+
+                        capture_error(
+                            e,
+                            self,
+                            name="Agent.tool_error",
+                            loop=loop_count,
+                        )
+
+                        self.short_memory.add(
+                            role="Tool Executor",
+                            content=(
+                                f"Tool execution failed after "
+                                f"{self.tool_retry_attempts} attempts: {e}"
+                            ),
+                        )
+
+                        # Exit the retry loop, not the run, so the model can read the failure
+                        success = True
+
                     except (
                         BadRequestError,
                         InternalServerError,
                         AuthenticationError,
                         Exception,
                     ) as e:
+                        last_error = e
 
-                        # Close out any tool calls recorded before the failure,
-                        # so the retried request is still well formed.
+                        # Answer the recorded tool calls so the retried request is well formed
                         if use_transcript and turn_calls:
                             transcript.flush_tool_results(
                                 turn_calls, turn_results
                             )
 
-                        # Track the LLM/generation error via telemetry — the
-                        # retry loop swallows it, so capture_run never sees it.
+                        # The retry loop swallows this, so capture_run never sees it
                         capture_error(
                             e,
                             self,
@@ -1682,19 +1317,23 @@ class Agent:
                         attempt += 1
 
                 if not success:
-
-                    if self.autosave is True:
-                        log_agent_data(self.to_dict())
-                        self.save()
-                        self._autosave_config_step(
-                            loop_count=loop_count
+                    # Drop this run's turns so a fallback model starts from clean history.
+                    while (
+                        len(self.short_memory.conversation_history)
+                        > history_start
+                    ):
+                        self.short_memory.delete(
+                            len(
+                                self.short_memory.conversation_history
+                            )
+                            - 1
                         )
 
-                    logger.error(
-                        "Failed to generate a valid response after"
-                        " retry attempts."
-                    )
-                    break  # Exit the loop if all retry attempts fail
+                    raise AgentLLMError(
+                        f"Agent '{self.agent_name}' got no response from "
+                        f"'{self.model_name}' after {self.retry_attempts} "
+                        f"attempt(s): {last_error}"
+                    ) from last_error
 
                 # Check stopping conditions
                 if (
@@ -1725,8 +1364,7 @@ class Agent:
                             "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
                         )
                     except (KeyboardInterrupt, EOFError):
-                        # Graceful exit on Ctrl+C / Ctrl+D during
-                        # interactive input. No traceback, no error.
+                        # Ctrl+C / Ctrl+D during input exits without a traceback
                         formatter.console.print()
                         self.pretty_print(
                             "Session ended by user. Goodbye.",
@@ -1748,6 +1386,8 @@ class Agent:
                     self.short_memory.add(
                         role=self.user_name, content=user_input
                     )
+                    if transcript is not None:
+                        transcript.append_user(user_input)
 
                 if self.loop_interval:
                     logger.info(
@@ -1822,106 +1462,18 @@ class Agent:
             f"Error Type: {error_type}\n"
             f"Error Message: {error_message}\n"
             f"Traceback:\n{traceback_info}\n"
-            f"Agent State: {self.to_dict()}\n"
             f"Please optimize your input parameters, or create an issue on the Swarms GitHub and contact our team on Discord for support. "
             f"For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
         )
 
         raise error
 
-    def _visualize_function_call(
-        self,
-        function_name: str,
-        arguments: Dict[str, Any],
-        result: str = None,
-    ) -> None:
-        """
-        Visualize a function call using formatter.
-
-        Args:
-            function_name: Name of the function being called
-            arguments: Arguments passed to the function
-            result: Optional result of the function call
-        """
-        if not self.print_on:
-            return
-
-        # Format function call visualization
-        call_content = f"Function: {function_name}\n\n"
-        call_content += "Arguments:\n"
-        for key, value in arguments.items():
-            # Truncate long values for readability
-            value_str = str(value)
-            if len(value_str) > 200:
-                value_str = value_str[:200] + "..."
-            call_content += f"  {key}: {value_str}\n"
-
-        if result:
-            result_str = str(result)
-            if len(result_str) > 500:
-                result_str = result_str[:500] + "..."
-            call_content += f"\nResult:\n{result_str}"
-
-        formatter.print_panel(
-            call_content,
-            title=f"Agent: {self.agent_name} Function Call: {function_name}",
-        )
-
-    def _visualize_handoff_call(
-        self,
-        handoffs: List[Dict[str, str]],
-        tool_call: Dict[str, Any] = None,
-    ) -> None:
-        """
-        Visualize a handoff tool call with detailed information about all delegations.
-
-        Args:
-            handoffs: List of handoff requests, each containing agent_name, task, and reasoning
-            tool_call: Optional tool call dictionary for additional metadata
-        """
-        if not self.print_on:
-            return
-
-        # Build visualization content
-        call_content = "Function: handoff_task\n"
-        call_content += f"Delegating to {len(handoffs)} agent(s)\n\n"
-
-        if tool_call and tool_call.get("id"):
-            call_content += f"Call ID: {tool_call.get('id')}\n\n"
-
-        call_content += "Handoff Details:\n"
-        call_content += "=" * 80 + "\n"
-
-        for i, handoff in enumerate(handoffs, 1):
-            agent_name = handoff.get("agent_name", "<unknown>")
-            task = handoff.get("task", "")
-            reasoning = handoff.get("reasoning", "")
-
-            call_content += f"\n[{i}] Agent: {agent_name}\n"
-            call_content += f"    Task: {task[:150]}{'...' if len(task) > 150 else ''}\n"
-            call_content += f"    Reasoning: {reasoning[:150]}{'...' if len(reasoning) > 150 else ''}\n"
-            if i < len(handoffs):
-                call_content += "\n" + "-" * 80 + "\n"
-
-        formatter.print_panel(
-            call_content,
-            title=f"Agent: {self.agent_name} Handoff Tool Call",
-        )
-
-    def get_all_selected_tools(self) -> List[str]:
-        """
-        Return a list of all autonomous loop tool names.
-
-        Returns:
-            List of tool name strings (e.g. ["create_plan", "think", "subtask_done", ...])
-        """
-        return get_autonomous_loop_tool_names()
-
     def _run_autonomous_loop(
         self,
         task: str,
         img: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
@@ -1936,6 +1488,8 @@ class Agent:
             img (Optional[str]): Optional image input for multimodal models.
             streaming_callback (Optional[Callable[[str], None]]): Callback
                 receiving streaming tokens in real time.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat
+                format that the loop's transcript starts from.
             *args: Passed through to the loop.
             **kwargs: Passed through to the loop.
 
@@ -1946,160 +1500,10 @@ class Agent:
             task=task,
             img=img,
             streaming_callback=streaming_callback,
+            messages=messages,
             *args,
             **kwargs,
         )
-
-    def setup_dynamic_tools(
-        self, always_loaded: Optional[List[dict]] = None
-    ) -> DynamicToolLoader:
-        """
-        Defer this agent's tool schemas behind a ``tool_search`` tool.
-
-        Tool definitions are re-sent on every request and sit in the cached
-        prefix, so a large tool set is paid for continuously. Deferring sends
-        only ``tool_search`` up front; the agent loads what it needs, and the
-        loaded schemas are included from the next request onwards.
-
-        Args:
-            always_loaded: Schemas that must never be deferred. Control-flow
-                tools belong here - an agent that has to search for its own
-                ``complete_task`` cannot finish.
-
-        Returns:
-            The loader, also stored on ``self.tool_loader``.
-        """
-        # Keep already-registered handoff and MCP tools: overwriting here is what broke handoffs.
-        user_tool_names = {
-            schema.get("function", {}).get("name")
-            for schema in convert_multiple_functions_to_openai_function_schema(
-                list(self.tools or [])
-            )
-        }
-        # Excluded because schemas() re-adds it, and setup runs twice for an autonomous agent.
-        preserved = [
-            schema
-            for schema in (self.tools_list_dictionary or [])
-            if isinstance(schema, dict)
-            and schema.get("function", {}).get("name")
-            not in user_tool_names | {SEARCH_TOOL_NAME}
-        ]
-
-        keep: List[dict] = []
-        seen: set = set()
-        for schema in list(always_loaded or []) + preserved:
-            name = schema.get("function", {}).get("name")
-            if name and name not in seen:
-                seen.add(name)
-                keep.append(schema)
-
-        self.tool_loader = DynamicToolLoader(
-            tools=self.tools or [],
-            always_loaded=keep,
-        )
-
-        # A rebuilt loader is empty; the fetch guard will not refetch.
-        for schema in self._mcp_schemas_cache or []:
-            self.tool_loader.register_schema(schema)
-
-        self.tools_list_dictionary = self.tool_loader.schemas()
-        return self.tool_loader
-
-    def defer_tool_schemas(self, schemas: List[dict]) -> None:
-        """Add pre-built schemas to the deferred catalog (MCP, loop tools)."""
-        if self.tool_loader is None:
-            return
-        for schema in schemas:
-            self.tool_loader.register_schema(schema)
-        self.tools_list_dictionary = self.tool_loader.schemas()
-
-    def defer_mcp_tools(self) -> int:
-        """
-        Move this agent's MCP tool schemas into the deferred catalog.
-
-        MCP is the case dynamic tools exist for: a single server can expose
-        dozens of tools, and every one of them is otherwise re-sent with every
-        request. Deferring them makes them searchable instead, so the request
-        carries only what the agent actually loaded.
-
-        The fetch is a network call, and rebuilding the LLM after each
-        ``tool_search`` would repeat it, so it runs once per agent.
-
-        Returns:
-            int: How many schemas were added to the catalog. 0 if MCP is not
-            configured, dynamic tools are off, or this already ran.
-        """
-        if self.tool_loader is None or not self.mcp_enabled:
-            return 0
-
-        # Keyed on loader contents, not a flag: the autonomous loop builds a fresh loader per run.
-        cached = self._mcp_schemas_cache
-        if cached is not None and all(
-            schema.get("function", {}).get("name") in self.tool_loader
-            for schema in cached
-        ):
-            return 0
-
-        if cached is None:
-            try:
-                cached = self.add_mcp_tools_to_memory()
-            except Exception as error:
-                # A server being unreachable must not take down agent setup;
-                # the agent simply runs without those tools.
-                logger.error(
-                    f"Could not fetch MCP tools to defer: {error}"
-                )
-                self._mcp_schemas_cache = []
-                self._mcp_tools_deferred = True
-                return 0
-            self._mcp_schemas_cache = cached
-
-        schemas = cached
-        self._mcp_tools_deferred = True
-        self.defer_tool_schemas(schemas)
-
-        if self.verbose:
-            logger.info(
-                f"Deferred {len(schemas)} MCP tool(s) into the catalog: "
-                f"{[s.get('function', {}).get('name') for s in schemas]}"
-            )
-        return len(schemas)
-
-    def _tool_search_tool(
-        self,
-        query: str,
-        max_results: int = 5,
-        min_score_ratio: float = 0.0,
-        **kwargs,
-    ) -> str:
-        """
-        Handler for the ``tool_search`` tool.
-
-        Loading changes the tool list, so the LLM is rebuilt here - otherwise
-        the newly loaded schemas would not be sent and the model could not
-        call what it just found.
-        """
-        if self.tool_loader is None:
-            return (
-                "Tool search is unavailable: this agent was not built with "
-                "dynamic_tools=True."
-            )
-
-        result = self.tool_loader.run_search(
-            query=query,
-            max_results=max_results,
-            min_score_ratio=min_score_ratio,
-        )
-        self.tools_list_dictionary = self.tool_loader.schemas()
-        if self.llm is not None:
-            self.llm = self.llm_handling()
-
-        if self.verbose:
-            logger.info(
-                f"tool_search({query!r}) -> loaded "
-                f"{self.tool_loader.loaded_names}"
-            )
-        return result
 
     def _transcript_from_memory(self) -> Transcript:
         """
@@ -2139,7 +1543,7 @@ class Agent:
         self,
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[dict]] = None,
-    ) -> str:
+    ) -> Any:
         """
         Generate a comprehensive final summary of the autonomous task execution.
 
@@ -2151,7 +1555,7 @@ class Agent:
                 flattened string rendering of it.
 
         Returns:
-            str: Comprehensive summary
+            Any: The conversation shaped by ``output_type``, on every path.
         """
         summary_prompt = get_summary_prompt()
         self.short_memory.add(
@@ -2176,46 +1580,20 @@ class Agent:
                 **call_kwargs,
             )
 
-            response = self.parse_llm_output(response)
+            response = self.tool_manager.parse_llm_output(response)
 
             # Add LLM response to memory
             self.short_memory.add(
                 role=self.agent_name, content=str(response)
             )
 
-            # Check if complete_task was called
-            if isinstance(response, list):
-                for tool_call in response:
-                    if (
-                        isinstance(tool_call, dict)
-                        and tool_call.get("function", {}).get("name")
-                        == "complete_task"
-                    ):
-                        arguments = json.loads(
-                            tool_call["function"]["arguments"]
-                        )
-
-                        # Visualize final task completion
-                        self._visualize_function_call(
-                            "complete_task", arguments
-                        )
-
-                        result = self._complete_task_tool(**arguments)
-
-                        # Add result to memory
-                        self.short_memory.add(
-                            role="Tool Executor",
-                            content=f"complete_task result: {result}",
-                        )
-
-                        # Show comprehensive summary
-                        if self.print_on:
-                            formatter.print_panel(
-                                result,
-                                title="Task Completion Summary",
-                            )
-
-                        return result
+            if (
+                self.tool_manager.handle_complete_task(response)
+                is not None
+            ):
+                return history_output_formatter(
+                    self.short_memory, type=self.output_type
+                )
 
             # If complete_task wasn't called, generate summary manually
             comprehensive_summary = f"""Task Execution Summary
@@ -2846,6 +2224,17 @@ Subtask Breakdown:
             logger.info(f"Error sending agent message: {error}")
             raise error
 
+    def list_tools(self) -> List[str]:
+        """
+        Names of every tool this agent can call.
+
+        See :meth:`swarms.agents.tool_manager.ToolManager.list_tools`.
+
+        Returns:
+            List[str]: Tool names, without duplicates, in a stable order.
+        """
+        return self.tool_manager.list_tools()
+
     def add_tool(self, tool: Callable):
         """Add a single tool to the agent's tools list.
 
@@ -2989,8 +2378,7 @@ Subtask Breakdown:
             Dict[str, Any]: A dictionary representation of the class attributes.
         """
 
-        # Create a copy of the dict to avoid mutating the original object
-        # Remove the llm object from the copy since it's not serializable
+        # The llm object is not serializable
         dict_copy = self.__dict__.copy()
         dict_copy.pop("llm", None)
 
@@ -3056,36 +2444,6 @@ Subtask Breakdown:
             f"Model saved to {agent_workspace}/{self.agent_name}.yaml"
         )
 
-    def handle_tool_schema_ops(self):
-        if exists(self.tool_schema):
-            logger.info(f"Tool schema provided: {self.tool_schema}")
-
-            output = self.tool_struct.base_model_to_dict(
-                self.tool_schema, output_str=True
-            )
-
-            # Add the tool schema to the short memory
-            self.short_memory.add(
-                role=self.agent_name, content=output
-            )
-
-        # If multiple base models, then conver them.
-        if exists(self.list_base_models):
-            logger.info(
-                "Multiple base models provided, Automatically converting to OpenAI function"
-            )
-
-            schemas = self.tool_struct.multi_base_models_to_dict(
-                output_str=True
-            )
-
-            # If the output is a string then add it to the memory
-            self.short_memory.add(
-                role=self.agent_name, content=schemas
-            )
-
-        return None
-
     def _stream_with_tool_collection(
         self, stream, tool_calls_out: list
     ):
@@ -3146,6 +2504,17 @@ Subtask Breakdown:
             >>> response = agent.call_llm("What is Python?", current_loop=1)
             >>> response = agent.call_llm("Describe this image", img="chart.png")
         """
+        skills = self._skills_prompt.strip()
+        if skills:
+            if kwargs.get("messages") is not None:
+                kwargs["messages"] = [
+                    {"role": "system", "content": skills},
+                    *kwargs["messages"],
+                ]
+            elif isinstance(task, str):
+                # Not converted to messages: that path drops img and imgs.
+                task = f"{skills}\n\n{task}"
+
         return self.llm_manager.call(
             task=task,
             img=img,
@@ -3223,6 +2592,7 @@ Subtask Breakdown:
         correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         n: int = 1,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -3250,6 +2620,10 @@ Subtask Breakdown:
             correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
             n (int): How many outputs to generate (number of runs). Defaults to 1.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
+                e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
+                They are added to the agent's conversation and sent as the context
+                this task continues from. Defaults to the agent's own ``messages``.
             *args: Additional positional arguments for extensibility.
             **kwargs: Additional keyword arguments passed to LLM/tool execution.
 
@@ -3273,10 +2647,13 @@ Subtask Breakdown:
             >>> with open("image.jpg", "rb") as f:
             ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
             >>> agent.run("Describe this image", img=img_base64)
+            >>> agent.run(
+            ...     "And what did I just ask you?",
+            ...     messages=[{"role": "user", "content": "Name three primes."}],
+            ... )
         """
 
-        # If no task is provided, prompt for one only in interactive mode.
-        # Outside interactive mode, fail fast instead of blocking on stdin.
+        # Outside interactive mode, fail fast instead of blocking on stdin
         if task is None or (
             isinstance(task, str) and task.strip() == ""
         ):
@@ -3296,8 +2673,7 @@ Subtask Breakdown:
                     "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
                 ).strip()
             except (KeyboardInterrupt, EOFError):
-                # Graceful exit on Ctrl+C / Ctrl+D before the first task
-                # has even been entered. No traceback, no error.
+                # Ctrl+C / Ctrl+D before the first task exits without a traceback
                 formatter.console.print()
                 self.pretty_print(
                     "Session ended by user. Goodbye.",
@@ -3319,7 +2695,10 @@ Subtask Breakdown:
         if streaming_callback is None:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
-            # else: both are None, streaming_callback stays None
+
+        # Constructor messages are already in short_memory; per-call ones are not.
+        if messages:
+            self.short_memory.add_messages(messages)
 
         try:
             if self.max_loops == "auto":
@@ -3328,17 +2707,30 @@ Subtask Breakdown:
                     task=task,
                     img=img,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
             elif n > 1:
-                output = [self.run(task=task) for _ in range(n)]
+                output = [
+                    self._run(
+                        task=task,
+                        img=img,
+                        imgs=imgs,
+                        streaming_callback=streaming_callback,
+                        messages=messages,
+                        *args,
+                        **kwargs,
+                    )
+                    for _ in range(n)
+                ]
             else:
                 output = self._run(
                     task=task,
                     img=img,
                     imgs=imgs,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
@@ -3410,7 +2802,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Any extra kwargs forwarded to _run().
+            **kwargs: Any extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -3439,7 +2831,7 @@ Subtask Breakdown:
 
         def _run_thread():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
@@ -3480,7 +2872,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Extra kwargs forwarded to _run().
+            **kwargs: Extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -3514,7 +2906,7 @@ Subtask Breakdown:
 
         def _run_sync():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
@@ -3679,8 +3071,7 @@ Subtask Breakdown:
             List[Any]: One entry per agent, in the order the agents were given.
                 An agent whose conversation raised contributes None.
         """
-        # Pool is scoped to the call — see run_concurrent_tasks for why this is
-        # not an Agent-level executor.
+        # Scoped to the call, see run_concurrent_tasks for why
         with ContextThreadPoolExecutor(
             max_workers=os.cpu_count()
         ) as executor:
@@ -3723,172 +3114,6 @@ Subtask Breakdown:
                 f"Agent Name {self.agent_name} [Loop: {loop_count}/{self.max_loops}]",
             )
 
-    def parse_llm_output(self, response: Any):
-        """Parse and standardize the output from the LLM.
-
-        Args:
-            response (Any): The response from the LLM in any format
-
-        Returns:
-            str: Standardized string output
-
-        Raises:
-            ValueError: If the response format is unexpected and can't be handled
-        """
-        try:
-
-            if isinstance(response, dict):
-                if "choices" in response:
-                    return response["choices"][0]["message"][
-                        "content"
-                    ]
-
-                # MCP returns a bare dict for one call and a list for several; normalise so isinstance(list) holds.
-                if "function" in response:
-                    return [response]
-
-                return json.dumps(
-                    response
-                )  # Convert other dicts to string
-
-            elif isinstance(response, BaseModel):
-                response = response.model_dump()
-
-            # Handle List[BaseModel] responses
-            elif (
-                isinstance(response, list)
-                and response
-                and isinstance(response[0], BaseModel)
-            ):
-                return [item.model_dump() for item in response]
-
-            return response
-
-        except Exception as e:
-            logger.error(f"Error parsing LLM output: {e}")
-            raise ValueError(
-                f"Failed to parse LLM output: {type(response)}"
-            ) from e
-
-    def _complete_task_tool(
-        self,
-        task_id: str,
-        summary: str,
-        success: bool,
-        results: Optional[str] = None,
-        lessons_learned: Optional[str] = None,
-        **kwargs,
-    ) -> str:
-        """
-        Mark the main task as complete and provide comprehensive summary.
-
-        This tool signals that the entire task has been completed and generates
-        a comprehensive summary of the entire execution. It's typically called
-        at the end of the autonomous loop to provide a final report.
-
-        **Summary Generation:**
-        Creates a comprehensive summary including:
-        - Task ID and overall status (Success/Failed)
-        - High-level summary of the entire task
-        - Detailed results (if provided)
-        - Lessons learned (if provided)
-        - Breakdown of all subtasks with their individual statuses
-
-        **Task Verification:**
-        Before completing, the method checks if all subtasks are done. If incomplete
-        subtasks exist, a warning is logged but the task can still be marked complete.
-
-        **Memory Integration:**
-        The comprehensive summary is added to conversation memory and can be
-        retrieved for final output formatting.
-
-        Args:
-            task_id (str): The unique identifier of the main task. This should match
-                the original task or be a descriptive identifier.
-            summary (str): Comprehensive summary of the entire task completion.
-                Should cover what was accomplished, key outcomes, and overall status.
-            success (bool): Whether the main task was completed successfully.
-                - True: Task completed as intended
-                - False: Task failed or partially completed
-            results (Optional[str]): Detailed results from task execution. Can include
-                specific outputs, data, or findings. Defaults to None.
-            lessons_learned (Optional[str]): Key insights, patterns, or learnings
-                from the task execution. Useful for future reference. Defaults to None.
-            **kwargs: Additional arguments (currently unused, reserved for future use).
-
-        Returns:
-            str: Comprehensive task completion summary. The summary includes:
-                - Task ID and status
-                - Summary text
-                - Results (if provided)
-                - Lessons learned (if provided)
-                - Subtask breakdown with individual statuses
-
-        Note:
-            - This method is called automatically by the autonomous loop when task is complete
-            - The summary replaces the need for a separate summary phase
-            - Incomplete subtasks are logged as warnings but don't block completion
-            - The comprehensive summary is stored in memory for final output
-            - If verbose=True, task completion is logged
-
-        Examples:
-            >>> result = agent._complete_task_tool(
-            ...     task_id="build_web_app",
-            ...     summary="Successfully built web application with authentication",
-            ...     success=True,
-            ...     results="Created 10 files, implemented 5 features",
-            ...     lessons_learned="Authentication should be implemented early"
-            ... )
-            >>> # Returns comprehensive summary with all details
-        """
-        if self.verbose:
-            logger.info(f"Completing main task {task_id}: {summary}")
-
-        # Verify all subtasks are complete
-        incomplete = [
-            s["step_id"]
-            for s in self.autonomous_subtasks
-            if s["status"] not in ["completed", "failed"]
-        ]
-        if incomplete:
-            if self.verbose:
-                logger.warning(
-                    f"Attempting to complete task but {len(incomplete)} subtasks are not done: {incomplete}"
-                )
-
-        # Create comprehensive summary
-        comprehensive_summary = f"""Task Completion Summary
-
-Task ID: {task_id}
-Status: {'Success' if success else 'Failed'}
-Summary: {summary}
-"""
-        if results:
-            comprehensive_summary += f"\nResults:\n{results}\n"
-        if lessons_learned:
-            comprehensive_summary += (
-                f"\nLessons Learned:\n{lessons_learned}\n"
-            )
-
-        comprehensive_summary += "\nSubtask Breakdown:\n"
-        for subtask in self.autonomous_subtasks:
-            comprehensive_summary += f"- {subtask['step_id']}: {subtask.get('status', 'unknown')} - {subtask.get('description', '')}\n"
-            if "summary" in subtask:
-                comprehensive_summary += (
-                    f"  Summary: {subtask['summary']}\n"
-                )
-
-        # Add to memory
-        self.short_memory.add(
-            role=self.agent_name, content=comprehensive_summary
-        )
-
-        if self.verbose:
-            logger.info(
-                "Main task marked as completed with comprehensive summary"
-            )
-        return comprehensive_summary
-
     def output_cleaner_op(self, response: str):
         # Apply the cleaner function to the response
         if self.output_cleaner is not None:
@@ -3903,115 +3128,42 @@ Summary: {summary}
                 content=response,
             )
 
-    def mcp_tool_handling(
-        self, response: any, current_loop: Optional[int] = 0
-    ):
+    @property
+    def input_tokens(self) -> int:
+        """Tokens the agent's next request would carry, counted with its model's tokenizer.
+
+        Covers everything the agent sends as input: the system prompt, the
+        whole conversation in ``short_memory``, and the tool schemas. Use it
+        to see how full the context window is before a run. It is an
+        estimate — the conversation is counted as rendered text, role labels
+        included — so it runs a little above what the provider bills. For the
+        billed figure, summed over past calls, see :attr:`usage`.
         """
-        Execute the MCP tool calls contained in an LLM response.
-
-        All of the MCP mechanics — routing each tool call to the server that
-        owns it, authenticating (API key, bearer token, or OAuth), opening the
-        session and shaping the result — are handled by
-        :class:`swarms.tools.mcp_manager.MCPManager`. This method only wires
-        the result back into the agent's conversation.
-
-        **Post-Execution Processing:**
-        1. Formats the tool results as JSON
-        2. Adds them to conversation memory under the "Tool Executor" role
-        3. Generates a natural-language summary with a tool-free LLM instance
-        4. Displays the summary if ``print_on=True``
-
-        Args:
-            response (any): The LLM response containing MCP tool calls. Can be
-                a list of tool calls, a single tool call, a full assistant
-                message, or a JSON string of any of those.
-            current_loop (Optional[int]): The current loop iteration number,
-                used for logging and progress display. Defaults to 0.
-
-        Returns:
-            None: Modifies internal state (memory, printed output) only.
-
-        Raises:
-            AgentMCPConnectionError: If no MCP server could be reached.
-            AgentMCPToolError: If tool execution fails outright.
-
-        Examples:
-            >>> # Single MCP server secured with an API key
-            >>> agent = Agent(mcp_url="https://api.example.com/mcp", mcp_api_key="sk-...")
-            >>> response = [{"function": {"name": "mcp_tool", "arguments": "{}"}}]
-            >>> agent.mcp_tool_handling(response, current_loop=1)
-
-            >>> # Multiple MCP servers
-            >>> agent = Agent(mcp_urls=["https://a/mcp", "https://b/mcp"])
-            >>> agent.mcp_tool_handling(response, current_loop=2)
-        """
-        try:
-            tool_response = self.mcp_manager.execute_tool_calls(
-                response, output_type="dict"
-            )
-
-            if not tool_response:
-                if self.verbose:
-                    logger.info(
-                        f"No MCP tool calls found in the response for {self.agent_name}"
-                    )
-                return
-
-            text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2, default=str)}"
-
-            if self.print_on is True:
-                formatter.print_panel(
-                    content=text_content,
-                    title="MCP Tool Response: 🛠️",
-                    style="green",
-                )
-
-            # Add to the memory
-            self.short_memory.add(
-                role="Tool Executor",
-                content=text_content,
-            )
-
-            # Create a temporary LLM instance without tools for the follow-up call
-            try:
-                temp_llm = self.temp_llm_instance_for_tool_summary()
-
-                summary = temp_llm.run(
-                    task=self.short_memory.get_str()
-                )
-            except Exception as e:
-                logger.error(
-                    f"Error calling LLM after MCP tool execution: {e}"
-                )
-                # Fallback: provide a default summary
-                summary = "I successfully executed the MCP tool and retrieved the information above."
-
-            if self.print_on is True:
-                self.pretty_print(summary, loop_count=current_loop)
-
-            # Add to the memory
-            self.short_memory.add(
-                role=self.agent_name, content=summary
-            )
-        except Exception as e:
-            logger.error(
-                f"Error in MCP tool handling for {self.agent_name}: {e} Traceback: {traceback.format_exc()}"
-            )
-            raise e
-
-    def temp_llm_instance_for_tool_summary(self):
-        return LiteLLM(
-            model_name=self.model_name,
-            temperature=self.temperature,
-            top_p=self.top_p,  # Anthropic rejects requests with both temperature and top_p
-            max_tokens=self.max_tokens,
-            system_prompt=self.system_prompt,
-            stream=False,  # Always disable streaming for tool summaries
-            tools_list_dictionary=None,
-            parallel_tool_calls=False,
-            base_url=self.llm_base_url,
-            api_key=self.llm_api_key,
+        parts = [self.short_memory.return_history_as_string()]
+        if self.tools_list_dictionary:
+            parts.append(json.dumps(self.tools_list_dictionary))
+        return count_tokens(
+            "\n".join(part for part in parts if part),
+            model=self.model_name,
         )
+
+    @property
+    def usage(self) -> dict:
+        """Token usage reported by the provider, summed over every LLM call this agent has made.
+
+        Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens`` (the
+        part of ``input_tokens`` served from the provider's prompt cache),
+        ``reasoning_tokens`` (the part of ``output_tokens`` the model spent
+        thinking, 0 when the provider does not report it), ``total_tokens``.
+        Streaming calls count once their stream has been consumed, since the
+        provider reports usage in the final chunk.
+        """
+        return dict(self._usage)
+
+    def _add_usage(self, call_usage: dict) -> None:
+        """Fold one completion's usage into the running total."""
+        for key in self._usage:
+            self._usage[key] += call_usage.get(key, 0)
 
     def get_available_models(self) -> List[str]:
         """
@@ -4053,348 +3205,8 @@ Summary: {summary}
         """
         return self.llm_manager.is_fallback_available()
 
-    def execute_tools(self, response: any, loop_count: int):
-        """
-        Execute tools based on LLM response containing function calls.
-
-        This method processes tool calls from the LLM response, executes them,
-        and handles the results. It supports both single and multiple tool calls,
-        visualizes function calls before execution, and optionally summarizes
-        tool execution results.
-
-        **Process Flow:**
-        1. Validates response is not None
-        2. Visualizes function calls if print_on=True
-        3. Executes tools using tool_struct
-        4. Adds tool output to conversation memory
-        5. Displays execution results (detailed or brief based on show_tool_execution_output)
-        6. Optionally generates tool execution summary using LLM
-
-        **Tool Call Format:**
-        The method accepts tool calls in two formats:
-        - List of tool calls: [{"function": {"name": "...", "arguments": "..."}, "id": "..."}, ...]
-        - Single tool call dict: {"function": {"name": "...", "arguments": "..."}, "id": "..."}
-
-        **Visualization:**
-        If print_on=True, function calls are visualized with:
-        - Function name
-        - Call ID (if available)
-        - Arguments (truncated if >200 chars)
-
-        **Tool Execution Summary:**
-        If tool_call_summary=True, a temporary LLM instance is created to summarize
-        tool execution results. This helps the agent understand tool outputs better.
-
-        Args:
-            response (any): The LLM response containing tool calls. Can be:
-                - List of tool call dictionaries
-                - Single tool call dictionary
-                - None (will log warning and return early)
-            loop_count (int): The current loop iteration number. Used for logging
-                and progress tracking.
-
-        Returns:
-            None: This method modifies internal state (adds to memory, displays output)
-                but does not return a value.
-
-        Raises:
-            Exception: If tool execution fails after retry attempts. The error is
-                logged with full traceback before raising.
-
-        Note:
-            - Tool execution results are automatically formatted and added to memory
-            - If show_tool_execution_output=False, only brief confirmation is shown
-            - Tool execution summary uses a temporary LLM instance without tools
-            - The method handles both JSON string and dict format for arguments
-
-        Examples:
-            >>> # Single tool call
-            >>> response = [{
-            ...     "function": {"name": "search_web", "arguments": '{"query": "Python"}'},
-            ...     "id": "call_123"
-            ... }]
-            >>> agent.execute_tools(response, loop_count=1)
-
-            >>> # Multiple tool calls
-            >>> response = [
-            ...     {"function": {"name": "tool1", "arguments": "{}"}, "id": "call_1"},
-            ...     {"function": {"name": "tool2", "arguments": "{}"}, "id": "call_2"}
-            ... ]
-            >>> agent.execute_tools(response, loop_count=2)
-        """
-        # Handle None response gracefully
-        if response is None:
-            logger.warning(
-                f"Cannot execute tools with None response in loop {loop_count}. "
-                "This may indicate the LLM did not return a valid response."
-            )
-            return
-
-        # Visualize function calls before execution
-        if self.print_on:
-            # Handle both list and single dict responses
-            tool_calls_to_visualize = []
-            if isinstance(response, list):
-                tool_calls_to_visualize = response
-            elif isinstance(response, dict):
-                # Single tool call as dict
-                tool_calls_to_visualize = [response]
-
-            for tool_call in tool_calls_to_visualize:
-                if isinstance(tool_call, dict):
-                    func_name = tool_call.get("function", {}).get(
-                        "name", "Unknown"
-                    )
-                    func_args = {}
-                    tool_call_id = tool_call.get("id", "N/A")
-
-                    try:
-                        func_args = json.loads(
-                            tool_call.get("function", {}).get(
-                                "arguments", "{}"
-                            )
-                        )
-                    except (
-                        json.JSONDecodeError,
-                        AttributeError,
-                        TypeError,
-                    ):
-                        # If arguments is already a dict, use it directly
-                        func_args = tool_call.get("function", {}).get(
-                            "arguments", {}
-                        )
-                        if not isinstance(func_args, dict):
-                            func_args = {}
-
-                    # Visualize the function call with enhanced details
-                    call_content = f"Function: {func_name}\n"
-                    if tool_call_id != "N/A":
-                        call_content += f"Call ID: {tool_call_id}\n"
-                    call_content += "\nArguments:\n"
-                    for key, value in func_args.items():
-                        # Truncate long values for readability
-                        value_str = str(value)
-                        if len(value_str) > 200:
-                            value_str = value_str[:200] + "..."
-                        call_content += f"  {key}: {value_str}\n"
-
-                    formatter.print_panel(
-                        call_content,
-                        title=f"Agent: {self.agent_name} Function Call",
-                    )
-
-        try:
-            output = self.tool_struct.execute_function_calls_from_api_response(
-                response
-            )
-        except Exception as e:
-            # Retry the tool call
-            output = self.tool_struct.execute_function_calls_from_api_response(
-                response
-            )
-
-            if output is None:
-                logger.error(f"Error executing tools: {e}")
-                raise e
-
-        self.short_memory.add(
-            role="Tool Executor",
-            content=format_data_structure(output),
-        )
-
-        # Stored so a transcript builder can map it to tool_call ids.
-        self._last_tool_output = output
-
-        if self.print_on is True:
-            # Extract tool names and details from response for better display
-            tool_names = []
-            tool_details = []
-
-            # Handle both list and single dict responses
-            tool_calls_to_process = []
-            if isinstance(response, list):
-                tool_calls_to_process = response
-            elif isinstance(response, dict):
-                tool_calls_to_process = [response]
-
-            for tool_call in tool_calls_to_process:
-                if isinstance(tool_call, dict):
-                    func_name = tool_call.get("function", {}).get(
-                        "name", "Unknown"
-                    )
-                    tool_names.append(func_name)
-                    tool_details.append(
-                        {
-                            "name": func_name,
-                            "id": tool_call.get("id", "N/A"),
-                            "type": tool_call.get("type", "function"),
-                        }
-                    )
-
-            if self.show_tool_execution_output is True:
-                # Create detailed output display with enhanced information
-                tool_display = (
-                    f"Execution Time: {time.strftime('%H:%M:%S')}\n\n"
-                )
-
-                if tool_details:
-                    tool_display += "Tools Executed:\n"
-                    for detail in tool_details:
-                        tool_display += f"  - {detail['name']}"
-                        if detail["id"] != "N/A":
-                            tool_display += f" (ID: {detail['id']})"
-                        tool_display += f" [{detail['type']}]\n"
-                    tool_display += "\n"
-
-                # Format output for better readability
-                output_str = format_data_structure(output)
-                tool_display += f"Output:\n{output_str}"
-
-                # Show results in a panel
-                formatter.print_panel(
-                    tool_display,
-                    title="Tool Execution Results",
-                )
-            else:
-                # Show brief execution confirmation with tool names
-                if tool_names:
-                    brief_display = (
-                        f"Tools Executed: {', '.join(tool_names)}\n"
-                    )
-                    brief_display += (
-                        f"Time: {time.strftime('%H:%M:%S')}"
-                    )
-                    formatter.print_panel(
-                        brief_display,
-                        title="Tool Execution",
-                    )
-                else:
-                    formatter.print_panel(
-                        f"Tool Executed Successfully [{time.strftime('%H:%M:%S')}]",
-                        title="Tool Execution",
-                    )
-
-        # A temporary LLM instead of mutating the cached one.
-        if self.tool_call_summary is True:
-            temp_llm = self.temp_llm_instance_for_tool_summary()
-
-            tool_response = temp_llm.run(
-                f"""
-                Please analyze and summarize the following tool execution output in a clear and concise way. 
-                Focus on the key information and insights that would be most relevant to the user's original request.
-                If there are any errors or issues, highlight them prominently.
-                
-                Tool Output:
-                {output}
-                """
-            )
-
-            self.short_memory.add(
-                role=self.agent_name,
-                content=tool_response,
-            )
-
-            if self.print_on is True:
-                self.pretty_print(
-                    tool_response,
-                    loop_count,
-                )
-
     def list_output_types(self):
         return OutputType
-
-    def tool_execution_retry(self, response: any, loop_count: int):
-        """
-        Execute tools with retry logic for handling failures.
-
-        This method provides a robust wrapper around tool execution with automatic
-        retry on failure. It handles None responses gracefully and implements
-        retry logic using the configured tool_retry_attempts.
-
-        **Retry Strategy:**
-        - If tool execution fails, the method automatically retries
-        - Maximum retry attempts are controlled by self.tool_retry_attempts (default: 3)
-        - Each retry is logged with detailed error information
-        - After all retries are exhausted, AgentToolExecutionError is raised,
-          chained from the last underlying error via `raise ... from`
-
-        **Error Handling:**
-        - None responses: Logs warning and skips execution (does not raise)
-        - Any exception from execute_tools: Logs error with full traceback and
-          retries, since execute_tools re-raises the tool's own exception type
-
-        **Logging:**
-        All errors are logged with:
-        - Agent name for identification
-        - Loop count for context
-        - Full traceback for debugging
-        - Retry attempt number
-
-        Args:
-            response (any): The response from the LLM that may contain tool calls to execute.
-                Can be:
-                - List of tool call dictionaries
-                - Single tool call dictionary
-                - None (will log warning and return without raising)
-            loop_count (int): The current iteration loop number. Used for:
-                - Logging context
-                - Error reporting
-                - Debugging tool execution issues
-
-        Returns:
-            None: This method modifies internal state but does not return a value.
-
-        Raises:
-            AgentToolExecutionError: If tool execution fails after all retry attempts.
-            Exception: Any other exception that occurs during tool execution after
-                retries are exhausted.
-
-        Note:
-            - Uses self.tool_retry_attempts (default: 3) for maximum retry attempts
-            - None responses are handled gracefully without raising exceptions
-            - Detailed error logging helps with debugging tool execution issues
-            - The method delegates actual tool execution to execute_tools()
-
-        Examples:
-            >>> # Normal execution
-            >>> response = [{"function": {"name": "my_tool", "arguments": "{}"}}]
-            >>> agent.tool_execution_retry(response, loop_count=1)
-
-            >>> # Handles None response gracefully
-            >>> agent.tool_execution_retry(None, loop_count=2)
-            >>> # Logs warning but does not raise exception
-        """
-        if response is None:
-            logger.warning(
-                f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
-                f"This may indicate an issue with the model or prompt. Skipping tool execution."
-            )
-            return
-
-        # Catch broadly: nothing raises AgentToolExecutionError, so that caught nothing.
-        attempts = max(1, int(self.tool_retry_attempts or 1))
-        last_error: Optional[Exception] = None
-
-        for attempt in range(1, attempts + 1):
-            try:
-                self.execute_tools(
-                    response=response,
-                    loop_count=loop_count,
-                )
-                return getattr(self, "_last_tool_output", None)
-            except Exception as e:
-                last_error = e
-                logger.error(
-                    f"Agent '{self.agent_name}' tool execution failed on attempt "
-                    f"{attempt}/{attempts} in loop {loop_count}: {str(e)}. "
-                    f"Full traceback: {traceback.format_exc()}"
-                )
-
-        # Attempts exhausted: raise, or the model reads a silent no-op as success.
-        raise AgentToolExecutionError(
-            f"Agent '{self.agent_name}' failed to execute tools in loop "
-            f"{loop_count} after {attempts} attempt(s): {last_error}"
-        ) from last_error
 
     def _transcript_from_messages(
         self,

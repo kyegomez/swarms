@@ -17,9 +17,9 @@ inlined in ``swarms/structs/agent.py``:
 
 Configuration stays on the ``Agent``. The manager holds a reference to its
 owner and reads config live rather than snapshotting it, because agents mutate
-their own config at run time — ``system_prompt`` grows when skills load,
-``tools_list_dictionary`` changes when tools are registered, ``streaming_on``
-is toggled per call by ``run_stream``. Anything the manager writes
+their own config at run time — ``tools_list_dictionary`` changes when tools
+are registered, ``streaming_on`` is toggled per call by ``run_stream``.
+Anything the manager writes
 (``model_name``, ``current_model_index``, ``llm``) is written back to the agent,
 so serialization, ``save``/``load``, and every existing ``agent.llm`` reference
 keep working unchanged.
@@ -147,6 +147,7 @@ class LLMManager:
         )
 
         # Update the model name and reinitialize LLM
+        agent.fallback_models = available_models
         agent.model_name = new_model
         agent.llm = self.build()
 
@@ -224,6 +225,8 @@ class LLMManager:
                 "agent_name": agent.agent_name,
                 "prompt_caching": agent.prompt_caching,
                 "cache_config": agent.cache_config,
+                # The agent keeps the running total, so a rebuilt LLM does not reset it.
+                "usage_hook": agent._add_usage,
                 # Omitting these sends custom-endpoint traffic to the default provider instead.
                 "base_url": agent.llm_base_url,
                 "api_key": agent.llm_api_key,
@@ -235,7 +238,7 @@ class LLMManager:
                 agent.mcp_enabled
                 and getattr(agent, "tool_loader", None) is not None
             ):
-                agent.defer_mcp_tools()
+                agent.tool_manager.defer_mcp_tools()
                 deferred_mcp = True
 
             # Initialize tools_list_dictionary, if applicable
@@ -251,7 +254,9 @@ class LLMManager:
                         f"Adding MCP tools to memory for {agent.agent_name}"
                     )
 
-                mcp_tools = agent.add_mcp_tools_to_memory()
+                mcp_tools = (
+                    agent.tool_manager.add_mcp_tools_to_memory()
+                )
 
                 if agent.verbose:
                     logger.info(f"MCP tools: {mcp_tools}")
@@ -287,8 +292,6 @@ class LLMManager:
                     if len(args) == 1 and isinstance(args[0], dict):
                         additional_args.update(args[0])
                     else:
-                        # For other types of args, log them for debugging
-                        # and potentially handle them based on their type
                         logger.debug(
                             f"Received positional args in llm_handling: {args}"
                         )
@@ -494,8 +497,8 @@ class LLMManager:
         1. **Detailed streaming** (``agent.stream``): streams tokens with full
            metadata (citations, usage, logprobs, …), passing a ``token_info``
            dict to ``streaming_callback`` per token.
-        2. **Panel streaming** (``agent.streaming_on``): streams with formatted
-           panels, a real-time callback, or silently when ``print_on`` is False.
+        2. **Panel streaming** (``agent.streaming_on`` or a ``streaming_callback``):
+           formatted panels, a real-time callback, or silent when ``print_on`` is False.
         3. **Non-streaming**: a direct ``llm.run()`` returning the full string.
 
         Args:
@@ -523,13 +526,18 @@ class LLMManager:
         if "is_last" in kwargs:
             del kwargs["is_last"]
 
+        if imgs:
+            kwargs["imgs"] = imgs
+
         try:
             if agent.stream and hasattr(agent.llm, "stream"):
                 return self._call_detailed_streaming(
                     task, img, streaming_callback, *args, **kwargs
                 )
 
-            if agent.streaming_on and hasattr(agent.llm, "stream"):
+            if (
+                agent.streaming_on or streaming_callback is not None
+            ) and hasattr(agent.llm, "stream"):
                 return self._call_panel_streaming(
                     task,
                     img,
@@ -543,8 +551,6 @@ class LLMManager:
 
             if img is not None:
                 run_args["img"] = img
-            if imgs:
-                run_args["imgs"] = imgs
 
             return agent.llm.run(**run_args, **kwargs)
 
@@ -754,8 +760,7 @@ class LLMManager:
         # Restore original stream setting
         self.agent.llm.stream = original_stream
 
-        # If the model made tool calls during the stream, return them
-        # so the auto loop executes them — same format as non-streaming.
+        # Tool calls made mid-stream come back in the non-streaming shape
         return tool_calls_out if tool_calls_out else complete_response
 
     def _collect_stream(
@@ -817,8 +822,7 @@ class LLMManager:
                 "".join(thinking_parts), title=self._thinking_title()
             )
 
-        # Chain the already-consumed first chunk with the remaining stream,
-        # then wrap with tool-call collection.
+        # The first chunk was already consumed, chain it back in
         chained = itertools.chain(
             (
                 [first_content_chunk]

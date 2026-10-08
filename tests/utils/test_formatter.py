@@ -122,5 +122,67 @@ print(f"The answer is {result}")
     )
 
 
+def _director_panel(**kwargs) -> str:
+    """Render the director panel and return it as plain text."""
+    formatter = Formatter(md=False)
+    with formatter.console.capture() as capture:
+        formatter.print_director_task_distribution(**kwargs)
+    return capture.get()
+
+
+def test_director_panel_shows_the_plan():
+    output = _director_panel(
+        director_name="Director",
+        orders=[{"agent_name": "W1", "task": "Do the work"}],
+        plan="Split the work in two, then combine.",
+    )
+
+    assert "Plan" in output
+    assert "Split the work in two" in output
+
+
+def test_director_panel_titles_itself_with_the_director_name():
+    output = _director_panel(
+        director_name="ResearchDirector",
+        orders=[{"agent_name": "W1", "task": "Do the work"}],
+    )
+
+    assert "Director Name: ResearchDirector" in output
+
+
+def test_director_panel_does_not_truncate_a_long_order():
+    tail = "and this final clause must survive the render"
+    task = (
+        "Identify three practical benefits of multi-agent systems, "
+        "each with one concrete production example, covering "
+        "scalability, fault tolerance and specialization, " + tail
+    )
+    assert len(task) > 160, "task must exceed the old 160-char cap"
+
+    output = _director_panel(
+        director_name="Director",
+        orders=[{"agent_name": "Researcher", "task": task}],
+    )
+
+    assert "..." not in output
+    # rich wraps, so check the words rather than the whole string
+    for word in tail.split():
+        assert word in output
+
+
+def test_director_panel_does_not_parse_markup_in_a_task():
+    output = _director_panel(
+        director_name="Director",
+        orders=[
+            {
+                "agent_name": "W1",
+                "task": "Focus on [scalability] first",
+            }
+        ],
+    )
+
+    assert "[scalability]" in output
+
+
 if __name__ == "__main__":
     test_formatter()

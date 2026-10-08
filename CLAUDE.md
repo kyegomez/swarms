@@ -111,7 +111,7 @@ print(result)
 | `context_length` | int | `None` | Token budget; triggers compression at 90 % |
 | `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
 | `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
-| `temperature` | float | `0.5` | Sampling temperature |
+| `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
 | `max_tokens` | int | model's max output | Max tokens per LLM call. Unset resolves to the model's own output limit |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
 | `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
@@ -1064,6 +1064,51 @@ wf.set_end_points(["Merger"])
 
 results = wf.run(task="Process this dataset from two angles and merge the findings.")
 ```
+
+---
+
+## Contributing: WARP Git Messages (required)
+
+Every commit message, PR title and issue title you write for this repository must use the WARP (Warp Speed Protocol) shorthand. This is required of AI agents exactly as it is of people; a PR or issue without it is triaged later, so expect a delay if it is skipped.
+
+```
+[TYPE][Function/FileName][Short Description]
+```
+
+- `TYPE` in capitals: for example `FEAT`, `FIX`, `DOCS`, `REFACTOR`, `TEST`, `CHORE`.
+- `Function/FileName`: the function, class, module or file the change is about.
+- `Short Description`: one imperative line.
+
+```
+[FIX][Agent._run][Raise AgentLLMError after retry exhaustion]
+[FEAT][MCPDeployer][Serve several agents as separate tools]
+[DOCS][README][Add the MCPDeployer section]
+```
+
+Full specification: the [WARP Git Message Skill](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1) on the Swarms marketplace. Load it before writing a commit message, PR or issue for this repo.
+
+---
+
+## Comments: one line, only when needed
+
+A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.
+
+```python
+# Good
+# Sequential on purpose: agents share a rate-limited client.
+return [agent.run(task) for agent in agents]
+```
+
+```python
+# Bad
+# ------------------------------------------------------------
+# This function takes a list of agents and runs each of them
+# against the provided task, collecting the results into a list
+# which is then returned to the caller.
+# ------------------------------------------------------------
+```
+
+Multi-line comment blocks keep arriving in PRs and keep getting removed. Write them short the first time.
 
 ---
 

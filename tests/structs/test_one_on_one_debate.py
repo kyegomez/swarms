@@ -633,3 +633,47 @@ def test_one_on_one_debate_class_multiple_loops(
             f"Failed to test OneOnOneDebate multiple loops: {e}"
         )
         raise
+
+
+def test_one_on_one_debate_forwards_the_answer_not_the_transcript():
+    """Each turn should receive the previous reply, not the whole transcript."""
+
+    class _Memory:
+        def __init__(self):
+            self.last = ""
+
+        def get_final_message_content(self):
+            return self.last
+
+    class _TranscriptAgent:
+        """Returns its whole conversation, as Agent does by default."""
+
+        def __init__(self, name):
+            self.agent_name = name
+            self.short_memory = _Memory()
+            self._transcript = []
+            self.prompts = []
+
+        def run(self, task=None, img=None):
+            self.prompts.append(str(task))
+            reply = f"{self.agent_name}-reply"
+            self.short_memory.last = reply
+            self._transcript.append(f"prev:{task}")
+            return "\n".join(self._transcript) + "\n" + reply
+
+    first = _TranscriptAgent("A")
+    second = _TranscriptAgent("B")
+
+    one_on_one_debate(
+        max_loops=6, task="seed", agents=[first, second]
+    )
+
+    for agent in (first, second):
+        assert not any(
+            "prev:" in prompt for prompt in agent.prompts[1:]
+        ), f"{agent.agent_name} was handed a transcript: {agent.prompts}"
+        assert agent.prompts[1:] == [
+            "B-reply" if agent.agent_name == "A" else "A-reply"
+        ] * len(
+            agent.prompts[1:]
+        ), f"{agent.agent_name} prompts: {agent.prompts}"
