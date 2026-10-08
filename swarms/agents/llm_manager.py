@@ -44,6 +44,7 @@ from litellm.utils import (
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentLLMInitializationError
+from swarms.telemetry.otel import swarm_telemetry
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists
 from swarms.utils.litellm_wrapper import LiteLLM
@@ -519,6 +520,85 @@ class LLMManager:
         Raises:
             AgentLLMError, BadRequestError, InternalServerError,
             AuthenticationError, Exception: re-raised for upstream handling.
+        """
+        agent = self.agent
+        with swarm_telemetry().capture_run(
+            "Agent.llm_call", agent
+        ) as span:
+            span.set("gen_ai.operation.name", "chat")
+            span.set("gen_ai.request.model", self.get_current_model())
+            span.set("swarms.loop", current_loop)
+            usage_before = dict(getattr(agent, "_usage", None) or {})
+            try:
+                result = self._call_llm(
+                    task,
+                    img,
+                    imgs,
+                    current_loop,
+                    streaming_callback,
+                    *args,
+                    **kwargs,
+                )
+            finally:
+                usage_after = getattr(agent, "_usage", None)
+                if isinstance(usage_after, dict):
+                    span.record_usage(
+                        {
+                            key: value - usage_before.get(key, 0)
+                            for key, value in usage_after.items()
+                        }
+                    )
+                request = getattr(agent.llm, "last_request", None)
+                if request is not None:
+                    span.record_json("swarms.request", request)
+            response = getattr(agent.llm, "last_response", None)
+            # A stream leaves no response object, so the assembled result stands in.
+            span.record_json(
+                "swarms.response",
+                (
+                    response.model_dump()
+                    if hasattr(response, "model_dump")
+                    else result if response is None else response
+                ),
+            )
+            finish_reason = getattr(
+                agent.llm, "last_finish_reason", None
+            )
+            if finish_reason:
+                span.set(
+                    "gen_ai.response.finish_reasons", finish_reason
+                )
+            response_model = getattr(
+                agent.llm, "last_response_model", None
+            )
+            if response_model:
+                span.set("gen_ai.response.model", response_model)
+            span.record_success()
+            return result
+
+    def _call_llm(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """Run the model call for one loop, picking the streaming mode from the agent's config.
+
+        Args:
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): Image input for multimodal processing.
+            imgs (Optional[List[str]]): Several image inputs.
+            current_loop (int): Loop iteration, used in streaming panel titles.
+            streaming_callback (Optional[Callable[[str], None]]): Receives streamed tokens.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
+
+        Returns:
+            Any: The complete response string, or the tool-call list.
         """
         agent = self.agent
 

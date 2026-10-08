@@ -11,7 +11,9 @@ from typing import (
     Any,
     Callable,
     ContextManager,
+    Dict,
     Iterator,
+    List,
     Optional,
     Sequence,
 )
@@ -288,10 +290,10 @@ class _SpanHandle:
             pass
 
     def record_output(self, result: Any) -> None:
-        """Attach the operation's output and mark the span successful.
+        """Attach the operation's full output and mark the span successful.
 
         Args:
-            result (Any): The operation result; stringified and truncated.
+            result (Any): The operation result; stringified, without truncation.
 
         Returns:
             None
@@ -300,19 +302,53 @@ class _SpanHandle:
             return
         try:
             self._span.set_attribute(
-                "swarms.output", _truncate(result)
+                "swarms.output",
+                result if isinstance(result, str) else str(result),
             )
+        except Exception:
+            pass
+        self.record_success()
+
+    def record_success(self) -> None:
+        """Mark the span successful without attaching an output.
+
+        Returns:
+            None
+        """
+        if self._span is None or self._done:
+            return
+        try:
             self._span.set_attribute("swarms.status", "completed")
             self._span.set_status(Status(StatusCode.OK))
             self._done = True
         except Exception:
             pass
 
-    def record_conversation(self, messages: Any) -> None:
-        """Attach the full conversation history to the span as JSON, without truncation.
+    def record_usage(self, usage: Dict[str, Any]) -> None:
+        """Attach token counts to the span as integer swarms.usage attributes.
 
         Args:
-            messages (Any): The conversation messages, one dict per message.
+            usage (Dict[str, Any]): Token counts keyed by kind, such as input_tokens.
+
+        Returns:
+            None
+        """
+        if self._span is None:
+            return
+        try:
+            for key, value in usage.items():
+                self._span.set_attribute(
+                    f"swarms.usage.{key}", int(value)
+                )
+        except Exception:
+            pass
+
+    def record_json(self, key: str, value: Any) -> None:
+        """Attach a value to the span as JSON, without truncation, with credential keys redacted.
+
+        Args:
+            key (str): Attribute name.
+            value (Any): The value to record.
 
         Returns:
             None
@@ -323,11 +359,32 @@ class _SpanHandle:
             import json
 
             self._span.set_attribute(
-                "swarms.conversation",
-                json.dumps(_sanitize(messages), default=str),
+                key, json.dumps(_sanitize(value), default=str)
             )
         except Exception:
             pass
+
+    def record_inputs(self, arguments: Dict[str, Any]) -> None:
+        """Attach every argument of the call to the span as JSON, without truncation.
+
+        Args:
+            arguments (Dict[str, Any]): Argument names mapped to their values.
+
+        Returns:
+            None
+        """
+        self.record_json("swarms.inputs", arguments)
+
+    def record_conversation(self, messages: Any) -> None:
+        """Attach the full conversation history to the span as JSON, without truncation.
+
+        Args:
+            messages (Any): The conversation messages, one dict per message.
+
+        Returns:
+            None
+        """
+        self.record_json("swarms.conversation", messages)
 
     def record_error(self, exc: BaseException) -> None:
         """Record an exception on the span and mark it failed.
@@ -817,10 +874,67 @@ def capture_error(
         pass
 
 
+def _conversation_history(obj: Any) -> Optional[List[Any]]:
+    """Find the message list of the conversation an object keeps.
+
+    Args:
+        obj (Any): The instance whose call is traced.
+
+    Returns:
+        Optional[List[Any]]: The messages, or None when it keeps no conversation.
+    """
+    for attribute in ("short_memory", "conversation"):
+        history = getattr(
+            getattr(obj, attribute, None),
+            "conversation_history",
+            None,
+        )
+        if isinstance(history, list):
+            return history
+    return None
+
+
+def _call_safely(getter: Callable[[Any], Any], obj: Any) -> Any:
+    """Call a getter on the traced object, returning None if it raises.
+
+    Args:
+        getter (Callable[[Any], Any]): Reads something from the object.
+        obj (Any): The instance whose call is traced.
+
+    Returns:
+        Any: What the getter returned, or None.
+    """
+    try:
+        return getter(obj)
+    except Exception:
+        return None
+
+
+def _usage_growth(
+    before: Optional[Dict[str, Any]], after: Optional[Dict[str, Any]]
+) -> Optional[Dict[str, int]]:
+    """Subtract two cumulative token counts to get what one call used.
+
+    Args:
+        before (Optional[Dict[str, Any]]): Counts before the call.
+        after (Optional[Dict[str, Any]]): Counts after the call.
+
+    Returns:
+        Optional[Dict[str, int]]: Tokens used per kind, or None when either count is missing.
+    """
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        return None
+    return {
+        key: int(after.get(key, 0)) - int(before.get(key, 0))
+        for key in after
+    }
+
+
 def trace_run(
     name: str,
     input_params: Sequence[str] = ("task",),
     conversation: Optional[Callable[[Any], Any]] = None,
+    usage: Optional[Callable[[Any], Dict[str, Any]]] = None,
 ) -> Callable[[Callable], Callable]:
     """Decorate a method so each call is captured as a run span.
 
@@ -842,7 +956,11 @@ def trace_run(
             ``("task",)``.
         conversation (Optional[Callable[[Any], Any]]): Returns the instance's
             conversation messages, recorded in full as swarms.conversation after
-            every call, whether it succeeds or fails. Defaults to None.
+            every call, whether it succeeds or fails. Defaults to None, which
+            reads the conversation kept in short_memory or conversation.
+        usage (Optional[Callable[[Any], Dict[str, Any]]]): Returns the instance's
+            cumulative token counts; what they grow by during the call is
+            recorded as swarms.usage attributes. Defaults to None.
 
     Returns:
         Callable[[Callable], Callable]: A decorator that wraps the target method.
@@ -863,6 +981,7 @@ def trace_run(
                 return func(self, *args, **kwargs)
 
             inputs: dict = {}
+            arguments: dict = {}
             if sig is not None:
                 try:
                     bound = sig.bind_partial(self, *args, **kwargs)
@@ -871,23 +990,33 @@ def trace_run(
                         for p in input_params
                         if p in bound.arguments
                     }
+                    bound.apply_defaults()
+                    arguments = dict(bound.arguments)
+                    arguments.pop(next(iter(sig.parameters)), None)
                 except Exception:
                     inputs = {}
 
             # capture_run records exceptions itself, only the success output is needed
+            find_history = conversation or _conversation_history
             with telem.capture_run(name, self, **inputs) as span:
+                span.record_inputs(arguments)
+                usage_before = (
+                    _call_safely(usage, self) if usage else None
+                )
                 try:
                     result = func(self, *args, **kwargs)
                     span.record_output(result)
                     return result
                 finally:
-                    if conversation is not None:
-                        try:
-                            span.record_conversation(
-                                conversation(self)
-                            )
-                        except Exception:
-                            pass
+                    history = _call_safely(find_history, self)
+                    if history is not None:
+                        span.record_conversation(history)
+                    if usage:
+                        used = _usage_growth(
+                            usage_before, _call_safely(usage, self)
+                        )
+                        if used is not None:
+                            span.record_usage(used)
 
         return wrapper
 

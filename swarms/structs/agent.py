@@ -2578,7 +2578,7 @@ Subtask Breakdown:
     @trace_run(
         "Agent.run",
         input_params=("task", "img", "imgs"),
-        conversation=lambda agent: agent.short_memory.conversation_history,
+        usage=lambda agent: agent.usage,
     )
     def run(
         self,
