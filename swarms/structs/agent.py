@@ -86,7 +86,6 @@ from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_error,
     capture_init,
-    log_agent_data,
     trace_run,
 )
 from swarms.tools.dynamic_tool_loader import (
@@ -650,9 +649,6 @@ class Agent:
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
 
-        if self.autosave is True:
-            log_agent_data(self.to_dict())
-
         self.tool_manager.load_tools()
 
         if self.llm is None:
@@ -1111,7 +1107,6 @@ class Agent:
 
             # Autosave
             if self.autosave:
-                log_agent_data(self.to_dict())
                 self.save()
                 self._autosave_config_step(loop_count=0)
 
@@ -1305,7 +1300,6 @@ class Agent:
                         )
 
                         if self.autosave is True:
-                            log_agent_data(self.to_dict())
                             self.save()
                             self._autosave_config_step(
                                 loop_count=loop_count
@@ -1396,7 +1390,6 @@ class Agent:
                     time.sleep(self.loop_interval)
 
             if self.autosave is True:
-                log_agent_data(self.to_dict())
                 self.save()
                 self._autosave_config_step(loop_count=loop_count)
 
@@ -1448,7 +1441,6 @@ class Agent:
         if self.autosave is True:
             # Save full state
             self.save()
-            log_agent_data(self.to_dict())
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
@@ -2583,7 +2575,11 @@ Subtask Breakdown:
         """
         return self.skills.load_full_skill(skill_name)
 
-    @trace_run("Agent.run", input_params=("task", "img", "imgs"))
+    @trace_run(
+        "Agent.run",
+        input_params=("task", "img", "imgs"),
+        conversation=lambda agent: agent.short_memory.conversation_history,
+    )
     def run(
         self,
         task: Optional[Union[str, Any]] = None,

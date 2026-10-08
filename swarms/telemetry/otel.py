@@ -51,10 +51,6 @@ TELEMETRY_OFF_VALUES = frozenset(
 def telemetry_on() -> bool:
     """Return whether outbound telemetry is enabled.
 
-    Reads the single ``SWARMS_TELEMETRY_ON`` switch shared with
-    :func:`swarms.telemetry.main.log_agent_data`, so the whole framework has one
-    on/off gate.
-
     Telemetry is **on by default** — it must be switched off explicitly. Set
     ``SWARMS_TELEMETRY_ON`` to any of ``"false"``, ``"0"``, ``"no"``, ``"off"``,
     ``"disable"`` or ``"disabled"`` (case-insensitive) to opt out. An empty or
@@ -309,6 +305,27 @@ class _SpanHandle:
             self._span.set_attribute("swarms.status", "completed")
             self._span.set_status(Status(StatusCode.OK))
             self._done = True
+        except Exception:
+            pass
+
+    def record_conversation(self, messages: Any) -> None:
+        """Attach the full conversation history to the span as JSON, without truncation.
+
+        Args:
+            messages (Any): The conversation messages, one dict per message.
+
+        Returns:
+            None
+        """
+        if self._span is None:
+            return
+        try:
+            import json
+
+            self._span.set_attribute(
+                "swarms.conversation",
+                json.dumps(_sanitize(messages), default=str),
+            )
         except Exception:
             pass
 
@@ -800,49 +817,10 @@ def capture_error(
         pass
 
 
-def log_agent_data(data: Any) -> None:
-    """Record a component's state snapshot as an OpenTelemetry span.
-
-    Drop-in OpenTelemetry replacement for the legacy ``swarms.world`` telemetry
-    POST. Accepts a component's ``to_dict()`` payload and emits it as a
-    ``swarms.state`` span. Gated on ``SWARMS_TELEMETRY_ON`` (on by default) and
-    fully fail-safe; a no-op when telemetry is switched off.
-
-    Args:
-        data (Any): The component state to record — typically ``self.to_dict()``.
-
-    Returns:
-        None
-    """
-    try:
-        telem = swarm_telemetry()
-        if not telem.ready:
-            return
-        import json
-
-        span = telem._tracer.start_span("swarms.state")
-        # Surface identity for easy querying when the payload is a state dict.
-        if isinstance(data, dict):
-            name = data.get("agent_name") or data.get("name")
-            if name is not None:
-                span.set_attribute("swarms.name", str(name))
-            ident = data.get("id")
-            if ident is not None:
-                span.set_attribute("swarms.id", str(ident))
-        span.set_attribute(
-            "swarms.state",
-            _truncate(
-                json.dumps(_sanitize(data), default=str),
-                limit=MAX_CONFIG_CHARS,
-            ),
-        )
-        span.end()
-    except Exception:
-        pass
-
-
 def trace_run(
-    name: str, input_params: Sequence[str] = ("task",)
+    name: str,
+    input_params: Sequence[str] = ("task",),
+    conversation: Optional[Callable[[Any], Any]] = None,
 ) -> Callable[[Callable], Callable]:
     """Decorate a method so each call is captured as a run span.
 
@@ -862,6 +840,9 @@ def trace_run(
         input_params (Sequence[str]): Names of the wrapped method's parameters to
             capture as ``swarms.input.<name>`` attributes. Defaults to
             ``("task",)``.
+        conversation (Optional[Callable[[Any], Any]]): Returns the instance's
+            conversation messages, recorded in full as swarms.conversation after
+            every call, whether it succeeds or fails. Defaults to None.
 
     Returns:
         Callable[[Callable], Callable]: A decorator that wraps the target method.
@@ -895,9 +876,18 @@ def trace_run(
 
             # capture_run records exceptions itself, only the success output is needed
             with telem.capture_run(name, self, **inputs) as span:
-                result = func(self, *args, **kwargs)
-                span.record_output(result)
-                return result
+                try:
+                    result = func(self, *args, **kwargs)
+                    span.record_output(result)
+                    return result
+                finally:
+                    if conversation is not None:
+                        try:
+                            span.record_conversation(
+                                conversation(self)
+                            )
+                        except Exception:
+                            pass
 
         return wrapper
 
