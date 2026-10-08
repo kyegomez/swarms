@@ -28,6 +28,7 @@ from loguru import logger
 
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.structs.autonomous_loop_utils import (
+    PERMISSIONED_TOOLS,
     assign_task_tool,
     cancel_sub_agent_tasks_tool,
     check_sub_agent_status_tool,
@@ -48,6 +49,10 @@ from swarms.structs.autonomous_loop_utils import (
 from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
+)
+from swarms.structs.tool_permissions import (
+    PermissionDecision,
+    ToolPermissionPolicy,
 )
 from swarms.structs.transcript import Transcript
 from swarms.tools.dynamic_tool_loader import SEARCH_TOOL_NAME
@@ -110,6 +115,27 @@ class AutonomousAgentLoop:
         self._transcript = Transcript()
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
+        self._permission_policy = ToolPermissionPolicy(
+            tool_permissions=getattr(agent, "tool_permissions", None),
+            default_permission=getattr(
+                agent, "default_permission", "allow"
+            ),
+            permission_callback=getattr(
+                agent, "permission_callback", None
+            ),
+        )
+
+    @property
+    def permission_log(self) -> List[PermissionDecision]:
+        """
+        Every allow/deny ruling this loop made, oldest first.
+
+        Empty when no policy is configured: an all-allow policy is skipped
+        rather than run, so the default path is byte-for-byte what it was.
+        Pass ``tool_permissions={}`` with ``default_permission="allow"`` to
+        keep the log without restricting anything.
+        """
+        return self._permission_policy.log
 
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
@@ -440,6 +466,16 @@ class AutonomousAgentLoop:
                 }
             else:
                 planning_tool_handlers = all_planning_tool_handlers
+
+            if not self._permission_policy.is_permissive:
+                planning_tool_handlers = {
+                    name: (
+                        self._permission_policy.guard(name, handler)
+                        if name in PERMISSIONED_TOOLS
+                        else handler
+                    )
+                    for name, handler in planning_tool_handlers.items()
+                }
 
             # Add handoff tool handler if handoffs are configured
             if exists(self.agent.handoffs):
