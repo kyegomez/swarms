@@ -2,7 +2,7 @@
 
 ARG PYTHON_VERSION=3.13
 
-FROM python:${PYTHON_VERSION}-slim AS builder
+FROM python:${PYTHON_VERSION}-alpine AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.12.23 /uv /bin/uv
 
@@ -19,13 +19,17 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --python /opt/venv/bin/python .
 
 # Same base as the builder, so the venv's interpreter path still resolves.
-FROM python:${PYTHON_VERSION}-slim
+FROM python:${PYTHON_VERSION}-alpine
 
 ENV PATH="/opt/venv/bin:${PATH}" \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-RUN useradd --create-home --shell /bin/bash swarms \
+# The base image's pip is never used and bundles outdated urllib3, setuptools and msgpack.
+RUN apk upgrade --no-cache \
+    && apk add --no-cache bash \
+    && rm -rf /usr/local/lib/python*/site-packages/pip* /usr/local/bin/pip* \
+    && adduser -D -u 1000 -s /bin/bash swarms \
     && mkdir /app \
     && chown swarms:swarms /app
 
