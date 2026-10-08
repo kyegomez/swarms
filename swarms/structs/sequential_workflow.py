@@ -304,7 +304,11 @@ class SequentialWorkflow:
         )
 
     @trace_run(
-        "SequentialWorkflow.run", input_params=("task", "img", "imgs")
+        "SequentialWorkflow.run",
+        input_params=("task", "img", "imgs"),
+        conversation=lambda workflow: (
+            workflow.agent_rearrange.conversation.conversation_history
+        ),
     )
     def run(
         self,
