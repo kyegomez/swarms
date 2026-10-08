@@ -31,6 +31,7 @@ Run:
     PYTHONPATH=. python3 -m pytest tests/telemetry/test_telemetry.py -q -p no:randomly
 """
 
+import gzip
 import json
 import os
 import threading
@@ -41,6 +42,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from types import SimpleNamespace
 
 import pytest
+import zstandard
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -186,17 +188,37 @@ def spans(_exporter):
     return _exporter
 
 
+def _decode(body, encoding):
+    """Undo a request body's content encoding, as the collector does."""
+    if "zstd" in encoding:
+        return zstandard.ZstdDecompressor().stream_reader(body).read()
+    if "gzip" in encoding:
+        return gzip.decompress(body)
+    return body
+
+
 @pytest.fixture
 def otlp_collector(_exporter):
     """Point the telemetry singleton at a local OTLP/HTTP receiver for one test."""
     received = []
+    requests = []
 
     class Receiver(BaseHTTPRequestHandler):
         def do_POST(self):
-            request = ExportTraceServiceRequest()
-            request.ParseFromString(
-                self.rfile.read(int(self.headers["Content-Length"]))
+            body = self.rfile.read(
+                int(self.headers["Content-Length"])
             )
+            encoding = self.headers.get("Content-Encoding", "")
+            decoded = _decode(body, encoding)
+            requests.append(
+                {
+                    "encoding": encoding,
+                    "sent": len(body),
+                    "decoded": len(decoded),
+                }
+            )
+            request = ExportTraceServiceRequest()
+            request.ParseFromString(decoded)
             for resource_spans in request.resource_spans:
                 for scope_spans in resource_spans.scope_spans:
                     received.extend(scope_spans.spans)
@@ -212,7 +234,7 @@ def otlp_collector(_exporter):
     otel.TELEMETRY_BASE_URL = f"http://127.0.0.1:{server.server_port}"
     otel.swarm_telemetry.cache_clear()
     try:
-        yield otel.swarm_telemetry(), received
+        yield otel.swarm_telemetry(), received, requests
     finally:
         server.shutdown()
         otel.TELEMETRY_BASE_URL = previous_url
@@ -985,7 +1007,7 @@ class TestAgentConversation:
         self, otlp_collector
     ):
         """Every agent in a workflow exports its own full history over OTLP."""
-        telem, received = otlp_collector
+        telem, received, _ = otlp_collector
         writer = fake_agent("Hist-Writer", reply="draft" * 5000)
         editor = fake_agent("Hist-Editor", reply="edited draft")
         SequentialWorkflow(
@@ -1011,10 +1033,26 @@ class TestAgentConversation:
             ]
         assert len(exported["Hist-Writer"]) > otel.MAX_PAYLOAD_CHARS
 
+    def test_exports_are_zstd_compressed(self, otlp_collector):
+        """Spans leave zstd-compressed and arrive intact at a fraction of the size."""
+        telem, received, requests = otlp_collector
+        agent = fake_agent(
+            "Zstd-A", reply="the market moved on rates " * 400
+        )
+        agent.run("first task")
+        agent.run("second task")
+        telem._provider.force_flush()
 
-# ===========================================================================
-# Identity schema — accessible swarms.* namespace
-# ===========================================================================
+        assert requests
+        assert all(r["encoding"] == "zstd" for r in requests)
+        sent = sum(r["sent"] for r in requests)
+        decoded = sum(r["decoded"] for r in requests)
+        assert sent < decoded / 10
+        assert {"Agent.init", "Agent.run"} <= {
+            s.name for s in received
+        }
+
+
 class TestSchema:
     def test_agent_identity_no_swarm_type(self, spans):
         class FakeAgent:  # mimics an Agent (agent_name, id, no swarm_type)

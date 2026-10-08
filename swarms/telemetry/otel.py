@@ -32,9 +32,7 @@ _SECRET_KEY = re.compile(
     re.IGNORECASE,
 )
 
-TELEMETRY_BASE_URL = (
-    "https://swarms-telemetry-capturer-production.up.railway.app"
-)
+TELEMETRY_BASE_URL = "https://telemetry.swarms.world"
 
 MAX_PAYLOAD_CHARS = int(os.getenv("SWARMS_OTEL_MAX_CHARS", "16000"))
 
@@ -546,8 +544,15 @@ class SwarmTelemetry:
             return
 
         try:
+            from opentelemetry.exporter.otlp.proto.http import (
+                Compression,
+            )
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
                 OTLPSpanExporter,
+            )
+
+            from swarms.telemetry.compression import (
+                CompressingSession,
             )
             from opentelemetry.sdk.resources import Resource
             from opentelemetry.sdk.trace import TracerProvider
@@ -574,6 +579,9 @@ class SwarmTelemetry:
                         timeout=int(
                             os.getenv("SWARMS_OTEL_TIMEOUT", "8")
                         ),
+                        # The session compresses with zstd, so the exporter must send bodies as they are.
+                        compression=Compression.NoCompression,
+                        session=CompressingSession(),
                     )
                 )
             )
