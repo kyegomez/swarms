@@ -33,9 +33,11 @@ Run:
 
 import json
 import os
+import threading
 import time
 import uuid
 from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 from dotenv import load_dotenv
@@ -47,6 +49,9 @@ load_dotenv()
 os.environ["SWARMS_TELEMETRY_ON"] = "true"
 
 import swarms.telemetry.otel as otel  # noqa: E402
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (  # noqa: E402
+    ExportTraceServiceRequest,
+)
 from opentelemetry.sdk.trace.export import (  # noqa: E402
     SimpleSpanProcessor,
 )
@@ -71,6 +76,7 @@ from swarms import (  # noqa: E402
     SequentialWorkflow,
     SwarmRouter,
 )
+from swarms.schemas.agent_errors import AgentLLMError  # noqa: E402
 from swarms.schemas.planner_worker_schemas import (  # noqa: E402
     CycleVerdict,
 )
@@ -101,7 +107,6 @@ from swarms.telemetry.otel import (  # noqa: E402
     capture_init,
     capture_run,
     init_config,
-    log_agent_data,
     swarm_telemetry,
     telemetry_on,
     trace_run,
@@ -181,6 +186,42 @@ def spans(_exporter):
 
 
 @pytest.fixture
+def otlp_collector(_exporter):
+    """Point the telemetry singleton at a local OTLP/HTTP receiver for one test."""
+    received = []
+
+    class Receiver(BaseHTTPRequestHandler):
+        def do_POST(self):
+            request = ExportTraceServiceRequest()
+            request.ParseFromString(
+                self.rfile.read(int(self.headers["Content-Length"]))
+            )
+            for resource_spans in request.resource_spans:
+                for scope_spans in resource_spans.scope_spans:
+                    received.extend(scope_spans.spans)
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Receiver)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    previous_url = otel.TELEMETRY_BASE_URL
+    otel.TELEMETRY_BASE_URL = f"http://127.0.0.1:{server.server_port}"
+    otel.swarm_telemetry.cache_clear()
+    try:
+        yield otel.swarm_telemetry(), received
+    finally:
+        server.shutdown()
+        otel.TELEMETRY_BASE_URL = previous_url
+        otel.swarm_telemetry.cache_clear()
+        otel.swarm_telemetry()._provider.add_span_processor(
+            SimpleSpanProcessor(_exporter)
+        )
+
+
+@pytest.fixture
 def toggle_telemetry(_exporter):
     """Context manager fixture to force telemetry on/off for a block.
 
@@ -249,6 +290,18 @@ _by_name_all = _all_by_name
 
 def _attrs(span):
     return dict(span.attributes)
+
+
+def _assert_llm_failure_recorded(exporter, run_span, agent_name):
+    """Assert the run span failed with AgentLLMError and the agent's model error was recorded."""
+    top = _by_name(exporter, run_span)
+    assert top.status.status_code.name == "ERROR"
+    assert _attrs(top)["swarms.status"] == "error"
+    assert _attrs(top)["swarms.error.type"] == "AgentLLMError"
+
+    err = _by_name(exporter, "Agent.llm_error")
+    assert _attrs(err)["swarms.status"] == "error"
+    assert _attrs(err)["swarms.name"] == agent_name
 
 
 # ============================================================================
@@ -585,6 +638,141 @@ class TestTraceRun:
 
         assert hasattr(Comp.run, "__wrapped__")
 
+    def test_records_full_conversation(self, spans):
+        """A conversation getter records every message, untruncated."""
+        long_reply = "x" * (otel.MAX_PAYLOAD_CHARS + 100)
+
+        class Comp:
+            def __init__(self):
+                self.messages = []
+
+            @trace_run("Comp.chat", conversation=lambda c: c.messages)
+            def run(self, task=None):
+                self.messages += [
+                    {"role": "User", "content": task},
+                    {"role": "Comp", "content": long_reply},
+                ]
+                return "done"
+
+        Comp().run(task="hi")
+        raw = _attrs(_by_name(spans, "Comp.chat"))[
+            "swarms.conversation"
+        ]
+        assert json.loads(raw) == [
+            {"role": "User", "content": "hi"},
+            {"role": "Comp", "content": long_reply},
+        ]
+
+    def test_records_conversation_when_the_call_fails(self, spans):
+        """The conversation is recorded even when the call raises."""
+
+        class Comp:
+            messages = [{"role": "User", "content": "hi"}]
+
+            @trace_run("Comp.fail", conversation=lambda c: c.messages)
+            def run(self, task=None):
+                raise ValueError("bad")
+
+        with pytest.raises(ValueError):
+            Comp().run(task="hi")
+        a = _attrs(_by_name(spans, "Comp.fail"))
+        assert a["swarms.status"] == "error"
+        assert json.loads(a["swarms.conversation"]) == Comp.messages
+
+    def test_broken_conversation_getter_never_breaks_the_call(
+        self, spans
+    ):
+        """A getter that raises leaves the result and output untouched."""
+
+        class Comp:
+            @trace_run("Comp.getter", conversation=lambda c: 1 / 0)
+            def run(self, task=None):
+                return "ok"
+
+        assert Comp().run(task="hi") == "ok"
+        a = _attrs(_by_name(spans, "Comp.getter"))
+        assert a["swarms.output"] == "ok"
+        assert "swarms.conversation" not in a
+
+
+class TestAgentConversation:
+    def test_run_span_records_the_agent_history(self, spans):
+        """Each Agent.run span carries the agent's full message history."""
+        agent = fake_agent("Conv-A")
+        agent.run("first task")
+        agent.run("second task")
+
+        last = _all_by_name(spans, "Agent.run")[-1]
+        recorded = json.loads(_attrs(last)["swarms.conversation"])
+        history = agent.short_memory.conversation_history
+        assert [(m["role"], m["content"]) for m in recorded] == [
+            (m["role"], m["content"]) for m in history
+        ]
+        contents = [m["content"] for m in recorded]
+        assert "first task" in contents and "second task" in contents
+
+    def test_long_history_is_not_truncated(self, spans):
+        """A history past the payload cap is recorded in full."""
+        agent = fake_agent("Conv-Long", reply="y" * 5000)
+        for i in range(5):
+            agent.run(f"task {i}")
+
+        last = _all_by_name(spans, "Agent.run")[-1]
+        raw = _attrs(last)["swarms.conversation"]
+        assert len(raw) > otel.MAX_PAYLOAD_CHARS
+        recorded = json.loads(raw)
+        assert "task 4" in [m["content"] for m in recorded]
+        assert "y" * 5000 in recorded[-1]["content"]
+
+    def test_failed_run_records_the_history(self, spans):
+        """A failed run records the history the agent keeps, plus its task."""
+        agent = fake_agent("Conv-Bad", retry_attempts=1)
+        agent.run("good task")
+        agent.llm.raise_exc = True
+        with pytest.raises(AgentLLMError):
+            agent.run("doomed task")
+
+        failed = _attrs(_all_by_name(spans, "Agent.run")[-1])
+        assert failed["swarms.status"] == "error"
+        assert failed["swarms.input.task"] == "doomed task"
+        # The agent drops a failed run's turns from its memory.
+        contents = [
+            m["content"]
+            for m in json.loads(failed["swarms.conversation"])
+        ]
+        assert "good task" in contents
+        assert "doomed task" not in contents
+
+    def test_each_agents_history_reaches_the_collector(
+        self, otlp_collector
+    ):
+        """Every agent in a workflow exports its own full history over OTLP."""
+        telem, received = otlp_collector
+        writer = fake_agent("Hist-Writer", reply="draft" * 5000)
+        editor = fake_agent("Hist-Editor", reply="edited draft")
+        SequentialWorkflow(
+            agents=[writer, editor], max_loops=1, autosave=False
+        ).run(task="write the report")
+        telem._provider.force_flush()
+
+        exported = {}
+        for span in received:
+            attrs = {
+                a.key: a.value.string_value for a in span.attributes
+            }
+            if span.name == "Agent.run":
+                exported[attrs["swarms.name"]] = attrs[
+                    "swarms.conversation"
+                ]
+
+        for agent in (writer, editor):
+            history = json.loads(exported[agent.agent_name])
+            assert [(m["role"], m["content"]) for m in history] == [
+                (m["role"], m["content"])
+                for m in agent.short_memory.conversation_history
+            ]
+        assert len(exported["Hist-Writer"]) > otel.MAX_PAYLOAD_CHARS
+
 
 # ===========================================================================
 # Identity schema — accessible swarms.* namespace
@@ -652,32 +840,6 @@ class TestCaptureInit:
         assert span is not None
         cfg = json.loads(_attrs(span)["swarms.config"])
         assert cfg == {"size": 7, "label": "w"}
-
-
-# ===========================================================================
-# log_agent_data (OTel replacement for the old swarms.world POST)
-# ===========================================================================
-class TestLogAgentData:
-    def test_emits_state_span(self, spans):
-        log_agent_data(
-            {"agent_name": "Q", "id": "a1", "max_loops": 3}
-        )
-        span = _by_name(spans, "swarms.state")
-        a = _attrs(span)
-        assert a["swarms.name"] == "Q"
-        assert a["swarms.id"] == "a1"
-        assert "swarms.state" in a
-
-    def test_reexported_from_package(self):
-        from swarms.telemetry import log_agent_data as reexport
-
-        assert reexport is log_agent_data
-
-    def test_old_impl_deleted(self):
-        import swarms.telemetry.main as main
-
-        assert not hasattr(main, "log_agent_data")
-        assert not hasattr(main, "_log_agent_data")
 
 
 # ===========================================================================
@@ -1745,27 +1907,20 @@ class TestSequentialWorkflowTelemetry:
             s.status.status_code.name == "OK" for s in agent_runs
         )
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
-        """A raising FakeLLM never reaches SequentialWorkflow at all."""
+    def test_error_llm_failure_propagates(self, spans):
+        """A model failure in one agent fails the workflow run."""
         a, b = fake_agent("Seq-Ok"), fake_agent(
             "Seq-Bad", raise_exc=True
         )
         wf = SequentialWorkflow(
             agents=[a, b], max_loops=1, autosave=False
         )
-        result = wf.run(task="hello")  # does not raise
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            wf.run(task="hello")
 
-        top = _by_name(spans, "SequentialWorkflow.run")
-        assert top is not None
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert top.status.status_code.name == "OK"
-
-        # The LLM failure is only visible as a distinct Agent.llm_error span.
-        err = _by_name(spans, "Agent.llm_error")
-        assert err is not None
-        assert _attrs(err)["swarms.status"] == "error"
-        assert _attrs(err)["swarms.name"] == "Seq-Bad"
+        _assert_llm_failure_recorded(
+            spans, "SequentialWorkflow.run", "Seq-Bad"
+        )
 
     def test_error_member_failure_propagates(self, spans):
         """A member agent whose .run() itself raises propagates unchanged."""
@@ -1821,7 +1976,10 @@ class TestConcurrentWorkflowTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_is_recorded_as_agent_error(
+        self, spans
+    ):
+        """A model failure in one agent is recorded while the others finish."""
         a, b = fake_agent("Conc-Ok"), fake_agent(
             "Conc-Bad", raise_exc=True
         )
@@ -1831,12 +1989,14 @@ class TestConcurrentWorkflowTelemetry:
 
         top = _by_name(spans, "ConcurrentWorkflow.run")
         assert _attrs(top)["swarms.status"] == "completed"
-        # No ConcurrentWorkflow.agent_error span — the future never raised,
-        # because Agent.run() itself never propagated the LLM failure.
-        assert (
-            _by_name(spans, "ConcurrentWorkflow.agent_error") is None
+
+        agent_error = _attrs(
+            _by_name(spans, "ConcurrentWorkflow.agent_error")
         )
-        assert _by_name(spans, "Agent.llm_error") is not None
+        assert agent_error["swarms.error.type"] == "AgentLLMError"
+        assert agent_error["swarms.agent"] == "Conc-Bad"
+        err = _by_name(spans, "Agent.llm_error")
+        assert _attrs(err)["swarms.name"] == "Conc-Bad"
 
     def test_error_member_failure_swallowed_by_default(self, spans):
         """Default on_error='store': swallowed per-agent, run still OK."""
@@ -1914,7 +2074,8 @@ class TestAgentRearrangeTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_propagates(self, spans):
+        """A model failure in one agent fails the flow run."""
         a, b = fake_agent("AR-Ok"), fake_agent(
             "AR-Bad", raise_exc=True
         )
@@ -1924,12 +2085,12 @@ class TestAgentRearrangeTelemetry:
             max_loops=1,
             autosave=False,
         )
-        result = ar.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            ar.run(task="hello")
 
-        top = _by_name(spans, "AgentRearrange.run")
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "Agent.llm_error") is not None
+        _assert_llm_failure_recorded(
+            spans, "AgentRearrange.run", "AR-Bad"
+        )
 
     def test_error_member_failure_propagates_on_sequential_flow(
         self, spans
@@ -2007,17 +2168,18 @@ class TestRoundRobinSwarmTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_propagates(self, spans):
+        """A model failure in one agent fails the round robin run."""
         a, b = fake_agent("RR-Ok"), fake_agent(
             "RR-Bad", raise_exc=True
         )
         rr = RoundRobinSwarm(agents=[a, b], max_loops=1)
-        result = rr.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            rr.run(task="hello")
 
-        top = _by_name(spans, "RoundRobinSwarm.run")
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "Agent.llm_error") is not None
+        _assert_llm_failure_recorded(
+            spans, "RoundRobinSwarm.run", "RR-Bad"
+        )
 
     def test_error_member_failure_propagates(self, spans):
         a, b = fake_agent("RR-A2"), break_member_run(
@@ -2288,7 +2450,8 @@ class TestSwarmRouterTelemetry:
         assert _by_name(spans, "ConcurrentWorkflow.run") is not None
         assert len(_all_by_name(spans, "Agent.run")) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_propagates(self, spans):
+        """A model failure in one agent fails the routed run."""
         a, b = fake_agent("SR-Ok"), fake_agent(
             "SR-Bad", raise_exc=True
         )
@@ -2298,12 +2461,12 @@ class TestSwarmRouterTelemetry:
             swarm_type="SequentialWorkflow",
             autosave=False,
         )
-        result = router.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            router.run(task="hello")
 
-        top = _by_name(spans, "SwarmRouter.run")
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "Agent.llm_error") is not None
+        _assert_llm_failure_recorded(
+            spans, "SwarmRouter.run", "SR-Bad"
+        )
 
     def test_error_member_failure_propagates_for_sequential(
         self, spans
