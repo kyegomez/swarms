@@ -5,6 +5,7 @@ from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_wrapper import sum_agent_usage
 
 
 class KnowledgeGenerator:
@@ -370,6 +371,25 @@ class GKPAgent:
 
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
+        )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the knowledge generator, reasoner and coordinator agents.
+
+        Keys match :attr:`Agent.usage`: ``input_tokens``, ``output_tokens``,
+        ``cached_tokens``, ``reasoning_tokens``, ``total_tokens``. Totals are
+        lifetime totals, so they grow across ``run()`` calls.
+
+        Returns:
+            dict: A new usage dict.
+        """
+        return sum_agent_usage(
+            [
+                self.knowledge_generator.agent,
+                self.reasoner.agent,
+                self.coordinator,
+            ]
         )
 
     def _create_coordinator_system_prompt(self) -> str:

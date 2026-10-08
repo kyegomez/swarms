@@ -21,7 +21,7 @@ import copy
 import socket
 import traceback
 from functools import lru_cache
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, Iterable, List, Optional, Union
 
 import litellm
 import requests
@@ -115,6 +115,29 @@ def empty_usage() -> dict:
         "reasoning_tokens": 0,
         "total_tokens": 0,
     }
+
+
+def sum_agent_usage(agents: Iterable[Any]) -> dict:
+    """Sum ``usage`` over distinct agents, the shape ``Agent.usage`` returns.
+
+    Args:
+        agents (Iterable[Any]): Agents to add up. The same object listed
+            twice is counted once, and anything without a ``usage`` dict is
+            skipped.
+
+    Returns:
+        dict: A new usage dict built from :func:`empty_usage`.
+    """
+    total = empty_usage()
+    seen = set()
+    for agent in agents:
+        usage = getattr(agent, "usage", None)
+        if id(agent) in seen or not isinstance(usage, dict):
+            continue
+        seen.add(id(agent))
+        for key in total:
+            total[key] += usage.get(key, 0)
+    return total
 
 
 def _field(obj: any, name: str, default: any = None) -> any:
