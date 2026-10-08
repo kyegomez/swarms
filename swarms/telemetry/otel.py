@@ -546,8 +546,15 @@ class SwarmTelemetry:
             return
 
         try:
+            from opentelemetry.exporter.otlp.proto.http import (
+                Compression,
+            )
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
                 OTLPSpanExporter,
+            )
+
+            from swarms.telemetry.compression import (
+                CompressingSession,
             )
             from opentelemetry.sdk.resources import Resource
             from opentelemetry.sdk.trace import TracerProvider
@@ -574,6 +581,9 @@ class SwarmTelemetry:
                         timeout=int(
                             os.getenv("SWARMS_OTEL_TIMEOUT", "8")
                         ),
+                        # The session compresses with zstd, so the exporter must send bodies as they are.
+                        compression=Compression.NoCompression,
+                        session=CompressingSession(),
                     )
                 )
             )

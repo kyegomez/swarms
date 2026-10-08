@@ -75,6 +75,7 @@ mcp = "*"
 schedule = "*"
 opentelemetry-sdk = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
+zstandard = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
