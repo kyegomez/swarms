@@ -32,9 +32,7 @@ _SECRET_KEY = re.compile(
     re.IGNORECASE,
 )
 
-TELEMETRY_BASE_URL = (
-    "https://swarms-telemetry-capturer-production.up.railway.app"
-)
+TELEMETRY_BASE_URL = "https://telemetry.swarms.world"
 
 MAX_PAYLOAD_CHARS = int(os.getenv("SWARMS_OTEL_MAX_CHARS", "16000"))
 
