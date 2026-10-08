@@ -761,7 +761,7 @@ class Conversation:
         if self._str_cache is None:
             self._cache_misses += 1
             self._str_cache = self._build_history_string()
-            self._last_cached_tokens = self._history_token_count()
+            self._last_cached_tokens = self.count_history_tokens()
         else:
             self._cache_hits += 1
 
@@ -822,7 +822,7 @@ class Conversation:
         self._token_count_cache = cache
         return counts
 
-    def _history_token_count(self) -> int:
+    def count_history_tokens(self) -> int:
         """Count the tokens in the history string from per-message counts.
 
         Returns:
