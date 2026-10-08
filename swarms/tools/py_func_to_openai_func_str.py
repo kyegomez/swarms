@@ -1,8 +1,6 @@
-import concurrent.futures
 import functools
 import inspect
 import json
-import os
 from logging import getLogger
 from typing import (
     Any,
@@ -486,22 +484,10 @@ def convert_multiple_functions_to_openai_function_schema(
     functions: List[Callable[..., Any]],
 ) -> List[Dict[str, Any]]:
     """Convert a list of functions to a list of OpenAI function schemas"""
-    # return [
-    #     get_openai_function_schema_from_func(function) for function in functions
-    # ]
-    # Use 40% of cpu cores
-    max_workers = int(os.cpu_count() * 0.8)
-
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=max_workers
-    ) as executor:
-        futures = [
-            executor.submit(
-                get_openai_function_schema_from_func, function
-            )
-            for function in functions
-        ]
-        return [future.result() for future in futures]
+    return [
+        get_openai_function_schema_from_func(function)
+        for function in functions
+    ]
 
 
 #

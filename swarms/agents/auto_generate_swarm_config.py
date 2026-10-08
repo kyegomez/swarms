@@ -49,8 +49,7 @@ def parse_yaml_from_swarm_markdown(markdown_text: str) -> dict:
     Returns:
         dict: A parsed Python dictionary of the YAML content.
     """
-    # Match YAML blocks inside triple backticks — use the last match
-    # because the LLM's generated YAML comes after any examples in the prompt
+    # Last match: the generated YAML comes after any examples in the prompt
     pattern = r"```yaml\s*\n(.*?)```"
     matches = re.findall(pattern, markdown_text, re.DOTALL)
 
@@ -344,9 +343,13 @@ def write_autoswarm_file(
                 f"    swarm_type={_format_value(swarm_arch['swarm_type'])},"
             )
         if swarm_arch.get("max_loops"):
-            router_lines.append(
-                f"    max_loops={swarm_arch['max_loops']},"
-            )
+            try:
+                max_loops_val = int(swarm_arch["max_loops"])
+            except (ValueError, TypeError):
+                raise ValueError(
+                    f"swarm_architecture.max_loops must be an integer, got {type(swarm_arch['max_loops']).__name__}: {swarm_arch['max_loops']!r}"
+                )
+            router_lines.append(f"    max_loops={max_loops_val},")
         router_lines.append(")")
         parts.append("\n".join(router_lines))
     else:
@@ -378,7 +381,7 @@ def write_autoswarm_file(
 def generate_swarm_config(
     task: str,
     file_name: str = "swarm_config_output.yaml",
-    model_name: str = "gpt-4.1",
+    model_name: str = "gpt-5.4",
     *args,
     **kwargs,
 ):
@@ -392,7 +395,7 @@ def generate_swarm_config(
     Args:
         task (str): The task to be performed by the swarm.
         file_name (str, optional): The file name for the output YAML configuration. Defaults to "swarm_config_output.yaml".
-        model_name (str, optional): The name of the model to use for the agent. Defaults to "gpt-4.1".
+        model_name (str, optional): The name of the model to use for the agent. Defaults to "gpt-5.4".
         *args: Additional positional arguments to be passed to the agent's run method.
         **kwargs: Additional keyword arguments to be passed to the agent's run method.
 

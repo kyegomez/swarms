@@ -1,7 +1,19 @@
-from swarms.schemas.agent_step_schemas import Step, ManySteps
+from swarms.schemas.agent_errors import (
+    AgentError,
+    AgentInitializationError,
+    AgentLLMError,
+    AgentLLMInitializationError,
+    AgentRunError,
+    AgentToolExecutionError,
+)
+from swarms.schemas.agent_mcp_errors import (
+    AgentMCPConnectionError,
+    AgentMCPError,
+    AgentMCPToolError,
+)
 from swarms.schemas.mcp_schemas import (
     MCPConnection,
-    MultipleMCPConnections,
+    MCPOAuthConfig,
 )
 from swarms.schemas.planner_worker_schemas import (
     CycleVerdict,
@@ -13,10 +25,17 @@ from swarms.schemas.planner_worker_schemas import (
 )
 
 __all__ = [
-    "Step",
-    "ManySteps",
     "MCPConnection",
-    "MultipleMCPConnections",
+    "MCPOAuthConfig",
+    "AgentError",
+    "AgentInitializationError",
+    "AgentRunError",
+    "AgentLLMError",
+    "AgentLLMInitializationError",
+    "AgentToolExecutionError",
+    "AgentMCPError",
+    "AgentMCPConnectionError",
+    "AgentMCPToolError",
     "CycleVerdict",
     "PlannerTask",
     "PlannerTaskOutput",

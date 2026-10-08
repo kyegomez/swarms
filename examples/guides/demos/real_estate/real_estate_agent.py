@@ -11,7 +11,6 @@ import json
 import requests
 from loguru import logger
 from swarms import Agent
-from swarm_models import OpenAIChat
 from dotenv import load_dotenv
 from enum import Enum
 
@@ -189,18 +188,13 @@ class CommercialRealEstateAgent:
         """
         self.property_api = PropertyRadarAPI(propertyradar_api_key)
 
-        # Initialize OpenAI model
-        self.model = OpenAIChat(
-            openai_api_key=openai_api_key,
-            model_name=model_name,
-            temperature=temperature,
-        )
-
         # Initialize the agent
         self.agent = Agent(
             agent_name="Commercial-Real-Estate-Agent",
             system_prompt=self._get_system_prompt(),
-            llm=self.model,
+            model_name=model_name,
+            temperature=temperature,
+            llm_api_key=openai_api_key,
             max_loops=1,
             autosave=True,
             dashboard=False,

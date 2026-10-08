@@ -25,7 +25,7 @@ financial_analyst = Agent(
     3. Assessing risk factors
     4. Providing financial forecasts
     5. Recommending financial strategies""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     dynamic_temperature_enabled=True,
 )

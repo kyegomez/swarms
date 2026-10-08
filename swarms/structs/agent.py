@@ -1,12 +1,9 @@
 import asyncio
 import json
 import os
-import random
 import threading
 import time
 import traceback
-import uuid
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
 from typing import (
     Any,
@@ -16,7 +13,6 @@ from typing import (
     Literal,
     Optional,
     Sequence,
-    Tuple,
     Union,
 )
 
@@ -30,90 +26,78 @@ from litellm.exceptions import (
 )
 from litellm.utils import (
     get_max_tokens,
+    get_model_info,
     supports_function_calling,
-    supports_parallel_function_calling,
-    supports_vision,
 )
 from loguru import logger
 from pydantic import BaseModel
 
+from swarms.agents.agent_marketplace_handler import (
+    AgentMarketplaceHandler,
+)
 from swarms.agents.ape_agent import auto_generate_prompt
+from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.agents.context_compressor import ContextCompressor
-from swarms.utils.workspace_utils import get_workspace_dir
-from swarms.artifacts.main_artifact import Artifact
-from swarms.prompts.agent_system_prompts import AGENT_SYSTEM_PROMPT_3
+from swarms.agents.llm_manager import LLMManager
+from swarms.agents.skills_manager import SkillsManager
+from swarms.agents.tool_manager import ToolManager
+from swarms.prompts.agent_system_prompts import (
+    build_agent_system_prompt,
+)
 from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
-from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
     MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
 )
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
-from swarms.schemas.agent_mcp_errors import (
-    AgentMCPConnectionError,
-    AgentMCPToolError,
+from swarms.schemas.agent_errors import (
+    AgentInitializationError,
+    AgentLLMError,
+    AgentRunError,
+    AgentToolExecutionError,
 )
-from swarms.schemas.base_schemas import (
-    AgentChatCompletionResponse,
+from swarms.schemas.mcp_schemas import (
+    MCPConnection,
+    MCPOAuthConfig,
 )
-from swarms.schemas.mcp_schemas import MCPConnection
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.autonomous_loop_utils import (
     MAX_PLANNING_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
-    assign_task_tool,
-    check_sub_agent_status_tool,
-    cancel_sub_agent_tasks_tool,
-    create_file_tool,
-    create_sub_agent_tool,
-    delete_file_tool,
-    get_autonomous_loop_tool_names,
-    get_autonomous_planning_tools,
-    get_execution_prompt,
-    get_planning_prompt,
     get_summary_prompt,
-    grep_tool,
-    list_directory_tool,
-    read_file_tool,
-    respond_to_user_tool,
-    run_bash_tool,
-    update_file_tool,
 )
 from swarms.structs.conversation import Conversation
-from swarms.structs.dynamic_skills_loader import DynamicSkillsLoader
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
+from swarms.structs.transcript import Transcript
 from swarms.structs.transforms import (
     MessageTransforms,
     TransformConfig,
     handle_transforms,
 )
-from swarms.telemetry.main import log_agent_data
-from swarms.tools.base_tool import BaseTool
-from swarms.tools.handoffs_tool import handoff_task
-from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
-from swarms.tools.mcp_client_tools import (
-    execute_multiple_tools_on_multiple_mcp_servers_sync,
-    execute_tool_call_simple,
-    get_mcp_tools_sync,
-    get_tools_for_multiple_mcp_servers,
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_error,
+    capture_init,
+    log_agent_data,
+    trace_run,
 )
-from swarms.tools.py_func_to_openai_func_str import (
-    convert_multiple_functions_to_openai_function_schema,
+from swarms.tools.dynamic_tool_loader import (
+    DynamicToolLoader,
 )
-from swarms.utils.fetch_prompts_marketplace import (
-    fetch_prompts_from_marketplace,
-)
+from swarms.tools.mcp_manager import MCPManager
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
+from swarms.utils.generate_id import generate_id
 from swarms.utils.generate_keys import generate_api_key
+from swarms.utils.get_reasoning_efforts import ReasoningEffort
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -122,11 +106,10 @@ from swarms.utils.index import (
     format_data_structure,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
-from swarms.utils.swarms_marketplace_utils import (
-    add_prompt_to_marketplace,
-)
+from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.utils.workspace_utils import get_workspace_dir
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -134,69 +117,14 @@ def stop_when_repeats(response: str) -> bool:
     return "stop" in response.lower()
 
 
-# Parse done token
-def parse_done_token(response: str) -> bool:
-    """Parse the response to see if the done token is present"""
-    return "<DONE>" in response
-
-
 # Agent ID generator
-def agent_id():
-    """Generate an agent id"""
-    return f"agent-{uuid.uuid4().hex}"
+def agent_id() -> str:
+    """Deprecated: use ``generate_id("agent")``."""
+    return generate_id("agent")
 
 
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
-
-
-# Agent Exceptions
-class AgentError(Exception):
-    """Base class for all agent-related exceptions."""
-
-    pass
-
-
-class AgentInitializationError(AgentError):
-    """Exception raised when the agent fails to initialize properly. Please check the configuration and parameters."""
-
-    pass
-
-
-class AgentRunError(AgentError):
-    """Exception raised when the agent encounters an error during execution. Ensure that the task and environment are set up correctly."""
-
-    pass
-
-
-class AgentLLMError(AgentError):
-    """Exception raised when there is an issue with the language model (LLM). Verify the model's availability and compatibility."""
-
-    pass
-
-
-class AgentToolError(AgentError):
-    """Exception raised when the agent fails to utilize a tool. Check the tool's configuration and availability."""
-
-    pass
-
-
-class AgentMemoryError(AgentError):
-    """Exception raised when the agent encounters a memory-related issue. Ensure that memory resources are properly allocated and accessible."""
-
-    pass
-
-
-class AgentLLMInitializationError(AgentError):
-    """Exception raised when the LLM fails to initialize properly. Please check the configuration and parameters."""
-
-    pass
-
-
-class AgentToolExecutionError(AgentError):
-    """Exception raised when the agent fails to execute a tool. Check the tool's configuration and availability."""
-
-    pass
 
 
 class Agent:
@@ -210,7 +138,6 @@ class Agent:
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
         retry_attempts (int): The number of retry attempts
-        retry_interval (int): The retry interval
         stopping_token (str): The stopping token
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
@@ -228,7 +155,6 @@ class Agent:
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         multi_modal (bool): Enable multimodal
-        tokenizer (Any): The tokenizer
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
@@ -240,7 +166,7 @@ class Agent:
         stopping_func (Callable): The stopping function
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
-        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml', 'xml'.
+        output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
         output_cleaner (Callable): The output cleaner function
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
@@ -259,12 +185,63 @@ class Agent:
             Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
             and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
+        think_tool (bool): Whether the autonomous looper (max_loops="auto") offers the
+            `think` tool. Defaults to False. A `think` call spends a full round-trip to
+            produce reasoning the model could emit inline alongside its actions, so it is
+            off unless asked for. Enable it for models that do not reason natively, or
+            when an explicit analysis step is worth the extra turn. When False, the system
+            prompt is adjusted to match so the model is not told to call a tool it lacks.
+        max_planning_attempts (int): Autonomous loop (max_loops="auto") only. How many
+            times to ask the model for a plan before giving up. Defaults to 5.
+        max_subtask_iterations (int): Autonomous loop only. Ceiling on execution
+            iterations across the whole run, which is also its worst-case number of
+            LLM calls. Defaults to 100.
+        max_subtask_loops (int): Autonomous loop only. Ceiling on iterations spent
+            inside any one subtask before moving on. Defaults to 20.
         selected_tools (Union[str, List[str]]): Tools to enable for the autonomous looper when max_loops="auto".
             Available tools: "create_plan", "think", "subtask_done", "complete_task", "respond_to_user",
             "create_file", "update_file", "read_file", "list_directory", "delete_file", "run_bash",
             "create_sub_agent", "assign_task".
             Defaults to "all" (all tools enabled). Pass a list of tool names to restrict tools, or "all"
             for unrestricted access. Use this to control which tools the agent can use during autonomous execution.
+        prompt_caching (bool): Enable provider-side prompt caching. When True, ephemeral
+            cache_control breakpoints are added to the stable prefix of each request (system
+            prompt, tools, and the last message) so it is cached and re-billed at a discount.
+            Applies to the Anthropic model family (Claude on Anthropic / Bedrock / Vertex);
+            providers that cache automatically (e.g. OpenAI) are left untouched. Defaults to False.
+        cache_config (dict): Fine-grained prompt-caching options; only consulted when
+            prompt_caching=True. All keys optional:
+                "ttl" (str): "5m" (default) or "1h" for Anthropic's extended cache.
+                "cache_system_prompt" (bool): cache the system prefix (default True).
+                "cache_messages" (bool): cache through the last message (default True).
+                "cache_tools" (bool): cache the tool-definitions block (default True).
+                "override" (bool): force cache_control injection on/off regardless of the
+                    detected provider (e.g. opt Gemini/Vertex in, or a custom alias out).
+                    Default None (auto-detect: Anthropic only).
+                "prompt_cache_key" (str): OpenAI routing hint for higher cache hit rates.
+                "prompt_cache_retention" (str): OpenAI cache TTL ("in_memory" | "24h").
+            Defaults to None.
+        mcp_url (Union[str, MCPConnection, dict]): A single MCP server. Pass a URL string for
+            an unauthenticated server, or an MCPConnection/dict to configure auth, transport,
+            headers and timeouts.
+        mcp_urls (List[Union[str, MCPConnection, dict]]): Several MCP servers. Tools from every
+            server are merged and each tool call is routed back to the server that owns it.
+        mcp_config (Union[MCPConnection, dict]): A single MCP server given as a connection object.
+        mcp_configs (List[Union[MCPConnection, dict]]): Several MCP servers given as connection objects.
+        mcp_api_key (str): API key applied to every MCP server that does not define its own.
+            Sent as "Authorization: Bearer <key>" by default; override the header or prefix
+            per-server with MCPConnection(api_key_header=..., api_key_prefix=...). Supports
+            "env:MY_VAR" / "${MY_VAR}" indirection so secrets stay out of code.
+        mcp_authorization_token (str): Bearer token applied to every MCP server that does not
+            define its own. Equivalent to mcp_api_key with the default header/prefix.
+        mcp_oauth (Union[MCPOAuthConfig, dict]): OAuth 2.1 settings applied to every MCP server
+            without its own. Supports the interactive authorization-code flow (PKCE + dynamic
+            client registration, tokens cached on disk), the headless client_credentials grant,
+            and pre-issued access tokens.
+        mcp_headers (Dict[str, str]): Extra headers merged into every MCP request.
+        mcp_transport (str): Force a transport for every MCP server: "streamable_http", "sse",
+            "stdio", or "auto". Defaults to auto-detection from the URL.
+        mcp_timeout (int): Request timeout in seconds for every MCP server. Defaults to 30.
 
     Methods:
         run: Run the agent
@@ -279,7 +256,6 @@ class Agent:
         load_skills_metadata: Load Agent Skills metadata from directory
         load_full_skill: Load complete skill content (Tier 2 loading)
         analyze_feedback: Analyze the feedback
-        undo_last: Undo the last response
         interactive_run: Run the agent in interactive mode
         streamed_generation: Stream the generation of the response
         save_state: Save the state
@@ -294,24 +270,23 @@ class Agent:
         run_async_concurrent: Run the agent asynchronously and concurrently
         run_async_concurrent: Run the agent asynchronously and concurrently
         construct_dynamic_prompt: Construct the dynamic prompt
-        handle_artifacts: Handle artifacts
 
 
     Examples:
     >>> from swarms import Agent
-    >>> agent = Agent(model_name="gpt-4.1", max_loops=1)
+    >>> agent = Agent(model_name="gpt-5.4", max_loops=1)
     >>> response = agent.run("Generate a report on the financials.")
     >>> print(response)
     >>> # Generate a report on the financials.
 
     >>> # Detailed token streaming example
-    >>> agent = Agent(model_name="gpt-4.1", max_loops=1, stream=True)
+    >>> agent = Agent(model_name="gpt-5.4", max_loops=1, stream=True)
     >>> response = agent.run("Tell me a story.")  # Will stream each token with detailed metadata
     >>> print(response)  # Final complete response
 
     >>> # Fallback model example
     >>> agent = Agent(
-    ...     fallback_models=["gpt-4.1", "gpt-5.4", "gpt-3.5-turbo"],
+    ...     fallback_models=["gpt-5.4", "gpt-5.4", "gpt-3.5-turbo"],
     ...     max_loops=1
     ... )
     >>> response = agent.run("Generate a report on the financials.")
@@ -319,7 +294,7 @@ class Agent:
 
     >>> # Marketplace prompt example - load a prompt in one line
     >>> agent = Agent(
-    ...     model_name="gpt-4.1",
+    ...     model_name="gpt-5.4",
     ...     marketplace_prompt_id="550e8400-e29b-41d4-a716-446655440000",
     ...     max_loops=1
     ... )
@@ -330,23 +305,21 @@ class Agent:
 
     def __init__(
         self,
-        id: Optional[str] = agent_id(),
+        id: Optional[str] = None,
         agent_name: Optional[str] = "swarm-worker-01",
         agent_description: Optional[
             str
         ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
-        system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
+        system_prompt: Optional[str] = None,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
         loop_interval: Optional[int] = 0,
         retry_attempts: Optional[int] = 3,
-        retry_interval: Optional[int] = 1,
         stopping_token: Optional[str] = None,
         dynamic_loops: Optional[bool] = False,
         interactive: Optional[bool] = False,
         dashboard: Optional[bool] = False,
-        # TODO: Change to callable, then parse the callable to a string
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
@@ -357,7 +330,6 @@ class Agent:
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
         multi_modal: Optional[bool] = None,
-        tokenizer: Optional[Any] = None,
         long_term_memory: Optional[Union[Callable, Any]] = None,
         fallback_model_name: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
@@ -368,41 +340,59 @@ class Agent:
         verbose: Optional[bool] = False,
         stopping_func: Optional[Callable] = None,
         custom_exit_command: Optional[str] = "exit",
-        # [Tools]
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
         output_cleaner: Optional[Callable] = None,
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
-        max_tokens: int = 4096,
-        temperature: float = 0.5,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
         plan_enabled: bool = False,
-        model_name: str = "gpt-4.1",
+        model_name: str = "gpt-5.4",
         llm_args: dict = None,
+        prompt_caching: bool = False,
+        cache_config: dict = None,
         load_state_path: str = None,
         role: agent_roles = "worker",
         print_on: bool = True,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
-        mcp_url: Optional[Union[str, MCPConnection]] = None,
-        mcp_urls: List[str] = None,
+        mcp_url: Optional[Union[str, MCPConnection, Dict]] = None,
+        mcp_urls: Optional[
+            List[Union[str, MCPConnection, Dict]]
+        ] = None,
         react_on: bool = False,
         safety_prompt_on: bool = False,
         random_models_on: bool = False,
-        mcp_config: Optional[MCPConnection] = None,
+        mcp_config: Optional[Union[MCPConnection, Dict]] = None,
+        mcp_configs: Optional[
+            List[Union[MCPConnection, Dict]]
+        ] = None,
+        mcp_api_key: Optional[str] = None,
+        mcp_authorization_token: Optional[str] = None,
+        mcp_oauth: Optional[Union[MCPOAuthConfig, Dict]] = None,
+        mcp_headers: Optional[Dict[str, str]] = None,
+        mcp_transport: Optional[
+            Literal["streamable_http", "sse", "stdio", "auto"]
+        ] = None,
+        mcp_timeout: Optional[int] = None,
         top_p: Optional[float] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
-        tool_call_summary: bool = True,
-        summarize_multiple_images: bool = False,
+        tool_call_summary: bool = False,
         tool_retry_attempts: int = 3,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
-        reasoning_effort: Optional[str] = None,
-        thinking_tokens: int = None,
+        reasoning_effort: Optional[ReasoningEffort] = None,
+        thinking_tokens: int = 1024,
+        think_tool: bool = False,
+        max_planning_attempts: int = MAX_PLANNING_ATTEMPTS,
+        max_subtask_iterations: int = MAX_SUBTASK_ITERATIONS,
+        max_subtask_loops: int = MAX_SUBTASK_LOOPS,
+        dynamic_tools: bool = False,
         reasoning_enabled: bool = False,
         handoffs: Optional[Union[Sequence[Callable], Any]] = None,
         capabilities: Optional[List[str]] = None,
@@ -413,26 +403,25 @@ class Agent:
         skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
         context_compression: bool = True,
-        persistent_memory: bool = True,
+        persistent_memory: bool = False,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ):
         # super().__init__(*args, **kwargs)
-        self.id = id
-        self.skills_dir = skills_dir
-        self.skills_metadata = []
+        self.id = id or generate_id("agent")
+        self.skills = SkillsManager(skills_dir=skills_dir)
+        self._skills_prompt = ""
         self.selected_tools = selected_tools
         self.llm = llm
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
         self.retry_attempts = retry_attempts
-        self.retry_interval = retry_interval
         self.task = None
         self.stopping_token = stopping_token
         self.interactive = interactive
         self.dashboard = dashboard
-        self.saved_state_path = saved_state_path
         self.dynamic_temperature_enabled = dynamic_temperature_enabled
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
@@ -440,16 +429,17 @@ class Agent:
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
+        if system_prompt is None:
+            system_prompt = build_agent_system_prompt()
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
-        # self.saved_state_path = f"{self.agent_name}_{generate_api_key(prefix='agent-')}_state.json"
-        self.saved_state_path = (
+        # Fallback: this once overwrote the caller's own path.
+        self.saved_state_path = saved_state_path or (
             f"{generate_api_key(prefix='agent-')}_state.json"
         )
         self.autosave = autosave
         self.multi_modal = multi_modal
-        self.tokenizer = tokenizer
         self.long_term_memory = long_term_memory
         self.preset_stopping_token = preset_stopping_token
         self.streaming_on = streaming_on
@@ -466,9 +456,10 @@ class Agent:
         self.rules = rules
         self.max_tokens = max_tokens
         self.temperature = temperature
-        # Always use environment variable for workspace_dir, ignore user input
-        # Fallback to default if environment variable is not set
+        # The environment wins over the argument, with a default when unset
         self.workspace_dir = get_workspace_dir()
+        # Built on first use, constructing an agent must not create a directory
+        self._workspace = None
         self.tags = tags
         self.use_cases = use_cases
         self.name = agent_name
@@ -477,27 +468,61 @@ class Agent:
         self.plan_enabled = plan_enabled
         self.model_name = model_name
         self.llm_args = llm_args
+        self.prompt_caching = prompt_caching
+        self.cache_config = cache_config
         self.load_state_path = load_state_path
         self.role = role
         self.print_on = print_on
-        self.tools_list_dictionary = tools_list_dictionary
+        # Own list per agent: a literal [] default made every agent share one object.
+        self.tools_list_dictionary = (
+            tools_list_dictionary
+            if tools_list_dictionary is not None
+            else []
+        )
         self.mcp_url = mcp_url
         self.mcp_urls = mcp_urls
         self.react_on = react_on
         self.safety_prompt_on = safety_prompt_on
         self.random_models_on = random_models_on
         self.mcp_config = mcp_config
+        self.mcp_configs = mcp_configs
+        self.mcp_api_key = mcp_api_key
+        self.mcp_authorization_token = mcp_authorization_token
+        self.mcp_oauth = mcp_oauth
+        self.mcp_headers = mcp_headers
+        self.mcp_transport = mcp_transport
+        self.mcp_timeout = mcp_timeout
         self.top_p = top_p
         self.llm_base_url = llm_base_url
         self.llm_api_key = llm_api_key
         self.tool_call_summary = tool_call_summary
-        self.summarize_multiple_images = summarize_multiple_images
         self.tool_retry_attempts = tool_retry_attempts
         self.reasoning_prompt_on = reasoning_prompt_on
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
         self.reasoning_effort = reasoning_effort
         self.thinking_tokens = thinking_tokens
+
+        self.dynamic_tools = dynamic_tools
+        self.tool_loader: Optional[DynamicToolLoader] = None
+        self._mcp_tools_deferred = False
+        self._usage = empty_usage()
+        self._mcp_schemas_cache: Optional[List[dict]] = None
+
+        self.think_tool = think_tool
+        # A budget below 1 would silently make the phase it bounds do nothing.
+        for name, value in (
+            ("max_planning_attempts", max_planning_attempts),
+            ("max_subtask_iterations", max_subtask_iterations),
+            ("max_subtask_loops", max_subtask_loops),
+        ):
+            if value < 1:
+                raise ValueError(
+                    f"{name} must be at least 1, got {value}"
+                )
+        self.max_planning_attempts = max_planning_attempts
+        self.max_subtask_iterations = max_subtask_iterations
+        self.max_subtask_loops = max_subtask_loops
         self.reasoning_enabled = reasoning_enabled
         self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
@@ -506,23 +531,44 @@ class Agent:
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
 
-        # self.context_length = (
-        #     get_single_model_max_tokens(model_name)
-        #     if model_name
-        #     else 16000
-        # )
-        self.context_length = 16000
+        self.mcp_manager = MCPManager(
+            mcp_url=self.mcp_url,
+            mcp_urls=self.mcp_urls,
+            mcp_config=self.mcp_config,
+            mcp_configs=self.mcp_configs,
+            api_key=self.mcp_api_key,
+            authorization_token=self.mcp_authorization_token,
+            oauth=self.mcp_oauth,
+            headers=self.mcp_headers,
+            transport=self.mcp_transport,
+            timeout=self.mcp_timeout,
+            agent_name=self.agent_name,
+            verbose=self.verbose,
+            retry_attempts=self.tool_retry_attempts,
+        )
+
+        if self.context_length is None:
+            self.context_length = self._default_context_length()
+
+        if self.max_tokens is None or self.max_tokens <= 0:
+            self.max_tokens = self._default_max_tokens() or 16000
 
         if self.max_loops == "auto":
+            # Without this the prompt tells the model to call a think tool it lacks
             self.system_prompt += (
-                "\n\n" + get_autonomous_agent_prompt()
+                "\n\n"
+                + get_autonomous_agent_prompt(
+                    include_think_tool=self.think_tool
+                )
             )
 
         # When False the agent does not read or write MEMORY.md across sessions.
         self.persistent_memory = persistent_memory
 
-        # Context compression is available for both max_loops="auto" and
-        # integer max_loops runs. Gated purely on the user-facing boolean.
+        # Prior turns, seeded into short_memory and re-sent as context on every run.
+        self.messages = messages
+
+        # Applies to auto and integer max_loops alike
         self.context_compression = context_compression
         if self.context_compression:
             self._context_compressor = ContextCompressor(
@@ -548,6 +594,9 @@ class Agent:
         # Async subagent support
         self._subagent_registry = None
 
+        # Owns fetching prompts from, and publishing prompts to, the Swarms Marketplace
+        self.marketplace = AgentMarketplaceHandler(agent=self)
+
         # Load prompt from marketplace if marketplace_prompt_id is provided
         if self.marketplace_prompt_id:
             self._load_prompt_from_marketplace()
@@ -565,25 +614,24 @@ class Agent:
 
         self.fallback_models = fallback_models or []
         self.current_model_index = 0
-        self.model_attempts = {}
 
         # If fallback_models is provided, use the first model as the primary model
         if self.fallback_models and not self.model_name:
             self.model_name = self.fallback_models[0]
 
+        # Reads config off this agent, so it must come after the config is set
+        self.llm_manager = LLMManager(agent=self)
+        self.tool_manager = ToolManager(agent=self)
+        self.autonomous_loop = AutonomousAgentLoop(agent=self)
+
         # self.init_handling()
         self.setup_config()
 
-        # Initialize the short memory. The Conversation manages the
-        # persistent MEMORY.md file at
-        # $WORKSPACE_DIR/agents/{agent_name}-{id}/MEMORY.md.
+        # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
         self.short_memory = self.short_memory_init()
 
         # Initialize the tools
-        self.tool_struct = self.setup_tools()
-
-        if exists(self.tool_schema) or exists(self.list_base_models):
-            self.handle_tool_schema_ops()
+        self.tool_manager.setup_tools()
 
         if exists(self.sop) or exists(self.sop_list):
             self.handle_sop_ops()
@@ -605,26 +653,15 @@ class Agent:
         if self.autosave is True:
             log_agent_data(self.to_dict())
 
-        # Add handoff tool if handoffs are configured
-        if exists(self.handoffs):
-            handoff_tool_schema = get_handoff_tool_schema()
-            if self.tools_list_dictionary is None:
-                self.tools_list_dictionary = []
-            self.tools_list_dictionary.extend(handoff_tool_schema)
-
-            # Add handoff prompt to system prompt
-            agent_registry = self._get_agent_registry()
-            if agent_registry:
-                handoff_prompt = get_handoffs_prompt(
-                    list(agent_registry.values())
-                )
-                self.system_prompt += "\n\n" + handoff_prompt
-
-        if exists(self.tools):
-            self.tool_handling()
+        self.tool_manager.load_tools()
 
         if self.llm is None:
             self.llm = self.llm_handling()
+        elif getattr(
+            self.llm, "usage_hook", None
+        ) is None and hasattr(self.llm, "usage_hook"):
+            # A caller-supplied LiteLLM reports into this agent too.
+            self.llm.usage_hook = self._add_usage
 
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
@@ -641,106 +678,63 @@ class Agent:
         if self.publish_to_marketplace is True:
             self.handle_publish_to_marketplace()
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def handle_publish_to_marketplace(self):
-        # Join tags and capabilities into a single string
-        tags_and_capabilities = ", ".join(
-            self.tags + self.capabilities
-            if self.tags and self.capabilities
-            else None
-        )
+        """
+        Publish this agent's prompt and metadata to the Swarms Marketplace.
 
-        if self.use_cases is None:
-            raise AgentInitializationError(
-                "Use cases are required when publishing to the marketplace. The schema is a list of dictionaries with 'title' and 'description' keys."
-            )
+        Requires `use_cases` to be set and SWARMS_API_KEY to be present.
+        """
+        return self.marketplace.publish()
 
-        add_prompt_to_marketplace(
-            name=self.agent_name,
-            prompt=self.short_memory.get_str(),
-            description=self.agent_description,
-            tags=tags_and_capabilities,
-            category="research",
-            use_cases=(self.use_cases if self.use_cases else None),
-        )
+    @property
+    def skills_dir(self) -> Optional[str]:
+        """Directory the agent loads Agent Skills from."""
+        return self.skills.skills_dir
+
+    @skills_dir.setter
+    def skills_dir(self, skills_dir: Optional[str]) -> None:
+        self.skills.set_skills_dir(skills_dir)
+
+    @property
+    def skills_metadata(self) -> List[Dict[str, str]]:
+        """Metadata for the skills loaded so far."""
+        return self.skills.metadata
+
+    @skills_metadata.setter
+    def skills_metadata(self, metadata: List[Dict[str, str]]) -> None:
+        self.skills.metadata = metadata
 
     def handle_skills(self, task: Optional[str] = None):
         """
-        Handle skills loading based on task similarity.
+        Select the Agent Skills for this run.
+
+        The rendered section is sent with every LLM call by :meth:`call_llm`.
+        ``system_prompt`` is left unchanged: the LLM copies it once at
+        construction, so text appended to it here never reached the model,
+        and each run appended another copy.
 
         Args:
             task: Optional task description. If provided, loads skills dynamically
                   based on similarity to the task. If not provided, loads all skills statically.
         """
-        if task is not None:
-            # Dynamic skills loading based on task
-            self._load_dynamic_skills_for_task(task)
-        else:
-            # Static skills loading (original behavior)
-            self._load_static_skills()
+        self._skills_prompt = self.skills.prompt_for_task(task)
 
-    def _load_static_skills(self):
-        """Load all skills statically (original behavior)."""
-        skills_prompt = (
-            "\n\n# Available Skills\n\n"
-            "You have access to the following specialized skills. "
-            "Follow their instructions when relevant:\n\n"
-        )
-
-        self.system_prompt += skills_prompt
-
-        self.skills_metadata = self.load_skills_metadata(
-            self.skills_dir
-        )
-
-        if self.skills_metadata:
-            self.system_prompt += self._build_skills_prompt(
-                self.skills_metadata
-            )
-            logger.info(
-                f"Loaded {len(self.skills_metadata)} skills from {self.skills_dir}"
-            )
-
-    def _load_dynamic_skills_for_task(self, task: str):
+    @property
+    def workspace(self) -> "WorkspaceManager":
         """
-        Load skills dynamically based on task similarity.
+        This agent's workspace manager, created on first access.
 
-        Args:
-            task: The task description to match skills against
+        Returns:
+            WorkspaceManager: Rooted at ``{workspace}/agents/{name}-{uuid}``.
         """
-        # Initialize the dynamic skills loader if not already done
-        if (
-            not hasattr(self, "dynamic_skills_loader")
-            or self.dynamic_skills_loader is None
-        ):
-            self.dynamic_skills_loader = DynamicSkillsLoader(
-                self.skills_dir
+        if self._workspace is None:
+            self._workspace = WorkspaceManager.for_agent(
+                self, verbose=self.verbose
             )
-
-        logger.info(
-            f"Loading dynamic skills for task: {task[:100]}..."
-        )
-
-        relevant_skills = (
-            self.dynamic_skills_loader.load_relevant_skills(task)
-        )
-
-        if relevant_skills:
-            skills_prompt = (
-                "\n\n# Available Skills\n\n"
-                "You have access to the following specialized skills. "
-                "Follow their instructions when relevant:\n\n"
-            )
-            self.system_prompt += skills_prompt
-            self.system_prompt += self._build_skills_prompt(
-                relevant_skills
-            )
-            logger.info(
-                f"Dynamically loaded {len(relevant_skills)} relevant skills for task: {task[:100]}..."
-            )
-        else:
-            logger.info(
-                f"No relevant skills found for task: {task[:100]}..."
-            )
+        return self._workspace
 
     def _get_agent_workspace_dir(self) -> str:
         """
@@ -752,271 +746,7 @@ class Agent:
         Returns:
             str: The full path to the agent-specific workspace directory.
         """
-        # Generate a sanitized agent name in "name-of-agent" format (lowercase with hyphens)
-        if self.agent_name:
-            # Convert to lowercase and replace spaces/special chars with hyphens
-            safe_agent_name = (
-                self.agent_name.lower()
-                .replace(" ", "-")
-                .replace("_", "-")
-                .replace("/", "-")
-                .replace("\\", "-")
-                .replace(":", "-")
-                .replace("*", "-")
-                .replace("?", "-")
-                .replace('"', "-")
-                .replace("<", "-")
-                .replace(">", "-")
-                .replace("|", "-")
-                # Remove multiple consecutive hyphens
-                .replace("--", "-")
-                .replace("--", "-")
-                .strip("-")
-            )
-        else:
-            safe_agent_name = "agent"
-
-        # Extract UUID from agent ID
-        if self.id.startswith("agent-"):
-            agent_uuid = self.id.replace("agent-", "")
-        else:
-            agent_uuid = self.id
-
-        # Limit UUID length for directory name (use last 12 chars for brevity)
-        agent_uuid_short = (
-            agent_uuid[-12:] if len(agent_uuid) > 12 else agent_uuid
-        )
-
-        # Create directory name: {name-of-agent}-{uuid} (no "agent-" prefix)
-        dir_name = f"{safe_agent_name}-{agent_uuid_short}"
-
-        # Create full path: workspace_dir/agents/{name-of-agent}-{uuid}/
-        agents_dir = os.path.join(self.workspace_dir, "agents")
-        agent_workspace = os.path.join(agents_dir, dir_name)
-
-        # Ensure directory exists
-        os.makedirs(agent_workspace, exist_ok=True)
-
-        return agent_workspace
-
-    def _get_agent_registry(self) -> Dict[str, Any]:
-        """
-        Get the agent registry from handoffs configuration.
-
-        Returns:
-            Dict mapping agent names to agent instances.
-        """
-        agent_registry = {}
-        if self.handoffs:
-            if isinstance(self.handoffs, (list, tuple)):
-                for agent in self.handoffs:
-                    agent_name = getattr(
-                        agent, "agent_name", str(agent)
-                    )
-                    agent_registry[agent_name] = agent
-            elif isinstance(self.handoffs, dict):
-                agent_registry = self.handoffs
-        return agent_registry
-
-    def _handoff_task_tool(
-        self, handoffs: List[Dict[str, str]]
-    ) -> str:
-        """
-        Tool handler for handoff_task function calls.
-
-        This method processes handoff requests from the LLM and delegates tasks
-        to other agents in the handoffs registry. It supports delegating to
-        multiple agents concurrently and aggregates their responses.
-
-        **Handoff Process:**
-        1. Retrieves agent registry from handoffs configuration
-        2. Validates that requested agents exist in the registry
-        3. Delegates tasks to specified agents using handoff_task function
-        4. Returns aggregated responses from all delegated agents
-
-        **Handoff Request Format:**
-        Each handoff request must contain:
-        - agent_name (str): The name of the agent to delegate to (must exist in registry)
-        - task (str): The specific task to be delegated to that agent
-        - reasoning (str): Explanation of why this agent was selected for the task
-
-        **Agent Registry:**
-        The agent registry is built from:
-        - List of Agent instances: Uses agent_name attribute
-        - Dictionary: Uses keys as agent names
-        - Empty if handoffs is not configured
-
-        Args:
-            handoffs (List[Dict[str, str]]): List of handoff requests. Each request
-                is a dictionary containing:
-                - agent_name (str): The name of the agent to delegate to.
-                    Must match an agent in the handoffs registry.
-                - task (str): The task to be delegated to that agent.
-                - reasoning (str): Explanation of why this agent was selected.
-
-        Returns:
-            str: Aggregated response from all delegated agents. The format depends
-                on the handoff_task implementation, typically a concatenated string
-                of responses from each agent.
-
-        Raises:
-            KeyError: If an agent_name in handoffs doesn't exist in the registry.
-            Exception: If handoff_task execution fails for any agent.
-
-        Note:
-            - Requires handoffs to be configured during agent initialization
-            - Agent names must match exactly (case-sensitive)
-            - Multiple agents can be delegated to concurrently
-            - Handoff results are automatically added to conversation memory
-
-        Examples:
-            >>> # Configure handoffs
-            >>> agent1 = Agent(agent_name="researcher")
-            >>> agent2 = Agent(agent_name="writer")
-            >>> main_agent = Agent(handoffs=[agent1, agent2])
-            >>>
-            >>> # LLM can now call handoff_task
-            >>> handoffs = [
-            ...     {
-            ...         "agent_name": "researcher",
-            ...         "task": "Research the topic",
-            ...         "reasoning": "This agent specializes in research"
-            ...     }
-            ... ]
-            >>> result = main_agent._handoff_task_tool(handoffs)
-        """
-        agent_registry = self._get_agent_registry()
-        return handoff_task(
-            handoffs=handoffs,
-            agent_registry=agent_registry,
-        )
-
-    def setup_tools(self):
-        """
-        Initialize the BaseTool structure for tool execution.
-
-        This method creates a BaseTool instance that handles tool execution,
-        validation, and management. The BaseTool structure is used throughout
-        the agent's lifecycle for executing function calls from LLM responses.
-
-        **BaseTool Functionality:**
-        - Converts tool functions to executable format
-        - Validates tool calls from LLM responses
-        - Executes tools with proper error handling
-        - Formats tool execution results
-        - Supports parallel tool execution
-
-        Args:
-            None: Uses self.tools and self.verbose from instance.
-
-        Returns:
-            BaseTool: An initialized BaseTool instance configured with:
-                - tools: List of user-provided tool functions
-                - verbose: Verbosity setting for tool execution logging
-
-        Note:
-            - This method is called automatically during agent initialization
-            - The BaseTool instance is stored in self.tool_struct
-            - Tools must be callable Python functions
-            - Tool functions should have proper type hints for schema generation
-
-        Examples:
-            >>> agent = Agent(tools=[my_function])
-            >>> # setup_tools() is called automatically
-            >>> # agent.tool_struct is now ready to execute tools
-        """
-        return BaseTool(
-            tools=self.tools,
-            verbose=self.verbose,
-        )
-
-    def tool_handling(self):
-        """
-        Process and integrate user-defined tools into the agent's tool system.
-
-        This method converts user-provided tools (callable functions) into OpenAI
-        function schema format and adds them to the agent's tools_list_dictionary.
-        It preserves existing tools (e.g., handoff tools) and avoids duplicates.
-
-        **Process:**
-        1. Converts user tools to OpenAI function schema format
-        2. Initializes tools_list_dictionary if None
-        3. Tracks existing tool names to prevent duplicates
-        4. Adds new tools that don't already exist
-        5. Adds tools to conversation memory for LLM context
-
-        **Tool Schema Format:**
-        Tools are converted to OpenAI function calling format:
-        {
-            "type": "function",
-            "function": {
-                "name": "function_name",
-                "description": "Function description",
-                "parameters": {
-                    "type": "object",
-                    "properties": {...},
-                    "required": [...]
-                }
-            }
-        }
-
-        **Duplicate Prevention:**
-        The method checks tool names before adding to prevent duplicate tools.
-        This is important when handoff tools or other system tools are already
-        present in tools_list_dictionary.
-
-        Args:
-            None: Uses self.tools and self.tools_list_dictionary from instance.
-
-        Returns:
-            None: Modifies self.tools_list_dictionary and self.short_memory.
-
-        Note:
-            - This method is called automatically during agent initialization if tools are provided
-            - Tools are added to conversation memory so the LLM knows what tools are available
-            - The method preserves existing tools in tools_list_dictionary (e.g., handoff tools)
-            - Tool names are case-sensitive for duplicate detection
-
-        Raises:
-            Exception: If tool conversion fails or tools cannot be added to memory.
-
-        Examples:
-            >>> def my_tool(query: str) -> str:
-            ...     return f"Searching for {query}"
-            >>> agent = Agent(tools=[my_tool])
-            >>> # tool_handling() is called automatically during initialization
-            >>> # The tool is now available for the LLM to use
-        """
-        # Convert all the tools into a list of dictionaries
-        user_tools = (
-            convert_multiple_functions_to_openai_function_schema(
-                self.tools
-            )
-        )
-
-        # Preserve existing tools in tools_list_dictionary (e.g., handoff tools)
-        if self.tools_list_dictionary is None:
-            self.tools_list_dictionary = []
-
-        # Get existing tool names to avoid duplicates
-        existing_tool_names = set()
-        for tool in self.tools_list_dictionary:
-            if isinstance(tool, dict) and "function" in tool:
-                existing_tool_names.add(
-                    tool["function"].get("name", "")
-                )
-
-        # Add user tools, avoiding duplicates
-        for tool in user_tools:
-            tool_name = tool.get("function", {}).get("name", "")
-            if tool_name not in existing_tool_names:
-                self.tools_list_dictionary.append(tool)
-                existing_tool_names.add(tool_name)
-
-        self.short_memory.add(
-            role=self.agent_name,
-            content=self.tools_list_dictionary,
-        )
+        return self.workspace.dir
 
     def short_memory_init(self):
         # Compactly assemble initial prompt as a string with available fields
@@ -1026,13 +756,7 @@ class Agent:
             prompt += "\n\n"
             prompt += SAFETY_PROMPT
 
-        # Compute the persistent MEMORY.md path under the workspace dir.
-        # Only resolved when persistent_memory=True (the default). When False
-        # the Conversation receives no path and operates as a pure in-process
-        # store with no on-disk read or write across sessions.
-        # Key on agent_name only (not self.id) so memory is stable across
-        # process restarts — self.id defaults to a fresh uuid every run,
-        # which would otherwise create a new empty MEMORY.md each time.
+        # Keyed on agent_name, not self.id, which is a fresh uuid per run and would orphan MEMORY.md.
         memory_md_path = None
         if self.persistent_memory:
             try:
@@ -1058,6 +782,7 @@ class Agent:
             tokenizer_model_name=self.model_name,
             context_length=self.context_length,
             memory_md_path=memory_md_path,
+            messages=self.messages,
         )
 
         return memory
@@ -1078,170 +803,28 @@ class Agent:
         Returns:
             LiteLLM: The initialized LiteLLM instance
         """
+        self.llm = self.llm_manager.build(*args, **kwargs)
+        return self.llm
 
-        if self.model_name is None:
-            self.model_name = "gpt-5.4"
-
-        # Use current model (which may be a fallback) only if fallbacks are configured
-        if self.fallback_models:
-            current_model = self.get_current_model()
-        else:
-            current_model = self.model_name
-
-        # Determine if parallel tool calls should be enabled
-        if exists(self.tools) and len(self.tools) >= 2:
-            parallel_tool_calls = True
-        elif exists(self.mcp_url) or exists(self.mcp_urls):
-            parallel_tool_calls = True
-        elif exists(self.mcp_config):
-            parallel_tool_calls = True
-        else:
-            parallel_tool_calls = False
-
-        try:
-            # Base configuration that's always included
-            common_args = {
-                "model_name": current_model,
-                "temperature": self.temperature,
-                "max_tokens": self.max_tokens,
-                "system_prompt": self.system_prompt,
-                "stream": self.streaming_on,
-                "top_p": self.top_p,
-                "retries": self.retry_attempts,
-                "reasoning_effort": self.reasoning_effort,
-                "thinking_tokens": self.thinking_tokens,
-                "reasoning_enabled": self.reasoning_enabled,
-                "agent_name": self.agent_name,
-            }
-
-            # Initialize tools_list_dictionary, if applicable
-            tools_list = []
-
-            # Append tools from different sources
-            if self.tools_list_dictionary is not None:
-                tools_list.extend(self.tools_list_dictionary)
-
-            if exists(self.mcp_url) or exists(self.mcp_urls):
-                if self.verbose:
-                    logger.info(
-                        f"Adding MCP tools to memory for {self.agent_name}"
-                    )
-                # tools_list.extend(self.add_mcp_tools_to_memory())
-                mcp_tools = self.add_mcp_tools_to_memory()
-
-                if self.verbose:
-                    logger.info(f"MCP tools: {mcp_tools}")
-
-                tools_list.extend(mcp_tools)
-
-            # Additional arguments for LiteLLM initialization
-            additional_args = {}
-
-            if self.llm_args is not None:
-                additional_args.update(self.llm_args)
-
-            if tools_list:
-                additional_args.update(
-                    {
-                        "tools_list_dictionary": tools_list,
-                        "tool_choice": "auto",
-                        "parallel_tool_calls": parallel_tool_calls,
-                    }
-                )
-
-            if exists(self.mcp_url) or exists(self.mcp_urls):
-                additional_args.update({"mcp_call": True})
-
-            # if args or kwargs are provided, then update the additional_args
-            if args or kwargs:
-                # Handle keyword arguments first
-                if kwargs:
-                    additional_args.update(kwargs)
-
-                # Handle positional arguments (args)
-                # These could be additional configuration parameters
-                # that should be merged into the additional_args
-                if args:
-                    # If args contains a dictionary, merge it directly
-                    if len(args) == 1 and isinstance(args[0], dict):
-                        additional_args.update(args[0])
-                    else:
-                        # For other types of args, log them for debugging
-                        # and potentially handle them based on their type
-                        logger.debug(
-                            f"Received positional args in llm_handling: {args}"
-                        )
-                        # You can add specific handling for different arg types here
-                        # For now, we'll add them as additional configuration
-                        additional_args.update(
-                            {"additional_args": args}
-                        )
-
-            # Final LiteLLM initialization with combined arguments
-            self.llm = LiteLLM(**{**common_args, **additional_args})
-
-            return self.llm
-        except AgentLLMInitializationError as e:
-            logger.error(
-                f"AgentLLMInitializationError: Agent Name: {self.agent_name} Error in llm_handling: {e} Your current configuration is not supported. Please check the configuration and parameters. Traceback: {traceback.format_exc()}"
-            )
-            return None
-
-    def add_mcp_tools_to_memory(self):
+    @property
+    def mcp_enabled(self) -> bool:
         """
-        Adds MCP tools to the agent's short-term memory.
+        Whether this agent has at least one MCP server configured.
 
-        This function checks for either a single MCP URL or multiple MCP URLs and adds the available tools
-        to the agent's memory. The tools are listed in JSON format.
-
-        Raises:
-            Exception: If there's an error accessing the MCP tools
+        Backed by the agent's :class:`MCPManager`, which normalizes
+        ``mcp_url``, ``mcp_urls``, ``mcp_config`` and ``mcp_configs`` into a
+        single list of connections.
         """
-        try:
-            # Determine which MCP configuration to use
-            if exists(self.mcp_url):
-                tools = get_mcp_tools_sync(server_path=self.mcp_url)
-            elif exists(self.mcp_config):
-                tools = get_mcp_tools_sync(connection=self.mcp_config)
-            elif exists(self.mcp_urls):
-                logger.info(
-                    f"Getting MCP tools for multiple MCP servers for {self.agent_name}"
-                )
-                tools = get_tools_for_multiple_mcp_servers(
-                    urls=self.mcp_urls,
-                )
-
-                if self.verbose:
-                    logger.info(f"MCP tools: {tools}")
-            else:
-                raise AgentMCPConnectionError(
-                    "mcp_url must be either a string URL or MCPConnection object"
-                )
-
-            # Print success message if any MCP configuration exists
-            if self.print_on:
-                self.pretty_print(
-                    f"✨ [SYSTEM] Successfully integrated {len(tools)} MCP tools into agent: {self.agent_name} | Status: ONLINE | Time: {time.strftime('%H:%M:%S')} ✨",
-                    loop_count=0,
-                )
-
-            return tools
-        except AgentMCPConnectionError as e:
-            logger.error(
-                f"Error Adding MCP Tools to Agent: {self.agent_name} Error: {e} Traceback: {traceback.format_exc()}"
-            )
-            raise e
+        manager = getattr(self, "mcp_manager", None)
+        return manager is not None and manager.enabled
 
     def _load_prompt_from_marketplace(self) -> None:
         """
         Load a prompt from the Swarms marketplace using the marketplace_prompt_id.
 
-        This method fetches the prompt content from the Swarms marketplace API
-        and sets it as the agent's system prompt. If the agent_name and agent_description
-        are not already set, they will be populated from the marketplace prompt data.
-
-        The method uses the fetch_prompts_from_marketplace utility function to retrieve
-        the prompt data, which includes the prompt name, description, and content.
+        Appends the marketplace prompt to this agent's system prompt and
+        back-fills `agent_name` / `agent_description` when they are still at
+        their defaults.
 
         Raises:
             ValueError: If the prompt cannot be found in the marketplace.
@@ -1251,51 +834,7 @@ class Agent:
             Requires the SWARMS_API_KEY environment variable to be set for
             authenticated API access.
         """
-        try:
-            logger.info(
-                f"Loading prompt from marketplace with ID: {self.marketplace_prompt_id}"
-            )
-
-            result = fetch_prompts_from_marketplace(
-                prompt_id=self.marketplace_prompt_id,
-                return_params_on=True,
-            )
-
-            if result is None:
-                raise ValueError(
-                    f"Prompt with ID '{self.marketplace_prompt_id}' not found in the marketplace. "
-                    "Please verify the prompt ID is correct."
-                )
-
-            name, description, prompt = result
-
-            # Set the system prompt from the marketplace
-            if prompt:
-                self.system_prompt += prompt
-                logger.info(
-                    f"Successfully loaded prompt '{name}' from marketplace"
-                )
-
-            # Optionally set agent name and description if not already set
-            if name and self.agent_name == "swarm-worker-01":
-                self.agent_name = name
-                self.name = name
-
-            if description and self.agent_description is None:
-                self.agent_description = description
-                self.description = description
-
-            if self.print_on:
-                self.pretty_print(
-                    f"[Marketplace] Loaded prompt '{name}' from Swarms Marketplace",
-                    loop_count=0,
-                )
-
-        except Exception as e:
-            logger.error(
-                f"Error loading prompt from marketplace: {e} Traceback: {traceback.format_exc()}"
-            )
-            raise
+        self.marketplace.load_prompt()
 
     def setup_config(self):
         # The max_loops will be set dynamically if the dynamic_loop
@@ -1323,38 +862,9 @@ class Agent:
         Returns:
             bool: True if model supports vision and image is provided, False otherwise.
         """
-
-        # Only check vision support if an image is provided
-        if img is not None:
-            out = supports_vision(self.model_name)
-            if out is False:
-                logger.error(
-                    f"[Agent: {self.agent_name}] Model '{self.model_name}' does not support vision capabilities. "
-                    f"Image input was provided: {img[:100]}{'...' if len(img) > 100 else ''}. "
-                    f"Please use a vision-enabled model."
-                )
-
-        if self.tools_list_dictionary is not None:
-            out = supports_function_calling(self.model_name)
-            if out is False:
-                logger.error(
-                    f"[Agent: {self.agent_name}] Model '{self.model_name}' does not support function calling capabilities. "
-                    f"tools_list_dictionary is set: {self.tools_list_dictionary}. "
-                    f"Please use a function calling-enabled model."
-                )
-
-        if self.tools is not None:
-            if len(self.tools) > 2:
-                out = supports_parallel_function_calling(
-                    self.model_name
-                )
-                if out is False:
-                    logger.error(
-                        f"[Agent: {self.agent_name}] Model '{self.model_name}' does not support parallel function calling capabilities. "
-                        f"Please use a parallel function calling-enabled model."
-                    )
-
-        return None
+        return self.llm_manager.check_model_supports_utilities(
+            img=img
+        )
 
     def check_if_no_prompt_then_autogenerate(self, task: str = None):
         """
@@ -1400,10 +910,6 @@ class Agent:
 
             logger.info("Auto-generated prompt successfully.")
 
-    def set_system_prompt(self, system_prompt: str):
-        """Set the system prompt"""
-        self.system_prompt = system_prompt
-
     def _check_stopping_condition(self, response: str) -> bool:
         """Check if the stopping condition is met."""
         try:
@@ -1417,22 +923,10 @@ class Agent:
 
     def dynamic_temperature(self):
         """
-        1. Check the self.llm object for the temperature
-        2. If the temperature is not present, then use the default temperature
-        3. If the temperature is present, then dynamically change the temperature
-        4. for every loop you can randomly change the temperature on a scale from 0.0 to 1.0
+        Randomly reset the LLM's temperature on a 0.0-1.0 scale between loops.
+        Falls back to 0.5 when the LLM exposes no temperature attribute.
         """
-        try:
-            if hasattr(self.llm, "temperature"):
-                # Randomly change the temperature attribute of self.llm object
-                self.llm.temperature = random.uniform(0.0, 1.0)
-            else:
-                # Use a default temperature
-                self.llm.temperature = 0.5
-        except Exception as error:
-            logger.error(
-                f"Error dynamically changing temperature: {error}"
-            )
+        self.llm_manager.randomize_temperature()
 
     def print_dashboard(self):
         """
@@ -1440,7 +934,7 @@ class Agent:
         Uses square brackets instead of emojis for section headers and bullet points.
         """
         tools_activated = True if self.tools is not None else False
-        mcp_activated = True if self.mcp_url is not None else False
+        mcp_activated = self.mcp_enabled
         formatter.print_panel(
             f"""
             
@@ -1476,7 +970,9 @@ class Agent:
         self,
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -1555,7 +1051,6 @@ class Agent:
                 - "json": JSON string
                 - "dict": Dictionary
                 - "yaml": YAML string
-                - "xml": XML string
                 - "final": Comprehensive final summary (for autonomous loop)
                 - Other types: As configured
 
@@ -1592,6 +1087,10 @@ class Agent:
             ... )
         """
         try:
+            history_start = len(
+                self.short_memory.conversation_history
+            )
+
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.check_model_supports_utilities(img=img)
@@ -1603,6 +1102,9 @@ class Agent:
 
             # Set the loop count
             loop_count = 0
+
+            # Built lazily so the transforms path can keep its flattened prompt
+            transcript: Optional[Transcript] = None
 
             # Clear the short memory
             response = None
@@ -1619,8 +1121,6 @@ class Agent:
             ):
                 loop_count += 1
 
-                # Compress short-term memory if an auto-loop run has
-                # crossed the configured fraction of the context window.
                 if self._context_compressor is not None:
                     self._context_compressor.maybe_compress(self)
 
@@ -1654,24 +1154,29 @@ class Agent:
                 if self.dynamic_temperature_enabled is True:
                     self.dynamic_temperature()
 
-                # Task prompt with optional transforms
+                # Task prompt with optional transforms.
+                task_prompt = None
+                use_transcript = self.transforms is None
+
                 if self.transforms is not None:
                     task_prompt = handle_transforms(
                         transforms=self.transforms,
                         short_memory=self.short_memory,
                         model_name=self.model_name,
                     )
-
-                else:
-                    # Use original method if no transforms
-                    task_prompt = (
-                        self.short_memory.return_history_as_string()
+                elif transcript is None:
+                    transcript = self._transcript_from_messages(
+                        messages, task
                     )
 
                 # Parameters
                 attempt = 0
                 success = False
+                last_error: Optional[Exception] = None
                 while attempt < self.retry_attempts and not success:
+                    # Outside the try: except must answer tool calls.
+                    turn_calls = []
+                    turn_results = {}
                     try:
 
                         show_loading = (
@@ -1688,43 +1193,40 @@ class Agent:
                         )
 
                         with loading_ctx:
-                            if img is not None:
-                                response = self.call_llm(
-                                    task=task_prompt,
-                                    img=img,
-                                    current_loop=loop_count,
-                                    streaming_callback=streaming_callback,
-                                    *args,
-                                    **kwargs,
-                                )
-                            else:
-                                response = self.call_llm(
-                                    task=task_prompt,
-                                    current_loop=loop_count,
-                                    streaming_callback=streaming_callback,
-                                    *args,
-                                    **kwargs,
+                            llm_kwargs = dict(kwargs)
+                            if use_transcript:
+                                llm_kwargs["messages"] = (
+                                    transcript.messages
                                 )
 
-                        # If streaming is enabled, then don't print the response
+                            response = self.call_llm(
+                                task=task_prompt,
+                                img=img,
+                                imgs=imgs,
+                                current_loop=loop_count,
+                                streaming_callback=streaming_callback,
+                                *args,
+                                **llm_kwargs,
+                            )
 
-                        # Parse the response from the agent with the output type
-                        if exists(self.tools_list_dictionary):
-                            if isinstance(response, BaseModel):
-                                response = response.model_dump()
-
-                        # Parse the response from the agent with the output type
-                        response = self.parse_llm_output(response)
+                        response = self.tool_manager.parse_response(
+                            response
+                        )
 
                         self.short_memory.add(
                             role=self.agent_name,
                             content=response,
                         )
 
+                        # Every tool call in this turn needs a matching result before the next request.
+                        if use_transcript:
+                            turn_calls = transcript.record_assistant(
+                                response
+                            )
+
                         # Print
                         if self.print_on is True:
-                            # Skip printing structured output (list of tool calls) here
-                            # Function call visualization is handled in execute_tools
+                            # Tool calls are visualised in execute_tools
                             if isinstance(response, list):
                                 # Tool calls will be visualized in execute_tools, skip here
                                 pass
@@ -1737,74 +1239,15 @@ class Agent:
                                     response, loop_count
                                 )
 
-                        # Handle handoff tool calls
-                        if isinstance(response, list):
-                            for tool_call in response:
-                                if (
-                                    isinstance(tool_call, dict)
-                                    and tool_call.get(
-                                        "function", {}
-                                    ).get("name")
-                                    == "handoff_task"
-                                ):
-                                    arguments = json.loads(
-                                        tool_call["function"][
-                                            "arguments"
-                                        ]
-                                    )
-                                    handoffs_list = arguments.get(
-                                        "handoffs", []
-                                    )
-
-                                    # Visualize handoff tool call
-                                    if self.print_on:
-                                        self._visualize_handoff_call(
-                                            handoffs_list, tool_call
-                                        )
-
-                                    result = self._handoff_task_tool(
-                                        handoffs=handoffs_list
-                                    )
-                                    # Add result to memory
-                                    self.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"Handoff Result:\n{result}",
-                                    )
-                                    if self.print_on:
-                                        delegated_agents = ", ".join(
-                                            agent.get(
-                                                "agent_name",
-                                                "<unknown>",
-                                            )
-                                            for agent in handoffs_list
-                                        )
-                                        self.pretty_print(
-                                            f"[Handoff] Delegated tasks to {len(handoffs_list)} agent(s): {delegated_agents}\nSuccessfully executed handoff_task function.",
-                                            loop_count,
-                                        )
-
-                        # Check and execute callable tools
-                        if exists(self.tools):
-                            self.tool_execution_retry(
-                                response, loop_count
-                            )
-
-                        # Handle MCP tools
-                        if (
-                            exists(self.mcp_url)
-                            or exists(self.mcp_config)
-                            or exists(self.mcp_urls)
-                        ):
-                            # Only handle MCP tools if response is not None
-                            if response is not None:
-                                self.mcp_tool_handling(
-                                    response=response,
-                                    current_loop=loop_count,
-                                )
-                            else:
-                                logger.warning(
-                                    f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
-                                )
+                        self.tool_manager.handle_tool_calls(
+                            response,
+                            loop_count,
+                            transcript=(
+                                transcript if use_transcript else None
+                            ),
+                            turn_calls=turn_calls,
+                            turn_results=turn_results,
+                        )
 
                         success = True  # Mark as successful to exit the retry loop
 
@@ -1814,12 +1257,52 @@ class Agent:
                                 loop_count=loop_count
                             )
 
+                    except AgentToolExecutionError as e:
+                        # A tool failure is not a provider failure, re-running the model cannot fix it
+                        if use_transcript and turn_calls:
+                            transcript.flush_tool_results(
+                                turn_calls, turn_results
+                            )
+
+                        capture_error(
+                            e,
+                            self,
+                            name="Agent.tool_error",
+                            loop=loop_count,
+                        )
+
+                        self.short_memory.add(
+                            role="Tool Executor",
+                            content=(
+                                f"Tool execution failed after "
+                                f"{self.tool_retry_attempts} attempts: {e}"
+                            ),
+                        )
+
+                        # Exit the retry loop, not the run, so the model can read the failure
+                        success = True
+
                     except (
                         BadRequestError,
                         InternalServerError,
                         AuthenticationError,
                         Exception,
                     ) as e:
+                        last_error = e
+
+                        # Answer the recorded tool calls so the retried request is well formed
+                        if use_transcript and turn_calls:
+                            transcript.flush_tool_results(
+                                turn_calls, turn_results
+                            )
+
+                        # The retry loop swallows this, so capture_run never sees it
+                        capture_error(
+                            e,
+                            self,
+                            name="Agent.llm_error",
+                            loop=loop_count,
+                        )
 
                         if self.autosave is True:
                             log_agent_data(self.to_dict())
@@ -1834,19 +1317,23 @@ class Agent:
                         attempt += 1
 
                 if not success:
-
-                    if self.autosave is True:
-                        log_agent_data(self.to_dict())
-                        self.save()
-                        self._autosave_config_step(
-                            loop_count=loop_count
+                    # Drop this run's turns so a fallback model starts from clean history.
+                    while (
+                        len(self.short_memory.conversation_history)
+                        > history_start
+                    ):
+                        self.short_memory.delete(
+                            len(
+                                self.short_memory.conversation_history
+                            )
+                            - 1
                         )
 
-                    logger.error(
-                        "Failed to generate a valid response after"
-                        " retry attempts."
-                    )
-                    break  # Exit the loop if all retry attempts fail
+                    raise AgentLLMError(
+                        f"Agent '{self.agent_name}' got no response from "
+                        f"'{self.model_name}' after {self.retry_attempts} "
+                        f"attempt(s): {last_error}"
+                    ) from last_error
 
                 # Check stopping conditions
                 if (
@@ -1877,8 +1364,7 @@ class Agent:
                             "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
                         )
                     except (KeyboardInterrupt, EOFError):
-                        # Graceful exit on Ctrl+C / Ctrl+D during
-                        # interactive input. No traceback, no error.
+                        # Ctrl+C / Ctrl+D during input exits without a traceback
                         formatter.console.print()
                         self.pretty_print(
                             "Session ended by user. Goodbye.",
@@ -1900,6 +1386,8 @@ class Agent:
                     self.short_memory.add(
                         role=self.user_name, content=user_input
                     )
+                    if transcript is not None:
+                        transcript.append_user(user_input)
 
                 if self.loop_interval:
                     logger.info(
@@ -1933,60 +1421,27 @@ class Agent:
         self, loop_count: Optional[int] = None
     ) -> None:
         """
-        Save the agent's configuration dictionary to a JSON file in the agent-specific workspace directory.
-        This method is called at each step of the agent's run to maintain an up-to-date
-        configuration snapshot. It only runs when autosave is enabled.
+        Write a config snapshot to the agent workspace, once per step.
 
         Args:
-            loop_count (Optional[int]): The current loop count for logging purposes. Defaults to None.
+            loop_count (Optional[int]): Current loop, recorded in the
+                saved metadata and used only for logging. Defaults to None.
 
         Note:
-            This method handles errors gracefully to ensure it doesn't interrupt the main execution.
-            The saved file will be named `config.json` in the agent-specific workspace directory:
-            workspace_dir/agents/{name-of-agent}-{uuid}/config.json
+            Writes ``config.json`` under
+            workspace_dir/agents/{name-of-agent}-{uuid}/. Never raises -
+            autosave must not interrupt a run.
         """
         if not self.autosave:
             return
 
-        try:
-            # Get agent-specific workspace directory
-            agent_workspace = self._get_agent_workspace_dir()
+        path = self.workspace.save_config(
+            additional_metadata={"loop_count": loop_count}
+        )
 
-            # Save as config.json in the agent-specific directory
-            file_path = os.path.join(agent_workspace, "config.json")
-
-            # Get the current configuration dictionary
-            config_dict = self.to_dict()
-
-            # Add metadata about when this was saved
-            config_dict["_autosave_metadata"] = {
-                "timestamp": time.strftime(
-                    "%Y-%m-%d %H:%M:%S", time.localtime()
-                ),
-                "loop_count": loop_count,
-                "agent_id": self.id,
-                "agent_name": self.agent_name,
-            }
-
-            # Write to JSON file atomically (write to temp file first, then rename)
-            temp_path = file_path + ".tmp"
-            with open(temp_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    config_dict, f, indent=2, ensure_ascii=False
-                )
-
-            # Atomic rename
-            os.replace(temp_path, file_path)
-
-            if self.verbose and loop_count is not None:
-                logger.debug(
-                    f"Autosaved config at loop {loop_count} to {file_path}"
-                )
-
-        except Exception as e:
-            # Log error but don't raise - we don't want autosave to break execution
-            logger.warning(
-                f"Failed to autosave config step for agent '{self.agent_name}': {e}"
+        if path and self.verbose and loop_count is not None:
+            logger.debug(
+                f"Autosaved config at loop {loop_count} to {path}"
             )
 
     def _handle_run_error(self, error: any):
@@ -2007,973 +1462,100 @@ class Agent:
             f"Error Type: {error_type}\n"
             f"Error Message: {error_message}\n"
             f"Traceback:\n{traceback_info}\n"
-            f"Agent State: {self.to_dict()}\n"
             f"Please optimize your input parameters, or create an issue on the Swarms GitHub and contact our team on Discord for support. "
             f"For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
         )
 
         raise error
 
-    def _visualize_function_call(
-        self,
-        function_name: str,
-        arguments: Dict[str, Any],
-        result: str = None,
-    ) -> None:
-        """
-        Visualize a function call using formatter.
-
-        Args:
-            function_name: Name of the function being called
-            arguments: Arguments passed to the function
-            result: Optional result of the function call
-        """
-        if not self.print_on:
-            return
-
-        # Format function call visualization
-        call_content = f"Function: {function_name}\n\n"
-        call_content += "Arguments:\n"
-        for key, value in arguments.items():
-            # Truncate long values for readability
-            value_str = str(value)
-            if len(value_str) > 200:
-                value_str = value_str[:200] + "..."
-            call_content += f"  {key}: {value_str}\n"
-
-        if result:
-            result_str = str(result)
-            if len(result_str) > 500:
-                result_str = result_str[:500] + "..."
-            call_content += f"\nResult:\n{result_str}"
-
-        formatter.print_panel(
-            call_content,
-            title=f"Agent: {self.agent_name} Function Call: {function_name}",
-        )
-
-    def _visualize_handoff_call(
-        self,
-        handoffs: List[Dict[str, str]],
-        tool_call: Dict[str, Any] = None,
-    ) -> None:
-        """
-        Visualize a handoff tool call with detailed information about all delegations.
-
-        Args:
-            handoffs: List of handoff requests, each containing agent_name, task, and reasoning
-            tool_call: Optional tool call dictionary for additional metadata
-        """
-        if not self.print_on:
-            return
-
-        # Build visualization content
-        call_content = "Function: handoff_task\n"
-        call_content += f"Delegating to {len(handoffs)} agent(s)\n\n"
-
-        if tool_call and tool_call.get("id"):
-            call_content += f"Call ID: {tool_call.get('id')}\n\n"
-
-        call_content += "Handoff Details:\n"
-        call_content += "=" * 80 + "\n"
-
-        for i, handoff in enumerate(handoffs, 1):
-            agent_name = handoff.get("agent_name", "<unknown>")
-            task = handoff.get("task", "")
-            reasoning = handoff.get("reasoning", "")
-
-            call_content += f"\n[{i}] Agent: {agent_name}\n"
-            call_content += f"    Task: {task[:150]}{'...' if len(task) > 150 else ''}\n"
-            call_content += f"    Reasoning: {reasoning[:150]}{'...' if len(reasoning) > 150 else ''}\n"
-            if i < len(handoffs):
-                call_content += "\n" + "-" * 80 + "\n"
-
-        formatter.print_panel(
-            call_content,
-            title=f"Agent: {self.agent_name} Handoff Tool Call",
-        )
-
-    def get_all_selected_tools(self) -> List[str]:
-        """
-        Return a list of all autonomous loop tool names.
-
-        Returns:
-            List of tool name strings (e.g. ["create_plan", "think", "subtask_done", ...])
-        """
-        return get_autonomous_loop_tool_names()
-
     def _run_autonomous_loop(
         self,
-        task: Optional[Union[str, Any]] = None,
+        task: str,
         img: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
-    ) -> Any:
+    ):
         """
-        Execute the autonomous loop structure: plan -> execute subtasks -> summary.
+        Run the plan-execute-summarize loop used when ``max_loops="auto"``.
 
-        This method implements the optimized autonomous looping when max_loops="auto"
-        and interactive=False. It follows a three-phase structure:
-
-        **Phase 1: Planning**
-        - Creates a detailed plan using the `create_plan` tool
-        - Breaks down the task into subtasks with dependencies, priorities, and step IDs
-        - Supports handoff delegation during planning if handoffs are configured
-        - Maximum planning attempts are controlled by MAX_PLANNING_ATTEMPTS
-
-        **Phase 2: Execution**
-        - Executes each subtask in dependency order
-        - For each subtask, runs a thinking -> tool actions -> observation loop
-        - Supports both planning tools (think, subtask_done, complete_task) and user-defined tools
-        - Prevents infinite thinking loops with max_consecutive_thinks limit
-        - Each subtask has a maximum iteration limit (MAX_SUBTASK_LOOPS)
-        - Overall execution has a maximum iteration limit (MAX_SUBTASK_ITERATIONS)
-
-        **Phase 3: Summary**
-        - Generates a comprehensive final summary when all subtasks are complete
-        - Uses the `complete_task` tool or generates summary manually
-        - Returns formatted output based on output_type configuration
-
-        The method automatically integrates:
-        - Planning tools (create_plan, think, subtask_done, complete_task, file operations)
-        - Handoff tools (if handoffs are configured)
-        - User-defined tools (added after planning phase)
-        - MCP tools (if configured)
+        Delegates to :class:`~swarms.agents.autonomous_loop.AutonomousAgentLoop`,
+        which owns the loop's planning, execution, and tool-dispatch logic.
 
         Args:
-            task (Optional[Union[str, Any]]): The task or prompt for the agent to process.
-                This is the main objective that will be broken down into subtasks.
-            img (Optional[str]): Optional image path or data to be processed during execution.
-            streaming_callback (Optional[Callable[[str], None]]): Optional callback function
-                to receive streaming tokens in real-time. Useful for dashboard integration.
-            *args: Additional positional arguments passed to LLM calls.
-            **kwargs: Additional keyword arguments passed to LLM calls.
+            task (str): The task for the agent to work through autonomously.
+            img (Optional[str]): Optional image input for multimodal models.
+            streaming_callback (Optional[Callable[[str], None]]): Callback
+                receiving streaming tokens in real time.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat
+                format that the loop's transcript starts from.
+            *args: Passed through to the loop.
+            **kwargs: Passed through to the loop.
 
         Returns:
-            Any: The agent's output with comprehensive summary. Format depends on output_type:
-                - "final": Returns comprehensive task completion summary
-                - Other types: Returns formatted conversation history based on output_type
-
-        Raises:
-            Exception: If planning phase fails after maximum attempts.
-            Exception: If execution exceeds maximum iteration limits.
-
-        Note:
-            - This method is automatically called when max_loops="auto" and interactive=False
-            - The method resets autonomous loop state at the start of each execution
-            - Tool execution results are automatically added to conversation memory
-            - Progress visualization is shown if print_on=True
-
-        Examples:
-            >>> agent = Agent(max_loops="auto", interactive=False)
-            >>> result = agent.run("Build a web application with authentication")
-            >>> # The agent will:
-            >>> # 1. Create a plan with subtasks
-            >>> # 2. Execute each subtask with tool calls
-            >>> # 3. Generate a comprehensive summary
+            The agent's final answer once it determines the task is complete.
         """
-        try:
+        return self.autonomous_loop._run_autonomous_loop(
+            task=task,
+            img=img,
+            streaming_callback=streaming_callback,
+            messages=messages,
+            *args,
+            **kwargs,
+        )
 
-            self.short_memory.add(role=self.user_name, content=task)
+    def _transcript_from_memory(self) -> Transcript:
+        """
+        Seed a structured transcript from ``short_memory``.
 
-            # Reset autonomous loop state
-            self.autonomous_subtasks = []
-            self.current_subtask_index = 0
-            self.subtask_status = {}
-            self.plan_created = False
-            self.think_call_count = 0
-
-            # Add planning tools to tools_list_dictionary
-            planning_tools = get_autonomous_planning_tools()
-
-            # Filter planning tools if selected_tools is not "all"
-            if (
-                self.selected_tools != "all"
-                and self.selected_tools is not None
-            ):
-                logger.info(
-                    f"Filtering autonomous looper tools to: {self.selected_tools}"
-                )
-                filtered_tools = []
-                for tool in planning_tools:
-                    tool_name = tool.get("function", {}).get(
-                        "name", ""
-                    )
-                    if tool_name in self.selected_tools:
-                        filtered_tools.append(tool)
-                planning_tools = filtered_tools
-                logger.info(
-                    f"Filtered to {len(planning_tools)} tools: {[t.get('function', {}).get('name', '') for t in planning_tools]}"
-                )
-
-            # The `think` tool is redundant when the model already reasons natively
-            # via extended thinking (thinking_tokens). Drop it to avoid unnecessary
-            # tool-call round-trips and a cluttered tool list.
-            if self.thinking_tokens is not None:
-                planning_tools = [
-                    t
-                    for t in planning_tools
-                    if t.get("function", {}).get("name") != "think"
-                ]
-
-            if self.tools_list_dictionary is None:
-                self.tools_list_dictionary = []
-
-            # Get existing tool names to avoid duplicates
-            existing_tool_names = set()
-            if self.tools_list_dictionary:
-                for tool in self.tools_list_dictionary:
-                    if isinstance(tool, dict) and "function" in tool:
-                        existing_tool_names.add(
-                            tool["function"].get("name", "")
-                        )
-
-            # Add planning tools (avoid duplicates)
-            for tool in planning_tools:
-                tool_name = tool.get("function", {}).get("name", "")
-                if tool_name not in existing_tool_names:
-                    self.tools_list_dictionary.append(tool)
-                    existing_tool_names.add(tool_name)
-
-            # Add handoff tool if handoffs are configured (avoid duplicates)
-            if exists(self.handoffs):
-                handoff_tool_schema = get_handoff_tool_schema()
-                for tool in handoff_tool_schema:
-                    tool_name = tool.get("function", {}).get(
-                        "name", ""
-                    )
-                    if tool_name not in existing_tool_names:
-                        self.tools_list_dictionary.append(tool)
-                        existing_tool_names.add(tool_name)
-
-                # Add handoff prompt to system prompt
-                agent_registry = self._get_agent_registry()
-                if agent_registry:
-                    handoff_prompt = get_handoffs_prompt(
-                        list(agent_registry.values())
-                    )
-                    self.system_prompt += "\n\n" + handoff_prompt
-
-            # Reinitialize LLM with planning tools (and handoff tool if configured)
-            if self.llm is not None:
-                self.llm = self.llm_handling()
-
-            # Register planning tool handlers
-            all_planning_tool_handlers = {
-                "create_plan": self._create_plan_tool,
-                "think": self._think_tool,
-                "subtask_done": self._subtask_done_tool,
-                "complete_task": self._complete_task_tool,
-                "respond_to_user": lambda **kwargs: respond_to_user_tool(
-                    self, **kwargs
-                ),
-                "create_file": lambda **kwargs: create_file_tool(
-                    self, **kwargs
-                ),
-                "update_file": lambda **kwargs: update_file_tool(
-                    self, **kwargs
-                ),
-                "read_file": lambda **kwargs: read_file_tool(
-                    self, **kwargs
-                ),
-                "list_directory": lambda **kwargs: list_directory_tool(
-                    self, **kwargs
-                ),
-                "delete_file": lambda **kwargs: delete_file_tool(
-                    self, **kwargs
-                ),
-                "run_bash": lambda **kwargs: run_bash_tool(
-                    self, **kwargs
-                ),
-                "grep": lambda **kwargs: grep_tool(self, **kwargs),
-                "create_sub_agent": lambda **kwargs: create_sub_agent_tool(
-                    self, **kwargs
-                ),
-                "assign_task": lambda **kwargs: assign_task_tool(
-                    self, **kwargs
-                ),
-                "check_sub_agent_status": lambda **kwargs: check_sub_agent_status_tool(
-                    self, **kwargs
-                ),
-                "cancel_sub_agent_tasks": lambda **kwargs: cancel_sub_agent_tasks_tool(
-                    self, **kwargs
-                ),
-            }
-
-            # Filter tool handlers if selected_tools is not "all"
-            if (
-                self.selected_tools != "all"
-                and self.selected_tools is not None
-            ):
-                planning_tool_handlers = {
-                    k: v
-                    for k, v in all_planning_tool_handlers.items()
-                    if k in self.selected_tools
-                }
+        Conversation roles are free-form strings ("User", the agent name,
+        "Tool Executor", ...), so they are mapped onto chat roles here. The
+        system prompt is skipped because the LLM wrapper supplies it. Turns
+        added *during* a run are appended structurally on top of this prefix,
+        which is what preserves tool-call fidelity where it matters most.
+        """
+        transcript = Transcript()
+        for message in self.short_memory.conversation_history:
+            if not isinstance(message, dict):
+                continue
+            role = message.get("role")
+            content = message.get("content")
+            if content is None or str(role).lower() == "system":
+                continue
+            if role == self.agent_name:
+                transcript.append_assistant_text(content)
             else:
-                planning_tool_handlers = all_planning_tool_handlers
-
-            # Add handoff tool handler if handoffs are configured
-            if exists(self.handoffs):
-                planning_tool_handlers["handoff_task"] = (
-                    self._handoff_task_tool
-                )
-
-            # Phase 1: Planning
-            if self.print_on:
-                formatter.print_panel(
-                    f"Starting planning phase for task:\n\n{task}",
-                    title="Autonomous Loop: Planning Phase",
-                )
-
-            planning_prompt = get_planning_prompt(task)
-            self.short_memory.add(
-                role=self.user_name, content=planning_prompt
-            )
-
-            plan_created = False
-            planning_attempts = 0
-            max_planning_attempts = MAX_PLANNING_ATTEMPTS
-
-            while (
-                not plan_created
-                and planning_attempts < max_planning_attempts
-            ):
-                planning_attempts += 1
-                try:
-                    task_prompt = (
-                        self.short_memory.return_history_as_string()
-                    )
-                    response = self.call_llm(
-                        task=task_prompt,
-                        img=img,
-                        current_loop=0,
-                        streaming_callback=streaming_callback,
-                        *args,
-                        **kwargs,
-                    )
-
-                    response = self.parse_llm_output(response)
-                    self.short_memory.add(
-                        role=self.agent_name, content=response
-                    )
-
-                    # Check if response contains create_plan or handoff_task tool call
-                    if isinstance(response, list):
-                        for tool_call in response:
-                            if isinstance(tool_call, dict):
-                                function_name = tool_call.get(
-                                    "function", {}
-                                ).get("name")
-
-                                if function_name == "create_plan":
-                                    # Execute create_plan tool
-                                    arguments = json.loads(
-                                        tool_call["function"][
-                                            "arguments"
-                                        ]
-                                    )
-
-                                    # Visualize function call
-                                    self._visualize_function_call(
-                                        "create_plan", arguments
-                                    )
-
-                                    result = planning_tool_handlers[
-                                        "create_plan"
-                                    ](**arguments)
-
-                                    # Add result to memory
-                                    self.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"create_plan result: {result}",
-                                    )
-
-                                elif (
-                                    function_name == "handoff_task"
-                                    and exists(self.handoffs)
-                                ):
-                                    # Handle handoff tool call in planning phase
-                                    arguments = json.loads(
-                                        tool_call["function"][
-                                            "arguments"
-                                        ]
-                                    )
-                                    handoffs_list = arguments.get(
-                                        "handoffs", []
-                                    )
-
-                                    # Visualize handoff tool call
-                                    if self.print_on:
-                                        self._visualize_handoff_call(
-                                            handoffs_list, tool_call
-                                        )
-
-                                    result = self._handoff_task_tool(
-                                        handoffs=handoffs_list
-                                    )
-
-                                    # Add result to memory
-                                    self.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"handoff_task result: {result}",
-                                    )
-
-                                # Show plan creation result
-                                if self.print_on:
-                                    plan_summary = f"Plan created with {len(self.autonomous_subtasks)} subtasks:\n\n"
-                                    for i, subtask in enumerate(
-                                        self.autonomous_subtasks, 1
-                                    ):
-                                        plan_summary += f"{i}. {subtask['step_id']}: {subtask['description']}\n"
-                                        plan_summary += f"   Priority: {subtask['priority']}\n"
-                                        if subtask.get(
-                                            "dependencies"
-                                        ):
-                                            plan_summary += f"   Dependencies: {', '.join(subtask['dependencies'])}\n"
-
-                                    formatter.print_panel(
-                                        plan_summary,
-                                        title="Plan Created",
-                                    )
-
-                                plan_created = True
-                                break
-
-                    # Also check if plan was created via tool execution
-                    if self.plan_created:
-                        plan_created = True
-                        break
-
-                except Exception as e:
-                    if self.verbose:
-                        logger.error(
-                            f"Error in planning phase (attempt {planning_attempts}): {e}"
-                        )
-                    if planning_attempts >= max_planning_attempts:
-                        raise
-
-            if not plan_created:
-                raise Exception(
-                    "Failed to create plan after maximum attempts"
-                )
-
-            # Integrate user tools after planning phase
-            if exists(self.tools):
-                # Convert user tools to function schema
-                user_tools = convert_multiple_functions_to_openai_function_schema(
-                    self.tools
-                )
-
-                # Get existing tool names to avoid duplicates
-                existing_tool_names = set()
-                if self.tools_list_dictionary:
-                    for tool in self.tools_list_dictionary:
-                        if (
-                            isinstance(tool, dict)
-                            and "function" in tool
-                        ):
-                            existing_tool_names.add(
-                                tool["function"].get("name", "")
-                            )
-
-                # Add user tools to tools_list_dictionary (avoid duplicates)
-                if self.tools_list_dictionary is None:
-                    self.tools_list_dictionary = []
-
-                tools_added = 0
-                for tool in user_tools:
-                    tool_name = tool.get("function", {}).get(
-                        "name", ""
-                    )
-                    if tool_name not in existing_tool_names:
-                        self.tools_list_dictionary.append(tool)
-                        existing_tool_names.add(tool_name)
-                        tools_added += 1
-
-                # Reinitialize LLM with both planning tools and user tools
-                if self.llm is not None:
-                    self.llm = self.llm_handling()
-
-                if self.print_on and tools_added > 0:
-                    formatter.print_panel(
-                        f"Integrated {tools_added} user tools into autonomous loop",
-                        title="Tools Integration",
-                    )
-
-            # Phase 2: Execution - For each subtask
-            if self.print_on:
-                formatter.print_panel(
-                    f"Starting execution phase with {len(self.autonomous_subtasks)} subtasks",
-                    title="Autonomous Loop: Execution Phase",
-                )
-
-            max_subtask_iterations = MAX_SUBTASK_ITERATIONS
-            total_iterations = 0
-
-            while not self._all_subtasks_complete():
-                total_iterations += 1
-                if total_iterations > max_subtask_iterations:
-                    if self.print_on:
-                        formatter.print_panel(
-                            f"Maximum iterations ({max_subtask_iterations}) reached. Stopping execution.",
-                            title="Execution Limit Reached",
-                        )
-                    if self.verbose:
-                        logger.warning(
-                            f"Maximum iterations ({max_subtask_iterations}) reached. Stopping execution."
-                        )
-                    break
-
-                # Get next executable subtask
-                current_subtask = self._get_next_executable_subtask()
-                if current_subtask is None:
-                    # All subtasks are done or blocked
-                    if self._all_subtasks_complete():
-                        break
-                    else:
-                        if self.verbose:
-                            logger.warning(
-                                "No executable subtasks found, but not all are complete"
-                            )
-                        break
-
-                subtask_id = current_subtask["step_id"]
-                subtask_desc = current_subtask["description"]
-                subtask_priority = current_subtask.get(
-                    "priority", "medium"
-                )
-
-                # Show subtask start
-                if self.print_on:
-                    progress = f"{sum(1 for s in self.autonomous_subtasks if s['status'] in ['completed', 'failed'])}/{len(self.autonomous_subtasks)}"
-                    formatter.print_panel(
-                        f"Subtask: {subtask_id}\nDescription: {subtask_desc}\nPriority: {subtask_priority}\nProgress: {progress} subtasks completed",
-                        title=f"Executing Subtask: {subtask_id}",
-                    )
-
-                # Subtask execution loop: thinking -> tool actions -> observation
-                subtask_iterations = 0
-                max_subtask_loops = MAX_SUBTASK_LOOPS
-                subtask_done = False
-
-                # Add the execution prompt ONCE before the inner loop so the model
-                # doesn't see duplicate copies of it on subsequent iterations and
-                # mistakenly conclude "this task has been run before."
-                execution_prompt = get_execution_prompt(
-                    subtask_id,
-                    subtask_desc,
-                    self.autonomous_subtasks,
-                )
-                self.short_memory.add(
-                    role=self.user_name,
-                    content=execution_prompt,
-                )
-
-                while (
-                    not subtask_done
-                    and subtask_iterations < max_subtask_loops
-                ):
-                    subtask_iterations += 1
-                    self.think_call_count = (
-                        0  # Reset for each subtask
-                    )
-
-                    try:
-                        task_prompt = (
-                            self.short_memory.return_history_as_string()
-                        )
-                        response = self.call_llm(
-                            task=task_prompt,
-                            img=img,
-                            current_loop=subtask_iterations,
-                            streaming_callback=streaming_callback,
-                            *args,
-                            **kwargs,
-                        )
-
-                        response = self.parse_llm_output(response)
-                        self.short_memory.add(
-                            role=self.agent_name, content=response
-                        )
-
-                        # Handle tool calls
-                        if isinstance(response, list):
-                            regular_tool_calls = []
-
-                            for tool_call in response:
-                                if isinstance(
-                                    tool_call, dict
-                                ) and tool_call.get(
-                                    "function", {}
-                                ).get(
-                                    "name"
-                                ):
-                                    function_name = tool_call[
-                                        "function"
-                                    ]["name"]
-                                    arguments = json.loads(
-                                        tool_call["function"][
-                                            "arguments"
-                                        ]
-                                    )
-
-                                    # Handle planning tools and handoff tool
-                                    if (
-                                        function_name
-                                        in planning_tool_handlers
-                                    ):
-                                        # Special handling for handoff_task tool
-                                        if (
-                                            function_name
-                                            == "handoff_task"
-                                        ):
-                                            # Visualize handoff tool call
-                                            handoffs_list = (
-                                                arguments.get(
-                                                    "handoffs", []
-                                                )
-                                            )
-                                            if self.print_on:
-                                                self._visualize_handoff_call(
-                                                    handoffs_list,
-                                                    tool_call,
-                                                )
-
-                                            result = self._handoff_task_tool(
-                                                handoffs=handoffs_list
-                                            )
-                                        else:
-                                            # Only pre-visualize tools that won't be shown again
-                                            # with their result (subtask_done / complete_task are
-                                            # visualized post-execution so skip the pre call).
-                                            if function_name not in (
-                                                "subtask_done",
-                                                "complete_task",
-                                            ):
-                                                self._visualize_function_call(
-                                                    function_name,
-                                                    arguments,
-                                                )
-
-                                            result = planning_tool_handlers[
-                                                function_name
-                                            ](
-                                                **arguments
-                                            )
-
-                                        # Add result to memory
-                                        self.short_memory.add(
-                                            role="Tool Executor",
-                                            content=f"{function_name} result: {result}",
-                                        )
-
-                                        # Visualize result for important tools
-                                        if function_name in [
-                                            "subtask_done",
-                                            "complete_task",
-                                        ]:
-                                            self._visualize_function_call(
-                                                function_name,
-                                                arguments,
-                                                result,
-                                            )
-
-                                        # Check if subtask is done
-                                        if (
-                                            function_name
-                                            == "subtask_done"
-                                        ):
-                                            if (
-                                                arguments.get(
-                                                    "task_id"
-                                                )
-                                                == subtask_id
-                                            ):
-                                                subtask_done = True
-                                                # Show subtask completion
-                                                if self.print_on:
-                                                    status = (
-                                                        "completed"
-                                                        if arguments.get(
-                                                            "success"
-                                                        )
-                                                        else "failed"
-                                                    )
-                                                    formatter.print_panel(
-                                                        f"Subtask {subtask_id} marked as {status}\n\nSummary: {arguments.get('summary', 'N/A')}",
-                                                        title=f"Subtask {status.title()}: {subtask_id}",
-                                                    )
-                                                break
-
-                                        # Check if main task is complete
-                                        if (
-                                            function_name
-                                            == "complete_task"
-                                        ):
-                                            # Task is complete, exit all loops
-                                            return self._generate_final_summary(
-                                                streaming_callback=streaming_callback
-                                            )
-                                    else:
-                                        # Collect regular tool calls for batch visualization and execution
-                                        regular_tool_calls.append(
-                                            tool_call
-                                        )
-
-                            # Handle all regular tools together
-                            if regular_tool_calls and exists(
-                                self.tools
-                            ):
-                                # Visualize all regular tool calls first
-                                if self.print_on:
-                                    for (
-                                        tool_call
-                                    ) in regular_tool_calls:
-                                        func_name = tool_call.get(
-                                            "function", {}
-                                        ).get("name", "Unknown")
-                                        func_args = {}
-                                        try:
-                                            func_args = json.loads(
-                                                tool_call.get(
-                                                    "function", {}
-                                                ).get(
-                                                    "arguments", "{}"
-                                                )
-                                            )
-                                        except (
-                                            json.JSONDecodeError,
-                                            AttributeError,
-                                        ):
-                                            pass
-                                        self._visualize_function_call(
-                                            func_name, func_args
-                                        )
-
-                                # Execute all regular tools together
-                                try:
-                                    tool_output = self.tool_struct.execute_function_calls_from_api_response(
-                                        regular_tool_calls
-                                    )
-
-                                    # Add to memory
-                                    self.short_memory.add(
-                                        role="Tool Executor",
-                                        content=format_data_structure(
-                                            tool_output
-                                        ),
-                                    )
-
-                                    # Display tool execution results using formatter
-                                    if self.print_on:
-                                        tool_names = [
-                                            tc.get(
-                                                "function", {}
-                                            ).get("name", "Unknown")
-                                            for tc in regular_tool_calls
-                                        ]
-                                        tool_display = f"Tools Executed: {', '.join(tool_names)}\n\n"
-                                        tool_display += f"Output:\n{format_data_structure(tool_output)}"
-
-                                        formatter.print_panel(
-                                            tool_display,
-                                            title="Tool Execution Results",
-                                        )
-
-                                    # Handle tool call summary if enabled
-                                    if self.tool_call_summary is True:
-                                        temp_llm = (
-                                            self.temp_llm_instance_for_tool_summary()
-                                        )
-                                        tool_response = temp_llm.run(
-                                            f"""
-                                            Please analyze and summarize the following tool execution output in a clear and concise way. 
-                                            Focus on the key information and insights that would be most relevant to the user's original request.
-                                            If there are any errors or issues, highlight them prominently.
-                                            
-                                            Tool Output:
-                                            {tool_output}
-                                            """
-                                        )
-                                        self.short_memory.add(
-                                            role=self.agent_name,
-                                            content=tool_response,
-                                        )
-
-                                except Exception as e:
-                                    # Fallback to tool_execution_retry if direct execution fails
-                                    if self.verbose:
-                                        logger.warning(
-                                            f"Direct tool execution failed, using retry mechanism: {e}"
-                                        )
-                                    self.tool_execution_retry(
-                                        regular_tool_calls,
-                                        subtask_iterations,
-                                    )
-                        else:
-                            # Handle regular tool execution
-                            if exists(self.tools):
-                                # Visualize tool calls before execution
-                                if (
-                                    isinstance(response, list)
-                                    and self.print_on
-                                ):
-                                    for tool_call in response:
-                                        if isinstance(
-                                            tool_call, dict
-                                        ):
-                                            func_name = tool_call.get(
-                                                "function", {}
-                                            ).get("name", "Unknown")
-                                            func_args = {}
-                                            try:
-                                                func_args = json.loads(
-                                                    tool_call.get(
-                                                        "function", {}
-                                                    ).get(
-                                                        "arguments",
-                                                        "{}",
-                                                    )
-                                                )
-                                            except (
-                                                json.JSONDecodeError,
-                                                AttributeError,
-                                            ):
-                                                pass
-
-                                            # Only visualize if it's not a planning tool
-                                            if (
-                                                func_name
-                                                not in planning_tool_handlers
-                                            ):
-                                                self._visualize_function_call(
-                                                    func_name,
-                                                    func_args,
-                                                )
-
-                                # Execute tools and capture output for display
-                                try:
-                                    tool_output = self.tool_struct.execute_function_calls_from_api_response(
-                                        response
-                                    )
-
-                                    # Add to memory
-                                    self.short_memory.add(
-                                        role="Tool Executor",
-                                        content=format_data_structure(
-                                            tool_output
-                                        ),
-                                    )
-
-                                    # Display tool execution results using formatter
-                                    if self.print_on:
-                                        tool_display = f"Tool Output:\n{format_data_structure(tool_output)}"
-                                        formatter.print_panel(
-                                            tool_display,
-                                            title="Tool Execution Results",
-                                        )
-
-                                    # Handle tool call summary if enabled
-                                    if self.tool_call_summary is True:
-                                        temp_llm = (
-                                            self.temp_llm_instance_for_tool_summary()
-                                        )
-                                        tool_response = temp_llm.run(
-                                            f"""
-                                            Please analyze and summarize the following tool execution output in a clear and concise way. 
-                                            Focus on the key information and insights that would be most relevant to the user's original request.
-                                            If there are any errors or issues, highlight them prominently.
-                                            
-                                            Tool Output:
-                                            {tool_output}
-                                            """
-                                        )
-                                        self.short_memory.add(
-                                            role=self.agent_name,
-                                            content=tool_response,
-                                        )
-
-                                except Exception as e:
-                                    # Fallback to tool_execution_retry if direct execution fails
-                                    if self.verbose:
-                                        logger.warning(
-                                            f"Direct tool execution failed, using retry mechanism: {e}"
-                                        )
-                                    self.tool_execution_retry(
-                                        response, subtask_iterations
-                                    )
-
-                        # Check if subtask status changed
-                        if (
-                            subtask_id in self.subtask_status
-                            and self.subtask_status[subtask_id]
-                            in ["completed", "failed"]
-                        ):
-                            subtask_done = True
-
-                        # Prevent infinite thinking loops
-                        if (
-                            self.think_call_count
-                            >= self.max_consecutive_thinks
-                        ):
-                            if self.print_on:
-                                formatter.print_panel(
-                                    f"Too many consecutive think calls ({self.think_call_count}). Forcing action.",
-                                    title="Loop Prevention",
-                                )
-                            if self.verbose:
-                                logger.warning(
-                                    f"Too many consecutive think calls ({self.think_call_count}). Forcing action."
-                                )
-                            # Force action by adding a prompt
-                            self.short_memory.add(
-                                role="system",
-                                content="You have been thinking too much. Take action now using available tools.",
-                            )
-
-                    except Exception as e:
-                        if self.verbose:
-                            logger.error(
-                                f"Error in subtask execution loop: {e}"
-                            )
-                        # Continue to next iteration
-
-                if not subtask_done:
-                    if self.print_on:
-                        formatter.print_panel(
-                            f"Subtask {subtask_id} not completed after {max_subtask_loops} iterations",
-                            title="Subtask Timeout",
-                        )
-                    if self.verbose:
-                        logger.warning(
-                            f"Subtask {subtask_id} not completed after {max_subtask_loops} iterations"
-                        )
-
-            # Phase 3: Final Summary
-            if self.print_on:
-                formatter.print_panel(
-                    "All subtasks completed. Generating final summary...",
-                    title="Autonomous Loop: Summary Phase",
-                )
-
-            return self._generate_final_summary(
-                streaming_callback=streaming_callback
-            )
-
-        except Exception as error:
-            self._handle_run_error(error)
+                transcript.append_user(content)
+        return transcript
+
+    def _memory_and_transcript(
+        self, role: str, content: Any, transcript: Transcript
+    ) -> None:
+        """Record a turn in both ``short_memory`` and the live transcript."""
+        self.short_memory.add(role=role, content=content)
+        if role == self.agent_name:
+            transcript.append_assistant_text(content)
+        else:
+            transcript.append_user(content)
 
     def _generate_final_summary(
         self,
         streaming_callback: Optional[Callable[[str], None]] = None,
-    ) -> str:
+        messages: Optional[List[dict]] = None,
+    ) -> Any:
         """
         Generate a comprehensive final summary of the autonomous task execution.
 
+        Args:
+            streaming_callback: Optional callback receiving streaming tokens.
+            messages: The autonomous loop's structured transcript. When given,
+                the summary is requested against the real conversation - with
+                its tool calls and tool results intact - rather than against a
+                flattened string rendering of it.
+
         Returns:
-            str: Comprehensive summary
+            Any: The conversation shaped by ``output_type``, on every path.
         """
         summary_prompt = get_summary_prompt()
         self.short_memory.add(
@@ -2981,53 +1563,37 @@ class Agent:
         )
 
         try:
-            task_prompt = self.short_memory.return_history_as_string()
+            if messages is not None:
+                call_kwargs = {
+                    "task": None,
+                    "messages": messages
+                    + [{"role": "user", "content": summary_prompt}],
+                }
+            else:
+                call_kwargs = {
+                    "task": self.short_memory.return_history_as_string()
+                }
+
             response = self.call_llm(
-                task=task_prompt,
                 current_loop=0,
                 streaming_callback=streaming_callback,
+                **call_kwargs,
             )
 
-            response = self.parse_llm_output(response)
+            response = self.tool_manager.parse_llm_output(response)
 
             # Add LLM response to memory
             self.short_memory.add(
                 role=self.agent_name, content=str(response)
             )
 
-            # Check if complete_task was called
-            if isinstance(response, list):
-                for tool_call in response:
-                    if (
-                        isinstance(tool_call, dict)
-                        and tool_call.get("function", {}).get("name")
-                        == "complete_task"
-                    ):
-                        arguments = json.loads(
-                            tool_call["function"]["arguments"]
-                        )
-
-                        # Visualize final task completion
-                        self._visualize_function_call(
-                            "complete_task", arguments
-                        )
-
-                        result = self._complete_task_tool(**arguments)
-
-                        # Add result to memory
-                        self.short_memory.add(
-                            role="Tool Executor",
-                            content=f"complete_task result: {result}",
-                        )
-
-                        # Show comprehensive summary
-                        if self.print_on:
-                            formatter.print_panel(
-                                result,
-                                title="Task Completion Summary",
-                            )
-
-                        return result
+            if (
+                self.tool_manager.handle_complete_task(response)
+                is not None
+            ):
+                return history_output_formatter(
+                    self.short_memory, type=self.output_type
+                )
 
             # If complete_task wasn't called, generate summary manually
             comprehensive_summary = f"""Task Execution Summary
@@ -3096,17 +1662,17 @@ Subtask Breakdown:
             Exception: If an error occurs during the asynchronous operation.
         """
         try:
+            # Positional, in run()'s order: keywords plus *args made every extra positional collide with task.
             return await asyncio.to_thread(
                 self.run,
-                task=task,
-                img=img,
+                task,
+                img,
                 *args,
                 **kwargs,
             )
         except Exception as error:
-            await self._handle_run_error(
-                error
-            )  # Ensure this is also async if needed
+            # Not awaited: _handle_run_error is sync and always raises, as the other seven call sites assume.
+            self._handle_run_error(error)
 
     def __call__(
         self,
@@ -3203,46 +1769,39 @@ Subtask Breakdown:
             )
             raise error
 
-    async def run_concurrent(self, task: str, *args, **kwargs):
-        """
-        Run a task concurrently.
-
-        Args:
-            task (str): The task to run.
-        """
-        try:
-            logger.info(f"Running concurrent task: {task}")
-            future = self.executor.submit(
-                self.run, task, *args, **kwargs
-            )
-            result = await asyncio.wrap_future(future)
-            logger.info(f"Completed task: {result}")
-            return result
-        except Exception as error:
-            logger.error(
-                f"Error running agent: {error} while running concurrently"
-            )
-
     def run_concurrent_tasks(self, tasks: List[str], *args, **kwargs):
         """
         Run multiple tasks concurrently.
 
         Args:
             tasks (List[str]): A list of tasks to run.
+
+        Returns:
+            List[Any]: One result per task, in the order the tasks were given.
+
+        Raises:
+            Exception: Whatever the underlying runs raise. Failures are logged
+                and re-raised rather than swallowed, so a caller never receives
+                None in place of results.
         """
         try:
             logger.info(f"Running concurrent tasks: {tasks}")
-            futures = [
-                self.executor.submit(
-                    self.run, task=task, *args, **kwargs
-                )
-                for task in tasks
-            ]
-            results = [future.result() for future in futures]
+            # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
+            with ContextThreadPoolExecutor(
+                max_workers=os.cpu_count()
+            ) as executor:
+                futures = [
+                    executor.submit(
+                        self.run, *args, task=task, **kwargs
+                    )
+                    for task in tasks
+                ]
+                results = [future.result() for future in futures]
             logger.info(f"Completed tasks: {results}")
             return results
         except Exception as error:
             logger.error(f"Error running concurrent tasks: {error}")
+            raise
 
     def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
         """
@@ -3263,6 +1822,54 @@ Subtask Breakdown:
         except Exception as error:
             logger.info(f"Error running bulk run: {error}", "red")
 
+    def _default_context_length(self) -> int:
+        """
+        Returns the maximum input token window for the agent's underlying model.
+
+        Attempts to determine the input (context) window based on the current model name by checking
+        for the "max_input_tokens" property. If the value can't be determined (e.g., unknown model or
+        missing field), defaults to 16000.
+
+        Returns:
+            int: The maximum number of input tokens for the model. Returns 16000 if undetermined.
+
+        Notes:
+            - Do NOT use ``get_max_tokens`` for context (input window). That reports max *output* tokens,
+              which may not correspond to available context for input (e.g., 32768 for gpt-4.1 output, but
+              over a million for certain input windows).
+        """
+        try:
+            return (
+                get_model_info(self.model_name).get(
+                    "max_input_tokens"
+                )
+                or 16000
+            )
+        except Exception:
+            return 16000
+
+    def _default_max_tokens(self) -> int:
+        """
+        Returns the maximum output token count for the agent's underlying model.
+
+        Determines the model's output window (number of output tokens) by checking for
+        the "max_output_tokens" property in the model info. Returns 16000 as default if the
+        property does not exist or can't be determined.
+
+        Returns:
+            int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
+        """
+        # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
+        try:
+            return (
+                get_model_info(self.model_name).get(
+                    "max_output_tokens"
+                )
+                or 16000
+            )
+        except Exception:
+            return 16000
+
     def reliability_check(self):
 
         if self.system_prompt is None:
@@ -3275,9 +1882,12 @@ Subtask Breakdown:
                 "The agent name is not set. Please set an agent name to improve reliability."
             )
 
-        if self.max_loops is None or self.max_loops == 0:
+        if self.max_loops != "auto" and (
+            not isinstance(self.max_loops, int) or self.max_loops <= 0
+        ):
             raise AgentInitializationError(
-                "Max loops is not provided or is set to 0. Please set max loops to 1 or more."
+                "max_loops must be a positive integer or 'auto', "
+                f"got {self.max_loops!r}."
             )
 
         # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
@@ -3296,7 +1906,8 @@ Subtask Breakdown:
                 "Context length is not provided. Please set a valid context length."
             )
 
-        if self.tools_list_dictionary is not None:
+        # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
+        if self.tools_list_dictionary:
             if not supports_function_calling(self.model_name):
                 logger.warning(
                     f"The model '{self.model_name}' does not support function calling. Please use a model that supports function calling."
@@ -3384,7 +1995,7 @@ Subtask Breakdown:
 
             # Log saved state information if verbose
             if self.verbose:
-                self._log_saved_state_info(full_path)
+                self._log_state_info(full_path, saved=True)
 
             logger.info(
                 f"Successfully saved agent state to: {full_path}"
@@ -3444,56 +2055,6 @@ Subtask Breakdown:
         except Exception as e:
             logger.warning(f"Error saving additional components: {e}")
 
-    def enable_autosave(self, interval: int = 300) -> None:
-        """
-        Enable automatic saving of agent state using SafeStateManager at specified intervals.
-
-        Args:
-            interval (int): Time between saves in seconds. Defaults to 300 (5 minutes).
-        """
-
-        def autosave_loop():
-            while self.autosave:
-                try:
-                    self.save()
-                    if self.verbose:
-                        logger.debug(
-                            f"Autosaved agent state (interval: {interval}s)"
-                        )
-                except Exception as e:
-                    logger.error(f"Autosave failed: {e}")
-                time.sleep(interval)
-
-        self.autosave = True
-        self.autosave_thread = threading.Thread(
-            target=autosave_loop,
-            daemon=True,
-            name=f"{self.agent_name}_autosave",
-        )
-        self.autosave_thread.start()
-        logger.info(f"Enabled autosave with {interval}s interval")
-
-    def disable_autosave(self) -> None:
-        """Disable automatic saving of agent state."""
-        if hasattr(self, "autosave"):
-            self.autosave = False
-            if hasattr(self, "autosave_thread"):
-                self.autosave_thread.join(timeout=1)
-                delattr(self, "autosave_thread")
-            logger.info("Disabled autosave")
-
-    def cleanup(self) -> None:
-        """Cleanup method to be called on exit. Ensures final state is saved."""
-        try:
-            if getattr(self, "autosave", False):
-                logger.info(
-                    "Performing final autosave before exit..."
-                )
-                self.disable_autosave()
-                self.save()
-        except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
-
     def load(self, file_path: str = None) -> None:
         """
         Load agent state from a file using SafeStateManager.
@@ -3534,7 +2095,7 @@ Subtask Breakdown:
             self._reinitialize_after_load()
 
             if self.verbose:
-                self._log_loaded_state_info(resolved_path)
+                self._log_state_info(resolved_path, saved=False)
 
         except FileNotFoundError:
             logger.error(f"State file not found: {resolved_path}")
@@ -3561,56 +2122,35 @@ Subtask Breakdown:
                     rules=self.rules,
                 )
 
-            # Reinitialize executor if needed
-            # if not hasattr(self, "executor") or self.executor is None:
-            with ThreadPoolExecutor(
-                max_workers=os.cpu_count()
-            ) as executor:
-                self.executor = executor
+            # Nothing to restore: concurrent work builds its own call-scoped pool.
 
         except Exception as e:
             logger.error(f"Error reinitializing components: {e}")
             raise
 
-    def _log_saved_state_info(self, file_path: str) -> None:
-        """Log information about saved state for debugging"""
+    def _log_state_info(self, file_path: str, *, saved: bool) -> None:
+        """Log information about saved or loaded state for debugging."""
         try:
             state_dict = SafeLoaderUtils.create_state_dict(self)
             preserved = SafeLoaderUtils.preserve_instances(self)
 
-            logger.info(f"Saved agent state to: {file_path}")
+            verb = "Saved" if saved else "Loaded"
+            logger.info(
+                f"{verb} agent state {'to' if saved else 'from'}: {file_path}"
+            )
             logger.debug(
-                f"Saved {len(state_dict)} configuration values"
+                f"{verb} {len(state_dict)} configuration values"
             )
             logger.debug(
                 f"Preserved {len(preserved)} class instances"
             )
 
             if self.verbose:
-                logger.debug("Preserved instances:")
-                for name, instance in preserved.items():
-                    logger.debug(
-                        f"  - {name}: {type(instance).__name__}"
-                    )
-        except Exception as e:
-            logger.error(f"Error logging state info: {e}")
-
-    def _log_loaded_state_info(self, file_path: str) -> None:
-        """Log information about loaded state for debugging"""
-        try:
-            state_dict = SafeLoaderUtils.create_state_dict(self)
-            preserved = SafeLoaderUtils.preserve_instances(self)
-
-            logger.info(f"Loaded agent state from: {file_path}")
-            logger.debug(
-                f"Loaded {len(state_dict)} configuration values"
-            )
-            logger.debug(
-                f"Preserved {len(preserved)} class instances"
-            )
-
-            if self.verbose:
-                logger.debug("Current class instances:")
+                logger.debug(
+                    "Preserved instances:"
+                    if saved
+                    else "Current class instances:"
+                )
                 for name, instance in preserved.items():
                     logger.debug(
                         f"  - {name}: {type(instance).__name__}"
@@ -3638,28 +2178,6 @@ Subtask Breakdown:
         """
         return SafeLoaderUtils.preserve_instances(self)
 
-    def undo_last(self) -> Tuple[str, str]:
-        """
-        Response the last response and return the previous state
-
-        Example:
-        # Feature 2: Undo functionality
-        response = agent.run("Another task")
-        print(f"Response: {response}")
-        previous_state, message = agent.undo_last()
-        print(message)
-
-        """
-        if len(self.short_memory) < 2:
-            return None, None
-
-        # Remove the last response but keep the last state, short_memory is a dict
-        self.short_memory.delete(-1)
-
-        # Get the previous state
-        previous_state = self.short_memory[-1]
-        return previous_state, f"Restored to {previous_state}"
-
     def save_to_yaml(self, file_path: str) -> None:
         """
         Save the agent to a YAML file
@@ -3676,7 +2194,7 @@ Subtask Breakdown:
             raise error
 
     def get_llm_parameters(self):
-        return str(vars(self.llm))
+        return self.llm_manager.get_parameters()
 
     def update_system_prompt(self, system_prompt: str):
         """Upddate the system message"""
@@ -3690,26 +2208,9 @@ Subtask Breakdown:
         """Update the loop interval"""
         self.loop_interval = loop_interval
 
-    def update_retry_attempts(self, retry_attempts: int):
-        """Update the retry attempts"""
-        self.retry_attempts = retry_attempts
-
-    def update_retry_interval(self, retry_interval: int):
-        """Update the retry interval"""
-        self.retry_interval = retry_interval
-
     def reset(self):
         """Reset the agent"""
         self.short_memory = None
-
-    def receieve_message(self, name: str, message: str):
-        """Receieve a message"""
-        try:
-            message = f"{name}: {message}"
-            return self.short_memory.add(role=name, content=message)
-        except Exception as error:
-            logger.info(f"Error receiving message: {error}")
-            raise error
 
     def send_agent_message(
         self, agent_name: str, message: str, *args, **kwargs
@@ -3722,6 +2223,17 @@ Subtask Breakdown:
         except Exception as error:
             logger.info(f"Error sending agent message: {error}")
             raise error
+
+    def list_tools(self) -> List[str]:
+        """
+        Names of every tool this agent can call.
+
+        See :meth:`swarms.agents.tool_manager.ToolManager.list_tools`.
+
+        Returns:
+            List[str]: Tool names, without duplicates, in a stable order.
+        """
+        return self.tool_manager.list_tools()
 
     def add_tool(self, tool: Callable):
         """Add a single tool to the agent's tools list.
@@ -3799,48 +2311,18 @@ Subtask Breakdown:
             pass
 
     def check_available_tokens(self):
-        # Log the amount of tokens left in the memory and in the task
-        if self.tokenizer is not None:
-            tokens_used = count_tokens(
-                self.short_memory.return_history_as_string()
-            )
-            logger.info(
-                f"Tokens available: {self.context_length - tokens_used}"
-            )
-
-        return tokens_used
-
-    def tokens_checks(self):
-        # Check the tokens available
         tokens_used = count_tokens(
-            self.short_memory.return_history_as_string()
-        )
-        out = self.check_available_tokens()
-
-        logger.info(
-            f"Tokens available: {out} Context Length: {self.context_length} Tokens in memory: {tokens_used}"
+            self.short_memory.return_history_as_string(),
+            model=self.model_name,
         )
 
-        return out
+        limit = self.context_length - tokens_used
 
-    def update_tool_usage(
-        self,
-        step_id: str,
-        tool_name: str,
-        tool_args: dict,
-        tool_response: Any,
-    ):
-        """Update tool usage information for a specific step."""
-        for step in self.agent_output.steps:
-            if step.step_id == step_id:
-                step.response.tool_calls.append(
-                    {
-                        "tool": tool_name,
-                        "arguments": tool_args,
-                        "response": str(tool_response),
-                    }
-                )
-                break
+        if self.verbose:
+            logger.info(
+                f"Tokens available: {limit} You have {tokens_used} tokens used"
+            )
+        return limit
 
     def _serialize_callable(
         self, attr_value: Callable
@@ -3896,8 +2378,7 @@ Subtask Breakdown:
             Dict[str, Any]: A dictionary representation of the class attributes.
         """
 
-        # Create a copy of the dict to avoid mutating the original object
-        # Remove the llm object from the copy since it's not serializable
+        # The llm object is not serializable
         dict_copy = self.__dict__.copy()
         dict_copy.pop("llm", None)
 
@@ -3963,136 +2444,29 @@ Subtask Breakdown:
             f"Model saved to {agent_workspace}/{self.agent_name}.yaml"
         )
 
-    def handle_tool_schema_ops(self):
-        if exists(self.tool_schema):
-            logger.info(f"Tool schema provided: {self.tool_schema}")
-
-            output = self.tool_struct.base_model_to_dict(
-                self.tool_schema, output_str=True
-            )
-
-            # Add the tool schema to the short memory
-            self.short_memory.add(
-                role=self.agent_name, content=output
-            )
-
-        # If multiple base models, then conver them.
-        if exists(self.list_base_models):
-            logger.info(
-                "Multiple base models provided, Automatically converting to OpenAI function"
-            )
-
-            schemas = self.tool_struct.multi_base_models_to_dict(
-                output_str=True
-            )
-
-            # If the output is a string then add it to the memory
-            self.short_memory.add(
-                role=self.agent_name, content=schemas
-            )
-
-        return None
-
     def _stream_with_tool_collection(
         self, stream, tool_calls_out: list
     ):
         """Yield every chunk unchanged while assembling delta.tool_calls fragments.
 
-        Chunks are always forwarded so callers (print_streaming_panel, callback loops,
-        etc.) can handle content deltas as normal.  Tool-call-only chunks carry no
-        delta.content so existing display code skips them harmlessly.
-
-        After the generator is fully consumed, tool_calls_out is populated with the
-        assembled tool call list in the same format returned by output_for_tools, so
-        the auto loop can handle it without any changes.
+        See :meth:`swarms.agents.llm_manager.LLMManager.stream_with_tool_collection`.
         """
-        accumulator: dict = {}
-        for chunk in stream:
-            if hasattr(chunk, "choices") and chunk.choices:
-                delta = chunk.choices[0].delta
-                for tc in getattr(delta, "tool_calls", None) or []:
-                    idx = tc.index
-                    if idx not in accumulator:
-                        accumulator[idx] = {
-                            "id": "",
-                            "type": "function",
-                            "function": {"name": "", "arguments": ""},
-                        }
-                    if tc.id:
-                        accumulator[idx]["id"] = tc.id
-                    if tc.function:
-                        if tc.function.name:
-                            accumulator[idx]["function"][
-                                "name"
-                            ] += tc.function.name
-                        if tc.function.arguments:
-                            accumulator[idx]["function"][
-                                "arguments"
-                            ] += tc.function.arguments
-            yield chunk  # always forward; callers filter on delta.content
-
-        # Populate the output list once the stream is exhausted
-        tool_calls_out.extend(
-            accumulator[i] for i in sorted(accumulator)
+        return self.llm_manager.stream_with_tool_collection(
+            stream, tool_calls_out
         )
 
     def _extract_thinking_from_stream(self, stream):
-        """Yield only content chunks from a stream, displaying thinking chunks as a panel first.
+        """Yield content chunks, flushing any reasoning chunks to a panel first.
 
-        Anthropic (and other reasoning providers) emit thinking deltas before content
-        deltas. This generator consumes all thinking chunks silently, then flushes a
-        single thinking panel to the console, and finally yields every subsequent
-        content chunk unchanged so callers can handle them normally.
+        See :meth:`swarms.agents.llm_manager.LLMManager.extract_thinking_from_stream`.
         """
-        thinking_parts = []
-        thinking_displayed = False
-
-        for chunk in stream:
-            if not hasattr(chunk, "choices") or not chunk.choices:
-                yield chunk
-                continue
-
-            delta = chunk.choices[0].delta
-            reasoning = getattr(delta, "reasoning_content", None)
-
-            if reasoning:
-                thinking_parts.append(reasoning)
-                continue  # swallow the thinking chunk; don't pass to content stream
-
-            # First non-thinking chunk — flush accumulated thinking
-            if thinking_parts and not thinking_displayed:
-                if self.print_on:
-                    title = (
-                        f"{self.agent_name} | Thinking"
-                        if self.agent_name
-                        else "Thinking"
-                    )
-                    formatter.print_thinking_panel(
-                        "".join(thinking_parts), title=title
-                    )
-                thinking_displayed = True
-
-            yield chunk
-
-        # Edge case: stream ended with only thinking and no content chunks
-        if (
-            thinking_parts
-            and not thinking_displayed
-            and self.print_on
-        ):
-            title = (
-                f"{self.agent_name} | Thinking"
-                if self.agent_name
-                else "Thinking"
-            )
-            formatter.print_thinking_panel(
-                "".join(thinking_parts), title=title
-            )
+        return self.llm_manager.extract_thinking_from_stream(stream)
 
     def call_llm(
         self,
         task: str,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
         current_loop: int = 0,
         streaming_callback: Optional[Callable[[str], None]] = None,
         *args,
@@ -4101,427 +2475,55 @@ Subtask Breakdown:
         """
         Calls the LLM with the given task, handling streaming and multimodal inputs.
 
-        This method is the primary interface for calling the language model. It handles
-        three modes of operation: detailed streaming, basic streaming, and non-streaming.
-        It also supports multimodal inputs (images) and provides comprehensive error handling.
-
-        **Streaming Modes:**
-
-        1. **Detailed Streaming (stream=True):**
-           - Streams tokens with full metadata (citations, tokens used, logprobs, etc.)
-           - Each token includes: token_index, model, id, created, object, token,
-             system_fingerprint, finish_reason, citations, provider_specific_fields,
-             service_tier, obfuscation, usage, logprobs, timestamp
-           - Calls streaming_callback with token_info dictionary for each token
-           - Prints final ModelResponseStream with usage statistics
-
-        2. **Basic Streaming (streaming_on=True):**
-           - Streams tokens with formatted panels
-           - Supports three behaviors:
-             - With streaming_callback: Real-time callback for dashboard integration
-             - With print_on=False: Silent streaming (collects chunks only)
-             - With print_on=True: Displays streaming panel with collected chunks
-           - Uses formatter.print_streaming_panel for visual display
-
-        3. **Non-Streaming:**
-           - Direct call to llm.run() with task and optional image
-           - Returns complete response string
-
-        **Multimodal Support:**
-        - If img is provided, passes it to llm.run() for vision-enabled models
-        - Automatically handles image paths, URLs, data URIs, or raw base64-encoded strings
-        - Supports formats: file paths, HTTP/HTTPS URLs, data URIs (data:image/...;base64,...), and raw base64 strings
-
-        **Error Handling:**
-        - Catches AgentLLMError, BadRequestError, InternalServerError, AuthenticationError
-        - Logs errors with model name, task, and full traceback
-        - Re-raises exceptions for upstream handling
+        Delegates to :meth:`swarms.agents.llm_manager.LLMManager.call`, which
+        handles detailed streaming, panel streaming, silent streaming, and
+        non-streaming calls, plus image input and tool-call collection.
 
         Args:
-            task (str): The task or prompt to send to the LLM. This is the main
-                input that the model will process.
-            img (Optional[str]): Optional image input for multimodal processing. Can be a file path, URL,
-                data URI (data:image/...;base64,...), or raw base64-encoded string. Only used with
-                vision-enabled models. Defaults to None.
-            current_loop (int): The current loop iteration number. Used for:
-                - Streaming panel titles
-                - Progress tracking
-                - Error logging context
-                Defaults to 0.
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): Optional image input for multimodal processing. Can be a
+                file path, URL, data URI, or raw base64-encoded string.
+            current_loop (int): The current loop iteration number, used for streaming
+                panel titles and error logging context. Defaults to 0.
             streaming_callback (Optional[Callable[[str], None]]): Optional callback
-                function to receive streaming tokens in real-time. For detailed streaming
-                (stream=True), receives token_info dictionaries. For basic streaming
-                (streaming_on=True), receives token strings. Defaults to None.
+                receiving streaming tokens in real time.
             *args: Additional positional arguments passed directly to llm.run().
             **kwargs: Additional keyword arguments passed directly to llm.run().
-                Note: 'is_last' is automatically filtered out if present.
 
         Returns:
-            str: The complete response from the LLM. For streaming modes, this is
-                the concatenated result of all streamed tokens. For non-streaming,
-                this is the direct response from llm.run().
+            str: The complete response from the LLM, or the assembled tool-call
+                list when the model made tool calls mid-stream.
 
         Raises:
             AgentLLMError: If there's an issue with the language model.
             BadRequestError: If the request is malformed or invalid.
             InternalServerError: If the LLM service encounters an internal error.
             AuthenticationError: If authentication fails with the LLM service.
-            Exception: For other unexpected errors during LLM calls.
-
-        Note:
-            - The method automatically restores original stream setting after execution
-            - Detailed streaming mode requires stream=True and llm.stream attribute
-            - Basic streaming mode requires streaming_on=True and llm.stream attribute
-            - Image processing requires a vision-enabled model
-            - The method uses self.get_current_model() for error logging
 
         Examples:
-            >>> # Non-streaming call
             >>> response = agent.call_llm("What is Python?", current_loop=1)
-            >>> print(response)
-
-            >>> # Streaming with callback
-            >>> def on_token(token):
-            ...     print(f"Received: {token}")
-            >>> response = agent.call_llm(
-            ...     "Tell me a story",
-            ...     streaming_callback=on_token,
-            ...     current_loop=1
-            ... )
-
-            >>> # Multimodal call with file path
-            >>> response = agent.call_llm(
-            ...     "Describe this image",
-            ...     img="path/to/image.jpg",
-            ...     current_loop=1
-            ... )
-
-            >>> # Multimodal call with base64 string
-            >>> import base64
-            >>> with open("image.jpg", "rb") as f:
-            ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
-            >>> response = agent.call_llm(
-            ...     "Describe this image",
-            ...     img=img_base64,
-            ...     current_loop=1
-            ... )
+            >>> response = agent.call_llm("Describe this image", img="chart.png")
         """
+        skills = self._skills_prompt.strip()
+        if skills:
+            if kwargs.get("messages") is not None:
+                kwargs["messages"] = [
+                    {"role": "system", "content": skills},
+                    *kwargs["messages"],
+                ]
+            elif isinstance(task, str):
+                # Not converted to messages: that path drops img and imgs.
+                task = f"{skills}\n\n{task}"
 
-        # Filter out is_last from kwargs if present
-        if "is_last" in kwargs:
-            del kwargs["is_last"]
-
-        try:
-            if self.stream and hasattr(self.llm, "stream"):
-                original_stream = self.llm.stream
-                self.llm.stream = True
-
-                if img is not None:
-                    streaming_response = self.llm.run(
-                        task=task, img=img, *args, **kwargs
-                    )
-                else:
-                    streaming_response = self.llm.run(
-                        task=task, *args, **kwargs
-                    )
-
-                if hasattr(
-                    streaming_response, "__iter__"
-                ) and not isinstance(streaming_response, str):
-                    complete_response = ""
-                    token_count = 0
-                    final_chunk = None
-                    first_chunk = None
-                    tool_calls_out: list = []
-
-                    for chunk in self._stream_with_tool_collection(
-                        self._extract_thinking_from_stream(
-                            streaming_response
-                        ),
-                        tool_calls_out,
-                    ):
-                        if first_chunk is None:
-                            first_chunk = chunk
-
-                        if (
-                            hasattr(chunk, "choices")
-                            and chunk.choices[0].delta.content
-                        ):
-                            content = chunk.choices[0].delta.content
-                            complete_response += content
-                            token_count += 1
-
-                            # Schema per token outputted
-                            token_info = {
-                                "token_index": token_count,
-                                "model": getattr(
-                                    chunk,
-                                    "model",
-                                    self.get_current_model(),
-                                ),
-                                "id": getattr(chunk, "id", ""),
-                                "created": getattr(
-                                    chunk, "created", int(time.time())
-                                ),
-                                "object": getattr(
-                                    chunk,
-                                    "object",
-                                    "chat.completion.chunk",
-                                ),
-                                "token": content,
-                                "system_fingerprint": getattr(
-                                    chunk, "system_fingerprint", ""
-                                ),
-                                "finish_reason": chunk.choices[
-                                    0
-                                ].finish_reason,
-                                "citations": getattr(
-                                    chunk, "citations", None
-                                ),
-                                "provider_specific_fields": getattr(
-                                    chunk,
-                                    "provider_specific_fields",
-                                    None,
-                                ),
-                                "service_tier": getattr(
-                                    chunk, "service_tier", "default"
-                                ),
-                                "obfuscation": getattr(
-                                    chunk, "obfuscation", None
-                                ),
-                                "usage": getattr(
-                                    chunk, "usage", None
-                                ),
-                                "logprobs": chunk.choices[0].logprobs,
-                                "timestamp": time.time(),
-                            }
-
-                            print(f"ResponseStream {token_info}")
-
-                            if streaming_callback is not None:
-                                streaming_callback(token_info)
-
-                        final_chunk = chunk
-
-                    # Final ModelResponse to stream
-                    if (
-                        final_chunk
-                        and hasattr(final_chunk, "usage")
-                        and final_chunk.usage
-                    ):
-                        usage = final_chunk.usage
-                        print(
-                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
-                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
-                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
-                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
-                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
-                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
-                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
-                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
-                            f"provider_specific_fields=None, "
-                            f"usage=Usage(completion_tokens={usage.completion_tokens}, "
-                            f"prompt_tokens={usage.prompt_tokens}, "
-                            f"total_tokens={usage.total_tokens}, "
-                            f"completion_tokens_details=CompletionTokensDetailsWrapper("
-                            f"accepted_prediction_tokens={usage.completion_tokens_details.accepted_prediction_tokens}, "
-                            f"audio_tokens={usage.completion_tokens_details.audio_tokens}, "
-                            f"reasoning_tokens={usage.completion_tokens_details.reasoning_tokens}, "
-                            f"rejected_prediction_tokens={usage.completion_tokens_details.rejected_prediction_tokens}, "
-                            f"text_tokens={usage.completion_tokens_details.text_tokens}), "
-                            f"prompt_tokens_details=PromptTokensDetailsWrapper("
-                            f"audio_tokens={usage.prompt_tokens_details.audio_tokens}, "
-                            f"cached_tokens={usage.prompt_tokens_details.cached_tokens}, "
-                            f"text_tokens={usage.prompt_tokens_details.text_tokens}, "
-                            f"image_tokens={usage.prompt_tokens_details.image_tokens})))"
-                        )
-                    else:
-                        print(
-                            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
-                            f"created={getattr(final_chunk, 'created', 'N/A')}, "
-                            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
-                            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
-                            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
-                            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
-                            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
-                            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
-                            f"provider_specific_fields=None)"
-                        )
-
-                    self.llm.stream = original_stream
-                    return (
-                        tool_calls_out
-                        if tool_calls_out
-                        else complete_response
-                    )
-                else:
-                    self.llm.stream = original_stream
-                    return streaming_response
-
-            elif self.streaming_on and hasattr(self.llm, "stream"):
-                original_stream = self.llm.stream
-                self.llm.stream = True
-
-                if img is not None:
-                    streaming_response = self.llm.run(
-                        task=task, img=img, *args, **kwargs
-                    )
-                else:
-                    streaming_response = self.llm.run(
-                        task=task, *args, **kwargs
-                    )
-
-                # If we get a streaming response, handle it with the new streaming panel
-                if hasattr(
-                    streaming_response, "__iter__"
-                ) and not isinstance(streaming_response, str):
-                    import itertools
-
-                    tool_calls_out: list = []
-
-                    # Check if streaming_callback is provided (for ConcurrentWorkflow dashboard integration)
-                    if streaming_callback is not None:
-                        # Real-time callback streaming — thinking panel is printed as a
-                        # side effect inside _extract_thinking_from_stream; no Live context
-                        # is active so there is no interleaving risk.
-                        streaming_response = (
-                            self._stream_with_tool_collection(
-                                self._extract_thinking_from_stream(
-                                    streaming_response
-                                ),
-                                tool_calls_out,
-                            )
-                        )
-                        chunks = []
-                        for chunk in streaming_response:
-                            if (
-                                hasattr(chunk, "choices")
-                                and chunk.choices[0].delta.content
-                            ):
-                                content = chunk.choices[
-                                    0
-                                ].delta.content
-                                chunks.append(content)
-                                streaming_callback(content)
-                        complete_response = "".join(chunks)
-                    # Check print_on parameter for different streaming behaviors
-                    elif self.print_on is False:
-                        # Silent streaming - no printing, just collect chunks
-                        streaming_response = (
-                            self._stream_with_tool_collection(
-                                streaming_response, tool_calls_out
-                            )
-                        )
-                        chunks = []
-                        for chunk in streaming_response:
-                            if (
-                                hasattr(chunk, "choices")
-                                and chunk.choices[0].delta.content
-                            ):
-                                content = chunk.choices[
-                                    0
-                                ].delta.content
-                                chunks.append(content)
-                        complete_response = "".join(chunks)
-                    else:
-                        # Print-streaming path uses Rich's Live display. We MUST print the
-                        # thinking panel BEFORE the Live context opens, otherwise the
-                        # console.print() call inside _extract_thinking_from_stream
-                        # interleaves with the Live display and corrupts the terminal.
-                        thinking_parts: list = []
-                        first_content_chunk = None
-                        for chunk in streaming_response:
-                            delta = (
-                                chunk.choices[0].delta
-                                if hasattr(chunk, "choices")
-                                and chunk.choices
-                                else None
-                            )
-                            reasoning = (
-                                getattr(
-                                    delta, "reasoning_content", None
-                                )
-                                if delta
-                                else None
-                            )
-                            if reasoning:
-                                thinking_parts.append(reasoning)
-                            else:
-                                first_content_chunk = chunk
-                                break
-
-                        if thinking_parts:
-                            title = (
-                                f"{self.agent_name} | Thinking"
-                                if self.agent_name
-                                else "Thinking"
-                            )
-                            formatter.print_thinking_panel(
-                                "".join(thinking_parts), title=title
-                            )
-
-                        # Chain the already-consumed first chunk with the remaining stream,
-                        # then wrap with tool-call collection.
-                        chained = itertools.chain(
-                            (
-                                [first_content_chunk]
-                                if first_content_chunk is not None
-                                else []
-                            ),
-                            streaming_response,
-                        )
-                        streaming_response = (
-                            self._stream_with_tool_collection(
-                                chained, tool_calls_out
-                            )
-                        )
-
-                        # Use the streaming panel to display and collect the response
-                        complete_response = formatter.print_streaming_panel(
-                            streaming_response,
-                            title=f"🤖 Agent: {self.agent_name} Loops: {current_loop}",
-                            style=None,  # Use random color like non-streaming approach
-                            collect_chunks=True,
-                        )
-
-                    # Restore original stream setting
-                    self.llm.stream = original_stream
-
-                    # If the model made tool calls during the stream, return them
-                    # so the auto loop executes them — same format as non-streaming.
-                    return (
-                        tool_calls_out
-                        if tool_calls_out
-                        else complete_response
-                    )
-                else:
-                    # Restore original stream setting
-                    self.llm.stream = original_stream
-                    return streaming_response
-            else:
-                args = {
-                    "task": task,
-                }
-
-                if img is not None:
-                    args["img"] = img
-
-                out = self.llm.run(**args, **kwargs)
-
-                return out
-
-        except (
-            AgentLLMError,
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
-            Exception,
-        ) as e:
-            logger.error(
-                f"Error calling LLM with model '{self.get_current_model()}': {e}. "
-                f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
-            )
-            raise e
+        return self.llm_manager.call(
+            task=task,
+            img=img,
+            imgs=imgs,
+            current_loop=current_loop,
+            streaming_callback=streaming_callback,
+            *args,
+            **kwargs,
+        )
 
     def handle_sop_ops(self):
         # If the user inputs a list of strings for the sop then join them and set the sop
@@ -4539,7 +2541,7 @@ Subtask Breakdown:
         logger.info("SOP Uploaded into the memory")
 
     def load_skills_metadata(
-        self, skills_dir: str
+        self, skills_dir: str = None
     ) -> List[Dict[str, str]]:
         """
         Load skill metadata from SKILL.md files in the skills directory.
@@ -4548,8 +2550,8 @@ Subtask Breakdown:
         loads skill name and description into memory for context-aware activation.
 
         Args:
-            skills_dir: Path to directory containing skill folders.
-                Each folder should contain a SKILL.md file with YAML frontmatter.
+            skills_dir: Path to directory containing skill folders. Defaults to
+                the agent's configured `skills_dir`.
 
         Returns:
             List of skill metadata dicts with 'name', 'description', 'path', 'content'
@@ -4558,97 +2560,7 @@ Subtask Breakdown:
             >>> agent = Agent(skills_dir="./skills")
             >>> # Loads all skills from ./skills/*/SKILL.md
         """
-        skills = []
-
-        if not os.path.exists(skills_dir):
-            logger.warning(
-                f"Skills directory not found: {skills_dir}"
-            )
-            return skills
-
-        for skill_folder in os.listdir(skills_dir):
-            skill_path = os.path.join(skills_dir, skill_folder)
-
-            if not os.path.isdir(skill_path):
-                continue
-
-            skill_file = os.path.join(skill_path, "SKILL.md")
-
-            if not os.path.exists(skill_file):
-                continue
-
-            try:
-                with open(skill_file, "r", encoding="utf-8") as f:
-                    content = f.read()
-
-                # Parse YAML frontmatter
-                if content.startswith("---"):
-                    parts = content.split("---", 2)
-                    if len(parts) >= 3:
-                        frontmatter = yaml.safe_load(parts[1])
-                        skills.append(
-                            {
-                                "name": frontmatter.get(
-                                    "name", skill_folder
-                                ),
-                                "description": frontmatter.get(
-                                    "description", ""
-                                ),
-                                "path": skill_file,
-                                "content": (
-                                    parts[2].strip()
-                                    if len(parts) > 2
-                                    else ""
-                                ),
-                            }
-                        )
-                        logger.info(
-                            f"Loaded skill: {frontmatter.get('name')}"
-                        )
-            except Exception as e:
-                logger.warning(
-                    f"Failed to load skill from {skill_file}: {e}"
-                )
-                continue
-
-        return skills
-
-    def _build_skills_prompt(
-        self, skills: List[Dict[str, str]]
-    ) -> str:
-        """
-        Build the skills section to append to system prompt.
-
-        Loads full skill content (YAML frontmatter + markdown instructions)
-        into the system prompt for immediate availability.
-
-        Args:
-            skills: List of skill metadata dicts from load_skills_metadata()
-
-        Returns:
-            Formatted skills prompt section to append to system_prompt
-
-        Example:
-            >>> skills = [{"name": "financial-analysis", "description": "DCF modeling", "content": "..."}]
-            >>> prompt = agent._build_skills_prompt(skills)
-            >>> # Returns formatted skills section with full instructions
-        """
-        if not skills:
-            return ""
-
-        prompt = "\n\n# Available Skills\n\n"
-        prompt += (
-            "You have access to the following specialized skills. "
-        )
-        prompt += "Follow their instructions when relevant:\n\n"
-
-        for skill in skills:
-            prompt += f"## {skill['name']}\n\n"
-            prompt += f"**Description**: {skill['description']}\n\n"
-            prompt += skill["content"]
-            prompt += "\n\n---\n\n"
-
-        return prompt
+        return self.skills.load_metadata(skills_dir)
 
     def load_full_skill(self, skill_name: str) -> Optional[str]:
         """
@@ -4669,24 +2581,9 @@ Subtask Breakdown:
             >>> content = agent.load_full_skill("financial-analysis")
             >>> # Returns full markdown instructions for the skill
         """
-        for skill in self.skills_metadata:
-            if skill["name"] == skill_name:
-                try:
-                    with open(
-                        skill["path"], "r", encoding="utf-8"
-                    ) as f:
-                        content = f.read()
-                    # Return everything after frontmatter
-                    if content.startswith("---"):
-                        parts = content.split("---", 2)
-                        if len(parts) >= 3:
-                            return parts[2].strip()
-                except Exception as e:
-                    logger.error(
-                        f"Failed to load full skill {skill_name}: {e}"
-                    )
-        return None
+        return self.skills.load_full_skill(skill_name)
 
+    @trace_run("Agent.run", input_params=("task", "img", "imgs"))
     def run(
         self,
         task: Optional[Union[str, Any]] = None,
@@ -4695,6 +2592,7 @@ Subtask Breakdown:
         correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         n: int = 1,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -4722,6 +2620,10 @@ Subtask Breakdown:
             correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
             n (int): How many outputs to generate (number of runs). Defaults to 1.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
+                e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
+                They are added to the agent's conversation and sent as the context
+                this task continues from. Defaults to the agent's own ``messages``.
             *args: Additional positional arguments for extensibility.
             **kwargs: Additional keyword arguments passed to LLM/tool execution.
 
@@ -4745,17 +2647,21 @@ Subtask Breakdown:
             >>> with open("image.jpg", "rb") as f:
             ...     img_base64 = base64.b64encode(f.read()).decode("utf-8")
             >>> agent.run("Describe this image", img=img_base64)
+            >>> agent.run(
+            ...     "And what did I just ask you?",
+            ...     messages=[{"role": "user", "content": "Name three primes."}],
+            ... )
         """
 
-        # # If interactive mode is enabled and no task is provided, prompt the user
-        # if self.interactive and (
-        #     task is None
-        #     or (isinstance(task, str) and task.strip() == "")
-        if (
-            task is None
-            or isinstance(task, str)
-            and task.strip() == ""
+        # Outside interactive mode, fail fast instead of blocking on stdin
+        if task is None or (
+            isinstance(task, str) and task.strip() == ""
         ):
+            if not self.interactive:
+                raise ValueError(
+                    "No task provided. Pass a non-empty `task`, or set "
+                    "interactive=True to be prompted for one."
+                )
             # Always show prompt when asking for initial task, even if print_on is False
             self.pretty_print(
                 "Interactive mode enabled. Please enter your initial task:",
@@ -4767,8 +2673,7 @@ Subtask Breakdown:
                     "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
                 ).strip()
             except (KeyboardInterrupt, EOFError):
-                # Graceful exit on Ctrl+C / Ctrl+D before the first task
-                # has even been entered. No traceback, no error.
+                # Ctrl+C / Ctrl+D before the first task exits without a traceback
                 formatter.console.print()
                 self.pretty_print(
                     "Session ended by user. Goodbye.",
@@ -4787,14 +2692,13 @@ Subtask Breakdown:
         if not isinstance(task, str):
             task = format_data_structure(task)
 
-        # Use instance streaming_callback if not provided in method call
-        # Priority: local callback (method parameter) > instance callback (__init__)
-        # Check both: use local if provided, otherwise fall back to instance callback
-        # If both are None, streaming_callback remains None
         if streaming_callback is None:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
-            # else: both are None, streaming_callback stays None
+
+        # Constructor messages are already in short_memory; per-call ones are not.
+        if messages:
+            self.short_memory.add_messages(messages)
 
         try:
             if self.max_loops == "auto":
@@ -4803,20 +2707,30 @@ Subtask Breakdown:
                     task=task,
                     img=img,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
-            elif imgs is not None:
-                output = self.run_multiple_images(
-                    task=task, imgs=imgs, *args, **kwargs
-                )
             elif n > 1:
-                output = [self.run(task=task) for _ in range(n)]
+                output = [
+                    self._run(
+                        task=task,
+                        img=img,
+                        imgs=imgs,
+                        streaming_callback=streaming_callback,
+                        messages=messages,
+                        *args,
+                        **kwargs,
+                    )
+                    for _ in range(n)
+                ]
             else:
                 output = self._run(
                     task=task,
                     img=img,
+                    imgs=imgs,
                     streaming_callback=streaming_callback,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
@@ -4888,7 +2802,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Any extra kwargs forwarded to _run().
+            **kwargs: Any extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -4899,7 +2813,6 @@ Subtask Breakdown:
                 print(token, end="", flush=True)
         """
         import queue
-        import threading
 
         token_queue: queue.Queue = queue.Queue()
         _DONE = object()
@@ -4918,7 +2831,7 @@ Subtask Breakdown:
 
         def _run_thread():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
@@ -4959,7 +2872,7 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
-            **kwargs: Extra kwargs forwarded to _run().
+            **kwargs: Extra kwargs forwarded to run().
 
         Yields:
             str: Individual token strings in generation order.
@@ -4970,7 +2883,6 @@ Subtask Breakdown:
                 print(token, end="", flush=True)
         """
         import asyncio
-        import threading
 
         loop = asyncio.get_running_loop()
         token_queue: asyncio.Queue = asyncio.Queue()
@@ -4994,7 +2906,7 @@ Subtask Breakdown:
 
         def _run_sync():
             try:
-                self._run(
+                self.run(
                     task=task,
                     img=img,
                     streaming_callback=_on_token,
@@ -5034,9 +2946,9 @@ Subtask Breakdown:
         """
         Handles fallback execution when the primary model fails.
 
-        This method attempts to execute the task using fallback models when the primary
-        model encounters an error. It will try each available fallback model in sequence
-        until either the task succeeds or all fallback models are exhausted.
+        Delegates to :meth:`swarms.agents.llm_manager.LLMManager.handle_fallback_execution`,
+        which walks the fallback chain until the task succeeds or every model is
+        exhausted.
 
         Args:
             task (Optional[Union[str, Any]], optional): The task to be executed. Defaults to None.
@@ -5050,73 +2962,17 @@ Subtask Breakdown:
 
         Returns:
             Any: The result of the execution if successful.
-
-        Raises:
-            Exception: If all fallback models fail or no fallback models are available.
         """
-        # Check if fallback models are available
-        if not self.is_fallback_available():
-            if self.verbose:
-                logger.error(
-                    f"Agent Name: {self.agent_name} [NO FALLBACK] failed with model '{self.get_current_model()}' "
-                    f"and no fallback models are configured. Error: {str(original_error)[:100]}{'...' if len(str(original_error)) > 100 else ''}"
-                )
-            self._handle_run_error(original_error)
-            return None
-
-        # Try to switch to the next fallback model
-        if not self.switch_to_next_model():
-            if self.verbose:
-                logger.error(
-                    f"Agent Name: {self.agent_name} [FALLBACK EXHAUSTED] has exhausted all available models. "
-                    f"Tried {len(self.get_available_models())} models: {self.get_available_models()}"
-                )
-            self._handle_run_error(original_error)
-            return None
-
-        # Log fallback attempt
-        if self.verbose:
-            logger.warning(
-                f"Agent Name: {self.agent_name} [FALLBACK] failed with model '{self.get_current_model()}'. "
-                f"Switching to fallback model '{self.get_current_model()}' (attempt {self.current_model_index + 1}/{len(self.get_available_models())})"
-            )
-
-        try:
-            # Recursive call to run() with the new model
-            result = self.run(
-                task=task,
-                img=img,
-                imgs=imgs,
-                correct_answer=correct_answer,
-                streaming_callback=streaming_callback,
-                *args,
-                **kwargs,
-            )
-
-            if self.verbose:
-                # Log successful completion with fallback model
-                logger.info(
-                    f"Agent Name: {self.agent_name} [FALLBACK SUCCESS] successfully completed task "
-                    f"using fallback model '{self.get_current_model()}'"
-                )
-            return result
-
-        except Exception as fallback_error:
-            logger.error(
-                f"Agent Name: {self.agent_name} Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
-            )
-
-            # Try the next fallback model recursively
-            return self._handle_fallback_execution(
-                task=task,
-                img=img,
-                imgs=imgs,
-                correct_answer=correct_answer,
-                streaming_callback=streaming_callback,
-                original_error=original_error,
-                *args,
-                **kwargs,
-            )
+        return self.llm_manager.handle_fallback_execution(
+            task=task,
+            img=img,
+            imgs=imgs,
+            correct_answer=correct_answer,
+            streaming_callback=streaming_callback,
+            original_error=original_error,
+            *args,
+            **kwargs,
+        )
 
     def run_batched(
         self,
@@ -5126,98 +2982,35 @@ Subtask Breakdown:
         **kwargs,
     ):
         """
-        Run a batch of tasks concurrently.
+        Run a batch of tasks, one after another.
 
         Args:
             tasks (List[str]): List of tasks to run.
-            imgs (List[str], optional): List of images to run. Defaults to None.
+            imgs (List[str], optional): One image per task, paired by position.
+                Omit to run the tasks without images. Defaults to None.
             *args: Additional positional arguments to be passed to the execution method.
             **kwargs: Additional keyword arguments to be passed to the execution method.
 
         Returns:
             List[Any]: List of results from each task execution.
         """
+        # Index imgs rather than zip: zip rebound imgs and raised when it was None.
+        if imgs is None:
+            return [
+                self.run(task=task, *args, **kwargs) for task in tasks
+            ]
+
+        if len(imgs) != len(tasks):
+            raise ValueError(
+                f"run_batched got {len(tasks)} tasks and {len(imgs)} images; "
+                "pass one image per task, or omit imgs entirely. Zipping them "
+                "would silently drop the extras."
+            )
+
         return [
-            self.run(task=task, imgs=imgs, *args, **kwargs)
-            for task, imgs in zip(tasks, imgs)
+            self.run(task=task, img=img, *args, **kwargs)
+            for task, img in zip(tasks, imgs)
         ]
-
-    def handle_artifacts(
-        self, text: str, file_output_path: str, file_extension: str
-    ) -> None:
-        """
-        Handle creating and saving artifacts with error handling.
-        Artifacts are saved in the agent-specific workspace directory if the path is relative.
-
-        Args:
-            text (str): The content to save as an artifact.
-            file_output_path (str): The path where the artifact should be saved. If relative,
-                                  will be saved in the agent-specific workspace directory.
-            file_extension (str): The file extension for the artifact (e.g., '.md', '.txt', '.pdf').
-        """
-        try:
-            # Ensure file_extension starts with a dot
-            if not file_extension.startswith("."):
-                file_extension = "." + file_extension
-
-            # Get agent-specific workspace directory
-            agent_workspace = self._get_agent_workspace_dir()
-
-            # If file_output_path doesn't have an extension, treat it as a directory
-            # and create a default filename based on timestamp
-            if not os.path.splitext(file_output_path)[1]:
-                timestamp = time.strftime("%Y%m%d_%H%M%S")
-                filename = f"artifact_{timestamp}{file_extension}"
-                # If path is relative, use agent workspace; otherwise use as-is
-                if os.path.isabs(file_output_path):
-                    full_path = os.path.join(
-                        file_output_path, filename
-                    )
-                else:
-                    full_path = os.path.join(
-                        agent_workspace, file_output_path, filename
-                    )
-            else:
-                # If path is absolute, use as-is; otherwise use agent workspace
-                if os.path.isabs(file_output_path):
-                    full_path = file_output_path
-                else:
-                    full_path = os.path.join(
-                        agent_workspace, file_output_path
-                    )
-
-            # Create the directory if it doesn't exist
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
-            logger.info(f"Creating artifact for file: {full_path}")
-            artifact = Artifact(
-                file_path=full_path,
-                file_type=file_extension,
-                contents=text,
-                edit_count=0,
-            )
-
-            logger.info(
-                f"Saving artifact with extension: {file_extension}"
-            )
-            artifact.save_as(file_extension)
-            logger.success(
-                f"Successfully saved artifact to {full_path}"
-            )
-
-        except ValueError as e:
-            logger.error(
-                f"Invalid input values for artifact: {str(e)}"
-            )
-            raise
-        except IOError as e:
-            logger.error(f"Error saving artifact to file: {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(
-                f"Unexpected error handling artifact: {str(e)}"
-            )
-            raise
 
     def showcase_config(self):
 
@@ -5269,9 +3062,19 @@ Subtask Breakdown:
     ) -> Any:
         """
         Talk to multiple agents.
+
+        Args:
+            agents (List[Union[Any, Callable]]): The agents to talk to.
+            task (str): The message to send to each agent.
+
+        Returns:
+            List[Any]: One entry per agent, in the order the agents were given.
+                An agent whose conversation raised contributes None.
         """
-        # o# Use the existing executor from self.executor or create a new one if needed
-        with ThreadPoolExecutor() as executor:
+        # Scoped to the call, see run_concurrent_tasks for why
+        with ContextThreadPoolExecutor(
+            max_workers=os.cpu_count()
+        ) as executor:
             # Create futures for each agent conversation
             futures = [
                 executor.submit(
@@ -5294,12 +3097,6 @@ Subtask Breakdown:
 
         return outputs
 
-    def get_agent_role(self) -> str:
-        """
-        Get the role of the agent.
-        """
-        return self.role
-
     def pretty_print(self, response: str, loop_count: int):
         """Print the response in a formatted panel"""
         # Handle None response
@@ -5314,476 +3111,8 @@ Subtask Breakdown:
         if self.print_on:
             formatter.print_panel(
                 response,
-                f"Agent Name {self.agent_name} [Max Loops: {loop_count} ]",
+                f"Agent Name {self.agent_name} [Loop: {loop_count}/{self.max_loops}]",
             )
-
-    def parse_llm_output(self, response: Any):
-        """Parse and standardize the output from the LLM.
-
-        Args:
-            response (Any): The response from the LLM in any format
-
-        Returns:
-            str: Standardized string output
-
-        Raises:
-            ValueError: If the response format is unexpected and can't be handled
-        """
-        try:
-
-            if isinstance(response, dict):
-                if "choices" in response:
-                    return response["choices"][0]["message"][
-                        "content"
-                    ]
-                return json.dumps(
-                    response
-                )  # Convert other dicts to string
-
-            elif isinstance(response, BaseModel):
-                response = response.model_dump()
-
-            # Handle List[BaseModel] responses
-            elif (
-                isinstance(response, list)
-                and response
-                and isinstance(response[0], BaseModel)
-            ):
-                return [item.model_dump() for item in response]
-
-            return response
-
-        except AgentChatCompletionResponse as e:
-            logger.error(f"Error parsing LLM output: {e}")
-            raise ValueError(
-                f"Failed to parse LLM output: {type(response)}"
-            )
-
-    def _create_plan_tool(
-        self, task_description: str, steps: List[Dict], **kwargs
-    ) -> str:
-        """
-        Create a detailed plan for task execution.
-
-        This tool is used by the autonomous loop to break down a complex task into
-        manageable subtasks with dependencies, priorities, and execution order.
-
-        **Plan Structure:**
-        Each step in the plan must contain:
-        - step_id (str): Unique identifier for the subtask
-        - description (str): Detailed description of what needs to be done
-        - priority (str, optional): Priority level (e.g., "high", "medium", "low")
-        - dependencies (List[str], optional): List of step_ids that must complete first
-
-        **Plan Storage:**
-        The plan is stored in:
-        - self.autonomous_subtasks: List of all subtasks with their details
-        - self.subtask_status: Dictionary mapping step_id to status ("pending", "completed", "failed")
-        - self.plan_created: Boolean flag indicating plan creation
-
-        **Execution Order:**
-        Subtasks are executed based on:
-        1. Dependencies: Tasks with unmet dependencies are blocked
-        2. Priority: Higher priority tasks are preferred when multiple are available
-        3. Creation order: Used as tiebreaker
-
-        Args:
-            task_description (str): High-level description of the overall task to be completed.
-                This provides context for the subtask planning.
-            steps (List[Dict]): List of step dictionaries, each containing:
-                - step_id (str): Unique identifier for the subtask (required)
-                - description (str): What needs to be accomplished (required)
-                - priority (str): Priority level, e.g., "high", "medium", "low" (optional)
-                - dependencies (List[str]): List of step_ids that must complete first (optional)
-            **kwargs: Additional arguments (currently unused, reserved for future use).
-
-        Returns:
-            str: Confirmation message indicating successful plan creation with the number
-                of subtasks created. Format: "Plan created successfully with {n} subtasks"
-
-        Note:
-            - This method is called automatically by the autonomous loop during planning phase
-            - The plan replaces any existing autonomous_subtasks
-            - All subtasks start with status "pending"
-            - current_subtask_index is reset to 0
-            - If verbose=True, plan creation is logged with step details
-
-        Examples:
-            >>> steps = [
-            ...     {
-            ...         "step_id": "step1",
-            ...         "description": "Set up project structure",
-            ...         "priority": "high",
-            ...         "dependencies": []
-            ...     },
-            ...     {
-            ...         "step_id": "step2",
-            ...         "description": "Implement authentication",
-            ...         "priority": "high",
-            ...         "dependencies": ["step1"]
-            ...     }
-            ... ]
-            >>> result = agent._create_plan_tool(
-            ...     "Build a web application",
-            ...     steps
-            ... )
-            >>> # Returns: "Plan created successfully with 2 subtasks"
-        """
-        if self.verbose:
-            logger.info(f"Creating plan for task: {task_description}")
-
-        # Store the plan
-        self.autonomous_subtasks = []
-        for step in steps:
-            subtask = {
-                "step_id": step.get("step_id", ""),
-                "description": step.get("description", ""),
-                "priority": step.get("priority", "medium"),
-                "dependencies": step.get("dependencies", []),
-                "status": "pending",
-            }
-            self.autonomous_subtasks.append(subtask)
-            self.subtask_status[subtask["step_id"]] = "pending"
-
-        self.plan_created = True
-        self.current_subtask_index = 0
-
-        if self.verbose:
-            logger.info(
-                f"Plan created with {len(steps)} steps: {[s['step_id'] for s in self.autonomous_subtasks]}"
-            )
-        return f"Plan created successfully with {len(steps)} subtasks"
-
-    def _think_tool(
-        self,
-        current_state: str,
-        analysis: str,
-        next_actions: List[str],
-        confidence: float,
-        **kwargs,
-    ) -> str:
-        """
-        Analyze current situation and plan next actions.
-
-        This tool allows the agent to pause and think about the current state of
-        task execution, analyze the situation, and plan the next steps. It's used
-        in the autonomous loop to enable reflective reasoning before taking action.
-
-        **Thinking Process:**
-        1. Agent analyzes the current state of execution
-        2. Provides reasoning about the situation
-        3. Lists potential next actions
-        4. Assigns a confidence level to the analysis
-
-        **Loop Prevention:**
-        The method tracks consecutive think calls using self.think_call_count.
-        If too many consecutive think calls occur (exceeds max_consecutive_thinks),
-        the autonomous loop will force action to prevent infinite thinking loops.
-
-        **Memory Integration:**
-        The thinking result is added to conversation memory with format:
-        "[THINKING] {analysis}\nNext actions: {actions}\nConfidence: {confidence}"
-
-        Args:
-            current_state (str): Description of the current state of task execution.
-                This should include what has been accomplished and what remains.
-            analysis (str): The agent's analysis of the current situation. Should include
-                observations, insights, and reasoning about the current state.
-            next_actions (List[str]): List of potential next actions to take. Each action
-                should be a clear, actionable step the agent can take.
-            confidence (float): Confidence level in the analysis, ranging from 0.0 to 1.0.
-                Higher values indicate greater confidence in the analysis and planned actions.
-            **kwargs: Additional arguments (currently unused, reserved for future use).
-
-        Returns:
-            str: Formatted analysis result string containing:
-                - Analysis confirmation
-                - Confidence level
-                - List of next actions
-
-        Note:
-            - This method increments self.think_call_count to track consecutive calls
-            - Thinking results are automatically added to conversation memory
-            - If verbose=True, thinking details are logged
-            - Excessive thinking is prevented by max_consecutive_thinks limit
-
-        Examples:
-            >>> result = agent._think_tool(
-            ...     current_state="Completed step 1, working on step 2",
-            ...     analysis="Step 2 requires additional data from step 1",
-            ...     next_actions=["Retrieve data from step 1", "Process the data"],
-            ...     confidence=0.85
-            ... )
-            >>> # Returns formatted analysis with confidence and actions
-        """
-        # Increment think call count
-        self.think_call_count += 1
-
-        if self.verbose:
-            logger.info(f"Thinking: {analysis}")
-            logger.info(f"Next actions: {next_actions}")
-            logger.info(f"Confidence: {confidence}")
-
-        result = f"Analysis complete. Confidence: {confidence}. Next actions: {', '.join(next_actions)}"
-
-        # Add to memory
-        self.short_memory.add(
-            role=self.agent_name,
-            content=f"[THINKING] {analysis}\nNext actions: {', '.join(next_actions)}\nConfidence: {confidence}",
-        )
-
-        return result
-
-    def _subtask_done_tool(
-        self, task_id: str, summary: str, success: bool, **kwargs
-    ) -> str:
-        """
-        Mark a subtask as completed and move to the next task in the plan.
-
-        This tool is used in the autonomous loop to signal that a subtask has been
-        completed (either successfully or with failure). It updates the subtask
-        status, stores a summary, and allows the loop to proceed to the next subtask.
-
-        **Status Updates:**
-        - Updates self.subtask_status[task_id] to "completed" or "failed"
-        - Updates the corresponding subtask in self.autonomous_subtasks
-        - Stores the summary in the subtask dictionary
-        - Resets think_call_count to allow fresh thinking for next subtask
-
-        **Progress Tracking:**
-        - Increments current_subtask_index to move to next subtask
-        - The autonomous loop uses this to determine when all subtasks are done
-
-        **Memory Integration:**
-        The completion is added to conversation memory with format:
-        "[SUBTASK DONE] {task_id}: {summary} (Success: {success})"
-
-        Args:
-            task_id (str): The unique identifier (step_id) of the subtask being completed.
-                Must match a step_id from the plan created by _create_plan_tool.
-            summary (str): A summary of what was accomplished in this subtask. Should
-                include key results, findings, or outcomes.
-            success (bool): Whether the subtask was completed successfully.
-                - True: Subtask completed as intended
-                - False: Subtask failed but execution continues
-            **kwargs: Additional arguments (currently unused, reserved for future use).
-
-        Returns:
-            str: Confirmation message indicating the subtask status. Format:
-                "Subtask {task_id} marked as {completed/failed}"
-
-        Note:
-            - This method is called automatically by the autonomous loop when a subtask finishes
-            - The task_id must exist in autonomous_subtasks
-            - Failed subtasks don't block execution but are tracked for final summary
-            - Think call count is reset to prevent carryover thinking loops
-            - If verbose=True, subtask completion is logged
-
-        Examples:
-            >>> result = agent._subtask_done_tool(
-            ...     task_id="step1",
-            ...     summary="Created project structure with 5 directories",
-            ...     success=True
-            ... )
-            >>> # Returns: "Subtask step1 marked as completed"
-            >>> # Updates status and allows loop to proceed to next subtask
-        """
-        if self.verbose:
-            logger.info(f"Completing subtask {task_id}: {summary}")
-
-        # Update subtask status
-        if task_id in self.subtask_status:
-            self.subtask_status[task_id] = (
-                "completed" if success else "failed"
-            )
-
-        # Update subtask in list
-        for subtask in self.autonomous_subtasks:
-            if subtask["step_id"] == task_id:
-                subtask["status"] = (
-                    "completed" if success else "failed"
-                )
-                subtask["summary"] = summary
-                break
-
-        # Reset think call count when subtask is done
-        self.think_call_count = 0
-
-        # Move to next subtask
-        self.current_subtask_index += 1
-
-        if self.verbose:
-            logger.info(
-                f"Subtask {task_id} marked as {'completed' if success else 'failed'}. Moving to next subtask."
-            )
-
-        # Add to memory
-        self.short_memory.add(
-            role=self.agent_name,
-            content=f"[SUBTASK DONE] {task_id}: {summary} (Success: {success})",
-        )
-
-        return f"Subtask {task_id} marked as {'completed' if success else 'failed'}"
-
-    def _complete_task_tool(
-        self,
-        task_id: str,
-        summary: str,
-        success: bool,
-        results: Optional[str] = None,
-        lessons_learned: Optional[str] = None,
-        **kwargs,
-    ) -> str:
-        """
-        Mark the main task as complete and provide comprehensive summary.
-
-        This tool signals that the entire task has been completed and generates
-        a comprehensive summary of the entire execution. It's typically called
-        at the end of the autonomous loop to provide a final report.
-
-        **Summary Generation:**
-        Creates a comprehensive summary including:
-        - Task ID and overall status (Success/Failed)
-        - High-level summary of the entire task
-        - Detailed results (if provided)
-        - Lessons learned (if provided)
-        - Breakdown of all subtasks with their individual statuses
-
-        **Task Verification:**
-        Before completing, the method checks if all subtasks are done. If incomplete
-        subtasks exist, a warning is logged but the task can still be marked complete.
-
-        **Memory Integration:**
-        The comprehensive summary is added to conversation memory and can be
-        retrieved for final output formatting.
-
-        Args:
-            task_id (str): The unique identifier of the main task. This should match
-                the original task or be a descriptive identifier.
-            summary (str): Comprehensive summary of the entire task completion.
-                Should cover what was accomplished, key outcomes, and overall status.
-            success (bool): Whether the main task was completed successfully.
-                - True: Task completed as intended
-                - False: Task failed or partially completed
-            results (Optional[str]): Detailed results from task execution. Can include
-                specific outputs, data, or findings. Defaults to None.
-            lessons_learned (Optional[str]): Key insights, patterns, or learnings
-                from the task execution. Useful for future reference. Defaults to None.
-            **kwargs: Additional arguments (currently unused, reserved for future use).
-
-        Returns:
-            str: Comprehensive task completion summary. The summary includes:
-                - Task ID and status
-                - Summary text
-                - Results (if provided)
-                - Lessons learned (if provided)
-                - Subtask breakdown with individual statuses
-
-        Note:
-            - This method is called automatically by the autonomous loop when task is complete
-            - The summary replaces the need for a separate summary phase
-            - Incomplete subtasks are logged as warnings but don't block completion
-            - The comprehensive summary is stored in memory for final output
-            - If verbose=True, task completion is logged
-
-        Examples:
-            >>> result = agent._complete_task_tool(
-            ...     task_id="build_web_app",
-            ...     summary="Successfully built web application with authentication",
-            ...     success=True,
-            ...     results="Created 10 files, implemented 5 features",
-            ...     lessons_learned="Authentication should be implemented early"
-            ... )
-            >>> # Returns comprehensive summary with all details
-        """
-        if self.verbose:
-            logger.info(f"Completing main task {task_id}: {summary}")
-
-        # Verify all subtasks are complete
-        incomplete = [
-            s["step_id"]
-            for s in self.autonomous_subtasks
-            if s["status"] not in ["completed", "failed"]
-        ]
-        if incomplete:
-            if self.verbose:
-                logger.warning(
-                    f"Attempting to complete task but {len(incomplete)} subtasks are not done: {incomplete}"
-                )
-
-        # Create comprehensive summary
-        comprehensive_summary = f"""Task Completion Summary
-
-Task ID: {task_id}
-Status: {'Success' if success else 'Failed'}
-Summary: {summary}
-"""
-        if results:
-            comprehensive_summary += f"\nResults:\n{results}\n"
-        if lessons_learned:
-            comprehensive_summary += (
-                f"\nLessons Learned:\n{lessons_learned}\n"
-            )
-
-        comprehensive_summary += "\nSubtask Breakdown:\n"
-        for subtask in self.autonomous_subtasks:
-            comprehensive_summary += f"- {subtask['step_id']}: {subtask.get('status', 'unknown')} - {subtask.get('description', '')}\n"
-            if "summary" in subtask:
-                comprehensive_summary += (
-                    f"  Summary: {subtask['summary']}\n"
-                )
-
-        # Add to memory
-        self.short_memory.add(
-            role=self.agent_name, content=comprehensive_summary
-        )
-
-        if self.verbose:
-            logger.info(
-                "Main task marked as completed with comprehensive summary"
-            )
-        return comprehensive_summary
-
-    def _get_next_executable_subtask(
-        self,
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Get the next executable subtask based on dependencies and status.
-
-        Returns:
-            Dictionary of the next subtask or None if all are done
-        """
-        if not self.autonomous_subtasks:
-            return None
-
-        # Find subtasks that are pending and have all dependencies completed
-        for subtask in self.autonomous_subtasks:
-            if subtask["status"] == "pending":
-                # Check if all dependencies are completed
-                dependencies = subtask.get("dependencies", [])
-                if not dependencies or all(
-                    self.subtask_status.get(dep, "completed")
-                    in ["completed", "failed"]
-                    for dep in dependencies
-                ):
-                    return subtask
-
-        return None
-
-    def _all_subtasks_complete(self) -> bool:
-        """
-        Check if all subtasks are completed.
-
-        Returns:
-            bool: True if all subtasks are completed or failed
-        """
-        if not self.autonomous_subtasks:
-            return False
-
-        return all(
-            subtask["status"] in ["completed", "failed"]
-            for subtask in self.autonomous_subtasks
-        )
 
     def output_cleaner_op(self, response: str):
         # Apply the cleaner function to the response
@@ -5799,155 +3128,42 @@ Summary: {summary}
                 content=response,
             )
 
-    def mcp_tool_handling(
-        self, response: any, current_loop: Optional[int] = 0
-    ):
+    @property
+    def input_tokens(self) -> int:
+        """Tokens the agent's next request would carry, counted with its model's tokenizer.
+
+        Covers everything the agent sends as input: the system prompt, the
+        whole conversation in ``short_memory``, and the tool schemas. Use it
+        to see how full the context window is before a run. It is an
+        estimate — the conversation is counted as rendered text, role labels
+        included — so it runs a little above what the provider bills. For the
+        billed figure, summed over past calls, see :attr:`usage`.
         """
-        Handle execution of MCP (Model Context Protocol) tools.
-
-        This method processes tool calls from the LLM response and executes them
-        using MCP servers. It supports single MCP server (mcp_url or mcp_config)
-        and multiple MCP servers (mcp_urls or mcp_configs).
-
-        **MCP Tool Execution:**
-        - Single server: Uses execute_tool_call_simple with server_path or connection
-        - Multiple servers: Uses execute_multiple_tools_on_multiple_mcp_servers_sync
-        - Tool responses are formatted as JSON and added to conversation memory
-        - Results are displayed in formatted panels if print_on=True
-
-        **Post-Execution Processing:**
-        After tool execution, the method:
-        1. Formats tool response as JSON
-        2. Adds response to conversation memory
-        3. Optionally generates a summary using a temporary LLM instance
-        4. Displays summary if print_on=True
-
-        **Error Handling:**
-        - AgentMCPConnectionError: Raised if MCP configuration is invalid
-        - AgentMCPToolError: Raised if tool execution fails
-        - Other exceptions: Logged with full traceback
-
-        Args:
-            response (any): The LLM response containing MCP tool calls. Can be:
-                - List of tool call dictionaries
-                - Single tool call dictionary
-                - Tool call in OpenAI function calling format
-            current_loop (Optional[int]): The current loop iteration number.
-                Used for logging and progress display. Defaults to 0.
-
-        Returns:
-            None: This method modifies internal state (adds to memory, displays output)
-                but does not return a value.
-
-        Raises:
-            AgentMCPConnectionError: If MCP configuration is missing or invalid.
-                Raised when neither mcp_url, mcp_config, mcp_urls, nor mcp_configs are set.
-            AgentMCPToolError: If MCP tool execution fails.
-            Exception: For other unexpected errors during tool execution.
-
-        Note:
-            - Requires MCP configuration (mcp_url, mcp_config, mcp_urls, or mcp_configs)
-            - Tool responses are automatically formatted as JSON
-            - Summary generation uses a temporary LLM instance without tools
-            - The method handles both single and multiple MCP server scenarios
-
-        Examples:
-            >>> # Single MCP server
-            >>> agent = Agent(mcp_url="path/to/mcp/server")
-            >>> response = [{"function": {"name": "mcp_tool", "arguments": "{}"}}]
-            >>> agent.mcp_tool_handling(response, current_loop=1)
-
-            >>> # Multiple MCP servers
-            >>> agent = Agent(mcp_urls=["server1", "server2"])
-            >>> agent.mcp_tool_handling(response, current_loop=2)
-        """
-        try:
-
-            if exists(self.mcp_url):
-                # Execute the tool call
-                tool_response = asyncio.run(
-                    execute_tool_call_simple(
-                        response=response,
-                        server_path=self.mcp_url,
-                    )
-                )
-            elif exists(self.mcp_config):
-                # Execute the tool call
-                tool_response = asyncio.run(
-                    execute_tool_call_simple(
-                        response=response,
-                        connection=self.mcp_config,
-                    )
-                )
-            elif exists(self.mcp_urls):
-                tool_response = execute_multiple_tools_on_multiple_mcp_servers_sync(
-                    responses=response,
-                    urls=self.mcp_urls,
-                    output_type="json",
-                )
-                # tool_response = format_data_structure(tool_response)
-
-                # print(f"Multiple MCP Tool Response: {tool_response}")
-            else:
-                raise AgentMCPConnectionError(
-                    "mcp_url must be either a string URL or MCPConnection object"
-                )
-
-            # Get the text content from the tool response
-            # execute_tool_call_simple returns a string directly, not an object with content attribute
-            text_content = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2, sort_keys=True)}"
-
-            if self.print_on is True:
-                formatter.print_panel(
-                    content=text_content,
-                    title="MCP Tool Response: 🛠️",
-                    style="green",
-                )
-
-            # Add to the memory
-            self.short_memory.add(
-                role="Tool Executor",
-                content=text_content,
-            )
-
-            # Create a temporary LLM instance without tools for the follow-up call
-            try:
-                temp_llm = self.temp_llm_instance_for_tool_summary()
-
-                summary = temp_llm.run(
-                    task=self.short_memory.get_str()
-                )
-            except Exception as e:
-                logger.error(
-                    f"Error calling LLM after MCP tool execution: {e}"
-                )
-                # Fallback: provide a default summary
-                summary = "I successfully executed the MCP tool and retrieved the information above."
-
-            if self.print_on is True:
-                self.pretty_print(summary, loop_count=current_loop)
-
-            # Add to the memory
-            self.short_memory.add(
-                role=self.agent_name, content=summary
-            )
-        except AgentMCPToolError as e:
-            logger.error(f"Error in MCP tool: {e}")
-            raise e
-
-    def temp_llm_instance_for_tool_summary(self):
-        return LiteLLM(
-            model_name=self.model_name,
-            temperature=self.temperature,
-            top_p=self.top_p,  # Anthropic rejects requests with both temperature and top_p
-            max_tokens=self.max_tokens,
-            system_prompt=self.system_prompt,
-            stream=False,  # Always disable streaming for tool summaries
-            tools_list_dictionary=None,
-            parallel_tool_calls=False,
-            base_url=self.llm_base_url,
-            api_key=self.llm_api_key,
+        parts = [self.short_memory.return_history_as_string()]
+        if self.tools_list_dictionary:
+            parts.append(json.dumps(self.tools_list_dictionary))
+        return count_tokens(
+            "\n".join(part for part in parts if part),
+            model=self.model_name,
         )
+
+    @property
+    def usage(self) -> dict:
+        """Token usage reported by the provider, summed over every LLM call this agent has made.
+
+        Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens`` (the
+        part of ``input_tokens`` served from the provider's prompt cache),
+        ``reasoning_tokens`` (the part of ``output_tokens`` the model spent
+        thinking, 0 when the provider does not report it), ``total_tokens``.
+        Streaming calls count once their stream has been consumed, since the
+        provider reports usage in the final chunk.
+        """
+        return dict(self._usage)
+
+    def _add_usage(self, call_usage: dict) -> None:
+        """Fold one completion's usage into the running total."""
+        for key in self._usage:
+            self._usage[key] += call_usage.get(key, 0)
 
     def get_available_models(self) -> List[str]:
         """
@@ -5956,22 +3172,7 @@ Summary: {summary}
         Returns:
             List[str]: List of model names in order of preference
         """
-        models = []
-
-        # If fallback_models is specified, use it as the primary list
-        if self.fallback_models:
-            models = self.fallback_models.copy()
-        else:
-            # Otherwise, build the list from individual parameters
-            if self.model_name:
-                models.append(self.model_name)
-            if (
-                self.fallback_model_name
-                and self.fallback_model_name not in models
-            ):
-                models.append(self.fallback_model_name)
-
-        return models
+        return self.llm_manager.get_available_models()
 
     def get_current_model(self) -> str:
         """
@@ -5980,10 +3181,7 @@ Summary: {summary}
         Returns:
             str: Current model name
         """
-        available_models = self.get_available_models()
-        if self.current_model_index < len(available_models):
-            return available_models[self.current_model_index]
-        return available_models[0] if available_models else "gpt-5.4"
+        return self.llm_manager.get_current_model()
 
     def switch_to_next_model(self) -> bool:
         """
@@ -5992,42 +3190,11 @@ Summary: {summary}
         Returns:
             bool: True if successfully switched to next model, False if no more models available
         """
-        available_models = self.get_available_models()
-
-        if self.current_model_index + 1 < len(available_models):
-            previous_model = (
-                available_models[self.current_model_index]
-                if self.current_model_index < len(available_models)
-                else "Unknown"
-            )
-            self.current_model_index += 1
-            new_model = available_models[self.current_model_index]
-
-            # always log model switches
-            logger.warning(
-                f"[Model Switch] agent '{self.agent_name}' switching from '{previous_model}' to fallback model: '{new_model}' "
-                f"(attempt {self.current_model_index + 1}/{len(available_models)})"
-            )
-
-            # Update the model name and reinitialize LLM
-            self.model_name = new_model
-            self.llm = self.llm_handling()
-
-            return True
-        else:
-            logger.error(
-                f"No more models: agent '{self.agent_name}' has exhausted all available models. "
-                f"Tried {len(available_models)} models: {available_models}"
-            )
-            return False
+        return self.llm_manager.switch_to_next_model()
 
     def reset_model_index(self) -> None:
         """Reset the model index to use the primary model."""
-        self.current_model_index = 0
-        available_models = self.get_available_models()
-        if available_models:
-            self.model_name = available_models[0]
-            self.llm = self.llm_handling()
+        self.llm_manager.reset_model_index()
 
     def is_fallback_available(self) -> bool:
         """
@@ -6036,408 +3203,33 @@ Summary: {summary}
         Returns:
             bool: True if fallback models are configured
         """
-        available_models = self.get_available_models()
-        return len(available_models) > 1
-
-    def execute_tools(self, response: any, loop_count: int):
-        """
-        Execute tools based on LLM response containing function calls.
-
-        This method processes tool calls from the LLM response, executes them,
-        and handles the results. It supports both single and multiple tool calls,
-        visualizes function calls before execution, and optionally summarizes
-        tool execution results.
-
-        **Process Flow:**
-        1. Validates response is not None
-        2. Visualizes function calls if print_on=True
-        3. Executes tools using tool_struct
-        4. Adds tool output to conversation memory
-        5. Displays execution results (detailed or brief based on show_tool_execution_output)
-        6. Optionally generates tool execution summary using LLM
-
-        **Tool Call Format:**
-        The method accepts tool calls in two formats:
-        - List of tool calls: [{"function": {"name": "...", "arguments": "..."}, "id": "..."}, ...]
-        - Single tool call dict: {"function": {"name": "...", "arguments": "..."}, "id": "..."}
-
-        **Visualization:**
-        If print_on=True, function calls are visualized with:
-        - Function name
-        - Call ID (if available)
-        - Arguments (truncated if >200 chars)
-
-        **Tool Execution Summary:**
-        If tool_call_summary=True, a temporary LLM instance is created to summarize
-        tool execution results. This helps the agent understand tool outputs better.
-
-        Args:
-            response (any): The LLM response containing tool calls. Can be:
-                - List of tool call dictionaries
-                - Single tool call dictionary
-                - None (will log warning and return early)
-            loop_count (int): The current loop iteration number. Used for logging
-                and progress tracking.
-
-        Returns:
-            None: This method modifies internal state (adds to memory, displays output)
-                but does not return a value.
-
-        Raises:
-            Exception: If tool execution fails after retry attempts. The error is
-                logged with full traceback before raising.
-
-        Note:
-            - Tool execution results are automatically formatted and added to memory
-            - If show_tool_execution_output=False, only brief confirmation is shown
-            - Tool execution summary uses a temporary LLM instance without tools
-            - The method handles both JSON string and dict format for arguments
-
-        Examples:
-            >>> # Single tool call
-            >>> response = [{
-            ...     "function": {"name": "search_web", "arguments": '{"query": "Python"}'},
-            ...     "id": "call_123"
-            ... }]
-            >>> agent.execute_tools(response, loop_count=1)
-
-            >>> # Multiple tool calls
-            >>> response = [
-            ...     {"function": {"name": "tool1", "arguments": "{}"}, "id": "call_1"},
-            ...     {"function": {"name": "tool2", "arguments": "{}"}, "id": "call_2"}
-            ... ]
-            >>> agent.execute_tools(response, loop_count=2)
-        """
-        # Handle None response gracefully
-        if response is None:
-            logger.warning(
-                f"Cannot execute tools with None response in loop {loop_count}. "
-                "This may indicate the LLM did not return a valid response."
-            )
-            return
-
-        # Visualize function calls before execution
-        if self.print_on:
-            # Handle both list and single dict responses
-            tool_calls_to_visualize = []
-            if isinstance(response, list):
-                tool_calls_to_visualize = response
-            elif isinstance(response, dict):
-                # Single tool call as dict
-                tool_calls_to_visualize = [response]
-
-            for tool_call in tool_calls_to_visualize:
-                if isinstance(tool_call, dict):
-                    func_name = tool_call.get("function", {}).get(
-                        "name", "Unknown"
-                    )
-                    func_args = {}
-                    tool_call_id = tool_call.get("id", "N/A")
-
-                    try:
-                        func_args = json.loads(
-                            tool_call.get("function", {}).get(
-                                "arguments", "{}"
-                            )
-                        )
-                    except (
-                        json.JSONDecodeError,
-                        AttributeError,
-                        TypeError,
-                    ):
-                        # If arguments is already a dict, use it directly
-                        func_args = tool_call.get("function", {}).get(
-                            "arguments", {}
-                        )
-                        if not isinstance(func_args, dict):
-                            func_args = {}
-
-                    # Visualize the function call with enhanced details
-                    call_content = f"Function: {func_name}\n"
-                    if tool_call_id != "N/A":
-                        call_content += f"Call ID: {tool_call_id}\n"
-                    call_content += "\nArguments:\n"
-                    for key, value in func_args.items():
-                        # Truncate long values for readability
-                        value_str = str(value)
-                        if len(value_str) > 200:
-                            value_str = value_str[:200] + "..."
-                        call_content += f"  {key}: {value_str}\n"
-
-                    formatter.print_panel(
-                        call_content,
-                        title=f"Agent: {self.agent_name} Function Call",
-                    )
-
-        try:
-            output = self.tool_struct.execute_function_calls_from_api_response(
-                response
-            )
-        except Exception as e:
-            # Retry the tool call
-            output = self.tool_struct.execute_function_calls_from_api_response(
-                response
-            )
-
-            if output is None:
-                logger.error(f"Error executing tools: {e}")
-                raise e
-
-        self.short_memory.add(
-            role="Tool Executor",
-            content=format_data_structure(output),
-        )
-
-        if self.print_on is True:
-            # Extract tool names and details from response for better display
-            tool_names = []
-            tool_details = []
-
-            # Handle both list and single dict responses
-            tool_calls_to_process = []
-            if isinstance(response, list):
-                tool_calls_to_process = response
-            elif isinstance(response, dict):
-                tool_calls_to_process = [response]
-
-            for tool_call in tool_calls_to_process:
-                if isinstance(tool_call, dict):
-                    func_name = tool_call.get("function", {}).get(
-                        "name", "Unknown"
-                    )
-                    tool_names.append(func_name)
-                    tool_details.append(
-                        {
-                            "name": func_name,
-                            "id": tool_call.get("id", "N/A"),
-                            "type": tool_call.get("type", "function"),
-                        }
-                    )
-
-            if self.show_tool_execution_output is True:
-                # Create detailed output display with enhanced information
-                tool_display = (
-                    f"Execution Time: {time.strftime('%H:%M:%S')}\n\n"
-                )
-
-                if tool_details:
-                    tool_display += "Tools Executed:\n"
-                    for detail in tool_details:
-                        tool_display += f"  - {detail['name']}"
-                        if detail["id"] != "N/A":
-                            tool_display += f" (ID: {detail['id']})"
-                        tool_display += f" [{detail['type']}]\n"
-                    tool_display += "\n"
-
-                # Format output for better readability
-                output_str = format_data_structure(output)
-                tool_display += f"Output:\n{output_str}"
-
-                # Show results in a panel
-                formatter.print_panel(
-                    tool_display,
-                    title="Tool Execution Results",
-                )
-            else:
-                # Show brief execution confirmation with tool names
-                if tool_names:
-                    brief_display = (
-                        f"Tools Executed: {', '.join(tool_names)}\n"
-                    )
-                    brief_display += (
-                        f"Time: {time.strftime('%H:%M:%S')}"
-                    )
-                    formatter.print_panel(
-                        brief_display,
-                        title="Tool Execution",
-                    )
-                else:
-                    formatter.print_panel(
-                        f"Tool Executed Successfully [{time.strftime('%H:%M:%S')}]",
-                        title="Tool Execution",
-                    )
-
-        # Now run the LLM again without tools - create a temporary LLM instance
-        # instead of modifying the cached one
-        # Create a temporary LLM instance without tools for the follow-up call
-        if self.tool_call_summary is True:
-            temp_llm = self.temp_llm_instance_for_tool_summary()
-
-            tool_response = temp_llm.run(
-                f"""
-                Please analyze and summarize the following tool execution output in a clear and concise way. 
-                Focus on the key information and insights that would be most relevant to the user's original request.
-                If there are any errors or issues, highlight them prominently.
-                
-                Tool Output:
-                {output}
-                """
-            )
-
-            self.short_memory.add(
-                role=self.agent_name,
-                content=tool_response,
-            )
-
-            if self.print_on is True:
-                self.pretty_print(
-                    tool_response,
-                    loop_count,
-                )
+        return self.llm_manager.is_fallback_available()
 
     def list_output_types(self):
         return OutputType
 
-    def run_multiple_images(
-        self, task: str, imgs: List[str], *args, **kwargs
-    ):
+    def _transcript_from_messages(
+        self,
+        messages: Optional[List[Dict[str, Any]]],
+        task: Optional[Any],
+    ) -> Transcript:
         """
-        Run the agent with multiple images using concurrent processing.
+        Build this run's transcript, preferring caller-supplied turns.
 
         Args:
-            task (str): The task to be performed on each image.
-            imgs (List[str]): List of image paths or URLs to process.
-            *args: Additional positional arguments to pass to the agent's run method.
-            **kwargs: Additional keyword arguments to pass to the agent's run method.
+            messages: Prior conversation as typed chat messages. When given,
+                these replace the memory-derived prefix and ``task`` is
+                appended as the new user turn. ``None`` falls back to
+                :meth:`_transcript_from_memory`.
+            task: The instruction for this turn.
 
         Returns:
-            List[Any]: A list of outputs generated for each image in the same order as the input images.
-
-        Examples:
-            >>> agent = Agent()
-            >>> outputs = agent.run_multiple_images(
-            ...     task="Describe what you see in this image",
-            ...     imgs=["image1.jpg", "image2.png", "image3.jpeg"]
-            ... )
-            >>> print(f"Processed {len(outputs)} images")
-            Processed 3 images
-
-        Raises:
-            Exception: If an error occurs while processing any of the images.
+            The transcript to send with the next request.
         """
-        # Calculate number of workers as 95% of available CPU cores
-        cpu_count = os.cpu_count()
-        max_workers = max(1, int(cpu_count * 0.95))
+        if messages is None:
+            return self._transcript_from_memory()
 
-        # Use ThreadPoolExecutor for concurrent processing
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all image processing tasks
-            future_to_img = {
-                executor.submit(
-                    self.run, task=task, img=img, *args, **kwargs
-                ): img
-                for img in imgs
-            }
-
-            # Collect results in order
-            outputs = []
-            for future in future_to_img:
-                try:
-                    output = future.result()
-                    outputs.append(output)
-                except Exception as e:
-                    logger.error(f"Error processing image: {e}")
-                    outputs.append(
-                        None
-                    )  # or raise the exception based on your preference
-
-        # Combine the outputs into a single string if summarization is enabled
-        if self.summarize_multiple_images is True:
-            output = "\n".join(outputs)
-
-            prompt = f"""
-            You have already analyzed {len(outputs)} images and provided detailed descriptions for each one. 
-            Now, based on your previous analysis of these images, create a comprehensive report that:
-
-            1. Synthesizes the key findings across all images
-            2. Identifies common themes, patterns, or relationships between the images
-            3. Provides an overall summary that captures the most important insights
-            4. Highlights any notable differences or contrasts between the images
-
-            Here are your previous analyses of the images:
-            {output}
-
-            Please create a well-structured report that brings together your insights from all {len(outputs)} images.
-            """
-
-            outputs = self.run(task=prompt, *args, **kwargs)
-
-        return outputs
-
-    def tool_execution_retry(self, response: any, loop_count: int):
-        """
-        Execute tools with retry logic for handling failures.
-
-        This method provides a robust wrapper around tool execution with automatic
-        retry on failure. It handles None responses gracefully and implements
-        retry logic using the configured tool_retry_attempts.
-
-        **Retry Strategy:**
-        - If tool execution fails, the method automatically retries
-        - Maximum retry attempts are controlled by self.tool_retry_attempts (default: 3)
-        - Each retry is logged with detailed error information
-        - After all retries are exhausted, the exception is re-raised
-
-        **Error Handling:**
-        - None responses: Logs warning and skips execution (does not raise)
-        - AgentToolExecutionError: Logs error with full traceback and retries
-        - Other exceptions: Logs error and retries
-
-        **Logging:**
-        All errors are logged with:
-        - Agent name for identification
-        - Loop count for context
-        - Full traceback for debugging
-        - Retry attempt number
-
-        Args:
-            response (any): The response from the LLM that may contain tool calls to execute.
-                Can be:
-                - List of tool call dictionaries
-                - Single tool call dictionary
-                - None (will log warning and return without raising)
-            loop_count (int): The current iteration loop number. Used for:
-                - Logging context
-                - Error reporting
-                - Debugging tool execution issues
-
-        Returns:
-            None: This method modifies internal state but does not return a value.
-
-        Raises:
-            AgentToolExecutionError: If tool execution fails after all retry attempts.
-            Exception: Any other exception that occurs during tool execution after
-                retries are exhausted.
-
-        Note:
-            - Uses self.tool_retry_attempts (default: 3) for maximum retry attempts
-            - None responses are handled gracefully without raising exceptions
-            - Detailed error logging helps with debugging tool execution issues
-            - The method delegates actual tool execution to execute_tools()
-
-        Examples:
-            >>> # Normal execution
-            >>> response = [{"function": {"name": "my_tool", "arguments": "{}"}}]
-            >>> agent.tool_execution_retry(response, loop_count=1)
-
-            >>> # Handles None response gracefully
-            >>> agent.tool_execution_retry(None, loop_count=2)
-            >>> # Logs warning but does not raise exception
-        """
-        try:
-            if response is not None:
-                self.execute_tools(
-                    response=response,
-                    loop_count=loop_count,
-                )
-            else:
-                logger.warning(
-                    f"Agent '{self.agent_name}' received None response from LLM in loop {loop_count}. "
-                    f"This may indicate an issue with the model or prompt. Skipping tool execution."
-                )
-        except AgentToolExecutionError as e:
-            logger.error(
-                f"Agent '{self.agent_name}' encountered error during tool execution in loop {loop_count}: {str(e)}. "
-                f"Full traceback: {traceback.format_exc()}. "
-                f"Attempting to retry tool execution with 3 attempts"
-            )
+        transcript = Transcript(list(messages))
+        if task is not None:
+            transcript.append_user(task)
+        return transcript

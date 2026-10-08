@@ -51,7 +51,7 @@ You are a college selection final decision maker. Your role is to:
 """
 
 function_caller = LiteLLM(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     system_prompt=FINAL_AGENT_PROMPT,
     response_format=CollegesRecommendation,
     temperature=0.1,

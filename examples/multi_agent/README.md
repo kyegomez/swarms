@@ -21,6 +21,11 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [batched_grid_workflow_example.py](batched_grid_workflow/batched_grid_workflow_example.py) - Complete workflow example
 - [README.md](batched_grid_workflow/README.md) - Detailed documentation
 
+## Broadcast
+- [broadcast_class_example.py](broadcast_examples/broadcast_class_example.py) - `Broadcast`: one sender, many receivers, synchronous `run()`
+- [broadcast_function_example.py](broadcast_examples/broadcast_function_example.py) - `broadcast()`: the async functional form
+- [README.md](broadcast_examples/README.md) - Detailed documentation
+
 ## Caching Examples
 - [example_multi_agent_caching.py](caching_examples/example_multi_agent_caching.py) - Multi-agent caching implementation
 - [quick_start_agent_caching.py](caching_examples/quick_start_agent_caching.py) - Quick start guide for caching
@@ -75,14 +80,11 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [example_images/](graphworkflow_examples/example_images/) - Visualization images
 
 ## Group Chat
-- [interactive_groupchat_example.py](groupchat/interactive_groupchat_example.py) - Interactive group chat
-- [quantum_physics_swarm.py](groupchat/quantum_physics_swarm.py) - Physics-focused group chat
-- [random_dynamic_speaker_example.py](groupchat/random_dynamic_speaker_example.py) - Dynamic speaker selection
-- [enhanced_collaboration_example.py](groupchat/enhanced_collaboration_example.py) - Enhanced collaboration patterns
-- [interactive_groupchat_speaker_example.py](groupchat/interactive_groupchat_speaker_example.py) - Speaker management
+- [enhanced_collaboration_example.py](groupchat/enhanced_collaboration_example.py) - Analyst / researcher / strategist collaboration scenarios
 - [medical_panel_example.py](groupchat/medical_panel_example.py) - Medical panel discussion
-- [speaker_function_examples.py](groupchat/speaker_function_examples.py) - Speaker function examples
-- [stream_example.py](groupchat/stream_example.py) - Streaming example
+- [quantum_physics_swarm.py](groupchat/quantum_physics_swarm.py) - Condensed-matter physics research team
+- [test_groupchat_feat.py](groupchat/test_groupchat_feat.py) - Minimal dynamic GroupChat smoke test
+- [stream_example.py](groupchat/stream_example.py) - Single-agent streaming example
 - [groupchat_examples/](groupchat/groupchat_examples/) - Additional group chat patterns
 
 ## Heavy Swarm
@@ -119,6 +121,16 @@ This directory contains comprehensive examples demonstrating various multi-agent
 
 ## Spreadsheet Examples
 - [spreadsheet_examples/](spreadsheet_examples/) - Spreadsheet-based agent examples and swarm usage
+
+## One-to-One
+- [one_to_one_class_example.py](one_to_one_examples/one_to_one_class_example.py) - `OneToOne`: a sender and receiver exchange messages for `max_loops` turns
+- [one_to_one_function_example.py](one_to_one_examples/one_to_one_function_example.py) - `one_to_one()`: the functional form
+- [README.md](one_to_one_examples/README.md) - Detailed documentation
+
+## One-to-Three
+- [one_to_three_class_example.py](one_to_three_examples/one_to_three_class_example.py) - `OneToThree`: one sender, exactly three receivers
+- [one_to_three_function_example.py](one_to_three_examples/one_to_three_function_example.py) - `one_to_three()`: the functional form
+- [README.md](one_to_three_examples/README.md) - Detailed documentation
 
 ## Orchestration
 - [orchestration_examples/](orchestration_examples/) - Workflow orchestration patterns

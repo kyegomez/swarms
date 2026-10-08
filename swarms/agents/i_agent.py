@@ -74,7 +74,6 @@ class IterativeReflectiveExpansion:
             system_prompt=self.system_prompt,
             model_name=model_name,
             max_loops=1,
-            dynamic_temperature_enabled=True,
         )
 
     def generate_initial_hypotheses(self, task: str) -> List[str]:
@@ -283,18 +282,3 @@ class IterativeReflectiveExpansion:
         return history_output_formatter(
             self.conversation, self.output_type
         )
-
-
-# def main() -> None:
-#     """
-#     Main function to execute the Iterative Reflective Expansion algorithm on a sample problem.
-#     """
-#     problem_statement = "What is the 40th prime number?"
-#     reasoning_engine = IterativeReflectiveExpansion(max_loops=1)
-#     final_solution = reasoning_engine.run(problem_statement)
-#     print("Final Solution:")
-#     print(final_solution)
-
-
-# if __name__ == "__main__":
-#     main()

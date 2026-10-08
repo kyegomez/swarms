@@ -1,15 +1,19 @@
 import asyncio
 import os
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 from pydantic import BaseModel, Field
 
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 model_recommendations = {
-    "gpt-4.1": {
+    "gpt-5.4": {
         "description": "Fast and efficient for simple tasks and general queries",
         "best_for": [
             "Simple queries",
@@ -180,7 +184,7 @@ class ModelRouter:
         self,
         system_prompt: str = model_router_system_prompt,
         max_tokens: int = 4000,
-        temperature: float = 0.5,
+        temperature: Optional[float] = None,
         max_workers: int = 10,
         api_key: str = None,
         max_loops: int = 1,
@@ -220,6 +224,8 @@ class ModelRouter:
                 f"Failed to initialize ModelRouter: {str(e)}"
             )
 
+        capture_init(self)
+
     def step(self, task: str):
         """
         Run a single task through the model router.
@@ -233,7 +239,9 @@ class ModelRouter:
         Raises:
             RuntimeError: If model selection or execution fails
         """
-        model_router_output = self.model_caller.run(task)
+        model_router_output = ModelOutput.model_validate_json(
+            self.model_caller.run(task)
+        )
 
         selected_model = model_router_output.model
         selected_provider = model_router_output.provider
@@ -270,6 +278,7 @@ class ModelRouter:
 
         return final_output
 
+    @trace_run("ModelRouter.run")
     def run(self, task: str):
         """
         Run a task through the model router with memory.
@@ -349,7 +358,7 @@ class ModelRouter:
             RuntimeError: If concurrent execution fails
         """
         try:
-            with ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
                 outputs = list(executor.map(self.run, tasks))

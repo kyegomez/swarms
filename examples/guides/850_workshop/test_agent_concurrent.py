@@ -9,7 +9,7 @@ equity_analyst_1 = Agent(
     agent_description="Equity research analyst focused on fundamental analysis",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     dynamic_temperature_enabled=True,
 )
 
@@ -18,7 +18,7 @@ equity_analyst_2 = Agent(
     agent_description="Equity research analyst focused on technical analysis",
     system_prompt=FINANCIAL_AGENT_SYS_PROMPT,
     max_loops=1,
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     dynamic_temperature_enabled=True,
 )
 

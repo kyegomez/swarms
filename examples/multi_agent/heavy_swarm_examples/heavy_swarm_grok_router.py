@@ -10,9 +10,9 @@ router = SwarmRouter(
     name="GrokRouter",
     description="SwarmRouter with Grok Heavy agents",
     swarm_type="HeavySwarm",
-    heavy_swarm_worker_model_name="gpt-4.1",
-    heavy_swarm_question_agent_model_name="gpt-4.1",
-    heavy_swarm_use_grok_agents=True,
+    heavy_swarm_worker_model_name="gpt-5.4",
+    heavy_swarm_question_agent_model_name="gpt-5.4",
+    heavy_swarm_variant="medium",
 )
 
 result = router.run(

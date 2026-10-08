@@ -46,7 +46,7 @@ head_of_content_agent = Agent(
     - Content ROI measurement and reporting
 
     You deliver strategic, data-driven content recommendations that drive engagement, conversions, and brand growth.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     dynamic_temperature_enabled=True,
@@ -99,7 +99,7 @@ ad_creative_director_agent = Agent(
     - Innovative advertising approaches and trends
 
     You deliver creative solutions that are both strategically sound and creatively brilliant, driving brand awareness, engagement, and conversions.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     tools=[exa_search],
     temperature=0.8,
@@ -165,7 +165,7 @@ seo_strategist_agent = Agent(
     - Voice search and featured snippet optimization
 
     You deliver data-driven SEO strategies that drive sustainable organic growth, improve search visibility, and generate qualified traffic that converts.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.6,
     tools=[exa_search],
@@ -239,7 +239,7 @@ brand_strategist_agent = Agent(
     - Brand architecture and portfolio management
 
     You deliver strategic brand solutions that create powerful market differentiation, build strong brand equity, and drive sustainable business growth through compelling brand positioning and experiences.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     tools=[exa_search],
     print_on=True,
@@ -294,7 +294,7 @@ marketing_director_agent = Agent(
     - Stakeholder communication and executive reporting
 
     You deliver comprehensive marketing strategies that leverage the full expertise of your specialized team, ensuring all marketing efforts work together to drive business growth, brand awareness, and customer acquisition.""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     temperature=0.7,
     dynamic_temperature_enabled=True,

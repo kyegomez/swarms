@@ -1,11 +1,16 @@
+import json
 import concurrent.futures
+import os
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
 
+from swarms.structs import conversation as conversation_module
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 def setup_temp_conversations_dir():
@@ -557,9 +562,9 @@ def test_save_and_load_json():
     file_path = temp_dir / "test_save.json"
 
     try:
-        conv = Conversation()
+        conv = Conversation(save_filepath=str(file_path))
         conv.add("user", "Hello")
-        conv.save_as_json(str(file_path))
+        conv.save_as_json(force=True)
 
         conv2 = Conversation()
         conv2.load_from_json(str(file_path))
@@ -697,6 +702,35 @@ def test_add_appends_to_memory_md(tmp_path):
     assert "### user — " in content
     assert "Test message" in content
     assert "---" in content
+
+
+def test_add_multiple_returns_one_result_per_message():
+    """add_multiple_messages reports what it added, rather than None."""
+    conv = Conversation()
+    added = conv.add_multiple_messages(
+        ["user", "assistant"], ["Hello", "Hi there"]
+    )
+    assert added is not None
+    assert len(added) == 2
+
+
+def test_add_multiple_does_not_depend_on_the_cpu_count(monkeypatch):
+    """A machine reporting fewer than four CPUs can still add messages.
+
+    int(os.cpu_count() * 0.25) is 0 for 1, 2 and 3 CPUs, which is a
+    ValueError from ThreadPoolExecutor rather than a slow path.
+    """
+    monkeypatch.setattr(os, "cpu_count", lambda: 1)
+    conv = Conversation()
+    conv.add_multiple_messages(
+        ["user", "assistant", "system"],
+        ["Hello", "Hi there", "System message"],
+    )
+    assert [msg["role"] for msg in conv.conversation_history] == [
+        "user",
+        "assistant",
+        "system",
+    ]
 
 
 def test_concurrent_add_thread_safety(tmp_path):
@@ -859,6 +893,7 @@ def test_timestamp_format_in_history_string(tmp_path):
     conv = Conversation(
         time_enabled=True,
         dynamic_context_window=False,
+        save_filepath=str(tmp_path / "timestamp_1.json"),
         conversations_dir=str(tmp_path / "convs"),
     )
     conv.add("user", "Hello")
@@ -872,6 +907,7 @@ def test_no_timestamp_fallback(tmp_path):
     conv = Conversation(
         time_enabled=False,
         dynamic_context_window=False,
+        save_filepath=str(tmp_path / "timestamp_2.json"),
         conversations_dir=str(tmp_path / "convs"),
     )
     conv.add("user", "Hello")
@@ -884,6 +920,7 @@ def test_time_enabled_end_to_end(tmp_path):
     conv = Conversation(
         time_enabled=True,
         dynamic_context_window=False,
+        save_filepath=str(tmp_path / "timestamp_3.json"),
         conversations_dir=str(tmp_path / "convs"),
     )
     conv.add("user", "First")
@@ -898,6 +935,88 @@ def test_time_enabled_end_to_end(tmp_path):
         datetime.fromisoformat(ts)
 
 
+# ── Message Metadata Tests (Issue #1926) ──
+
+
+def test_add_message_with_metadata(tmp_path):
+    """Test that Conversation.add preserves message metadata."""
+    conv = Conversation(
+        name="test_add_metadata",
+        save_filepath=str(tmp_path / "metadata_1.json"),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+    metadata = {"trace_id": "abc123", "cost": 0.01}
+    msg = conv.add("user", "Hello with metadata", metadata=metadata)
+    assert len(conv.conversation_history) == 1
+    assert conv.conversation_history[0]["metadata"] == metadata
+    assert msg["metadata"] == metadata
+    return True
+
+
+def test_add_message_with_metadata_and_category(tmp_path):
+    """Test that metadata and category coexist on stored message."""
+    conv = Conversation(
+        name="test_add_metadata_cat",
+        save_filepath=str(tmp_path / "metadata_2.json"),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+    metadata = {"trace_id": "xyz789"}
+    msg = conv.add(
+        "user",
+        "Hello",
+        category="input",
+        metadata=metadata,
+    )
+    assert conv.conversation_history[0]["category"] == "input"
+    assert conv.conversation_history[0]["metadata"] == metadata
+    assert msg["category"] == "input"
+    assert msg["metadata"] == metadata
+    return True
+
+
+def test_add_message_metadata_serialization(tmp_path):
+    """Test that metadata is preserved across to_dict, to_json, and to_yaml."""
+    conv = Conversation(
+        name="test_add_metadata_ser",
+        save_filepath=str(tmp_path / "metadata_3.json"),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+    metadata = {"source": "unit_test", "run_id": 42}
+    conv.add("user", "Test metadata serialization", metadata=metadata)
+
+    # to_dict
+    dict_res = conv.to_dict()
+    assert dict_res[0]["metadata"] == metadata
+
+    # to_json
+    json_res = conv.to_json()
+    assert '"metadata":' in json_res
+    assert '"source": "unit_test"' in json_res
+
+    # to_yaml
+    yaml_res = conv.to_yaml()
+    assert "metadata:" in yaml_res
+    assert "source: unit_test" in yaml_res
+    return True
+
+
+def test_add_message_empty_and_none_metadata(tmp_path):
+    """Test that empty or None metadata does not pollute message dict."""
+    conv = Conversation(
+        name="test_add_metadata_empty",
+        save_filepath=str(tmp_path / "metadata_4.json"),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+    msg_none = conv.add("user", "None metadata", metadata=None)
+    assert "metadata" not in conv.conversation_history[0]
+    assert "metadata" not in msg_none
+
+    msg_empty = conv.add("user", "Empty metadata", metadata={})
+    assert "metadata" not in conv.conversation_history[1]
+    assert "metadata" not in msg_empty
+    return True
+
+
 def run_all_tests():
     """Run all test functions and return results."""
     logger.info("Starting test suite execution")
@@ -905,6 +1024,10 @@ def run_all_tests():
     test_functions = [
         test_add_message,
         test_add_message_with_time,
+        test_add_message_with_metadata,
+        test_add_message_with_metadata_and_category,
+        test_add_message_metadata_serialization,
+        test_add_message_empty_and_none_metadata,
         test_delete_message,
         test_delete_message_out_of_bounds,
         test_update_message,
@@ -1006,6 +1129,293 @@ def generate_markdown_report(results):
         )
 
     return report
+
+
+# ============================================================================
+# Context isolation: an unnamed conversation must not resume someone else's
+# ============================================================================
+
+
+class TestDefaultConversationDoesNotResumeFromDisk:
+    """
+    Regression for cross-contamination between unrelated conversations.
+
+    ``name`` used to default to "conversation-test", so every anonymous
+    ``Conversation()`` resolved to the same file under the conversations
+    directory and silently loaded whatever a previous, unrelated run had left
+    there. Every swarm in the process started with someone else's messages and
+    re-sent them on every agent call.
+    """
+
+    def test_anonymous_conversation_starts_empty(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.setattr(
+            conversation_module,
+            "generate_conversation_name",
+            lambda: "conversation-deadbeef",
+        )
+        stale = tmp_path / "conversation_conversation-deadbeef.json"
+        stale.write_text(
+            json.dumps(
+                [
+                    {
+                        "role": "user",
+                        "content": "left over from another run",
+                    }
+                ]
+            )
+        )
+
+        conversation = Conversation(conversations_dir=str(tmp_path))
+
+        assert (
+            conversation.conversation_history == []
+        ), "an unnamed conversation resumed from an unrelated file"
+
+    def test_two_anonymous_conversations_do_not_share_state(
+        self, tmp_path
+    ):
+        first = Conversation(
+            conversations_dir=str(tmp_path), autosave=True
+        )
+        first.add("user", "private to the first conversation")
+        first.save_as_json(force=True)
+
+        second = Conversation(conversations_dir=str(tmp_path))
+
+        contents = [m["content"] for m in second.conversation_history]
+        assert "private to the first conversation" not in contents
+
+    def test_anonymous_conversations_get_distinct_names_and_ids(self):
+        first, second = Conversation(), Conversation()
+
+        assert re.fullmatch(r"conversation-[0-9a-f]{8}", first.name)
+        assert first.name != second.name
+        assert first.id != second.id
+
+    def test_a_named_conversation_still_resumes(self, tmp_path):
+        """Resume-by-name is deliberate and must keep working."""
+        first = Conversation(
+            name="my-project", conversations_dir=str(tmp_path)
+        )
+        first.add("user", "remember this")
+        first.save_as_json(
+            str(tmp_path / "conversation_my-project.json")
+        )
+
+        second = Conversation(
+            name="my-project", conversations_dir=str(tmp_path)
+        )
+
+        contents = [m["content"] for m in second.conversation_history]
+        assert "remember this" in contents
+
+    def test_an_explicit_filepath_still_resumes(self, tmp_path):
+        path = tmp_path / "explicit.json"
+        first = Conversation(save_filepath=str(path))
+        first.add("user", "explicit save")
+        first.save_as_json(str(path))
+
+        second = Conversation(save_filepath=str(path))
+
+        contents = [m["content"] for m in second.conversation_history]
+        assert "explicit save" in contents
+
+
+# ============================================================================
+# MESSAGE ACCESSORS: STRINGS VS REAL MESSAGE DICTS
+# ============================================================================
+
+
+def _two_turn_conversation():
+    conv = Conversation()
+    conv.add("user", "Hello, world!")
+    conv.add("assistant", "Hello, user!")
+    return conv
+
+
+def test_return_messages_as_strings_formats_role_colon_content():
+    """The flattener returns renderings, not messages."""
+    conv = _two_turn_conversation()
+
+    strings = conv.return_messages_as_strings()
+
+    assert isinstance(strings, list)
+    assert all(isinstance(s, str) for s in strings)
+    assert strings == [
+        "user: Hello, world!",
+        "assistant: Hello, user!",
+    ]
+
+
+def test_return_messages_as_list_returns_message_dicts():
+    """The name promises a message list, so it returns dicts, not strings."""
+    conversation = Conversation()
+    conversation.add("user", "Hello, world!")
+    conversation.add("assistant", "Hello, user!")
+
+    messages = conversation.return_messages_as_list()
+
+    assert all(isinstance(message, dict) for message in messages)
+    assert [m["role"] for m in messages] == ["user", "assistant"]
+    assert [m["content"] for m in messages] == [
+        "Hello, world!",
+        "Hello, user!",
+    ]
+    # The string rendering lives under its own name.
+    assert conversation.return_messages_as_strings() == [
+        "user: Hello, world!",
+        "assistant: Hello, user!",
+    ]
+
+
+def test_return_messages_as_dictionary_preserves_roles():
+    """The real message-list accessor: dicts with exactly role and content.
+
+    Asserting the type and the role keeps a future rename from silently
+    swapping this with the "role: content" flattener.
+    """
+    conv = _two_turn_conversation()
+
+    messages = conv.return_messages_as_dictionary()
+
+    assert isinstance(messages, list)
+    for message in messages:
+        assert isinstance(message, dict)
+        assert set(message.keys()) == {"role", "content"}
+
+    assert messages[0]["role"] == "user"
+    assert messages[0]["content"] == "Hello, world!"
+    assert messages[1]["role"] == "assistant"
+    assert messages[1]["content"] == "Hello, user!"
+
+
+def test_return_all_except_first_without_a_system_prompt():
+    conv = Conversation()
+    conv.add("User", "Task")
+    conv.add("Agent-1", "First answer")
+    conv.add("Agent-2", "Second answer")
+
+    assert [m["role"] for m in conv.return_all_except_first()] == [
+        "Agent-1",
+        "Agent-2",
+    ]
+
+    text = conv.return_all_except_first_string()
+    assert "First answer" in text
+    assert "Second answer" in text
+    assert "Task" not in text
+
+
+def test_return_all_except_first_with_a_system_prompt():
+    conv = Conversation(system_prompt="You are helpful.")
+    conv.add("User", "Task")
+    conv.add("Agent-1", "First answer")
+    conv.add("Agent-2", "Second answer")
+
+    assert [m["role"] for m in conv.return_all_except_first()] == [
+        "Agent-1",
+        "Agent-2",
+    ]
+
+    text = conv.return_all_except_first_string()
+    assert "You are helpful." not in text
+    assert "Task" not in text
+    assert "First answer" in text
+
+
+def test_construction_does_not_create_a_conversations_dir(tmp_path):
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        conv = Conversation()
+        assert not (tmp_path / "conversations").exists()
+
+        conv.add("User", "Task")
+        conv.save_as_json(force=True)
+        assert (tmp_path / "conversations").is_dir()
+    finally:
+        os.chdir(cwd)
+
+
+def test_construction_does_not_touch_the_home_dir(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    Conversation(name="demo")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_resuming_a_named_conversation_keeps_one_system_prompt(
+    tmp_path,
+):
+    kwargs = dict(
+        name="demo",
+        system_prompt="You are helpful.",
+        autosave=True,
+        conversations_dir=str(tmp_path),
+    )
+    conv = Conversation(**kwargs)
+    conv.add("User", "hello")
+    conv.add("Assistant", "hi")
+
+    for _ in range(2):
+        conv = Conversation(**kwargs)
+        assert [m["role"] for m in conv.conversation_history] == [
+            "System",
+            "User",
+            "Assistant",
+        ]
+
+
+def _record_token_counts(monkeypatch):
+    counted = []
+
+    def counting(text, *args, **kwargs):
+        counted.append(text)
+        return count_tokens(text, *args, **kwargs)
+
+    monkeypatch.setattr(conversation_module, "count_tokens", counting)
+    return counted
+
+
+def test_history_reads_reuse_message_token_counts(monkeypatch):
+    conv = Conversation(context_length=10_000)
+    conv.add("User", "first message")
+    conv.add("Assistant", "second message")
+    counted = _record_token_counts(monkeypatch)
+
+    for _ in range(3):
+        conv.return_history_as_string()
+    assert counted == [
+        "User: first message",
+        "Assistant: second message",
+    ]
+
+    conv.add("User", "third message")
+    conv.return_history_as_string()
+    assert counted[2:] == ["User: third message"]
+
+
+def test_trimmed_history_counts_messages_not_the_transcript(
+    monkeypatch,
+):
+    conv = Conversation(context_length=40)
+    contents = [
+        f"message {i} " + " ".join(["word"] * 10) for i in range(20)
+    ]
+    for content in contents:
+        conv.add("User", content)
+    counted = _record_token_counts(monkeypatch)
+
+    history = conv.return_history_as_string()
+
+    assert all("\n\n" not in text for text in counted)
+    full = "\n\n".join(f"User: {content}" for content in contents)
+    assert full.endswith(history)
+    assert history.endswith(contents[-1])
+    assert count_tokens(history) <= 40
 
 
 if __name__ == "__main__":

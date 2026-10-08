@@ -39,7 +39,7 @@ gpt4o = _agent("GPT4o_Worker", "gpt-4o-mini", common_prompt)
 sonnet = _agent("Sonnet_Worker", "claude-sonnet-4-6", common_prompt)
 aggregator = _agent(
     "Aggregator",
-    "gpt-4.1",
+    "gpt-5.4",
     "You are a senior editor. Given three independent expert answers, "
     "produce one synthesized answer that captures the strongest claims "
     "from each source. Cite which sources agreed on the key claim.",

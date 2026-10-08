@@ -1,18 +1,27 @@
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
 
 from loguru import logger
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import (
+    messages_for,
+    split_last_turn,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 
-from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
+from swarms.utils.generate_id import generate_id
 
 
 class EvaluationError(Exception):
@@ -198,25 +207,6 @@ Your report should be structured as follows:
 Focus on synthesizing the input feedback without adding new analysis."""
 
 
-def build_aggregation_prompt(rationales: Dict[str, str]) -> str:
-    """
-    Builds the prompt for aggregating evaluation results.
-
-    Args:
-        rationales (Dict[str, str]): Dictionary mapping dimension names to their evaluation results
-
-    Returns:
-        str: The formatted aggregation prompt
-    """
-    aggregation_input = "### MULTI-DIMENSION TECHNICAL ANALYSIS:\n"
-    for dim, text in rationales.items():
-        aggregation_input += (
-            f"\n--- {dim.upper()} ANALYSIS ---\n{text.strip()}\n"
-        )
-    aggregation_input += "\n### COMPREHENSIVE TECHNICAL REPORT:\n"
-    return aggregation_input
-
-
 class CouncilAsAJudge:
     """
     A council of AI agents that evaluates task responses across multiple dimensions.
@@ -239,13 +229,13 @@ class CouncilAsAJudge:
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "CouncilAsAJudge",
         description: str = "Evaluates task responses across multiple dimensions",
         model_name: str = "gpt-5.4",
         output_type: str = "final",
         cache_size: int = 128,
-        random_model_name: bool = True,
+        random_model_name: bool = False,
         max_loops: int = 1,
         aggregation_model_name: str = "gpt-5.4",
         judge_agent_model_name: Optional[str] = None,
@@ -265,7 +255,7 @@ class CouncilAsAJudge:
             max_loops (int): Maximum number of loops for agents
             aggregation_model_name (str): Model name for the aggregator agent
         """
-        self.id = id
+        self.id = id or generate_id("council-as-judge")
         self.name = name
         self.description = description
         self.model_name = model_name
@@ -282,6 +272,9 @@ class CouncilAsAJudge:
         self.judge_agents = self._create_judges()
         self.aggregator_agent = self._create_aggregator()
         self.conversation = Conversation()
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def reliability_check(self):
         logger.info(
@@ -344,7 +337,8 @@ class CouncilAsAJudge:
                 dim: Agent(
                     agent_name=f"{dim}_judge",
                     system_prompt=judge_system_prompt(),
-                    model_name=self.judge_agent_model_name,
+                    model_name=self.judge_agent_model_name
+                    or self.model_name,
                     max_loops=1,
                     output_type="final",
                     dynamic_temperature_enabled=True,
@@ -417,6 +411,10 @@ class CouncilAsAJudge:
                 f"Failed to evaluate dimension {dim}: {str(e)}"
             )
 
+    @trace_run(
+        "CouncilAsAJudge.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, task: str) -> None:
         """
         Run the evaluation process using ThreadPoolExecutor.
@@ -430,6 +428,7 @@ class CouncilAsAJudge:
 
         try:
 
+            self.conversation.clear()
             self.conversation.add(
                 role="User",
                 content=task,
@@ -442,7 +441,7 @@ class CouncilAsAJudge:
             ]
 
             # Run evaluations in parallel using ThreadPoolExecutor
-            with ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
                 # Submit all tasks
@@ -456,12 +455,9 @@ class CouncilAsAJudge:
                     for dim, agent, _ in tasks
                 }
 
-                # Collect results as they complete
-                all_rationales = {}
                 for future in as_completed(future_to_dim):
                     try:
-                        dim, result = future.result()
-                        all_rationales[dim] = result
+                        future.result()
                     except Exception as e:
                         dim = future_to_dim[future]
                         logger.error(
@@ -471,12 +467,14 @@ class CouncilAsAJudge:
                             f"Failed to evaluate dimension {dim}: {str(e)}"
                         )
 
-            # Generate final report
-            aggregation_prompt = build_aggregation_prompt(
-                all_rationales
+            prior, aggregation_task = split_last_turn(
+                messages_for(
+                    self.aggregator_agent.agent_name,
+                    self.conversation,
+                )
             )
             final_report = self.aggregator_agent.run(
-                aggregation_prompt
+                task=aggregation_task, messages=prior
             )
 
             self.conversation.add(

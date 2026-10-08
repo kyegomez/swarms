@@ -15,7 +15,7 @@ load_dotenv()
 # Director LLM: Responsible for orchestrating tasks among the agents
 # ------------------------------------------------------------------------------
 llm = LiteLLM(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     response_format=SwarmSpec,
     system_prompt=(
         "As the Director of this Hierarchical Agent Swarm, you are in charge of "
@@ -56,7 +56,7 @@ def main():
     # --------------------------------------------------------------------------
     analysis_agent = Agent(
         agent_name="Stock-Analysis-Agent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         interactive=False,
         streaming_on=False,

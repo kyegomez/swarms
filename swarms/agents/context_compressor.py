@@ -52,7 +52,7 @@ class ContextCompressor:
         self,
         threshold: float = 0.9,
         summarizer_model: Optional[str] = None,
-        summarizer_temperature: float = 0.2,
+        summarizer_temperature: Optional[float] = None,
         summarizer_max_tokens: int = 4000,
     ):
         """
@@ -86,9 +86,44 @@ class ContextCompressor:
 
         Loop-mode gating (auto vs integer) is now handled by the agent's
         ``context_compression`` flag at construction; this method just
-        measures the token budget.
+        measures the token budget. Tokens are only counted once the
+        history's size in bytes could reach the threshold.
         """
+        context_length = getattr(agent, "context_length", None)
+        if not context_length:
+            return False
+
+        # A token is never shorter than one byte, so a history under the budget in bytes cannot exceed it in tokens.
+        history = getattr(
+            agent.short_memory, "conversation_history", None
+        )
+        if (
+            isinstance(history, list)
+            and self._history_bytes(history)
+            < self.threshold * context_length
+        ):
+            return False
+
         return self.usage_ratio(agent) >= self.threshold
+
+    @staticmethod
+    def _history_bytes(history: list) -> int:
+        """
+        Upper bound on the UTF-8 size of the formatted history.
+
+        Args:
+            history: The conversation's message dicts.
+
+        Returns:
+            int: Bytes in the history as the agent formats it, or slightly more.
+        """
+        return sum(
+            len(
+                f"[{message.get('timestamp')}] {message.get('role')}: "
+                f"{message.get('content')}\n\n".encode()
+            )
+            for message in history
+        )
 
     def _summarize(self, agent: Any, history: str) -> str:
         model = self.summarizer_model or getattr(
@@ -137,10 +172,7 @@ class ContextCompressor:
 
         summary = self._summarize(agent, history)
 
-        # Delegate to Conversation.compact() so the system_prompt/rules are
-        # preserved in-memory AND MEMORY.md is wiped + re-seeded with the
-        # summary block (otherwise the on-disk log would grow unbounded
-        # across compressions and re-inflate on the next run's preload).
+        # Conversation.compact() also wipes and re-seeds MEMORY.md, which would otherwise grow unbounded.
         summary_content = (
             "[Compressed Memory Summary]\n"
             "The following is a compressed summary of earlier "

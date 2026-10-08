@@ -1,7 +1,7 @@
-import concurrent.futures
 import datetime
 import json
 import os
+import secrets
 import threading
 import traceback
 import uuid
@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -23,30 +24,26 @@ if TYPE_CHECKING:
     from swarms.structs.agent import Agent
 
 from loguru import logger
+from swarms.utils.generate_id import generate_id
 
 
-def generate_conversation_id():
-    """Generate a unique conversation ID."""
-    return str(uuid.uuid4())
+def generate_conversation_id() -> str:
+    """Deprecated: use ``generate_id()``."""
+    return generate_id()
 
 
 def get_conversation_dir():
-    """Get the directory for storing conversation logs."""
-    # Get the current working directory
-    conversation_dir = os.path.join(os.getcwd(), "conversations")
-    try:
-        os.makedirs(conversation_dir, mode=0o755, exist_ok=True)
-    except Exception as e:
-        logger.error(
-            f"Failed to create conversations directory: {str(e)}"
-        )
-        # Fallback to the same directory as the script
-        conversation_dir = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "conversations",
-        )
-        os.makedirs(conversation_dir, mode=0o755, exist_ok=True)
-    return conversation_dir
+    """Get the directory for storing conversation logs.
+
+    The path is not created here: constructing a Conversation must not litter
+    the working directory. The save paths create it when they write.
+    """
+    return os.path.join(os.getcwd(), "conversations")
+
+
+def generate_conversation_name() -> str:
+    """Name an unnamed conversation, uniquely per instance."""
+    return f"conversation-{secrets.token_hex(4)}"
 
 
 class Conversation:
@@ -75,8 +72,8 @@ class Conversation:
 
     def __init__(
         self,
-        id: str = generate_conversation_id(),
-        name: str = "conversation-test",
+        id: Optional[str] = None,
+        name: Optional[str] = None,
         system_prompt: Optional[str] = None,
         time_enabled: bool = False,
         autosave: bool = False,
@@ -90,19 +87,24 @@ class Conversation:
         save_as_json_bool: bool = False,
         token_count: bool = False,
         message_id_on: bool = False,
-        tokenizer_model_name: str = "gpt-4.1",
+        tokenizer_model_name: str = "gpt-5.4",
         conversations_dir: Optional[str] = None,
         export_method: str = "json",
         dynamic_context_window: bool = True,
         cache_enabled: bool = False,
         output_metadata: bool = False,
         memory_md_path: Optional[str] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
     ):
 
         # Initialize all attributes first
-        self.id = id
-        self.name = name
+        self.id = id or generate_id()
+        # Only an explicitly chosen name resumes from disk
+        self._explicit_name = name is not None
+        self.name = name or generate_conversation_name()
         self.save_filepath = save_filepath
+        # Only an explicitly chosen file resumes from disk
+        self._explicit_save_filepath = save_filepath is not None
         self.system_prompt = system_prompt
         self.time_enabled = time_enabled
         self.autosave = autosave
@@ -123,30 +125,29 @@ class Conversation:
         self.output_metadata = output_metadata
         self.memory_md_path = memory_md_path
         self._memory_md_lock = threading.Lock()
-        # Suppress disk writes during initial setup so the static
-        # system_prompt and rules aren't re-appended to MEMORY.md on every
-        # construction. Only user tasks and agent responses added via
-        # later add() calls should be persisted.
-        self._suppress_memory_md = True
 
-        if self.name is None:
-            self.name = id
+        # Suppressed so the static system_prompt and rules are not re-appended to MEMORY.md every construction.
+        self._suppress_memory_md = True
 
         self.conversation_history = []
         self._str_cache: Optional[str] = None
         self._cache_hits: int = 0
         self._cache_misses: int = 0
         self._last_cached_tokens: int = 0
+        self._token_count_cache: Dict[Tuple[str, str], int] = {}
 
         self.setup_file_path()
-        self.setup()
+        if not self.conversation_history:
+            self._initialize_new_conversation()
 
-        # Re-enable MEMORY.md writes and preload any prior interaction log
-        # as a single System preamble message.
+        # Prior MEMORY.md content becomes one System preamble message
         self._suppress_memory_md = False
         if self.memory_md_path:
             self._init_memory_md()
             self._preload_memory_md()
+
+        if messages:
+            self.add_messages(messages)
 
     def setup_file_path(self):
         """Set up the file path for saving the conversation and load existing data if available."""
@@ -162,8 +163,10 @@ class Conversation:
             extension = (
                 ".json" if self.export_method == "json" else ".yaml"
             )
-            self.save_filepath = (
-                f"conversation_{self.name}{extension}"
+            # Under conversations_dir, not CWD: same-named conversations must not collide.
+            self.save_filepath = os.path.join(
+                self.conversations_dir or get_conversation_dir(),
+                f"conversation_{self.name}{extension}",
             )
             logger.debug(
                 f"Setting default save filepath to: {self.save_filepath}"
@@ -186,8 +189,15 @@ class Conversation:
             "%Y-%m-%d_%H-%M-%S"
         )
 
+        # Named conversations only: an unnamed one gets a fresh random name, so it has nothing to resume.
+        wants_persistence = (
+            self._explicit_save_filepath
+            or self.load_filepath is not None
+            or self._explicit_name
+        )
+
         # Check if file exists and load it
-        if os.path.exists(self.save_filepath):
+        if wants_persistence and os.path.exists(self.save_filepath):
             logger.debug(
                 f"Found existing conversation file at: {self.save_filepath}"
             )
@@ -207,35 +217,6 @@ class Conversation:
                 f"No existing conversation file found at: {self.save_filepath}"
             )
 
-    def setup(self):
-        # Set up conversations directory
-        self.conversations_dir = (
-            self.conversations_dir
-            or os.path.join(
-                os.path.expanduser("~"), ".swarms", "conversations"
-            )
-        )
-        os.makedirs(self.conversations_dir, exist_ok=True)
-
-        # Try to load existing conversation if it exists
-        conversation_file = os.path.join(
-            self.conversations_dir, f"{self.name}.json"
-        )
-        if os.path.exists(conversation_file):
-            with open(conversation_file, "r") as f:
-                saved_data = json.load(f)
-                # Update attributes from saved data
-                for key, value in saved_data.get(
-                    "metadata", {}
-                ).items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-                self.conversation_history = saved_data.get(
-                    "history", []
-                )
-        else:
-            self._initialize_new_conversation()
-
     def _initialize_new_conversation(self):
         """Initialize a new conversation with system prompt and rules."""
         if self.system_prompt is not None:
@@ -246,9 +227,6 @@ class Conversation:
 
         if self.custom_rules_prompt is not None:
             self.add(self.user or "User", self.custom_rules_prompt)
-
-        # if self.tokenizer is not None:
-        #     self.truncate_memory_with_tokenizer()
 
     def _autosave(self):
         """Automatically save the conversation if autosave is enabled."""
@@ -449,6 +427,7 @@ class Conversation:
         self,
         role: str,
         content: Union[str, dict, list, Any],
+        metadata: Optional[dict] = None,
         category: Optional[str] = None,
     ):
         """Add a message to the conversation history.
@@ -456,6 +435,7 @@ class Conversation:
         Args:
             role (str): The role of the speaker (e.g., 'User', 'System').
             content (Union[str, dict, list]): The content of the message to be added.
+            metadata (Optional[dict]): Optional metadata for the message.
             category (Optional[str]): Optional category for the message.
         """
         # Base message with role and timestamp
@@ -472,6 +452,9 @@ class Conversation:
 
         if category:
             message["category"] = category
+
+        if metadata:
+            message["metadata"] = metadata
 
         # Add message to conversation history
         self.conversation_history.append(message)
@@ -532,9 +515,6 @@ class Conversation:
             all_input_text = " ".join(input_messages)
             all_output_text = " ".join(output_messages)
 
-            print(all_input_text)
-            print(all_output_text)
-
             # Count tokens only if there is text
             input_tokens = (
                 count_tokens(
@@ -584,7 +564,10 @@ class Conversation:
             category (Optional[str]): Optional category for the message.
         """
         result = self.add_in_memory(
-            role=role, content=content, category=category
+            role=role,
+            content=content,
+            metadata=metadata,
+            category=category,
         )
 
         # Ensure autosave happens after the message is added
@@ -608,23 +591,61 @@ class Conversation:
         roles: List[str],
         contents: List[Union[str, dict, list, any]],
     ):
-        """Add multiple messages to the conversation history."""
+        """Add multiple messages to the conversation history, in order.
+
+        Args:
+            roles (List[str]): One role per message.
+            contents (List[Union[str, dict, list, any]]): One content per role.
+
+        Returns:
+            list: The result of each :meth:`add`, in the order given.
+        """
         if len(roles) != len(contents):
             raise ValueError(
                 "Number of roles and contents must match."
             )
 
-        # Now create a formula to get 25% of available cpus
-        max_workers = int(os.cpu_count() * 0.25)
+        return [
+            self.add(role, content)
+            for role, content in zip(roles, contents)
+        ]
 
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_workers
-        ) as executor:
-            futures = [
-                executor.submit(self.add, role, content)
-                for role, content in zip(roles, contents)
-            ]
-            concurrent.futures.wait(futures)
+    def add_messages(self, messages: List[Dict[str, Any]]):
+        """Add chat-format messages to the conversation history, in order.
+
+        Args:
+            messages (List[Dict[str, Any]]): Messages shaped like
+                ``{"role": ..., "content": ...}``. Any other keys - ``name``,
+                ``tool_calls``, ``tool_call_id`` - are kept as metadata so a
+                tool exchange survives the round trip.
+
+        Returns:
+            list: The result of each :meth:`add`, in the order given.
+        """
+        added = []
+        for message in messages:
+            if not isinstance(message, dict):
+                raise ValueError(
+                    f"Each message must be a dict with 'role' and 'content', got {type(message).__name__}."
+                )
+            if "role" not in message:
+                raise ValueError(
+                    f"Message is missing a 'role' key: {message}"
+                )
+
+            extra = {
+                key: value
+                for key, value in message.items()
+                if key not in ("role", "content")
+            }
+            added.append(
+                self.add(
+                    role=message["role"],
+                    content=message.get("content"),
+                    metadata=extra or None,
+                )
+            )
+        return added
 
     def delete(self, index: str):
         """Delete a message from the conversation history."""
@@ -740,9 +761,7 @@ class Conversation:
         if self._str_cache is None:
             self._cache_misses += 1
             self._str_cache = self._build_history_string()
-            self._last_cached_tokens = count_tokens(
-                self._str_cache, self.tokenizer_model_name
-            )
+            self._last_cached_tokens = self._history_token_count()
         else:
             self._cache_hits += 1
 
@@ -755,6 +774,14 @@ class Conversation:
         return self._return_history_as_string_worker()
 
     def _return_history_as_string_worker(self):
+        return "\n\n".join(self._format_messages())
+
+    def _format_messages(self) -> List[str]:
+        """Format each message as one history line.
+
+        Returns:
+            List[str]: One line per message, oldest first.
+        """
         formatted_messages = []
 
         for message in self.conversation_history:
@@ -768,7 +795,45 @@ class Conversation:
                     f"{message['role']}: {message['content']}"
                 )
 
-        return "\n\n".join(formatted_messages)
+        return formatted_messages
+
+    def _message_token_counts(self, lines: List[str]) -> List[int]:
+        """Count the tokens in each line, reusing counts from the previous call.
+
+        Args:
+            lines (List[str]): Formatted history lines.
+
+        Returns:
+            List[int]: One token count per line.
+        """
+        previous = self._token_count_cache
+        # Rebuilt each call so lines no longer in the history drop out.
+        cache = {}
+        counts = []
+        for line in lines:
+            key = (self.tokenizer_model_name, line)
+            if key not in cache:
+                cache[key] = (
+                    previous[key]
+                    if key in previous
+                    else count_tokens(line, self.tokenizer_model_name)
+                )
+            counts.append(cache[key])
+        self._token_count_cache = cache
+        return counts
+
+    def _history_token_count(self) -> int:
+        """Count the tokens in the history string from per-message counts.
+
+        Returns:
+            int: Token count, capped at context_length when the dynamic context window is on.
+        """
+        counts = self._message_token_counts(self._format_messages())
+        # One token per "\n\n" separator between messages.
+        total = sum(counts) + max(len(counts) - 1, 0)
+        if self.dynamic_context_window is True:
+            return min(total, self.context_length)
+        return total
 
     def get_str(self) -> str:
         """Alias for :meth:`return_history_as_string` (kept for compatibility).
@@ -933,6 +998,41 @@ class Conversation:
             )
             raise  # Re-raise to ensure the error is visible
 
+    def _restore(self, data: Union[dict, list]):
+        """Apply a loaded save file to this conversation.
+
+        Accepts both shapes a save file can have. ``save_as_json`` and
+        ``save_as_yaml`` write ``to_dict()``, which is the bare list of
+        messages, while this loader only understood a
+        ``{"metadata": ..., "conversation_history": ...}`` wrapper — so
+        reloading a file this class had just written raised
+        ``AttributeError: 'list' object has no attribute 'get'``.
+
+        Args:
+            data (Union[dict, list]): Parsed contents of a save file.
+        """
+        if isinstance(data, list):
+            self.conversation_history = data
+            self._str_cache = None
+            return
+
+        if not isinstance(data, dict):
+            logger.warning(
+                f"Ignoring save file with unexpected top-level "
+                f"{type(data).__name__}; expected a list or a dict."
+            )
+            return
+
+        # Conversation-level settings, when the file carries the wrapper.
+        for key, value in (data.get("metadata") or {}).items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+        self.conversation_history = data.get(
+            "conversation_history", []
+        )
+        self._str_cache = None
+
     def load_from_json(self, filename: str):
         """Load the conversation history and metadata from a JSON file.
 
@@ -944,18 +1044,7 @@ class Conversation:
                 with open(filename, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
-                # Load metadata
-                metadata = data.get("metadata", {})
-                # Update all metadata attributes
-                for key, value in metadata.items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-
-                # Load conversation history
-                self.conversation_history = data.get(
-                    "conversation_history", []
-                )
-                self._str_cache = None
+                self._restore(data)
 
                 logger.info(
                     f"Successfully loaded conversation from {filename}"
@@ -977,18 +1066,7 @@ class Conversation:
                 with open(filename, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f)
 
-                # Load metadata
-                metadata = data.get("metadata", {})
-                # Update all metadata attributes
-                for key, value in metadata.items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-
-                # Load conversation history
-                self.conversation_history = data.get(
-                    "conversation_history", []
-                )
-                self._str_cache = None
+                self._restore(data)
 
                 logger.info(
                     f"Successfully loaded conversation from {filename}"
@@ -1081,8 +1159,7 @@ class Conversation:
                 if remaining_tokens <= 0:
                     break
 
-                # If we have space left, we need to truncate this message
-                # Use binary search to find content length that fits remaining token space
+                # Binary-search a prefix of this message that fits the remaining budget
                 truncated_content = self._binary_search_truncate(
                     content,
                     remaining_tokens,
@@ -1230,8 +1307,11 @@ class Conversation:
             return f"{self.conversation_history[-1]['role']}: {self.conversation_history[-1]['content']}"
         return ""
 
-    def return_messages_as_list(self):
+    def return_messages_as_strings(self):
         """Return the conversation messages as a list of formatted strings.
+
+        This is a rendering, not a message list. To build a request body use
+        :meth:`return_messages_as_dictionary`, which preserves roles.
 
         Returns:
             list: List of messages formatted as 'role: content'.
@@ -1241,11 +1321,14 @@ class Conversation:
             for message in self.conversation_history
         ]
 
-    def return_messages_as_dictionary(self):
-        """Return the conversation messages as a list of dictionaries.
+    def return_messages_as_list(self):
+        """Return the conversation as a list of message dictionaries.
+
+        For the ``'role: content'`` string rendering use
+        :meth:`return_messages_as_strings`.
 
         Returns:
-            list: List of dictionaries containing role and content of each message.
+            list: One ``{"role", "content"}`` dict per message.
         """
         return [
             {
@@ -1254,6 +1337,14 @@ class Conversation:
             }
             for message in self.conversation_history
         ]
+
+    def return_messages_as_dictionary(self):
+        """Return the conversation messages as a list of dictionaries.
+
+        Returns:
+            list: List of dictionaries containing role and content of each message.
+        """
+        return self.return_messages_as_list()
 
     def add_tool_output_to_agent(self, role: str, tool_output: dict):
         """
@@ -1296,16 +1387,33 @@ class Conversation:
             return output
         return ""
 
+    def _index_after_first_message(self) -> int:
+        """Index of the first message after the system prompt and the input.
+
+        Neither fixed offset is right for both shapes. ``Agent.short_memory``
+        begins ``[System, User, ...]``, so a slice of 1 echoes the task back
+        in the agent's own output. Swarms like ``ConcurrentWorkflow`` begin
+        ``[User, agent, agent, ...]`` with no system row, so a slice of 2
+        drops the first agent's answer. Read the history instead of guessing.
+        """
+        history = self.conversation_history
+        start = (
+            1 if history and history[0].get("role") == "System" else 0
+        )
+        return start + 1
+
     def return_all_except_first(self):
-        """Return all messages except the first one.
+        """Return all messages except the system prompt and the first input.
 
         Returns:
             list: List of messages except the first one.
         """
-        return self.conversation_history[2:]
+        return self.conversation_history[
+            self._index_after_first_message() :
+        ]
 
     def return_all_except_first_string(self):
-        """Return all messages except the first one as a string.
+        """Return all messages except the system prompt and the first input.
 
         Returns:
             str: All messages except the first one as a string.
@@ -1313,7 +1421,9 @@ class Conversation:
         return "\n".join(
             [
                 f"{msg['content']}"
-                for msg in self.conversation_history[2:]
+                for msg in self.conversation_history[
+                    self._index_after_first_message() :
+                ]
             ]
         )
 
@@ -1471,11 +1581,6 @@ class Conversation:
                 names.append(name)
         return sorted(names)
 
-    def clear_memory(self):
-        """Clear the memory of the conversation."""
-        self.conversation_history = []
-        self._str_cache = None
-
     def _dynamic_auto_chunking_worker(self):
         """
         Dynamically chunk the conversation history to fit within the context length.
@@ -1483,43 +1588,57 @@ class Conversation:
         Returns:
             str: The chunked conversation history as a string that fits within context_length tokens.
         """
-        all_tokens = self._return_history_as_string_worker()
+        lines = self._format_messages()
+        counts = self._message_token_counts(lines)
 
-        total_tokens = count_tokens(
-            all_tokens, self.tokenizer_model_name
-        )
+        # One token per "\n\n" separator between messages.
+        if sum(counts) + len(lines) - 1 <= self.context_length:
+            return "\n\n".join(lines)
 
-        if total_tokens <= self.context_length:
-            return all_tokens
+        # Keep the newest messages that fit, then the tail of the first one that does not.
+        budget = self.context_length
+        kept = []
+        for line, tokens in zip(reversed(lines), reversed(counts)):
+            separator = 1 if kept else 0
+            if tokens + separator > budget:
+                tail = self._binary_search_tail(
+                    line, budget - separator
+                )
+                if tail:
+                    kept.append(tail)
+                break
+            kept.append(line)
+            budget -= tokens + separator
 
-        # We need to remove characters from the beginning until we're under the limit
-        # Start by removing a percentage of characters and adjust iteratively
-        target_tokens = self.context_length
-        current_string = all_tokens
+        return "\n\n".join(reversed(kept))
 
-        # Binary search approach to find the right cutoff point
-        left, right = 0, len(all_tokens)
+    def _binary_search_tail(
+        self, text: str, target_tokens: int
+    ) -> str:
+        """Find the longest suffix of the text that fits the token budget.
 
+        Args:
+            text (str): Text to trim from the front.
+            target_tokens (int): Maximum tokens the suffix may hold.
+
+        Returns:
+            str: The longest fitting suffix, or an empty string if none fits.
+        """
+        if target_tokens <= 0:
+            return ""
+
+        left, right = 0, len(text)
         while left < right:
             mid = (left + right) // 2
-            test_string = all_tokens[mid:]
-
-            if not test_string:
-                break
-
-            test_tokens = count_tokens(
-                test_string, self.tokenizer_model_name
-            )
-
-            if test_tokens <= target_tokens:
-                # We can remove more from the beginning
+            if (
+                count_tokens(text[mid:], self.tokenizer_model_name)
+                <= target_tokens
+            ):
                 right = mid
-                current_string = test_string
             else:
-                # We need to keep more from the beginning
                 left = mid + 1
 
-        return current_string
+        return text[left:]
 
     def dynamic_auto_chunking(self):
         """
@@ -1533,23 +1652,3 @@ class Conversation:
         except Exception as e:
             logger.error(f"Dynamic auto chunking failed: {e}")
             return self._return_history_as_string_worker()
-
-
-# Example usage
-# conversation = Conversation()
-# conversation = Conversation(token_count=True, context_length=14)
-# conversation.add("user", "Hello, how are you?")
-# conversation.add("assistant", "I am doing well, thanks.")
-# conversation.add("user", "What is the weather in Tokyo?")
-# print(conversation.dynamic_auto_chunking())
-# # conversation.add(
-# #     "assistant", {"name": "tool_1", "output": "Hello, how are you?"}
-# )
-# print(conversation.return_json())
-
-# # print(conversation.get_last_message_as_string())
-# print(conversation.return_json())
-# # conversation.add("assistant", "I am doing well, thanks.")
-# # # print(conversation.to_json())
-# print(type(conversation.to_dict()))
-# print(conversation.to_yaml())

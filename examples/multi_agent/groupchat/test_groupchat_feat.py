@@ -1,22 +1,33 @@
-from swarms import Agent, GroupChat
+"""Smoke test for the dynamic GroupChat."""
 
-# Create agents with organized configuration
+from swarms import Agent
+from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
+
 afu = Agent(
-    agent_name="afu", system_prompt="...", model_name="gpt-4.1"
+    agent_name="afu",
+    system_prompt="You are afu, a creative copywriter for Xiaohongshu beauty posts.",
+    model_name="gpt-5.4",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
 )
 
 nunu = Agent(
-    agent_name="nunu", system_prompt="...", model_name="gpt-4.1"
+    agent_name="nunu",
+    system_prompt="You are nunu, a beauty product reviewer who critiques copy for authenticity.",
+    model_name="gpt-5.4",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
 )
 
-# Set up the group chat
 chat = GroupChat(
     agents=[afu, nunu],
-    speaker_function="random-dynamic-speaker",
-    interactive=False,
+    max_loops=8,
+    threshold=0.5,
+    idle_timeout=8.0,
 )
 
-# Run a prompt through the group chat
 response = chat.run(
     "@afu Write a Xiaohongshu lipstick advertisement copy"
 )

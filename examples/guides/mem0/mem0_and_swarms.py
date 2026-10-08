@@ -576,7 +576,7 @@ def example_usage():
     setup = setup_rag_agent_with_mem0(
         pdf_paths=["pdf.pdf"],
         user_id="example_user",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         chunk_size=2000,
     )
 

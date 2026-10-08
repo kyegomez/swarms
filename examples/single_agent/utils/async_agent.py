@@ -3,7 +3,7 @@ from swarms.prompts.finance_agent_sys_prompt import (
     FINANCIAL_AGENT_SYS_PROMPT,
 )
 
-# Initialize the agent (no swarm_models import needed)
+# Initialize the agent
 agent = Agent(
     agent_name="Financial-Analysis-Agent",
     agent_description="Personal finance advisor agent",
@@ -12,7 +12,7 @@ agent = Agent(
         + " Output the <DONE> token when you're done creating a portfolio"
     ),
     max_loops=1,
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     dynamic_temperature_enabled=True,
     user_name="Kye",
     retry_attempts=3,

@@ -14,7 +14,7 @@ load_dotenv()
 # Trading Director: Responsible for orchestrating tasks among multiple stock analysts
 # ------------------------------------------------------------------------------
 director_llm = LiteLLM(
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     response_format=SwarmSpec,
     system_prompt=(
         "You are the Trading Director in charge of coordinating a team of specialized "
@@ -50,7 +50,7 @@ def main():
     # --------------------------------------------------------------------------
     macro_agent = Agent(
         agent_name="Macro-Economic-Analysis-Agent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         interactive=False,
         streaming_on=False,
@@ -80,7 +80,7 @@ def main():
     # --------------------------------------------------------------------------
     sector_agent = Agent(
         agent_name="Sector-Performance-Analysis-Agent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         interactive=False,
         streaming_on=False,
@@ -112,7 +112,7 @@ def main():
     # --------------------------------------------------------------------------
     technical_agent = Agent(
         agent_name="Technical-Analysis-Agent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         interactive=False,
         streaming_on=False,
@@ -144,7 +144,7 @@ def main():
     # --------------------------------------------------------------------------
     risk_agent = Agent(
         agent_name="Risk-Analysis-Agent",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         interactive=False,
         streaming_on=False,

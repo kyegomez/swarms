@@ -13,10 +13,12 @@ video/
 artifacts_three
 dataframe/
 .ruff_cache
+.pycache/
 target/
 Cargo.lock
 .claude/
 .pytest_cache
+.pycache_tmp
 databases
 static/generated
 conversations/
@@ -27,8 +29,6 @@ infra.md
 runs
 Financial-Analysis-Agent_state.json
 conversations/
-models/
-evolved_gpt2_models/
 experimental
 ffn_alternatives
 artifacts_five

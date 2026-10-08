@@ -1,5 +1,12 @@
 from swarms import Agent
-from swarms.structs.multi_agent_debates import BrainstormingSession
+import sys
+from pathlib import Path
+
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[1] / "alternate_debates")
+)
+
+from brainstorming_session import BrainstormingSession  # noqa: E402
 
 # Initialize the research team members
 research_director = Agent(

@@ -3,8 +3,8 @@ Tests for HeavySwarm.
 
 Covers:
 - Default 5-agent mode (research / analysis / alternatives / verification / synthesis)
-- Grok mode (use_grok_agents=True) — 4 agents: captain, harper, benjamin, lucas
-- Grok Heavy mode (use_grok_heavy=True) — 16 agents including captain
+- Grok mode (variant="medium") — 4 agents: captain, harper, benjamin, lucas
+- Grok Heavy mode (variant="heavy") — 16 agents including captain
 - Schema structure for both grok and grok-heavy question-generation
 - Prompt constants
 - SwarmRouter integration
@@ -18,14 +18,18 @@ from dotenv import load_dotenv
 
 from swarms.prompts.heavy_swarm_prompts import (
     BENJAMIN_HEAVY_PROMPT,
+    BENJAMIN_PROMPT,
+    CAPTAIN_SWARM_PROMPT,
     CHARLOTTE_PROMPT,
     ELIZABETH_PROMPT,
     GROK_HEAVY_CAPTAIN_PROMPT,
     HARPER_HEAVY_PROMPT,
+    HARPER_PROMPT,
     HENRY_PROMPT,
     JACK_PROMPT,
     JAMES_PROMPT,
     LUCAS_HEAVY_PROMPT,
+    LUCAS_PROMPT,
     LUNA_PROMPT,
     MIA_PROMPT,
     NOAH_PROMPT,
@@ -36,18 +40,13 @@ from swarms.prompts.heavy_swarm_prompts import (
     grok_heavy_schema,
     grok_schema,
 )
-from swarms.structs.heavy_swarm import (
-    BENJAMIN_PROMPT,
-    CAPTAIN_SWARM_PROMPT,
-    HARPER_PROMPT,
-    LUCAS_PROMPT,
-    HeavySwarm,
-)
+from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.swarm_router import SwarmRouter
 
 load_dotenv()
 
 MODEL = "gpt-5.4-mini"
+LIVE_MAX_LOOPS = 2
 
 HEAVY_WORKER_KEYS = [
     "harper",
@@ -74,29 +73,29 @@ HEAVY_WORKER_KEYS = [
 
 
 class TestGrokAgentCreation:
-    """Verify agent creation and configuration for use_grok_agents."""
+    """Verify agent creation and configuration for variant="medium"."""
 
     def test_grok_agents_flag_default_false(self):
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
         )
-        assert swarm.use_grok_agents is False
+        assert swarm.variant == "default"
 
     def test_grok_agents_flag_set_true(self):
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
         )
-        assert swarm.use_grok_agents is True
+        assert swarm.variant == "medium"
 
     def test_default_agents_keys(self):
         """Default mode creates research/analysis/etc agents."""
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=False,
+            variant="default",
         )
         agents = swarm.agents
         assert "research" in agents
@@ -111,7 +110,7 @@ class TestGrokAgentCreation:
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
         )
         agents = swarm.agents
         assert "captain" in agents
@@ -125,7 +124,7 @@ class TestGrokAgentCreation:
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
         )
         assert swarm.agents["captain"].agent_name == "Captain-Swarm"
         assert swarm.agents["harper"].agent_name == "Harper"
@@ -133,26 +132,30 @@ class TestGrokAgentCreation:
         assert swarm.agents["lucas"].agent_name == "Lucas"
 
     def test_grok_agent_prompts(self):
+        """Captain holds the raw prompt; autonomous workers have it embedded."""
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
         )
+        # Leader (max_loops=1) keeps the prompt verbatim.
         assert (
             swarm.agents["captain"].system_prompt
             == CAPTAIN_SWARM_PROMPT
         )
-        assert swarm.agents["harper"].system_prompt == HARPER_PROMPT
+        # Workers (max_loops="auto") wrap with the autonomous-loop preamble,
+        # so we check substring containment.
+        assert HARPER_PROMPT in swarm.agents["harper"].system_prompt
         assert (
-            swarm.agents["benjamin"].system_prompt == BENJAMIN_PROMPT
+            BENJAMIN_PROMPT in swarm.agents["benjamin"].system_prompt
         )
-        assert swarm.agents["lucas"].system_prompt == LUCAS_PROMPT
+        assert LUCAS_PROMPT in swarm.agents["lucas"].system_prompt
 
     def test_grok_agent_model_names(self):
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
         )
         for key in ["captain", "harper", "benjamin", "lucas"]:
             assert swarm.agents[key].model_name == MODEL
@@ -167,7 +170,7 @@ class TestGrokAgentCreation:
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
             worker_tools=[dummy_tool],
         )
         for key in ["captain", "harper", "benjamin", "lucas"]:
@@ -177,15 +180,32 @@ class TestGrokAgentCreation:
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
         )
         assert len(swarm.agents) == 4
+
+    def test_grok_captain_max_loops_is_1(self):
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+        assert swarm.agents["captain"].max_loops == 1
+
+    def test_grok_workers_max_loops_is_auto(self):
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+        for key in ["harper", "benjamin", "lucas"]:
+            assert swarm.agents[key].max_loops == "auto"
 
     def test_default_agent_count(self):
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=False,
+            variant="default",
         )
         assert len(swarm.agents) == 5
 
@@ -266,37 +286,36 @@ class TestGrokPrompts:
 
 
 class TestGrokHeavyFlagBehavior:
-    """Verify flag defaults and mutual exclusion."""
+    """Verify variant defaults and validation."""
 
     def test_grok_heavy_flag_default_false(self):
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
         )
-        assert swarm.use_grok_heavy is False
+        assert swarm.variant == "default"
 
     def test_grok_heavy_flag_set_true(self):
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_heavy=True,
+            variant="heavy",
         )
-        assert swarm.use_grok_heavy is True
+        assert swarm.variant == "heavy"
 
-    def test_mutual_exclusion_raises(self):
-        with pytest.raises(ValueError, match="mutually exclusive"):
+    def test_unknown_variant_raises(self):
+        with pytest.raises(ValueError, match="Unknown variant"):
             HeavySwarm(
                 worker_model_name=MODEL,
                 question_agent_model_name=MODEL,
-                use_grok_agents=True,
-                use_grok_heavy=True,
+                variant="bogus",
             )
 
     def test_grok_agents_still_works(self):
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
         )
         assert "captain" in swarm.agents
         assert "harper" in swarm.agents
@@ -324,7 +343,7 @@ class TestGrokHeavyAgentCreation:
         return HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_heavy=True,
+            variant="heavy",
         )
 
     def test_creates_16_agents(self, heavy_swarm):
@@ -345,6 +364,10 @@ class TestGrokHeavyAgentCreation:
 
     def test_captain_name_is_grok(self, heavy_swarm):
         assert heavy_swarm.agents["captain"].agent_name == "Grok"
+
+    def test_workers_max_loops_is_auto(self, heavy_swarm):
+        for key in HEAVY_WORKER_KEYS:
+            assert heavy_swarm.agents[key].max_loops == "auto"
 
     def test_worker_agents_use_configured_model(self, heavy_swarm):
         for key in HEAVY_WORKER_KEYS:
@@ -447,6 +470,321 @@ class TestGrokHeavyPrompts:
 # ============================================================================
 
 
+class TestQuestionDecomposerSeesTheImage:
+    """#1903: the decomposer writes the questions every worker answers, but it
+    took only `task`, so a visual run decomposed the sentence and guessed at
+    the image.
+    """
+
+    def _capture(self, monkeypatch):
+        seen = {}
+
+        class FakeLiteLLM:
+            def __init__(self, **kwargs):
+                seen["prompt"] = kwargs.get("system_prompt", "")
+
+            def run(self, task, *args, **kwargs):
+                seen["task"] = task
+                seen["img"] = kwargs.get("img")
+                return ""
+
+        monkeypatch.setattr(
+            "swarms.structs.heavy_swarm.LiteLLM", FakeLiteLLM
+        )
+        return seen
+
+    def test_img_reaches_the_question_agent(self, monkeypatch):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+
+        swarm.execute_question_generation(
+            "What does this chart imply?", img="revenue.png"
+        )
+
+        assert seen["img"] == "revenue.png"
+        assert "An image accompanies this task" in seen["prompt"]
+
+    def test_text_only_runs_are_unchanged(self, monkeypatch):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+
+        swarm.execute_question_generation("A text-only task")
+
+        assert seen["img"] is None
+        assert "An image accompanies this task" not in seen["prompt"]
+
+
+class TestQuestionAgentPerVariant:
+    """The decomposer's schema has to match the roster that reads its output,
+    and its sampling settings have to be ones every provider accepts.
+    """
+
+    def _capture(self, monkeypatch):
+        seen = {}
+
+        class FakeLiteLLM:
+            def __init__(self, **kwargs):
+                seen.update(kwargs)
+
+            def run(self, task, *args, **kwargs):
+                return ""
+
+        monkeypatch.setattr(
+            "swarms.structs.heavy_swarm.LiteLLM", FakeLiteLLM
+        )
+        return seen
+
+    @pytest.mark.parametrize(
+        "variant, function_name, roles",
+        [
+            (
+                "default",
+                "generate_specialized_questions",
+                [
+                    "research",
+                    "analysis",
+                    "alternatives",
+                    "verification",
+                ],
+            ),
+            (
+                "medium",
+                "generate_grok_questions",
+                ["harper", "benjamin", "lucas"],
+            ),
+            (
+                "heavy",
+                "generate_grok_heavy_questions",
+                ["harper", "benjamin", "lucas", "noah"],
+            ),
+        ],
+    )
+    def test_schema_matches_the_variant_roster(
+        self, monkeypatch, variant, function_name, roles
+    ):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant=variant,
+        )
+
+        swarm.execute_question_generation("A task")
+
+        tool = seen["tools_list_dictionary"][0]["function"]
+        assert tool["name"] == function_name
+        for role in roles:
+            assert (
+                f"{role}_question" in tool["parameters"]["properties"]
+            )
+        assert (
+            f"Use {function_name} function only"
+            in seen["system_prompt"]
+        )
+
+    def test_no_hard_coded_sampling_values(self, monkeypatch):
+        seen = self._capture(monkeypatch)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+
+        swarm.execute_question_generation("A task")
+
+        assert seen.get("top_p") is None
+        assert "temperature" not in seen
+        assert "frequency_penalty" not in seen
+        assert "presence_penalty" not in seen
+
+    def test_medium_get_questions_only_returns_its_roster(
+        self, monkeypatch
+    ):
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="medium",
+        )
+        monkeypatch.setattr(
+            swarm,
+            "execute_question_generation",
+            lambda task, img=None: {
+                "harper_question": "h",
+                "benjamin_question": "b",
+                "lucas_question": "l",
+            },
+        )
+
+        questions = swarm.get_questions_only("A task")
+
+        assert questions == {
+            "harper_question": "h",
+            "benjamin_question": "b",
+            "lucas_question": "l",
+        }
+
+
+class TestUsage:
+    """#2343: HeavySwarm.usage sums question generation, which runs on a
+    bare LiteLLM, and every worker and synthesis/captain Agent.
+    """
+
+    QUESTION_USAGE = {
+        "input_tokens": 30,
+        "output_tokens": 7,
+        "cached_tokens": 5,
+        "reasoning_tokens": 2,
+        "total_tokens": 37,
+    }
+
+    def _fake_question_llm(self, monkeypatch):
+        import json
+        from types import SimpleNamespace
+
+        usage = self.QUESTION_USAGE
+
+        class FakeLiteLLM:
+            def __init__(self, **kwargs):
+                self.usage_hook = kwargs.get("usage_hook")
+
+            def run(self, task, *args, **kwargs):
+                if self.usage_hook is not None:
+                    self.usage_hook(dict(usage))
+                arguments = {"thinking": "t"}
+                for role in ["research", "analysis", "alternatives"]:
+                    arguments[f"{role}_question"] = f"{role}?"
+                arguments["verification_question"] = "verify?"
+                for role in ["harper", "benjamin", "lucas"]:
+                    arguments[f"{role}_question"] = f"{role}?"
+                for role in HEAVY_WORKER_KEYS:
+                    arguments[f"{role}_question"] = f"{role}?"
+                return [
+                    SimpleNamespace(
+                        id="call-1",
+                        function=SimpleNamespace(
+                            name="generate_specialized_questions",
+                            arguments=json.dumps(arguments),
+                        ),
+                    )
+                ]
+
+        monkeypatch.setattr(
+            "swarms.structs.heavy_swarm.LiteLLM", FakeLiteLLM
+        )
+
+    @staticmethod
+    def _stub_agents(swarm, input_tokens=100, output_tokens=10):
+        for agent in swarm.agents.values():
+
+            def _run(task=None, *args, _agent=agent, **kwargs):
+                _agent._add_usage(
+                    {
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "total_tokens": input_tokens + output_tokens,
+                    }
+                )
+                return f"{_agent.agent_name} output"
+
+            agent.run = _run
+
+    @staticmethod
+    def _swarm(variant="default", max_loops=1):
+        return HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant=variant,
+            max_loops=max_loops,
+            output_type="string",
+        )
+
+    def test_usage_is_zero_before_any_run(self):
+        assert self._swarm().usage == {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 0,
+        }
+
+    @pytest.mark.parametrize(
+        "variant, agent_count",
+        [("default", 5), ("medium", 4), ("heavy", 16)],
+    )
+    def test_usage_after_run_counts_questions_and_every_agent(
+        self, monkeypatch, variant, agent_count
+    ):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm(variant=variant)
+        assert len(swarm.agents) == agent_count
+        self._stub_agents(swarm)
+
+        swarm.run("task")
+
+        assert swarm.usage == {
+            "input_tokens": 30 + 100 * agent_count,
+            "output_tokens": 7 + 10 * agent_count,
+            "cached_tokens": 5,
+            "reasoning_tokens": 2,
+            "total_tokens": 37 + 110 * agent_count,
+        }
+
+    def test_usage_grows_across_max_loops(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm(max_loops=2)
+        self._stub_agents(swarm)
+
+        swarm.run("task")
+
+        assert swarm.usage["input_tokens"] == 2 * (30 + 100 * 5)
+        assert swarm.usage["output_tokens"] == 2 * (7 + 10 * 5)
+
+    def test_usage_grows_across_runs(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+        self._stub_agents(swarm)
+
+        swarm.run("first")
+        after_one = swarm.usage["total_tokens"]
+        swarm.run("second")
+
+        assert swarm.usage["total_tokens"] == 2 * after_one
+
+    def test_question_generation_alone_is_counted(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+
+        swarm.get_questions_only("task")
+
+        assert swarm.usage == self.QUESTION_USAGE
+
+    def test_agent_under_two_keys_is_counted_once(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+        research = swarm.agents["research"]
+        research._add_usage({"input_tokens": 100})
+        swarm.agents["alias"] = research
+
+        assert swarm.usage["input_tokens"] == 100
+
+    def test_usage_returns_a_copy(self, monkeypatch):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+        swarm.get_questions_only("task")
+
+        swarm.usage["input_tokens"] = 999
+
+        assert swarm.usage["input_tokens"] == 30
+
+
 class TestSwarmRouterGrokIntegration:
     """Verify SwarmRouter passes through grok flag."""
 
@@ -455,12 +793,11 @@ class TestSwarmRouterGrokIntegration:
             name="TestRouter",
             description="Test",
             swarm_type="HeavySwarm",
-            heavy_swarm_loops_per_agent=1,
             heavy_swarm_question_agent_model_name=MODEL,
             heavy_swarm_worker_model_name=MODEL,
-            heavy_swarm_use_grok_agents=True,
+            heavy_swarm_variant="medium",
         )
-        assert router.heavy_swarm_use_grok_agents is True
+        assert router.heavy_swarm_variant == "medium"
 
     def test_router_grok_flag_default_false(self):
         router = SwarmRouter(
@@ -470,7 +807,7 @@ class TestSwarmRouterGrokIntegration:
             heavy_swarm_question_agent_model_name=MODEL,
             heavy_swarm_worker_model_name=MODEL,
         )
-        assert router.heavy_swarm_use_grok_agents is False
+        assert router.heavy_swarm_variant == "default"
 
 
 # ============================================================================
@@ -490,7 +827,7 @@ class TestGrokQuestionGeneration:
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
         )
         questions = swarm.get_questions_only(
             "What are the best strategies for reducing "
@@ -509,7 +846,7 @@ class TestGrokQuestionGeneration:
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
         )
         questions = swarm.get_questions_as_list(
             "How should a startup approach Series A funding?"
@@ -524,7 +861,7 @@ class TestGrokQuestionGeneration:
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=False,
+            variant="default",
         )
         questions = swarm.get_questions_only(
             "What are the trends in AI hardware?"
@@ -537,7 +874,7 @@ class TestGrokQuestionGeneration:
 
 
 # ============================================================================
-# Full pipeline (real API)
+# Full pipeline (real API) — 4-agent Grok and 16-agent Grok Heavy with max_loops=2
 # ============================================================================
 
 
@@ -546,18 +883,18 @@ class TestGrokQuestionGeneration:
     reason="OPENAI_API_KEY not set",
 )
 class TestGrokFullPipeline:
-    """End-to-end test of the full Grok HeavySwarm pipeline."""
+    """End-to-end test of the 4-agent Grok HeavySwarm pipeline."""
 
     def test_grok_full_run(self):
-        """Full grok pipeline: question gen -> 3 agents -> captain synthesis."""
+        """4-agent grok pipeline runs max_loops=2 iterations end-to-end."""
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
-            max_loops=1,
-            loops_per_agent=1,
+            variant="medium",
+            max_loops=LIVE_MAX_LOOPS,
             output_type="string",
         )
+        assert len(swarm.agents) == 4
         result = swarm.run(
             "What are the key considerations for "
             "building a solar farm in Nevada?"
@@ -567,13 +904,12 @@ class TestGrokFullPipeline:
         assert len(result) > 100
 
     def test_grok_full_run_dict_output(self):
-        """Grok pipeline returns structured dict output."""
+        """4-agent grok pipeline returns structured dict output."""
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
-            max_loops=1,
-            loops_per_agent=1,
+            variant="medium",
+            max_loops=LIVE_MAX_LOOPS,
             output_type="dict-all-except-first",
         )
         result = swarm.run(
@@ -586,14 +922,13 @@ class TestGrokFullPipeline:
         assert any("Captain" in r or "Synthesis" in r for r in roles)
 
     def test_grok_run_with_dashboard(self):
-        """Grok pipeline works with dashboard enabled."""
+        """4-agent grok pipeline works with dashboard enabled."""
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=True,
+            variant="medium",
             show_dashboard=True,
-            max_loops=1,
-            loops_per_agent=1,
+            max_loops=LIVE_MAX_LOOPS,
             output_type="string",
         )
         result = swarm.run(
@@ -604,17 +939,80 @@ class TestGrokFullPipeline:
         assert len(result) > 100
 
     def test_default_full_run_still_works(self):
-        """Default pipeline still works after grok changes."""
+        """Default 5-agent pipeline still works after grok changes."""
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
-            use_grok_agents=False,
-            max_loops=1,
-            loops_per_agent=1,
+            variant="default",
+            max_loops=LIVE_MAX_LOOPS,
             output_type="string",
         )
         result = swarm.run(
             "What is the current state of quantum computing?"
+        )
+        assert result is not None
+        assert isinstance(result, str)
+        assert len(result) > 100
+
+
+@pytest.mark.skipif(
+    not os.getenv("OPENAI_API_KEY"),
+    reason="OPENAI_API_KEY not set",
+)
+class TestGrokHeavyFullPipeline:
+    """End-to-end test of the 16-agent Grok Heavy HeavySwarm pipeline."""
+
+    def test_grok_heavy_full_run(self):
+        """16-agent grok-heavy pipeline runs max_loops=2 iterations end-to-end."""
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="heavy",
+            max_loops=LIVE_MAX_LOOPS,
+            output_type="string",
+        )
+        assert len(swarm.agents) == 16
+        result = swarm.run(
+            "How should humanity approach the long-term colonization of Mars?"
+        )
+        assert result is not None
+        assert isinstance(result, str)
+        assert len(result) > 100
+
+    def test_grok_heavy_full_run_dict_output(self):
+        """16-agent grok-heavy pipeline returns structured dict output."""
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="heavy",
+            max_loops=LIVE_MAX_LOOPS,
+            output_type="dict-all-except-first",
+        )
+        result = swarm.run(
+            "What are the broad implications of widespread AI adoption?"
+        )
+        assert result is not None
+        assert isinstance(result, list)
+        assert len(result) > 0
+        roles = [entry.get("role", "") for entry in result]
+        # Grok captain emits the synthesis under the "Grok" agent name
+        assert any(
+            "Grok" in r or "Synthesis" in r or "Captain" in r
+            for r in roles
+        )
+
+    def test_grok_heavy_run_with_dashboard(self):
+        """16-agent grok-heavy pipeline works with dashboard enabled."""
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+            variant="heavy",
+            show_dashboard=True,
+            max_loops=LIVE_MAX_LOOPS,
+            output_type="string",
+        )
+        result = swarm.run(
+            "Compare nuclear fission and fusion as energy sources"
         )
         assert result is not None
         assert isinstance(result, str)

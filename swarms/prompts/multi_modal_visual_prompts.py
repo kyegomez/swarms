@@ -1,4 +1,3 @@
-# prompts
 VISUAL_AGENT_PREFIX = """
 Worker Multi-Modal Agent is designed to be able to assist with
 a wide range of text and visual related tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics.

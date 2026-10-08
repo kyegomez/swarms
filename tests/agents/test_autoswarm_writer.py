@@ -30,21 +30,21 @@ SAMPLE_CONFIG = {
         {
             "agent_name": "Researcher",
             "system_prompt": "You are a research specialist.",
-            "model_name": "gpt-4.1",
+            "model_name": "gpt-5.4",
             "max_loops": 1,
             "temperature": 0.5,
         },
         {
             "agent_name": "Analyst",
             "system_prompt": "You are a data analyst.",
-            "model_name": "gpt-4.1",
+            "model_name": "gpt-5.4",
             "max_loops": 2,
             "temperature": 0.3,
         },
         {
             "agent_name": "Writer",
             "system_prompt": "You are a technical writer.",
-            "model_name": "gpt-4.1",
+            "model_name": "gpt-5.4",
             "max_loops": 1,
         },
     ],
@@ -199,8 +199,8 @@ class TestGeneratedFileCreatesRealAgents:
         _, source = _generate_file()
         ns = _exec_generated_code(source)
 
-        assert ns["researcher"].model_name == "gpt-4.1"
-        assert ns["analyst"].model_name == "gpt-4.1"
+        assert ns["researcher"].model_name == "gpt-5.4"
+        assert ns["analyst"].model_name == "gpt-5.4"
 
     def test_agent_max_loops_match(self):
         _, source = _generate_file()
@@ -248,7 +248,7 @@ class TestGeneratedFileCreatesRealAgents:
                     "agent_name": "Full-Agent",
                     "system_prompt": "Full config.",
                     "description": "A full agent",
-                    "model_name": "gpt-4.1",
+                    "model_name": "gpt-5.4",
                     "max_loops": 3,
                     "temperature": 0.7,
                     "max_tokens": 4096,
@@ -272,7 +272,7 @@ class TestGeneratedFileCreatesRealAgents:
 
         assert agent.agent_name == "Full-Agent"
         assert agent.agent_description == "A full agent"
-        assert agent.model_name == "gpt-4.1"
+        assert agent.model_name == "gpt-5.4"
         assert agent.max_loops == 3
         assert agent.temperature == 0.7
         assert agent.max_tokens == 4096
@@ -787,26 +787,26 @@ agents:
   - agent_name: "Data-Collector"
     system_prompt: "You collect and organize raw data from various sources."
     max_loops: 2
-    model_name: "gpt-4.1"
+    model_name: "gpt-5.4"
     temperature: 0.3
     verbose: true
 
   - agent_name: "Analyzer"
     system_prompt: "You analyze data patterns and extract insights."
     max_loops: 3
-    model_name: "gpt-4.1"
+    model_name: "gpt-5.4"
     temperature: 0.5
 
   - agent_name: "Visualizer"
     system_prompt: "You create data visualizations and charts."
     max_loops: 1
-    model_name: "gpt-4.1"
+    model_name: "gpt-5.4"
     temperature: 0.2
 
   - agent_name: "Report-Writer"
     system_prompt: "You write comprehensive reports based on analysis and visualizations."
     max_loops: 1
-    model_name: "gpt-4.1"
+    model_name: "gpt-5.4"
     temperature: 0.7
     autosave: true
 

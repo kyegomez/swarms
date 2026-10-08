@@ -1,13 +1,3 @@
-"""
-Hierarchical Multi-Agent Example
-
-This example demonstrates hierarchical execution using HierarchicalSwarm,
-where a director agent coordinates worker agents: creates plans, assigns tasks,
-and iterates on results.
-
-Use Case: Project execution where a director delegates to specialized teams.
-"""
-
 from swarms import Agent
 from swarms.structs import HierarchicalSwarm
 

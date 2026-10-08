@@ -8,7 +8,9 @@ converting them to base64-encoded data URIs suitable for use with LLM APIs.
 import base64
 import ipaddress
 import re
+import socket
 import uuid
+from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -16,33 +18,128 @@ import requests
 from loguru import logger
 
 
+def _ip_is_blocked(addr: ipaddress._BaseAddress) -> bool:
+    """Return True for any address that must never be reached over the network.
+
+    Covers loopback, private (RFC 1918), link-local (incl. the 169.254.169.254
+    cloud-metadata range), reserved, unspecified, and multicast space. IPv4
+    addresses embedded in IPv6 (``::ffff:a.b.c.d`` and 6to4) are unwrapped and
+    re-checked, so a mapped metadata address cannot slip through.
+    """
+    # Unwrap IPv4-in-IPv6 so ::ffff:169.254.169.254 is judged as the v4 address.
+    mapped = getattr(addr, "ipv4_mapped", None)
+    if mapped is not None:
+        addr = mapped
+    sixtofour = getattr(addr, "sixtofour", None)
+    if sixtofour is not None:
+        addr = sixtofour
+
+    return (
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_reserved
+        or addr.is_unspecified
+        or addr.is_multicast
+    )
+
+
 def _is_safe_url(url: str) -> bool:
     """
     Reject URLs that target private/link-local networks (SSRF prevention).
-    Only http:// and https:// schemes are permitted.
+
+    Only ``http``/``https`` are permitted, and the host is **resolved** before
+    the verdict: a hostname that maps to a private or cloud-metadata address is
+    blocked, and *every* address it resolves to must be public (so a name with
+    one public and one internal A-record cannot be used to pivot). Numeric host
+    forms (decimal, hex, octal) and IPv4-in-IPv6 are normalized rather than
+    trusted as opaque strings.
+
+    Note: this checks the addresses known at call time. A determined attacker
+    controlling DNS can still rebind between this check and the subsequent
+    request (TOCTOU); eliminating that requires pinning the resolved IP for the
+    actual connection, which the calling HTTP client does not currently do.
     """
     try:
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https"):
             return False
-        host = parsed.hostname or ""
-        # Block localhost variants
-        if host in ("localhost", ""):
+
+        host = (parsed.hostname or "").strip()
+        if not host or host.lower() == "localhost":
             return False
+
+        # A literal IP in any notation ipaddress accepts is judged directly
         try:
-            addr = ipaddress.ip_address(host)
-            if (
-                addr.is_private
-                or addr.is_loopback
-                or addr.is_link_local
-                or addr.is_reserved
-            ):
-                return False
+            return not _ip_is_blocked(ipaddress.ip_address(host))
         except ValueError:
-            pass  # hostname, not a raw IP — allow it
+            pass  # a hostname — resolve it below.
+
+        # Resolve the hostname and require EVERY answer to be public.
+        try:
+            infos = socket.getaddrinfo(host, None)
+        except socket.gaierror:
+            return False  # cannot resolve — do not fetch.
+
+        resolved = {info[4][0] for info in infos}
+        if not resolved:
+            return False
+
+        for ip in resolved:
+            try:
+                if _ip_is_blocked(ipaddress.ip_address(ip)):
+                    return False
+            except ValueError:
+                return False
+
         return True
     except Exception:
         return False
+
+
+@lru_cache(maxsize=32)
+def _fetch_image_url(url: str) -> bytes:
+    """Fetch an image URL once per process; an agent re-sends the same img
+    every loop.
+
+    URLs only: file paths stay uncached so a mutated file is still re-read.
+    The guard sits inside the cache on purpose -- a hit makes no request, and
+    lru_cache does not memoize the raise, so a blocked URL fails every call.
+    Entries are bounded by count, not bytes: 32 images retained at most.
+    """
+    if not _is_safe_url(url):
+        raise ValueError(
+            f"Blocked URL '{url}': only external HTTP/HTTPS URLs are permitted."
+        )
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    return response.content
+
+
+def get_media_base64(source: str) -> str:
+    """
+    Fetch any media file (URL or local path) and return its raw base64 encoding.
+
+    Unlike `get_image_base64`, this returns the bare base64 string with no data
+    URI prefix, so it works for audio and other non-image media.
+
+    Args:
+        source (str): HTTP/HTTPS URL or local file path.
+
+    Returns:
+        str: The base64-encoded file contents.
+
+    Raises:
+        ValueError: If the URL targets a blocked (non-public) address.
+        requests.HTTPError: If fetching from a URL fails.
+        FileNotFoundError: If the local file does not exist.
+    """
+    if source.startswith(("http://", "https://")):
+        data = _fetch_image_url(source)
+    else:
+        with open(source, "rb") as file:
+            data = file.read()
+    return base64.b64encode(data).decode("utf-8")
 
 
 def is_base64_encoded(image_source: str) -> bool:
@@ -59,9 +156,7 @@ def is_base64_encoded(image_source: str) -> bool:
     if image_source.startswith("data:image"):
         return True
 
-    # Check if it's a raw base64 string (no data URI prefix)
-    # Base64 strings are typically long and contain only base64 characters
-    # We check for reasonable length and base64 character set
+    # Length plus character set, since a raw base64 string has no data URI prefix to match on.
     if len(image_source) > 100:  # Base64 images are typically long
         try:
             # Try to decode a sample to verify it's valid base64
@@ -115,21 +210,13 @@ def get_image_base64(image_source: str) -> str:
     if is_base64_encoded(
         image_source
     ) and not image_source.startswith(("http://", "https://")):
-        # It's a raw base64 string, convert to data URI format
-        # Default to JPEG if we can't determine the format
-        # In practice, users should provide data URI format, but we support raw base64 for flexibility
+        # Default to JPEG when the format cannot be determined.
         mime_type = "image/jpeg"  # Default MIME type
         return f"data:{mime_type};base64,{image_source}"
 
     # Handle URLs
     if image_source.startswith(("http://", "https://")):
-        if not _is_safe_url(image_source):
-            raise ValueError(
-                f"Blocked URL '{image_source}': only external HTTP/HTTPS URLs are permitted."
-            )
-        response = requests.get(image_source, timeout=30)
-        response.raise_for_status()
-        image_data = response.content
+        image_data = _fetch_image_url(image_source)
     else:
         # Assume it's a file path
         with open(image_source, "rb") as file:

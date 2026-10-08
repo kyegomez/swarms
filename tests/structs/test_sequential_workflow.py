@@ -4,6 +4,9 @@ from unittest.mock import patch
 import pytest
 
 from swarms import Agent, SequentialWorkflow
+from swarms.prompts.agent_acknowledgement_prompt import (
+    AGENT_COLLAB_PROMPT,
+)
 from swarms.structs.sequential_workflow import DRIFT_DETECTION_PROMPT
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -557,3 +560,179 @@ def test_workflow_run_drift_retries_until_threshold_met():
     assert result == "good output"
     assert pipeline_call_count == 3
     assert drift_call_count == 3
+
+
+def test_workflow_run_drift_stops_at_max_retries():
+    """A score that never clears the threshold must not rerun forever.
+
+    Without a retry cap this test does not fail, it hangs: the judge always
+    scores below threshold, so the pipeline is rerun in an unbounded loop.
+    """
+    wf = _make_workflow(
+        drift_detection=True,
+        drift_threshold=0.75,
+        drift_max_retries=2,
+    )
+
+    pipeline_call_count = 0
+
+    def pipeline_side_effect(**kwargs):
+        nonlocal pipeline_call_count
+        pipeline_call_count += 1
+        return f"output {pipeline_call_count}"
+
+    with patch.object(
+        wf.agent_rearrange, "run", side_effect=pipeline_side_effect
+    ), patch.object(
+        wf.drift_agent, "run", return_value=_tool_call_response(0.1)
+    ):
+        result = wf.run("task")
+
+    # one initial run plus drift_max_retries reruns
+    assert pipeline_call_count == 3
+    assert result == "output 3"
+
+
+def test_workflow_drift_max_retries_zero_never_reruns():
+    """drift_max_retries=0 scores the output but never regenerates it."""
+    wf = _make_workflow(
+        drift_detection=True,
+        drift_threshold=0.75,
+        drift_max_retries=0,
+    )
+
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="only output"
+    ) as pipeline, patch.object(
+        wf.drift_agent, "run", return_value=_tool_call_response(0.1)
+    ):
+        result = wf.run("task")
+
+    assert pipeline.call_count == 1
+    assert result == "only output"
+
+
+def test_negative_drift_max_retries_is_rejected():
+    with pytest.raises(ValueError, match="drift_max_retries"):
+        _make_workflow(drift_detection=True, drift_max_retries=-1)
+
+
+def test_run_forwards_imgs_to_the_pipeline():
+    """run(imgs=[...]) must reach the agents, not be dropped.
+
+    imgs is an accepted, documented parameter, but it was never put
+    into the kwargs handed to AgentRearrange, so multi-image runs
+    silently became text-only runs.
+    """
+    wf = _make_workflow()
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="out"
+    ) as pipeline:
+        wf.run("describe these", imgs=["a.png", "b.png"])
+
+    assert pipeline.call_args.kwargs["imgs"] == ["a.png", "b.png"]
+
+
+def test_run_omits_imgs_when_not_supplied():
+    """No imgs key when the caller didn't pass one."""
+    wf = _make_workflow()
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="out"
+    ) as pipeline:
+        wf.run("plain task")
+
+    assert "imgs" not in pipeline.call_args.kwargs
+
+
+# ============================================================================
+# MULTI-AGENT COLLAB PROMPT: DELIVERED, NOT WELDED ONTO THE AGENTS
+# ============================================================================
+
+
+def _recording_agents(names):
+    """Agents whose run() records the context it was handed."""
+    calls = []
+    agents = []
+    for name in names:
+        agent = Agent(
+            agent_name=name,
+            system_prompt=f"You are {name}.",
+            model_name="gpt-4o",
+            max_loops=1,
+        )
+
+        def _make(agent_obj, agent_name):
+            def _run(task=None, messages=None, **kwargs):
+                calls.append(
+                    {
+                        "agent": agent_name,
+                        "task": task,
+                        "messages": list(messages or []),
+                    }
+                )
+                answer = f"{agent_name}-answer"
+                agent_obj.short_memory.add(
+                    role=agent_name, content=answer
+                )
+                return answer
+
+            return _run
+
+        agent.run = _make(agent, name)
+        agents.append(agent)
+    return agents, calls
+
+
+def test_collab_prompt_never_mutates_the_callers_agents():
+    """Construction used to do `agent.system_prompt += AGENT_COLLAB_PROMPT`.
+
+    It was never restored and it was cumulative, so building two workflows
+    over the same agents appended 13,433 chars twice.
+    """
+    agents, _ = _recording_agents(["A1", "A2"])
+    originals = [agent.system_prompt for agent in agents]
+
+    SequentialWorkflow(
+        agents=agents,
+        max_loops=1,
+        autosave=False,
+        multi_agent_collab_prompt=True,
+    )
+    SequentialWorkflow(
+        agents=agents,
+        max_loops=1,
+        autosave=False,
+        multi_agent_collab_prompt=True,
+    )
+
+    for agent, original in zip(agents, originals):
+        assert agent.system_prompt == original
+
+
+def test_collab_prompt_is_delivered_as_a_system_turn_at_run_time():
+    """Not mutating the agents must not mean losing the guidance."""
+    agents, calls = _recording_agents(["A1", "A2"])
+    originals = [agent.system_prompt for agent in agents]
+
+    workflow = SequentialWorkflow(
+        agents=agents,
+        max_loops=1,
+        autosave=False,
+        multi_agent_collab_prompt=True,
+    )
+    workflow.run("the task")
+
+    assert calls, "no agent was run"
+    system_turns = [
+        message["content"]
+        for call in calls
+        for message in call["messages"]
+        if message["role"] == "system"
+    ]
+    assert any(
+        AGENT_COLLAB_PROMPT in content for content in system_turns
+    )
+
+    # ...and the caller's agents are still untouched afterwards.
+    for agent, original in zip(agents, originals):
+        assert agent.system_prompt == original

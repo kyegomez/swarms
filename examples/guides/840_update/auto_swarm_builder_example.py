@@ -7,7 +7,7 @@ swarm = AutoSwarmBuilder(
     verbose=True,
     max_loops=1,
     model_name="gpt-5.4",
-    execution_type="return-agents",
+    swarm_type="return-agents",
 )
 
 out = swarm.run(

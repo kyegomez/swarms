@@ -1,7 +1,10 @@
 from swarms.prompts.autonomous_agent_prompt import (
-    AUTONOMOUS_AGENT_SYSTEM_PROMPT,
+    autonomous_agent_system_prompt,
     get_autonomous_agent_prompt,
     get_autonomous_agent_prompt_with_context,
+)
+from swarms.prompts.auto_agent_builder_prompt import (
+    AUTO_AGENT_BUILDER_SYSTEM_PROMPT,
 )
 from swarms.prompts.code_interpreter import CODE_INTERPRETER
 from swarms.prompts.documentation import DOCUMENTATION_WRITER_SOP
@@ -15,6 +18,7 @@ from swarms.prompts.product_agent_prompt import PRODUCT_AGENT_PROMPT
 from swarms.prompts.prompt import Prompt
 
 __all__ = [
+    "AUTO_AGENT_BUILDER_SYSTEM_PROMPT",
     "CODE_INTERPRETER",
     "FINANCE_AGENT_PROMPT",
     "GROWTH_AGENT_PROMPT",
@@ -23,7 +27,7 @@ __all__ = [
     "PRODUCT_AGENT_PROMPT",
     "DOCUMENTATION_WRITER_SOP",
     "Prompt",
-    "AUTONOMOUS_AGENT_SYSTEM_PROMPT",
+    "autonomous_agent_system_prompt",
     "get_autonomous_agent_prompt",
     "get_autonomous_agent_prompt_with_context",
 ]

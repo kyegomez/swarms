@@ -8,11 +8,3 @@ class AgentMCPConnectionError(AgentMCPError):
 
 class AgentMCPToolError(AgentMCPError):
     pass
-
-
-class AgentMCPToolNotFoundError(AgentMCPError):
-    pass
-
-
-class AgentMCPToolInvalidError(AgentMCPError):
-    pass

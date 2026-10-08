@@ -1,0 +1,43 @@
+# CODEOWNERS — required reviewers for sensitive paths in swarms
+#
+# Syntax: <path-pattern>  <owner...>
+# The LAST matching pattern wins. Owners are auto-requested for review on any
+# PR that touches a matching path. Enforcement (blocking merge until a code
+# owner approves) only takes effect once a branch ruleset for `master` turns on
+# "Require review from Code Owners" — this file defines *who*, the ruleset
+# defines *whether it's mandatory*.
+#
+# Owner handles must be GitHub users/teams with write access to the repo.
+
+# ----------------------------------------------------------------------------
+# Default owner — everything not matched more specifically below.
+# ----------------------------------------------------------------------------
+*                           @kyegomez
+
+# ----------------------------------------------------------------------------
+# Supply chain & release — a malicious change here can poison a published
+# package or leak CI secrets. Highest-priority review surface.
+# ----------------------------------------------------------------------------
+/pyproject.toml             @kyegomez
+/.github/                   @kyegomez
+/.github/workflows/         @kyegomez
+/.github/dependabot.yml     @kyegomez
+/.github/CODEOWNERS         @kyegomez
+
+# ----------------------------------------------------------------------------
+# Data egress & credentials — anything that sends data off the machine or
+# touches auth/keys. Guards against exfiltration slipping in via a PR.
+# ----------------------------------------------------------------------------
+/swarms/telemetry/          @kyegomez
+
+# ----------------------------------------------------------------------------
+# Code / command execution surface — tool calling, MCP, shell/subprocess,
+# and the autonomous loop that can run generated code.
+# ----------------------------------------------------------------------------
+/swarms/tools/              @kyegomez
+/swarms/structs/autonomous_loop_utils.py  @kyegomez
+
+# ----------------------------------------------------------------------------
+# Security policy.
+# ----------------------------------------------------------------------------
+/SECURITY.md                @kyegomez

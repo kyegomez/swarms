@@ -88,7 +88,7 @@ from swarms import Agent
 
 agent = Agent(
     agent_name="Analyst",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -103,16 +103,16 @@ print(result)
 | `agent_name` | str | `"swarm-worker-01"` | Unique name — used for memory file paths |
 | `agent_description` | str | generic | Shown to orchestrators for routing |
 | `system_prompt` | str | built-in | The agent's persona / instructions |
-| `model_name` | str | `"gpt-4.1"` | Any LiteLLM model string |
+| `model_name` | str | `"gpt-5.4"` | Any LiteLLM model string |
 | `max_loops` | int \| `"auto"` | `1` | Loops before returning; `"auto"` = autonomous until done |
 | `tools` | list[Callable] | `None` | Python functions the agent can call |
 | `streaming_on` | bool | `False` | Stream tokens to stdout |
 | `interactive` | bool | `False` | REPL mode — prompt user for input each loop |
 | `context_length` | int | `None` | Token budget; triggers compression at 90 % |
 | `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
-| `persistent_memory` | bool | `True` | Read/write MEMORY.md across restarts (v12) |
-| `temperature` | float | `0.5` | Sampling temperature |
-| `max_tokens` | int | `4096` | Max tokens per LLM call |
+| `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
+| `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
+| `max_tokens` | int | model's max output | Max tokens per LLM call. Unset resolves to the model's own output limit |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
 | `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
 | `output_type` | str | `"str-all-except-first"` | How to format returned output |
@@ -131,7 +131,7 @@ When `max_loops="auto"` the agent runs a plan→execute→reflect loop until it 
 ```python
 agent = Agent(
     agent_name="Researcher",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     interactive=False,
 )
@@ -144,7 +144,7 @@ Use any LiteLLM-compatible string:
 
 ```python
 # OpenAI
-model_name="gpt-4.1"
+model_name="gpt-5.4"
 model_name="gpt-5.4-mini"
 model_name="o3"
 
@@ -173,32 +173,37 @@ result = agent.run(
 
 ## Memory & Persistence (v12)
 
-### `persistent_memory=True` (default)
+### `persistent_memory=True` (opt in)
 
 On startup the agent reads `{workspace}/agents/{agent_name}/MEMORY.md` and injects it as a system preamble. On each response it appends to that file. State survives process restarts automatically.
 
 ```python
 agent = Agent(
     agent_name="ProjectAssistant",
-    model_name="gpt-4.1",
-    persistent_memory=True,   # default
+    model_name="gpt-5.4",
+    persistent_memory=True,   # off by default; opt in
 )
 # First run: agent has no prior context
 agent.run("My project is called Helios. Remember that.")
 
-# New process, same agent_name → agent remembers "Helios"
-agent2 = Agent(agent_name="ProjectAssistant", model_name="gpt-4.1")
+# New process, same agent_name → agent remembers "Helios".
+# persistent_memory must be set here too; it is False by default.
+agent2 = Agent(
+    agent_name="ProjectAssistant",
+    model_name="gpt-5.4",
+    persistent_memory=True,
+)
 agent2.run("What is my project called?")
 ```
 
-### `persistent_memory=False`
+### `persistent_memory=False` (default)
 
 Fully stateless — no disk reads or writes. Use for short, isolated tasks where carry-over would be harmful.
 
 ```python
 agent = Agent(
     agent_name="OneShot",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     persistent_memory=False,
 )
 ```
@@ -210,7 +215,7 @@ agent = Agent(
 ```python
 agent = Agent(
     agent_name="LongSession",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     context_length=32000,
     context_compression=True,   # default
 )
@@ -258,7 +263,7 @@ def get_stock_price(ticker: str) -> str:
 
 agent = Agent(
     agent_name="StockAnalyst",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     tools=[get_stock_price],
     max_loops=3,
 )
@@ -270,7 +275,7 @@ result = agent.run("What is the current price of Apple and Microsoft?")
 ```python
 agent = Agent(
     agent_name="ResearchAgent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     tools=[search_web, get_stock_price, read_file, write_file],
     max_loops="auto",
 )
@@ -298,7 +303,7 @@ schema = base_model_to_openai_function(WeatherQuery)
 ```python
 agent = Agent(
     agent_name="Writer",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     streaming_on=True,
 )
 agent.run("Write a short poem about distributed systems.")
@@ -312,7 +317,7 @@ def handle_token(token: str) -> None:
 
 agent = Agent(
     agent_name="Writer",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     streaming_callback=handle_token,
 )
 agent.run("Write a haiku.")
@@ -324,7 +329,7 @@ agent.run("Write a haiku.")
 import asyncio
 from swarms import Agent
 
-agent = Agent(agent_name="AsyncWriter", model_name="gpt-4.1", streaming_on=True)
+agent = Agent(agent_name="AsyncWriter", model_name="gpt-5.4", streaming_on=True)
 
 async def main():
     async for token in agent.arun_stream("Explain async/await in Python."):
@@ -344,9 +349,9 @@ Agents execute **one after another**. The output of each agent is passed as cont
 ```python
 from swarms import Agent, SequentialWorkflow
 
-researcher = Agent(agent_name="Researcher", model_name="gpt-4.1", max_loops=1)
-analyst   = Agent(agent_name="Analyst",    model_name="gpt-4.1", max_loops=1)
-writer    = Agent(agent_name="Writer",     model_name="gpt-4.1", max_loops=1)
+researcher = Agent(agent_name="Researcher", model_name="gpt-5.4", max_loops=1)
+analyst   = Agent(agent_name="Analyst",    model_name="gpt-5.4", max_loops=1)
+writer    = Agent(agent_name="Writer",     model_name="gpt-5.4", max_loops=1)
 
 pipeline = SequentialWorkflow(
     agents=[researcher, analyst, writer],
@@ -367,7 +372,7 @@ All agents run **in parallel** on the same task. Results are collected and retur
 from swarms import Agent, ConcurrentWorkflow
 
 agents = [
-    Agent(agent_name=f"Worker-{i}", model_name="gpt-4.1", max_loops=1)
+    Agent(agent_name=f"Worker-{i}", model_name="gpt-5.4", max_loops=1)
     for i in range(5)
 ]
 
@@ -386,10 +391,10 @@ Define execution flow as a string using a simple DSL. Mix sequential (`->`) and 
 ```python
 from swarms import Agent, AgentRearrange
 
-planner  = Agent(agent_name="Planner",  model_name="gpt-4.1", max_loops=1)
-coder    = Agent(agent_name="Coder",    model_name="gpt-4.1", max_loops=1)
-reviewer = Agent(agent_name="Reviewer", model_name="gpt-4.1", max_loops=1)
-tester   = Agent(agent_name="Tester",   model_name="gpt-4.1", max_loops=1)
+planner  = Agent(agent_name="Planner",  model_name="gpt-5.4", max_loops=1)
+coder    = Agent(agent_name="Coder",    model_name="gpt-5.4", max_loops=1)
+reviewer = Agent(agent_name="Reviewer", model_name="gpt-5.4", max_loops=1)
+tester   = Agent(agent_name="Tester",   model_name="gpt-5.4", max_loops=1)
 
 pipeline = AgentRearrange(
     agents=[planner, coder, reviewer, tester],
@@ -404,7 +409,8 @@ result = pipeline.run("Build a Python function that validates email addresses.")
 - `A -> B` — A runs, then B receives A's output
 - `A, B` — A and B run concurrently with the same input
 - `A -> B, C -> D` — A runs first, then B and C run concurrently, then D receives their combined output
-- `A -> H -> B` — Insert a human-in-the-loop step (requires `human_in_the_loop=True`)
+
+`AgentRearrange` has no built-in human-in-the-loop step — every name in `flow` must correspond to an agent in `agents`, or the flow will fail at run time. For a human checkpoint, break the pipeline into separate `AgentRearrange`/`Agent.run()` calls and insert your own logic (e.g. `input()`) between them — see the "Human-in-the-loop with AgentRearrange" pattern below.
 
 **When to use:** Any workflow where you need explicit, readable control over agent execution order and parallelism.
 
@@ -471,9 +477,9 @@ wf.add_edge(Edge(source="researcher", target="editor"))
 from swarms import Agent, SwarmRouter
 
 agents = [
-    Agent(agent_name="Analyst",  model_name="gpt-4.1", max_loops=1),
-    Agent(agent_name="Writer",   model_name="gpt-4.1", max_loops=1),
-    Agent(agent_name="Reviewer", model_name="gpt-4.1", max_loops=1),
+    Agent(agent_name="Analyst",  model_name="gpt-5.4", max_loops=1),
+    Agent(agent_name="Writer",   model_name="gpt-5.4", max_loops=1),
+    Agent(agent_name="Reviewer", model_name="gpt-5.4", max_loops=1),
 ]
 
 router = SwarmRouter(
@@ -501,10 +507,8 @@ result = router.run("Write a blog post about transformer architectures.")
 | `"HeavySwarm"` | Intensive multi-loop deep analysis |
 | `"RoundRobin"` | Round-robin task distribution |
 | `"PlannerWorkerSwarm"` | Planner + worker delegation |
-| `"BatchedGridWorkflow"` | Grid-based batch execution |
 | `"LLMCouncil"` | LLM-based council decisions |
 | `"AutoSwarmBuilder"` | Auto-configures everything |
-| `"auto"` | Router selects swarm_type automatically |
 
 ---
 
@@ -516,14 +520,14 @@ Multiple **worker** agents each respond to the task independently, then an **agg
 from swarms import Agent, MixtureOfAgents
 
 workers = [
-    Agent(agent_name="Worker-GPT",    model_name="gpt-4.1",       max_loops=1),
+    Agent(agent_name="Worker-GPT",    model_name="gpt-5.4",       max_loops=1),
     Agent(agent_name="Worker-Claude", model_name="claude-sonnet-4-6", max_loops=1),
     Agent(agent_name="Worker-Llama",  model_name="groq/llama-3.3-70b-versatile", max_loops=1),
 ]
 
 aggregator = Agent(
     agent_name="Aggregator",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     system_prompt="Synthesise the following expert responses into one coherent answer.",
     max_loops=1,
 )
@@ -551,7 +555,7 @@ from swarms import Agent, HierarchicalSwarm
 director = Agent(
     agent_name="Director",
     agent_description="Breaks complex tasks into subtasks and delegates them.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -575,25 +579,49 @@ result = swarm.run("Produce a comprehensive competitive analysis of the AI chip 
 
 ### GroupChat
 
-Agents engage in a round-table discussion. A speaker selection function decides who speaks next. Use for brainstorming, debate, or collaborative problem-solving.
+An asynchronous, self-selecting groupchat. There are no rounds or speaker-selection functions — every agent listens in parallel and decides on its own whether to chime in. A forced `respond(score, message)` function call asks each agent how much it wants to speak (0..1); replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds.
 
 ```python
-from swarms import Agent, GroupChat
-from swarms.structs.groupchat import expertise_based, round_robin_speaker
+from swarms import Agent
+from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
 
-optimist  = Agent(agent_name="Optimist",  system_prompt="You argue for the benefits.", model_name="gpt-4.1", max_loops=1)
-pessimist = Agent(agent_name="Pessimist", system_prompt="You argue for the risks.",    model_name="gpt-4.1", max_loops=1)
-realist   = Agent(agent_name="Realist",   system_prompt="You seek balanced analysis.", model_name="gpt-4.1", max_loops=1)
+# Every agent MUST carry RESPOND_TOOL so the chat can ask it whether to speak.
+# Recommended per-agent: max_loops=1, persistent_memory=False.
+optimist = Agent(
+    agent_name="Optimist",
+    system_prompt="You argue for the benefits.",
+    model_name="gpt-5.4",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
+pessimist = Agent(
+    agent_name="Pessimist",
+    system_prompt="You argue for the risks.",
+    model_name="gpt-5.4",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
+realist = Agent(
+    agent_name="Realist",
+    system_prompt="You seek balanced analysis.",
+    model_name="gpt-5.4",
+    max_loops=1,
+    persistent_memory=False,
+    tools_list_dictionary=[RESPOND_TOOL],
+)
 
 chat = GroupChat(
     agents=[optimist, pessimist, realist],
-    speaker_fn=round_robin_speaker,   # or expertise_based, random_speaker, priority_speaker
-    max_loops=3,                      # 3 rounds of discussion
+    max_loops=10,        # hard cap on total messages posted
+    threshold=0.5,       # min decision score (0..1) to publish a reply
+    idle_timeout=8.0,    # seconds of silence before stopping
 )
 result = chat.run("Should we adopt AI for medical diagnosis?")
 ```
 
-**Speaker functions:** `round_robin_speaker`, `expertise_based`, `random_speaker`, `priority_speaker`, `random_dynamic_speaker`
+**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Raise `idle_timeout` if agents need time to think before replying.
 
 ---
 
@@ -625,15 +653,15 @@ A council of agents each deliberate, then a judge agent makes the final ruling b
 from swarms import Agent, CouncilAsAJudge
 
 council = [
-    Agent(agent_name="Expert-Security", model_name="gpt-4.1", max_loops=1),
-    Agent(agent_name="Expert-Privacy",  model_name="gpt-4.1", max_loops=1),
-    Agent(agent_name="Expert-Legal",    model_name="gpt-4.1", max_loops=1),
+    Agent(agent_name="Expert-Security", model_name="gpt-5.4", max_loops=1),
+    Agent(agent_name="Expert-Privacy",  model_name="gpt-5.4", max_loops=1),
+    Agent(agent_name="Expert-Legal",    model_name="gpt-5.4", max_loops=1),
 ]
 
 judge = Agent(
     agent_name="Judge",
     system_prompt="Given the council's analysis, deliver a final verdict.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -654,13 +682,13 @@ Two or more agents argue opposing positions for multiple rounds. A judge deliver
 ```python
 from swarms import Agent, DebateWithJudge
 
-pro  = Agent(agent_name="Pro",  system_prompt="Argue strongly in favour.",  model_name="gpt-4.1", max_loops=1)
-con  = Agent(agent_name="Con",  system_prompt="Argue strongly against.",    model_name="gpt-4.1", max_loops=1)
+pro  = Agent(agent_name="Pro",  system_prompt="Argue strongly in favour.",  model_name="gpt-5.4", max_loops=1)
+con  = Agent(agent_name="Con",  system_prompt="Argue strongly against.",    model_name="gpt-5.4", max_loops=1)
 
 judge = Agent(
     agent_name="Judge",
     system_prompt="Evaluate the debate and deliver an objective verdict.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -683,7 +711,7 @@ from swarms import HeavySwarm
 
 swarm = HeavySwarm(
     num_agents=4,
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     loops_per_agent=5,       # each agent reasons for 5 loops
     show_output=True,
 )
@@ -695,7 +723,7 @@ Or via `SwarmRouter`:
 ```python
 from swarms import Agent, SwarmRouter
 
-agents = [Agent(agent_name=f"Deep-{i}", model_name="gpt-4.1", max_loops=5) for i in range(4)]
+agents = [Agent(agent_name=f"Deep-{i}", model_name="gpt-5.4", max_loops=5) for i in range(4)]
 router = SwarmRouter(agents=agents, swarm_type="HeavySwarm")
 result = router.run("Deep analysis: implications of AGI on global labour markets.")
 ```
@@ -733,7 +761,7 @@ from swarms import Agent, PlannerWorkerSwarm
 planner = Agent(
     agent_name="Planner",
     system_prompt="You create detailed, step-by-step execution plans.",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
 )
 
@@ -801,7 +829,7 @@ results = asyncio.run(run_agents_concurrently_async(agents=agents, task="..."))
 import asyncio
 from swarms import Agent
 
-agent = Agent(agent_name="AsyncAgent", model_name="gpt-4.1")
+agent = Agent(agent_name="AsyncAgent", model_name="gpt-5.4")
 
 async def main():
     # Standard async run
@@ -827,7 +855,7 @@ from swarms import Agent
 # Single MCP server
 agent = Agent(
     agent_name="MCPAgent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     mcp_url="http://localhost:8000/sse",   # SSE endpoint
     max_loops="auto",
 )
@@ -835,7 +863,7 @@ agent = Agent(
 # Multiple MCP servers
 agent = Agent(
     agent_name="MultiMCPAgent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     mcp_urls=[
         "http://localhost:8000/sse",
         "http://localhost:8001/sse",
@@ -884,7 +912,7 @@ conv.compact(summary="User asked basic arithmetic. Answer: 4.")
 # Pass to an agent
 agent = Agent(
     agent_name="MyAgent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     # agent reads MEMORY.md automatically when persistent_memory=True
 )
 ```
@@ -908,7 +936,7 @@ agent = Agent(
 | High-stakes ruling with deliberation | `CouncilAsAJudge` |
 | Structured adversarial debate | `DebateWithJudge` |
 | Deep research, many loops | `HeavySwarm` |
-| Don't know yet / rapid prototyping | `AutoSwarmBuilder` or `SwarmRouter(swarm_type="auto")` |
+| Don't know yet / rapid prototyping | `AutoSwarmBuilder` |
 | Need to switch architectures easily | `SwarmRouter` |
 
 ---
@@ -921,9 +949,9 @@ agent = Agent(
 from swarms import Agent, SequentialWorkflow
 
 pipeline = SequentialWorkflow(agents=[
-    Agent(agent_name="Researcher", system_prompt="You research topics thoroughly.", model_name="gpt-4.1"),
-    Agent(agent_name="Writer",     system_prompt="You write clear, engaging content.", model_name="gpt-4.1"),
-    Agent(agent_name="Editor",     system_prompt="You improve clarity and fix errors.", model_name="gpt-4.1"),
+    Agent(agent_name="Researcher", system_prompt="You research topics thoroughly.", model_name="gpt-5.4"),
+    Agent(agent_name="Writer",     system_prompt="You write clear, engaging content.", model_name="gpt-5.4"),
+    Agent(agent_name="Editor",     system_prompt="You improve clarity and fix errors.", model_name="gpt-5.4"),
 ], max_loops=1)
 
 result = pipeline.run("Write an article about the history of neural networks.")
@@ -935,11 +963,11 @@ result = pipeline.run("Write an article about the history of neural networks.")
 from swarms import Agent, MixtureOfAgents
 
 specialists = [
-    Agent(agent_name="TechExpert",    system_prompt="Analyse the technical aspects.", model_name="gpt-4.1"),
-    Agent(agent_name="BusinessExpert",system_prompt="Analyse the business aspects.", model_name="gpt-4.1"),
-    Agent(agent_name="LegalExpert",   system_prompt="Analyse the legal aspects.",   model_name="gpt-4.1"),
+    Agent(agent_name="TechExpert",    system_prompt="Analyse the technical aspects.", model_name="gpt-5.4"),
+    Agent(agent_name="BusinessExpert",system_prompt="Analyse the business aspects.", model_name="gpt-5.4"),
+    Agent(agent_name="LegalExpert",   system_prompt="Analyse the legal aspects.",   model_name="gpt-5.4"),
 ]
-synthesiser = Agent(agent_name="Synthesiser", model_name="gpt-4.1",
+synthesiser = Agent(agent_name="Synthesiser", model_name="gpt-5.4",
                     system_prompt="Combine expert analyses into one coherent report.")
 
 moa = MixtureOfAgents(agents=specialists, aggregator_agent=synthesiser)
@@ -965,7 +993,7 @@ def write_file(filename: str, content: str) -> str:
 
 agent = Agent(
     agent_name="AutonomousResearcher",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops="auto",
     tools=[search_web, write_file],
     persistent_memory=True,
@@ -982,7 +1010,7 @@ import sys
 from swarms import Agent, ConcurrentWorkflow
 
 agents = [
-    Agent(agent_name="GPT",    model_name="gpt-4.1",          max_loops=1),
+    Agent(agent_name="GPT",    model_name="gpt-5.4",          max_loops=1),
     Agent(agent_name="Claude", model_name="claude-sonnet-4-6", max_loops=1),
     Agent(agent_name="Gemini", model_name="gemini/gemini-2.5-pro", max_loops=1),
 ]
@@ -996,23 +1024,20 @@ for agent_name, answer in results.items():
 
 ### Pattern: Human-in-the-loop with AgentRearrange
 
+`AgentRearrange` has no native human-in-the-loop step — chain separate `.run()` calls yourself and insert your own checkpoint logic between them:
+
 ```python
-from swarms import Agent, AgentRearrange
+from swarms import Agent
 
-def human_input(response: str) -> str:
-    print(f"\nAgent says:\n{response}\n")
-    return input("Your feedback: ")
+drafter  = Agent(agent_name="Drafter",  model_name="gpt-5.4")
+finisher = Agent(agent_name="Finisher", model_name="gpt-5.4")
 
-pipeline = AgentRearrange(
-    agents=[
-        Agent(agent_name="Drafter",  model_name="gpt-4.1"),
-        Agent(agent_name="Finisher", model_name="gpt-4.1"),
-    ],
-    flow="Drafter -> H -> Finisher",
-    human_in_the_loop=True,
-    custom_human_in_the_loop=human_input,
-)
-result = pipeline.run("Draft a press release about our product launch.")
+draft = drafter.run("Draft a press release about our product launch.")
+
+print(f"\nAgent says:\n{draft}\n")
+feedback = input("Your feedback: ")
+
+result = finisher.run(f"Revise this draft based on the feedback.\n\nDraft:\n{draft}\n\nFeedback:\n{feedback}")
 ```
 
 ### Pattern: GraphWorkflow with fan-out / fan-in
@@ -1023,7 +1048,7 @@ from swarms import Agent, GraphWorkflow, Node, Edge, NodeType
 ingestion = Agent(agent_name="Ingestion", model_name="gpt-5.4-mini", max_loops=1)
 branch_a  = Agent(agent_name="BranchA",   model_name="gpt-5.4-mini", max_loops=1)
 branch_b  = Agent(agent_name="BranchB",   model_name="gpt-5.4-mini", max_loops=1)
-merger    = Agent(agent_name="Merger",    model_name="gpt-4.1",      max_loops=1)
+merger    = Agent(agent_name="Merger",    model_name="gpt-5.4",      max_loops=1)
 
 wf = GraphWorkflow()
 for a in [ingestion, branch_a, branch_b, merger]:
@@ -1039,6 +1064,51 @@ wf.set_end_points(["Merger"])
 
 results = wf.run(task="Process this dataset from two angles and merge the findings.")
 ```
+
+---
+
+## Contributing: WARP Git Messages (required)
+
+Every commit message, PR title and issue title you write for this repository must use the WARP (Warp Speed Protocol) shorthand. This is required of AI agents exactly as it is of people; a PR or issue without it is triaged later, so expect a delay if it is skipped.
+
+```
+[TYPE][Function/FileName][Short Description]
+```
+
+- `TYPE` in capitals: for example `FEAT`, `FIX`, `DOCS`, `REFACTOR`, `TEST`, `CHORE`.
+- `Function/FileName`: the function, class, module or file the change is about.
+- `Short Description`: one imperative line.
+
+```
+[FIX][Agent._run][Raise AgentLLMError after retry exhaustion]
+[FEAT][MCPDeployer][Serve several agents as separate tools]
+[DOCS][README][Add the MCPDeployer section]
+```
+
+Full specification: the [WARP Git Message Skill](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1) on the Swarms marketplace. Load it before writing a commit message, PR or issue for this repo.
+
+---
+
+## Comments: one line, only when needed
+
+A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.
+
+```python
+# Good
+# Sequential on purpose: agents share a rate-limited client.
+return [agent.run(task) for agent in agents]
+```
+
+```python
+# Bad
+# ------------------------------------------------------------
+# This function takes a list of agents and runs each of them
+# against the provided task, collecting the results into a list
+# which is then returned to the caller.
+# ------------------------------------------------------------
+```
+
+Multi-line comment blocks keep arriving in PRs and keep getting removed. Write them short the first time.
 
 ---
 
@@ -1058,8 +1128,6 @@ from swarms import Agent
 **Don't give all agents the same `agent_name`** — `persistent_memory` and `MEMORY.md` are keyed on `agent_name`. Duplicate names cause agents to share and corrupt each other's memory.
 
 **Don't instantiate heavyweight structures inside tight loops** — create agents and workflows once, reuse them across calls.
-
-**Don't pass `tools=[]` (empty list)** — pass `tools=None` instead. An empty list can confuse schema generation.
 
 **Don't use `streaming_on=True` and `streaming_callback` together on the same agent** — `streaming_on` streams to stdout; `streaming_callback` streams to your function. Pick one.
 

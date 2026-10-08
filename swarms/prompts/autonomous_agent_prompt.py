@@ -1,25 +1,15 @@
-"""
-Comprehensive prompt for autonomous agent operating in auto loop mode.
-
-This prompt guides the agent through the structured workflow:
-plan -> think -> action -> subtask_done -> complete_task
-"""
-
 from datetime import datetime
 
 
 def get_time() -> str:
-    """
-    Build the autonomous agent system prompt with current date/time injected.
-
-    Returns:
-        str: Full system prompt with date/time line prepended.
-    """
+    """The current local date and time as one prompt line."""
     now = datetime.now().astimezone()
     return f"Current date and time: {now.strftime('%A, %B %d, %Y %H:%M %Z')}\n"
 
 
-AUTONOMOUS_AGENT_SYSTEM_PROMPT = f"""
+def autonomous_agent_system_prompt() -> str:
+    """The autonomous agent system prompt, with the time as of this call."""
+    return f"""
 You are an elite autonomous agent operating in a structured autonomous loop by The Swarms Corporation.
 Your mission is to reliably and efficiently complete complex tasks by breaking them down into manageable subtasks, executing them systematically, and providing comprehensive results.
 
@@ -52,6 +42,13 @@ You operate in a structured three-phase cycle:
 - Critical priority tasks are foundational and must be completed first
 - Dependencies ensure logical execution order
 - The plan should be comprehensive but not overly granular
+- The plan is not frozen. Call `create_plan` again whenever execution teaches
+  you something the plan did not anticipate: work you discovered, a step that
+  should be split, a step that is no longer needed, or a dependency you got
+  wrong. Pass the full step list you now believe in. Completed steps keep
+  their results, so revising never loses finished work. Revise instead of
+  forcing unplanned work into an unrelated subtask, and instead of failing a
+  subtask you could re-scope.
 
 **Example Plan Structure**:
 Task: Research and write a report on renewable energy
@@ -250,14 +247,41 @@ Now, begin your mission with excellence.
 """
 
 
-def get_autonomous_agent_prompt() -> str:
+NO_THINK_TOOL_OVERRIDE = """
+
+## THE THINK TOOL IS NOT AVAILABLE
+
+The `think` tool is NOT available in this run. Disregard every instruction
+above that tells you to call it, along with the limits described for it.
+
+Reason inline instead: state your brief analysis in your own message text, then
+call the tools that do the actual work in that same response. Do not spend a
+turn on analysis alone - it costs a full round-trip and produces no progress.
+"""
+
+
+def get_autonomous_agent_prompt(
+    include_think_tool: bool = False,
+) -> str:
     """
     Get the comprehensive autonomous agent system prompt.
 
+    Args:
+        include_think_tool: Whether the `think` tool is available to the agent.
+            When False, an override is appended telling the model to ignore the
+            think-tool instructions and reason inline instead. This mirrors
+            ``Agent(think_tool=...)``; the prompt must agree with the tool list
+            or the model is told to call a tool it has not been given.
+
     Returns:
-        str: The full autonomous agent system prompt
+        str: The autonomous agent system prompt.
     """
-    return AUTONOMOUS_AGENT_SYSTEM_PROMPT
+    prompt = autonomous_agent_system_prompt()
+    if include_think_tool:
+        return prompt
+
+    # Overridden at the end rather than excised; the think guidance is woven through in a dozen places.
+    return prompt + NO_THINK_TOOL_OVERRIDE
 
 
 def get_autonomous_agent_prompt_with_context(
@@ -276,7 +300,7 @@ def get_autonomous_agent_prompt_with_context(
     Returns:
         str: Contextualized autonomous agent prompt
     """
-    prompt = AUTONOMOUS_AGENT_SYSTEM_PROMPT
+    prompt = autonomous_agent_system_prompt()
 
     if agent_name:
         prompt = prompt.replace(

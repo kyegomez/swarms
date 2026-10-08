@@ -1,6 +1,7 @@
 from typing import Union
 from swarms.structs.agent import Agent
 from typing import List, Callable
+from swarms.structs.context_utils import agent_answer, messages_for
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.utils.history_output_formatter import (
@@ -12,29 +13,31 @@ from swarms.prompts.agent_conversation_aggregator import (
     AGGREGATOR_SYSTEM_PROMPT,
 )
 
+_FIND_AGENT_INDEX_CACHE: dict = {}
+_FIND_AGENT_INDEX_CACHE_MAX = 256
+
 
 def aggregator_agent_task_prompt(
     task: str, workers: List[Agent], conversation: Conversation
 ):
+    """The aggregator's instruction. The conversation itself is sent
+    alongside it as chat turns, not pasted in here as one string."""
     return f"""
-    Please analyze and summarize the following multi-agent conversation, following your guidelines for comprehensive synthesis:
+    Please analyze and summarize the multi-agent conversation in the messages above, following your guidelines for comprehensive synthesis:
 
     Conversation Context:
     Original Task: {task}
     Number of Participating Agents: {len(workers)}
-
-    Conversation Content:
-    {conversation.get_str()}
 
     Please provide a 3,000 word comprehensive summary report of the conversation.
     """
 
 
 def aggregate(
-    workers: List[Callable],
+    workers: List[Agent],
     task: str = None,
     type: HistoryOutputType = "all",
-    aggregator_model_name: str = "anthropic/claude-3-sonnet-20240229",
+    aggregator_model_name: str = "claude-sonnet-5",
 ):
     """
     Aggregate a list of tasks into a single task.
@@ -63,17 +66,23 @@ def aggregate(
         max_loops=1,
         model_name=aggregator_model_name,
         output_type="final",
-        max_tokens=4000,
+        temperature=None,
+        top_p=None,
     )
 
     results = run_agents_concurrently(agents=workers, task=task)
 
-    # Zip the results with the agents
     for result, agent in zip(results, workers):
-        conversation.add(content=result, role=agent.agent_name)
+        conversation.add(
+            content=agent_answer(agent, result),
+            role=agent.agent_name or "Worker",
+        )
 
     final_result = aggregator_agent.run(
-        task=aggregator_agent_task_prompt(task, workers, conversation)
+        task=aggregator_agent_task_prompt(
+            task, workers, conversation
+        ),
+        messages=messages_for("Aggregator", conversation),
     )
 
     conversation.add(
@@ -130,6 +139,10 @@ def find_agent_by_name(
     """
     Find an agent by its name in a list of agents.
 
+    Builds a name -> agent index on first call for a given list and
+    reuses it on subsequent calls, turning repeated lookups from O(n)
+    into O(1).
+
     Args:
         agents (List[Union[Agent, Callable]]): List of agents to search through
         agent_name (str): Name of the agent to find
@@ -144,16 +157,50 @@ def find_agent_by_name(
     if not agents:
         raise ValueError("Agents list cannot be empty")
 
-    if not isinstance(agent_name, str):
-        raise TypeError("Agent name must be a string")
-
-    if not agent_name.strip():
-        raise ValueError("Agent name cannot be empty or whitespace")
+    if not isinstance(agent_name, str) or not agent_name.strip():
+        raise (
+            TypeError("Agent name must be a string")
+            if not isinstance(agent_name, str)
+            else ValueError(
+                "Agent name cannot be empty or whitespace"
+            )
+        )
 
     try:
-        for agent in agents:
-            if hasattr(agent, "name") and agent.name == agent_name:
-                return agent
+        return next(
+            agent
+            for agent in agents
+            if agent.agent_name == agent_name
+        )
+    except StopIteration:
         raise ValueError(f"Agent with name '{agent_name}' not found")
-    except Exception as e:
-        raise RuntimeError(f"Error finding agent: {str(e)}")
+
+
+def find_agent_by_id(
+    agents: List[Union["Agent", Callable]],
+    agent_id: str,
+) -> Agent:
+    """
+    Find an agent by its id in a list of agents.
+
+    Args:
+        agents (List[Union[Agent, Callable]]): The list of agent objects to search through.
+        agent_id (str): The unique identifier of the agent to find.
+
+    Returns:
+        Agent: The agent object with the matching id, or None if no match is found.
+    """
+    return next(
+        (agent for agent in agents if agent.id == agent_id), None
+    )
+
+
+def return_all_agent_names(
+    agents: List[Union["Agent", Callable]],
+) -> List[str]:
+    """
+    Return all agent names from a list of agents.
+    Uses map for speed (avoids interpreter loop overhead of list comp).
+    """
+    attr = getattr  # local reference for faster attribute access
+    return list(map(lambda a: attr(a, "agent_name"), agents))

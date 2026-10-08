@@ -6,14 +6,14 @@ from swarms.prompts.multi_agent_collab_prompt import (
 # Define two real agents with the multi-agent collaboration prompt
 agent1 = Agent(
     agent_name="ResearchAgent1",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     system_prompt=MULTI_AGENT_COLLAB_PROMPT_TWO,  # Set collaboration prompt
 )
 
 agent2 = Agent(
     agent_name="ResearchAgent2",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     max_loops=1,
     system_prompt=MULTI_AGENT_COLLAB_PROMPT_TWO,  # Set collaboration prompt
 )

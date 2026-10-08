@@ -1,7 +1,7 @@
 # Example usage
 from pathlib import Path
-from swarms.structs.csv_to_agent import (
-    AgentLoader,
+from swarms.structs.agent_loader import (
+    CSVAgentLoader,
     AgentValidationError,
 )
 
@@ -30,10 +30,10 @@ if __name__ == "__main__":
 
     try:
         # Initialize CSV manager
-        csv_manager = AgentLoader(Path("agents.csv"))
+        csv_manager = CSVAgentLoader(Path("agents.csv"))
 
         # Create CSV with initial agents
-        csv_manager.create_agent_csv(agent_configs)
+        csv_manager.create_agent_file(agent_configs)
 
         # Load agents from CSV
         agents = csv_manager.load_agents()

@@ -2,6 +2,10 @@
 
 This directory contains comprehensive guides and tutorials for using Swarms effectively.
 
+## AgentSH Implementation
+- [agentsh.py](agentsh_implementation/agentsh.py) - Self-organized multi-agent harness with no orchestrator (Agensh, arXiv:2609.26781)
+- [README.md](agentsh_implementation/README.md) - How the implementation works
+
 ## Generation Length Blog
 - [longform_generator.py](generation_length_blog/longform_generator.py) - Long-form content generation
 - [universal_api.py](generation_length_blog/universal_api.py) - Universal API implementation
@@ -44,8 +48,6 @@ This directory contains comprehensive guides and tutorials for using Swarms effe
 - [README.md](840_update/README.md) - 840 update documentation
 
 ### 850 Workshop
-- [aop_raw_client_code.py](850_workshop/aop_raw_client_code.py) - AOP raw client implementation
-- [aop_raw_task_example.py](850_workshop/aop_raw_task_example.py) - AOP raw task example
 - [moa_seq_example.py](850_workshop/moa_seq_example.py) - MOA sequential example
 - [peer_review_example.py](850_workshop/peer_review_example.py) - Peer review example
 - [test_agent_concurrent.py](850_workshop/test_agent_concurrent.py) - Concurrent agent testing

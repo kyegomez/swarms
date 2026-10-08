@@ -28,7 +28,7 @@ def create_agent(
     name: str,
     description: str,
     system_prompt: str,
-    model_name: str = "gpt-4.1",
+    model_name: str = "gpt-5.4",
 ) -> Agent:
     """
     Create an agent with proper documentation and configuration.

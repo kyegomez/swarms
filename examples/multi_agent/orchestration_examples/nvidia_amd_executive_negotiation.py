@@ -1,5 +1,12 @@
 from swarms import Agent
-from swarms.structs.multi_agent_debates import MediationSession
+import sys
+from pathlib import Path
+
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[1] / "alternate_debates")
+)
+
+from mediation_session import MediationSession  # noqa: E402
 
 # Initialize the executive and legal participants
 jensen_huang = Agent(
@@ -32,7 +39,7 @@ jensen_huang = Agent(
     - Phase out AMD brands
     - Minimal premium on acquisition
     - Complete executive control""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 lisa_su = Agent(
@@ -65,7 +72,7 @@ lisa_su = Agent(
     - RDNA architecture continuation
     - Employee retention guarantees
     - Leadership role in combined entity""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 nvidia_counsel = Agent(
@@ -98,7 +105,7 @@ nvidia_counsel = Agent(
     - Weak AMD protections
     - Full NVIDIA control
     - Limited liability exposure""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 amd_counsel = Agent(
@@ -131,7 +138,7 @@ amd_counsel = Agent(
     - Strong AMD board representation
     - Significant breakup fee
     - Robust regulatory provisions""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 antitrust_expert = Agent(
@@ -164,7 +171,7 @@ antitrust_expert = Agent(
     - Price control mechanisms
     - Innovation guarantees
     - Market access provisions""",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
 )
 
 # Initialize the high-conflict negotiation session

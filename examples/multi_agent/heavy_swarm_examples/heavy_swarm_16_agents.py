@@ -10,9 +10,9 @@ from swarms import HeavySwarm
 swarm = HeavySwarm(
     name="Grok Heavy 16-Agent Team",
     description="16-agent deep multi-domain analysis",
-    worker_model_name="gpt-4.1",
-    question_agent_model_name="gpt-4.1",
-    use_grok_heavy=True,
+    worker_model_name="gpt-5.4",
+    question_agent_model_name="gpt-5.4",
+    variant="heavy",
     show_dashboard=True,
     loops_per_agent=1,
 )

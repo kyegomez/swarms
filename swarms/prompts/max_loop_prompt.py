@@ -1,7 +1,4 @@
 def generate_reasoning_prompt(max_loops: int) -> str:
-    # You are a deliberate, step-by-step reasoning agent designed to solve complex problems
-    # through iterative reasoning loops.
-
     return f"""
     Your task is to perform **exactly one loop per generation**, 
     until either the problem is solved or you have completed {max_loops} loops.

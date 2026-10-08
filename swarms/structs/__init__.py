@@ -2,36 +2,35 @@ from swarms.structs.advisor_swarm import AdvisorSwarm
 from swarms.structs.agent import Agent
 from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange
-from swarms.structs.aop import AOP
 from swarms.structs.async_subagent import (
     SubagentRegistry,
     SubagentTask,
     TaskStatus,
 )
+from swarms.structs.auto_agent_builder import (
+    AutoAgentBuilder,
+)
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
-from swarms.structs.base_structure import BaseStructure
-from swarms.structs.base_swarm import BaseSwarm
 from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
+from swarms.structs.broadcast import Broadcast, broadcast
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.debate_with_judge import DebateWithJudge
+from swarms.structs.decision_model import (
+    DecisionModel,
+    get_decision_model_prices,
+    get_decision_models,
+)
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
     Node,
     NodeType,
 )
-from swarms.structs.groupchat import (
-    GroupChat,
-    expertise_based,
-    priority_speaker,
-    random_dynamic_speaker,
-    random_speaker,
-    round_robin_speaker,
-)
+from swarms.structs.groupchat import RESPOND_TOOL, GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.hiearchical_swarm import HierarchicalSwarm
 from swarms.structs.hybrid_hiearchical_peer_swarm import (
@@ -59,7 +58,10 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
     run_single_agent,
 )
+from swarms.structs.mcp_deployer import MCPDeployer, deploy_as_mcp
 from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.one_to_one import OneToOne, one_to_one
+from swarms.structs.one_to_three import OneToThree, one_to_three
 from swarms.structs.planner_generator_evaluator import (
     EvaluationReport,
     HarnessResult,
@@ -69,41 +71,31 @@ from swarms.structs.planner_generator_evaluator import (
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.structs.skill_orchestra import SkillOrchestra
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
-from swarms.structs.stopping_conditions import (
-    check_cancelled,
-    check_complete,
-    check_done,
-    check_end,
-    check_error,
-    check_exit,
-    check_failure,
-    check_finished,
-    check_stopped,
-    check_success,
-)
 from swarms.structs.swarm_rearrange import SwarmRearrange
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
 )
 from swarms.structs.swarming_architectures import (
-    broadcast,
     circular_swarm,
     grid_swarm,
     mesh_swarm,
-    one_to_one,
     pyramid_swarm,
     star_swarm,
 )
 
+from swarms.structs.check_models import (
+    model_count,
+    get_available_models,
+    is_model_available,
+)
+
+
 __all__ = [
     "AdvisorSwarm",
     "Agent",
-    "BaseStructure",
-    "BaseSwarm",
     "ConcurrentWorkflow",
     "SocialAlgorithms",
     "Conversation",
@@ -123,6 +115,10 @@ __all__ = [
     "grid_swarm",
     "mesh_swarm",
     "one_to_one",
+    "one_to_three",
+    "OneToOne",
+    "OneToThree",
+    "Broadcast",
     "pyramid_swarm",
     "star_swarm",
     "SpreadSheetSwarm",
@@ -137,16 +133,12 @@ __all__ = [
     "run_agents_with_different_tasks",
     "run_single_agent",
     "GroupChat",
-    "expertise_based",
-    "round_robin_speaker",
-    "random_speaker",
-    "priority_speaker",
-    "random_dynamic_speaker",
     "MultiAgentRouter",
     "ModelRouter",
     "HybridHierarchicalClusterSwarm",
     "get_agents_info",
     "get_swarms_info",
+    "AutoAgentBuilder",
     "AutoSwarmBuilder",
     "CouncilAsAJudge",
     "LLMCouncil",
@@ -154,29 +146,16 @@ __all__ = [
     "aggregate",
     "find_agent_by_name",
     "run_agent",
-    "round_robin_speaker",
-    "random_speaker",
-    "priority_speaker",
-    "random_dynamic_speaker",
     "HierarchicalSwarm",
     "HeavySwarm",
     "CronJob",
-    "check_done",
-    "check_finished",
-    "check_complete",
-    "check_success",
-    "check_failure",
-    "check_error",
-    "check_stopped",
-    "check_cancelled",
-    "check_exit",
-    "check_end",
     "AgentLoader",
     "BatchedGridWorkflow",
-    "AOP",
     "SelfMoASeq",
-    "SkillOrchestra",
     "DebateWithJudge",
+    "DecisionModel",
+    "get_decision_model_prices",
+    "get_decision_models",
     "PlannerGeneratorEvaluator",
     "StepContract",
     "EvaluationReport",
@@ -184,4 +163,10 @@ __all__ = [
     "SubagentRegistry",
     "SubagentTask",
     "TaskStatus",
+    "RESPOND_TOOL",
+    "model_count",
+    "MCPDeployer",
+    "deploy_as_mcp",
+    "get_available_models",
+    "is_model_available",
 ]

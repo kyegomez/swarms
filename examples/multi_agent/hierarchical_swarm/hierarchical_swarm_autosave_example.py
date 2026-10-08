@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-"""
-HierarchicalSwarm Autosave Example
-
-This example demonstrates how to use the autosave feature to automatically
-save conversation history after swarm execution.
-
-Usage:
-    python hierarchical_swarm_autosave_example.py
-"""
-
 from swarms import Agent, HierarchicalSwarm
 
 

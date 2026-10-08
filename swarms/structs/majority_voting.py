@@ -1,22 +1,30 @@
-import concurrent.futures
-import os
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, List
+import copy
+from concurrent.futures import as_completed
+from typing import Any, Callable, Dict, List, Optional, Union
 
+from swarms.structs.execution_utils import (
+    batched_run,
+    run_concurrently,
+)
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.structs.multi_agent_exec import run_agents_concurrently
-from swarms.structs.swarm_id import swarm_id
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
-from typing import Callable, Optional
-
-logger = initialize_logger(log_folder="majority_voting")
-
+from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.structs.context_utils import (
+    agent_answer,
+    messages_for,
+    split_last_turn,
+)
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
+from swarms.utils.generate_id import generate_id
 
 CONSENSUS_AGENT_PROMPT = """
 You are the Consensus Agent, responsible for synthesizing and evaluating the responses from a panel of expert agents. Your task is to deliver a rigorous, insightful, and actionable consensus based on their outputs.
@@ -65,7 +73,7 @@ def default_consensus_agent(
     name: str = "Consensus-Agent",
     system_prompt: str = None,
     description: str = "An agent that uses consensus to generate a final answer.",
-    model_name: str = "gpt-4.1",
+    model_name: str = "gpt-5.4",
     streaming_callback: Optional[Callable[[str], None]] = None,
     *args,
     **kwargs,
@@ -109,7 +117,7 @@ class MajorityVoting:
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "MajorityVoting",
         description: str = "A multi-loop majority voting system for agents",
         agents: List[Agent] = None,
@@ -120,16 +128,23 @@ class MajorityVoting:
         consensus_agent_prompt: str = CONSENSUS_AGENT_PROMPT,
         consensus_agent_name: str = "Consensus-Agent",
         consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
-        consensus_agent_model_name: str = "gpt-4.1",
+        consensus_agent_model_name: str = "gpt-5.4",
         additional_consensus_agent_kwargs: dict = {},
         *args,
         **kwargs,
     ):
-        self.id = id
+        self.id = id or generate_id("majority-voting")
         self.name = name
         self.description = description
         self.agents = agents
         self.autosave = autosave
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "majority-voting",
+            verbose=verbose,
+            enabled=autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
         self.verbose = verbose
         self.max_loops = max_loops
         self.output_type = output_type
@@ -149,10 +164,16 @@ class MajorityVoting:
 
         self.reliability_check()
 
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
     def reliability_check(self):
 
-        if self.agents is None:
-            raise ValueError("Agents list is empty")
+        if not self.agents:
+            raise ValueError("Agents list cannot be None or empty")
+
+        if self.max_loops <= 0:
+            raise ValueError("max_loops must be greater than 0")
 
         # Log the agents in a more formatted, readable way
         agent_list = "\n".join(
@@ -168,6 +189,49 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
+    def _run_voters(self) -> Dict[str, Any]:
+        """
+        Run every voter on the shared conversation, concurrently.
+
+        Each voter receives the history as typed turns and contributes its
+        answer. Recording ``run``'s return value instead would store the
+        voter's whole conversation - which already contains this history - so
+        the shared transcript would compound on every loop.
+
+        Returns:
+            Maps agent name to that voter's answer.
+        """
+        answers: Dict[str, Any] = {}
+        with ContextThreadPoolExecutor(
+            max_workers=len(self.agents)
+        ) as executor:
+            future_to_agent = {}
+            for agent in self.agents:
+                prior, vote_task = split_last_turn(
+                    messages_for(agent.agent_name, self.conversation)
+                )
+                future = executor.submit(
+                    agent.run, task=vote_task, messages=prior
+                )
+                future_to_agent[future] = agent
+
+            for future in as_completed(future_to_agent):
+                agent = future_to_agent[future]
+                try:
+                    result = future.result()
+                except Exception as error:
+                    answers[agent.agent_name] = error
+                    continue
+                answers[agent.agent_name] = agent_answer(
+                    agent, fallback=result
+                )
+
+        return answers
+
+    @trace_run(
+        "MajorityVoting.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(
         self,
         task: str,
@@ -190,6 +254,9 @@ class MajorityVoting:
 
         """
 
+        # A reused instance would otherwise carry the previous task's votes
+        self.conversation = Conversation(time_enabled=False)
+
         self.conversation.add(
             role="user",
             content=task,
@@ -197,16 +264,12 @@ class MajorityVoting:
 
         for i in range(self.max_loops):
 
-            output = run_agents_concurrently(
-                agents=self.agents,
-                task=self.conversation.get_str(),
-                max_workers=os.cpu_count(),
-            )
+            outputs = self._run_voters()
 
-            for agent, output in zip(self.agents, output):
+            for agent in self.agents:
                 self.conversation.add(
                     role=agent.agent_name,
-                    content=output,
+                    content=outputs[agent.agent_name],
                 )
 
             # Set streaming_on for the consensus agent based on the provided streaming_callback
@@ -227,24 +290,32 @@ class MajorityVoting:
                                 consensus_agent_name, chunk, False
                             )
                     except Exception as callback_error:
-                        if self.verbose:
-                            logger.warning(
-                                f"[STREAMING] Callback failed for {consensus_agent_name}: {str(callback_error)}"
-                            )
+                        raise callback_error
 
             else:
                 consensus_streaming_callback = None
 
             # Run the consensus agent with the streaming callback, if any
+            prior, consensus_task = split_last_turn(
+                messages_for(
+                    self.consensus_agent.agent_name, self.conversation
+                )
+            )
             consensus_output = self.consensus_agent.run(
-                task=(f"History: {self.conversation.get_str()}"),
+                task=consensus_task,
+                messages=prior,
                 streaming_callback=consensus_streaming_callback,
+            )
+            consensus_output = agent_answer(
+                self.consensus_agent, fallback=consensus_output
             )
 
             self.conversation.add(
                 role=self.consensus_agent.agent_name,
                 content=consensus_output,
             )
+
+        self.workspace.save_conversation(self.conversation)
 
         return history_output_formatter(
             conversation=self.conversation,
@@ -265,13 +336,23 @@ class MajorityVoting:
         Returns:
             List[Any]: List of majority votes for each task.
         """
-        return [self.run(task, *args, **kwargs) for task in tasks]
+        return batched_run(self.run, tasks, *args, **kwargs)
+
+    def _clone_for_task(self) -> "MajorityVoting":
+        """Build a copy of this system for one concurrent task.
+
+        ``run`` replaces ``self.conversation`` and every voter writes into
+        it, so one instance cannot serve several threads. The copy shares
+        the agents, as the instance already did; ``run`` gives it its own
+        Conversation.
+        """
+        return copy.copy(self)
 
     def run_concurrently(
         self, tasks: List[str], *args, **kwargs
-    ) -> List[Any]:
+    ) -> Union[List[Any], Dict[Any, Any]]:
         """
-        Runs the majority voting system concurrently.
+        Runs the majority voting system concurrently, each task on its own clone.
 
         Args:
             tasks (List[str]): List of tasks to be performed by the agents.
@@ -281,14 +362,11 @@ class MajorityVoting:
         Returns:
             List[Any]: List of majority votes for each task.
         """
-        with ThreadPoolExecutor(
-            max_workers=os.cpu_count()
-        ) as executor:
-            futures = [
-                executor.submit(self.run, task, *args, **kwargs)
-                for task in tasks
-            ]
-            return [
-                future.result()
-                for future in concurrent.futures.as_completed(futures)
-            ]
+        return run_concurrently(
+            lambda task, *a, **kw: self._clone_for_task().run(
+                task, *a, **kw
+            ),
+            tasks,
+            *args,
+            **kwargs,
+        )

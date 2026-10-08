@@ -1,8 +1,16 @@
 import os
+from typing import Any
+
 import pytest
 
-from swarms import Agent
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms import Agent, PlannerGeneratorEvaluator
+from swarms.schemas.hs_schemas import OrderBatch
+from swarms.schemas.planner_worker_schemas import PlannerTask
+from swarms.structs.hiearchical_swarm import (
+    HierarchicalOrder,
+    HierarchicalSwarm,
+)
+from swarms.structs.planner_worker_swarm import TaskQueue
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
@@ -281,57 +289,6 @@ def test_hierarchical_swarm_collaboration_prompts():
     assert result is not None
 
 
-def test_hierarchical_swarm_with_dashboard():
-    """Test HierarchicalSwarm with interactive dashboard"""
-    # Create agents
-    content_creator = Agent(
-        agent_name="Content-Creator",
-        agent_description="Content creation specialist",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-        print_on=False,
-    )
-
-    editor = Agent(
-        agent_name="Editor",
-        agent_description="Content editor and proofreader",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-        print_on=False,
-    )
-
-    publisher = Agent(
-        agent_name="Publisher",
-        agent_description="Publishing and distribution specialist",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-        print_on=False,
-    )
-
-    # Create swarm with interactive dashboard
-    swarm = HierarchicalSwarm(
-        name="Content-Publishing-Swarm",
-        description="Hierarchical swarm for content creation and publishing",
-        agents=[content_creator, editor, publisher],
-        max_loops=1,
-        interactive=True,
-        verbose=True,
-    )
-
-    # Verify dashboard was created
-    assert swarm.dashboard is not None
-    assert swarm.interactive is True
-
-    # Execute swarm
-    result = swarm.run(
-        "Create a comprehensive guide on machine learning best practices"
-    )
-    assert result is not None
-
-
 def test_hierarchical_swarm_real_world_scenario():
     """Test HierarchicalSwarm in a realistic business scenario"""
     # Create agents representing different business functions
@@ -495,222 +452,799 @@ def test_hierarchical_swarm_autosave_saves_conversation_after_run(
 
 
 ##############################################################################
-# Streaming tests
+# Director settings and worker recovery tests
 ##############################################################################
 
 
-@pytest.fixture
-def streaming_swarm():
-    """Create a lightweight HierarchicalSwarm for streaming tests."""
+class StubAgent:
+    def __init__(
+        self,
+        agent_name: str,
+        outputs: list[Any],
+    ):
+        self.agent_name = agent_name
+        self.description = f"{agent_name} test agent"
+        self.system_prompt = self.description
+        self.outputs = iter(outputs)
+        self.calls = 0
+        self.output_type = "dict"
+
+    def run(self, *args, **kwargs):
+        self.calls += 1
+        output = next(self.outputs)
+        if isinstance(output, Exception):
+            raise output
+        return output
+
+
+def make_recovery_swarm(
+    director: StubAgent,
+    workers: list[StubAgent],
+    **kwargs,
+) -> HierarchicalSwarm:
     return HierarchicalSwarm(
-        name="Streaming-Test-Swarm",
-        agents=[
-            Agent(
-                agent_name="Researcher",
-                system_prompt="List 2 short bullets on the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-            Agent(
-                agent_name="Writer",
-                system_prompt="Combine into one short paragraph.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-        ],
-        max_loops=1,
-        output_type="dict",
+        director=director,
+        agents=workers,
         autosave=False,
-        director_feedback_on=False,
         planning_enabled=False,
+        director_feedback_on=False,
+        add_collaboration_prompt=False,
+        **kwargs,
     )
 
 
-@pytest.mark.asyncio
-async def test_arun_stream_plain(streaming_swarm):
-    """arun_stream without events yields (agent_name, token) tuples."""
-    agent_names = set()
-    token_count = 0
-    async for agent_name, token in streaming_swarm.arun_stream(
-        "solid-state batteries"
-    ):
-        assert isinstance(agent_name, str)
-        assert isinstance(token, str)
-        agent_names.add(agent_name)
-        token_count += 1
+def test_director_settings_are_forwarded(monkeypatch):
+    captured = {}
 
-    assert token_count > 5, f"Too few tokens: {token_count}"
-    # Director + at least one worker
-    assert (
-        len(agent_names) >= 2
-    ), f"Expected >=2 agents, got {agent_names}"
+    def build_director(**kwargs):
+        captured.update(kwargs)
+        return StubAgent(kwargs["agent_name"], [])
 
+    monkeypatch.setattr(
+        "swarms.structs.hiearchical_swarm.Agent",
+        build_director,
+    )
+    worker = StubAgent("Worker", ["done"])
 
-@pytest.mark.asyncio
-async def test_arun_stream_event_types(streaming_swarm):
-    """with_events=True emits all required event types with role and loop."""
-    event_types = set()
-    roles = set()
-    end_events = []
-
-    async for evt in streaming_swarm.arun_stream(
-        "solid-state batteries", with_events=True
-    ):
-        assert "type" in evt
-        event_types.add(evt["type"])
-        if "role" in evt:
-            roles.add(evt["role"])
-        if evt["type"].endswith("_end"):
-            end_events.append(evt)
-
-    # All required event types
-    assert "swarm_start" in event_types
-    assert "swarm_end" in event_types
-    assert "director_start" in event_types
-    assert "director_end" in event_types
-    assert "worker_start" in event_types
-    assert "worker_end" in event_types
-    assert "token" in event_types
-
-    # Roles tagged correctly
-    assert "director" in roles
-    assert "worker" in roles
-    assert "swarm" in roles
-
-    # End events (except swarm_end) carry output and loop
-    for e in end_events:
-        if e["type"] == "swarm_end":
-            continue
-        assert "loop" in e, f"Missing loop in {e}"
-        assert (
-            "output" in e and len(str(e["output"])) > 0
-        ), f"Missing output in {e}"
-
-
-@pytest.mark.asyncio
-async def test_arun_stream_parallel_interleaving():
-    """Parallel workers interleave tokens (>= 3 agent-name flips)."""
     swarm = HierarchicalSwarm(
-        name="Parallel-Interleave-Test",
-        agents=[
-            Agent(
-                agent_name="Optimist",
-                system_prompt="Write 4-6 upbeat sentences about the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-            Agent(
-                agent_name="Pessimist",
-                system_prompt="Write 4-6 cautious sentences about the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
-            ),
-        ],
-        max_loops=1,
-        output_type="dict",
+        agents=[worker],
         autosave=False,
-        director_feedback_on=False,
         planning_enabled=False,
+        director_settings={
+            "agent_name": "Custom Director",
+            "model_name": "custom-model",
+            "max_loops": 3,
+            "reasoning_effort": "high",
+            "output_type": "dict",
+        },
+    )
+
+    assert swarm.director_name == "Custom Director"
+    assert swarm.director_model_name == "custom-model"
+    assert captured["max_loops"] == 3
+    assert captured["reasoning_effort"] == "high"
+    assert captured["output_type"] == "final"
+    assert captured["base_model"] is OrderBatch
+    assert worker.output_type == "final"
+    assert swarm.director.output_type == "final"
+
+
+def test_custom_director_and_workers_are_forced_to_final_output():
+    director = StubAgent("Director", [])
+    worker = StubAgent("Worker", ["done"])
+
+    swarm = make_recovery_swarm(director, [worker])
+
+    assert director.output_type == "final"
+    assert worker.output_type == "final"
+
+    plan, orders = swarm.parse_orders(
+        '{"plan": "Use the worker", "orders": '
+        '[{"agent_name": "Worker", "task": "Do the work"}]}'
+    )
+    assert plan == "Use the worker"
+    assert orders[0].agent_name == "Worker"
+
+
+def test_step_skips_feedback_on_final_loop(monkeypatch):
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", [])],
+        max_loops=2,
+    )
+    swarm.director_feedback_on = True
+    feedback_calls = []
+    director_output = {
+        "orders": [{"agent_name": "Worker", "task": "Do the work"}],
+    }
+
+    monkeypatch.setattr(
+        swarm, "run_director", lambda task, img=None: director_output
+    )
+    monkeypatch.setattr(
+        swarm,
+        "execute_orders",
+        lambda orders: ["done"],
+    )
+    monkeypatch.setattr(
+        swarm,
+        "feedback_director",
+        lambda outputs: feedback_calls.append(outputs) or "feedback",
+    )
+
+    assert swarm.step("task") == "feedback"
+    assert swarm.step("task", is_final_loop=True) == ["done"]
+    assert feedback_calls == [["done"]]
+
+
+def test_step_returns_immediately_when_director_has_no_orders(
+    monkeypatch,
+):
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", [])],
+    )
+    monkeypatch.setattr(
+        swarm,
+        "run_director",
+        lambda task, img=None: {
+            "plan": "Nothing needed",
+            "orders": [],
+        },
+    )
+
+    def unexpected_execution(*args, **kwargs):
+        raise AssertionError("empty plans must not execute workers")
+
+    monkeypatch.setattr(swarm, "execute_orders", unexpected_execution)
+
+    assert swarm.step("task") == []
+
+
+def test_run_marks_only_the_last_step_as_final(monkeypatch):
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", [])],
+        max_loops=2,
+    )
+    final_flags = []
+
+    def capture_step(*args, is_final_loop=False, **kwargs):
+        final_flags.append(is_final_loop)
+        return []
+
+    monkeypatch.setattr(swarm, "step", capture_step)
+
+    swarm.run("task")
+
+    assert final_flags == [False, True]
+
+
+def test_batched_run_forwards_utility_options(monkeypatch):
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", [])],
+    )
+    captured = {}
+
+    def fake_batched_run(func, tasks, *args, **kwargs):
+        captured.update(
+            func=func,
+            tasks=tasks,
+            args=args,
+            kwargs=kwargs,
+        )
+        return ["first", "second"]
+
+    monkeypatch.setattr(
+        "swarms.structs.hiearchical_swarm.batched_run",
+        fake_batched_run,
+    )
+
+    result = swarm.batched_run(
+        ["task-1", "task-2"],
+        "positional",
+        imgs=["one.png", "two.png"],
+        max_workers=2,
+        return_agent_output_dict=True,
+        return_exceptions=True,
+    )
+
+    assert result == ["first", "second"]
+    assert captured["func"] == swarm.run
+    assert captured["tasks"] == ["task-1", "task-2"]
+    assert captured["args"] == ("positional",)
+    assert captured["kwargs"] == {
+        "img": None,
+        "imgs": ["one.png", "two.png"],
+        "max_workers": 2,
+        "return_agent_output_dict": True,
+        "return_exceptions": True,
+    }
+
+
+def test_failed_worker_is_retried_and_reassigned():
+    failed_worker = StubAgent(
+        "Failed Worker",
+        [RuntimeError("offline"), RuntimeError("offline")],
+    )
+    healthy_worker = StubAgent("Healthy Worker", ["recovered"])
+    director = StubAgent(
+        "Director",
+        [
+            {
+                "plan": "Move the failed task to a healthy worker.",
+                "orders": [
+                    {
+                        "agent_name": "Healthy Worker",
+                        "task": "complete the task",
+                    }
+                ],
+            }
+        ],
+    )
+    swarm = make_recovery_swarm(
+        director,
+        [failed_worker, healthy_worker],
+        max_agent_retries=1,
+        max_reassignment_attempts=1,
+        parallel_execution=False,
+    )
+
+    outputs = swarm.execute_orders(
+        [
+            HierarchicalOrder(
+                agent_name="Failed Worker",
+                task="complete the task",
+            )
+        ]
+    )
+
+    assert failed_worker.calls == 2
+    assert healthy_worker.calls == 1
+    assert director.calls == 1
+    assert outputs[-1] == "recovered"
+    assert "[WORKER UNAVAILABLE]" in swarm.conversation.get_str()
+    assert "[RECOVERY STARTED]" in swarm.conversation.get_str()
+
+
+def test_one_failed_worker_does_not_stop_other_orders():
+    failed_worker = StubAgent(
+        "Failed Worker",
+        [RuntimeError("offline")],
+    )
+    healthy_worker = StubAgent("Healthy Worker", ["completed"])
+    director = StubAgent("Director", [])
+    swarm = make_recovery_swarm(
+        director,
+        [failed_worker, healthy_worker],
+        max_agent_retries=0,
+        max_reassignment_attempts=0,
         parallel_execution=True,
     )
 
-    worker_sequence = []
-    async for evt in swarm.arun_stream(
-        "AI in healthcare", with_events=True
-    ):
-        if evt["type"] == "token" and evt["role"] == "worker":
-            worker_sequence.append(evt["agent"])
-
-    flips = sum(
-        1
-        for i in range(1, len(worker_sequence))
-        if worker_sequence[i] != worker_sequence[i - 1]
-    )
-    assert (
-        len(worker_sequence) > 10
-    ), f"Too few worker tokens: {len(worker_sequence)}"
-    assert flips >= 3, f"Expected >=3 flips, got {flips}"
-
-
-@pytest.mark.asyncio
-async def test_arun_stream_aggregator_feedback():
-    """Aggregator phase streams when director_feedback_on=True."""
-    swarm = HierarchicalSwarm(
-        name="Aggregator-Test",
-        agents=[
-            Agent(
-                agent_name="Researcher",
-                system_prompt="List 2 short bullets on the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
+    outputs = swarm.execute_orders(
+        [
+            HierarchicalOrder(
+                agent_name="Failed Worker",
+                task="first task",
             ),
-        ],
-        max_loops=1,
-        output_type="dict",
-        autosave=False,
-        director_feedback_on=True,
-        planning_enabled=False,
-    )
-
-    event_types = set()
-    roles = set()
-    async for evt in swarm.arun_stream(
-        "solid-state batteries", with_events=True
-    ):
-        event_types.add(evt["type"])
-        if "role" in evt:
-            roles.add(evt["role"])
-
-    assert "aggregator_start" in event_types
-    assert "aggregator_end" in event_types
-    assert "aggregator" in roles
-
-
-@pytest.mark.asyncio
-async def test_arun_stream_token_events_have_role_and_loop():
-    """Every token event carries role, agent, and loop fields."""
-    swarm = HierarchicalSwarm(
-        name="Token-Metadata-Test",
-        agents=[
-            Agent(
-                agent_name="Researcher",
-                system_prompt="List 2 short bullets on the topic.",
-                model_name="gpt-4.1-mini",
-                max_loops=1,
-                persistent_memory=False,
-                print_on=False,
+            HierarchicalOrder(
+                agent_name="Healthy Worker",
+                task="second task",
             ),
-        ],
-        max_loops=1,
-        output_type="dict",
-        autosave=False,
-        director_feedback_on=False,
-        planning_enabled=False,
+        ]
     )
 
-    token_count = 0
-    async for evt in swarm.arun_stream(
-        "solid-state batteries", with_events=True
-    ):
-        if evt["type"] == "token":
-            token_count += 1
-            assert "role" in evt, f"Token missing role: {evt}"
-            assert "agent" in evt, f"Token missing agent: {evt}"
-            assert "loop" in evt, f"Token missing loop: {evt}"
-            assert "token" in evt, f"Token missing token: {evt}"
+    assert outputs[0]["status"] == "failed"
+    assert outputs[1] == "completed"
+    assert healthy_worker.calls == 1
 
-    assert token_count > 0
+
+##############################################################################
+# max_workers and nested-swarm worker tests
+##############################################################################
+
+
+class StubNestedSwarm:
+    """Mimic a nested orchestrator identified by ``name``."""
+
+    def __init__(self, name: str, outputs: list):
+        self.name = name
+        self.description = f"{name} nested swarm"
+        self.outputs = iter(outputs)
+        self.calls = 0
+        self.output_type = "dict-all-except-first"
+
+    def run(self, task, *args, **kwargs):
+        self.calls += 1
+        output = next(self.outputs)
+        if isinstance(output, Exception):
+            raise output
+        return output
+
+
+class StubFlatOrchestrator:
+    """Mimic an orchestrator with a strict ``run`` signature."""
+
+    def __init__(self, name: str, outputs: list):
+        self.name = name
+        self.description = f"{name} orchestrator"
+        self.outputs = iter(outputs)
+        self.calls = 0
+        self.output_type = "dict"
+
+    def run(self, task, img=None):
+        self.calls += 1
+        return next(self.outputs)
+
+
+def test_max_workers_defaults_to_cpu_heuristic():
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", ["done"])],
+    )
+    assert swarm.max_workers == max(
+        1, int((os.cpu_count() or 1) * 0.95)
+    )
+
+
+def test_max_workers_override_is_used():
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", ["done"])],
+        max_workers=2,
+    )
+    assert swarm.max_workers == 2
+
+
+def test_max_workers_must_be_positive():
+    with pytest.raises(ValueError):
+        make_recovery_swarm(
+            StubAgent("Director", []),
+            [StubAgent("Worker", ["done"])],
+            max_workers=0,
+        )
+
+
+def test_nested_swarm_worker_is_called():
+    sub_team = StubNestedSwarm("SubTeam", ["sub-team result"])
+    director = StubAgent("Director", [])
+    swarm = make_recovery_swarm(
+        director,
+        [sub_team],
+        parallel_execution=False,
+    )
+
+    output = swarm.call_single_agent(
+        "SubTeam",
+        "handle part A",
+    )
+
+    assert output == "sub-team result"
+    assert sub_team.calls == 1
+
+
+def test_orchestrator_with_strict_run_signature_completes():
+    flat = StubFlatOrchestrator("FlatOrchestrator", ["moa result"])
+    director = StubAgent("Director", [])
+    swarm = make_recovery_swarm(
+        director,
+        [flat],
+        parallel_execution=False,
+    )
+
+    output = swarm.call_single_agent(
+        "FlatOrchestrator",
+        "handle part B",
+    )
+
+    assert output == "moa result"
+    assert flat.calls == 1
+
+
+def test_reassignment_targets_nested_swarm_worker_by_name():
+    failed_worker = StubAgent(
+        "Failed Worker",
+        [RuntimeError("offline"), RuntimeError("offline")],
+    )
+    healthy_sub_team = StubNestedSwarm(
+        "Healthy SubTeam", ["recovered by subteam"]
+    )
+    director = StubAgent(
+        "Director",
+        [
+            {
+                "plan": "Move the failed task to the healthy nested sub-team.",
+                "orders": [
+                    {
+                        "agent_name": "Healthy SubTeam",
+                        "task": "complete the task",
+                    }
+                ],
+            }
+        ],
+    )
+    swarm = make_recovery_swarm(
+        director,
+        [failed_worker, healthy_sub_team],
+        max_agent_retries=1,
+        max_reassignment_attempts=1,
+        parallel_execution=False,
+    )
+
+    outputs = swarm.execute_orders(
+        [
+            HierarchicalOrder(
+                agent_name="Failed Worker",
+                task="complete the task",
+            )
+        ]
+    )
+
+    assert healthy_sub_team.calls == 1
+    assert outputs[-1] == "recovered by subteam"
+    assert "[RECOVERY NOTICE]" not in swarm.conversation.get_str()
+
+
+# ============================================================================
+# Context management: how much each agent is re-sent
+# ============================================================================
+
+
+def _scripted_hs_agent(name, seen, director=False):
+    """A real Agent with a stubbed LLM call, so short_memory is real."""
+    import json as _json
+
+    from swarms import Agent
+
+    agent = Agent(
+        agent_name=name,
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        persistent_memory=False,
+        print_on=False,
+        autosave=False,
+    )
+
+    def fake_call_llm(task=None, *args, **kwargs):
+        messages = kwargs.get("messages") or []
+        seen.append((name, messages))
+        if director:
+            return [
+                {
+                    "id": "d1",
+                    "type": "function",
+                    "function": {
+                        "name": "handoff",
+                        "arguments": _json.dumps(
+                            {
+                                "plan": "do it",
+                                "orders": [
+                                    {
+                                        "agent_name": "W1",
+                                        "task": "do part 1",
+                                    }
+                                ],
+                            }
+                        ),
+                    },
+                }
+            ]
+        return f"[{name}-out]"
+
+    agent.call_llm = fake_call_llm
+    return agent
+
+
+class TestHierarchicalContextManagement:
+    """
+    Every agent used to receive ``History: <entire conversation>`` on each
+    invocation. That history lands in the agent's own memory, so the next
+    invocation re-sent all of it on top - the director's prompt grew about
+    sevenfold across two loops.
+    """
+
+    def _run_two_loops(self):
+        from swarms import HierarchicalSwarm
+
+        seen = []
+        swarm = HierarchicalSwarm(
+            director=_scripted_hs_agent(
+                "Director", seen, director=True
+            ),
+            agents=[_scripted_hs_agent("W1", seen)],
+            max_loops=2,
+        )
+        swarm.run("Build something.")
+        return swarm, seen
+
+    def test_the_director_prompt_does_not_balloon(self):
+        _, seen = self._run_two_loops()
+        director_turns = [
+            sum(len(str(m.get("content"))) for m in messages)
+            for name, messages in seen
+            if name == "Director"
+        ]
+        assert len(director_turns) >= 2, "the director ran only once"
+
+        first, second = director_turns[0], director_turns[1]
+        assert second < first * 5, (
+            f"director context grew {second / max(first, 1):.1f}x "
+            f"across one loop: {director_turns}"
+        )
+
+    def test_a_worker_sees_its_own_output_once_as_assistant(self):
+        """The compounding this guards against is the agent re-reading itself.
+
+        Typed turns carry the whole conversation every request, so raw growth
+        is linear and no longer the signal. What must not happen is the
+        worker's own output coming back a second time, mislabelled as
+        something someone else said - that is what compounded across loops.
+        """
+        _, seen = self._run_two_loops()
+        worker_calls = [
+            messages for name, messages in seen if name == "W1"
+        ]
+        if len(worker_calls) < 2:
+            return
+
+        second = worker_calls[1]
+        # Turns that are the output, not ones quoting it inside a larger
+        # blob: the feedback director still interpolates a flattened history
+        # (#2033), which is a separate unconverted path.
+        own = [
+            message
+            for message in second
+            if str(message.get("content")).strip() == "[W1-out]"
+        ]
+        assert (
+            len(own) == 1
+        ), f"the worker saw its own output {len(own)} times: {own}"
+        assert (
+            own[0]["role"] == "assistant"
+        ), f"own output arrived as {own[0]['role']!r}, not 'assistant'"
+
+    def test_the_director_tool_call_is_stored_readably(self):
+        """
+        A raw tool-call list renders as a Python repr in the history that
+        every later agent then has to read.
+        """
+        swarm, _ = self._run_two_loops()
+        director_messages = [
+            str(m["content"])
+            for m in swarm.conversation.conversation_history
+            if m["role"] == "Director"
+        ]
+        assert director_messages, "the director recorded nothing"
+        assert not any(
+            c.startswith("[{'id'") for c in director_messages
+        ), "the director's tool call was stored as a Python repr"
+
+    def test_the_conversation_starts_clean(self):
+        from swarms import HierarchicalSwarm
+
+        seen = []
+        swarm = HierarchicalSwarm(
+            director=_scripted_hs_agent(
+                "Director", seen, director=True
+            ),
+            agents=[_scripted_hs_agent("W1", seen)],
+            max_loops=1,
+        )
+        roles = [
+            m["role"] for m in swarm.conversation.conversation_history
+        ]
+        assert (
+            "user" not in roles
+        ), f"stale messages loaded from disk: {roles}"
+
+
+def _swarm_with_one_order(print_on):
+    """A swarm whose director always issues a single order."""
+    seen = []
+    return HierarchicalSwarm(
+        director=_scripted_hs_agent("Director", seen, director=True),
+        agents=[_scripted_hs_agent("W1", seen)],
+        max_loops=1,
+        print_on=print_on,
+    )
+
+
+def test_the_director_panel_prints_without_verbose(capsys):
+    swarm = _swarm_with_one_order(print_on=True)
+    assert swarm.verbose is False
+
+    swarm.step("Build something.")
+
+    printed = capsys.readouterr().out
+    assert "Director Name: Director" in printed
+    assert "W1" in printed
+
+
+def test_print_on_false_silences_the_director_panel(capsys):
+    swarm = _swarm_with_one_order(print_on=False)
+
+    swarm.step("Build something.")
+
+    assert "Director Name" not in capsys.readouterr().out
+
+
+def test_the_director_panel_carries_the_plan(capsys):
+    swarm = _swarm_with_one_order(print_on=True)
+
+    swarm.step("Build something.")
+
+    printed = capsys.readouterr().out
+    assert "Plan" in printed
+    # the scripted director's plan, from _scripted_hs_agent
+    assert "do it" in printed
 
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_second_run_does_not_carry_the_first_task():
+    """A reused swarm starts each task from an empty conversation and cursor."""
+    director = StubAgent(
+        "Director",
+        [
+            OrderBatch(
+                orders=[
+                    HierarchicalOrder(
+                        agent_name="Worker", task="first subtask"
+                    )
+                ]
+            ),
+            OrderBatch(
+                orders=[
+                    HierarchicalOrder(
+                        agent_name="Worker", task="second subtask"
+                    )
+                ]
+            ),
+        ],
+    )
+    worker = StubAgent("Worker", ["first answer", "second answer"])
+    swarm = make_recovery_swarm(director, [worker], max_loops=1)
+
+    swarm.run("first task")
+    swarm.run("second task")
+
+    history = swarm.conversation.get_str()
+
+    assert "first task" not in history, history
+    assert "first answer" not in history, history
+    assert "second task" in history, history
+    assert swarm._delivered.get("Worker", 0) <= len(
+        swarm.conversation.conversation_history
+    )
+
+
+def test_task_queue_pending_count_tracks_dependency_readiness():
+    """get_pending_count only counts PENDING tasks whose dependencies are done."""
+    queue = TaskQueue()
+    collect = PlannerTask(
+        title="Collect", description="Collect the data"
+    )
+    analyse = PlannerTask(
+        title="Analyse",
+        description="Analyse the data",
+        depends_on=[collect.id],
+    )
+    queue.add_tasks([collect, analyse])
+
+    assert queue.get_pending_count() == 1
+
+    claimed = queue.claim("worker-1")
+
+    assert claimed.id == collect.id
+    assert queue.get_pending_count() == 0
+
+    assert queue.start(collect.id, claimed.version)
+    assert queue.complete(collect.id, "the data", claimed.version + 1)
+
+    assert queue.get_pending_count() == 1
+    assert queue.get_completed_count() == 1
+
+
+def test_task_queue_failed_count_only_counts_exhausted_retries():
+    """get_failed_count ignores a failure that still has a retry budget."""
+    queue = TaskQueue()
+    task = PlannerTask(
+        title="Flaky",
+        description="Fails on every attempt",
+        max_retries=1,
+    )
+    queue.add_task(task)
+
+    first = queue.claim("worker-1")
+
+    assert queue.start(task.id, first.version)
+    assert queue.fail(task.id, "boom", first.version + 1)
+    assert queue.get_failed_count() == 0
+    assert queue.get_pending_count() == 1
+
+    retry = queue.claim("worker-1")
+
+    assert queue.start(task.id, retry.version)
+    assert queue.fail(task.id, "boom again", retry.version + 1)
+    assert queue.get_failed_count() == 1
+    assert queue.get_pending_count() == 0
+
+
+def test_harness_result_reflects_conversation_state(tmp_path):
+    """get_harness_result reports identity plus the live conversation history."""
+    harness = PlannerGeneratorEvaluator(
+        name="PGE-Under-Test",
+        working_directory=str(tmp_path),
+    )
+
+    before = harness.get_harness_result()
+
+    assert before["id"] == harness.id
+    assert before["name"] == "PGE-Under-Test"
+    assert before["shared_state_path"] == harness.shared_state_path
+    assert before["conversation"] == []
+
+    harness.conversation.add(role="System", content="step one passed")
+
+    after = harness.get_harness_result()
+
+    assert len(after["conversation"]) == 1
+    assert after["conversation"][-1]["role"] == "System"
+    assert after["conversation"][-1]["content"] == "step one passed"
+    assert after["id"] == before["id"]
+
+
+@pytest.mark.parametrize("parallel_execution", [True, False])
+def test_worker_timeout_returns_without_waiting_for_stalled_worker(
+    parallel_execution, tmp_path, monkeypatch
+):
+    from threading import Event, Timer
+    from time import monotonic
+
+    monkeypatch.chdir(tmp_path)
+    released = Event()
+    finished = Event()
+
+    class StalledWorker(StubAgent):
+        def run(self, *args, **kwargs):
+            self.calls += 1
+            released.wait(3)
+            finished.set()
+            return "late worker result"
+
+    stalled = StalledWorker("Stalled", [])
+    healthy = StubAgent("Healthy", ["healthy result"])
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [stalled, healthy],
+        max_retries=1,
+        max_reassignment_attempts=0,
+        worker_timeout=0.05,
+        heartbeat_interval=0.01,
+        parallel_execution=parallel_execution,
+    )
+    # Also let the pre-fix implementation terminate after exposing the wait.
+    release_timer = Timer(0.6, released.set)
+    release_timer.start()
+    started = monotonic()
+    try:
+        outputs = swarm.execute_orders(
+            [
+                HierarchicalOrder(agent_name="Stalled", task="blocked task"),
+                HierarchicalOrder(agent_name="Healthy", task="quick task"),
+            ]
+        )
+        elapsed = monotonic() - started
+        assert elapsed < 0.45
+        assert "healthy result" in outputs
+        assert stalled.calls == 2
+        assert "[WORKER UNAVAILABLE]" in swarm.conversation.get_str()
+    finally:
+        released.set()
+        release_timer.cancel()
+    assert finished.wait(1)
+    assert "late worker result" not in swarm.conversation.get_str()

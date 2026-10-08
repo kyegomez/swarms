@@ -7,6 +7,8 @@ from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
+from swarms.telemetry.otel import ContextThreadPoolExecutor
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 
 def run_single_agent(
@@ -57,10 +59,7 @@ async def run_agent_async(agent: AgentType, task: str) -> Any:
         ...     result = await run_agent_async(agent, "Process data")
         ...     return result
     """
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(
-        None, run_single_agent, agent, task
-    )
+    return await asyncio.to_thread(run_single_agent, agent, task)
 
 
 async def run_agents_concurrently_async(
@@ -113,10 +112,10 @@ def run_agents_concurrently(
         img (Optional[str]): Optional image data to pass to agent run() if supported.
         max_workers (Optional[int]): Maximum threads for the executor (default: 95% of CPU cores).
         return_agent_output_dict (bool): If True, returns a dict mapping agent names to outputs.
-                                         Otherwise returns a list of results in completion order.
+                                         Otherwise returns a list of results in input order.
 
     Returns:
-        List[Any] or Dict[str, Any]: List of results from each agent's run() method in completion order,
+        List[Any] or Dict[str, Any]: List of results from each agent's run() method in input order,
                                      or a dict of agent names to results (preserving agent order)
                                      if return_agent_output_dict is True.
                                      If an agent fails, the corresponding result is the Exception.
@@ -126,7 +125,7 @@ def run_agents_concurrently(
         - By default, utilizes nearly all available CPU cores for optimal performance.
         - Any Exception during agent execution is caught and included in the results.
         - If return_agent_output_dict is True, the results dict preserves agent input order.
-        - Otherwise, the results list is in order of completion (not input order).
+        - Otherwise, the results list is in input order, so results[i] is agents[i]'s.
 
     Example:
         >>> agents = [Agent1(), Agent2()]
@@ -140,13 +139,11 @@ def run_agents_concurrently(
     """
     try:
         if max_workers is None:
-            num_cores = os.cpu_count()
-            max_workers = int(num_cores * 0.95) if num_cores else 1
+            max_workers = max_workers_95_percent()
 
         futures = []
-        agent_id_map = {}
 
-        with concurrent.futures.ThreadPoolExecutor(
+        with ContextThreadPoolExecutor(
             max_workers=max_workers
         ) as executor:
             for agent in agents:
@@ -157,7 +154,6 @@ def run_agents_concurrently(
                     agent_kwargs["img"] = img
                 future = executor.submit(agent.run, **agent_kwargs)
                 futures.append(future)
-                agent_id_map[future] = agent
 
             if return_agent_output_dict:
                 # Use agent name as key, preserve input order
@@ -176,13 +172,11 @@ def run_agents_concurrently(
                     output_dict[name] = result
                 return output_dict
             else:
+                # Input order, not completion order: callers pair this list positionally with `agents`.
                 results = []
-                for future in concurrent.futures.as_completed(
-                    futures
-                ):
+                for future in futures:
                     try:
-                        result = future.result()
-                        results.append(result)
+                        results.append(future.result())
                     except Exception as e:
                         results.append(e)
                 return results
@@ -224,15 +218,19 @@ def run_agents_concurrently_multiprocess(
         >>> print(f"Processed {len(results)} agents")
     """
     results = []
-    loop = asyncio.get_event_loop()
 
-    # Process agents in batches to avoid overwhelming system resources
-    for i in range(0, len(agents), batch_size):
-        batch = agents[i : i + batch_size]
-        batch_results = loop.run_until_complete(
-            run_agents_concurrently_async(batch, task)
-        )
-        results.extend(batch_results)
+    # Use a dedicated event loop to ensure compatibility across contexts.
+    loop = asyncio.new_event_loop()
+    try:
+        # Process agents in batches to avoid overwhelming system resources
+        for i in range(0, len(agents), batch_size):
+            batch = agents[i : i + batch_size]
+            batch_results = loop.run_until_complete(
+                run_agents_concurrently_async(batch, task)
+            )
+            results.extend(batch_results)
+    finally:
+        loop.close()
 
     return results
 
@@ -274,6 +272,10 @@ def batched_grid_agent_execution(
         >>> for i, result in enumerate(results):
         ...     print(f"Agent {i+1} with {tasks[i]}: {result}")
     """
+
+    if max_workers is None:
+        max_workers = max_workers_95_percent()
+
     logger.info(
         f"Batch Grid Execution with {len(agents)} agents and number of tasks: {len(tasks)}"
     )
@@ -283,11 +285,8 @@ def batched_grid_agent_execution(
             "The number of agents must match the number of tasks."
         )
 
-    # 90% of the available CPU cores
-    max_workers = max_workers or int(os.cpu_count() * 0.9)
-
     results = [None] * len(agents)
-    with concurrent.futures.ThreadPoolExecutor(
+    with ContextThreadPoolExecutor(
         max_workers=max_workers
     ) as executor:
         future_to_index = {
@@ -343,6 +342,9 @@ def run_agents_with_different_tasks(
         ...     agent, task = pairs[i]
         ...     print(f"Agent {agent.agent_name} with {task}: {result}")
     """
+    if max_workers is None:
+        max_workers = max_workers_95_percent()
+
     if not agent_task_pairs:
         return []
 

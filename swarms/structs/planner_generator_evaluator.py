@@ -31,6 +31,7 @@ import traceback
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+from swarms.structs.execution_utils import batched_run
 from swarms.prompts.planner_generator_evaluator_prompts import (
     EVALUATOR_EVALUATE_STEP_PROMPT,
     EVALUATOR_SYSTEM_PROMPT,
@@ -41,12 +42,12 @@ from swarms.prompts.planner_generator_evaluator_prompts import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.structs.swarm_id import swarm_id
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.utils.generate_id import generate_id
 
 logger = initialize_logger(log_folder="planner_generator_evaluator")
 
@@ -186,19 +187,19 @@ class PlannerGeneratorEvaluator:
 
     Examples:
         >>> # Simple usage with defaults
-        >>> harness = PlannerGeneratorEvaluator(model_name="gpt-4.1")
+        >>> harness = PlannerGeneratorEvaluator(model_name="gpt-5.4")
         >>> result = harness.run("Write a market analysis report for EV batteries")
 
         >>> # With custom agents that have tools (e.g., Evaluator with Playwright MCP)
         >>> from swarms import Agent
         >>> evaluator = Agent(
         ...     agent_name="PGE-Evaluator",
-        ...     model_name="gpt-4.1",
+        ...     model_name="gpt-5.4",
         ...     max_loops=1,
         ...     mcp_config={"url": "http://localhost:3000/playwright"},
         ... )
         >>> harness = PlannerGeneratorEvaluator(
-        ...     model_name="gpt-4.1",
+        ...     model_name="gpt-5.4",
         ...     evaluator_agent=evaluator,
         ... )
         >>> result = harness.run("Build a todo app with React frontend")
@@ -209,7 +210,7 @@ class PlannerGeneratorEvaluator:
         id: str = None,
         name: str = "PlannerGeneratorEvaluator",
         description: str = "Three-agent Planner-Generator-Evaluator harness with iterative feedback loop",
-        model_name: str = "gpt-4.1",
+        model_name: str = "gpt-5.4",
         planner_model_name: Optional[str] = None,
         generator_model_name: Optional[str] = None,
         evaluator_model_name: Optional[str] = None,
@@ -229,7 +230,7 @@ class PlannerGeneratorEvaluator:
         *args,
         **kwargs,
     ):
-        self.id = id or swarm_id()
+        self.id = id or generate_id("planner-generator-evaluator")
         self.name = name
         self.description = description
         self.model_name = model_name
@@ -710,8 +711,7 @@ class PlannerGeneratorEvaluator:
                 criterion_scores[criterion] = float(score)
                 criterion_thresholds[criterion] = float(threshold)
 
-        # If no table parsed, try alternative patterns:
-        # "Criterion: score/10" or "Criterion: score out of 10"
+        # No table, try "Criterion: score/10" and "Criterion: score out of 10"
         if not criterion_scores:
             alt_scores = re.findall(
                 r"\*?\*?([^*:\n]+?)\*?\*?\s*:\s*(\d+(?:\.\d+)?)\s*(?:/\s*10|out of 10)",
@@ -809,6 +809,8 @@ class PlannerGeneratorEvaluator:
         total_retries = 0
 
         try:
+            self.conversation.clear()
+
             # Add task to conversation
             self.conversation.add(role="User", content=task)
 
@@ -972,7 +974,7 @@ class PlannerGeneratorEvaluator:
         Returns:
             List of results, one per task.
         """
-        return [self.run(task) for task in tasks]
+        return batched_run(self.run, tasks)
 
     def get_harness_result(self) -> Dict[str, Any]:
         """Get the current state of the harness as a dictionary.

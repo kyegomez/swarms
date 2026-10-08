@@ -2,10 +2,10 @@ from swarms import HierarchicalSwarm, Agent
 
 # Create agents
 research_agent = Agent(
-    agent_name="Research-Analyst", model_name="gpt-4.1", print_on=True
+    agent_name="Research-Analyst", model_name="gpt-5.4", print_on=True
 )
 analysis_agent = Agent(
-    agent_name="Data-Analyst", model_name="gpt-4.1", print_on=True
+    agent_name="Data-Analyst", model_name="gpt-5.4", print_on=True
 )
 
 # Create swarm with interactive dashboard

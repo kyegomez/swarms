@@ -1,21 +1,24 @@
-import concurrent.futures
 import json
 import traceback
-from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, List, Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
 
 from swarms.structs.conversation import Conversation
-from swarms.tools.base_tool import BaseTool
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.utils.formatter import formatter
-from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
+from swarms.utils.generate_id import generate_id
 
 
 class HandOffsResponse(BaseModel):
@@ -47,11 +50,21 @@ class MultipleHandOffsResponse(BaseModel):
     )
 
 
-def get_agent_response_schema(model_name: str = None):
-    return BaseTool().base_model_to_dict(MultipleHandOffsResponse)
-
-
 def agent_boss_router_prompt(agent_descriptions: any):
+    """
+    Build the system prompt that instructs the boss agent how to route tasks.
+
+    The prompt embeds the rendered ``agent_descriptions`` block so the boss
+    model knows what agents are available and how to choose between them.
+
+    Args:
+        agent_descriptions: A string (or string-coercible value) listing the
+            available agents, typically in the form
+            ``"- <agent_name>: <description>"`` joined by newlines.
+
+    Returns:
+        str: The fully rendered boss-agent system prompt.
+    """
     return f"""
         You are an intelligent boss agent responsible for routing tasks to the most appropriate specialized agents.
 
@@ -98,7 +111,7 @@ class MultiAgentRouter:
     Attributes:
         name (str): The name of the router.
         description (str): A description of the router's purpose.
-        agents (dict): A dictionary of agents, where the key is the agent's name and the value is the agent object.
+        agents (List[Callable]): List of agents managed by the router. Name lookups go through `find_agent_by_name`.
         model (str): The model to use for the boss agent.
         temperature (float): The temperature for the boss agent's model.
         shared_memory_system (callable): A shared memory system for agents to query.
@@ -112,12 +125,12 @@ class MultiAgentRouter:
 
     def __init__(
         self,
-        id: str = generate_api_key(prefix="multi-agent-router"),
+        id: Optional[str] = None,
         name: str = "swarm-router",
         description: str = "Routes tasks to specialized agents based on their capabilities",
         agents: List[Callable] = None,
         model: str = "gpt-5.4",
-        temperature: float = 0.1,
+        temperature: Optional[float] = None,
         shared_memory_system: callable = None,
         output_type: OutputType = "dict",
         print_on: bool = True,
@@ -134,13 +147,14 @@ class MultiAgentRouter:
             description (str, optional): A description of the router's purpose. Defaults to "Routes tasks to specialized agents based on their capabilities".
             agents (List[Agent], optional): A list of agents to be managed by the router. Defaults to an empty list.
             model (str, optional): The model to use for the boss agent. Defaults to "gpt-5.4".
-            temperature (float, optional): The temperature for the boss agent's model. Defaults to 0.1.
+            temperature (float, optional): The temperature for the boss agent's model. Defaults to None.
             shared_memory_system (callable, optional): A shared memory system for agents to query. Defaults to None.
             output_type (OutputType, optional): The type of output expected from the agents. Defaults to "dict".
             print_on (bool, optional): Whether to print the boss agent's decision. Defaults to True.
             system_prompt (str, optional): Custom system prompt for the router. Defaults to None.
             skip_null_tasks (bool, optional): Whether to skip executing agents when their assigned task is null or None. Defaults to True.
         """
+        self.id = id or generate_id("multi-agent-router")
         self.name = name
         self.description = description
         self.shared_memory_system = shared_memory_system
@@ -150,7 +164,7 @@ class MultiAgentRouter:
         self.print_on = print_on
         self.system_prompt = system_prompt
         self.skip_null_tasks = skip_null_tasks
-        self.agents = {agent.agent_name: agent for agent in agents}
+        self.agents = list(agents) if agents else []
         self.conversation = Conversation()
 
         router_system_prompt = ""
@@ -171,12 +185,19 @@ class MultiAgentRouter:
             **kwargs,
         )
 
-    def __repr__(self):
-        return f"MultiAgentRouter(name={self.name}, agents={list(self.agents.keys())})"
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
-    def query_ragent(self, task: str) -> str:
-        """Query the ResearchAgent"""
-        return self.shared_memory_system.query(task)
+    def __repr__(self):
+        """
+        Return a debug-friendly representation listing the router name and the
+        names of every agent it manages.
+
+        Returns:
+            str: A repr of the form
+            ``MultiAgentRouter(name=<name>, agents=[<names>])``.
+        """
+        return f"MultiAgentRouter(name={self.name}, agents={[a.agent_name for a in self.agents]})"
 
     def _create_boss_system_prompt(self) -> str:
         """
@@ -187,8 +208,8 @@ class MultiAgentRouter:
         """
         agent_descriptions = "\n".join(
             [
-                f"- {name}: {agent.description}"
-                for name, agent in self.agents.items()
+                f"- {agent.agent_name}: {agent.description}"
+                for agent in self.agents
             ]
         )
 
@@ -196,30 +217,43 @@ class MultiAgentRouter:
 
     def handle_single_handoff(
         self, boss_response_str: dict, task: str
-    ) -> dict:
+    ) -> None:
         """
-        Handles a single handoff to one agent.
+        Execute the single agent selected by the boss and record its response.
 
-        If skip_null_tasks is True and the assigned task is null or None,
-        the agent execution will be skipped.
+        Looks up the agent named in the first (and only) handoff, runs it on
+        the modified task (falling back to the original task if the boss did
+        not rewrite it), and appends the agent's response to
+        ``self.conversation``. When ``skip_null_tasks`` is True and the
+        resolved task is empty or ``None``, execution is skipped.
+
+        Args:
+            boss_response_str (dict): Parsed boss decision. Expected to contain
+                a ``"handoffs"`` list with at least one entry shaped like
+                ``{"agent_name": str, "task": Optional[str], ...}``.
+            task (str): The original user task, used as a fallback when the
+                boss did not supply a rewritten task.
+
+        Returns:
+            None: The conversation is mutated in place.
+
+        Raises:
+            ValueError: If the boss selected an agent name that is not
+                registered with this router.
         """
 
-        # Validate that the selected agent exists
-        if (
-            boss_response_str["handoffs"][0]["agent_name"]
-            not in self.agents
-        ):
-            raise ValueError(
-                f"Boss selected unknown agent: {boss_response_str.agent_name}"
-            )
-
-        # Get the selected agent
-        selected_agent = self.agents[
-            boss_response_str["handoffs"][0]["agent_name"]
+        handoff_agent_name = boss_response_str["handoffs"][0][
+            "agent_name"
         ]
 
+        selected_agent = find_agent_by_name(
+            self.agents, handoff_agent_name
+        )
+
         # Use the modified task if provided, otherwise use original task
-        final_task = boss_response_str["handoffs"][0]["task"] or task
+        final_task = (
+            boss_response_str["handoffs"][0].get("task") or task
+        )
 
         # Skip execution if task is null/None and skip_null_tasks is True
         if self.skip_null_tasks and (
@@ -229,6 +263,7 @@ class MultiAgentRouter:
                 logger.info(
                     f"Skipping execution for agent {selected_agent.agent_name} - task is null/None"
                 )
+            return
 
         # Use the agent's run method directly
         agent_response = selected_agent.run(final_task)
@@ -237,33 +272,54 @@ class MultiAgentRouter:
             role=selected_agent.agent_name, content=agent_response
         )
 
-        # return agent_response
-
     def handle_multiple_handoffs(
         self, boss_response_str: dict, task: str
-    ) -> dict:
+    ) -> None:
         """
-        Handles multiple handoffs to multiple agents.
+        Execute every agent selected by the boss and record the first response.
 
-        If skip_null_tasks is True and any assigned task is null or None,
-        those agents will be skipped and only agents with valid tasks will be executed.
+        Validates that every ``agent_name`` referenced in ``boss_response_str``
+        exists before running anything. Each agent is run with its boss-supplied
+        task (or the original ``task`` when the boss did not rewrite it). When
+        ``skip_null_tasks`` is True, agents whose resolved task is empty or
+        ``None`` are skipped. After execution, the first selected agent's
+        response is appended to ``self.conversation``.
+
+        Args:
+            boss_response_str (dict): Parsed boss decision containing a
+                ``"handoffs"`` list, each entry shaped like
+                ``{"agent_name": str, "task": Optional[str], ...}``.
+            task (str): The original user task, used as a fallback when the
+                boss did not supply a rewritten task.
+
+        Returns:
+            None: The conversation is mutated in place.
+
+        Raises:
+            ValueError: If any of the boss-selected agents is not registered
+                with this router.
         """
 
-        # Validate that the selected agents exist
+        # Resolve up front so an unknown name fails before anything is paid for
+        resolved = []
         for handoff in boss_response_str["handoffs"]:
-            if handoff["agent_name"] not in self.agents:
-                raise ValueError(
-                    f"Boss selected unknown agent: {handoff.agent_name}"
+            try:
+                agent = find_agent_by_name(
+                    self.agents, handoff["agent_name"]
                 )
+            except (TypeError, ValueError):
+                raise ValueError(
+                    f"Boss selected unknown agent: {handoff['agent_name']}"
+                )
+            resolved.append((handoff, agent))
 
         # Get the selected agents and their tasks
         selected_agents = []
         final_tasks = []
         skipped_agents = []
 
-        for handoff in boss_response_str["handoffs"]:
-            agent = self.agents[handoff["agent_name"]]
-            final_task = handoff["task"] or task
+        for handoff, agent in resolved:
+            final_task = handoff.get("task") or task
 
             # Skip execution if task is null/None and skip_null_tasks is True
             if self.skip_null_tasks and (
@@ -281,13 +337,16 @@ class MultiAgentRouter:
 
         # Execute agents only if there are valid tasks
         if selected_agents:
-            # Use the agents' run method directly
-            agent_responses = [
-                agent.run(final_task)
-                for agent, final_task in zip(
-                    selected_agents, final_tasks
+            # The tasks are independent, in series they cost the sum of their latencies
+            with ContextThreadPoolExecutor(
+                max_workers=len(selected_agents)
+            ) as executor:
+                agent_responses = list(
+                    executor.map(
+                        lambda pair: pair[0].run(pair[1]),
+                        zip(selected_agents, final_tasks),
+                    )
                 )
-            ]
 
             self.conversation.add(
                 role=selected_agents[0].agent_name,
@@ -335,78 +394,90 @@ class MultiAgentRouter:
             )
             raise
 
+    @trace_run(
+        "MultiAgentRouter.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, task: str):
-        """Route a task to the appropriate agent and return the result"""
+        """
+        Route a single task through the boss agent and execute the selected
+        worker(s).
+
+        Args:
+            task (str): The task to route.
+
+        Returns:
+            Any: The formatted conversation history, shaped according to
+            ``self.output_type`` (see ``history_output_formatter``).
+        """
         return self.route_task(task)
 
     def __call__(self, task: str):
-        """Route a task to the appropriate agent and return the result"""
+        """
+        Convenience alias for :meth:`run` so the router can be invoked
+        directly: ``router(task)``.
+
+        Args:
+            task (str): The task to route.
+
+        Returns:
+            Any: The formatted conversation history, shaped according to
+            ``self.output_type``.
+        """
         return self.route_task(task)
 
     def batch_run(self, tasks: List[str] = []):
-        """Batch route tasks to the appropriate agents"""
+        """
+        Route a batch of tasks sequentially.
+
+        Each task is independently routed; failures are logged with the task
+        that caused them and the corresponding result is omitted from the
+        returned list (the batch does not abort on a single failure).
+
+        Args:
+            tasks (List[str]): Tasks to route in order.
+
+        Returns:
+            List[Any]: Routed results for the tasks that succeeded, in input
+            order.
+        """
         results = []
         for task in tasks:
             try:
-                result = self.route_task(task)
-                results.append(result)
+                results.append(self.route_task(task))
             except Exception as e:
-                logger.error(f"Error routing task: {str(e)}")
+                logger.error(f"Error routing task {task!r}: {e}")
         return results
 
     def concurrent_batch_run(self, tasks: List[str] = []):
-        """Concurrently route tasks to the appropriate agents"""
+        """
+        Route a batch of tasks in parallel using a thread pool.
+
+        Tasks are dispatched to a ``ThreadPoolExecutor``. Failures are logged
+        with the task that caused them and omitted from the result list.
+
+        Note:
+            All tasks share this router's ``Conversation``, so their histories
+            interleave. Prefer :meth:`batch_run` when the per-task history
+            matters.
+
+        Args:
+            tasks (List[str]): Tasks to route concurrently.
+
+        Returns:
+            List[Any]: Routed results for the tasks that succeeded, in input
+            order.
+        """
         results = []
-        with ThreadPoolExecutor() as executor:
+        with ContextThreadPoolExecutor() as executor:
             futures = [
                 executor.submit(self.route_task, task)
                 for task in tasks
             ]
-            for future in concurrent.futures.as_completed(futures):
+            # Read in submission order so element i belongs to tasks[i]
+            for task, future in zip(tasks, futures):
                 try:
-                    result = future.result()
-                    results.append(result)
+                    results.append(future.result())
                 except Exception as e:
-                    logger.error(f"Error routing task: {str(e)}")
+                    logger.error(f"Error routing task {task!r}: {e}")
         return results
-
-
-# # Example usage:
-# if __name__ == "__main__":
-#     # Define some example agents
-#     agents = [
-#         Agent(
-#             agent_name="ResearchAgent",
-#             description="Specializes in researching topics and providing detailed, factual information",
-#             system_prompt="You are a research specialist. Provide detailed, well-researched information about any topic, citing sources when possible.",
-#             model_name="openai/gpt-4o",
-#         ),
-#         Agent(
-#             agent_name="CodeExpertAgent",
-#             description="Expert in writing, reviewing, and explaining code across multiple programming languages",
-#             system_prompt="You are a coding expert. Write, review, and explain code with a focus on best practices and clean code principles.",
-#             model_name="openai/gpt-4o",
-#         ),
-#         Agent(
-#             agent_name="WritingAgent",
-#             description="Skilled in creative and technical writing, content creation, and editing",
-#             system_prompt="You are a writing specialist. Create, edit, and improve written content while maintaining appropriate tone and style.",
-#             model_name="openai/gpt-4o",
-#         ),
-#     ]
-
-#     # Initialize router
-#     router = MultiAgentRouter(agents=agents)
-
-#     # Example task
-#     task = "Write a Python function to calculate fibonacci numbers"
-
-#     try:
-#         # Process the task
-#         result = router.route_task(task)
-#         print(f"Selected Agent: {result['boss_decision']['selected_agent']}")
-#         print(f"Reasoning: {result['boss_decision']['reasoning']}")
-#         print(f"Total Time: {result['total_time']:.2f}s")
-
-#     except Exception as e:
-#         print(f"Error occurred: {str(e)}")

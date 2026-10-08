@@ -1,14 +1,6 @@
-import os
 from swarms import Agent, AgentRearrange
-from swarm_models import OpenAIChat
 
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("OPENAI_API_KEY")
-
-# Create an instance of the OpenAIChat class
-model = OpenAIChat(
-    api_key=api_key, model_name="gpt-5.4", temperature=0.1
-)
+MODEL_NAME = "gpt-5.4"
 
 # Initialize the gatekeeper agent
 gatekeeper_agent = Agent(
@@ -61,7 +53,8 @@ gatekeeper_agent = Agent(
         </audit_trail>
     </compliance>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -105,7 +98,8 @@ boss_agent = Agent(
         </communication>
     </interaction_protocols>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -150,7 +144,8 @@ worker1 = Agent(
         </reporting>
     </protocols>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,
@@ -195,7 +190,8 @@ worker2 = Agent(
         </report_generation>
     </protocols>
     """,
-    llm=model,
+    model_name=MODEL_NAME,
+    temperature=0.1,
     max_loops=1,
     dashboard=False,
     streaming_on=True,

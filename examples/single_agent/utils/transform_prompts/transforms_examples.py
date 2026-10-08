@@ -181,7 +181,7 @@ def example_3_agent_integration():
     agent = Agent(
         agent_name="Transformed-Agent",
         agent_description="AI assistant with automatic context management",
-        model_name="gpt-4.1",
+        model_name="gpt-5.4",
         max_loops=1,
         streaming_on=False,
         print_on=False,
@@ -189,7 +189,7 @@ def example_3_agent_integration():
         transforms=TransformConfig(
             enabled=True,
             method="middle-out",
-            model_name="gpt-4.1",
+            model_name="gpt-5.4",
             preserve_system_messages=True,
             preserve_recent_messages=3,
         ),

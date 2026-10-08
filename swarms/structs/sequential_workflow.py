@@ -1,19 +1,22 @@
 import ast
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Callable, List, Optional, Union
+from concurrent.futures import as_completed
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from loguru import logger as loguru_logger
-from swarms.prompts.multi_agent_collab_prompt import (
-    MULTI_AGENT_COLLAB_PROMPT,
+from swarms.prompts.agent_acknowledgement_prompt import (
+    AGENT_COLLAB_PROMPT,
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
-from swarms.utils.swarm_autosave import get_swarm_workspace_dir
-from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="sequential_workflow")
 
@@ -84,12 +87,14 @@ class SequentialWorkflow:
         output_type: OutputType = "dict",
         shared_memory_system: callable = None,
         multi_agent_collab_prompt: bool = False,
+        collab_prompt: Optional[str] = None,
         team_awareness: bool = False,
         autosave: bool = True,
         verbose: bool = False,
         drift_detection: bool = False,
         drift_threshold: float = 0.75,
         drift_model: str = "claude-sonnet-4-5",
+        drift_max_retries: int = 3,
         *args,
         **kwargs,
     ):
@@ -104,7 +109,10 @@ class SequentialWorkflow:
             max_loops (int, optional): Maximum number of times to execute the workflow. Defaults to 1.
             output_type (OutputType, optional): Output format for the workflow. Defaults to "dict".
             shared_memory_system (callable, optional): Callable for shared memory management. Defaults to None.
-            multi_agent_collab_prompt (bool, optional): If True, appends a collaborative prompt to each agent.
+            multi_agent_collab_prompt (bool, optional): If True, each agent receives a collaboration
+                preamble as a system turn for the duration of the run.
+            collab_prompt (str, optional): Overrides the default preamble text. Ignored unless
+                multi_agent_collab_prompt is True.
             autosave (bool, optional): Whether to enable autosaving of conversation history. Defaults to False.
             verbose (bool, optional): Whether to enable verbose logging. Defaults to False.
             drift_detection (bool, optional): If True, a judge agent scores the final output's semantic
@@ -113,6 +121,10 @@ class SequentialWorkflow:
                 A warning is logged when the score falls below this value. Defaults to 0.75.
             drift_model (str, optional): Model used by the drift detection judge agent.
                 Defaults to "claude-sonnet-4-5".
+            drift_max_retries (int, optional): Maximum number of pipeline reruns when the
+                drift score stays below drift_threshold. Once exhausted the last output is
+                returned with a warning instead of rerunning forever. 0 disables reruns, so
+                the output is scored and reported but never regenerated. Defaults to 3.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -127,10 +139,12 @@ class SequentialWorkflow:
         self.output_type = output_type
         self.shared_memory_system = shared_memory_system
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
+        self.collab_prompt = collab_prompt
         self.team_awareness = team_awareness
         self.autosave = autosave
         self.verbose = verbose
         self.drift_threshold = drift_threshold
+        self.drift_max_retries = drift_max_retries
         self.drift_agent = (
             Agent(
                 agent_name="DriftDetector",
@@ -144,7 +158,13 @@ class SequentialWorkflow:
             if drift_detection
             else None
         )
-        self.swarm_workspace_dir = None
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "sequential-workflow",
+            verbose=self.verbose,
+            enabled=self.autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
 
         self.reliability_check()
         self.flow = self.sequential_flow()
@@ -157,11 +177,15 @@ class SequentialWorkflow:
             max_loops=self.max_loops,
             output_type=self.output_type,
             team_awareness=self.team_awareness,
+            collab_prompt=(
+                (self.collab_prompt or AGENT_COLLAB_PROMPT)
+                if self.multi_agent_collab_prompt
+                else None
+            ),
         )
 
-        # Setup autosave workspace if enabled
-        if self.autosave:
-            self._setup_autosave()
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def reliability_check(self):
         """
@@ -176,13 +200,14 @@ class SequentialWorkflow:
         if self.max_loops == 0:
             raise ValueError("max_loops cannot be 0")
 
+        if self.drift_max_retries < 0:
+            raise ValueError(
+                "drift_max_retries must be greater than or equal to 0"
+            )
+
         if self.multi_agent_collab_prompt is True:
             for agent in self.agents:
-                if hasattr(agent, "system_prompt"):
-                    if agent.system_prompt is None:
-                        agent.system_prompt = ""
-                    agent.system_prompt += MULTI_AGENT_COLLAB_PROMPT
-                else:
+                if not hasattr(agent, "system_prompt"):
                     logger.warning(
                         f"Agent {getattr(agent, 'name', str(agent))} does not have a 'system_prompt' attribute."
                     )
@@ -231,7 +256,15 @@ class SequentialWorkflow:
     def _run_drift_detection(
         self, task: str, result: str, run_kwargs: dict
     ) -> str:
-        while True:
+        """Score the final output and rerun the pipeline while it drifts.
+
+        Bounded by ``drift_max_retries``. An output that never reaches
+        ``drift_threshold`` -- an impossible task, a threshold set too high, a
+        judge that always scores low -- would otherwise rerun every agent
+        forever, so the last attempt is returned with a warning once the retry
+        budget is spent.
+        """
+        for attempt in range(self.drift_max_retries + 1):
             try:
                 raw = self.drift_agent.run(
                     f"Original task: {task}\n\nFinal output: {result}"
@@ -246,16 +279,33 @@ class SequentialWorkflow:
                 logger.warning(
                     f"Drift detection failed ({e}); skipping"
                 )
-                break
+                return result
             if score >= self.drift_threshold:
                 logger.info(f"Drift check passed: score={score:.2f}")
-                break
+                return result
+            if attempt == self.drift_max_retries:
+                logger.warning(
+                    f"Drift detected: score={score:.2f} below threshold="
+                    f"{self.drift_threshold}, but drift_max_retries="
+                    f"{self.drift_max_retries} is exhausted; returning the "
+                    "last output as-is"
+                )
+                return result
             logger.warning(
                 f"Drift detected: score={score:.2f} below threshold={self.drift_threshold}, rerunning pipeline"
             )
             result = self.agent_rearrange.run(**run_kwargs)
         return result
 
+    def _autosave_conversation(self) -> None:
+        """Persist history; SequentialWorkflow keeps it on AgentRearrange."""
+        self.workspace.save_conversation(
+            getattr(self.agent_rearrange, "conversation", None)
+        )
+
+    @trace_run(
+        "SequentialWorkflow.run", input_params=("task", "img", "imgs")
+    )
     def run(
         self,
         task: str,
@@ -269,9 +319,9 @@ class SequentialWorkflow:
 
         If drift_detection is configured, a judge agent scores the final output's semantic
         alignment with the original task after the pipeline completes. If the score falls
-        below drift_threshold, the pipeline reruns and the cycle repeats until the score
-        meets the threshold. If the judge output cannot be parsed, drift checking is skipped
-        and the last result is returned as-is.
+        below drift_threshold, the pipeline reruns, for at most drift_max_retries attempts,
+        after which the last output is returned with a warning. If the judge output cannot
+        be parsed, drift checking is skipped and the last result is returned as-is.
 
         Args:
             task (str): The task for the agents to execute.
@@ -287,10 +337,15 @@ class SequentialWorkflow:
             Exception: If any error occurs during task execution.
         """
         try:
-            # prompt = f"{MULTI_AGENT_COLLAB_PROMPT}\n\n{task}"
-            run_kwargs = {"task": task}
+            # Ensure imgs is annotated since it's a list; otherwise type inference assumes Dict[str, str].
+
+            run_kwargs: Dict[str, Any] = {"task": task}
+
             if img is not None:
                 run_kwargs["img"] = img
+            if imgs is not None:
+                run_kwargs["imgs"] = imgs
+
             result = self.agent_rearrange.run(**run_kwargs)
 
             # Run drift detection if configured
@@ -299,26 +354,12 @@ class SequentialWorkflow:
                     task, result, run_kwargs
                 )
 
-            # Save conversation history after successful execution
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to save conversation history: {e}"
-                    )
+            self._autosave_conversation()
 
             return result
 
         except Exception as e:
-            # Save conversation history on error
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as save_error:
-                    logger.warning(
-                        f"Failed to save conversation history on error: {save_error}"
-                    )
+            self._autosave_conversation()
 
             logger.error(
                 f"An error occurred while executing the task: {e}"
@@ -437,7 +478,11 @@ class SequentialWorkflow:
             )
 
         try:
-            return [self.agent_rearrange.run(task) for task in tasks]
+            # One clone per task, a reused instance carries every earlier transcript
+            return [
+                self.agent_rearrange._clone_for_task().run(task)
+                for task in tasks
+            ]
         except Exception as e:
             logger.error(
                 f"An error occurred while executing the batch of tasks: {e}"
@@ -491,11 +536,14 @@ class SequentialWorkflow:
             )
 
         try:
-            with ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=os.cpu_count()
             ) as executor:
                 results = [
-                    executor.submit(self.agent_rearrange.run, task)
+                    executor.submit(
+                        self.agent_rearrange._clone_for_task().run,
+                        task,
+                    )
                     for task in tasks
                 ]
                 return [
@@ -507,102 +555,3 @@ class SequentialWorkflow:
                 f"An error occurred while executing the batch of tasks concurrently: {e}"
             )
             raise
-
-    def _setup_autosave(self):
-        """
-        Setup workspace directory for saving conversation history.
-
-        Creates the workspace directory structure if autosave is enabled.
-        Only conversation history will be saved to this directory.
-        """
-        try:
-            # Set default workspace directory if not set
-            if not os.getenv("WORKSPACE_DIR"):
-                default_workspace = os.path.join(
-                    os.getcwd(), "agent_workspace"
-                )
-                os.environ["WORKSPACE_DIR"] = default_workspace
-                # Clear the cache so get_workspace_dir() picks up the new value
-                get_workspace_dir.cache_clear()
-                if self.verbose:
-                    loguru_logger.info(
-                        f"WORKSPACE_DIR not set, using default: {default_workspace}"
-                    )
-
-            class_name = self.__class__.__name__
-            swarm_name = self.name or "sequential-workflow"
-            self.swarm_workspace_dir = get_swarm_workspace_dir(
-                class_name, swarm_name, use_timestamp=True
-            )
-
-            if self.swarm_workspace_dir:
-                if self.verbose:
-                    loguru_logger.info(
-                        f"Autosave enabled. Conversation history will be saved to: {self.swarm_workspace_dir}"
-                    )
-        except Exception as e:
-            loguru_logger.warning(
-                f"Failed to setup autosave for SequentialWorkflow: {e}"
-            )
-            # Don't raise - autosave failures shouldn't break initialization
-            self.swarm_workspace_dir = None
-
-    def _save_conversation_history(self):
-        """
-        Save conversation history as a separate JSON file to the workspace directory.
-
-        Saves the conversation history to:
-        workspace_dir/swarms/SequentialWorkflow/{workflow-name}-{id}/conversation_history.json
-        """
-        if not self.swarm_workspace_dir:
-            return
-
-        try:
-            # Get conversation history from agent_rearrange
-            conversation_data = []
-            if (
-                hasattr(self, "agent_rearrange")
-                and self.agent_rearrange
-            ):
-                if (
-                    hasattr(self.agent_rearrange, "conversation")
-                    and self.agent_rearrange.conversation
-                ):
-                    if hasattr(
-                        self.agent_rearrange.conversation,
-                        "conversation_history",
-                    ):
-                        conversation_data = (
-                            self.agent_rearrange.conversation.conversation_history
-                        )
-                    elif hasattr(
-                        self.agent_rearrange.conversation, "to_dict"
-                    ):
-                        conversation_data = (
-                            self.agent_rearrange.conversation.to_dict()
-                        )
-                    else:
-                        conversation_data = []
-
-            # Create conversation history file path
-            conversation_path = os.path.join(
-                self.swarm_workspace_dir, "conversation_history.json"
-            )
-
-            # Save conversation history as JSON
-            with open(conversation_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    conversation_data,
-                    f,
-                    indent=2,
-                    default=str,
-                )
-
-            if self.verbose:
-                loguru_logger.debug(
-                    f"Saved conversation history to {conversation_path}"
-                )
-        except Exception as e:
-            loguru_logger.warning(
-                f"Failed to save conversation history: {e}"
-            )

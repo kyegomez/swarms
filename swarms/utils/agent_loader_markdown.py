@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 # Lazy import to avoid circular dependency
 
 # Default model configuration
-DEFAULT_MODEL = "gpt-4.1"
+DEFAULT_MODEL = "gpt-5.4"
 
 
 class MarkdownAgentConfig(BaseModel):
@@ -27,7 +27,7 @@ class MarkdownAgentConfig(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     model_name: Optional[str] = DEFAULT_MODEL
-    temperature: Optional[float] = Field(default=0.1, ge=0.0, le=2.0)
+    temperature: Optional[float] = Field(default=None, ge=0.0, le=2.0)
     mcp_url: Optional[int] = None
     system_prompt: Optional[str] = None
     max_loops: Optional[int] = Field(default=1, ge=1)
@@ -161,7 +161,7 @@ class MarkdownAgentLoader:
                 ),
                 "model_name": frontmatter.get("model_name")
                 or frontmatter.get("model", DEFAULT_MODEL),
-                "temperature": frontmatter.get("temperature", 0.1),
+                "temperature": frontmatter.get("temperature"),
                 "max_loops": frontmatter.get("max_loops", 1),
                 "mcp_url": frontmatter.get("mcp_url"),
                 "system_prompt": remaining_content.strip(),

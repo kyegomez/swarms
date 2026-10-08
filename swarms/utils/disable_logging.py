@@ -1,7 +1,17 @@
-import concurrent.futures
 import logging
 import os
 import warnings
+
+
+def set_logger_level(logger_name: str) -> None:
+    """
+    Sets the logging level for a specific logger to CRITICAL.
+
+    Args:
+        logger_name (str): The name of the logger to modify.
+    """
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.CRITICAL)
 
 
 def disable_logging():
@@ -9,8 +19,6 @@ def disable_logging():
     Disables logging for specific modules and sets up file and stream handlers.
     Runs in a separate thread to avoid blocking the main thread.
     """
-    os.environ["WORKSPACE_DIR"] = "agent_workspace"
-
     warnings.filterwarnings("ignore", category=UserWarning)
 
     # disable tensorflow warnings
@@ -38,15 +46,15 @@ def disable_logging():
         "packaging",
     ]
 
-    # Use concurrent futures to set the level for each logger concurrently
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(set_logger_level, logger_names)
+    # Set the level for each logger sequentially, no concurrent futures
+    for logger_name in logger_names:
+        set_logger_level(logger_name)
 
     # Remove all existing handlers
     logging.getLogger().handlers = []
 
     # Get the workspace directory from the environment variables
-    workspace_dir = os.environ["WORKSPACE_DIR"]
+    workspace_dir = os.getenv("WORKSPACE_DIR") or "agent_workspace"
 
     # Check if the workspace directory exists, if not, create it
     if not os.path.exists(workspace_dir):
@@ -63,14 +71,3 @@ def disable_logging():
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.ERROR)
     logging.getLogger().addHandler(stream_handler)
-
-
-def set_logger_level(logger_name: str) -> None:
-    """
-    Sets the logging level for a specific logger to CRITICAL.
-
-    Args:
-        logger_name (str): The name of the logger to modify.
-    """
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.CRITICAL)

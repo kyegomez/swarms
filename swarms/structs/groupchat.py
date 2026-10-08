@@ -1,1573 +1,575 @@
-import concurrent.futures
-import random
-import re
-import traceback
-from typing import Callable, List, Optional, Union
+"""
+GroupChat
+================
 
-from loguru import logger
+An asynchronous groupchat where each agent independently decides whether to
+respond to messages, on its own schedule. There are no rounds — any agent (or
+several agents at once) can chime in whenever they have something to say.
 
+This module is useful when a discussion should feel more like an open room than
+a turn-based panel. Each participant receives every message, evaluates whether
+it has something useful to add, and only broadcasts a reply when its self-rated
+desire to speak clears the configured threshold.
+
+Flow (turn-based, one speaker per turn):
+
+    task -> posted to the shared conversation; every agent sees it
+    -> each turn, all agents privately "bid" via respond(score, message):
+       a self-rated desire to speak plus the reply they would give
+    -> the single highest bidder above `threshold` takes the floor; only its
+       message is posted to the conversation
+    -> a recency penalty discourages the same agent from speaking twice in a
+       row, so the floor passes around the room
+    -> stop when no agent bids above `threshold` for a turn (a conversational
+       lull), or `max_loops` total messages have been posted
+
+Only one agent speaks per turn, mirroring human turn-taking: everyone listens,
+the most motivated/relevant participant jumps in, and the rest stay silent
+unless they have something better to add.
+
+Key concepts:
+
+    RESPOND_TOOL
+        A forced function-calling schema used to make every agent return a
+        structured `(score, message)` bid instead of free-form text.
+
+    threshold
+        The minimum (recency-adjusted) score required to take the floor.
+        Raising it makes the room more selective; lowering it livelier.
+
+    recency_penalty / recency_window
+        How much to subtract from the bid of an agent that spoke within the
+        last `recency_window` turns. Prevents one agent from monologuing.
+
+    max_loops
+        A hard cap on total posted messages, including the initial user task.
+
+Example:
+
+    from swarms import Agent
+
+    agents = [
+        Agent(agent_name="Researcher", model_name="gpt-5.4"),
+        Agent(agent_name="Critic", model_name="gpt-5.4"),
+    ]
+
+    chat = GroupChat(agents=agents, max_loops=10, threshold=0.6)
+    result = chat.run("Discuss the tradeoffs of autonomous multi-agent systems.")
+"""
+
+import ast
+import asyncio
+import json
+from collections import deque
+from typing import Any, Callable, List, Optional, Tuple
+
+from swarms.structs.execution_utils import batched_run
+from swarms.prompts.groupchat_prompt import GROUPCHAT_DECIDE_PROMPT
+from swarms.structs.context_utils import messages_for
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.structs.ma_utils import create_agent_map
-from swarms.utils.generate_keys import generate_api_key
+from swarms.structs.serialization import SerializableMixin
+from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.prompts.multi_agent_collab_prompt import (
-    MULTI_AGENT_COLLAB_PROMPT_TWO,
-)
-
-SpeakerFunction = Callable[[List[str], "Agent"], bool]
-
-
-def get_mention_instruction() -> str:
-    """
-    Returns the instruction prompt for teaching agents how to use @mentions.
-
-    Returns:
-        str: The mention instruction prompt text
-    """
-    return """
-
-    IMPORTANT: You are part of a collaborative group chat where you can interact with other agents using @mentions.
-
-    -COLLABORATIVE RESPONSE PROTOCOL:
-    1. FIRST: Read and understand all previous responses from other agents
-    2. ACKNOWLEDGE: Reference and acknowledge what other agents have said
-    3. BUILD UPON: Add your perspective while building upon their insights
-    4. MENTION: Use @agent_name to call on other agents when needed
-    5. COMPLETE: Acknowledge when your part is done and what still needs to be done
-
-    HOW TO MENTION OTHER AGENTS:
-    - Use @agent_name to mention another agent in your response
-    - You can mention multiple agents: @agent1 @agent2
-    - When you mention an agent, they will be notified and can respond
-    - Example: "I think @analyst should review this data" or "Let's ask @researcher to investigate this further"
-
-    AVAILABLE AGENTS TO MENTION:
-    """
-
-
-def get_group_context(name: str, description: str) -> str:
-    """
-    Returns the group context prompt with name and description.
-
-    Args:
-        name (str): Name of the group chat
-        description (str): Description of the group chat
-
-    Returns:
-        str: The group context prompt text
-    """
-    return (
-        f"\n\nYou are part of a group chat named '{name}' with the following description: {description}\n"
-        f"Other participants in this chat:\n"
-    )
-
-
-def get_collaboration_guidelines() -> str:
-    """
-    Returns the collaboration guidelines prompt.
-
-    Returns:
-        str: The collaboration guidelines prompt text
-    """
-    return """
-
-    COLLABORATION GUIDELINES:
-    - ALWAYS read the full conversation history before responding
-    - ACKNOWLEDGE other agents' contributions: "Building on @analyst's data insights..." or "I agree with @researcher's findings that..."
-    - BUILD UPON previous responses rather than repeating information
-    - SYNTHESIZE multiple perspectives when possible
-    - ASK CLARIFYING QUESTIONS if you need more information from other agents
-    - DELEGATE appropriately: "Let me ask @expert_agent to verify this" or "@specialist, can you elaborate on this point?"
-
-    TASK COMPLETION GUIDELINES:
-    - ACKNOWLEDGE when you are done with your part of the task
-    - Clearly state what still needs to be done before the overall task is finished
-    - If you mention other agents, explain what specific input you need from them
-    - Use phrases like "I have completed [specific part]" or "The task still requires [specific actions]"
-
-    RESPONSE STRUCTURE:
-    1. ACKNOWLEDGE: "I've reviewed the responses from @agent1 and @agent2..."
-    2. BUILD: "Building on @agent1's analysis of the data..."
-    3. CONTRIBUTE: "From my perspective, I would add..."
-    4. COLLABORATE: "To get a complete picture, let me ask @agent3 to..."
-    5. COMPLETE: "I have completed [my part]. The task still requires [specific next steps]"
-    6. SYNTHESIZE: "Combining our insights, the key findings are..."
-
-    EXAMPLES OF GOOD COLLABORATION:
-    - "I've reviewed @analyst's data analysis and @researcher's market insights. The data shows strong growth potential, and I agree with @researcher that we should focus on emerging markets. Let me add that from a content perspective, we should @writer to create targeted messaging for these markets. I have completed my market analysis. The task now requires @writer to develop content and @reviewer to validate the approach."
-    - "Building on @researcher's findings about customer behavior, I can see that @analyst's data supports this trend. To get a complete understanding, let me ask @writer to help us craft messaging that addresses these specific customer needs. My data analysis is complete. The task still needs @writer to create messaging and @reviewer to approve the final strategy."
-
-    AVOID:
-    - Ignoring other agents' responses
-    - Repeating what others have already said
-    - Making assumptions without consulting relevant experts
-    - Responding in isolation without considering the group's collective knowledge
-    - Not acknowledging task completion status
-
-    Remember: You are part of a team. Your response should reflect that you've read, understood, and are building upon the contributions of others, and clearly communicate your task completion status.
-    """
-
-
-def get_agent_context_prompt(
-    name: str, description: str, other_agents: List[dict]
-) -> str:
-    """
-    Returns the complete agent context prompt with group info and other agents.
-
-    Args:
-        name (str): Name of the group chat
-        description (str): Description of the group chat
-        other_agents (List[dict]): List of dictionaries with 'name' and 'description' keys for other agents
-
-    Returns:
-        str: The complete agent context prompt text
-    """
-    group_context = get_group_context(name, description)
-    mention_instruction = get_mention_instruction()
-    collaboration_guidelines = get_collaboration_guidelines()
-
-    agent_context = group_context + mention_instruction
-    for other in other_agents:
-        agent_context += (
-            f"- @{other['name']}: {other['description']}\n"
-        )
-
-    agent_context += collaboration_guidelines
-    return agent_context
-
-
-def get_collaborative_task_prompt(
-    context: str, agent_name: str
-) -> str:
-    """
-    Returns the collaborative task prompt for agent responses.
-
-    Args:
-        context (str): The conversation history context
-        agent_name (str): Name of the agent responding
-
-    Returns:
-        str: The collaborative task prompt text
-    """
-    return f"""{context}
-
-COLLABORATIVE TASK: Please respond to the latest task as {agent_name}.
-
-IMPORTANT INSTRUCTIONS:
-1. Read the ENTIRE conversation history above
-2. Acknowledge what other agents have said before adding your perspective
-3. Build upon their insights rather than repeating information
-4. If you need input from other agents, mention them using @agent_name
-5. Provide your unique expertise while showing you understand the group's collective knowledge
-
-TASK COMPLETION GUIDELINES:
-- Acknowledge when you are done with your part of the task
-- Clearly state what still needs to be done before the overall task is finished
-- If you mention other agents, explain what specific input you need from them
-- Use phrases like "I have completed [specific part]" or "The task still requires [specific actions]"
-
-Remember: You are part of a collaborative team. Your response should demonstrate that you've read, understood, and are building upon the contributions of others."""
-
-
-class GroupChatError(Exception):
-    """Base exception class for GroupChat errors"""
-
-    pass
-
-
-class AgentNotFoundError(GroupChatError):
-    """Raised when a mentioned agent is not found in the group"""
-
-    pass
-
-
-class InvalidTaskFormatError(GroupChatError):
-    """Raised when the task format is invalid"""
-
-    pass
-
-
-class InvalidSpeakerFunctionError(GroupChatError):
-    """Raised when an invalid speaker function is provided"""
-
-    pass
-
-
-# Built-in speaker functions
-def round_robin_speaker(
-    agents: List[str], current_index: int = 0
-) -> str:
-    """
-    Round robin speaker function that cycles through agents in order.
-
-    Args:
-        agents: List of agent names
-        current_index: Current position in the cycle
-
-    Returns:
-        Next agent name in the round robin sequence
-    """
-    if not agents:
-        raise ValueError("No agents provided for round robin")
-    return agents[current_index % len(agents)]
-
-
-def random_speaker(agents: List[str], **kwargs) -> str:
-    """
-    Random speaker function that selects agents randomly.
-
-    Args:
-        agents: List of agent names
-        **kwargs: Additional arguments (ignored)
-
-    Returns:
-        Randomly selected agent name
-    """
-    if not agents:
-        raise ValueError("No agents provided for random selection")
-    return random.choice(agents)
-
-
-def priority_speaker(
-    agents: List[str], priorities: dict, **kwargs
-) -> str:
-    """
-    Priority-based speaker function that selects agents based on priority weights.
-
-    Args:
-        agents: List of agent names
-        priorities: Dictionary mapping agent names to priority weights
-        **kwargs: Additional arguments (ignored)
-
-    Returns:
-        Selected agent name based on priority weights
-    """
-    if not agents:
-        raise ValueError("No agents provided for priority selection")
-
-    # Filter agents that exist in the priorities dict
-    available_agents = [
-        agent for agent in agents if agent in priorities
-    ]
-    if not available_agents:
-        # Fallback to random if no priorities match
-        return random.choice(agents)
-
-    # Calculate total weight
-    total_weight = sum(
-        priorities[agent] for agent in available_agents
-    )
-    if total_weight == 0:
-        return random.choice(available_agents)
-
-    # Select based on weighted probability
-    rand_val = random.uniform(0, total_weight)
-    current_weight = 0
-
-    for agent in available_agents:
-        current_weight += priorities[agent]
-        if rand_val <= current_weight:
-            return agent
-
-    return available_agents[-1]  # Fallback
-
-
-def random_dynamic_speaker(
-    agents: List[str],
-    response: str = "",
-    strategy: str = "parallel",
-    **kwargs,
-) -> Union[str, List[str]]:
-    """
-    Random dynamic speaker function that selects agents based on @mentions in responses.
-
-    This function works in two phases:
-    1. If no response is provided (first call), randomly selects an agent
-    2. If a response is provided, extracts @mentions and returns agent(s) based on strategy
-
-    Args:
-        agents: List of available agent names
-        response: The response from the previous agent (may contain @mentions)
-        strategy: How to handle multiple mentions - "sequential" or "parallel"
-        **kwargs: Additional arguments (ignored)
-
-    Returns:
-        For sequential strategy: str (single agent name)
-        For parallel strategy: List[str] (list of agent names)
-    """
-    if not agents:
-        raise ValueError(
-            "No agents provided for random dynamic selection"
-        )
-
-    # If no response provided, randomly select first agent
-    if not response:
-        return random.choice(agents)
-
-    # Extract @mentions from the response
-    mentions = re.findall(r"@(\w+)", response)
-
-    # Filter mentions to only include valid agents
-    valid_mentions = [
-        mention for mention in mentions if mention in agents
-    ]
-
-    if not valid_mentions:
-        # If no valid mentions, randomly select from all agents
-        return random.choice(agents)
-
-    # Handle multiple mentions based on strategy
-    if strategy == "sequential":
-        # Return the first mentioned agent for sequential execution
-        return valid_mentions[0]
-    elif strategy == "parallel":
-        # Return all mentioned agents for parallel execution
-        return valid_mentions
-    else:
-        raise ValueError(
-            f"Invalid strategy: {strategy}. Must be 'sequential' or 'parallel'"
-        )
-
-
-speaker_functions = {
-    "round-robin-speaker": round_robin_speaker,
-    "random-speaker": random_speaker,
-    "priority-speaker": priority_speaker,
-    "random-dynamic-speaker": random_dynamic_speaker,
+from swarms.utils.loguru_logger import initialize_logger
+from swarms.telemetry.otel import capture_init, trace_run
+
+logger = initialize_logger(log_folder="groupchat")
+
+RESPOND_TOOL = {
+    # Forced tool call, so every speaking decision is machine-readable
+    "type": "function",
+    "function": {
+        "name": "respond",
+        "description": (
+            "Decide whether to reply in the groupchat. Set score 0..1 for how much "
+            "you want to speak. If you don't want to speak, set message to empty string."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "score": {
+                    "type": "number",
+                    "description": "How much you want to respond (0 = silent, 1 = strongly want to).",
+                    "minimum": 0,
+                    "maximum": 1,
+                },
+                "message": {
+                    "type": "string",
+                    "description": "Your reply to the group, or empty string if you don't want to speak.",
+                },
+            },
+            "required": ["score", "message"],
+        },
+    },
 }
 
 
-def round_robin(history: List[str], agent: Agent) -> bool:
-    """
-    Round robin speaker function.
-    Each agent speaks in turn, in a circular order.
-    """
-    return True
-
-
-def expertise_based(history: List[str], agent: Agent) -> bool:
-    """
-    Expertise based speaker function.
-    An agent speaks if their system prompt is in the last message.
-    """
-    return (
-        agent.system_prompt.lower() in history[-1].lower()
-        if history
-        else True
-    )
-
-
-def random_selection(history: List[str], agent: Agent) -> bool:
-    """
-    Random selection speaker function.
-    An agent speaks randomly.
-    """
-    import random
-
-    return random.choice([True, False])
-
-
-def custom_speaker(history: List[str], agent: Agent) -> bool:
-    """
-    Custom speaker function with complex logic.
+def _extract_args(tool_output: Any) -> Tuple[float, str]:
+    """Parse and normalize a forced ``respond()`` tool call.
 
     Args:
-        history: Previous conversation messages
-        agent: Current agent being evaluated
+        tool_output: Raw provider output from the forced tool invocation. Some
+            providers return a single tool-call dictionary, while others return
+            a list of tool-call dictionaries.
 
     Returns:
-        bool: Whether agent should speak
+        A ``(score, message)`` pair. Invalid or missing output is treated as a
+        silent decision: ``(0.0, "")``. Scores are clamped into the ``0..1``
+        range and messages are stripped of surrounding whitespace.
     """
-    # No history - let everyone speak
-    if not history:
-        return True
+    # An agent whose output_type renders to text hands back the repr of the tool-call list, not the list.
+    if isinstance(tool_output, str):
+        try:
+            tool_output = ast.literal_eval(tool_output)
+        except (ValueError, SyntaxError):
+            return 0.0, ""
 
-    last_message = history[-1].lower()
+    if isinstance(tool_output, list):
+        tool_output = tool_output[0] if tool_output else None
+    if not tool_output:
+        return 0.0, ""
 
-    # Check for agent expertise keywords
-    expertise_relevant = any(
-        keyword in last_message
-        for keyword in agent.description.lower().split()
-    )
+    # Providers return either a plain dict or a pydantic object whose function/arguments are attributes.
+    if not isinstance(tool_output, dict) and hasattr(
+        tool_output, "model_dump"
+    ):
+        try:
+            tool_output = tool_output.model_dump()
+        except Exception:
+            pass
 
-    # Check for direct mentions
-    mentioned = agent.agent_name.lower() in last_message
+    if isinstance(tool_output, dict):
+        fn = tool_output.get("function")
+    else:
+        fn = getattr(tool_output, "function", None)
+    if not fn:
+        return 0.0, ""
 
-    # Check if agent hasn't spoken recently
-    not_recent_speaker = not any(
-        agent.agent_name in msg for msg in history[-3:]
-    )
+    if isinstance(fn, dict):
+        args = fn.get("arguments")
+    else:
+        args = getattr(fn, "arguments", None)
+    if isinstance(args, str):
+        try:
+            args = json.loads(args)
+        except json.JSONDecodeError:
+            return 0.0, ""
+    if not isinstance(args, dict):
+        return 0.0, ""
 
-    return expertise_relevant or mentioned or not_recent_speaker
+    try:
+        score = float(args.get("score", 0.0))
+    except (TypeError, ValueError):
+        score = 0.0
+    message = str(args.get("message", "")).strip()
+    return max(0.0, min(1.0, score)), message
 
 
-def most_recent(history: List[str], agent: Agent) -> bool:
+class GroupChat(SerializableMixin):
+    """Coordinate a turn-based, self-selecting agent groupchat.
+
+    Each turn every agent privately bids on whether to speak; the single
+    highest (recency-adjusted) bidder above ``threshold`` takes the floor and
+    its reply is the only message posted. This mirrors human turn-taking:
+    everyone listens to the same conversation, the most motivated participant
+    jumps in, and the rest stay silent unless they can do better next turn.
+
+    There is no fixed speaking order — who speaks emerges from the bids — but a
+    ``recency_penalty`` discourages one agent from monologuing so the floor
+    moves around the room.
+
+    The conversation stops when either:
+
+    - ``max_loops`` total messages have been posted, or
+    - no agent bids above ``threshold`` for a turn (a conversational lull).
     """
-    Most recent speaker function.
-    An agent speaks if they are the last speaker.
-    """
-    return (
-        agent.agent_name == history[-1].split(":")[0].strip()
-        if history
-        else True
-    )
 
-
-def sentiment_based(history: List[str], agent: Agent) -> bool:
-    """
-    Sentiment based speaker function.
-    An agent speaks if the last message has a sentiment matching their personality.
-    """
-    if not history:
-        return True
-
-    last_message = history[-1].lower()
-    positive_words = [
-        "good",
-        "great",
-        "excellent",
-        "happy",
-        "positive",
-    ]
-    negative_words = [
-        "bad",
-        "poor",
-        "terrible",
-        "unhappy",
-        "negative",
-    ]
-
-    is_positive = any(word in last_message for word in positive_words)
-    is_negative = any(word in last_message for word in negative_words)
-
-    # Assuming agent has a "personality" trait in description
-    agent_is_positive = "positive" in agent.description.lower()
-
-    return is_positive if agent_is_positive else is_negative
-
-
-def length_based(history: List[str], agent: Agent) -> bool:
-    """
-    Length based speaker function.
-    An agent speaks if the last message is longer/shorter than a threshold.
-    """
-    if not history:
-        return True
-
-    last_message = history[-1]
-    threshold = 100
-
-    # Some agents prefer long messages, others short
-    prefers_long = "detailed" in agent.description.lower()
-    message_is_long = len(last_message) > threshold
-
-    return message_is_long if prefers_long else not message_is_long
-
-
-def question_based(history: List[str], agent: Agent) -> bool:
-    """
-    Question based speaker function.
-    An agent speaks if the last message contains a question.
-    """
-    if not history:
-        return True
-
-    last_message = history[-1]
-    question_indicators = [
-        "?",
-        "what",
-        "how",
-        "why",
-        "when",
-        "where",
-        "who",
-    ]
-
-    return any(
-        indicator in last_message.lower()
-        for indicator in question_indicators
-    )
-
-
-def topic_based(history: List[str], agent: Agent) -> bool:
-    """
-    Topic based speaker function.
-    An agent speaks if their expertise matches the current conversation topic.
-    """
-    if not history:
-        return True
-
-    # Look at last 3 messages to determine topic
-    recent_messages = history[-3:] if len(history) >= 3 else history
-    combined_text = " ".join(msg.lower() for msg in recent_messages)
-
-    # Extract expertise topics from agent description
-    expertise_topics = [
-        word.lower()
-        for word in agent.description.split()
-        if len(word) > 4
-    ]  # Simple topic extraction
-
-    return any(topic in combined_text for topic in expertise_topics)
-
-
-class GroupChat:
-    """
-    GroupChat enables collaborative conversations among multiple agents (or callables)
-    with flexible speaker selection strategies, conversation history, and interactive terminal sessions.
-
-    Features:
-        - Supports multiple agents (LLMs or callable functions)
-        - Customizable speaker selection (round robin, random, priority, dynamic, or custom)
-        - Maintains conversation history with time stamps
-        - Interactive REPL session for human-in-the-loop group chat
-        - Agents can @mention each other to request input or delegate tasks
-        - Automatic prompt augmentation to teach agents collaborative protocols
-
-    Args:
-        id (str): Unique identifier for the group chat (default: generated)
-        name (str): Name of the group chat
-        description (str): Description of the group chat's purpose
-        agents (List[Union[Agent, Callable]]): List of agent objects or callables
-        max_loops (int): Maximum number of conversation loops per run
-        output_type (str): Output format for conversation history ("dict", "str", etc.)
-        interactive (bool): If True, enables interactive terminal session
-        speaker_function (Optional[Union[str, Callable]]): Speaker selection strategy
-        speaker_state (Optional[dict]): State/config for the speaker function
-
-    Raises:
-        ValueError: If required arguments are missing or invalid
-        InvalidSpeakerFunctionError: If an invalid speaker function is provided
-        GroupChatError: For interactive session errors
-        AgentNotFoundError: If an agent is not found by name
-    """
+    _to_dict_exclude = ("agents", "conversation")
 
     def __init__(
         self,
-        id: str = generate_api_key(prefix="swarms-"),
-        name: str = "GroupChat",
-        description: str = "A group chat for multiple agents",
-        agents: List[Union[Agent, Callable]] = [],
-        max_loops: int = 1,
-        output_type: str = "dict",
-        interactive: bool = False,
-        speaker_function: Optional[Union[str, Callable]] = None,
-        speaker_state: Optional[dict] = None,
-        # Legacy parameters for backward compatibility
-        speaker_fn: Optional[SpeakerFunction] = None,
-        rules: str = "",
-        time_enabled: bool = True,
+        name: str = "dynamic-groupchat",
+        description: str = "Agents take turns; one speaker per turn.",
+        agents: Optional[List[Agent]] = None,
+        max_loops: int = 20,
+        threshold: float = 0.5,
+        recency_penalty: float = 0.3,
+        recency_window: int = 1,
+        idle_timeout: float = 8.0,
+        output_type: str = "str-all-except-first",
+        verbose: bool = False,
+        auto_equip: bool = True,
     ):
-        """
-        Initialize the GroupChat.
+        """Initialize the turn-based groupchat runtime.
 
         Args:
-            id (str): Unique identifier for the group chat.
-            name (str): Name of the group chat.
-            description (str): Description of the group chat.
-            agents (List[Union[Agent, Callable]]): List of agent objects or callables.
-            max_loops (int): Maximum number of conversation loops per run.
-            output_type (str): Output format for conversation history.
-            interactive (bool): If True, enables interactive terminal session.
-            speaker_function (Optional[Union[str, Callable]]): Speaker selection strategy.
-            speaker_state (Optional[dict]): State/config for the speaker function.
-            speaker_fn (Optional[SpeakerFunction]): Legacy speaker function for backward compatibility.
-            rules (str): Rules for the conversation.
-            time_enabled (bool): Whether to enable timestamps in conversation.
+            name: Human-readable name used in logs and serialized state.
+            description: Short description of the chat structure.
+            agents: Agents participating in the conversation. At least two are
+                required for a meaningful discussion.
+            max_loops: Maximum number of messages posted before stopping. The
+                initial user task counts as the first message.
+            threshold: Minimum (recency-adjusted) bid required to take the
+                floor. A turn where no agent clears it ends the chat.
+            recency_penalty: Amount subtracted from the bid of any agent that
+                spoke within the last ``recency_window`` turns. Discourages a
+                single agent from monologuing. Set to ``0.0`` to disable.
+            recency_window: How many of the most recent speakers are subject to
+                ``recency_penalty``.
+            idle_timeout: Deprecated/unused — the chat now ends on a bidding
+                lull rather than a wall-clock timeout. Kept for compatibility.
+            output_type: Format passed to ``history_output_formatter``.
+            verbose: Whether to emit internal log messages and print each
+                posted message as a panel to stdout.
+            auto_equip: When ``True`` (default), automatically inject
+                ``RESPOND_TOOL`` into any agent that doesn't already carry it,
+                so every agent can produce a machine-readable speaking bid.
+                Set to ``False`` if your agents already declare the tool
+                themselves.
+
+        Raises:
+            ValueError: If fewer than two agents are provided.
         """
-        self.id = id
         self.name = name
         self.description = description
         self.agents = agents
         self.max_loops = max_loops
+        self.threshold = threshold
+        self.recency_penalty = recency_penalty
+        self.recency_window = recency_window
+        self.idle_timeout = idle_timeout
         self.output_type = output_type
-        self.interactive = interactive
-        self.speaker_function = (
-            speaker_function or speaker_fn
-        )  # Support legacy parameter
-        self.speaker_state = speaker_state
-        self.rules = rules
-        self.time_enabled = time_enabled
+        self.verbose = verbose
+        self.auto_equip = auto_equip
 
-        self.setup()
+        self.conversation = Conversation(time_enabled=False)
 
-    def _setup_speaker_function(self):
-        # Speaker function configuration
-        if self.speaker_function is None:
-            self.speaker_function = round_robin_speaker
-        elif isinstance(self.speaker_function, str):
-            if self.speaker_function not in speaker_functions:
-                available_functions = ", ".join(
-                    speaker_functions.keys()
-                )
-                raise InvalidSpeakerFunctionError(
-                    f"Invalid speaker function: '{self.speaker_function}'. "
-                    f"Available functions: {available_functions}"
-                )
-            self.speaker_function = speaker_functions[
-                self.speaker_function
-            ]
-        elif callable(self.speaker_function):
-            self.speaker_function = self.speaker_function
-        else:
-            raise InvalidSpeakerFunctionError(
-                "Speaker function must be either a string, callable, or None"
-            )
+        # agents may be None, the documented error is ValueError not TypeError
+        if self.agents is None or len(self.agents) < 2:
+            raise ValueError("GroupChat requires at least 2 agents.")
 
-        self.speaker_state = self.speaker_state or {
-            "current_index": 0
-        }
+        if self.auto_equip:
+            self._ensure_respond_tool()
 
-    def setup(self):
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
+    def _ensure_respond_tool(self) -> None:
+        """Inject ``RESPOND_TOOL`` into agents that do not already carry it.
+
+        Without the ``respond`` tool an agent's speaking decision can never be
+        parsed, so it would sit silent for the whole chat. The agent's LLM
+        client bakes ``tools_list_dictionary`` in at construction time, so
+        after appending the schema the client is rebuilt via
+        ``llm_handling()``.
         """
-        Set up the group chat, including speaker function, conversation history,
-        agent mapping, and prompt augmentation.
-        """
-
-        # Initialize conversation history
-        self.conversation = Conversation(
-            time_enabled=self.time_enabled, rules=self.rules
-        )
-
-        self._setup_speaker_function()
-
-        self.agent_map = create_agent_map(self.agents)
-
-        self._validate_initialization()
-        self._setup_conversation_context()
-        self._update_agent_prompts()
-
-    def set_speaker_function(
-        self,
-        speaker_function: Union[str, Callable],
-        speaker_state: Optional[dict] = None,
-    ) -> None:
-        """
-        Set the speaker function using either a string name or a custom callable.
-
-        Args:
-            speaker_function: Either a string name of a predefined function or a custom callable
-                String options:
-                - "round-robin-speaker": Cycles through agents in order
-                - "random-speaker": Selects agents randomly
-                - "priority-speaker": Selects based on priority weights
-                - "random-dynamic-speaker": Randomly selects first agent, then follows @mentions in responses
-                Callable: Custom function that takes (agents: List[str], **kwargs) -> str
-            speaker_state: Optional state for the speaker function
-
-        Raises:
-            InvalidSpeakerFunctionError: If the speaker function is invalid
-        """
-        if isinstance(speaker_function, str):
-            # Handle string-based speaker function
-            if speaker_function not in speaker_functions:
-                available_functions = ", ".join(
-                    speaker_functions.keys()
-                )
-                raise InvalidSpeakerFunctionError(
-                    f"Invalid speaker function: '{speaker_function}'. "
-                    f"Available functions: {available_functions}"
-                )
-            self.speaker_function = speaker_functions[
-                speaker_function
-            ]
-            logger.info(
-                f"Speaker function set to: {speaker_function}"
-            )
-        elif callable(speaker_function):
-            # Handle callable speaker function
-            self.speaker_function = speaker_function
-            logger.info(
-                f"Custom speaker function set to: {speaker_function.__name__}"
-            )
-        else:
-            raise InvalidSpeakerFunctionError(
-                "Speaker function must be either a string or a callable"
-            )
-
-        # Update speaker state if provided
-        if speaker_state:
-            self.speaker_state.update(speaker_state)
-
-        # Validate the speaker function
-        self._validate_speaker_function()
-
-    def get_available_speaker_functions(self) -> List[str]:
-        """
-        Get a list of available speaker function names.
-
-        Returns:
-            List[str]: List of available speaker function names
-        """
-        return list(speaker_functions.keys())
-
-    def get_current_speaker_function(self) -> str:
-        """
-        Get the name of the current speaker function.
-
-        Returns:
-            str: Name of the current speaker function, or "custom" if it's a custom function
-        """
-        for name, func in speaker_functions.items():
-            if self.speaker_function == func:
-                return name
-        return "custom"
-
-    def start_interactive_session(self):
-        """
-        Start an interactive terminal session for chatting with agents.
-
-        This method creates a REPL (Read-Eval-Print Loop) that allows users to:
-        - Chat with agents using @mentions (optional)
-        - See available agents and their descriptions
-        - Exit the session using 'exit' or 'quit'
-        - Get help using 'help' or '?'
-        """
-        if not self.interactive:
-            raise GroupChatError(
-                "Interactive mode is not enabled. Initialize with interactive=True"
-            )
-
-        print(f"\nWelcome to {self.name}!")
-        print(f"Description: {self.description}")
-        print(
-            f"Current speaker function: {self.get_current_speaker_function()}"
-        )
-        print("\nAvailable agents:")
-        for name, agent in self.agent_map.items():
-            if isinstance(agent, Agent):
-                print(
-                    f"- @{name}: {agent.system_prompt.splitlines()[0]}"
-                )
-            else:
-                print(f"- @{name}: Custom callable function")
-
-        print("\nCommands:")
-        print("- Type 'help' or '?' for help")
-        print("- Type 'exit' or 'quit' to end the session")
-        print("- Type 'speaker' to change speaker function")
-        print(
-            "- Use @agent_name to mention specific agents (optional)"
-        )
-        print("\nStart chatting:")
-
-        while True:
-            try:
-                # Get user input
-                user_input = input("\nYou: ").strip()
-
-                # Handle special commands
-                if user_input.lower() in ["exit", "quit"]:
-                    print("Goodbye!")
-                    break
-
-                if user_input.lower() in ["help", "?"]:
-                    print("\nHelp:")
-                    print(
-                        "1. You can mention specific agents using @agent_name (optional)"
-                    )
-                    print(
-                        "2. If no agents are mentioned, they will be selected automatically"
-                    )
-                    print("3. Available agents:")
-                    for name in self.agent_map:
-                        print(f"   - @{name}")
-                    print(
-                        "4. Type 'speaker' to change speaker function"
-                    )
-                    print(
-                        "5. Type 'exit' or 'quit' to end the session"
-                    )
-                    continue
-
-                if user_input.lower() == "speaker":
-                    print(
-                        f"\nCurrent speaker function: {self.get_current_speaker_function()}"
-                    )
-                    print("Available speaker functions:")
-                    for i, func_name in enumerate(
-                        self.get_available_speaker_functions(), 1
-                    ):
-                        print(f"  {i}. {func_name}")
-
-                    try:
-                        choice = input(
-                            "\nEnter the number or name of the speaker function: "
-                        ).strip()
-
-                        # Try to parse as number first
-                        try:
-                            func_index = int(choice) - 1
-                            if (
-                                0
-                                <= func_index
-                                < len(
-                                    self.get_available_speaker_functions()
-                                )
-                            ):
-                                selected_func = self.get_available_speaker_functions()[
-                                    func_index
-                                ]
-                            else:
-                                print(
-                                    "Invalid number. Please try again."
-                                )
-                                continue
-                        except ValueError:
-                            # Try to parse as name
-                            selected_func = choice
-
-                        self.set_speaker_function(selected_func)
-                        print(
-                            f"Speaker function changed to: {self.get_current_speaker_function()}"
-                        )
-
-                    except InvalidSpeakerFunctionError as e:
-                        print(f"Error: {e}")
-                    except Exception as e:
-                        print(f"An error occurred: {e}")
-                    continue
-
-                if not user_input:
-                    continue
-
-                # Process the task and get responses
-                try:
-                    self.run(user_input)
-                    print("\nChat:")
-                    # print(response)
-
-                except AgentNotFoundError as e:
-                    print(f"\nError: {str(e)}")
-                except Exception as e:
-                    print(f"\nAn error occurred: {str(e)}")
-
-            except KeyboardInterrupt:
-                print("\nSession terminated by user. Goodbye!")
-                break
-            except Exception as e:
-                print(f"\nAn unexpected error occurred: {str(e)}")
-                print(
-                    "The session will continue. You can type 'exit' to end it."
-                )
-
-    def _validate_initialization(self) -> None:
-        """
-        Validates the group chat configuration.
-
-        Raises:
-            ValueError: If any required components are missing or invalid
-        """
-        if len(self.agents) < 1:
-            raise ValueError(
-                "At least one agent is required for the group chat"
-            )
-
-        if self.max_loops <= 0:
-            raise ValueError("Max loops must be greater than 0")
-
-    def _setup_conversation_context(self) -> None:
-        """
-        Sets up the initial conversation context with group chat information.
-        Adds a system message describing the group and its agents.
-        """
-        agent_info = []
         for agent in self.agents:
-            if isinstance(agent, Agent):
-                agent_info.append(
-                    f"- {agent.agent_name}: {agent.system_prompt}"
-                )
-            elif callable(agent):
-                agent_info.append(
-                    f"- {agent.__name__}: Custom callable function"
-                )
-
-        context = (
-            f"Group Chat Name: {self.name}\n"
-            f"Description: {self.description}\n"
-            f"Available Agents:\n" + "\n".join(agent_info)
-        )
-        self.conversation.add(role="System", content=context)
-
-    def _update_agent_prompts(self) -> None:
-        """
-        Updates each agent's system prompt with information about other agents and the group chat.
-        This includes collaborative instructions and @mention usage guidelines.
-        """
-        agent_info = []
-        for agent in self.agents:
-            if isinstance(agent, Agent):
-                agent_info.append(
-                    {
-                        "name": agent.agent_name,
-                        "description": agent.system_prompt,
-                    }
-                )
-            elif callable(agent):
-                agent_info.append(
-                    {
-                        "name": agent.__name__,
-                        "description": "Custom callable function",
-                    }
-                )
-
-        for agent in self.agents:
-            if isinstance(agent, Agent):
-                # Create context excluding the current agent
-                other_agents = [
-                    info
-                    for info in agent_info
-                    if info["name"] != agent.agent_name
-                ]
-                agent_context = get_agent_context_prompt(
-                    self.name, self.description, other_agents
-                )
-
-                # Update the agent's system prompt
-                agent.system_prompt = (
-                    agent.system_prompt + agent_context
-                )
-                logger.info(
-                    f"Updated system prompt for agent: {agent.agent_name}"
-                )
-
-    def _extract_mentions(self, task: str) -> List[str]:
-        """
-        Extracts @mentions from the task. If no mentions are found, returns all available agents.
-
-        Args:
-            task (str): The input task
-
-        Returns:
-            List[str]: List of mentioned agent names or all agent names if no mentions
-
-        Raises:
-            InvalidTaskFormatError: If the task format is invalid
-        """
-        try:
-            # Find all @mentions using regex
-            mentions = re.findall(r"@(\w+)", task)
-            valid_mentions = [
-                mention
-                for mention in mentions
-                if mention in self.agent_map
-            ]
-
-            # If no valid mentions found, return all available agents
-            if not valid_mentions:
-                return list(self.agent_map.keys())
-
-            return valid_mentions
-        except Exception as e:
-            logger.error(f"Error extracting mentions: {e}")
-            raise InvalidTaskFormatError(f"Invalid task format: {e}")
-
-    def _get_speaking_order(
-        self, mentioned_agents: List[str]
-    ) -> List[str]:
-        """
-        Determines the speaking order using the configured speaker function.
-
-        Args:
-            mentioned_agents: List of agent names that were mentioned
-
-        Returns:
-            List of agent names in the order they should speak
-        """
-        if not mentioned_agents:
-            return []
-
-        # Use the speaker function to determine order
-        try:
-            if self.speaker_function == round_robin_speaker:
-                # For round robin, we need to maintain state
-                current_index = self.speaker_state.get(
-                    "current_index", 0
-                )
-                ordered_agents = []
-
-                # Create the order starting from current index
-                for i in range(len(mentioned_agents)):
-                    agent = round_robin_speaker(
-                        mentioned_agents, current_index + i
-                    )
-                    ordered_agents.append(agent)
-
-                # Update state for next round
-                self.speaker_state["current_index"] = (
-                    current_index + len(mentioned_agents)
-                ) % len(mentioned_agents)
-                return ordered_agents
-
-            elif self.speaker_function == random_speaker:
-                # For random, shuffle the list
-                shuffled = mentioned_agents.copy()
-                random.shuffle(shuffled)
-                return shuffled
-
-            elif self.speaker_function == priority_speaker:
-                # For priority, we need priorities in speaker_state
-                priorities = self.speaker_state.get("priorities", {})
-                if not priorities:
-                    # Fallback to random if no priorities set
-                    shuffled = mentioned_agents.copy()
-                    random.shuffle(shuffled)
-                    return shuffled
-
-                # Sort by priority (higher priority first)
-                sorted_agents = sorted(
-                    mentioned_agents,
-                    key=lambda x: priorities.get(x, 0),
-                    reverse=True,
-                )
-                return sorted_agents
-
-            elif self.speaker_function == random_dynamic_speaker:
-                # For dynamic speaker, we need to handle it differently
-                # The dynamic speaker will be called during the run method
-                # For now, just return the original order
-                return mentioned_agents
-
-            else:
-                # Custom speaker function
-                # For custom functions, we'll use the first agent returned
-                # and then process the rest in original order
-                first_speaker = self.speaker_function(
-                    mentioned_agents, **self.speaker_state
-                )
-                if first_speaker in mentioned_agents:
-                    remaining = [
-                        agent
-                        for agent in mentioned_agents
-                        if agent != first_speaker
-                    ]
-                    return [first_speaker] + remaining
-                else:
-                    return mentioned_agents
-
-        except Exception as e:
-            logger.error(f"Error in speaker function: {e}")
-            # Fallback to original order
-            return mentioned_agents
-
-    def _process_dynamic_speakers(
-        self,
-        mentioned_agents: List[str],
-        img: Optional[str],
-        imgs: Optional[List[str]],
-    ) -> None:
-        """
-        Process responses using the dynamic speaker function.
-
-        Args:
-            mentioned_agents (List[str]): List of agent names to consider for speaking.
-            img (Optional[str]): Optional image input for the agents.
-            imgs (Optional[List[str]]): Optional list of images for the agents.
-
-        Returns:
-            None
-        """
-        # Get strategy from speaker state (default to sequential)
-        strategy = self.speaker_state.get("strategy", "sequential")
-
-        # Track which agents have spoken to ensure all get a chance
-        spoken_agents = set()
-        last_response = ""
-        max_loops = (
-            len(mentioned_agents) * 3
-        )  # Allow more loops for parallel
-        iteration = 0
-
-        while iteration < max_loops and len(spoken_agents) < len(
-            mentioned_agents
-        ):
-            # Determine next speaker(s) using dynamic function
-            # Avoid passing duplicate 'strategy' if it's present in speaker_state
-            speaker_state = {
-                k: v
-                for k, v in (self.speaker_state or {}).items()
-                if k != "strategy"
-            }
-            next_speakers = self.speaker_function(
-                mentioned_agents,
-                last_response,
-                strategy=strategy,
-                **speaker_state,
-            )
-
-            # Handle both single agent and multiple agents
-            if isinstance(next_speakers, str):
-                next_speakers = [next_speakers]
-
-            # Filter out invalid agents
-            valid_next_speakers = [
-                agent
-                for agent in next_speakers
-                if agent in mentioned_agents
-            ]
-
-            if not valid_next_speakers:
-                # If no valid mentions found, randomly select from unspoken agents
-                unspoken_agents = [
-                    agent
-                    for agent in mentioned_agents
-                    if agent not in spoken_agents
-                ]
-                if unspoken_agents:
-                    valid_next_speakers = [
-                        random.choice(unspoken_agents)
-                    ]
-                else:
-                    # All agents have spoken, break the loop
-                    break
-
-            # Process agents based on strategy
-            if strategy == "sequential":
-                self._process_sequential_speakers(
-                    valid_next_speakers, spoken_agents, img, imgs
-                )
-            elif strategy == "parallel":
-                self._process_parallel_speakers(
-                    valid_next_speakers, spoken_agents, img, imgs
-                )
-
-            iteration += 1
-
-    def _process_sequential_speakers(
-        self,
-        speakers: List[str],
-        spoken_agents: set,
-        img: Optional[str],
-        imgs: Optional[List[str]],
-    ) -> None:
-        """
-        Process speakers sequentially.
-
-        Args:
-            speakers (List[str]): List of agent names to process in order.
-            spoken_agents (set): Set of agent names that have already spoken.
-            img (Optional[str]): Optional image input for the agents.
-            imgs (Optional[List[str]]): Optional list of images for the agents.
-
-        Returns:
-            None
-        """
-        for next_speaker in speakers:
-            if next_speaker in spoken_agents:
-                continue  # Skip if already spoken
-
-            response = self._get_agent_response(
-                next_speaker, img, imgs
-            )
-            if response:
-                spoken_agents.add(next_speaker)
-                break  # Only process one agent in sequential mode
-
-    def _process_parallel_speakers(
-        self,
-        speakers: List[str],
-        spoken_agents: set,
-        img: Optional[str],
-        imgs: Optional[List[str]],
-    ) -> None:
-        """
-        Process speakers in parallel.
-
-        Args:
-            speakers (List[str]): List of agent names to process in parallel.
-            spoken_agents (set): Set of agent names that have already spoken.
-            img (Optional[str]): Optional image input for the agents.
-            imgs (Optional[List[str]]): Optional list of images for the agents.
-
-        Returns:
-            None
-        """
-        import concurrent.futures
-
-        # Get responses from all valid agents
-        responses = []
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_to_agent = {
-                executor.submit(
-                    self._get_agent_response, agent, img, imgs
-                ): agent
-                for agent in speakers
-                if agent not in spoken_agents
-            }
-
-            for future in concurrent.futures.as_completed(
-                future_to_agent
+            tools = agent.tools_list_dictionary or []
+            if any(
+                tool.get("function", {}).get("name") == "respond"
+                for tool in tools
+                if isinstance(tool, dict)
             ):
-                agent = future_to_agent[future]
-                try:
-                    response = future.result()
-                    if response:
-                        responses.append(response)
-                        spoken_agents.add(agent)
-                except Exception as e:
-                    logger.error(
-                        f"Error getting response from {agent}: {e}"
-                    )
+                continue
+            agent.tools_list_dictionary = [*tools, RESPOND_TOOL]
+            agent.llm = agent.llm_handling()
+            self._log(
+                "info",
+                f"Injected respond tool into {agent.agent_name}",
+            )
 
-    def _process_static_speakers(
+    def _other_agents(self, exclude: str) -> str:
+        """Return a comma-separated list of peers visible to one agent."""
+        return ", ".join(
+            a.agent_name
+            for a in self.agents
+            if a.agent_name != exclude
+        )
+
+    def _decide_sync(
+        self, agent: Agent, sender: str, message: str
+    ) -> Tuple[float, str]:
+        """Ask one agent whether it wants to respond to a message.
+
+        Runs the agent (which carries the ``respond`` tool in its
+        ``tools_list_dictionary``) and extracts the structured ``(score,
+        message)`` from the resulting tool call. Synchronous because
+        ``Agent.run`` is blocking; the async agent loop invokes this method
+        via ``asyncio.to_thread`` so one slow model call cannot block the
+        whole groupchat.
+        """
+        prompt = GROUPCHAT_DECIDE_PROMPT.format(
+            agent_name=agent.agent_name,
+            other_agents=self._other_agents(agent.agent_name),
+            sender=sender,
+            message=message,
+        )
+        previous_output_type = getattr(agent, "output_type", None)
+        agent.output_type = "final"
+        try:
+            # Typed turns let the agent tell its own prior speech from a peer's.
+            tool_output = agent.run(
+                task=prompt,
+                messages=messages_for(
+                    agent.agent_name, self.conversation
+                ),
+            )
+            # print(f"Agent {agent.agent_name} response: {tool_output}")
+        except Exception as e:
+            # Surface failures: a swallowed error looks exactly like "the agent chose to stay silent".
+            logger.warning(
+                f"[{self.name}] {agent.agent_name} failed to bid: "
+                f"{type(e).__name__}: {e}"
+            )
+            return 0.0, ""
+        finally:
+            agent.output_type = previous_output_type
+        return _extract_args(tool_output)
+
+    def _post(
         self,
-        mentioned_agents: List[str],
-        img: Optional[str],
-        imgs: Optional[List[str]],
+        sender: str,
+        content: str,
+        score: Optional[float],
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
     ) -> None:
+        """Record a message in the shared conversation and optionally print it.
+
+        There are no per-agent inboxes: every agent reads the same
+        ``Conversation`` when it builds its next bid, so a single append makes
+        the message visible to everyone the following turn.
+
+        When ``streaming_callback`` is provided, the posted message is replayed
+        token-by-token to the callback before being recorded, so consumers can
+        render the speaker's reply as it "arrives" — mirroring the live
+        streaming of ``SequentialWorkflow`` / ``AgentRearrange`` where one agent
+        speaks at a time.
         """
-        Process responses using a static speaker function.
+        if streaming_callback is not None:
+            self._stream_reply(sender, content, streaming_callback)
 
-        Args:
-            mentioned_agents (List[str]): List of agent names to process.
-            img (Optional[str]): Optional image input for the agents.
-            imgs (Optional[List[str]]): Optional list of images for the agents.
+        metadata = {"score": score} if score is not None else None
+        self.conversation.add(
+            role=sender, content=content, metadata=metadata
+        )
+        self._log(
+            "info",
+            f"{sender} -> {content[:80]} "
+            f"(score={'-' if score is None else f'{score:.2f}'})",
+        )
+        if self.verbose:
+            title = (
+                f"{sender}"
+                if score is None
+                else f"{sender}  (score={score:.2f})"
+            )
+            style = "bold green" if score is None else "bold blue"
+            formatter.print_panel(content, title=title, style=style)
 
-        Returns:
-            None
-        """
-        speaking_order = self._get_speaking_order(mentioned_agents)
-        logger.info(f"Speaking order determined: {speaking_order}")
-
-        # Get responses from mentioned agents in the determined order
-        for agent_name in speaking_order:
-            self._get_agent_response(agent_name, img, imgs)
-
-    def _process_random_speaker(
+    def _stream_reply(
         self,
-        mentioned_agents: List[str],
-        img: Optional[str],
-        imgs: Optional[List[str]],
+        sender: str,
+        content: str,
+        streaming_callback: Callable[[str, str, bool], None],
     ) -> None:
+        """Replay a posted message to ``streaming_callback`` as token chunks.
+
+        The groupchat is turn-based — exactly one agent holds the floor per
+        turn — so its reply is generated atomically (inside the bid) rather than
+        streamed live. To still offer the token-over-time experience of the
+        other swarm structures, the finished reply is chunked on whitespace and
+        emitted one piece at a time, followed by a final empty-chunk sentinel.
+
+        The callback signature matches the rest of the framework:
+        ``streaming_callback(agent_name: str, chunk: str, is_final: bool)``.
+        ``is_final=True`` marks the end of this speaker's turn.
         """
-        Process responses using the random speaker function.
-        This function randomly selects a single agent from the mentioned agents
-        to respond to the user query.
+        words = content.split(" ")
+        for i, word in enumerate(words):
+            chunk = word if i == len(words) - 1 else f"{word} "
+            if chunk:
+                streaming_callback(sender, chunk, False)
+        streaming_callback(sender, "", True)
+
+    async def _collect_bids(
+        self, sender: str, message: str
+    ) -> List[Tuple[Agent, float, str]]:
+        """Ask every agent, concurrently, for a speaking bid this turn.
+
+        Each agent returns a ``(score, message)`` pair: how much it wants the
+        floor and the reply it would give. Bidding is the cheap "do I have
+        something to add right now?" instinct — it runs in parallel for speed,
+        but at most one bid is ever posted (see ``_select_speaker``). Agent
+        calls are blocking, so each runs in its own thread via
+        ``asyncio.to_thread`` and one slow model cannot stall the turn.
         """
-        # Filter out invalid agents
-        valid_agents = [
-            name
-            for name in mentioned_agents
-            if name in self.agent_map
+        results = await asyncio.gather(
+            *(
+                asyncio.to_thread(
+                    self._decide_sync, agent, sender, message
+                )
+                for agent in self.agents
+            )
+        )
+        return [
+            (agent, score, reply)
+            for agent, (score, reply) in zip(self.agents, results)
         ]
 
-        if not valid_agents:
-            raise AgentNotFoundError(
-                "No valid agents found in the conversation"
+    def _select_speaker(
+        self,
+        bids: List[Tuple[Agent, float, str]],
+        recent: set,
+    ) -> Optional[Tuple[Agent, float, str]]:
+        """Pick the single agent that takes the floor this turn.
+
+        The winner is the highest *recency-adjusted* bid that (a) carries a
+        non-empty reply and (b) clears ``threshold``. Agents that spoke within
+        the last ``recency_window`` turns have ``recency_penalty`` subtracted
+        from their score, so the floor passes around instead of one agent
+        monologuing. Returns ``None`` when nobody clears the bar — a lull that
+        ends the conversation.
+
+        Returns:
+            ``(agent, raw_score, reply)`` for the chosen speaker, or ``None``.
+        """
+        best: Optional[Tuple[Agent, float, str]] = None
+        best_adjusted = self.threshold
+
+        for agent, score, reply in bids:
+            if not reply:
+                continue
+            adjusted = score
+            if agent.agent_name in recent:
+                adjusted -= self.recency_penalty
+            if adjusted <= best_adjusted:
+                continue
+            best_adjusted = adjusted
+            best = (agent, score, reply)
+
+        return best
+
+    async def _run_async(
+        self,
+        task: str,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ) -> Any:
+        """Run the turn-based groupchat and return formatted history.
+
+        Each turn: collect a bid from every agent,
+        let the single highest (recency-adjusted) bidder speak, and post only
+        that reply. The loop stops at the first lull — a turn where no agent
+        clears ``threshold`` — or once ``max_loops`` messages have been posted.
+
+        Args:
+            task: Initial user message that seeds the conversation.
+            streaming_callback: Optional ``(agent_name, chunk, is_final)``
+                callback. Each posted message — the initial user task and every
+                speaker's reply — is streamed to it token-by-token, with an
+                ``is_final=True`` sentinel marking the end of each turn.
+
+        Returns:
+            Conversation history formatted according to ``self.output_type``.
+        """
+        self._log("info", f"[{self.name}] initial task: {task}")
+
+        self.conversation.clear()
+
+        self._post(
+            sender="User",
+            content=task,
+            score=None,
+            streaming_callback=streaming_callback,
+        )
+        last_sender, last_message = "User", task
+
+        recent: "deque[str]" = deque(
+            maxlen=max(1, self.recency_window)
+        )
+        message_count = 1  # the user task counts as the first message
+
+        while message_count < self.max_loops:
+            bids = await self._collect_bids(last_sender, last_message)
+
+            selection = self._select_speaker(bids, set(recent))
+            if selection is None:
+                # No reply at all on the first turn is almost never a lull; it is a bad model name or missing key.
+                if message_count == 1 and not any(
+                    reply for _, _, reply in bids
+                ):
+                    logger.warning(
+                        f"[{self.name}] No agent produced a reply on the first "
+                        "turn. The chat will end immediately. Likely causes: an "
+                        "invalid model_name, a missing/invalid API key, a "
+                        "model without function-calling support, or replies "
+                        "that are not a parseable respond() tool call. Run "
+                        "with verbose=True to see each agent's bid."
+                    )
+                else:
+                    self._log(
+                        "info",
+                        "no agent cleared the threshold — lull, stopping",
+                    )
+                break
+
+            agent, score, reply = selection
+            self._post(
+                sender=agent.agent_name,
+                content=reply,
+                score=score,
+                streaming_callback=streaming_callback,
             )
+            recent.append(agent.agent_name)
+            last_sender, last_message = agent.agent_name, reply
+            message_count += 1
 
-        # Randomly select exactly one agent to respond
-        random_agent = random.choice(valid_agents)
-        logger.info(f"Random speaker selected: {random_agent}")
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )
 
-        # Get response from the randomly selected agent
-        self._get_agent_response(random_agent, img, imgs)
-
+    @trace_run(
+        "GroupChat.run", input_params=("task", "tasks", "img", "imgs")
+    )
     def run(
         self,
         task: str,
-        img: Optional[str] = None,
-        imgs: Optional[List[str]] = None,
-    ) -> str:
-        """
-        Process a task and get responses from agents. If no agents are mentioned,
-        randomly selects agents to participate.
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ) -> Any:
+        """Synchronously run the groupchat until a lull or ``max_loops``.
 
         Args:
-            task (str): The user input or task to process.
-            img (Optional[str]): Optional image input for the agents.
-            imgs (Optional[List[str]]): Optional list of images for the agents.
+            task: Initial user task or message for the group.
+            streaming_callback: Optional ``(agent_name, chunk, is_final)``
+                callback that receives each posted message as a stream of token
+                chunks, with ``is_final=True`` marking the end of a speaker's
+                turn. Matches the streaming signature used across the framework
+                (``ConcurrentWorkflow``, ``HierarchicalSwarm``, etc.).
 
         Returns:
-            str: The formatted conversation history (format depends on output_type).
-
-        Raises:
-            GroupChatError: If an unexpected error occurs.
+            Formatted conversation output from ``_run_async``.
         """
-        try:
-            # Extract mentioned agents (or all agents if none mentioned)
-            if "@" in task:
-                mentioned_agents = self._extract_mentions(task)
-            else:
-                mentioned_agents = list(self.agent_map.keys())
-
-            # Add user task to conversation
-            self.conversation.add(role="User", content=task)
-
-            # Process responses based on speaker function type
-            if self.speaker_function == random_dynamic_speaker:
-                self._process_dynamic_speakers(
-                    mentioned_agents, img, imgs
-                )
-            elif self.speaker_function == random_speaker:
-                # Use the specialized function for random_speaker
-                self._process_random_speaker(
-                    mentioned_agents, img, imgs
-                )
-            else:
-                self._process_static_speakers(
-                    mentioned_agents, img, imgs
-                )
-
-            return history_output_formatter(
-                self.conversation, self.output_type
+        return asyncio.run(
+            self._run_async(
+                task, streaming_callback=streaming_callback
             )
+        )
 
-        except Exception as e:
-            logger.error(
-                f"GroupChat: Unexpected error: {e} Traceback: {traceback.format_exc()}"
-            )
-            raise GroupChatError(
-                f"GroupChat: Unexpected error occurred: {str(e)} Traceback: {traceback.format_exc()}"
-            )
-
-    def __call__(
-        self,
-        task: str,
-        img: Optional[str] = None,
-        imgs: Optional[List[str]] = None,
-    ):
-        return self.run(task=task, img=img, imgs=imgs)
-
-    def _get_agent_response(
-        self,
-        agent_name: str,
-        img: Optional[str] = None,
-        imgs: Optional[List[str]] = None,
-    ) -> Optional[str]:
-        """
-        Get response from a specific agent.
+    def run_batch(self, tasks: List[str]) -> List[Any]:
+        """Run the groupchat in batch mode.
 
         Args:
-            agent_name (str): Name of the agent to get response from.
-            img (Optional[str]): Optional image for the task.
-            imgs (Optional[List[str]]): Optional list of images for the task.
+            tasks: List of user tasks or messages for the group.
 
         Returns:
-            Optional[str]: The agent's response or None if error.
-
-        Raises:
-            AgentNotFoundError: If the agent is not found.
+            List of formatted conversation outputs from ``_run_async``.
         """
-        agent = self.agent_map.get(agent_name)
-        if not agent:
-            raise AgentNotFoundError(
-                f"Agent '{agent_name}' not found"
-            )
-
-        try:
-            # Get the complete conversation history
-            context = self.conversation.return_history_as_string()
-
-            # Get response from agent
-            if isinstance(agent, Agent):
-                collaborative_task = get_collaborative_task_prompt(
-                    context, agent_name
-                )
-
-                response = agent.run(
-                    task=collaborative_task,
-                    img=img,
-                    imgs=imgs,
-                )
-            else:
-                # For callable functions
-                response = agent(context)
-
-            # Add response to conversation
-            if response and not response.isspace():
-                self.conversation.add(
-                    role=agent_name, content=response
-                )
-                logger.info(f"Agent {agent_name} responded")
-                return response
-
-        except Exception as e:
-            logger.error(
-                f"Error getting response from {agent_name}: {e}"
-            )
-            self.conversation.add(
-                role=agent_name,
-                content=f"Error: Unable to generate response - {str(e)}",
-            )
-            return f"Error: Unable to generate response - {str(e)}"
-
-        return None
-
-    # Legacy methods for backward compatibility
-    def reliability_check(self):
-        """
-        Validates the group chat configuration (legacy method).
-
-        Raises:
-            ValueError: If any required components are missing or invalid
-        """
-        self._validate_initialization()
-
-        # Add legacy prompt augmentation if using old speaker functions
-        if hasattr(self, "speaker_fn") and self.speaker_fn:
-            for agent in self.agents:
-                if isinstance(agent, Agent):
-                    agent.system_prompt += (
-                        MULTI_AGENT_COLLAB_PROMPT_TWO
-                    )
-
-    # Legacy run method for backward compatibility
-    def run_legacy(
-        self, task: str, img: str = None, *args, **kwargs
-    ) -> str:
-        """
-        Legacy run method for backward compatibility with old GroupChat interface.
-        """
-        if not task or not isinstance(task, str):
-            raise ValueError("Task must be a non-empty string")
-
-        # Initialize conversation with context
-        self.conversation.add(role="User", content=task)
-
-        try:
-            turn = 0
-            # Determine a random number of conversation turns
-            target_turns = random.randint(1, 4)
-            logger.debug(
-                f"Planning for approximately {target_turns} conversation turns"
-            )
-
-            # Keep track of which agent spoke last to create realistic exchanges
-            last_speaker = None
-
-            while turn < target_turns:
-
-                # Select an agent to speak (different from the last speaker if possible)
-                available_agents = self.agents.copy()
-
-                if last_speaker and len(available_agents) > 1:
-                    available_agents.remove(last_speaker)
-
-                current_speaker = random.choice(available_agents)
-
-                try:
-                    # Build complete context with conversation history
-                    conversation_history = (
-                        self.conversation.return_history_as_string()
-                    )
-
-                    # Prepare a prompt that explicitly encourages responding to others
-                    if last_speaker:
-                        prompt = f"The previous message was from {last_speaker.agent_name}. As {current_speaker.agent_name}, please respond to what they and others have said about: {task}"
-                    else:
-                        prompt = f"As {current_speaker.agent_name}, please start the discussion about: {task}"
-
-                    # Get the agent's response with full context awareness
-                    message = current_speaker.run(
-                        task=f"{conversation_history} {prompt}",
-                    )
-
-                    # Only add meaningful responses
-                    if message and not message.isspace():
-                        self.conversation.add(
-                            role=current_speaker.agent_name,
-                            content=message,
-                        )
-
-                        logger.info(
-                            f"Turn {turn}, {current_speaker.agent_name} responded"
-                        )
-
-                        # Update the last speaker
-                        last_speaker = current_speaker
-                        turn += 1
-
-                        # Occasionally end early to create natural variation
-                        if (
-                            turn > 3 and random.random() < 0.15
-                        ):  # 15% chance to end after at least 3 turns
-                            logger.debug(
-                                "Random early conversation end"
-                            )
-                            break
-
-                except Exception as e:
-                    logger.error(
-                        f"Error from {current_speaker.agent_name}: {e}"
-                    )
-                    # Skip this agent and continue conversation
-                    continue
-
-            return history_output_formatter(
-                self.conversation, self.output_type
-            )
-
-        except Exception as e:
-            logger.error(f"Error in chat: {e}")
-            raise
-
-    def batched_run(
-        self, tasks: List[str], *args, **kwargs
-    ) -> List[str]:
-        """
-        Runs multiple tasks in sequence.
-
-        Args:
-            tasks (List[str]): List of tasks to process
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
-
-        Returns:
-            List[str]: List of conversation histories for each task
-
-        Raises:
-            ValueError: If tasks list is empty or invalid
-        """
-        if not tasks or not isinstance(tasks, list):
-            raise ValueError(
-                "Tasks must be a non-empty list of strings"
-            )
-        return [self.run(task, *args, **kwargs) for task in tasks]
-
-    def concurrent_run(
-        self, tasks: List[str], *args, **kwargs
-    ) -> List[str]:
-        """
-        Runs multiple tasks concurrently using threads.
-
-        Args:
-            tasks (List[str]): List of tasks to process
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
-
-        Returns:
-            List[str]: List of conversation histories for each task
-
-        Raises:
-            ValueError: If tasks list is empty or invalid
-            RuntimeError: If concurrent execution fails
-        """
-        if not tasks or not isinstance(tasks, list):
-            raise ValueError(
-                "Tasks must be a non-empty list of strings"
-            )
-
-        try:
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                return list(
-                    executor.map(
-                        lambda task: self.run(task, *args, **kwargs),
-                        tasks,
-                    )
-                )
-        except Exception as e:
-            logger.error(f"Error in concurrent execution: {e}")
-            raise RuntimeError(
-                f"Concurrent execution failed: {str(e)}"
-            )
-
-    def _validate_speaker_function(self):
-        """
-        Validates the speaker function.
-        """
-        # This method is called to validate speaker functions
-        pass
+        return batched_run(self.run, tasks)

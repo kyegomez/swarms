@@ -1,4 +1,3 @@
-from litellm import encode, model_list
 from loguru import logger
 from typing import Optional
 from functools import lru_cache
@@ -26,6 +25,8 @@ def count_tokens(
     Raises:
         ValueError: If text is empty or if both primary and fallback models fail
     """
+    from litellm import encode
+
     if not text or not text.strip():
         logger.warning("Empty or whitespace-only text provided")
         return 0
@@ -74,33 +75,9 @@ def count_tokens(
 def get_supported_models() -> list:
     """Get list of supported models from litellm."""
     try:
+        from litellm import model_list
+
         return model_list
     except Exception as e:
         logger.warning(f"Could not retrieve model list: {e}")
         return []
-
-
-# if __name__ == "__main__":
-#     # Test with different scenarios
-#     test_text = "Hello, how are you?"
-
-#     # # Test with Claude model
-#     # try:
-#     #     tokens = count_tokens(test_text, model="claude-3-5-sonnet-20240620")
-#     #     print(f"Claude tokens: {tokens}")
-#     # except Exception as e:
-#     #     print(f"Claude test failed: {e}")
-
-#     # # Test with default model
-#     # try:
-#     #     tokens = count_tokens(test_text)
-#     #     print(f"Default model tokens: {tokens}")
-#     # except Exception as e:
-#     #     print(f"Default test failed: {e}")
-
-#     # Test with explicit fallback
-#     try:
-#         tokens = count_tokens(test_text, model="some-invalid-model", default_encoder="gpt-5.4")
-#         print(f"Fallback test tokens: {tokens}")
-#     except Exception as e:
-#         print(f"Fallback test failed: {e}")

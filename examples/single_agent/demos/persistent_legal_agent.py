@@ -1,6 +1,4 @@
-import os
 from swarms import Agent
-from swarm_models import OpenAIChat
 from dotenv import load_dotenv
 
 # Custom system prompt for VC legal document generation
@@ -19,25 +17,14 @@ Remember: All output should be marked as 'DRAFT' and require professional legal 
 
 def create_vc_legal_agent():
     load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
-
-    # Configure the model with appropriate parameters for legal work
-    # Get the OpenAI API key from the environment variable
-    api_key = os.getenv("GROQ_API_KEY")
-
-    # Model
-    model = OpenAIChat(
-        openai_api_base="https://api.groq.com/openai/v1",
-        openai_api_key=api_key,
-        model_name="llama-3.1-70b-versatile",
-        temperature=0.1,
-    )
 
     # Initialize the persistent agent
     agent = Agent(
         agent_name="VC-Legal-Document-Agent",
         system_prompt=VC_LEGAL_AGENT_PROMPT,
-        llm=model,
+        # The "groq/" prefix routes to Groq and picks up GROQ_API_KEY.
+        model_name="groq/llama-3.3-70b-versatile",
+        temperature=0.1,
         max_loops="auto",  # Allows multiple iterations until completion
         stopping_token="<DONE>",  # Agent will continue until this token is output
         autosave=True,

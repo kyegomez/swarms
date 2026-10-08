@@ -1,5 +1,5 @@
 import traceback
-from typing import List
+from typing import List, Optional
 
 from loguru import logger
 
@@ -7,8 +7,8 @@ from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
 )
 from swarms.structs.omni_agent_types import AgentType
-from swarms.structs.swarm_id import swarm_id
-from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import capture_init, trace_run
+from swarms.utils.generate_id import generate_id
 
 
 class BatchedGridWorkflow:
@@ -31,7 +31,6 @@ class BatchedGridWorkflow:
         description (str): Description of the workflow's purpose.
         agents (List[AgentType]): List of agents to execute tasks.
         max_loops (int): Maximum number of execution loops to perform.
-        output_type (OutputType): Type of output to return.
 
     Example:
         >>> from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
@@ -45,12 +44,11 @@ class BatchedGridWorkflow:
 
     def __init__(
         self,
-        id: str = swarm_id(),
+        id: Optional[str] = None,
         name: str = "BatchedGridWorkflow",
         description: str = "For every agent, run the task on a different task",
         agents: List[AgentType] = None,
         max_loops: int = 1,
-        output_type: OutputType = "dict",
     ):
         """
         Initialize a BatchedGridWorkflow instance.
@@ -62,7 +60,7 @@ class BatchedGridWorkflow:
             agents: List of agents to execute tasks.
             max_loops: Maximum number of execution loops to run (must be >= 1).
         """
-        self.id = id
+        self.id = id or generate_id("batched-grid-workflow")
         self.name = name
         self.description = description
         self.agents = agents
@@ -71,6 +69,9 @@ class BatchedGridWorkflow:
         # Validate max_loops parameter
         if not isinstance(max_loops, int) or max_loops < 1:
             raise ValueError("max_loops must be a positive integer")
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def step(self, tasks: List[str]):
         """
@@ -105,6 +106,10 @@ class BatchedGridWorkflow:
 
         return results
 
+    @trace_run(
+        "BatchedGridWorkflow.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, tasks: List[str]):
         """
         Run the batched grid workflow with the given tasks.

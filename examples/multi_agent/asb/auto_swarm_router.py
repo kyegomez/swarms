@@ -1,28 +1,15 @@
-import os
-from dotenv import load_dotenv
 from swarms import Agent
-from swarm_models import OpenAIChat
 from swarms.structs.swarm_router import SwarmRouter
 
-load_dotenv()
-
-# Get the OpenAI API key from the environment variable
-api_key = os.getenv("GROQ_API_KEY")
-
-# Model
-model = OpenAIChat(
-    openai_api_base="https://api.groq.com/openai/v1",
-    openai_api_key=api_key,
-    model_name="llama-3.1-70b-versatile",
-    temperature=0.1,
-)
+# Model — any LiteLLM-compatible string. Set GROQ_API_KEY in your environment.
+MODEL_NAME = "groq/llama-3.3-70b-versatile"
 
 
 # Initialize specialized agents
 data_extractor_agent = Agent(
     agent_name="Data-Extractor",
     system_prompt="You are a data extraction specialist. Extract relevant information from provided content.",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=1,
     autosave=True,
     verbose=True,
@@ -37,7 +24,7 @@ data_extractor_agent = Agent(
 summarizer_agent = Agent(
     agent_name="Document-Summarizer",
     system_prompt="You are a document summarization specialist. Provide clear and concise summaries.",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=1,
     autosave=True,
     verbose=True,
@@ -52,7 +39,7 @@ summarizer_agent = Agent(
 financial_analyst_agent = Agent(
     agent_name="Financial-Analyst",
     system_prompt="You are a financial analysis specialist. Analyze financial aspects of content.",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=1,
     autosave=True,
     verbose=True,
@@ -67,7 +54,7 @@ financial_analyst_agent = Agent(
 market_analyst_agent = Agent(
     agent_name="Market-Analyst",
     system_prompt="You are a market analysis specialist. Analyze market-related aspects.",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=1,
     autosave=True,
     verbose=True,
@@ -82,7 +69,7 @@ market_analyst_agent = Agent(
 operational_analyst_agent = Agent(
     agent_name="Operational-Analyst",
     system_prompt="You are an operational analysis specialist. Analyze operational aspects.",
-    llm=model,
+    model_name=MODEL_NAME,
     max_loops=1,
     autosave=True,
     verbose=True,
@@ -106,8 +93,7 @@ router = SwarmRouter(
         market_analyst_agent,
         operational_analyst_agent,
     ],
-    swarm_type="SequentialWorkflow",  # or "SequentialWorkflow" or "ConcurrentWorkflow" or
-    auto_generate_prompts=True,
+    swarm_type="SequentialWorkflow",  # or "ConcurrentWorkflow", "AgentRearrange", etc.
     output_type="all",
 )
 

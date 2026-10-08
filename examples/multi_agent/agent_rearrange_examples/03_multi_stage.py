@@ -13,7 +13,6 @@ Five-agent compound flow combining all the basic patterns:
 - Editor polishes the final report.
 """
 
-import time
 from swarms import Agent, AgentRearrange
 
 MODEL = "gpt-4o-mini"
@@ -77,40 +76,7 @@ TASK = (
 )
 
 
-def main() -> None:
-    print("=" * 72)
-    print(f"MULTI-STAGE  |  flow: {pipeline.flow}")
-    print("=" * 72)
-    print(f"Task: {TASK}\n")
+print(pipeline.explain(return_str=True))
 
-    t0 = time.perf_counter()
-    messages = pipeline.run(TASK)
-    print(f"Completed in {time.perf_counter() - t0:.2f}s\n")
-
-    order = [
-        "Ingestor",
-        "Tech",
-        "Business",
-        "Legal",
-        "Synthesizer",
-        "Editor",
-    ]
-    latest = {}
-    for msg in messages:
-        role = msg.get("role")
-        if role in order:
-            latest[role] = msg.get("content", "")
-
-    for name in order:
-        out = latest.get(name)
-        if not out:
-            continue
-        print("-" * 72)
-        print(f"[{name}]")
-        print("-" * 72)
-        print(str(out).strip())
-        print()
-
-
-if __name__ == "__main__":
-    main()
+result = pipeline.run(TASK)
+print(result)

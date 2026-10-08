@@ -1,20 +1,13 @@
-import os
+"""Florida token tax advisory panel using the dynamic GroupChat."""
+
 from dotenv import load_dotenv
-from swarm_models import OpenAIChat
-from swarms import Agent, GroupChat
+
+from swarms import Agent
+from swarms.structs.groupchat import GroupChat, RESPOND_TOOL
 
 if __name__ == "__main__":
     load_dotenv()
-    api_key = os.getenv("GROQ_API_KEY")
 
-    model = OpenAIChat(
-        openai_api_base="https://api.groq.com/openai/v1",
-        openai_api_key=api_key,
-        model_name="llama-3.1-70b-versatile",
-        temperature=0.1,
-    )
-
-    # General Crypto Tax Strategist
     agent1 = Agent(
         agent_name="Token-Tax-Strategist",
         system_prompt="""You are a cryptocurrency tax specialist focusing on token trading in Florida. Your expertise includes:
@@ -26,15 +19,14 @@ if __name__ == "__main__":
         - High-frequency trading tax implications
         - Cost basis calculation methods for token swaps
         Provide practical tax strategies for active token traders in Florida.""",
-        llm=model,
+        model_name="groq/llama-3.1-70b-versatile",
         max_loops=1,
+        persistent_memory=False,
         dynamic_temperature_enabled=True,
         user_name="swarms_corp",
-        output_type="string",
-        streaming_on=True,
+        tools_list_dictionary=[RESPOND_TOOL],
     )
 
-    # Compliance and Reporting Agent
     agent2 = Agent(
         agent_name="Florida-Compliance-Expert",
         system_prompt="""You are a Florida-based crypto tax compliance expert specializing in:
@@ -46,15 +38,14 @@ if __name__ == "__main__":
         - Multi-exchange transaction reporting
         - Wash sale considerations for tokens
         Focus on compliance strategies for active memecoin and token traders.""",
-        llm=model,
+        model_name="groq/llama-3.1-70b-versatile",
         max_loops=1,
+        persistent_memory=False,
         dynamic_temperature_enabled=True,
         user_name="swarms_corp",
-        output_type="string",
-        streaming_on=True,
+        tools_list_dictionary=[RESPOND_TOOL],
     )
 
-    # DeFi and DEX Specialist
     agent3 = Agent(
         agent_name="DeFi-Tax-Specialist",
         system_prompt="""You are a DeFi tax expert focusing on:
@@ -67,15 +58,14 @@ if __name__ == "__main__":
         - Impermanent loss tax treatment
         - Flash loan tax implications
         Specialize in DeFi platform tax optimization for Florida traders.""",
-        llm=model,
+        model_name="groq/llama-3.1-70b-versatile",
         max_loops=1,
+        persistent_memory=False,
         dynamic_temperature_enabled=True,
         user_name="swarms_corp",
-        output_type="string",
-        streaming_on=True,
+        tools_list_dictionary=[RESPOND_TOOL],
     )
 
-    # Memecoin and Token Analysis Agent
     agent4 = Agent(
         agent_name="Memecoin-Analysis-Expert",
         system_prompt="""You are a memecoin and token tax analysis expert specializing in:
@@ -88,12 +78,12 @@ if __name__ == "__main__":
         - Worthless token write-offs
         - Pre-sale and fair launch tax strategies
         Provide expert guidance on memecoin and new token tax scenarios.""",
-        llm=model,
+        model_name="groq/llama-3.1-70b-versatile",
         max_loops=1,
+        persistent_memory=False,
         dynamic_temperature_enabled=True,
         user_name="swarms_corp",
-        output_type="string",
-        streaming_on=True,
+        tools_list_dictionary=[RESPOND_TOOL],
     )
 
     agents = [agent1, agent2, agent3, agent4]
@@ -102,10 +92,12 @@ if __name__ == "__main__":
         name="Florida Token Tax Advisory",
         description="Specialized group for memecoin and token tax analysis, compliance, and DeFi trading in Florida",
         agents=agents,
+        max_loops=20,
+        threshold=0.5,
+        idle_timeout=10.0,
     )
 
-    # Example query focused on memecoin trading
     history = chat.run(
         "I'm trading memecoins and tokens on various DEXs from Florida. How should I handle my taxes for multiple token swaps, failed transactions, and potential losses? I have made alot of money and paid team members, delaware c corp, using crypto to pay my team"
     )
-    print(history.model_dump_json(indent=2))
+    print(history)

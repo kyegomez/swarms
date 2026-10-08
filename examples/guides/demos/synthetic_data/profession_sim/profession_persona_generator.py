@@ -191,7 +191,7 @@ class ProfessionPersonaGenerator:
                 agent_description="Expert agent for creating detailed professional persona prompts",
                 system_prompt=system_prompt,
                 max_loops=1,
-                model_name="gpt-4.1",
+                model_name="gpt-5.4",
                 dynamic_temperature_enabled=True,
                 output_type="final",  # Changed from "str-all-except-first" to prevent context accumulation
                 streaming_on=False,  # Disabled streaming for cleaner output

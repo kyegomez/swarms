@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "12.0.1"
+version = "16.0.1"
 description = "Swarms - TGSC"
 license = "Apache-2.0"
 authors = ["Kye Gomez <kye@swarms.world>"]
@@ -73,6 +73,8 @@ httpx = "*"
 requests = "*"
 mcp = "*"
 schedule = "*"
+opentelemetry-sdk = "*"
+opentelemetry-exporter-otlp-proto-http = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"
@@ -80,7 +82,7 @@ swarms = "swarms.cli.main:main"
 
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<27.0"
-ruff = ">=0.5.1,<0.15.9"
+ruff = ">=0.5.1,<0.16.2"
 types-toml = "^0.10.8.1"
 types-pytz = ">=2023.3,<2027.0"
 types-chardet = "^5.0.4.6"
@@ -95,8 +97,20 @@ black = "*"
 ruff = "*"
 pytest = "*"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "remote: tests that hit a real remote MCP server over the network",
+]
+
 [tool.ruff]
 line-length = 70
+
+[tool.ruff.lint.per-file-ignores]
+"examples/**" = ["E402", "E721", "E722", "F401", "F402"]
+"tests/**" = ["E402", "E721", "E722", "F401", "F402"]
+"scripts/**" = ["F401"]
 
 [tool.black]
 target-version = ["py38"]

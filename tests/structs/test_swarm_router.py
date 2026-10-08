@@ -1,17 +1,16 @@
+from unittest.mock import patch
+
 import pytest
+from typing import get_args
 
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmRouterConfig,
     SwarmRouterRunError,
     SwarmRouterConfigError,
-    Document,
+    SwarmType,
 )
 from swarms.structs.agent import Agent
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
 
 
 def create_sample_agents():
@@ -43,63 +42,6 @@ def create_sample_agents():
 # ============================================================================
 
 
-def test_default_initialization():
-    """Test SwarmRouter with default parameters."""
-    router = SwarmRouter()
-
-    assert router.name == "swarm-router"
-    assert (
-        router.description == "Routes your task to the desired swarm"
-    )
-    assert router.max_loops == 1
-    assert router.agents == []
-    assert router.swarm_type == "SequentialWorkflow"
-    assert router.autosave is False
-    assert router.return_json is False
-    assert router.auto_generate_prompts is False
-    assert router.shared_memory_system is None
-    assert router.rules is None
-    assert router.documents == []
-    assert router.output_type == "dict-all-except-first"
-    assert router.verbose is False
-    assert router.telemetry_enabled is False
-
-
-def test_custom_initialization():
-    """Test SwarmRouter with custom parameters."""
-    sample_agents = create_sample_agents()
-
-    router = SwarmRouter(
-        name="test-router",
-        description="Test router description",
-        max_loops=3,
-        agents=sample_agents,
-        swarm_type="ConcurrentWorkflow",
-        autosave=True,
-        return_json=True,
-        auto_generate_prompts=True,
-        rules="Test rules",
-        documents=["doc1.txt", "doc2.txt"],
-        output_type="json",
-        verbose=False,  # Keep quiet for tests
-        telemetry_enabled=False,
-    )
-
-    assert router.name == "test-router"
-    assert router.description == "Test router description"
-    assert router.max_loops == 3
-    assert router.agents == sample_agents
-    assert router.swarm_type == "ConcurrentWorkflow"
-    assert router.autosave is True
-    assert router.return_json is True
-    assert router.auto_generate_prompts is True
-    assert router.rules == "Test rules"
-    assert router.documents == ["doc1.txt", "doc2.txt"]
-    assert router.output_type == "json"
-    assert router.verbose is False
-    assert router.telemetry_enabled is False
-
-
 def test_initialization_with_heavy_swarm_config():
     """Test SwarmRouter with HeavySwarm specific configuration."""
     sample_agents = create_sample_agents()
@@ -107,17 +49,19 @@ def test_initialization_with_heavy_swarm_config():
     router = SwarmRouter(
         agents=sample_agents,
         swarm_type="HeavySwarm",
-        heavy_swarm_loops_per_agent=2,
+        heavy_swarm_max_loops=2,
         heavy_swarm_question_agent_model_name="gpt-5.4",
         heavy_swarm_worker_model_name="gpt-5.4",
         heavy_swarm_swarm_show_output=False,
+        heavy_swarm_variant="heavy",
     )
 
     assert router.swarm_type == "HeavySwarm"
-    assert router.heavy_swarm_loops_per_agent == 2
+    assert router.heavy_swarm_max_loops == 2
     assert router.heavy_swarm_question_agent_model_name == "gpt-5.4"
     assert router.heavy_swarm_worker_model_name == "gpt-5.4"
     assert router.heavy_swarm_swarm_show_output is False
+    assert router.heavy_swarm_variant == "heavy"
 
 
 def test_initialization_with_agent_rearrange_config():
@@ -139,18 +83,6 @@ def test_initialization_with_agent_rearrange_config():
 # ============================================================================
 
 
-def test_initialization_with_shared_memory():
-    """Test SwarmRouter with shared memory system."""
-    sample_agents = create_sample_agents()
-
-    router = SwarmRouter(
-        agents=sample_agents,
-        shared_memory_system=None,  # Test with None for now
-    )
-
-    assert router.shared_memory_system is None
-
-
 def test_initialization_with_worker_tools():
     """Test SwarmRouter with worker tools."""
     sample_agents = create_sample_agents()
@@ -161,40 +93,6 @@ def test_initialization_with_worker_tools():
     )
 
     assert router.worker_tools == []
-
-
-# ============================================================================
-# Document Management Tests
-# ============================================================================
-
-
-def test_document_creation():
-    """Test Document creation."""
-    doc = Document(
-        file_path="/path/to/test/document.txt",
-        data="This is test content",
-    )
-
-    assert doc.file_path == "/path/to/test/document.txt"
-    assert doc.data == "This is test content"
-
-
-def test_router_with_documents():
-    """Test SwarmRouter with document configuration."""
-    sample_agents = create_sample_agents()
-    documents = [
-        Document(file_path="/path/to/doc1.txt", data="Content1"),
-        Document(file_path="/path/to/doc2.txt", data="Content2"),
-    ]
-
-    router = SwarmRouter(
-        agents=sample_agents,
-        documents=documents,
-    )
-
-    assert len(router.documents) == 2
-    assert router.documents[0].file_path == "/path/to/doc1.txt"
-    assert router.documents[1].file_path == "/path/to/doc2.txt"
 
 
 # ============================================================================
@@ -209,7 +107,6 @@ def test_swarm_router_config_creation():
         description="Test configuration",
         swarm_type="SequentialWorkflow",
         rearrange_flow=None,
-        rules=None,
         multi_agent_collab_prompt=True,
         task="Test task",
     )
@@ -228,7 +125,6 @@ def test_router_with_config():
         description="Router from config",
         swarm_type="SequentialWorkflow",
         rearrange_flow=None,
-        rules="Test rules",
         multi_agent_collab_prompt=False,
         task="Test task",
     )
@@ -237,7 +133,6 @@ def test_router_with_config():
     assert config.name == "config-router"
     assert config.description == "Router from config"
     assert config.swarm_type == "SequentialWorkflow"
-    assert config.rules == "Test rules"
 
     # Create router with matching parameters
     router = SwarmRouter(
@@ -245,13 +140,11 @@ def test_router_with_config():
         description=config.description,
         agents=sample_agents,
         swarm_type=config.swarm_type,
-        rules=config.rules,
     )
 
     assert router.name == config.name
     assert router.description == config.description
     assert router.swarm_type == config.swarm_type
-    assert router.rules == config.rules
 
 
 # ============================================================================
@@ -411,23 +304,6 @@ def test_swarm_router_config_error():
     assert str(error) == "Config error message"
 
 
-def test_invalid_swarm_type():
-    """Test router with invalid swarm type."""
-    sample_agents = create_sample_agents()
-
-    # This should not raise an error during initialization
-    router = SwarmRouter(
-        agents=sample_agents,
-        swarm_type="InvalidSwarmType",
-    )
-
-    # But should raise ValueError during execution when creating swarm
-    with pytest.raises(
-        ValueError, match="Invalid swarm type: InvalidSwarmType"
-    ):
-        router.run("Test task")
-
-
 # ============================================================================
 # Integration Tests
 # ============================================================================
@@ -485,5 +361,866 @@ def test_router_reconfiguration():
     assert result is not None
 
 
+# ============================================================================
+# Swarm Type Coverage — one .run() per supported swarm_type
+# ============================================================================
+#
+# These tests exercise the SwarmRouter dispatch end-to-end for every type the
+# router claims to support. Each test uses minimal config and a trivial task
+# to keep LLM cost down; we only assert that .run() returns something, since
+# correctness of each underlying swarm is its own test file's responsibility.
+
+
+def test_run_with_agent_rearrange():
+    """SwarmRouter dispatches to AgentRearrange."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="AgentRearrange",
+        rearrange_flow="ResearchAgent -> CodeAgent",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_mixture_of_agents():
+    """SwarmRouter dispatches to MixtureOfAgents."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="MixtureOfAgents",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_sequential_workflow_type():
+    """SwarmRouter dispatches to SequentialWorkflow."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="SequentialWorkflow",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_concurrent_workflow():
+    """SwarmRouter dispatches to ConcurrentWorkflow."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="ConcurrentWorkflow",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_group_chat():
+    """SwarmRouter dispatches to GroupChat."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="GroupChat",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_multi_agent_router():
+    """SwarmRouter dispatches to MultiAgentRouter."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="MultiAgentRouter",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_hierarchical_swarm():
+    """SwarmRouter dispatches to HierarchicalSwarm."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="HierarchicalSwarm",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_auto_is_rejected_at_construction():
+    from swarms.structs.swarm_router import (
+        SwarmRouterConfigError,
+        SwarmType,
+    )
+
+    assert "auto" not in get_args(SwarmType)
+
+    with pytest.raises(SwarmRouterConfigError):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="auto",
+            max_loops=1,
+            verbose=False,
+        )
+
+
+def test_run_with_majority_voting():
+    """SwarmRouter dispatches to MajorityVoting."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="MajorityVoting",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_council_as_judge():
+    """SwarmRouter dispatches to CouncilAsAJudge."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="CouncilAsAJudge",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_run_with_heavy_swarm():
+    """SwarmRouter dispatches to HeavySwarm."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="HeavySwarm",
+        heavy_swarm_max_loops=1,
+        heavy_swarm_swarm_show_output=False,
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+def test_batched_grid_workflow_is_rejected_at_construction():
+    """BatchedGridWorkflow is not routable and is not offered as a SwarmType."""
+    assert "BatchedGridWorkflow" not in get_args(SwarmType)
+
+    with pytest.raises(SwarmRouterConfigError):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="BatchedGridWorkflow",
+            max_loops=1,
+            verbose=False,
+        )
+
+
+def test_run_with_llm_council():
+    """SwarmRouter dispatches to LLMCouncil."""
+    sample_agents = create_sample_agents()
+
+    router = SwarmRouter(
+        agents=sample_agents,
+        swarm_type="LLMCouncil",
+        max_loops=1,
+        verbose=False,
+    )
+
+    result = router.run("What is 1+1?")
+    assert result is not None
+
+
+class TestConcurrentRun:
+    """``concurrent_run`` runs a task list in parallel, in task order."""
+
+    @staticmethod
+    def _router(run_impl):
+        from unittest.mock import patch
+
+        from swarms import Agent, SwarmRouter
+
+        with patch("swarms.agents.tool_manager.LiteLLM"):
+            agent = Agent(
+                agent_name="A",
+                model_name="gpt-5.4",
+                max_loops=1,
+                autosave=False,
+                print_on=False,
+            )
+            router = SwarmRouter(
+                name="r",
+                agents=[agent],
+                swarm_type="SequentialWorkflow",
+                autosave=False,
+            )
+        router.run = run_impl
+        return router
+
+    def test_returns_one_result_per_task(self):
+        r = self._router(lambda task=None, **kw: f"ran:{task}")
+        assert r.concurrent_run(["a", "b"]) == ["ran:a", "ran:b"]
+
+    def test_results_are_in_task_order(self):
+        """The slowest task is first; it must still come back first."""
+        import time
+
+        def slow_first(task=None, **kw):
+            time.sleep(0.05 if task == "0" else 0)
+            return task
+
+        r = self._router(slow_first)
+        tasks = [str(i) for i in range(5)]
+        assert r.concurrent_run(tasks) == tasks
+
+    def test_tasks_actually_run_in_parallel(self):
+        import time
+
+        def slow(task=None, **kw):
+            time.sleep(0.05)
+            return task
+
+        r = self._router(slow)
+        start = time.time()
+        r.concurrent_run([str(i) for i in range(6)])
+        assert time.time() - start < 0.2
+
+    def test_imgs_are_paired_with_tasks_by_position(self):
+        seen = []
+
+        def spy(task=None, img=None, **kw):
+            seen.append((task, img))
+            return task
+
+        r = self._router(spy)
+        r.concurrent_run(["a", "b"], imgs=["one.png", "two.png"])
+        assert sorted(seen) == [
+            ("a", "one.png"),
+            ("b", "two.png"),
+        ]
+
+    def test_mismatched_imgs_length_raises(self):
+        """Zipping would silently drop the extra task instead."""
+        r = self._router(lambda task=None, **kw: task)
+        with pytest.raises(ValueError, match="one image per task"):
+            r.concurrent_run(["a", "b"], imgs=["only-one.png"])
+
+    def test_empty_task_list(self):
+        r = self._router(lambda task=None, **kw: task)
+        assert r.concurrent_run([]) == []
+
+    def test_exceptions_propagate(self):
+        def boom(task=None, **kw):
+            raise ValueError("nope")
+
+        r = self._router(boom)
+        with pytest.raises(ValueError, match="nope"):
+            r.concurrent_run(["a"])
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# ============================================================================
+# multi_agent_collab_prompt — delivered, not welded onto the caller's agents
+# ============================================================================
+
+
+def _collab_recording_agents(names):
+    """Agents whose run() records the system turns it was handed."""
+    from swarms import Agent
+
+    calls = []
+    agents = []
+    for name in names:
+        agent = Agent(
+            agent_name=name,
+            system_prompt=f"You are {name}.",
+            model_name="gpt-5.4",
+            max_loops=1,
+            verbose=False,
+        )
+
+        def _make(agent_obj, agent_name):
+            def _run(task=None, messages=None, **kwargs):
+                calls.append(
+                    {
+                        "agent": agent_name,
+                        "messages": list(messages or []),
+                    }
+                )
+                answer = f"{agent_name}-answer"
+                agent_obj.short_memory.add(
+                    role=agent_name, content=answer
+                )
+                return answer
+
+            return _run
+
+        agent.run = _make(agent, name)
+        agents.append(agent)
+    return agents, calls
+
+
+def test_collab_prompt_never_mutates_the_callers_agents():
+    """Building routers must not append to the caller's system_prompt.
+
+    The preamble used to be appended with ``+=`` at construction. It never
+    reached the model (the prompt is baked into the LLM when the agent is
+    built) and it accumulated once per router.
+    """
+    agents, _ = _collab_recording_agents(["A", "B"])
+    originals = [a.system_prompt for a in agents]
+
+    SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        multi_agent_collab_prompt=True,
+    )
+    SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        multi_agent_collab_prompt=True,
+    )
+
+    assert [a.system_prompt for a in agents] == originals
+
+
+def test_collab_prompt_is_delivered_as_a_system_turn():
+    """The preamble must actually reach the agent at run time."""
+    from swarms.prompts.multi_agent_collab_prompt import (
+        MULTI_AGENT_COLLAB_PROMPT_TWO,
+    )
+
+    agents, calls = _collab_recording_agents(["A", "B"])
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        multi_agent_collab_prompt=True,
+    )
+    router.run("Go.")
+
+    delivered = [
+        m["content"]
+        for call in calls
+        for m in call["messages"]
+        if m["role"] == "system"
+    ]
+    assert any(
+        MULTI_AGENT_COLLAB_PROMPT_TWO in text for text in delivered
+    )
+    assert [a.system_prompt for a in agents] == [
+        "You are A.",
+        "You are B.",
+    ]
+
+
+def test_collab_prompt_warns_when_the_swarm_type_cannot_deliver_it():
+    """A flag that does nothing must say so, regardless of verbose."""
+    agents, _ = _collab_recording_agents(["A", "B"])
+
+    with patch("swarms.structs.swarm_router.logger.warning") as warn:
+        SwarmRouter(
+            agents=agents,
+            swarm_type="ConcurrentWorkflow",
+            multi_agent_collab_prompt=True,
+            verbose=False,
+        )
+
+    assert warn.called
+    assert "multi_agent_collab_prompt is ignored" in str(
+        warn.call_args
+    )
+
+
+def test_list_all_agents_does_not_crash_at_construction():
+    """The swarm is built lazily, so setup() must not reach for it.
+
+    ``setup()`` used to call ``list_agents_to_eachother()``, which reads
+    ``self.swarm`` — created only on the first ``run()`` — so constructing a
+    router with ``list_all_agents=True`` raised ``AttributeError``.
+    """
+    agents, _ = _collab_recording_agents(["A", "B"])
+
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        list_all_agents=True,
+    )
+
+    assert router.swarm is None
+
+
+def test_list_all_agents_delivers_the_roster_as_a_system_turn():
+    """The roster reaches agents, and the caller's agents are untouched.
+
+    It cannot be seeded into the shared conversation: structures reset that
+    conversation per task, which would discard it before any agent ran.
+    """
+    agents, calls = _collab_recording_agents(["A", "B"])
+    originals = [a.system_prompt for a in agents]
+
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        list_all_agents=True,
+        multi_agent_collab_prompt=False,
+    )
+    router.run("Go.")
+
+    delivered = [
+        m["content"]
+        for call in calls
+        for m in call["messages"]
+        if m["role"] == "system"
+    ]
+    assert any("Total Agents" in text for text in delivered)
+    assert [a.system_prompt for a in agents] == originals
+
+
+def test_conversation_points_at_the_live_swarm_conversation_after_run():
+    """``router.conversation`` must be the conversation the run actually used."""
+    agents, _ = _collab_recording_agents(["A", "B"])
+    router = SwarmRouter(
+        agents=agents, swarm_type="SequentialWorkflow", max_loops=1
+    )
+
+    assert router.conversation is None
+    router.run("Go.")
+
+    roles = [
+        m["role"] for m in router.conversation.conversation_history
+    ]
+    assert "A" in roles and "B" in roles
+
+
+# ============================================================================
+# fallback_swarms
+# ============================================================================
+
+
+class _FakeSwarm:
+    """Stands in for any swarm the factory would build."""
+
+    def __init__(self, name, error=None):
+        self.name = name
+        self.error = error
+        self.calls = []
+        self.conversation = None
+        # SequentialWorkflow exposes its conversation via agent_rearrange.
+        self.agent_rearrange = self
+
+    def run(self, **kwargs):
+        self.calls.append(kwargs)
+        if self.error is not None:
+            raise self.error
+        return f"{self.name}-result"
+
+
+def _fallback_router(primary_error=None, fallbacks=None, **outcomes):
+    """A router whose factory builds ``_FakeSwarm``s instead of real swarms.
+
+    ``outcomes`` maps swarm type -> exception to raise from ``run()`` (or
+    ``None`` to succeed). Types not named succeed.
+    """
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        agent = Agent(
+            agent_name="A",
+            model_name="gpt-5.4",
+            max_loops=1,
+            autosave=False,
+            print_on=False,
+        )
+        router = SwarmRouter(
+            name="fallback-router",
+            agents=[agent],
+            swarm_type="SequentialWorkflow",
+            fallback_swarms=fallbacks,
+            autosave=False,
+        )
+    outcomes.setdefault("SequentialWorkflow", primary_error)
+    built = {}
+
+    def _factory_for(swarm_type):
+        def _build(*args, **kwargs):
+            built[swarm_type] = _FakeSwarm(
+                swarm_type, outcomes.get(swarm_type)
+            )
+            return built[swarm_type]
+
+        return _build
+
+    router._swarm_factory = {
+        swarm_type: _factory_for(swarm_type)
+        for swarm_type in router._swarm_factory
+    }
+    return router, built
+
+
+def test_fallback_is_not_touched_when_the_primary_succeeds():
+    router, built = _fallback_router(
+        fallbacks=["ConcurrentWorkflow", "GroupChat"]
+    )
+
+    assert router.run("go") == "SequentialWorkflow-result"
+    assert list(built) == ["SequentialWorkflow"]
+    assert router.active_swarm_type == "SequentialWorkflow"
+    assert router.fallback_attempts == []
+
+
+def test_primary_failure_runs_the_first_fallback():
+    boom = RuntimeError("primary down")
+    router, built = _fallback_router(
+        primary_error=boom,
+        fallbacks=["ConcurrentWorkflow", "GroupChat"],
+    )
+
+    assert router.run("go") == "ConcurrentWorkflow-result"
+    assert list(built) == ["SequentialWorkflow", "ConcurrentWorkflow"]
+    assert router.active_swarm_type == "ConcurrentWorkflow"
+    assert router.swarm is built["ConcurrentWorkflow"]
+    assert router.fallback_attempts == [
+        {"swarm_type": "SequentialWorkflow", "error": boom}
+    ]
+
+
+def test_fallbacks_are_tried_in_list_order():
+    router, built = _fallback_router(
+        primary_error=RuntimeError("1"),
+        fallbacks=[
+            "ConcurrentWorkflow",
+            "GroupChat",
+            "MajorityVoting",
+        ],
+        ConcurrentWorkflow=RuntimeError("2"),
+        GroupChat=RuntimeError("3"),
+    )
+
+    assert router.run("go") == "MajorityVoting-result"
+    assert [a["swarm_type"] for a in router.fallback_attempts] == [
+        "SequentialWorkflow",
+        "ConcurrentWorkflow",
+        "GroupChat",
+    ]
+    assert "MajorityVoting" in built
+
+
+def test_every_swarm_failing_raises_with_the_whole_chain():
+    last = ValueError("last one")
+    router, _ = _fallback_router(
+        primary_error=RuntimeError("first"),
+        fallbacks=["ConcurrentWorkflow"],
+        ConcurrentWorkflow=last,
+    )
+
+    with pytest.raises(SwarmRouterRunError) as excinfo:
+        router.run("go")
+
+    message = str(excinfo.value)
+    assert "SequentialWorkflow: RuntimeError: first" in message
+    assert "ConcurrentWorkflow: ValueError: last one" in message
+    assert excinfo.value.__cause__ is last
+    assert len(router.fallback_attempts) == 2
+
+
+def test_without_fallbacks_the_original_error_propagates_unchanged():
+    boom = KeyError("unchanged")
+    router, _ = _fallback_router(primary_error=boom)
+
+    with pytest.raises(KeyError) as excinfo:
+        router.run("go")
+
+    assert excinfo.value is boom
+    assert router.fallback_attempts == []
+
+
+def test_a_swarm_that_fails_to_construct_also_falls_back():
+    router, built = _fallback_router(fallbacks=["ConcurrentWorkflow"])
+
+    def _broken_factory(*args, **kwargs):
+        raise TypeError("cannot build")
+
+    router._swarm_factory["SequentialWorkflow"] = _broken_factory
+
+    assert router.run("go") == "ConcurrentWorkflow-result"
+    assert router.fallback_attempts[0]["swarm_type"] == (
+        "SequentialWorkflow"
+    )
+    assert isinstance(
+        router.fallback_attempts[0]["error"], RuntimeError
+    )
+
+
+def test_the_run_payload_reaches_the_fallback_swarm():
+    router, built = _fallback_router(
+        primary_error=RuntimeError("x"),
+        fallbacks=["ConcurrentWorkflow"],
+    )
+
+    router.run("go", img="chart.png")
+
+    assert built["ConcurrentWorkflow"].calls == [
+        {"task": "go", "img": "chart.png"}
+    ]
+
+
+def test_each_swarm_type_is_cached_under_its_own_key():
+    router, built = _fallback_router(
+        primary_error=RuntimeError("x"),
+        fallbacks=["ConcurrentWorkflow"],
+    )
+
+    router.run("one")
+    router.run("two")
+
+    # Built once each; the second run reused both cached swarms.
+    assert list(built) == ["SequentialWorkflow", "ConcurrentWorkflow"]
+    assert len(built["ConcurrentWorkflow"].calls) == 2
+    assert {key[0] for key in router._swarm_cache} == {
+        "SequentialWorkflow",
+        "ConcurrentWorkflow",
+    }
+
+
+def test_fallback_swarms_must_be_a_list():
+    with pytest.raises(
+        SwarmRouterConfigError, match="must be a list"
+    ):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="SequentialWorkflow",
+            fallback_swarms="ConcurrentWorkflow",
+        )
+
+
+def test_fallback_swarms_entries_must_be_valid_swarm_types():
+    with pytest.raises(
+        SwarmRouterConfigError, match="not a valid swarm type"
+    ):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="SequentialWorkflow",
+            fallback_swarms=["ConcurrentWorkflow", "NoSuchSwarm"],
+        )
+
+
+def test_agent_rearrange_fallback_requires_a_flow():
+    with pytest.raises(
+        SwarmRouterConfigError, match="requires rearrange_flow"
+    ):
+        SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type="SequentialWorkflow",
+            fallback_swarms=["AgentRearrange"],
+        )
+
+
+def test_config_model_accepts_fallback_swarms():
+    config = SwarmRouterConfig(
+        name="r",
+        description="d",
+        swarm_type="SequentialWorkflow",
+        rearrange_flow=None,
+        multi_agent_collab_prompt=False,
+        fallback_swarms=["ConcurrentWorkflow"],
+        task="t",
+    )
+    assert config.fallback_swarms == ["ConcurrentWorkflow"]
+
+
+# ============================================================================
+# usage
+# ============================================================================
+
+
+def _agent_with_usage(name, input_tokens, output_tokens):
+    """An offline agent whose lifetime usage is set directly."""
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-5.4",
+            max_loops=1,
+            autosave=False,
+            print_on=False,
+        )
+    agent._usage = {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": input_tokens + output_tokens,
+    }
+    return agent
+
+
+def _usage_router(agents):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        return SwarmRouter(
+            name="usage-router",
+            agents=agents,
+            swarm_type="SequentialWorkflow",
+            autosave=False,
+        )
+
+
+def test_usage_starts_at_zero():
+    router = _usage_router([_agent_with_usage("A", 0, 0)])
+    assert router.usage == {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 0,
+    }
+
+
+def test_usage_sums_the_configured_agents():
+    router = _usage_router(
+        [
+            _agent_with_usage("A", 100, 10),
+            _agent_with_usage("B", 50, 5),
+        ]
+    )
+    assert router.usage == {
+        "input_tokens": 150,
+        "output_tokens": 15,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 165,
+    }
+
+
+def test_usage_includes_agents_a_swarm_holds_on_its_own():
+    """A HierarchicalSwarm director or an MoA aggregator is not in
+    ``router.agents`` but its spend is part of the run."""
+    from types import SimpleNamespace
+
+    worker = _agent_with_usage("Worker", 100, 10)
+    director = _agent_with_usage("Director", 30, 3)
+    router = _usage_router([worker])
+    router._swarm_cache["fake"] = SimpleNamespace(
+        director=director, agents=[worker], conversation=None
+    )
+
+    assert router.usage["input_tokens"] == 130
+    assert router.usage["output_tokens"] == 13
+
+
+def test_usage_counts_a_shared_agent_once():
+    agent = _agent_with_usage("A", 100, 10)
+    router = _usage_router([agent])
+    router._swarm_cache["fake"] = type("S", (), {"agents": [agent]})()
+
+    assert router.usage["input_tokens"] == 100
+
+
+def _stub_council_run(agent, reply, calls):
+    def _run(task=None, messages=None, **kwargs):
+        calls.append(
+            {
+                "agent": agent.agent_name,
+                "task": task,
+                "messages": list(messages or []),
+            }
+        )
+        return reply
+
+    agent.run = _run
+
+
+def test_council_as_judge_aggregator_receives_typed_turns():
+    from swarms.structs.council_as_judge import CouncilAsAJudge
+
+    council = CouncilAsAJudge(
+        model_name="gpt-4o-mini",
+        random_model_name=False,
+        aggregation_model_name="gpt-4o-mini",
+        judge_agent_model_name="gpt-4o-mini",
+    )
+    calls = []
+    for agent in council.judge_agents.values():
+        _stub_council_run(
+            agent, f"{agent.agent_name}-rationale", calls
+        )
+    _stub_council_run(council.aggregator_agent, "final report", calls)
+
+    council.run(task="Evaluate this response for quality.")
+
+    call = next(
+        c
+        for c in calls
+        if c["agent"] == council.aggregator_agent.agent_name
+    )
+    contents = [m["content"] for m in call["messages"]] + [
+        str(call["task"])
+    ]
+    for agent in council.judge_agents.values():
+        assert any(
+            f"{agent.agent_name}: {agent.agent_name}-rationale"
+            in text
+            for text in contents
+        ), f"no turn attributed to {agent.agent_name}: {contents}"
+
+
+def test_council_as_judge_judges_use_council_judge_model_name():
+    router = SwarmRouter(
+        swarm_type="CouncilAsAJudge",
+        agents=create_sample_agents(),
+        council_judge_model_name="gpt-4o-mini",
+    )
+    council = router._create_council_as_judge()
+
+    assert {
+        agent.model_name for agent in council.judge_agents.values()
+    } == {"gpt-4o-mini"}
+
+
+def test_call_and_batch_run_do_not_send_an_absent_imgs():
+    router, built = _fallback_router()
+
+    router("go")
+    router.batch_run(["go"])
+
+    assert built["SequentialWorkflow"].calls == [
+        {"task": "go"},
+        {"task": "go"},
+    ]

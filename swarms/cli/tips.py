@@ -20,9 +20,7 @@ from typing import Dict, Iterable, List, Optional
 from rich.text import Text
 
 
-# ---------------------------------------------------------------------------
-# Tip pools — CLI-focused only
-# ---------------------------------------------------------------------------
+# Tip pools, CLI-focused only.
 
 COMMAND_TIPS: List[str] = [
     "Scaffold a new project with [bold]swarms init[/bold] — drops a .env and workspace dir for you",
@@ -111,7 +109,7 @@ ENV_TIPS: List[str] = [
     "Run [bold]swarms setup-check --verbose[/bold] to spot missing env vars",
     "Set [bold]OPENAI_API_KEY[/bold] and [bold]ANTHROPIC_API_KEY[/bold] together — Swarms picks per-agent",
     "Override the workspace per command with [bold]WORKSPACE_DIR=/tmp/runX swarms agent ...[/bold]",
-    "[bold]~/.swarms/[/bold] holds conversation logs and saved agent state",
+    "Conversations save to [bold]./conversations/[/bold], agent state and logs to [bold]WORKSPACE_DIR[/bold]; [bold]~/.swarms/[/bold] only caches MCP OAuth tokens",
 ]
 
 MODEL_FLAG_TIPS: List[str] = [
@@ -132,9 +130,7 @@ COMMUNITY_TIPS: List[str] = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Category registry
-# ---------------------------------------------------------------------------
+# Category registry.
 
 TIP_CATEGORIES: Dict[str, List[str]] = {
     "commands": COMMAND_TIPS,
@@ -148,12 +144,9 @@ TIP_CATEGORIES: Dict[str, List[str]] = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Random labels — Claude-Code-style variety
-# ---------------------------------------------------------------------------
+# Random labels.
 
-# (emoji, label, accent style). Sampling these gives the startup banner the
-# "feels fresh every time" quality.
+# (emoji, label, accent style), sampled so the startup banner varies
 TIP_LABELS: List[tuple[str, str, str]] = [
     ("※", "Tip", "bold red"),
     ("⚡", "Pro tip", "bold yellow"),
@@ -166,9 +159,7 @@ TIP_LABELS: List[tuple[str, str, str]] = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
+# Public API.
 
 
 def _all_tips(category: Optional[str] = None) -> List[str]:

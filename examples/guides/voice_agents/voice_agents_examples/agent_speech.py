@@ -5,7 +5,7 @@ from voice_agents.main import stream_tts_openai
 agent = Agent(
     agent_name="Quantitative-Trading-Agent",
     agent_description="Advanced quantitative trading and algorithmic analysis agent",
-    model_name="gpt-4.1",
+    model_name="gpt-5.4",
     dynamic_temperature_enabled=True,
     max_loops=1,
     dynamic_context_window=True,

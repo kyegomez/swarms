@@ -1,63 +1,36 @@
 import concurrent.futures
 import json
 import os
-import random
-import time
 import traceback
-from functools import lru_cache
 from typing import Dict, List, Optional
 
-from loguru import logger
-from rich.console import Console
-from rich.panel import Panel
-from rich.progress import (
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-    TimeElapsedColumn,
+from swarms.agents.heavy_swarm_agents import (
+    SwarmVariant,
+    build_heavy_swarm_agents,
 )
-from rich.table import Table
-
-from swarms.structs.agent import Agent
+from swarms.prompts.heavy_swarm_prompts import (
+    grok_heavy_schema,
+    grok_schema,
+    schema,
+)
+from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
+from swarms.structs.serialization import SerializableMixin
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
+from swarms.utils.heavy_swarm_dashboard import HeavySwarmDashboard
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.utils.litellm_wrapper import LiteLLM
-from swarms.prompts.heavy_swarm_prompts import (
-    RESEARCH_AGENT_PROMPT,
-    ANALYSIS_AGENT_PROMPT,
-    ALTERNATIVES_AGENT_PROMPT,
-    VERIFICATION_AGENT_PROMPT,
-    SYNTHESIS_AGENT_PROMPT,
-    CAPTAIN_SWARM_PROMPT,
-    HARPER_PROMPT,
-    BENJAMIN_PROMPT,
-    LUCAS_PROMPT,
-    GROK_HEAVY_CAPTAIN_PROMPT,
-    HARPER_HEAVY_PROMPT,
-    BENJAMIN_HEAVY_PROMPT,
-    LUCAS_HEAVY_PROMPT,
-    OLIVIA_PROMPT,
-    JAMES_PROMPT,
-    CHARLOTTE_PROMPT,
-    HENRY_PROMPT,
-    MIA_PROMPT,
-    WILLIAM_PROMPT,
-    SEBASTIAN_PROMPT,
-    JACK_PROMPT,
-    OWEN_PROMPT,
-    LUNA_PROMPT,
-    ELIZABETH_PROMPT,
-    NOAH_PROMPT,
-    schema,
-    grok_heavy_schema,
+from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
 )
 
 
-class HeavySwarm:
+class HeavySwarm(SerializableMixin):
     """
         HeavySwarm is a sophisticated multi-agent orchestration system that
         decomposes complex tasks into specialized questions and executes them
@@ -92,8 +65,6 @@ class HeavySwarm:
             description (str): Description of the swarm's purpose
             agents (Dict[str, Agent]): Dictionary of specialized agent instances (created internally)
             timeout (int): Maximum execution time per agent in seconds
-            aggregation_strategy (str): Strategy for result aggregation (currently 'synthesis')
-            loops_per_agent (int): Number of execution loops per agent
             question_agent_model_name (str): Model name for question generation
             worker_model_name (str): Model name for specialized worker agents
             verbose (bool): Enable detailed logging output
@@ -103,6 +74,9 @@ class HeavySwarm:
             max_loops (int): Maximum number of execution loops for iterative refinement
             conversation (Conversation): Conversation history tracker
             console (Console): Rich console for dashboard output
+            usage (dict): Provider token usage summed over question
+                generation and every worker and synthesis agent. See
+                :attr:`usage`.
 
         Example:
             >>> swarm = HeavySwarm(
@@ -117,6 +91,13 @@ class HeavySwarm:
             >>> # The swarm will run 3 iterations, each building upon the previous results
     """
 
+    _to_dict_exclude = (
+        "agents",
+        "conversation",
+        "dashboard",
+        "worker_tools",
+    )
+
     def __init__(
         self,
         name: str = "HeavySwarm",
@@ -124,21 +105,16 @@ class HeavySwarm:
             "A swarm of agents that can analyze a task and generate "
             "specialized questions for each agent role"
         ),
-        timeout: int = 300,
-        aggregation_strategy: str = "synthesis",
-        loops_per_agent: int = 1,
+        timeout: int = 900,
         question_agent_model_name: str = "gpt-5.4",
         worker_model_name: str = "gpt-5.4",
         verbose: bool = False,
-        max_workers: int = int(os.cpu_count() * 0.9),
         show_dashboard: bool = False,
         agent_prints_on: bool = False,
         output_type: str = "dict-all-except-first",
         worker_tools: Optional[tool_type] = None,
-        random_loops_per_agent: bool = False,
-        max_loops: int = 1,
-        use_grok_agents: bool = False,
-        use_grok_heavy: bool = False,
+        max_loops: Optional[int] = 1,
+        variant: SwarmVariant = "default",
     ) -> None:
         """
         Initialize the HeavySwarm with configuration parameters.
@@ -150,17 +126,11 @@ class HeavySwarm:
             agents (List[Agent], optional): Pre-configured agent list (currently unused as agents
                 are created internally). Defaults to None.
             timeout (int, optional): Maximum execution time per agent in seconds. Defaults to 300.
-            aggregation_strategy (str, optional): Strategy for aggregating results. Currently only
-                'synthesis' is supported. Defaults to "synthesis".
-            loops_per_agent (int, optional): Number of execution loops each
-                agent should perform. Must be greater than 0. Defaults to 1.
             question_agent_model_name (str, optional): Language model for
                 question generation. Defaults to "gpt-5.4".
             worker_model_name (str, optional): Language model for specialized
                 worker agents. Defaults to "gpt-5.4".
             verbose (bool, optional): Enable detailed logging and debug output. Defaults to False.
-            max_workers (int, optional): Maximum concurrent workers for
-                parallel execution. Defaults to 90% of CPU count.
             show_dashboard (bool, optional): Enable rich dashboard with
                 progress visualization. Defaults to False.
             agent_prints_on (bool, optional): Enable individual agent
@@ -169,15 +139,18 @@ class HeavySwarm:
                 history. Defaults to "dict-all-except-first".
             worker_tools (tool_type, optional): Tools available to worker
                 agents for enhanced functionality. Defaults to None.
-            random_loops_per_agent (bool, optional): Enable random number of
-                loops per agent (1-10 range). Defaults to False.
             max_loops (int, optional): Maximum number of execution loops for
                 the entire swarm. Each loop builds upon previous results for
                 iterative refinement. Defaults to 1.
+            variant (Literal["default", "medium", "heavy"], optional): Swarm
+                architecture to instantiate. ``"default"`` gives 5 agents
+                (Research / Analysis / Alternatives / Verification / Synthesis),
+                ``"medium"`` gives 4 Grok agents (Captain + Harper / Benjamin /
+                Lucas), and ``"heavy"`` gives 16 agents (Grok + 15 domain
+                specialists). Defaults to ``"default"``.
 
         Raises:
-            ValueError: If loops_per_agent is 0 or negative
-            ValueError: If required model names are None
+            ValueError: If required model names are None or ``variant`` is unknown.
 
         Note:
             The swarm automatically performs reliability checks during initialization
@@ -189,23 +162,22 @@ class HeavySwarm:
         self.name = name
         self.description = description
         self.timeout = timeout
-        self.aggregation_strategy = aggregation_strategy
-        self.loops_per_agent = loops_per_agent
         self.question_agent_model_name = question_agent_model_name
         self.worker_model_name = worker_model_name
         self.verbose = verbose
-        self.max_workers = max_workers
+        self.max_workers = int(os.cpu_count() * 0.9)
         self.show_dashboard = show_dashboard
         self.agent_prints_on = agent_prints_on
         self.output_type = output_type
         self.worker_tools = worker_tools
-        self.random_loops_per_agent = random_loops_per_agent
         self.max_loops = max_loops
-        self.use_grok_agents = use_grok_agents
-        self.use_grok_heavy = use_grok_heavy
+        self.variant = variant
 
-        self.conversation = Conversation()
-        self.console = Console()
+        self.conversation = Conversation(
+            time_enabled=True, message_id_on=True
+        )
+        self.dashboard = HeavySwarmDashboard()
+        self._question_usage = empty_usage()
 
         self.agents = self.create_agents()
 
@@ -214,17 +186,8 @@ class HeavySwarm:
 
         self.reliability_check()
 
-    def handle_worker_agent_loops(self) -> int:
-        """
-        Handle the loops per agent for the worker agents.
-        """
-        loops = None
-
-        if self.random_loops_per_agent:
-            loops = random.randint(1, 10)
-        else:
-            loops = self.loops_per_agent
-        return loops
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
 
     def show_swarm_info(self):
         """
@@ -250,39 +213,14 @@ class HeavySwarm:
         if not self.show_dashboard:
             return
 
-        # Create swarm info table with Swarms styling
-        info_table = Table(
-            title="⚡ HEAVYSWARM CONFIGURATION",
-            show_header=True,
-            header_style="bold red",
+        self.dashboard.show_config(
+            name=self.name,
+            description=self.description,
+            timeout=self.timeout,
+            question_model=self.question_agent_model_name,
+            worker_model=self.worker_model_name,
+            max_workers=self.max_workers,
         )
-        info_table.add_column("Parameter", style="white", width=25)
-        info_table.add_column("Value", style="bright_white", width=40)
-
-        info_table.add_row("Swarm Name", self.name)
-        info_table.add_row("Description", self.description)
-        info_table.add_row("Timeout", f"{self.timeout}s")
-        info_table.add_row(
-            "Loops per Agent", str(self.loops_per_agent)
-        )
-        info_table.add_row(
-            "Question Model", self.question_agent_model_name
-        )
-        info_table.add_row("Worker Model", self.worker_model_name)
-        info_table.add_row("Max Workers", str(self.max_workers))
-        info_table.add_row(
-            "Aggregation Strategy", self.aggregation_strategy
-        )
-
-        # Display dashboard with professional Swarms styling
-        self.console.print(
-            Panel(
-                info_table,
-                title="[bold red]HEAVYSWARM SYSTEM[/bold red]",
-                border_style="red",
-            )
-        )
-        self.console.print()
 
     def reliability_check(self):
         """
@@ -293,7 +231,6 @@ class HeavySwarm:
         configuration errors and provides clear error messages for any issues found.
 
         Validation checks include:
-        - loops_per_agent: Must be greater than 0 to ensure agents execute
         - worker_model_name: Must be set for agent execution
         - question_agent_model_name: Must be set for question generation
 
@@ -302,7 +239,6 @@ class HeavySwarm:
         - Without dashboard: Provides basic console output with completion confirmation
 
         Raises:
-            ValueError: If loops_per_agent is 0 or negative (agents won't execute)
             ValueError: If worker_model_name is None (agents can't be created)
             ValueError: If question_agent_model_name is None (questions can't be generated)
 
@@ -310,86 +246,25 @@ class HeavySwarm:
             This method is automatically called during __init__ to ensure the swarm
             is properly configured before any operations begin.
         """
-        if self.use_grok_agents and self.use_grok_heavy:
-            raise ValueError(
-                "use_grok_agents and use_grok_heavy are mutually exclusive. "
-                "Set only one to True."
-            )
-
         if self.show_dashboard:
-            with Progress(
-                SpinnerColumn(),
-                TextColumn(
-                    "[progress.description]{task.description}"
-                ),
-                transient=True,
-                console=self.console,
-            ) as progress:
-                task = progress.add_task(
-                    "[red]RUNNING RELIABILITY CHECKS...", total=4
-                )
-
-                # Check loops_per_agent
-                time.sleep(0.5)
-                if self.loops_per_agent == 0:
-                    raise ValueError(
-                        "loops_per_agent must be greater than 0. This parameter is used to determine how many times each agent will run. If it is 0, the agent will not run at all."
-                    )
-                progress.update(
-                    task,
-                    advance=1,
-                    description="[white]✓ LOOPS PER AGENT VALIDATED",
-                )
-
-                # Check worker_model_name
-                time.sleep(0.5)
+            with self.dashboard.reliability_progress(total=3) as step:
                 if self.worker_model_name is None:
                     raise ValueError(
                         "worker_model_name must be set. This parameter is used to determine the model that will be used to execute the agents."
                     )
-                progress.update(
-                    task,
-                    advance=1,
-                    description="[white]✓ WORKER MODEL VALIDATED",
-                )
+                step("[white]✓ WORKER MODEL VALIDATED")
 
-                # Check question_agent_model_name
-                time.sleep(0.5)
                 if self.question_agent_model_name is None:
                     raise ValueError(
                         "question_agent_model_name must be set. This parameter is used to determine the model that will be used to generate the questions."
                     )
-                progress.update(
-                    task,
-                    advance=1,
-                    description="[white]✓ QUESTION MODEL VALIDATED",
-                )
+                step("[white]✓ QUESTION MODEL VALIDATED")
 
-                # Final validation
-                time.sleep(0.5)
-                progress.update(
-                    task,
-                    advance=1,
-                    description="[bold white]✓ ALL RELIABILITY CHECKS PASSED!",
-                )
-                time.sleep(0.8)  # Let user see the final message
+                step("[bold white]✓ ALL RELIABILITY CHECKS PASSED!")
 
-            self.console.print(
-                Panel(
-                    "[bold red]✅ HEAVYSWARM RELIABILITY CHECK COMPLETE[/bold red]\n"
-                    "[white]All systems validated and ready for operation[/white]",
-                    title="[bold red]SYSTEM STATUS[/bold red]",
-                    border_style="red",
-                )
-            )
-            self.console.print()
+            self.dashboard.show_reliability_complete()
         else:
             # Original non-dashboard behavior
-            if self.loops_per_agent == 0:
-                raise ValueError(
-                    "loops_per_agent must be greater than 0. This parameter is used to determine how many times each agent will run. If it is 0, the agent will not run at all."
-                )
-
             if self.worker_model_name is None:
                 raise ValueError(
                     "worker_model_name must be set. This parameter is used to determine the model that will be used to execute the agents."
@@ -405,6 +280,10 @@ class HeavySwarm:
                 title="Reliability Check",
             )
 
+    @trace_run(
+        "HeavySwarm.run",
+        input_params=("task", "tasks", "img", "imgs"),
+    )
     def run(self, task: str, img: Optional[str] = None) -> str:
         """
         Execute the complete HeavySwarm orchestration flow with multi-loop functionality.
@@ -431,22 +310,18 @@ class HeavySwarm:
             The max_loops parameter controls how many iterations the swarm will perform.
             Each loop builds upon the previous results, enabling iterative refinement.
         """
-        if self.verbose:
-            logger.info("Starting HeavySwarm execution")
+        self._log(
+            "INFO",
+            f"Starting HeavySwarm: {self.name} on Task: {task}",
+        )
 
         current_loop = 0
         last_output = None
 
         if self.show_dashboard:
-            self.console.print(
-                Panel(
-                    f"[bold red]⚡ Completing Task[/bold red]\n"
-                    f"[white]Task: {task}[/white]",
-                    title="[bold red]Initializing HeavySwarm[/bold red]",
-                    border_style="red",
-                )
-            )
-            self.console.print()
+            self.dashboard.show_task_init(task)
+
+        self.conversation.clear()
 
         # Add initial task to conversation
         self.conversation.add(
@@ -459,8 +334,7 @@ class HeavySwarm:
         try:
             while current_loop < self.max_loops:
                 try:
-                    if self.verbose:
-                        logger.info("Processing task iteration")
+                    self._log("INFO", "Processing task iteration")
 
                     # No additional per-loop panels; keep dashboard output minimal and original-style
 
@@ -468,10 +342,9 @@ class HeavySwarm:
                     if current_loop == 0:
                         # First loop: use the original task
                         loop_task = task
-                        if self.verbose:
-                            logger.info(
-                                "First loop: Using original task"
-                            )
+                        self._log(
+                            "INFO", "First loop: Using original task"
+                        )
                     else:
                         # Subsequent loops: combine previous results with original task
                         loop_task = (
@@ -481,42 +354,29 @@ class HeavySwarm:
                             "Refine, improve, or complete any remaining aspects of the analysis. "
                             "Build upon the insights from the previous loop to provide deeper analysis."
                         )
-                        if self.verbose:
-                            logger.info(
-                                "Subsequent loop: Building upon previous results"
-                            )
+                        self._log(
+                            "INFO",
+                            "Subsequent loop: Building upon previous results",
+                        )
 
                     # Question generation with dashboard
                     try:
                         if self.show_dashboard:
-                            with Progress(
-                                SpinnerColumn(),
-                                TextColumn(
-                                    "[progress.description]{task.description}"
-                                ),
-                                transient=True,
-                                console=self.console,
-                            ) as progress:
-                                task_gen = progress.add_task(
-                                    "[red]⚡ GENERATING SPECIALIZED QUESTIONS...",
-                                    total=100,
-                                )
-                                progress.update(task_gen, advance=30)
+                            with self.dashboard.question_generation_progress() as (
+                                start,
+                                finish,
+                            ):
+                                start()
                                 questions = (
                                     self.execute_question_generation(
-                                        loop_task
+                                        loop_task, img=img
                                     )
                                 )
-                                progress.update(
-                                    task_gen,
-                                    advance=70,
-                                    description="[white]✓ QUESTIONS GENERATED SUCCESSFULLY!",
-                                )
-                                time.sleep(0.5)
+                                finish()
                         else:
                             questions = (
                                 self.execute_question_generation(
-                                    loop_task
+                                    loop_task, img=img
                                 )
                             )
 
@@ -528,14 +388,15 @@ class HeavySwarm:
 
                         if "error" in questions:
                             error_msg = f"Error in question generation: {questions['error']}"
-                            logger.error(error_msg)
+                            self._log("ERROR", error_msg)
                             return error_msg
 
                     except Exception as e:
                         error_msg = f"Failed to generate questions in loop {current_loop + 1}: {str(e)}"
-                        logger.error(error_msg)
-                        logger.error(
-                            f"Traceback: {traceback.format_exc()}"
+                        self._log("ERROR", error_msg)
+                        self._log(
+                            "ERROR",
+                            f"Traceback: {traceback.format_exc()}",
                         )
                         return error_msg
 
@@ -544,26 +405,25 @@ class HeavySwarm:
                         if self.show_dashboard:
                             agent_count = (
                                 15
-                                if self.use_grok_heavy
-                                else 3 if self.use_grok_agents else 4
+                                if self.variant == "heavy"
+                                else (
+                                    3
+                                    if self.variant == "medium"
+                                    else 4
+                                )
                             )
                             agent_label = (
                                 "Grok Heavy agents"
-                                if self.use_grok_heavy
+                                if self.variant == "heavy"
                                 else (
                                     "Grok agents (Harper, "
                                     "Benjamin, Lucas)"
-                                    if self.use_grok_agents
+                                    if self.variant == "medium"
                                     else "agents"
                                 )
                             )
-                            self.console.print(
-                                Panel(
-                                    f"[bold red]⚡ LAUNCHING SPECIALIZED AGENTS[/bold red]\n"
-                                    f"[white]Executing {agent_count} {agent_label} in parallel for comprehensive analysis[/white]",
-                                    title="[bold red]AGENT EXECUTION PHASE[/bold red]",
-                                    border_style="red",
-                                )
+                            self.dashboard.show_agent_launch_phase(
+                                agent_count, agent_label
                             )
 
                         agent_results = self._execute_agents_parallel(
@@ -574,9 +434,10 @@ class HeavySwarm:
 
                     except Exception as e:
                         error_msg = f"Failed to execute agents in loop {current_loop + 1}: {str(e)}"
-                        logger.error(error_msg)
-                        logger.error(
-                            f"Traceback: {traceback.format_exc()}"
+                        self._log("ERROR", error_msg)
+                        self._log(
+                            "ERROR",
+                            f"Traceback: {traceback.format_exc()}",
                         )
                         return error_msg
 
@@ -586,35 +447,16 @@ class HeavySwarm:
                             synth_name = (
                                 "Grok"
                                 if (
-                                    self.use_grok_heavy
-                                    or self.use_grok_agents
+                                    self.variant == "heavy"
+                                    or self.variant == "medium"
                                 )
                                 else "Agent 5"
                             )
-                            with Progress(
-                                SpinnerColumn(),
-                                TextColumn(
-                                    "[progress.description]{task.description}"
-                                ),
-                                TimeElapsedColumn(),
-                                console=self.console,
-                            ) as progress:
-                                synthesis_task = progress.add_task(
-                                    f"[red]{synth_name}: SYNTHESIZING COMPREHENSIVE ANALYSIS ••••••••••••••••••••••••••••••••",
-                                    total=None,
-                                )
-
-                                progress.update(
-                                    synthesis_task,
-                                    description=f"[red]{synth_name}: INTEGRATING AGENT RESULTS ••••••••••••••••••••••••••••••••",
-                                )
-                                time.sleep(0.5)
-
-                                progress.update(
-                                    synthesis_task,
-                                    description=f"[red]{synth_name}: Summarizing Results ••••••••••••••••••••••••••••••••",
-                                )
-
+                            with self.dashboard.synthesis_progress(
+                                synth_name
+                            ) as update_stage:
+                                update_stage("integrating")
+                                update_stage("summarizing")
                                 final_result = (
                                     self._synthesize_results(
                                         original_task=loop_task,
@@ -622,28 +464,10 @@ class HeavySwarm:
                                         agent_results=agent_results,
                                     )
                                 )
+                                update_stage("generating")
+                                update_stage("complete")
 
-                                progress.update(
-                                    synthesis_task,
-                                    description=f"[white]{synth_name}: GENERATING FINAL REPORT ••••••••••••••••••••••••••••••••",
-                                )
-                                time.sleep(0.3)
-
-                                progress.update(
-                                    synthesis_task,
-                                    description=f"[bold white]{synth_name}: COMPLETE! ••••••••••••••••••••••••••••••••",
-                                )
-                                time.sleep(0.5)
-
-                            self.console.print(
-                                Panel(
-                                    "[bold red]⚡ HEAVYSWARM ANALYSIS COMPLETE![/bold red]\n"
-                                    "[white]Comprehensive multi-agent analysis delivered successfully[/white]",
-                                    title="[bold red]MISSION ACCOMPLISHED[/bold red]",
-                                    border_style="red",
-                                )
-                            )
-                            self.console.print()
+                            self.dashboard.show_synthesis_complete()
                         else:
                             final_result = self._synthesize_results(
                                 original_task=loop_task,
@@ -659,9 +483,10 @@ class HeavySwarm:
 
                     except Exception as e:
                         error_msg = f"Failed to synthesize results in loop {current_loop + 1}: {str(e)}"
-                        logger.error(error_msg)
-                        logger.error(
-                            f"Traceback: {traceback.format_exc()}"
+                        self._log("ERROR", error_msg)
+                        self._log(
+                            "ERROR",
+                            f"Traceback: {traceback.format_exc()}",
                         )
                         return error_msg
 
@@ -669,16 +494,17 @@ class HeavySwarm:
                     last_output = final_result
                     current_loop += 1
 
-                    if self.verbose:
-                        logger.success(
-                            "Task iteration completed successfully"
-                        )
+                    self._log(
+                        "SUCCESS",
+                        "Task iteration completed successfully",
+                    )
 
                 except Exception as e:
                     error_msg = f"Failed to execute loop {current_loop + 1}: {str(e)}"
-                    logger.error(error_msg)
-                    logger.error(
-                        f"Traceback: {traceback.format_exc()}"
+                    self._log("ERROR", error_msg)
+                    self._log(
+                        "ERROR",
+                        f"Traceback: {traceback.format_exc()}",
                     )
                     return error_msg
 
@@ -686,404 +512,74 @@ class HeavySwarm:
             error_msg = (
                 f"Critical error in HeavySwarm execution: {str(e)}"
             )
-            logger.error(error_msg)
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            self._log("ERROR", error_msg)
+            self._log("ERROR", f"Traceback: {traceback.format_exc()}")
             return error_msg
 
         # Final completion message
         if self.show_dashboard:
-            self.console.print(
-                Panel(
-                    "[bold red]⚡ HEAVYSWARM ANALYSIS COMPLETE![/bold red]\n"
-                    "[white]Comprehensive multi-agent analysis delivered successfully[/white]",
-                    title="[bold red]MISSION ACCOMPLISHED[/bold red]",
-                    border_style="red",
-                )
-            )
-            self.console.print()
+            self.dashboard.show_synthesis_complete()
 
-        if self.verbose:
-            logger.success("HeavySwarm execution completed")
+        self._log("SUCCESS", "HeavySwarm execution completed")
 
         return history_output_formatter(
             conversation=self.conversation,
             type=self.output_type,
         )
 
-    @lru_cache(maxsize=1)
-    def create_agents(self):
-        """
-        Create and cache the 4 specialized agents with detailed role-specific prompts.
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over everything this swarm has run.
 
-        This method creates a complete set of specialized agents optimized for different
-        aspects of task analysis. Each agent is configured with expert-level system prompts
-        and optimal settings for their specific role. The agents are cached using LRU cache
-        to avoid recreation overhead on subsequent calls.
+        Adds the question-generation calls, which go through a bare
+        ``LiteLLM`` rather than an ``Agent``, to :attr:`Agent.usage` for every
+        distinct agent in ``self.agents``: the workers plus the synthesis agent
+        or captain, whichever the variant builds. Keys: ``input_tokens``,
+        ``output_tokens``, ``cached_tokens``, ``reasoning_tokens``,
+        ``total_tokens``.
 
-        The specialized agents created:
-
-        1. **Research Agent**: Expert in comprehensive information gathering, data collection,
-           market research, and source verification. Specializes in systematic literature
-           reviews, competitive intelligence, and statistical data interpretation.
-
-        2. **Analysis Agent**: Expert in advanced statistical analysis, pattern recognition,
-           predictive modeling, and causal relationship identification. Specializes in
-           regression analysis, forecasting, and performance metrics development.
-
-        3. **Alternatives Agent**: Expert in strategic thinking, creative problem-solving,
-           innovation ideation, and strategic option evaluation. Specializes in design
-           thinking, scenario planning, and blue ocean strategy identification.
-
-        4. **Verification Agent**: Expert in validation, feasibility assessment, fact-checking,
-           and quality assurance. Specializes in risk assessment, compliance verification,
-           and implementation barrier analysis.
-
-        5. **Synthesis Agent**: Expert in multi-perspective integration, comprehensive analysis,
-           and executive summary creation. Specializes in strategic alignment, conflict
-           resolution, and holistic solution development.
-
-        Agent Configuration:
-        - All agents use the configured worker_model_name
-        - Loops are set based on loops_per_agent parameter
-        - Dynamic temperature is enabled for creative responses
-        - Streaming is disabled for complete responses
-        - Verbose mode follows class configuration
+        The value grows across ``run()`` calls and across ``max_loops``.
+        Streamed calls count once their stream has been consumed, the same
+        rule as :attr:`Agent.usage`.
 
         Returns:
-            Dict[str, Agent]: Dictionary containing all 5 specialized agents with keys:
-                - 'research': Research Agent instance
-                - 'analysis': Analysis Agent instance
-                - 'alternatives': Alternatives Agent instance
-                - 'verification': Verification Agent instance
-                - 'synthesis': Synthesis Agent instance
-
-        Note:
-            This method uses @lru_cache(maxsize=1) to ensure agents are only created once
-            per HeavySwarm instance, improving performance for multiple task executions.
+            dict: A new usage dict; mutating it does not affect the swarm.
         """
-        if self.verbose:
-            logger.info("🏗️ Creating specialized agents...")
-
-        tools = None
-
-        if self.worker_tools is not None:
-            tools = self.worker_tools
-
-        if self.use_grok_heavy:
-            return self._create_grok_heavy_agents(tools)
-
-        if self.use_grok_agents:
-            return self._create_grok_agents(tools)
-
-        # Research Agent
-        research_agent = Agent(
-            agent_name="Research-Agent",
-            agent_description=(
-                "Expert research agent specializing in "
-                "comprehensive information gathering "
-                "and data collection"
-            ),
-            system_prompt=RESEARCH_AGENT_PROMPT,
-            max_loops=self.handle_worker_agent_loops(),
-            model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=self.agent_prints_on,
-            tools=tools,
-        )
-
-        # Analysis Agent
-        analysis_agent = Agent(
-            agent_name="Analysis-Agent",
-            agent_description=(
-                "Expert analytical agent specializing "
-                "in pattern recognition, data analysis, "
-                "and insight generation"
-            ),
-            system_prompt=ANALYSIS_AGENT_PROMPT,
-            max_loops=self.handle_worker_agent_loops(),
-            model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=self.agent_prints_on,
-            tools=tools,
-        )
-
-        # Alternatives Agent
-        alternatives_agent = Agent(
-            agent_name="Alternatives-Agent",
-            agent_description=(
-                "Expert strategic agent specializing "
-                "in alternative approaches, creative "
-                "solutions, and option generation"
-            ),
-            system_prompt=ALTERNATIVES_AGENT_PROMPT,
-            max_loops=self.handle_worker_agent_loops(),
-            model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=self.agent_prints_on,
-            tools=tools,
-        )
-
-        # Verification Agent
-        verification_agent = Agent(
-            agent_name="Verification-Agent",
-            agent_description=(
-                "Expert verification agent specializing "
-                "in validation, feasibility assessment, "
-                "and quality assurance"
-            ),
-            system_prompt=VERIFICATION_AGENT_PROMPT,
-            max_loops=self.handle_worker_agent_loops(),
-            model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=self.agent_prints_on,
-            tools=tools,
-        )
-
-        # Synthesis Agent
-        synthesis_agent = Agent(
-            agent_name="Synthesis-Agent",
-            agent_description=(
-                "Expert synthesis agent specializing "
-                "in integration, comprehensive analysis, "
-                "and final recommendations"
-            ),
-            system_prompt=SYNTHESIS_AGENT_PROMPT,
-            max_loops=1,
-            model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=True,
-            tools=tools,
-        )
-
-        agents = {
-            "research": research_agent,
-            "analysis": analysis_agent,
-            "alternatives": alternatives_agent,
-            "verification": verification_agent,
-            "synthesis": synthesis_agent,
-        }
-        return agents
-
-    def _create_grok_agents(self, tools):
-        """
-        Create the Grok 4.20 Heavy architecture agents:
-        Captain Swarm (leader), Harper (research/facts),
-        Benjamin (logic/math/code), Lucas (creative).
-        """
-        captain = Agent(
-            agent_name="Captain-Swarm",
-            agent_description=(
-                "Leader and orchestrator of the Grok "
-                "Heavy multi-agent system"
-            ),
-            system_prompt=CAPTAIN_SWARM_PROMPT,
-            max_loops=1,
-            model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=True,
-            tools=tools,
-        )
-
-        harper = Agent(
-            agent_name="Harper",
-            agent_description=(
-                "Research and Facts specialist for "
-                "evidence-based data gathering and "
-                "fact verification"
-            ),
-            system_prompt=HARPER_PROMPT,
-            max_loops=self.handle_worker_agent_loops(),
-            model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=self.agent_prints_on,
-            tools=tools,
-        )
-
-        benjamin = Agent(
-            agent_name="Benjamin",
-            agent_description=(
-                "Logic, Math, and Code specialist for "
-                "rigorous reasoning and computational "
-                "verification"
-            ),
-            system_prompt=BENJAMIN_PROMPT,
-            max_loops=self.handle_worker_agent_loops(),
-            model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=self.agent_prints_on,
-            tools=tools,
-        )
-
-        lucas = Agent(
-            agent_name="Lucas",
-            agent_description=(
-                "Creative and Divergent Thinking "
-                "specialist for contrarian analysis "
-                "and blind-spot detection"
-            ),
-            system_prompt=LUCAS_PROMPT,
-            max_loops=self.handle_worker_agent_loops(),
-            model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=self.agent_prints_on,
-            tools=tools,
-        )
-
-        return {
-            "captain": captain,
-            "harper": harper,
-            "benjamin": benjamin,
-            "lucas": lucas,
-        }
-
-    def _create_grok_heavy_agents(self, tools):
-        """
-        Create the 16-agent Grok 4.20 Heavy architecture:
-        Grok (captain/coordinator) + 15 domain specialists.
-        """
-        WORKER_CONFIGS = [
-            (
-                "harper",
-                "Harper",
-                HARPER_HEAVY_PROMPT,
-                "Creative Writing and Storytelling specialist",
-            ),
-            (
-                "benjamin",
-                "Benjamin",
-                BENJAMIN_HEAVY_PROMPT,
-                "Data, Finance and Economics specialist",
-            ),
-            (
-                "lucas",
-                "Lucas",
-                LUCAS_HEAVY_PROMPT,
-                "Coding, Programming and Technical Builds specialist",
-            ),
-            (
-                "olivia",
-                "Olivia",
-                OLIVIA_PROMPT,
-                "Literature, Arts and Culture specialist",
-            ),
-            (
-                "james",
-                "James",
-                JAMES_PROMPT,
-                "History, Politics and Philosophy specialist",
-            ),
-            (
-                "charlotte",
-                "Charlotte",
-                CHARLOTTE_PROMPT,
-                "Math, Statistics and Logic specialist",
-            ),
-            (
-                "henry",
-                "Henry",
-                HENRY_PROMPT,
-                "Engineering, Robotics and Innovation specialist",
-            ),
-            (
-                "mia",
-                "Mia",
-                MIA_PROMPT,
-                "Biology, Health and Medicine specialist",
-            ),
-            (
-                "william",
-                "William",
-                WILLIAM_PROMPT,
-                "Business Strategy and Entrepreneurship specialist",
-            ),
-            (
-                "sebastian",
-                "Sebastian",
-                SEBASTIAN_PROMPT,
-                "Physics, Astronomy and Hard Sciences specialist",
-            ),
-            (
-                "jack",
-                "Jack",
-                JACK_PROMPT,
-                "Psychology and Human Behavior specialist",
-            ),
-            (
-                "owen",
-                "Owen",
-                OWEN_PROMPT,
-                "Environment, Sustainability and Global Systems specialist",
-            ),
-            (
-                "luna",
-                "Luna",
-                LUNA_PROMPT,
-                "Space Exploration and Futurism specialist",
-            ),
-            (
-                "elizabeth",
-                "Elizabeth",
-                ELIZABETH_PROMPT,
-                "Ethics, Policy and Critical Thinking specialist",
-            ),
-            (
-                "noah",
-                "Noah",
-                NOAH_PROMPT,
-                "Long-Term Innovation and Systems Thinking specialist",
-            ),
-        ]
-
+        total = dict(self._question_usage)
         agents = {}
-        for key, name, prompt, desc in WORKER_CONFIGS:
-            agents[key] = Agent(
-                agent_name=name,
-                agent_description=desc,
-                system_prompt=prompt,
-                max_loops=self.handle_worker_agent_loops(),
-                model_name=self.worker_model_name,
-                streaming_on=False,
-                verbose=False,
-                dynamic_temperature_enabled=True,
-                print_on=self.agent_prints_on,
-                tools=tools,
-            )
+        for agent in (self.agents or {}).values():
+            if isinstance(getattr(agent, "usage", None), dict):
+                agents.setdefault(id(agent), agent)
+        for agent in agents.values():
+            for key, value in agent.usage.items():
+                if key in total:
+                    total[key] += value
+        return total
 
-        agents["captain"] = Agent(
-            agent_name="Grok",
-            agent_description=(
-                "Lead coordinator and synthesizer of "
-                "the 16-agent Grok Heavy system"
-            ),
-            system_prompt=GROK_HEAVY_CAPTAIN_PROMPT,
-            max_loops=1,
+    def _add_question_usage(self, call_usage: dict) -> None:
+        """Fold one question-generation call's usage into the swarm total.
+
+        Args:
+            call_usage (dict): The per-call usage ``LiteLLM`` passes to its
+                ``usage_hook``.
+        """
+        for key in self._question_usage:
+            self._question_usage[key] += call_usage.get(key, 0)
+
+    def create_agents(self):
+        """Build the swarm's agents.
+
+        Returns a ``dict`` of named ``Agent`` instances; the variant
+        (default / Grok / Grok Heavy) is chosen from the swarm flags.
+        Called once in ``__init__`` and cached on ``self.agents``.
+        """
+        self._log("INFO", "🏗️ Creating specialized agents...")
+        return build_heavy_swarm_agents(
             model_name=self.worker_model_name,
-            streaming_on=False,
-            verbose=False,
-            dynamic_temperature_enabled=True,
-            print_on=True,
-            tools=tools,
+            tools=self.worker_tools,
+            worker_prints_on=self.agent_prints_on,
+            variant=self.variant,
         )
-
-        return agents
 
     def _execute_agents_parallel(
         self, questions: Dict, agents: Dict, img: Optional[str] = None
@@ -1151,7 +647,7 @@ class HeavySwarm:
         def execute_agent(agent_info):
             agent_type, agent, question = agent_info
             try:
-                result = agent.run(question)
+                result = agent.run(question, img=img)
 
                 self.conversation.add(
                     role=agent.agent_name,
@@ -1160,13 +656,14 @@ class HeavySwarm:
                 )
                 return agent_type, result
             except Exception as e:
-                logger.error(
-                    f"❌ Error in {agent_type} Agent: {str(e)} Traceback: {traceback.format_exc()}"
+                self._log(
+                    "ERROR",
+                    f"❌ Error in {agent_type} Agent: {str(e)} Traceback: {traceback.format_exc()}",
                 )
                 return agent_type, f"Error: {str(e)}"
 
         # Prepare agent tasks
-        if self.use_grok_heavy:
+        if self.variant == "heavy":
             heavy_keys = [
                 ("Harper", "harper"),
                 ("Benjamin", "benjamin"),
@@ -1192,7 +689,7 @@ class HeavySwarm:
                 )
                 for name, key in heavy_keys
             ]
-        elif self.use_grok_agents:
+        elif self.variant == "medium":
             agent_tasks = [
                 (
                     "Harper",
@@ -1236,7 +733,7 @@ class HeavySwarm:
 
         # Execute agents in parallel using ThreadPoolExecutor
         results = {}
-        with concurrent.futures.ThreadPoolExecutor(
+        with ContextThreadPoolExecutor(
             max_workers=self.max_workers
         ) as executor:
             # Submit all agent tasks
@@ -1256,15 +753,17 @@ class HeavySwarm:
                     )
                     results[agent_name.lower()] = result
                 except concurrent.futures.TimeoutError:
-                    logger.error(
-                        f"⏰ Timeout for {agent_type} Agent after {self.timeout}s"
+                    self._log(
+                        "ERROR",
+                        f"⏰ Timeout for {agent_type} Agent after {self.timeout}s",
                     )
                     results[agent_type.lower()] = (
                         f"Timeout after {self.timeout} seconds"
                     )
                 except Exception as e:
-                    logger.error(
-                        f"❌ Exception in {agent_type} Agent: {str(e)}"
+                    self._log(
+                        "ERROR",
+                        f"❌ Exception in {agent_type} Agent: {str(e)}",
                     )
                     results[agent_type.lower()] = (
                         f"Exception: {str(e)}"
@@ -1319,7 +818,7 @@ class HeavySwarm:
         """
 
         # Agent configurations with professional styling
-        if self.use_grok_heavy:
+        if self.variant == "heavy":
             agent_configs = [
                 (
                     "Harper",
@@ -1412,7 +911,7 @@ class HeavySwarm:
                     "Long-term innovation and systems thinking",
                 ),
             ]
-        elif self.use_grok_agents:
+        elif self.variant == "medium":
             agent_configs = [
                 (
                     "Harper",
@@ -1464,85 +963,41 @@ class HeavySwarm:
 
         results = {}
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            TimeElapsedColumn(),
-            console=self.console,
-        ) as progress:
+        with self.dashboard.agent_progress_tracker(
+            agent_configs
+        ) as tracker:
 
-            # Create progress tasks for each agent
-            tasks = {}
-            for (
-                display_name,
-                agent_key,
-                color,
-                description,
-            ) in agent_configs:
-                task_id = progress.add_task(
-                    f"[{color}]{display_name}[/{color}]: INITIALIZING",
-                    total=None,
-                )
-                tasks[agent_key] = task_id
-
-            # Define agent execution function with progress updates
             def execute_agent_with_progress(agent_info):
                 agent_type, agent_key, agent, question = agent_info
                 try:
-                    # Update progress to show agent starting
-                    progress.update(
-                        tasks[agent_key],
-                        description=f"[red]{agent_type}[/red]: INITIALIZING ••••••••",
-                    )
+                    tracker.initializing(agent_key, agent_type)
+                    tracker.processing(agent_key, agent_type)
+                    tracker.executing(agent_key, agent_type)
 
-                    # Simulate some processing time for visual effect
-                    time.sleep(0.5)
-                    progress.update(
-                        tasks[agent_key],
-                        description=f"[red]{agent_type}[/red]: PROCESSING QUERY ••••••••••••••",
-                    )
+                    result = agent.run(question, img=img)
 
-                    # Execute the agent with dots animation
-                    progress.update(
-                        tasks[agent_key],
-                        description=f"[red]{agent_type}[/red]: EXECUTING ••••••••••••••••••••",
-                    )
+                    tracker.responding(agent_key, agent_type)
 
-                    result = agent.run(question)
-
-                    # Update progress during execution
-                    progress.update(
-                        tasks[agent_key],
-                        description=f"[white]{agent_type}[/white]: GENERATING RESPONSE ••••••••••••••••••••••••••",
-                    )
-
-                    # Add to conversation
                     self.conversation.add(
                         role=agent.agent_name,
                         content=result,
                         category="output",
                     )
 
-                    # Complete the progress
-                    progress.update(
-                        tasks[agent_key],
-                        description=f"[bold white]{agent_type}[/bold white]: ✅ COMPLETE! ••••••••••••••••••••••••••••••••",
-                    )
+                    tracker.complete(agent_key, agent_type)
 
                     return agent_type, result
 
                 except Exception as e:
-                    progress.update(
-                        tasks[agent_key],
-                        description=f"[bold red]{agent_type}[/bold red]: ❌ ERROR! ••••••••••••••••••••••••••••••••",
-                    )
-                    logger.error(
-                        f"❌ Error in {agent_type} Agent: {str(e)} Traceback: {traceback.format_exc()}"
+                    tracker.error(agent_key, agent_type)
+                    self._log(
+                        "ERROR",
+                        f"❌ Error in {agent_type} Agent: {str(e)} Traceback: {traceback.format_exc()}",
                     )
                     return agent_type, f"Error: {str(e)}"
 
             # Prepare agent tasks with keys
-            if self.use_grok_heavy:
+            if self.variant == "heavy":
                 heavy_keys = [
                     ("Harper", "harper"),
                     ("Benjamin", "benjamin"),
@@ -1569,7 +1024,7 @@ class HeavySwarm:
                     )
                     for name, key in heavy_keys
                 ]
-            elif self.use_grok_agents:
+            elif self.variant == "medium":
                 agent_tasks = [
                     (
                         "Harper",
@@ -1625,7 +1080,7 @@ class HeavySwarm:
                 ]
 
             # Execute agents in parallel
-            with concurrent.futures.ThreadPoolExecutor(
+            with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
                 # Submit all agent tasks
@@ -1653,44 +1108,32 @@ class HeavySwarm:
                             .replace("✅ ", "")
                         ] = result
                     except concurrent.futures.TimeoutError:
-                        progress.update(
-                            tasks[agent_key],
-                            description=f"[bold red]Agent {list(tasks.keys()).index(agent_key) + 1}[/bold red]: ⏰ TIMEOUT! ••••••••••••••••••••••••••••••••",
-                        )
+                        tracker.timeout(agent_key, agent_key)
                         results[agent_key] = (
                             f"Timeout after {self.timeout} seconds"
                         )
                     except Exception as e:
-                        progress.update(
-                            tasks[agent_key],
-                            description=f"[bold red]Agent {list(tasks.keys()).index(agent_key) + 1}[/bold red]: ❌ ERROR! ••••••••••••••••••••••••••••••••",
-                        )
+                        tracker.error(agent_key, agent_key)
                         results[agent_key] = f"Exception: {str(e)}"
 
         # Show completion summary
         agent_count = (
             15
-            if self.use_grok_heavy
-            else 3 if self.use_grok_agents else 4
+            if self.variant == "heavy"
+            else 3 if self.variant == "medium" else 4
         )
         synth_label = (
             "Grok"
-            if self.use_grok_heavy
+            if self.variant == "heavy"
             else (
                 "Captain Swarm"
-                if self.use_grok_agents
+                if self.variant == "medium"
                 else "synthesis"
             )
         )
-        self.console.print(
-            Panel(
-                "[bold red]⚡ ALL AGENTS COMPLETED SUCCESSFULLY![/bold red]\n"
-                f"[white]Results from all {agent_count} specialized agents are ready for {synth_label}[/white]",
-                title="[bold red]EXECUTION COMPLETE[/bold red]",
-                border_style="red",
-            )
+        self.dashboard.show_execution_complete(
+            agent_count, synth_label
         )
-        self.console.print()
 
         return results
 
@@ -1708,10 +1151,9 @@ class HeavySwarm:
         Returns:
             str: Comprehensive synthesized analysis
         """
-        # Get the cached agents
-        agents = self.create_agents()
+        agents = self.agents
 
-        if self.use_grok_heavy:
+        if self.variant == "heavy":
             synthesis_agent = agents["captain"]
             agents_names = [
                 "Harper (Creative Writing)",
@@ -1745,13 +1187,6 @@ class HeavySwarm:
         - Deliver prioritized, actionable recommendations with confidence levels
         - Flag risks, ethical concerns (Elizabeth), long-term systemic issues (Noah), and mitigation strategies
 
-        Conversation history for full context:
-
-        \n\n
-
-        {self.conversation.return_history_as_string()}
-
-        \n\n
 
         Present your synthesis as:
         1. Executive Summary (3-5 sentences)
@@ -1765,7 +1200,7 @@ class HeavySwarm:
 
         Be thorough, authoritative, and balance all 15 perspectives.
         """
-        elif self.use_grok_agents:
+        elif self.variant == "medium":
             synthesis_agent = agents["captain"]
             agents_names = [
                 "Harper (Research & Facts)",
@@ -1786,13 +1221,6 @@ class HeavySwarm:
         - Provide prioritized, actionable recommendations with confidence levels.
         - Identify risks, blind spots flagged by Lucas, and mitigation strategies.
 
-        Conversation history for context:
-
-        \n\n
-
-        {self.conversation.return_history_as_string()}
-
-        \n\n
 
         Present your synthesis as:
         1. Executive Summary
@@ -1830,13 +1258,6 @@ class HeavySwarm:
         - Ensure the report is well-structured, concise, and suitable for decision-makers (executive summary style).
         - Use bullet points, numbered lists, and section headings where appropriate for clarity and readability.
 
-        You may reference the conversation history for additional context:
-
-        \n\n
-
-        {self.conversation.return_history_as_string()}
-
-        \n\n
 
         Please present your synthesis in the following structure:
         1. Executive Summary
@@ -1849,7 +1270,12 @@ class HeavySwarm:
         Be thorough, objective, and ensure your synthesis is easy to follow for a non-technical audience.
         """
 
-        return synthesis_agent.run(synthesis_prompt)
+        return synthesis_agent.run(
+            synthesis_prompt,
+            messages=messages_for(
+                synthesis_agent.agent_name or "", self.conversation
+            ),
+        )
 
     def _parse_tool_calls(self, tool_calls: List) -> Dict[str, any]:
         """
@@ -1913,20 +1339,23 @@ class HeavySwarm:
             }
 
     def execute_question_generation(
-        self, task: str
+        self, task: str, img: Optional[str] = None
     ) -> Dict[str, str]:
         """
         Execute the question generation using the schema with a language model.
 
         Args:
             task (str): The main task to analyze
+            img (Optional[str]): Image accompanying the task. The decomposer
+                writes the questions every worker then answers, so without it
+                a visual task is decomposed from the sentence alone.
 
         Returns:
             Dict[str, str]: Generated questions for each agent role with parsed data
         """
 
         # Create the prompt for question generation
-        if self.use_grok_heavy:
+        if self.variant == "heavy":
             prompt = f"""
         System: Grok task decomposer. Generate 15 non-overlapping domain-specific questions via function tool.
 
@@ -1958,7 +1387,27 @@ class HeavySwarm:
         Use generate_grok_heavy_questions function only.
         """
             active_schema = grok_heavy_schema
-        elif self.use_grok_agents:
+        elif self.variant == "medium":
+            prompt = f"""
+        System: Grok task decomposer. Generate 3 non-overlapping domain-specific questions via function tool.
+
+        Specialists:
+        - Harper (Creative Writing & Storytelling): narrative framing, metaphors, human storytelling angles
+        - Benjamin (Data, Finance & Economics): quantitative data, financial modeling, economic implications
+        - Lucas (Coding, Programming & Technical): technical implementation, algorithms, systems architecture
+
+        Requirements:
+        - Each question ≤40 words, domain-specific, action-oriented
+        - No duplication across specialists
+        - Ambiguity notes only in "thinking" field (≤60 words)
+        - Each question must leverage the specialist's unique domain expertise
+
+        Task: {task}
+
+        Use generate_grok_questions function only.
+        """
+            active_schema = grok_schema
+        else:
             prompt = f"""
         System: Technical task analyzer. Generate 4 non-overlapping analytical questions via function tool.
 
@@ -1980,34 +1429,42 @@ class HeavySwarm:
         """
             active_schema = schema
 
-        max_tokens = 5000 if self.use_grok_heavy else 3000
+        # Named so the decomposer treats the image as part of the task
+        # rather than guessing at what the sentence refers to.
+        if img:
+            prompt += (
+                "\n        An image accompanies this task. Read it and write "
+                "the questions from what it actually shows.\n"
+            )
+
+        max_tokens = 5000 if self.variant == "heavy" else 3000
 
         question_agent = LiteLLM(
             system_prompt=prompt,
             model=self.question_agent_model_name,
             tools_list_dictionary=active_schema,
             max_tokens=max_tokens,
-            temperature=0.7,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
+            top_p=None,  # Anthropic rejects temperature and top_p together
             tool_choice="auto",
+            usage_hook=self._add_question_usage,
         )
 
         # Get raw tool calls from LiteLLM
-        raw_output = question_agent.run(task)
+        raw_output = question_agent.run(task, img=img)
 
         # Parse the tool calls and return clean data
         out = self._parse_tool_calls(raw_output)
 
-        if self.verbose:
-            logger.info(
-                f"🔍 Question Generation Output: {out} and type: {type(out)}"
-            )
+        self._log(
+            "INFO",
+            f"🔍 Question Generation Output: {out} and type: {type(out)}",
+        )
 
         return out
 
-    def get_questions_only(self, task: str) -> Dict[str, str]:
+    def get_questions_only(
+        self, task: str, img: Optional[str] = None
+    ) -> Dict[str, str]:
         """
         Generate and extract only the specialized questions without metadata or execution.
 
@@ -2039,12 +1496,12 @@ class HeavySwarm:
             >>> questions = swarm.get_questions_only("Analyze market trends for EVs")
             >>> print(questions['research_question'])
         """
-        result = self.execute_question_generation(task)
+        result = self.execute_question_generation(task, img=img)
 
         if "error" in result:
             return {"error": result["error"]}
 
-        if self.use_grok_heavy:
+        if self.variant == "heavy":
             heavy_keys = [
                 "harper",
                 "benjamin",
@@ -2067,7 +1524,7 @@ class HeavySwarm:
                 for k in heavy_keys
             }
 
-        if self.use_grok_agents:
+        if self.variant == "medium":
             return {
                 "harper_question": result.get("harper_question", ""),
                 "benjamin_question": result.get(
@@ -2087,7 +1544,9 @@ class HeavySwarm:
             ),
         }
 
-    def get_questions_as_list(self, task: str) -> List[str]:
+    def get_questions_as_list(
+        self, task: str, img: Optional[str] = None
+    ) -> List[str]:
         """
         Generate specialized questions and return them as an ordered list.
 
@@ -2125,12 +1584,12 @@ class HeavySwarm:
             This method internally calls get_questions_only() and converts the dictionary
             to a list format, maintaining the standard agent order.
         """
-        questions = self.get_questions_only(task)
+        questions = self.get_questions_only(task, img=img)
 
         if "error" in questions:
             return [f"Error: {questions['error']}"]
 
-        if self.use_grok_heavy:
+        if self.variant == "heavy":
             heavy_keys = [
                 "harper",
                 "benjamin",
@@ -2152,7 +1611,7 @@ class HeavySwarm:
                 questions.get(f"{k}_question", "") for k in heavy_keys
             ]
 
-        if self.use_grok_agents:
+        if self.variant == "medium":
             return [
                 questions.get("harper_question", ""),
                 questions.get("benjamin_question", ""),

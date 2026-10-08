@@ -51,7 +51,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        poetry install --with test --no-dev
+        poetry install --only main,test
 
     - name: Set up environment variables
       run: |
@@ -65,7 +65,6 @@ jobs:
 
     - name: Run Main Features Tests
       run: |
-        cd /Users/swarms_wd/Desktop/research/swarms
         poetry run python tests/test_main_features.py
 
     - name: Upload test results

@@ -1,23 +1,28 @@
 import concurrent.futures
-import json
-import os
 import time
 from typing import Callable, List, Optional, Union
 
-from loguru import logger as loguru_logger
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
-from swarms.structs.swarm_id import swarm_id
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_error,
+    capture_init,
+    trace_run,
+)
 from swarms.utils.formatter import formatter
-from swarms.utils.get_cpu_cores import get_cpu_cores
+from swarms.utils.generate_id import generate_id
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.utils.swarm_autosave import get_swarm_workspace_dir
-from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="concurrent_workflow")
+
+# Default cap on concurrent agent calls, guards provider rate limits not CPU
+MAX_CONCURRENT_AGENTS = 32
 
 
 class ConcurrentWorkflow:
@@ -41,6 +46,19 @@ class ConcurrentWorkflow:
         show_dashboard (bool): Whether to display real-time dashboard during execution
         agent_statuses (dict): Dictionary tracking status and output of each agent
         metadata_output_path (str): Path for saving workflow metadata
+        autosave (bool): Whether to persist conversation history to the workflow
+            workspace directory after each run
+        verbose (bool): Whether to emit debug-level logging for workspace and
+            autosave operations
+        on_error (str): Failure policy for an agent that raises. ``"store"``
+            records the error string as that agent's output and lets the other
+            agents finish; ``"raise"`` propagates the exception and aborts the run
+        max_workers (Optional[int]): Thread pool size for concurrent agent
+            execution. Agent calls are network-bound, so this defaults to
+            ``len(agents)`` capped at ``MAX_CONCURRENT_AGENTS`` rather than
+            deriving from CPU count.
+        swarm_workspace_dir (Optional[str]): Resolved workspace directory used for
+            autosave, or None when autosave is disabled or setup failed
         conversation (Conversation): Conversation object for storing agent interactions
 
     Methods:
@@ -50,15 +68,14 @@ class ConcurrentWorkflow:
         cleanup: Clean up resources and connections
         fix_agents: Configure agents for dashboard mode
         reliability_check: Validate workflow configuration
-        activate_auto_prompt_engineering: Enable automatic prompt engineering
         display_agent_dashboard: Display real-time dashboard
 
     Example:
         >>> from swarms import Agent, ConcurrentWorkflow
         >>>
         >>> # Create agents
-        >>> agent1 = Agent(llm=llm, agent_name="Agent1")
-        >>> agent2 = Agent(llm=llm, agent_name="Agent2")
+        >>> agent1 = Agent(agent_name="Agent1", model_name="gpt-5.4")
+        >>> agent2 = Agent(agent_name="Agent2", model_name="gpt-5.4")
         >>>
         >>> # Create workflow
         >>> workflow = ConcurrentWorkflow(
@@ -83,8 +100,46 @@ class ConcurrentWorkflow:
         show_dashboard: bool = False,
         autosave: bool = True,
         verbose: bool = False,
+        on_error: str = "store",
+        max_workers: Optional[int] = None,
     ):
-        self.id = id if id is not None else swarm_id()
+        """
+        Initialize a ConcurrentWorkflow.
+
+        Args:
+            id (str, optional): Unique identifier for this workflow instance.
+                Generated automatically when omitted.
+            name (str): Human-readable name for the workflow.
+            description (str): Description of the workflow's purpose.
+            agents (List[Union[Agent, Callable]], optional): Agents to execute
+                concurrently on each task. Must be non-empty; validated by
+                :meth:`reliability_check`.
+            auto_save (bool): Whether to automatically save workflow metadata.
+            output_type (str): Output formatting mode passed to
+                ``history_output_formatter`` (e.g. ``"dict-all-except-first"``).
+            max_loops (int): Maximum number of execution loops. Currently unused.
+            auto_generate_prompts (bool): Whether to enable automatic prompt
+                engineering for the configured agents.
+            show_dashboard (bool): Whether to display a real-time dashboard during
+                execution. Enabling this disables per-agent stdout printing to
+                avoid conflicting with the dashboard.
+            autosave (bool): Whether to persist conversation history to the
+                workflow workspace directory after each run.
+            verbose (bool): Whether to emit debug-level logging for workspace and
+                autosave operations.
+            on_error (str): Failure policy for an agent that raises. ``"store"``
+                records the error string as that agent's output and lets the
+                remaining agents finish; ``"raise"`` propagates the exception and
+                aborts the run.
+            max_workers (Optional[int]): Thread pool size for concurrent agent
+                execution. Agent calls are network-bound rather than CPU-bound,
+                so when omitted the pool is sized at ``len(agents)``, capped at
+                ``MAX_CONCURRENT_AGENTS``. See :meth:`_resolve_max_workers`.
+
+        Raises:
+            ValueError: If no agents are provided or the agents list is empty.
+        """
+        self.id = id or generate_id("concurrent-workflow")
         self.name = name
         self.description = description
         self.agents = agents
@@ -95,10 +150,11 @@ class ConcurrentWorkflow:
         self.show_dashboard = show_dashboard
         self.autosave = autosave
         self.verbose = verbose
-        self.swarm_workspace_dir = None
+        self.on_error = on_error
         self.metadata_output_path = (
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
         )
+        self.max_workers = max_workers
 
         # Initialize agent statuses if agents are provided
         if agents is not None:
@@ -110,16 +166,34 @@ class ConcurrentWorkflow:
             self.agent_statuses = {}
 
         self.reliability_check()
-        self.conversation = Conversation(
-            name=f"concurrent_workflow_name_{name}_id_{self.id}_conversation"
-        )
+        self.conversation = self._new_conversation()
 
         if self.show_dashboard is True:
             self.agents = self.fix_agents()
 
-        # Setup autosave workspace if enabled
-        if self.autosave:
-            self._setup_autosave()
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "concurrent-workflow",
+            verbose=self.verbose,
+            enabled=self.autosave,
+        )
+        self.swarm_workspace_dir = self.workspace.dir
+
+        # Capture the full __init__ configuration if telemetry is enabled.
+        capture_init(self)
+
+    def _new_conversation(self) -> Conversation:
+        """
+        Build an empty conversation for one task.
+
+        Returns:
+            Conversation: A fresh conversation named after this workflow, used
+                both for the instance's own conversation and for the per-task
+                scopes :meth:`batch_run` runs each task in.
+        """
+        return Conversation(
+            name=f"concurrent_workflow_name_{self.name}_id_{self.id}_conversation"
+        )
 
     def fix_agents(self):
         """
@@ -136,6 +210,23 @@ class ConcurrentWorkflow:
                 agent.print_on = False
         return self.agents
 
+    def _resolve_max_workers(self) -> int:
+        """
+        Determine the thread pool size for concurrent agent execution.
+
+        Each submitted task is one agent's LLM call, which is network-bound, so
+        CPU count is not the limiting factor. The pool never receives more than
+        ``len(self.agents)`` tasks, making that the natural size. The ceiling
+        guards large rosters against provider rate limits and HTTP connection
+        pool exhaustion.
+
+        Returns:
+            int: Number of worker threads to use, at least 1.
+        """
+        if self.max_workers is not None:
+            return max(1, self.max_workers)
+        return max(1, min(len(self.agents), MAX_CONCURRENT_AGENTS))
+
     def reliability_check(self):
         """
         Validate workflow configuration.
@@ -150,37 +241,20 @@ class ConcurrentWorkflow:
             Exception: If any other validation error occurs.
         """
         try:
-            if self.agents is None:
+            if not self.agents or len(self.agents) == 0:
                 raise ValueError(
                     "ConcurrentWorkflow: No agents provided"
                 )
-
-            if len(self.agents) == 0:
-                raise ValueError(
-                    "ConcurrentWorkflow: No agents provided"
-                )
-
             if len(self.agents) == 1:
                 logger.warning(
-                    "ConcurrentWorkflow: Only one agent provided."
+                    "ConcurrentWorkflow: Only one agent provided; concurrent execution may not be beneficial."
                 )
+
         except Exception as e:
             logger.error(
                 f"ConcurrentWorkflow: Reliability check failed: {e}"
             )
             raise
-
-    def activate_auto_prompt_engineering(self):
-        """
-        Enable automatic prompt engineering for all agents.
-
-        When enabled, this method activates automatic prompt engineering capabilities
-        for all agents in the workflow, allowing them to generate and optimize
-        their own prompts dynamically.
-        """
-        if self.auto_generate_prompts is True:
-            for agent in self.agents:
-                agent.auto_generate_prompt = True
 
     def display_agent_dashboard(
         self,
@@ -250,7 +324,6 @@ class ConcurrentWorkflow:
             if self.show_dashboard:
                 self.display_agent_dashboard()
 
-            max_workers = int(get_cpu_cores() * 0.95)
             futures = []
             results = []
 
@@ -332,8 +405,8 @@ class ConcurrentWorkflow:
 
                     raise
 
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=max_workers
+            with ContextThreadPoolExecutor(
+                max_workers=self._resolve_max_workers()
             ) as executor:
                 futures = [
                     executor.submit(
@@ -345,9 +418,20 @@ class ConcurrentWorkflow:
 
                 for future, agent in zip(futures, self.agents):
                     try:
-                        output = future.result()
+                        output = agent_answer(
+                            agent, fallback=future.result()
+                        )
                         results.append((agent.agent_name, output))
                     except Exception as e:
+                        # Same failure policy as _run: the dashboard must not revoke on_error.
+                        if self.on_error == "raise":
+                            raise
+                        capture_error(
+                            e,
+                            self,
+                            name="ConcurrentWorkflow.agent_error",
+                            agent=getattr(agent, "agent_name", None),
+                        )
                         logger.error(
                             f"Agent {agent.agent_name} failed: {str(e)}"
                         )
@@ -398,12 +482,10 @@ class ConcurrentWorkflow:
         """
         self.conversation.add(role="User", content=task)
 
-        max_workers = int(get_cpu_cores() * 0.95)
-
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_workers
+        with ContextThreadPoolExecutor(
+            max_workers=self._resolve_max_workers()
         ) as executor:
-            future_to_agent = {
+            futures = [
                 executor.submit(
                     self._run_agent_with_streaming,
                     agent,
@@ -411,18 +493,35 @@ class ConcurrentWorkflow:
                     img,
                     imgs,
                     streaming_callback,
-                ): agent
-                for agent in self.agents
-            }
-
-            for future in concurrent.futures.as_completed(
-                future_to_agent
-            ):
-                agent = future_to_agent[future]
-                output = future.result()
-                self.conversation.add(
-                    role=agent.agent_name, content=output
                 )
+                for agent in self.agents
+            ]
+
+            for future, agent in zip(futures, self.agents):
+                try:
+                    output = agent_answer(
+                        agent, fallback=future.result()
+                    )
+                    self.conversation.add(
+                        role=agent.agent_name, content=output
+                    )
+                except Exception as e:
+                    if self.on_error == "raise":
+                        raise
+                    # Track the swallowed per-agent failure so it isn't lost.
+                    capture_error(
+                        e,
+                        self,
+                        name="ConcurrentWorkflow.agent_error",
+                        agent=getattr(agent, "agent_name", None),
+                    )
+                    logger.error(
+                        f"Agent {agent.agent_name} failed: {str(e)}"
+                    )
+                    self.conversation.add(
+                        role=f"{agent.agent_name} (failed)",
+                        content=f"Error: {str(e)}",
+                    )
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
@@ -499,36 +598,9 @@ class ConcurrentWorkflow:
                 )
             raise
 
-    def cleanup(self):
-        """
-        Clean up resources and connections.
-
-        Performs cleanup operations including:
-        - Calling cleanup methods on all agents if available
-        - Resetting agent statuses
-        - Preserving conversation history for result formatting
-
-        This method is called automatically after each run to ensure proper resource management.
-        """
-        try:
-            # Reset agent statuses
-            for agent in self.agents:
-                if hasattr(agent, "cleanup"):
-                    try:
-                        agent.cleanup()
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to cleanup agent {agent.agent_name}: {str(e)}"
-                        )
-
-            # Clear conversation if needed
-            if hasattr(self, "conversation"):
-                # Keep the conversation for result formatting but reset for next run
-                pass
-
-        except Exception as e:
-            logger.error(f"Cleanup failed: {str(e)}")
-
+    @trace_run(
+        "ConcurrentWorkflow.run", input_params=("task", "img", "imgs")
+    )
     def run(
         self,
         task: str,
@@ -559,6 +631,7 @@ class ConcurrentWorkflow:
             >>> workflow = ConcurrentWorkflow(agents=[agent1, agent2])
             >>> result = workflow.run("Analyze this data")
         """
+        self.conversation = self._new_conversation()
         try:
             if self.show_dashboard:
                 result = self.run_with_dashboard(
@@ -569,29 +642,12 @@ class ConcurrentWorkflow:
                     task, img, imgs, streaming_callback
                 )
 
-            # Save conversation history after successful execution
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to save conversation history: {e}"
-                    )
+            self.workspace.save_conversation()
 
             return result
         except Exception:
-            # Save conversation history on error
-            if self.autosave and self.swarm_workspace_dir:
-                try:
-                    self._save_conversation_history()
-                except Exception as save_error:
-                    logger.warning(
-                        f"Failed to save conversation history on error: {save_error}"
-                    )
+            self.workspace.save_conversation()
             raise
-        finally:
-            # Always cleanup resources
-            self.cleanup()
 
     def batch_run(
         self,
@@ -608,6 +664,10 @@ class ConcurrentWorkflow:
         Each task is executed with all agents running concurrently, but the tasks
         themselves are processed sequentially.
 
+        Every task runs against its own conversation, so a result holds that
+        task's messages and nothing from the tasks before it. The workflow's own
+        conversation is restored afterwards and is left untouched by the batch.
+
         Args:
             tasks (List[str]): List of tasks to be executed.
             imgs (Optional[List[str]]): List of image paths corresponding to each task.
@@ -621,103 +681,19 @@ class ConcurrentWorkflow:
             >>> results = workflow.batch_run(["Task 1", "Task 2", "Task 3"])
         """
         results = []
-        for idx, task in enumerate(tasks):
-            img = None
-            if imgs is not None and idx < len(imgs):
-                img = imgs[idx]
-            results.append(
-                self.run(
-                    task=task,
-                    img=img,
-                    streaming_callback=streaming_callback,
+        workflow_conversation = self.conversation
+        try:
+            for idx, task in enumerate(tasks):
+                img = None
+                if imgs is not None and idx < len(imgs):
+                    img = imgs[idx]
+                results.append(
+                    self.run(
+                        task=task,
+                        img=img,
+                        streaming_callback=streaming_callback,
+                    )
                 )
-            )
+        finally:
+            self.conversation = workflow_conversation
         return results
-
-    def _setup_autosave(self):
-        """
-        Setup workspace directory for saving conversation history.
-
-        Creates the workspace directory structure if autosave is enabled.
-        Only conversation history will be saved to this directory.
-        """
-        try:
-            # Set default workspace directory if not set
-            if not os.getenv("WORKSPACE_DIR"):
-                default_workspace = os.path.join(
-                    os.getcwd(), "agent_workspace"
-                )
-                os.environ["WORKSPACE_DIR"] = default_workspace
-                # Clear the cache so get_workspace_dir() picks up the new value
-                get_workspace_dir.cache_clear()
-                if self.verbose:
-                    loguru_logger.info(
-                        f"WORKSPACE_DIR not set, using default: {default_workspace}"
-                    )
-
-            class_name = self.__class__.__name__
-            swarm_name = self.name or "concurrent-workflow"
-            self.swarm_workspace_dir = get_swarm_workspace_dir(
-                class_name, swarm_name, use_timestamp=True
-            )
-
-            if self.swarm_workspace_dir:
-                if self.verbose:
-                    loguru_logger.info(
-                        f"Autosave enabled. Conversation history will be saved to: {self.swarm_workspace_dir}"
-                    )
-        except Exception as e:
-            loguru_logger.warning(
-                f"Failed to setup autosave for ConcurrentWorkflow: {e}"
-            )
-            # Don't raise - autosave failures shouldn't break initialization
-            self.swarm_workspace_dir = None
-
-    def _save_conversation_history(self):
-        """
-        Save conversation history as a separate JSON file to the workspace directory.
-
-        Saves the conversation history to:
-        workspace_dir/swarms/ConcurrentWorkflow/{workflow-name}-{id}/conversation_history.json
-        """
-        if not self.swarm_workspace_dir:
-            return
-
-        try:
-            # Get conversation history
-            conversation_data = []
-            if hasattr(self, "conversation") and self.conversation:
-                if hasattr(self.conversation, "conversation_history"):
-                    conversation_data = (
-                        self.conversation.conversation_history
-                    )
-                elif hasattr(self.conversation, "to_dict"):
-                    conversation_data = self.conversation.to_dict()
-                else:
-                    conversation_data = []
-
-                # Create conversation history file path
-                conversation_path = os.path.join(
-                    self.swarm_workspace_dir,
-                    "conversation_history.json",
-                )
-
-                # Save conversation history as JSON
-                with open(
-                    conversation_path, "w", encoding="utf-8"
-                ) as f:
-                    json.dump(
-                        conversation_data,
-                        f,
-                        indent=2,
-                        default=str,
-                    )
-
-                if self.verbose:
-                    loguru_logger.debug(
-                        f"Saved conversation history to {conversation_path}"
-                    )
-        except Exception as e:
-            loguru_logger.warning(
-                f"Failed to save conversation history: {e}"
-            )

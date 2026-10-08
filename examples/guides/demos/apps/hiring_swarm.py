@@ -12,6 +12,7 @@ from typing import List
 
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -208,14 +209,10 @@ class HiringSwarm:
             ),
         ]
 
-    def find_agent_by_name(self, name: str) -> Agent:
-        """Find an agent by their name."""
-        for agent in self.agents:
-            if agent.agent_name == name:
-                return agent
-
     def initial_talent_acquisition(self):
-        elena_agent = self.find_agent_by_name("Talent-Acquisition")
+        elena_agent = find_agent_by_name(
+            self.agents, "Talent-Acquisition"
+        )
         elena_output = elena_agent.run(
             f"History: {self.conversation.get_str()}\n"
             f"Identify staffing needs, define the {self.job_role} position, develop job descriptions, and outline sourcing strategies."
@@ -225,7 +222,9 @@ class HiringSwarm:
         )
 
     def candidate_screening(self):
-        marcus_agent = self.find_agent_by_name("Candidate-Screening")
+        marcus_agent = find_agent_by_name(
+            self.agents, "Candidate-Screening"
+        )
         marcus_output = marcus_agent.run(
             f"History: {self.conversation.get_str()}\n"
             f"Screen resumes and applications for the {self.job_role} position, conduct preliminary interviews, and provide a shortlist of candidates."
@@ -235,8 +234,8 @@ class HiringSwarm:
         )
 
     def interview_coordination(self):
-        olivia_agent = self.find_agent_by_name(
-            "Interview-Coordinator"
+        olivia_agent = find_agent_by_name(
+            self.agents, "Interview-Coordinator"
         )
         olivia_output = olivia_agent.run(
             f"History: {self.conversation.get_str()}\n"
@@ -247,8 +246,8 @@ class HiringSwarm:
         )
 
     def onboarding_preparation(self):
-        nathan_agent = self.find_agent_by_name(
-            "Onboarding-Specialist"
+        nathan_agent = find_agent_by_name(
+            self.agents, "Onboarding-Specialist"
         )
         nathan_output = nathan_agent.run(
             f"History: {self.conversation.get_str()}\n"
@@ -259,7 +258,9 @@ class HiringSwarm:
         )
 
     def employee_engagement_strategy(self):
-        sophia_agent = self.find_agent_by_name("Employee-Engagement")
+        sophia_agent = find_agent_by_name(
+            self.agents, "Employee-Engagement"
+        )
         sophia_output = sophia_agent.run(
             f"History: {self.conversation.get_str()}\n"
             f"Develop and implement an employee engagement plan for the new {self.job_role} hire, including activities and feedback mechanisms."

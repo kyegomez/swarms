@@ -9,7 +9,11 @@ Based on the paper: "SkillOrchestra: Learning to Route Agents via Skill Transfer
 https://arxiv.org/abs/2602.19672
 """
 
-from swarms import Agent, SkillOrchestra
+from swarms import Agent
+
+# SkillOrchestra ships alongside this example rather than in swarms.structs,
+# so import it from the module in this folder.
+from skill_orchestra import SkillOrchestra
 
 code_agent = Agent(
     agent_name="CodeExpert",
@@ -56,9 +60,10 @@ orchestra = SkillOrchestra(
 )
 
 # The handbook was auto-generated. Inspect it:
+handbook = orchestra.get_handbook()
 print("Generated Skill Handbook:")
-for skill in orchestra.skill_handbook.skills:
-    print(f"  - {skill.name}: {skill.description}")
+for skill in handbook["skills"]:
+    print(f"  - {skill['name']}: {skill['description']}")
 print()
 
 # --- Run tasks: each should route to the most competent agent ---
