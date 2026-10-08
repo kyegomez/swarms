@@ -23,6 +23,7 @@ from swarms.schemas.planner_worker_schemas import (
     PlannerTaskStatus,
     TaskPriority,
 )
+from swarms.schemas.stream_schemas import ThinkingToken
 
 __all__ = [
     "MCPConnection",
@@ -42,4 +43,5 @@ __all__ = [
     "PlannerTaskSpec",
     "PlannerTaskStatus",
     "TaskPriority",
+    "ThinkingToken",
 ]
