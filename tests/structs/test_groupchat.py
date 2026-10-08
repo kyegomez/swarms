@@ -230,6 +230,30 @@ class TestConstructorValidation:
 # --------------------------------------------------------------------------
 
 
+class HistoryAgent(ScriptedAgent):
+    """Prefixes the history to its reply unless output_type is final."""
+
+    def __init__(self, name, bids=()):
+        super().__init__(name, bids)
+        self.output_type = "str-all-except-first"
+
+    def run(self, task=None, *args, **kwargs):
+        output = super().run(task, *args, **kwargs)
+        if self.output_type == "final":
+            return output
+        return f"User: {task}\n\n{self.agent_name}: {output!r}"
+
+
+class TestBidOutputType:
+    def test_bids_parse_whatever_the_agents_output_type(self):
+        speaker = HistoryAgent("A", [(0.9, "a real reply")])
+        chat = make_chat([speaker, HistoryAgent("B")])
+        chat.run("topic")
+
+        assert roles(chat)[:2] == ["User", "A"]
+        assert speaker.output_type == "str-all-except-first"
+
+
 class TestScheduling:
     def test_the_highest_bidder_takes_the_floor(self):
         eager = ScriptedAgent("Eager", [(0.9, "eager speaks")])

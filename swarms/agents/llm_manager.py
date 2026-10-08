@@ -44,6 +44,7 @@ from litellm.utils import (
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentLLMInitializationError
+from swarms.telemetry.otel import swarm_telemetry
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists
 from swarms.utils.litellm_wrapper import LiteLLM
@@ -147,6 +148,7 @@ class LLMManager:
         )
 
         # Update the model name and reinitialize LLM
+        agent.fallback_models = available_models
         agent.model_name = new_model
         agent.llm = self.build()
 
@@ -237,7 +239,7 @@ class LLMManager:
                 agent.mcp_enabled
                 and getattr(agent, "tool_loader", None) is not None
             ):
-                agent.defer_mcp_tools()
+                agent.tool_manager.defer_mcp_tools()
                 deferred_mcp = True
 
             # Initialize tools_list_dictionary, if applicable
@@ -253,7 +255,9 @@ class LLMManager:
                         f"Adding MCP tools to memory for {agent.agent_name}"
                     )
 
-                mcp_tools = agent.add_mcp_tools_to_memory()
+                mcp_tools = (
+                    agent.tool_manager.add_mcp_tools_to_memory()
+                )
 
                 if agent.verbose:
                     logger.info(f"MCP tools: {mcp_tools}")
@@ -494,8 +498,8 @@ class LLMManager:
         1. **Detailed streaming** (``agent.stream``): streams tokens with full
            metadata (citations, usage, logprobs, …), passing a ``token_info``
            dict to ``streaming_callback`` per token.
-        2. **Panel streaming** (``agent.streaming_on``): streams with formatted
-           panels, a real-time callback, or silently when ``print_on`` is False.
+        2. **Panel streaming** (``agent.streaming_on`` or a ``streaming_callback``):
+           formatted panels, a real-time callback, or silent when ``print_on`` is False.
         3. **Non-streaming**: a direct ``llm.run()`` returning the full string.
 
         Args:
@@ -518,10 +522,92 @@ class LLMManager:
             AuthenticationError, Exception: re-raised for upstream handling.
         """
         agent = self.agent
+        with swarm_telemetry().capture_run(
+            "Agent.llm_call", agent
+        ) as span:
+            span.set("gen_ai.operation.name", "chat")
+            span.set("gen_ai.request.model", self.get_current_model())
+            span.set("swarms.loop", current_loop)
+            usage_before = dict(getattr(agent, "_usage", None) or {})
+            try:
+                result = self._call_llm(
+                    task,
+                    img,
+                    imgs,
+                    current_loop,
+                    streaming_callback,
+                    *args,
+                    **kwargs,
+                )
+            finally:
+                usage_after = getattr(agent, "_usage", None)
+                if isinstance(usage_after, dict):
+                    span.record_usage(
+                        {
+                            key: value - usage_before.get(key, 0)
+                            for key, value in usage_after.items()
+                        }
+                    )
+                request = getattr(agent.llm, "last_request", None)
+                if request is not None:
+                    span.record_json("swarms.request", request)
+            response = getattr(agent.llm, "last_response", None)
+            # A stream leaves no response object, so the assembled result stands in.
+            span.record_json(
+                "swarms.response",
+                (
+                    response.model_dump()
+                    if hasattr(response, "model_dump")
+                    else result if response is None else response
+                ),
+            )
+            finish_reason = getattr(
+                agent.llm, "last_finish_reason", None
+            )
+            if finish_reason:
+                span.set(
+                    "gen_ai.response.finish_reasons", finish_reason
+                )
+            response_model = getattr(
+                agent.llm, "last_response_model", None
+            )
+            if response_model:
+                span.set("gen_ai.response.model", response_model)
+            span.record_success()
+            return result
+
+    def _call_llm(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """Run the model call for one loop, picking the streaming mode from the agent's config.
+
+        Args:
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): Image input for multimodal processing.
+            imgs (Optional[List[str]]): Several image inputs.
+            current_loop (int): Loop iteration, used in streaming panel titles.
+            streaming_callback (Optional[Callable[[str], None]]): Receives streamed tokens.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
+
+        Returns:
+            Any: The complete response string, or the tool-call list.
+        """
+        agent = self.agent
 
         # Filter out is_last from kwargs if present
         if "is_last" in kwargs:
             del kwargs["is_last"]
+
+        if imgs:
+            kwargs["imgs"] = imgs
 
         try:
             if agent.stream and hasattr(agent.llm, "stream"):
@@ -529,7 +615,9 @@ class LLMManager:
                     task, img, streaming_callback, *args, **kwargs
                 )
 
-            if agent.streaming_on and hasattr(agent.llm, "stream"):
+            if (
+                agent.streaming_on or streaming_callback is not None
+            ) and hasattr(agent.llm, "stream"):
                 return self._call_panel_streaming(
                     task,
                     img,
@@ -543,8 +631,6 @@ class LLMManager:
 
             if img is not None:
                 run_args["img"] = img
-            if imgs:
-                run_args["imgs"] = imgs
 
             return agent.llm.run(**run_args, **kwargs)
 

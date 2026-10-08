@@ -13,8 +13,12 @@ from dotenv import load_dotenv
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
+from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.schemas.agent_errors import (
+    AgentLLMError,
+    AgentToolExecutionError,
+)
 from swarms.tools.base_tool import BaseTool
 
 load_dotenv()
@@ -43,7 +47,7 @@ def _patched_agent(name, **kwargs):
     """An Agent with the model client stubbed, so __init__ makes no calls."""
     # setdefault, not a keyword: callers override max_loops (notably "auto").
     kwargs.setdefault("max_loops", 1)
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         return Agent(
             agent_name=name,
             print_on=False,
@@ -491,7 +495,7 @@ class TestAgentToolUsage:
                 max_loops=1,
                 **kwargs,
             )
-            tools = agent.add_mcp_tools_to_memory()
+            tools = agent.tool_manager.add_mcp_tools_to_memory()
 
         assert len(tools) == len(names)
         assert get_tools.called
@@ -1104,6 +1108,7 @@ class TestToolExecutionRetry:
         agent = Agent.__new__(Agent)
         agent.agent_name = name
         agent.tool_retry_attempts = attempts
+        agent.tool_manager = ToolManager(agent)
         return agent
 
     @pytest.mark.parametrize("attempts", [3, 5])
@@ -1115,9 +1120,11 @@ class TestToolExecutionRetry:
             calls.append(loop_count)
             raise RuntimeError("simulated tool failure")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
 
         # The regression: this was 1 regardless of tool_retry_attempts.
         assert len(calls) == attempts
@@ -1130,9 +1137,11 @@ class TestToolExecutionRetry:
         def failing(response, loop_count):
             raise RuntimeError("simulated tool failure")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError) as excinfo:
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
 
         # The underlying error is chained, not discarded.
         assert isinstance(excinfo.value.__cause__, RuntimeError)
@@ -1151,9 +1160,11 @@ class TestToolExecutionRetry:
             calls.append(1)
             raise ValueError("a tool's own error type")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
         assert len(calls) == 2
 
     def test_stops_retrying_once_a_attempt_succeeds(self):
@@ -1165,8 +1176,8 @@ class TestToolExecutionRetry:
             if len(calls) < 3:
                 raise RuntimeError("transient")
 
-        agent.execute_tools = flaky
-        Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+        agent.tool_manager.execute_tools = flaky
+        agent.tool_manager.tool_execution_retry([{"function": {}}], 1)
 
         # Third attempt succeeded, so the fourth must not run.
         assert len(calls) == 3
@@ -1191,15 +1202,17 @@ class TestToolExecutionRetry:
         }
 
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [call], 1)
+            agent.tool_manager.tool_execution_retry([call], 1)
         assert len(runs) == 3
 
     def test_none_response_does_not_execute_or_raise(self):
         agent = self._agent()
         called = []
-        agent.execute_tools = lambda **kw: called.append(1)
+        agent.tool_manager.execute_tools = lambda **kw: called.append(
+            1
+        )
 
-        Agent.tool_execution_retry(agent, None, 1)
+        agent.tool_manager.tool_execution_retry(None, 1)
         assert called == []
 
     def test_a_zero_or_none_attempt_count_still_runs_once(self):
@@ -1209,10 +1222,12 @@ class TestToolExecutionRetry:
         for attempts in (0, None):
             agent = self._agent(attempts=attempts)
             calls = []
-            agent.execute_tools = (
+            agent.tool_manager.execute_tools = (
                 lambda response, loop_count: calls.append(1)
             )
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
             assert (
                 len(calls) == 1
             ), f"attempts={attempts!r} should still run once"
@@ -1320,7 +1335,7 @@ class TestTextReplyFromAToolAgent:
             **kwargs,
         )
         agent.call_llm = lambda task=None, *a, **k: reply
-        agent.temp_llm_instance_for_tool_summary = (
+        agent.tool_manager.temp_llm_instance_for_tool_summary = (
             lambda: SimpleNamespace(
                 run=lambda prompt: summary_calls.append(prompt)
                 or "SUMMARY"
@@ -1362,7 +1377,9 @@ class TestTextReplyFromAToolAgent:
                 "arguments": '{"ticker": "X"}',
             },
         }
-        agent = self._agent([tool_call], summary_calls)
+        agent = self._agent(
+            [tool_call], summary_calls, tool_call_summary=True
+        )
 
         agent.run("price of X")
 
@@ -1373,6 +1390,136 @@ class TestTextReplyFromAToolAgent:
         assert len(executor) == 1 and "100" in executor[0]["content"]
         assert len(summary_calls) == 1
         assert history[-1]["content"] == "SUMMARY"
+
+    def test_a_tool_turn_makes_no_summary_call_by_default(self):
+        summary_calls = []
+        tool_call = {
+            "type": "function",
+            "id": "call-1",
+            "function": {
+                "name": "_price",
+                "arguments": '{"ticker": "X"}',
+            },
+        }
+        agent = self._agent([tool_call], summary_calls)
+
+        agent.run("price of X")
+
+        history = agent.short_memory.conversation_history
+        assert agent.tool_call_summary is False
+        assert summary_calls == []
+        assert history[-1]["role"] == "Tool Executor"
+        assert "100" in history[-1]["content"]
+
+
+class TestListTools:
+    """#2426: Agent.list_tools names every tool the agent can call."""
+
+    @staticmethod
+    def _weather(city: str) -> str:
+        """Get the weather.
+
+        Args:
+            city: The city.
+        """
+        return "sunny"
+
+    @staticmethod
+    def _agent(**kwargs):
+        kwargs.setdefault("max_loops", 1)
+        return Agent(
+            agent_name="ListToolsAgent",
+            model_name="gpt-5.4",
+            print_on=False,
+            **kwargs,
+        )
+
+    @staticmethod
+    def _mcp_agent(get_tools, **kwargs):
+        agent = TestListTools._agent(
+            mcp_url="http://localhost:9/mcp", llm=object(), **kwargs
+        )
+        agent.mcp_manager.get_tools = get_tools
+        return agent
+
+    @staticmethod
+    def _stock_schemas(*args, **kwargs):
+        return [
+            {"type": "function", "function": {"name": "lookup_stock"}}
+        ]
+
+    def test_local_tools_only(self):
+        agent = self._agent(
+            tools=[self._weather], dynamic_tools=False
+        )
+        assert agent.list_tools() == ["_weather"]
+
+    def test_mcp_tools_only(self):
+        agent = self._mcp_agent(
+            self._stock_schemas, dynamic_tools=False
+        )
+        assert agent.list_tools() == ["lookup_stock"]
+
+    def test_local_tools_come_before_mcp_tools(self):
+        agent = self._mcp_agent(
+            self._stock_schemas,
+            tools=[self._weather],
+            dynamic_tools=False,
+        )
+        assert agent.list_tools() == ["_weather", "lookup_stock"]
+
+    def test_handoffs_add_handoff_task_last(self):
+        agent = self._agent(
+            tools=[self._weather],
+            dynamic_tools=False,
+            handoffs=[self._agent()],
+        )
+        assert agent.list_tools() == ["_weather", "handoff_task"]
+
+    def test_dynamic_tools_include_deferred_tools_and_tool_search(
+        self,
+    ):
+        agent = self._agent(tools=[self._weather], dynamic_tools=True)
+        assert agent.tool_loader.deferred_names == ["_weather"]
+        assert agent.list_tools() == ["_weather", "tool_search"]
+
+    def test_autonomous_loop_tools_follow_local_tools(self):
+        from swarms.structs.autonomous_loop_utils import (
+            get_autonomous_loop_tool_names,
+        )
+
+        agent = self._agent(
+            tools=[self._weather],
+            dynamic_tools=False,
+            max_loops="auto",
+        )
+        loop_tools = [
+            name
+            for name in get_autonomous_loop_tool_names()
+            if name != "think"
+        ]
+        assert agent.list_tools() == ["_weather", *loop_tools]
+
+    def test_an_unreachable_mcp_server_leaves_the_other_names(self):
+        def unreachable(*args, **kwargs):
+            raise ConnectionError("server down")
+
+        agent = self._mcp_agent(
+            unreachable, tools=[self._weather], dynamic_tools=False
+        )
+        assert agent.list_tools() == ["_weather"]
+
+    def test_mcp_tools_are_fetched_once(self):
+        calls = []
+
+        def get_tools(*args, **kwargs):
+            calls.append(1)
+            return self._stock_schemas()
+
+        agent = self._mcp_agent(get_tools, dynamic_tools=False)
+        agent.list_tools()
+        agent.list_tools()
+        assert len(calls) == 1
 
 
 class TestConcurrentExecutionPool:
@@ -1686,7 +1833,9 @@ class TestAgentUsage:
                 return response
             return self._response(100 * n, n)
 
-        agent = self._agent(tools=[add], dynamic_tools=False)
+        agent = self._agent(
+            tools=[add], dynamic_tools=False, tool_call_summary=True
+        )
         agent.max_loops = 3
         with patch(
             "swarms.utils.litellm_wrapper.completion",
@@ -1878,3 +2027,110 @@ class TestRunSamples:
         assert (
             calls == [("https://example.com/chart.png", on_token)] * 2
         )
+
+
+class TestLLMFailureRaises:
+    """#2408: once its retries ran out, _run broke out of the loop and
+    returned the formatted history, so run() returned '' with no error and
+    fallback_models was never tried.
+    """
+
+    TASK = "What is 2+2?"
+
+    @staticmethod
+    def _completion(calls, down):
+        def fake_completion(**params):
+            calls.append(params["model"])
+            if params["model"] in down:
+                raise RuntimeError(f"{params['model']} is down")
+            message = SimpleNamespace(
+                content=f"answer from {params['model']}",
+                tool_calls=None,
+                reasoning_content=None,
+            )
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=message, finish_reason="stop"
+                    )
+                ],
+                usage=None,
+            )
+
+        return fake_completion
+
+    @staticmethod
+    def _agent(**kwargs):
+        return Agent(
+            agent_name="FallbackAgent",
+            max_loops=1,
+            retry_attempts=2,
+            print_on=False,
+            verbose=False,
+            persistent_memory=False,
+            **kwargs,
+        )
+
+    def test_raises_when_retries_run_out(self):
+        agent = self._agent(model_name="gpt-5.4")
+        history_before = len(agent.short_memory.conversation_history)
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, {"gpt-5.4"}),
+        ):
+            with pytest.raises(AgentLLMError):
+                agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "gpt-5.4"]
+        assert (
+            len(agent.short_memory.conversation_history)
+            == history_before
+        )
+
+    def test_falls_back_to_the_next_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, {"gpt-5.4"}),
+        ):
+            output = agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "gpt-5.4", "claude-sonnet-4-6"]
+        assert "answer from claude-sonnet-4-6" in str(output)
+        task_turns = [
+            m
+            for m in agent.short_memory.conversation_history
+            if m["content"] == self.TASK
+        ]
+        assert len(task_turns) == 1
+
+    def test_raises_once_every_fallback_fails(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(
+                calls, {"gpt-5.4", "claude-sonnet-4-6"}
+            ),
+        ):
+            with pytest.raises(AgentLLMError):
+                agent.run(self.TASK)
+
+        assert calls == [
+            "gpt-5.4",
+            "gpt-5.4",
+            "claude-sonnet-4-6",
+            "claude-sonnet-4-6",
+        ]

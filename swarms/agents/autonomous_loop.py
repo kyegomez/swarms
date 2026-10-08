@@ -316,8 +316,10 @@ class AutonomousAgentLoop:
                 deferred = [
                     t for t in planning_tools if t not in control
                 ]
-                self.agent.setup_dynamic_tools(always_loaded=control)
-                self.agent.defer_tool_schemas(deferred)
+                self.agent.tool_manager.setup_dynamic_tools(
+                    always_loaded=control
+                )
+                self.agent.tool_manager.defer_tool_schemas(deferred)
                 planning_tools = []
 
             # Get existing tool names to avoid duplicates
@@ -348,7 +350,9 @@ class AutonomousAgentLoop:
                         existing_tool_names.add(tool_name)
 
                 # Removed first, so a changed roster cannot go stale.
-                agent_registry = self.agent._get_agent_registry()
+                agent_registry = (
+                    self.agent.tool_manager.get_agent_registry()
+                )
                 if agent_registry:
                     handoff_prompt = get_handoffs_prompt(
                         list(agent_registry.values())
@@ -378,11 +382,11 @@ class AutonomousAgentLoop:
 
             # Register planning tool handlers
             all_planning_tool_handlers = {
-                SEARCH_TOOL_NAME: self.agent._tool_search_tool,
+                SEARCH_TOOL_NAME: self.agent.tool_manager.tool_search_tool,
                 "create_plan": self._create_plan_tool,
                 "think": self._think_tool,
                 "subtask_done": self._subtask_done_tool,
-                "complete_task": self.agent._complete_task_tool,
+                "complete_task": self.agent.tool_manager.complete_task_tool,
                 "respond_to_user": lambda **kwargs: respond_to_user_tool(
                     self.agent, **kwargs
                 ),
@@ -440,7 +444,7 @@ class AutonomousAgentLoop:
             # Add handoff tool handler if handoffs are configured
             if exists(self.agent.handoffs):
                 planning_tool_handlers["handoff_task"] = (
-                    self.agent._handoff_task_tool
+                    self.agent.tool_manager.handoff_task_tool
                 )
 
             # Phase 1: Planning
@@ -473,7 +477,11 @@ class AutonomousAgentLoop:
                         **kwargs,
                     )
 
-                    response = self.agent.parse_llm_output(response)
+                    response = (
+                        self.agent.tool_manager.parse_llm_output(
+                            response
+                        )
+                    )
                     self.agent.short_memory.add(
                         role=self.agent.agent_name, content=response
                     )
@@ -497,7 +505,7 @@ class AutonomousAgentLoop:
                                     )
 
                                     # Visualize function call
-                                    self.agent._visualize_function_call(
+                                    self.agent.tool_manager.visualize_function_call(
                                         "create_plan", arguments
                                     )
 
@@ -530,14 +538,12 @@ class AutonomousAgentLoop:
 
                                     # Visualize handoff tool call
                                     if self.agent.print_on:
-                                        self.agent._visualize_handoff_call(
+                                        self.agent.tool_manager.visualize_handoff_call(
                                             handoffs_list, tool_call
                                         )
 
-                                    result = (
-                                        self.agent._handoff_task_tool(
-                                            handoffs=handoffs_list
-                                        )
+                                    result = self.agent.tool_manager.handoff_task_tool(
+                                        handoffs=handoffs_list
                                     )
 
                                     # Add result to memory
@@ -729,8 +735,10 @@ class AutonomousAgentLoop:
                             **kwargs,
                         )
 
-                        response = self.agent.parse_llm_output(
-                            response
+                        response = (
+                            self.agent.tool_manager.parse_llm_output(
+                                response
+                            )
                         )
                         self.agent.short_memory.add(
                             role=self.agent.agent_name,
@@ -802,13 +810,13 @@ class AutonomousAgentLoop:
                                                 )
                                             )
                                             if self.agent.print_on:
-                                                self.agent._visualize_handoff_call(
+                                                self.agent.tool_manager.visualize_handoff_call(
                                                     handoffs_list,
                                                     tool_call,
                                                 )
 
                                             try:
-                                                result = self.agent._handoff_task_tool(
+                                                result = self.agent.tool_manager.handoff_task_tool(
                                                     handoffs=handoffs_list
                                                 )
                                             except (
@@ -825,7 +833,7 @@ class AutonomousAgentLoop:
                                                 "subtask_done",
                                                 "complete_task",
                                             ):
-                                                self.agent._visualize_function_call(
+                                                self.agent.tool_manager.visualize_function_call(
                                                     function_name,
                                                     arguments,
                                                 )
@@ -874,7 +882,7 @@ class AutonomousAgentLoop:
                                             "subtask_done",
                                             "complete_task",
                                         ]:
-                                            self.agent._visualize_function_call(
+                                            self.agent.tool_manager.visualize_function_call(
                                                 function_name,
                                                 arguments,
                                                 result,
@@ -962,7 +970,7 @@ class AutonomousAgentLoop:
                                             AttributeError,
                                         ):
                                             pass
-                                        self.agent._visualize_function_call(
+                                        self.agent.tool_manager.visualize_function_call(
                                             func_name, func_args
                                         )
 
@@ -1007,7 +1015,7 @@ class AutonomousAgentLoop:
                                         is True
                                     ):
                                         temp_llm = (
-                                            self.agent.temp_llm_instance_for_tool_summary()
+                                            self.agent.tool_manager.temp_llm_instance_for_tool_summary()
                                         )
                                         tool_response = temp_llm.run(
                                             f"""
@@ -1030,7 +1038,7 @@ class AutonomousAgentLoop:
                                         logger.warning(
                                             f"Direct tool execution failed, using retry mechanism: {e}"
                                         )
-                                    self.agent.tool_execution_retry(
+                                    self.agent.tool_manager.tool_execution_retry(
                                         regular_tool_calls,
                                         subtask_iterations,
                                     )
@@ -1085,7 +1093,7 @@ class AutonomousAgentLoop:
                                                 func_name
                                                 not in planning_tool_handlers
                                             ):
-                                                self.agent._visualize_function_call(
+                                                self.agent.tool_manager.visualize_function_call(
                                                     func_name,
                                                     func_args,
                                                 )
@@ -1118,7 +1126,7 @@ class AutonomousAgentLoop:
                                         is True
                                     ):
                                         temp_llm = (
-                                            self.agent.temp_llm_instance_for_tool_summary()
+                                            self.agent.tool_manager.temp_llm_instance_for_tool_summary()
                                         )
                                         tool_response = temp_llm.run(
                                             f"""
@@ -1141,7 +1149,7 @@ class AutonomousAgentLoop:
                                         logger.warning(
                                             f"Direct tool execution failed, using retry mechanism: {e}"
                                         )
-                                    self.agent.tool_execution_retry(
+                                    self.agent.tool_manager.tool_execution_retry(
                                         response, subtask_iterations
                                     )
 
@@ -1464,7 +1472,7 @@ class AutonomousAgentLoop:
         schemas = getattr(agent, "_mcp_schemas_cache", None)
         if schemas is None:
             try:
-                schemas = agent.add_mcp_tools_to_memory()
+                schemas = agent.tool_manager.add_mcp_tools_to_memory()
             except Exception as error:
                 logger.error(f"Could not list MCP tools: {error}")
                 return set()
@@ -1506,10 +1514,12 @@ class AutonomousAgentLoop:
         for call in mcp_calls:
             name = call.get("function", {}).get("name", "unknown")
             if self.agent.print_on:
-                self.agent._visualize_function_call(name, {})
+                self.agent.tool_manager.visualize_function_call(
+                    name, {}
+                )
 
             try:
-                self.agent.mcp_tool_handling(
+                self.agent.tool_manager.mcp_tool_handling(
                     response=[call], current_loop=current_loop
                 )
                 outcome = f"{name} executed via MCP. See the tool output above."
@@ -1554,7 +1564,7 @@ class AutonomousAgentLoop:
             + [str(step.get("description", "")) for step in steps]
         )
         before = set(agent.tool_loader.loaded_names)
-        agent._tool_search_tool(
+        agent.tool_manager.tool_search_tool(
             query=query,
             max_results=PREWARM_TOOL_LIMIT,
             # Speculative, so relevance must beat an explicit search.

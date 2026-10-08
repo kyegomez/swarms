@@ -17,10 +17,11 @@ The main class `LiteLLM` provides a simple interface for running LLM tasks with 
 for various input modalities and output formats.
 """
 
+import copy
 import socket
 import traceback
 from functools import lru_cache
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 import litellm
 import requests
@@ -229,7 +230,7 @@ class LiteLLM:
         prompt_caching: bool = False,
         cache_config: dict = None,
         mcp_call: bool = False,
-        top_p: float = 1.0,
+        top_p: Optional[float] = None,
         functions: List[dict] = None,
         return_all: bool = False,
         base_url: str = None,
@@ -303,7 +304,7 @@ class LiteLLM:
             mcp_call (bool, optional): Whether this is an MCP (Model Context Protocol) call.
                 Affects how tool calls are formatted in the response. Defaults to False.
             top_p (float, optional): Top-p (nucleus) sampling parameter. Controls diversity
-                via nucleus sampling. Defaults to 1.0.
+                via nucleus sampling. Defaults to None, so the provider's default applies.
             functions (List[dict], optional): Legacy function definitions (deprecated in
                 favor of tools_list_dictionary). Defaults to None.
             return_all (bool, optional): Whether to return the complete response object
@@ -374,6 +375,10 @@ class LiteLLM:
         self.agent_name = agent_name
         self.usage_hook = usage_hook
         self.usage = empty_usage()
+        self.last_finish_reason: Optional[str] = None
+        self.last_response_model: Optional[str] = None
+        self.last_request: Optional[dict] = None
+        self.last_response: Any = None
         self.modalities = []
         self.messages = []  # Initialize messages list
 
@@ -896,13 +901,15 @@ class LiteLLM:
 
         # Cache the system prompt — the largest stable prefix of the request.
         if self._cache_opt("cache_system_prompt", True):
-            for m in messages:
+            for i, m in enumerate(messages):
                 if isinstance(m, dict) and m.get("role") == "system":
-                    self._add_cache_control(m)
+                    messages[i] = copy.deepcopy(m)
+                    self._add_cache_control(messages[i])
                     break
 
         # Cache through the final message for incremental multi-turn caching.
         if self._cache_opt("cache_messages", True):
+            messages[-1] = copy.deepcopy(messages[-1])
             self._add_cache_control(messages[-1])
 
     def _maybe_cache_tools(self, tools: list) -> list:
@@ -1383,6 +1390,11 @@ class LiteLLM:
         if self.stream or response is None:
             return
         self._accumulate_usage(usage_from_response(response))
+        choices = _field(response, "choices") or []
+        self.last_finish_reason = (
+            _field(choices[0], "finish_reason") if choices else None
+        )
+        self.last_response_model = _field(response, "model")
 
     def _track_streaming_usage(self, stream: any):
         """Yield the stream's chunks, recording the trailing usage chunk.
@@ -1392,10 +1404,20 @@ class LiteLLM:
         It is consumed for accounting and not forwarded, so consumers never
         see an empty token.
         """
+        self.last_finish_reason = None
+        self.last_response_model = None
         for chunk in stream:
+            choices = _field(chunk, "choices") or []
+            if choices and _field(choices[0], "finish_reason"):
+                self.last_finish_reason = _field(
+                    choices[0], "finish_reason"
+                )
+            self.last_response_model = (
+                _field(chunk, "model") or self.last_response_model
+            )
             if _field(chunk, "usage"):
                 self._accumulate_usage(usage_from_response(chunk))
-                if not _field(chunk, "choices"):
+                if not choices:
                     continue
             yield chunk
 
@@ -1507,6 +1529,8 @@ class LiteLLM:
             llm.run("Write a story", temperature=0.9, max_tokens=2000)
             ```
         """
+        self.last_request = None
+        self.last_response = None
         try:
             completion_params = self._build_completion_params(
                 task,
@@ -1516,6 +1540,7 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
+            self.last_request = completion_params
             try:
                 response = completion(**completion_params)
             except Exception as error:
@@ -1527,7 +1552,10 @@ class LiteLLM:
                 logger.warning(
                     f"{self.model_name} rejected the output-token key, retrying: {error}"
                 )
+                self.last_request = retry_params
                 response = completion(**retry_params)
+            if not self.stream:
+                self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
@@ -1559,6 +1587,8 @@ class LiteLLM:
         Accepts the same arguments and returns the same output types as
         `run` (see its docstring).
         """
+        self.last_request = None
+        self.last_response = None
         try:
             completion_params = self._build_completion_params(
                 task,
@@ -1568,6 +1598,7 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
+            self.last_request = completion_params
             try:
                 response = await acompletion(**completion_params)
             except Exception as error:
@@ -1579,7 +1610,10 @@ class LiteLLM:
                 logger.warning(
                     f"{self.model_name} rejected the output-token key, retrying: {error}"
                 )
+                self.last_request = retry_params
                 response = await acompletion(**retry_params)
+            if not self.stream:
+                self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:

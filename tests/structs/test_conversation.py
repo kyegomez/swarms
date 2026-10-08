@@ -10,6 +10,7 @@ from loguru import logger
 
 from swarms.structs import conversation as conversation_module
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 def setup_temp_conversations_dir():
@@ -578,6 +579,23 @@ def test_save_and_load_json():
             return False
     finally:
         shutil.rmtree(temp_dir)
+
+
+def test_load_filepath_restores_the_saved_history(tmp_path):
+    saved = tmp_path / "saved.json"
+    conv = Conversation(save_filepath=str(saved))
+    conv.add("user", "remember Helios")
+    conv.save_as_json(force=True)
+
+    restored = Conversation(
+        load_filepath=str(saved),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+
+    assert [
+        message["content"]
+        for message in restored.conversation_history
+    ] == ["remember Helios"]
 
 
 # ── memory_md_path initialization ──
@@ -1290,20 +1308,6 @@ def test_return_messages_as_dictionary_preserves_roles():
     assert messages[1]["content"] == "Hello, user!"
 
 
-if __name__ == "__main__":
-    logger.info("Starting test execution")
-    results = run_all_tests()
-    report = generate_markdown_report(results)
-
-    # Save report to file
-    with open("test_results.md", "w") as f:
-        f.write(report)
-
-    logger.success(
-        "Test execution completed. Results saved to test_results.md"
-    )
-
-
 def test_return_all_except_first_without_a_system_prompt():
     conv = Conversation()
     conv.add("User", "Task")
@@ -1380,3 +1384,66 @@ def test_resuming_a_named_conversation_keeps_one_system_prompt(
             "User",
             "Assistant",
         ]
+
+
+def _record_token_counts(monkeypatch):
+    counted = []
+
+    def counting(text, *args, **kwargs):
+        counted.append(text)
+        return count_tokens(text, *args, **kwargs)
+
+    monkeypatch.setattr(conversation_module, "count_tokens", counting)
+    return counted
+
+
+def test_history_reads_reuse_message_token_counts(monkeypatch):
+    conv = Conversation(context_length=10_000)
+    conv.add("User", "first message")
+    conv.add("Assistant", "second message")
+    counted = _record_token_counts(monkeypatch)
+
+    for _ in range(3):
+        conv.return_history_as_string()
+    assert counted == [
+        "User: first message",
+        "Assistant: second message",
+    ]
+
+    conv.add("User", "third message")
+    conv.return_history_as_string()
+    assert counted[2:] == ["User: third message"]
+
+
+def test_trimmed_history_counts_messages_not_the_transcript(
+    monkeypatch,
+):
+    conv = Conversation(context_length=40)
+    contents = [
+        f"message {i} " + " ".join(["word"] * 10) for i in range(20)
+    ]
+    for content in contents:
+        conv.add("User", content)
+    counted = _record_token_counts(monkeypatch)
+
+    history = conv.return_history_as_string()
+
+    assert all("\n\n" not in text for text in counted)
+    full = "\n\n".join(f"User: {content}" for content in contents)
+    assert full.endswith(history)
+    assert history.endswith(contents[-1])
+    assert count_tokens(history) <= 40
+
+
+if __name__ == "__main__":
+    logger.info("Starting test execution")
+    results = run_all_tests()
+    report = generate_markdown_report(results)
+
+    # Save report to file
+    with open("test_results.md", "w") as f:
+        f.write(report)
+
+    logger.success(
+        "Test execution completed. Results saved to test_results.md"
+    )
