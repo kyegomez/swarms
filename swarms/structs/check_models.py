@@ -2,14 +2,13 @@ import time
 from typing import Any, Dict, Iterable, List, Optional
 
 import httpx
-from litellm import model_list
 from loguru import logger
+
+from swarms.utils import llm_backend
 
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
 OPENROUTER_CACHE_TTL_SECONDS = 300
 OPENROUTER_TIMEOUT_SECONDS = 10
-_BASE_MODELS = list(dict.fromkeys(model_list))
-_BASE_MODEL_SET = frozenset(_BASE_MODELS)
 
 _openrouter_models_cache = []
 _openrouter_cache_expires_at = 0.0
@@ -95,24 +94,36 @@ async def afetch_openrouter_models() -> List[str]:
     return models
 
 
+def _base_models() -> List[str]:
+    """The LLM backend's own model names, read on first use.
+
+    Returns:
+        List[str]: The backend's list. RouteHub's also matches aliases in
+        membership tests, so it is returned as is.
+    """
+    return llm_backend.model_list
+
+
 def _merge_models(
     openrouter_models: Iterable[str],
     exclude_keywords: Iterable[str],
 ) -> List[str]:
     """
-    Merge OpenRouter models into the static litellm list.
+    Merge OpenRouter models into the LLM backend's model list.
 
-    A model already present via litellm, with or without the ``openrouter/``
+    A model already present in that list, with or without the ``openrouter/``
     prefix, is skipped so each model appears once. ``exclude_keywords`` drops
     any model whose name contains one of them, case-insensitively.
     """
     keywords = [keyword.lower() for keyword in exclude_keywords]
 
-    merged = _BASE_MODELS + [
+    base = list(dict.fromkeys(_base_models()))
+    known = frozenset(base)
+    merged = base + [
         model
         for model in dict.fromkeys(openrouter_models)
-        if model not in _BASE_MODEL_SET
-        and model.removeprefix("openrouter/") not in _BASE_MODEL_SET
+        if model not in known
+        and model.removeprefix("openrouter/") not in known
     ]
 
     if not keywords:
@@ -138,7 +149,7 @@ def get_available_models(
     exclude_keywords: Optional[Iterable[str]] = None,
 ) -> Dict[str, Any]:
     """
-    List every model name litellm knows, plus OpenRouter's live catalogue.
+    List every model name the LLM backend knows, plus OpenRouter's live catalogue.
 
     Args:
         include_openrouter (bool): Fetch OpenRouter's model list (cached for
@@ -175,7 +186,7 @@ def is_model_available(
     model: str, include_openrouter: bool = True
 ) -> bool:
     """
-    Whether ``model`` is a name litellm or OpenRouter can serve.
+    Whether ``model`` is a name the LLM backend or OpenRouter can serve.
 
     Args:
         model (str): A model name as passed to ``Agent(model_name=...)``.
@@ -185,6 +196,8 @@ def is_model_available(
     Returns:
         bool: True if the name is listed.
     """
+    if model in _base_models():
+        return True
     return model in get_available_models(include_openrouter)["models"]
 
 

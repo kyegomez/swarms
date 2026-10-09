@@ -83,6 +83,20 @@ $ cd swarms
 $ pip install -r requirements.txt
 ```
 
+### Faster model calls with RouteHub
+
+`swarms[fast]` installs [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub), a lightweight LLM gateway with litellm's API, and swarms then makes every model call through it instead of litellm. Your code doesn't change.
+
+```bash
+$ pip3 install -U "swarms[fast]"
+```
+
+In our benchmarks, a new process got an agent's first answer in about 0.6 s instead of 1.2 s, and each model call spent about half as long in the client library.
+
+- **Model details** such as context windows come from [OpenRouter's model list](https://openrouter.ai/api/v1/models), fetched once when the first agent is built. If it can't be reached, agents fall back to a 16,000-token context window.
+- **Local servers** need their full OpenAI-compatible URL, such as `llm_base_url="http://localhost:11434/v1"` for Ollama.
+- **To switch back** to litellm without uninstalling, set `SWARMS_LLM_BACKEND=litellm`.
+
 ### Using Docker
 
 The official image, [`swarmscorp/swarms`](https://hub.docker.com/r/swarmscorp/swarms) on Docker Hub, has swarms and its CLI installed on Python 3.13, for `linux/amd64` and `linux/arm64`.

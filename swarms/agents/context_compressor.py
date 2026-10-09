@@ -9,7 +9,7 @@ budget for an unbounded run.
 
 from typing import Any, Optional
 
-from litellm import completion
+from swarms.utils.llm_backend import completion
 from loguru import logger
 
 
@@ -148,6 +148,8 @@ class ContextCompressor:
             ],
             temperature=self.summarizer_temperature,
             max_tokens=self.summarizer_max_tokens,
+            # RouteHub reads this per call; litellm otherwise inherits it from the last agent built.
+            drop_params=True,
         )
         return response.choices[0].message.content
 

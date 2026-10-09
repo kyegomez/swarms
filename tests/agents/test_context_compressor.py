@@ -483,14 +483,17 @@ class TestUsageRatioReusesMessageCounts:
         self, tmp_path
     ):
         """A check after one new message tokenizes just that message."""
-        import litellm
+        from swarms.utils import llm_backend
 
         agent = self._agent(tmp_path)
         cc = ContextCompressor()
         cc.usage_ratio(agent)
         agent.short_memory.add("User", "the newest message")
 
-        with patch("litellm.encode", wraps=litellm.encode) as encode:
+        with patch(
+            "swarms.utils.llm_backend.encode",
+            wraps=llm_backend.backend_module().encode,
+        ) as encode:
             cc.usage_ratio(agent)
 
         encoded = [

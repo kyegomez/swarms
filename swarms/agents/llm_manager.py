@@ -32,20 +32,11 @@ import traceback
 from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    supports_function_calling,
-    supports_parallel_function_calling,
-    supports_vision,
-)
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentLLMInitializationError
 from swarms.telemetry.otel import swarm_telemetry
+from swarms.utils import llm_backend
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists
 from swarms.utils.litellm_wrapper import LiteLLM
@@ -66,7 +57,7 @@ def _model_supports_function_calling(model_name: str) -> bool:
     Returns:
         bool: The lookup result.
     """
-    return supports_function_calling(model_name)
+    return llm_backend.supports_function_calling(model_name)
 
 
 @lru_cache(maxsize=None)
@@ -81,7 +72,7 @@ def _model_supports_parallel_function_calling(
     Returns:
         bool: The lookup result.
     """
-    return supports_parallel_function_calling(model_name)
+    return llm_backend.supports_parallel_function_calling(model_name)
 
 
 def _log_once(level: str, message: str) -> None:
@@ -372,7 +363,7 @@ class LLMManager:
 
         # Only check vision support if an image is provided
         if img is not None:
-            out = supports_vision(agent.model_name)
+            out = llm_backend.supports_vision(agent.model_name)
             if out is False:
                 logger.error(
                     f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support vision capabilities. "
@@ -678,12 +669,7 @@ class LLMManager:
 
             return agent.llm.run(**run_args, **kwargs)
 
-        except (
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
-            Exception,
-        ) as e:
+        except Exception as e:
             logger.error(
                 f"Error calling LLM with model '{self.get_current_model()}': {e}. "
                 f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
@@ -738,8 +724,9 @@ class LLMManager:
             if first_chunk is None:
                 first_chunk = chunk
 
+            # RouteHub forwards chunks with no choices, which litellm drops.
             if (
-                hasattr(chunk, "choices")
+                getattr(chunk, "choices", None)
                 and chunk.choices[0].delta.content
             ):
                 content = chunk.choices[0].delta.content
@@ -896,8 +883,9 @@ class LLMManager:
         chunks = []
 
         for chunk in stream:
+            # RouteHub forwards chunks with no choices, which litellm drops.
             if (
-                hasattr(chunk, "choices")
+                getattr(chunk, "choices", None)
                 and chunk.choices[0].delta.content
             ):
                 content = chunk.choices[0].delta.content
@@ -937,6 +925,12 @@ class LLMManager:
             )
             if reasoning:
                 thinking_parts.append(reasoning)
+            elif delta is not None and not (
+                getattr(delta, "content", None)
+                or getattr(delta, "tool_calls", None)
+            ):
+                # A role-only opening chunk, sent by RouteHub, carries nothing to show.
+                continue
             else:
                 first_content_chunk = chunk
                 break
