@@ -23,9 +23,7 @@ import traceback
 from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
-import litellm
 import requests
-from litellm import acompletion, completion, supports_vision
 from loguru import logger
 from pydantic import BaseModel
 
@@ -38,16 +36,50 @@ from swarms.utils.image_file_b64 import (
 )
 
 
+def completion(*args, **kwargs):
+    """Call litellm's completion, importing litellm on first use.
+
+    Args:
+        *args: Positional arguments for the litellm call.
+        **kwargs: Keyword arguments for the litellm call.
+
+    Returns:
+        The litellm response.
+    """
+    from litellm import completion as litellm_completion
+
+    return litellm_completion(*args, **kwargs)
+
+
+async def acompletion(*args, **kwargs):
+    """Await litellm's acompletion, importing litellm on first use.
+
+    Args:
+        *args: Positional arguments for the litellm call.
+        **kwargs: Keyword arguments for the litellm call.
+
+    Returns:
+        The litellm response.
+    """
+    from litellm import acompletion as litellm_acompletion
+
+    return await litellm_acompletion(*args, **kwargs)
+
+
 @lru_cache(maxsize=None)
 def _model_supports_vision(model: str) -> bool:
     """Cached litellm.supports_vision lookup (pure function of model name)."""
+    from litellm import supports_vision
+
     return supports_vision(model=model)
 
 
 @lru_cache(maxsize=None)
 def _model_supports_reasoning(model: str) -> bool:
     """Cached litellm.supports_reasoning lookup (pure function of model name)."""
-    return litellm.supports_reasoning(model=model)
+    from litellm import supports_reasoning
+
+    return supports_reasoning(model=model)
 
 
 class LiteLLMException(Exception):
@@ -381,6 +413,8 @@ class LiteLLM:
         self.last_response: Any = None
         self.modalities = []
         self.messages = []  # Initialize messages list
+
+        import litellm
 
         # Configure litellm settings
         litellm.set_verbose = (

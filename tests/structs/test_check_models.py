@@ -118,7 +118,7 @@ def test_available_models_without_openrouter_skips_the_fetch():
     # litellm's own list already carries some openrouter/ names; only the
     # live-fetched ones must be absent.
     assert "openrouter/fake-lab/alpha" not in report["models"]
-    assert report["count"] == len(check_models._BASE_MODELS)
+    assert report["count"] == len(check_models._base_models())
 
 
 def test_openrouter_duplicates_of_litellm_models_are_dropped(
@@ -158,7 +158,7 @@ def test_is_model_available():
 def test_model_count_matches_report():
     assert model_count() == get_available_models()["count"]
     assert model_count(include_openrouter=False) == len(
-        check_models._BASE_MODELS
+        check_models._base_models()
     )
     assert model_count(exclude_keywords=["gpt"]) < model_count()
 

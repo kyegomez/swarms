@@ -3,7 +3,6 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-from litellm import embedding
 from pydantic import BaseModel, Field
 
 from swarms.structs.execution_utils import batched_run
@@ -194,6 +193,8 @@ class TreeAgent(Agent):
         Returns:
             List[float]: Embedding vector
         """
+        from litellm import embedding
+
         try:
             response = embedding(
                 model=self.embedding_model_name, input=[text]

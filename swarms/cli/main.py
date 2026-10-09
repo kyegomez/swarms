@@ -22,10 +22,10 @@ import getpass
 import os
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from litellm import traceback
 from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn

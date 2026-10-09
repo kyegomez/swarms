@@ -9,7 +9,6 @@ budget for an unbounded run.
 
 from typing import Any, Optional
 
-from litellm import completion
 from loguru import logger
 
 
@@ -125,6 +124,8 @@ class ContextCompressor:
         )
 
     def _summarize(self, agent: Any, history: str) -> str:
+        from litellm import completion
+
         model = self.summarizer_model or getattr(
             agent, "model_name", None
         )

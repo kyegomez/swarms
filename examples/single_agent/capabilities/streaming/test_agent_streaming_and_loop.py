@@ -344,10 +344,7 @@ class TestAnthropicConstraintsRealLiteLLM:
             top_p=1.0,
             max_tokens=16000,
         )
-        with patch(
-            "swarms.utils.litellm_wrapper.litellm"
-        ) as mock_litellm:
-            mock_litellm.supports_reasoning.return_value = True
+        with patch("litellm.supports_reasoning", return_value=True):
             params = self._captured_params(llm)
         assert "top_p" not in params
 

@@ -1,18 +1,28 @@
 import time
+from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional
 
 import httpx
-from litellm import model_list
 from loguru import logger
 
 OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models"
 OPENROUTER_CACHE_TTL_SECONDS = 300
 OPENROUTER_TIMEOUT_SECONDS = 10
-_BASE_MODELS = list(dict.fromkeys(model_list))
-_BASE_MODEL_SET = frozenset(_BASE_MODELS)
 
 _openrouter_models_cache = []
 _openrouter_cache_expires_at = 0.0
+
+
+@lru_cache(maxsize=1)
+def _base_models() -> tuple:
+    """litellm's model names, each once, loaded on first use.
+
+    Returns:
+        tuple: The model names in litellm's order.
+    """
+    from litellm import model_list
+
+    return tuple(dict.fromkeys(model_list))
 
 
 def _parse_openrouter_models(payload: Dict[str, Any]) -> List[str]:
@@ -107,12 +117,14 @@ def _merge_models(
     any model whose name contains one of them, case-insensitively.
     """
     keywords = [keyword.lower() for keyword in exclude_keywords]
+    base_models = _base_models()
+    base_model_set = frozenset(base_models)
 
-    merged = _BASE_MODELS + [
+    merged = list(base_models) + [
         model
         for model in dict.fromkeys(openrouter_models)
-        if model not in _BASE_MODEL_SET
-        and model.removeprefix("openrouter/") not in _BASE_MODEL_SET
+        if model not in base_model_set
+        and model.removeprefix("openrouter/") not in base_model_set
     ]
 
     if not keywords:
