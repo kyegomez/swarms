@@ -26,10 +26,12 @@ def _make_agent(
     context_length: int = 1000,
     model_name: str = "claude-sonnet-4-5",
     agent_name: str = "TestAgent",
+    tokens: int = 10,
 ):
     """Return a minimal stub agent that ContextCompressor can introspect."""
     short_memory = MagicMock()
     short_memory.return_history_as_string.return_value = history
+    short_memory.count_history_tokens.return_value = tokens
     return SimpleNamespace(
         short_memory=short_memory,
         context_length=context_length,
@@ -54,7 +56,7 @@ class TestInit:
     def test_default_values(self):
         cc = ContextCompressor()
         assert cc.threshold == 0.9
-        assert cc.summarizer_temperature == 0.2
+        assert cc.summarizer_temperature is None
         assert cc.summarizer_max_tokens == 4000
         assert cc.summarizer_model is None
 
@@ -99,25 +101,17 @@ class TestUsageRatio:
     def test_correct_ratio(self):
         cc = ContextCompressor()
         agent = _make_agent(
-            history="hello world", context_length=1000
+            history="hello world", context_length=1000, tokens=500
         )
-        with patch(
-            "swarms.agents.context_compressor.count_tokens",
-            return_value=500,
-        ):
-            ratio = cc.usage_ratio(agent)
-        assert ratio == pytest.approx(0.5)
+        assert cc.usage_ratio(agent) == pytest.approx(0.5)
 
     def test_ratio_above_one_possible(self):
         """Allows >1.0 so should_compress still fires when over budget."""
         cc = ContextCompressor()
-        agent = _make_agent(history="x" * 100, context_length=10)
-        with patch(
-            "swarms.agents.context_compressor.count_tokens",
-            return_value=20,
-        ):
-            ratio = cc.usage_ratio(agent)
-        assert ratio == pytest.approx(2.0)
+        agent = _make_agent(
+            history="x" * 100, context_length=10, tokens=20
+        )
+        assert cc.usage_ratio(agent) == pytest.approx(2.0)
 
 
 # ---------------------------------------------------------------------------
@@ -267,11 +261,7 @@ class TestCompress:
         with patch.object(
             cc, "_summarize", return_value="summary"
         ) as mock_s:
-            with patch(
-                "swarms.agents.context_compressor.count_tokens",
-                return_value=10,
-            ):
-                cc.compress(agent)
+            cc.compress(agent)
         mock_s.assert_called_once_with(agent, "turn 1\nturn 2")
 
     def test_calls_compact_exactly_once(self):
@@ -280,11 +270,7 @@ class TestCompress:
         with patch.object(
             cc, "_summarize", return_value="my summary"
         ):
-            with patch(
-                "swarms.agents.context_compressor.count_tokens",
-                return_value=10,
-            ):
-                cc.compress(agent)
+            cc.compress(agent)
         agent.short_memory.compact.assert_called_once()
 
     def test_compact_receives_preamble_wrapped_summary(self):
@@ -292,11 +278,7 @@ class TestCompress:
         agent = _make_agent(history="turn 1")
         raw_summary = "Compressed result."
         with patch.object(cc, "_summarize", return_value=raw_summary):
-            with patch(
-                "swarms.agents.context_compressor.count_tokens",
-                return_value=10,
-            ):
-                cc.compress(agent)
+            cc.compress(agent)
         compact_call = agent.short_memory.compact.call_args
         summary_arg = (
             compact_call[1].get("summary") or compact_call[0][0]
@@ -309,11 +291,7 @@ class TestCompress:
         agent = _make_agent(history="turn 1")
         raw_summary = "Short summary."
         with patch.object(cc, "_summarize", return_value=raw_summary):
-            with patch(
-                "swarms.agents.context_compressor.count_tokens",
-                return_value=10,
-            ):
-                result = cc.compress(agent)
+            result = cc.compress(agent)
         assert result == raw_summary
 
 
@@ -429,3 +407,109 @@ class TestIntegration:
             f.startswith("history_") and f.endswith(".md")
             for f in archives
         )
+
+
+class TestShouldCompressSkipsTokenizing:
+    """should_compress tokenized the whole history on every loop, even when
+    it was nowhere near the context window, which was most of a tool turn.
+    """
+
+    @staticmethod
+    def _agent(contents, context_length):
+        history = [
+            {
+                "role": "User",
+                "content": text,
+                "timestamp": "2026-10-02T12:00:00.000000",
+            }
+            for text in contents
+        ]
+        short_memory = MagicMock()
+        short_memory.conversation_history = history
+        short_memory.return_history_as_string.return_value = (
+            "\n\n".join(
+                f"[{m['timestamp']}] {m['role']}: {m['content']}"
+                for m in history
+            )
+        )
+        return SimpleNamespace(
+            short_memory=short_memory, context_length=context_length
+        )
+
+    def test_far_below_the_limit_counts_nothing(self):
+        agent = self._agent(["hello"] * 10, context_length=100_000)
+        assert ContextCompressor().should_compress(agent) is False
+        agent.short_memory.count_history_tokens.assert_not_called()
+        agent.short_memory.return_history_as_string.assert_not_called()
+
+    def test_near_the_limit_uses_the_exact_count(self):
+        agent = self._agent(["word " * 200], context_length=1_000)
+        agent.short_memory.count_history_tokens.return_value = 950
+        assert ContextCompressor().should_compress(agent) is True
+        agent.short_memory.count_history_tokens.assert_called_once()
+
+    def test_byte_size_bounds_the_real_token_count(self):
+        from swarms.utils.litellm_tokenizer import count_tokens
+
+        agent = self._agent(
+            ["plain ascii text " * 50, "naïve café 東京 🚀 " * 50],
+            context_length=1,
+        )
+        text = agent.short_memory.return_history_as_string()
+        assert ContextCompressor._history_bytes(
+            agent.short_memory.conversation_history
+        ) >= count_tokens(text)
+
+
+class TestUsageRatioReusesMessageCounts:
+    """Usage checks on a real Conversation tokenize only new messages."""
+
+    CONTEXT_LENGTH = 100_000
+
+    def _agent(self, tmp_path):
+        from swarms.structs.conversation import Conversation
+
+        conv = Conversation(
+            conversations_dir=str(tmp_path),
+            context_length=self.CONTEXT_LENGTH,
+        )
+        for i in range(20):
+            conv.add("User", f"message {i} " + "word " * 50)
+        return SimpleNamespace(
+            short_memory=conv, context_length=self.CONTEXT_LENGTH
+        )
+
+    def test_second_check_tokenizes_only_the_new_message(
+        self, tmp_path
+    ):
+        """A check after one new message tokenizes just that message."""
+        import litellm
+
+        agent = self._agent(tmp_path)
+        cc = ContextCompressor()
+        cc.usage_ratio(agent)
+        agent.short_memory.add("User", "the newest message")
+
+        with patch("litellm.encode", wraps=litellm.encode) as encode:
+            cc.usage_ratio(agent)
+
+        encoded = [
+            call.kwargs["text"] for call in encode.call_args_list
+        ]
+        assert encoded == [agent.short_memory._format_messages()[-1]]
+
+    def test_ratio_never_undercounts(self, tmp_path):
+        """The count is at most one token per message above the exact count."""
+        from swarms.utils.litellm_tokenizer import count_tokens
+
+        agent = self._agent(tmp_path)
+        conv = agent.short_memory
+        exact = count_tokens(
+            conv.return_history_as_string(), conv.tokenizer_model_name
+        )
+        estimate = round(
+            ContextCompressor().usage_ratio(agent)
+            * self.CONTEXT_LENGTH
+        )
+        messages = len(conv.conversation_history)
+        assert exact <= estimate <= exact + messages

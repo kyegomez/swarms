@@ -72,6 +72,11 @@ class TestSanitizeName:
     def test_name_of_only_dots_does_not_become_empty(self):
         """'..' would otherwise strip to '' and yield a bare path."""
         assert sanitize_name("..") == "unnamed"
+        assert sanitize_name("...") == "unnamed"
+        assert sanitize_name(". .") == "unnamed"
+
+    def test_non_string_name_is_stringified(self):
+        assert sanitize_name(123) == "123"
 
 
 class TestEnsureWorkspaceEnv:

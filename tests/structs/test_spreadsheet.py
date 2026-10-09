@@ -83,7 +83,7 @@ def test_swarm_initialization_basic(temp_workspace):
     assert swarm.description == "Test swarm description"
     assert len(swarm.agents) == 1
     assert swarm.max_loops == 1
-    assert swarm.autosave is True
+    assert swarm.autosave is False
     assert swarm.tasks_completed == 0
     assert swarm.outputs == []
 
@@ -258,6 +258,89 @@ def test_track_output_increments_counter(temp_workspace):
 
     swarm._track_output("test_agent", "Task 2", "Result 2")
     assert swarm.tasks_completed == initial_count + 2
+
+
+def _conversation_agents():
+    return [
+        Agent(agent_name=name, model_name="gpt-5.4", max_loops=1)
+        for name in ("Analyst-A", "Analyst-B")
+    ]
+
+
+def _turns(swarm):
+    return [
+        (message["role"], message["content"])
+        for message in swarm.conversation.conversation_history
+    ]
+
+
+def test_run_records_the_task_and_each_reply(temp_workspace):
+    """A run's conversation holds the task and every agent's reply."""
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=False
+    )
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["reply A", "reply B"],
+    ):
+        summary = swarm.run("Summarise the market")
+
+    assert _turns(swarm) == [
+        ("User", "Summarise the market"),
+        ("Analyst-A", "reply A"),
+        ("Analyst-B", "reply B"),
+    ]
+    assert [o["result"] for o in summary["outputs"]] == [
+        "reply A",
+        "reply B",
+    ]
+
+
+def test_each_run_starts_a_fresh_conversation(temp_workspace):
+    """A second run's conversation does not carry the first run's turns."""
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=False
+    )
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        side_effect=[
+            ["first A", "first B"],
+            ["second A", "second B"],
+        ],
+    ):
+        swarm.run("First task")
+        swarm.run("Second task")
+
+    assert _turns(swarm) == [
+        ("User", "Second task"),
+        ("Analyst-A", "second A"),
+        ("Analyst-B", "second B"),
+    ]
+
+
+def test_run_from_config_records_each_agents_task(temp_workspace):
+    """In config mode, each agent's own task is recorded with its name."""
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=False
+    )
+    swarm.agent_tasks = {"Analyst-A": "task a", "Analyst-B": "task b"}
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["reply A", "reply B"],
+    ):
+        swarm.run()
+
+    history = swarm.conversation.conversation_history
+    assert _turns(swarm) == [
+        ("User", "task a"),
+        ("User", "task b"),
+        ("Analyst-A", "reply A"),
+        ("Analyst-B", "reply B"),
+    ]
+    assert [m.get("metadata") for m in history[:2]] == [
+        {"agent_name": "Analyst-A"},
+        {"agent_name": "Analyst-B"},
+    ]
 
 
 def test_load_from_csv_basic(sample_csv_file, temp_workspace):

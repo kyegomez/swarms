@@ -21,6 +21,8 @@ Covers four fixed defects:
 * #1962 — ``ContextCompressor.maybe_compress`` was never called on the
   ``max_loops="auto"`` path, so history grew unbounded in exactly the mode
   that needs compression most.
+* #1752 — the loop's three iteration budgets were module constants, so a
+  caller could not bound a run's cost without monkeypatching the module.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -37,6 +39,8 @@ from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
     _BASH_MAX_LENGTH,
     _check_bash_command,
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     get_autonomous_planning_tools,
     glob_tool,
@@ -996,6 +1000,125 @@ class TestHandoffPromptIsNotReappended:
         assert agent.system_prompt == before
 
 
+def lookup(query: str) -> str:
+    """Look up a query.
+
+    Args:
+        query: The text to look up.
+
+    Returns:
+        str: The query, unchanged.
+    """
+    return query
+
+
+def define(term: str) -> str:
+    """Define a term.
+
+    Args:
+        term: The term to define.
+
+    Returns:
+        str: The term, unchanged.
+    """
+    return term
+
+
+class TestClientIsReusedAcrossRuns:
+    """Runs with unchanged tools reuse the client and the tool schemas."""
+
+    def _complete_one_run(self, agent, monkeypatch):
+        """Run the loop through one planned step to completion."""
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+        agent.run("test task")
+
+    def _count_builds_and_conversions(self, agent, monkeypatch):
+        """Record every client build and every schema conversion."""
+        import swarms.agents.autonomous_loop as loop_module
+
+        builds, conversions = [], []
+        real_build = agent.llm_handling
+        real_convert = (
+            loop_module.convert_multiple_functions_to_openai_function_schema
+        )
+
+        def build(*args, **kwargs):
+            builds.append(1)
+            return real_build(*args, **kwargs)
+
+        def convert(functions):
+            conversions.append([f.__name__ for f in functions])
+            return real_convert(functions)
+
+        monkeypatch.setattr(agent, "llm_handling", build)
+        monkeypatch.setattr(
+            loop_module,
+            "convert_multiple_functions_to_openai_function_schema",
+            convert,
+        )
+        return builds, conversions
+
+    def test_second_run_rebuilds_and_converts_nothing(
+        self, monkeypatch
+    ):
+        """A second run with the same tools builds no client and converts no schema."""
+        agent = build_agent(tools=[lookup])
+        builds, conversions = self._count_builds_and_conversions(
+            agent, monkeypatch
+        )
+
+        self._complete_one_run(agent, monkeypatch)
+        builds_after_first_run = len(builds)
+        self._complete_one_run(agent, monkeypatch)
+
+        assert builds_after_first_run == 1
+        assert len(builds) == 1
+        assert conversions == []
+
+    def test_a_new_tool_is_converted_and_rebuilds_the_client(
+        self, monkeypatch
+    ):
+        """A tool added between runs is converted alone and the client is rebuilt."""
+        agent = build_agent(tools=[lookup])
+        builds, conversions = self._count_builds_and_conversions(
+            agent, monkeypatch
+        )
+
+        self._complete_one_run(agent, monkeypatch)
+        agent.tools.append(define)
+        self._complete_one_run(agent, monkeypatch)
+
+        assert conversions == [["define"]]
+        assert len(builds) == 2
+        names = [
+            schema["function"]["name"]
+            for schema in agent.tools_list_dictionary
+        ]
+        assert names.count("define") == 1
+
+
 # --------------------------------------------------------------------------
 # #1962 — context compression in the auto loop
 # --------------------------------------------------------------------------
@@ -1369,3 +1492,131 @@ class TestFinalSummaryShape:
         result = agent.run("test task")
 
         assert isinstance(result, list)
+
+
+class TestIterationLimitsAreConfigurable:
+    """The three budgets bound a run's cost, so they must be settable per agent."""
+
+    def _thinks_forever(self, agent, monkeypatch, *steps):
+        """Script a model that plans, then only ever calls `think`."""
+        turn = {"n": 0}
+
+        def scripted(task=None, *args, **kwargs):
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return plan(*steps)
+            return [
+                tool_call(
+                    "think",
+                    current_state=f"state {turn['n']}",
+                    analysis="pondering",
+                    next_actions=["keep thinking"],
+                    confidence=0.5,
+                )
+            ]
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        return turn
+
+    def test_the_defaults_are_the_module_constants(self):
+        agent = build_agent()
+
+        assert agent.max_planning_attempts == MAX_PLANNING_ATTEMPTS
+        assert agent.max_subtask_iterations == MAX_SUBTASK_ITERATIONS
+        assert agent.max_subtask_loops == MAX_SUBTASK_LOOPS
+
+    def test_the_subtask_budget_is_per_agent(self, monkeypatch):
+        capped = build_agent(think_tool=True, max_subtask_loops=3)
+        capped_turns = self._thinks_forever(
+            capped, monkeypatch, ("s1", [])
+        )
+        capped.run("demo")
+
+        default = build_agent(think_tool=True)
+        default_turns = self._thinks_forever(
+            default, monkeypatch, ("s1", [])
+        )
+        default.run("demo")
+
+        assert status_of(capped, "s1") == "failed"
+        assert capped_turns["n"] < default_turns["n"]
+
+    def test_the_run_budget_stops_the_outer_loop(self, monkeypatch):
+        agent = build_agent(
+            think_tool=True,
+            max_subtask_loops=2,
+            max_subtask_iterations=1,
+        )
+        self._thinks_forever(
+            agent, monkeypatch, ("s1", []), ("s2", []), ("s3", [])
+        )
+
+        agent.run("demo")
+
+        assert status_of(agent, "s2") == "pending"
+        assert status_of(agent, "s3") == "pending"
+
+    def test_the_planning_budget_bounds_planning_retries(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_planning_attempts=2)
+        calls = script_llm(
+            agent,
+            monkeypatch,
+            ["not a plan", "still not a plan", "nor this one"],
+        )
+
+        with pytest.raises(Exception):
+            agent.run("demo")
+
+        assert len(calls) == 2
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "max_planning_attempts",
+            "max_subtask_iterations",
+            "max_subtask_loops",
+        ],
+    )
+    def test_a_budget_below_one_is_rejected(self, name):
+        with pytest.raises(ValueError):
+            build_agent(**{name: 0})
+
+
+class TestRunStreamUsesTheAutonomousLoop:
+    def test_run_stream_plans_and_completes_like_run(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        script = [
+            plan(("step1", [])),
+            [
+                tool_call(
+                    "subtask_done",
+                    task_id="step1",
+                    summary="done",
+                    success=True,
+                )
+            ],
+            [
+                tool_call(
+                    "complete_task",
+                    task_id="main",
+                    summary="all done",
+                    success=True,
+                )
+            ],
+        ]
+        calls = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            calls.append(task)
+            return script.pop(0)
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        list(agent.run_stream("test task"))
+
+        assert len(calls) == 3
+        assert status_of(agent, "step1") == "completed"

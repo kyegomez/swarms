@@ -163,6 +163,20 @@ class TestSetupArgumentParser:
         )
         assert args.loops_per_agent == 3
 
+    def test_heavy_swarm_model_help_states_the_real_default(self):
+        from swarms.cli.main import DEFAULT_HEAVY_SWARM_MODEL
+
+        parser = self.setup_argument_parser()
+        args = parser.parse_args(["heavy-swarm"])
+        actions = {action.dest: action for action in parser._actions}
+
+        for dest in (
+            "question_agent_model_name",
+            "worker_model_name",
+        ):
+            assert getattr(args, dest) == DEFAULT_HEAVY_SWARM_MODEL
+            assert DEFAULT_HEAVY_SWARM_MODEL in actions[dest].help
+
 
 # ===========================================================================
 # 2. route_command
@@ -631,6 +645,33 @@ class TestShowAsciiArt:
 
         # Should just print, never crash
         show_ascii_art()
+
+    def test_no_key_hint_renders_markup(self, monkeypatch):
+        """The no-key hint shows bold text, not raw markup tags."""
+        import io
+
+        from rich.console import Console
+
+        from swarms.cli import utils
+
+        for key in (
+            "OPENAI_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "GROQ_API_KEY",
+            "GOOGLE_API_KEY",
+            "COHERE_API_KEY",
+            "MISTRAL_API_KEY",
+            "TOGETHER_API_KEY",
+        ):
+            monkeypatch.delenv(key, raising=False)
+        recorder = Console(record=True, width=120, file=io.StringIO())
+        monkeypatch.setattr(utils, "console", recorder)
+
+        utils.show_ascii_art()
+        output = recorder.export_text()
+
+        assert "No API key found — run swarms setup-check" in output
+        assert "[bold]" not in output
 
 
 # ===========================================================================

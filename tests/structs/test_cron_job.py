@@ -207,6 +207,18 @@ def test_stats_expose_the_failure_picture():
     assert stats["stopped_due_to_error"] is False
 
 
+def test_a_failed_execution_waits_for_the_next_interval():
+    agent = FailingAgent(fail_times=99)
+    job = CronJob(agent=agent, interval="1hour")
+    job._interval_method("t")
+
+    job.schedule.run_all()
+
+    assert agent.attempts == 1
+    assert job.error_count == 1
+    assert job.schedule.idle_seconds > 3000
+
+
 # ---------------------------------------------------------------------------
 # Configuration validation
 # ---------------------------------------------------------------------------
@@ -450,6 +462,25 @@ def test_run_many_rejects_an_empty_schedule_list():
 def test_run_many_names_the_missing_key(spec, missing):
     with pytest.raises(CronJobConfigError, match=missing):
         CronJob.run_many([spec], block=False)
+
+
+def test_stop_many_does_not_wait_out_each_jobs_sleep():
+    jobs = CronJob.run_many(
+        [
+            {"agent": MockAgent(), "interval": "1hour", "task": "t"}
+            for _ in range(10)
+        ],
+        block=False,
+    )
+
+    started = time.monotonic()
+    CronJob.stop_many(jobs)
+    elapsed = time.monotonic() - started
+
+    assert all(not job.thread.is_alive() for job in jobs)
+    assert (
+        elapsed < 1.0
+    ), f"stop_many took {elapsed:.2f}s for 10 idle jobs"
 
 
 if __name__ == "__main__":

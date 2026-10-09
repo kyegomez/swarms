@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "15.0.2"
+version = "16.0.1"
 description = "Swarms - TGSC"
 license = "Apache-2.0"
 authors = ["Kye Gomez <kye@swarms.world>"]
@@ -57,7 +57,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
-setuptools = "*"
 asyncio = ">=3.4.3,<5.0"
 toml = "*"
 loguru = "*"
@@ -75,6 +74,7 @@ mcp = "*"
 schedule = "*"
 opentelemetry-sdk = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
+zstandard = "*"
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

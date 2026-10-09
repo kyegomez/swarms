@@ -108,7 +108,10 @@ def show_ascii_art():
     info = Text()
     info.append("Swarms", style="bold white")
     info.append(f"  v{version}\n", style="dim white")
-    info.append(provider + "\n", style="dim white")
+    # The provider label carries Rich markup, which a plain append prints literally.
+    info.append_text(
+        Text.from_markup(provider + "\n", style="dim white")
+    )
     info.append(cwd + "\n", style="dim white")
     info.append(
         "https://github.com/kyegomez/swarms", style="dim white"

@@ -12,8 +12,6 @@ from typing import Any, Optional
 from litellm import completion
 from loguru import logger
 
-from swarms.utils.litellm_tokenizer import count_tokens
-
 
 COMPRESSION_SYSTEM_PROMPT = """
 You are a conversation compression expert. Your job is to produce a faithful, dense summary of an ongoing agent conversation so that the agent can continue its work without losing critical context.
@@ -52,7 +50,7 @@ class ContextCompressor:
         self,
         threshold: float = 0.9,
         summarizer_model: Optional[str] = None,
-        summarizer_temperature: float = 0.2,
+        summarizer_temperature: Optional[float] = None,
         summarizer_max_tokens: int = 4000,
     ):
         """
@@ -78,17 +76,53 @@ class ContextCompressor:
         context_length = getattr(agent, "context_length", None)
         if not context_length:
             return 0.0
-        history = agent.short_memory.return_history_as_string()
-        return count_tokens(history) / float(context_length)
+        # Counts are cached per message, so only messages added since the last check are tokenized.
+        tokens = agent.short_memory.count_history_tokens()
+        return tokens / float(context_length)
 
     def should_compress(self, agent: Any) -> bool:
         """True once usage has crossed the threshold.
 
         Loop-mode gating (auto vs integer) is now handled by the agent's
         ``context_compression`` flag at construction; this method just
-        measures the token budget.
+        measures the token budget. Tokens are only counted once the
+        history's size in bytes could reach the threshold.
         """
+        context_length = getattr(agent, "context_length", None)
+        if not context_length:
+            return False
+
+        # A token is never shorter than one byte, so a history under the budget in bytes cannot exceed it in tokens.
+        history = getattr(
+            agent.short_memory, "conversation_history", None
+        )
+        if (
+            isinstance(history, list)
+            and self._history_bytes(history)
+            < self.threshold * context_length
+        ):
+            return False
+
         return self.usage_ratio(agent) >= self.threshold
+
+    @staticmethod
+    def _history_bytes(history: list) -> int:
+        """
+        Upper bound on the UTF-8 size of the formatted history.
+
+        Args:
+            history: The conversation's message dicts.
+
+        Returns:
+            int: Bytes in the history as the agent formats it, or slightly more.
+        """
+        return sum(
+            len(
+                f"[{message.get('timestamp')}] {message.get('role')}: "
+                f"{message.get('content')}\n\n".encode()
+            )
+            for message in history
+        )
 
     def _summarize(self, agent: Any, history: str) -> str:
         model = self.summarizer_model or getattr(
@@ -127,7 +161,7 @@ class ContextCompressor:
         if not history.strip():
             return None
 
-        prior_tokens = count_tokens(history)
+        prior_tokens = agent.short_memory.count_history_tokens()
         agent_name = getattr(agent, "agent_name", "agent")
         logger.info(
             f"[ContextCompressor] Triggering compression for "
@@ -147,9 +181,7 @@ class ContextCompressor:
         )
         agent.short_memory.compact(summary=summary_content)
 
-        new_tokens = count_tokens(
-            agent.short_memory.return_history_as_string()
-        )
+        new_tokens = agent.short_memory.count_history_tokens()
         logger.info(
             f"[ContextCompressor] Compressed {prior_tokens} -> "
             f"{new_tokens} tokens for '{agent_name}'"

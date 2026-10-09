@@ -17,9 +17,9 @@ inlined in ``swarms/structs/agent.py``:
 
 Configuration stays on the ``Agent``. The manager holds a reference to its
 owner and reads config live rather than snapshotting it, because agents mutate
-their own config at run time — ``system_prompt`` grows when skills load,
-``tools_list_dictionary`` changes when tools are registered, ``streaming_on``
-is toggled per call by ``run_stream``. Anything the manager writes
+their own config at run time — ``tools_list_dictionary`` changes when tools
+are registered, ``streaming_on`` is toggled per call by ``run_stream``.
+Anything the manager writes
 (``model_name``, ``current_model_index``, ``llm``) is written back to the agent,
 so serialization, ``save``/``load``, and every existing ``agent.llm`` reference
 keep working unchanged.
@@ -29,6 +29,7 @@ import itertools
 import random
 import time
 import traceback
+from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
 from litellm.exceptions import (
@@ -44,11 +45,56 @@ from litellm.utils import (
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentLLMInitializationError
+from swarms.telemetry.otel import swarm_telemetry
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists
 from swarms.utils.litellm_wrapper import LiteLLM
 
 DEFAULT_MODEL_NAME = "gpt-5.4"
+
+# Messages already logged, so a capability gap is reported once per process.
+_logged_capability_messages = set()
+
+
+@lru_cache(maxsize=None)
+def _model_supports_function_calling(model_name: str) -> bool:
+    """Whether the model supports function calling.
+
+    Args:
+        model_name: The model to look up.
+
+    Returns:
+        bool: The lookup result.
+    """
+    return supports_function_calling(model_name)
+
+
+@lru_cache(maxsize=None)
+def _model_supports_parallel_function_calling(
+    model_name: str,
+) -> bool:
+    """Whether the model supports parallel function calling.
+
+    Args:
+        model_name: The model to look up.
+
+    Returns:
+        bool: The lookup result.
+    """
+    return supports_parallel_function_calling(model_name)
+
+
+def _log_once(level: str, message: str) -> None:
+    """Log a message the first time it occurs in this process.
+
+    Args:
+        level: The log level name.
+        message: The message to log.
+    """
+    if message in _logged_capability_messages:
+        return
+    _logged_capability_messages.add(message)
+    logger.log(level, message)
 
 
 class LLMManager:
@@ -147,6 +193,7 @@ class LLMManager:
         )
 
         # Update the model name and reinitialize LLM
+        agent.fallback_models = available_models
         agent.model_name = new_model
         agent.llm = self.build()
 
@@ -237,7 +284,7 @@ class LLMManager:
                 agent.mcp_enabled
                 and getattr(agent, "tool_loader", None) is not None
             ):
-                agent.defer_mcp_tools()
+                agent.tool_manager.defer_mcp_tools()
                 deferred_mcp = True
 
             # Initialize tools_list_dictionary, if applicable
@@ -253,7 +300,9 @@ class LLMManager:
                         f"Adding MCP tools to memory for {agent.agent_name}"
                     )
 
-                mcp_tools = agent.add_mcp_tools_to_memory()
+                mcp_tools = (
+                    agent.tool_manager.add_mcp_tools_to_memory()
+                )
 
                 if agent.verbose:
                     logger.info(f"MCP tools: {mcp_tools}")
@@ -314,11 +363,7 @@ class LLMManager:
         self, img: Optional[str] = None
     ) -> None:
         """
-        Log an error for each capability the current model is missing.
-
-        Checks vision support when an image is supplied, function calling when
-        a tool schema is set, and parallel function calling when more than two
-        tools are registered. Logging only — never raises.
+        Log the capabilities the current model lacks for this run.
 
         Args:
             img (str, optional): Image input to check vision support for.
@@ -335,24 +380,27 @@ class LLMManager:
                     f"Please use a vision-enabled model."
                 )
 
-        if agent.tools_list_dictionary is not None:
-            out = supports_function_calling(agent.model_name)
+        if agent.tools_list_dictionary:
+            out = _model_supports_function_calling(agent.model_name)
             if out is False:
-                logger.error(
-                    f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support function calling capabilities. "
-                    f"tools_list_dictionary is set: {agent.tools_list_dictionary}. "
-                    f"Please use a function calling-enabled model."
+                _log_once(
+                    "ERROR",
+                    f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support function calling capabilities, "
+                    f"but tools are configured. "
+                    f"Please use a function calling-enabled model.",
                 )
 
         if agent.tools is not None:
             if len(agent.tools) > 2:
-                out = supports_parallel_function_calling(
+                out = _model_supports_parallel_function_calling(
                     agent.model_name
                 )
+                # litellm's capability data lags new models, so this is only a hint.
                 if out is False:
-                    logger.error(
-                        f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support parallel function calling capabilities. "
-                        f"Please use a parallel function calling-enabled model."
+                    _log_once(
+                        "WARNING",
+                        f"Model '{agent.model_name}' is not listed as supporting parallel function calling, "
+                        f"so its tool calls may arrive one per turn.",
                     )
 
         return None
@@ -494,8 +542,8 @@ class LLMManager:
         1. **Detailed streaming** (``agent.stream``): streams tokens with full
            metadata (citations, usage, logprobs, …), passing a ``token_info``
            dict to ``streaming_callback`` per token.
-        2. **Panel streaming** (``agent.streaming_on``): streams with formatted
-           panels, a real-time callback, or silently when ``print_on`` is False.
+        2. **Panel streaming** (``agent.streaming_on`` or a ``streaming_callback``):
+           formatted panels, a real-time callback, or silent when ``print_on`` is False.
         3. **Non-streaming**: a direct ``llm.run()`` returning the full string.
 
         Args:
@@ -518,10 +566,92 @@ class LLMManager:
             AuthenticationError, Exception: re-raised for upstream handling.
         """
         agent = self.agent
+        with swarm_telemetry().capture_run(
+            "Agent.llm_call", agent
+        ) as span:
+            span.set("gen_ai.operation.name", "chat")
+            span.set("gen_ai.request.model", self.get_current_model())
+            span.set("swarms.loop", current_loop)
+            usage_before = dict(getattr(agent, "_usage", None) or {})
+            try:
+                result = self._call_llm(
+                    task,
+                    img,
+                    imgs,
+                    current_loop,
+                    streaming_callback,
+                    *args,
+                    **kwargs,
+                )
+            finally:
+                usage_after = getattr(agent, "_usage", None)
+                if isinstance(usage_after, dict):
+                    span.record_usage(
+                        {
+                            key: value - usage_before.get(key, 0)
+                            for key, value in usage_after.items()
+                        }
+                    )
+                request = getattr(agent.llm, "last_request", None)
+                if request is not None:
+                    span.record_json("swarms.request", request)
+            response = getattr(agent.llm, "last_response", None)
+            # A stream leaves no response object, so the assembled result stands in.
+            span.record_json(
+                "swarms.response",
+                (
+                    response.model_dump()
+                    if hasattr(response, "model_dump")
+                    else result if response is None else response
+                ),
+            )
+            finish_reason = getattr(
+                agent.llm, "last_finish_reason", None
+            )
+            if finish_reason:
+                span.set(
+                    "gen_ai.response.finish_reasons", finish_reason
+                )
+            response_model = getattr(
+                agent.llm, "last_response_model", None
+            )
+            if response_model:
+                span.set("gen_ai.response.model", response_model)
+            span.record_success()
+            return result
+
+    def _call_llm(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """Run the model call for one loop, picking the streaming mode from the agent's config.
+
+        Args:
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): Image input for multimodal processing.
+            imgs (Optional[List[str]]): Several image inputs.
+            current_loop (int): Loop iteration, used in streaming panel titles.
+            streaming_callback (Optional[Callable[[str], None]]): Receives streamed tokens.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
+
+        Returns:
+            Any: The complete response string, or the tool-call list.
+        """
+        agent = self.agent
 
         # Filter out is_last from kwargs if present
         if "is_last" in kwargs:
             del kwargs["is_last"]
+
+        if imgs:
+            kwargs["imgs"] = imgs
 
         try:
             if agent.stream and hasattr(agent.llm, "stream"):
@@ -529,7 +659,9 @@ class LLMManager:
                     task, img, streaming_callback, *args, **kwargs
                 )
 
-            if agent.streaming_on and hasattr(agent.llm, "stream"):
+            if (
+                agent.streaming_on or streaming_callback is not None
+            ) and hasattr(agent.llm, "stream"):
                 return self._call_panel_streaming(
                     task,
                     img,
@@ -543,8 +675,6 @@ class LLMManager:
 
             if img is not None:
                 run_args["img"] = img
-            if imgs:
-                run_args["imgs"] = imgs
 
             return agent.llm.run(**run_args, **kwargs)
 

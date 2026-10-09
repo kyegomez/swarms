@@ -33,7 +33,9 @@ No test makes a network call or requires an API key. Run with:
 from unittest.mock import Mock
 
 import pytest
+from loguru import logger
 
+import swarms.agents.llm_manager as llm_manager
 from swarms import Agent
 from swarms.utils.litellm_wrapper import LiteLLM
 
@@ -304,6 +306,25 @@ class TestResetModelIndex:
         assert isinstance(agent.llm, LiteLLM)
         assert agent.llm.model_name == "gpt-4o-mini"
 
+    def test_returns_to_primary_after_fallback_model_name_switch(
+        self, agent, fake_llm
+    ):
+        agent.fallback_models = []
+        agent.current_model_index = 0
+        agent.model_name = "gpt-4o-mini"
+        agent.fallback_model_name = "gpt-4o"
+
+        assert agent.llm_manager.switch_to_next_model() is True
+        assert agent.fallback_models == ["gpt-4o-mini", "gpt-4o"]
+        assert agent.current_model_index == 1
+        assert agent.llm.model_name == "gpt-4o"
+        assert agent.llm_manager.is_fallback_available() is True
+
+        agent.llm_manager.reset_model_index()
+
+        assert agent.model_name == "gpt-4o-mini"
+        assert agent.llm.model_name == "gpt-4o-mini"
+
 
 class TestIsFallbackAvailable:
     def test_true_with_multiple_models(self, agent):
@@ -423,6 +444,63 @@ class TestCheckModelSupportsUtilities:
         assert (
             agent.llm_manager.check_model_supports_utilities() is None
         )
+
+    def test_agent_without_tools_skips_function_calling_lookup(
+        self, agent, monkeypatch
+    ):
+        """An agent without tools makes no function-calling lookup."""
+        lookup = Mock(return_value=True)
+        monkeypatch.setattr(
+            llm_manager, "supports_function_calling", lookup
+        )
+        agent.model_name = "no-tools-model-2517"
+        agent.tools = None
+        agent.tools_list_dictionary = []
+
+        agent.llm_manager.check_model_supports_utilities()
+
+        lookup.assert_not_called()
+
+    def test_tool_lookups_are_cached_and_reported_once(
+        self, agent, monkeypatch
+    ):
+        """Repeated checks look a model up once and warn once."""
+        function_calling = Mock(return_value=True)
+        parallel = Mock(return_value=False)
+        monkeypatch.setattr(
+            llm_manager, "supports_function_calling", function_calling
+        )
+        monkeypatch.setattr(
+            llm_manager,
+            "supports_parallel_function_calling",
+            parallel,
+        )
+        agent.model_name = "cached-model-2517"
+        agent.tools = [lambda a: a, lambda b: b, lambda c: c]
+        agent.tools_list_dictionary = [
+            {"type": "function", "function": {"name": "f"}}
+        ]
+        records = []
+        sink = logger.add(
+            lambda message: records.append(message.record),
+            level="DEBUG",
+        )
+        try:
+            for _ in range(5):
+                agent.llm_manager.check_model_supports_utilities()
+        finally:
+            logger.remove(sink)
+
+        assert function_calling.call_count == 1
+        assert parallel.call_count == 1
+        reports = [
+            record
+            for record in records
+            if "parallel function calling" in record["message"]
+        ]
+        assert [record["level"].name for record in reports] == [
+            "WARNING"
+        ]
 
 
 ########################################################
@@ -801,6 +879,25 @@ class TestCallPanelStreaming:
 
         assert result == "AB"
         assert tokens == ["A", "B"]
+
+    def test_callback_streams_without_streaming_on(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = self._chunks()
+        tokens = []
+
+        result = agent.llm_manager.call(
+            "hi", current_loop=0, streaming_callback=tokens.append
+        )
+
+        assert result == "AB"
+        assert tokens == ["A", "B"]
+        assert "imgs" not in fake_llm.calls[-1]["kwargs"]
+
+        agent.llm_manager.call(
+            "hi", imgs=["a.png"], streaming_callback=tokens.append
+        )
+        assert fake_llm.calls[-1]["kwargs"]["imgs"] == ["a.png"]
 
     def test_silent_path_when_print_on_false(self, agent, fake_llm):
         fake_llm.stream_return = self._chunks()
