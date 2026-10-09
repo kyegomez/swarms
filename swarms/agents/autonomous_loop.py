@@ -110,6 +110,30 @@ class AutonomousAgentLoop:
         self._transcript = Transcript()
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
+        # The client this loop last built, and the inputs it was built from.
+        self._built_llm: Any = None
+        self._built_llm_signature: Optional[str] = None
+
+    def _refresh_llm(self) -> None:
+        """Rebuild the agent's client when its tools, prompt or model changed."""
+        if self.agent.llm is None:
+            return
+        signature = json.dumps(
+            [
+                self.agent.tools_list_dictionary,
+                self.agent.system_prompt,
+                self.agent.model_name,
+            ],
+            default=str,
+        )
+        if (
+            self.agent.llm is self._built_llm
+            and signature == self._built_llm_signature
+        ):
+            return
+        self.agent.llm = self.agent.llm_handling()
+        self._built_llm = self.agent.llm
+        self._built_llm_signature = signature
 
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
@@ -376,9 +400,7 @@ class AutonomousAgentLoop:
 
                     self._applied_handoff_block = handoff_block
 
-            # Reinitialize LLM with planning tools (and handoff tool if configured)
-            if self.agent.llm is not None:
-                self.agent.llm = self.agent.llm_handling()
+            self._refresh_llm()
 
             # Register planning tool handlers
             all_planning_tool_handlers = {
@@ -605,11 +627,6 @@ class AutonomousAgentLoop:
                 exists(self.agent.tools)
                 and not self.agent.dynamic_tools
             ):
-                # Convert user tools to function schema
-                user_tools = convert_multiple_functions_to_openai_function_schema(
-                    self.agent.tools
-                )
-
                 # Get existing tool names to avoid duplicates
                 existing_tool_names = set()
                 if self.agent.tools_list_dictionary:
@@ -626,6 +643,21 @@ class AutonomousAgentLoop:
                 if self.agent.tools_list_dictionary is None:
                     self.agent.tools_list_dictionary = []
 
+                # Schemas are named after the function, so tools already listed are not converted again.
+                unlisted_tools = [
+                    tool
+                    for tool in self.agent.tools
+                    if getattr(tool, "__name__", None)
+                    not in existing_tool_names
+                ]
+                user_tools = (
+                    convert_multiple_functions_to_openai_function_schema(
+                        unlisted_tools
+                    )
+                    if unlisted_tools
+                    else []
+                )
+
                 tools_added = 0
                 for tool in user_tools:
                     tool_name = tool.get("function", {}).get(
@@ -636,9 +668,7 @@ class AutonomousAgentLoop:
                         existing_tool_names.add(tool_name)
                         tools_added += 1
 
-                # Reinitialize LLM with both planning tools and user tools
-                if self.agent.llm is not None:
-                    self.agent.llm = self.agent.llm_handling()
+                self._refresh_llm()
 
                 if self.agent.print_on and tools_added > 0:
                     formatter.print_panel(
