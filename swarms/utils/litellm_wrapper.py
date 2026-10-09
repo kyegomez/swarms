@@ -23,12 +23,11 @@ import traceback
 from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
-import litellm
 import requests
-from litellm import acompletion, completion, supports_vision
 from loguru import logger
 from pydantic import BaseModel
 
+from swarms.utils import llm_backend
 from swarms.utils.formatter import formatter
 from swarms.utils.image_file_b64 import (
     get_image_base64,
@@ -36,18 +35,34 @@ from swarms.utils.image_file_b64 import (
     is_base64_encoded,
     save_base64_as_image,
 )
+from swarms.utils.llm_backend import acompletion, completion
 
 
-@lru_cache(maxsize=None)
+# Only a yes is remembered: RouteHub answers no while OpenRouter's model list is unreachable.
+_VISION_MODELS = set()
+
+
 def _model_supports_vision(model: str) -> bool:
-    """Cached litellm.supports_vision lookup (pure function of model name)."""
-    return supports_vision(model=model)
+    """Whether the model accepts images.
+
+    Args:
+        model (str): The model name.
+
+    Returns:
+        bool: The LLM backend's answer.
+    """
+    if model in _VISION_MODELS:
+        return True
+    if llm_backend.supports_vision(model=model):
+        _VISION_MODELS.add(model)
+        return True
+    return False
 
 
 @lru_cache(maxsize=None)
 def _model_supports_reasoning(model: str) -> bool:
-    """Cached litellm.supports_reasoning lookup (pure function of model name)."""
-    return litellm.supports_reasoning(model=model)
+    """Cached supports_reasoning lookup (pure function of model name)."""
+    return llm_backend.supports_reasoning(model=model)
 
 
 class LiteLLMException(Exception):
@@ -382,16 +397,20 @@ class LiteLLM:
         self.modalities = []
         self.messages = []  # Initialize messages list
 
-        # Configure litellm settings
-        litellm.set_verbose = (
-            verbose  # Disable verbose mode for better performance
-        )
-        litellm.ssl_verify = ssl_verify
-        litellm.num_retries = (
-            retries  # Add retries for better reliability
-        )
-
-        litellm.drop_params = drop_params
+        # litellm reads these from module globals shared by every agent; RouteHub takes them per call.
+        self._backend_options = {}
+        backend_options = {
+            "set_verbose": verbose,
+            "ssl_verify": ssl_verify,
+            "num_retries": retries,
+            "drop_params": drop_params,
+        }
+        if llm_backend.BACKEND == "litellm":
+            litellm = llm_backend.backend_module()
+            for name, value in backend_options.items():
+                setattr(litellm, name, value)
+        else:
+            self._backend_options = backend_options
 
         # Add system prompt if present (Anthropic rejects empty system blocks)
         if isinstance(self.system_prompt, str):
@@ -1192,7 +1211,16 @@ class LiteLLM:
         if img is not None:
             out = _model_supports_vision(self.model_name)
 
-            if out is False:
+            # RouteHub's catalog comes from the network, so a model it can't find may still take images.
+            if (
+                out is False
+                and llm_backend.BACKEND == "routehub"
+                and self.model_name not in llm_backend.model_list
+            ):
+                logger.warning(
+                    f"Can't confirm that {self.model_name} accepts images, sending the image anyway."
+                )
+            elif out is False:
                 raise ValueError(
                     f"Model {self.model_name} does not support vision"
                 )
@@ -1261,6 +1289,7 @@ class LiteLLM:
             5. Defaults from __init__
         """
         completion_params = {
+            **self._backend_options,
             "model": self.model_name,
             "messages": self._prepare_messages(
                 task=task, img=img, imgs=imgs, messages=messages

@@ -75,6 +75,11 @@ schedule = "*"
 opentelemetry-sdk = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
 zstandard = "*"
+routehub = { version = ">=0.1.0", extras = ["fast"], optional = true }
+
+[tool.poetry.extras]
+# RouteHub replaces litellm for model calls when installed.
+fast = ["routehub"]
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

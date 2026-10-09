@@ -18,17 +18,6 @@ from typing import (
 
 import toml
 import yaml
-from litellm import model_list
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    get_max_tokens,
-    get_model_info,
-    supports_function_calling,
-)
 from loguru import logger
 from pydantic import BaseModel
 
@@ -56,7 +45,7 @@ from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
-    AgentRunError,
+    AgentRunError,  # noqa: F401  re-exported from this module
     AgentToolExecutionError,
 )
 from swarms.schemas.mcp_schemas import (
@@ -104,6 +93,7 @@ from swarms.utils.index import (
     exists,
     format_data_structure,
 )
+from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
@@ -1277,12 +1267,7 @@ class Agent:
                         # Exit the retry loop, not the run, so the model can read the failure
                         success = True
 
-                    except (
-                        BadRequestError,
-                        InternalServerError,
-                        AuthenticationError,
-                        Exception,
-                    ) as e:
+                    except Exception as e:
                         last_error = e
 
                         # Answer the recorded tool calls so the retried request is well formed
@@ -1832,7 +1817,7 @@ Subtask Breakdown:
         """
         try:
             return (
-                get_model_info(self.model_name).get(
+                llm_backend.get_model_info(self.model_name).get(
                     "max_input_tokens"
                 )
                 or 16000
@@ -1854,7 +1839,7 @@ Subtask Breakdown:
         # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
         try:
             return (
-                get_model_info(self.model_name).get(
+                llm_backend.get_model_info(self.model_name).get(
                     "max_output_tokens"
                 )
                 or 16000
@@ -1884,7 +1869,9 @@ Subtask Breakdown:
 
         # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
         if self.max_tokens is None or self.max_tokens <= 0:
-            suggested_tokens = get_max_tokens(self.model_name)
+            suggested_tokens = llm_backend.get_max_tokens(
+                self.model_name
+            )
             if suggested_tokens is not None and suggested_tokens > 0:
                 self.max_tokens = suggested_tokens
             else:
@@ -1900,21 +1887,27 @@ Subtask Breakdown:
 
         # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
         if self.tools_list_dictionary:
-            if not supports_function_calling(self.model_name):
+            if not llm_backend.supports_function_calling(
+                self.model_name
+            ):
                 logger.warning(
                     f"The model '{self.model_name}' does not support function calling. Please use a model that supports function calling."
                 )
 
         try:
-            if self.max_tokens > get_max_tokens(self.model_name):
+            if self.max_tokens > llm_backend.get_max_tokens(
+                self.model_name
+            ):
                 logger.warning(
-                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' may or may not support {get_max_tokens(self.model_name)} tokens. Please set max tokens to {get_max_tokens(self.model_name)} or less."
+                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' may or may not support {llm_backend.get_max_tokens(self.model_name)} tokens. Please set max tokens to {llm_backend.get_max_tokens(self.model_name)} or less."
                 )
 
         except Exception:
             pass
 
-        if self.model_name not in model_list:
+        model_list = llm_backend.model_list
+        # Empty when RouteHub cannot reach OpenRouter, which says nothing about the model.
+        if model_list and self.model_name not in model_list:
             logger.warning(
                 f"The model '{self.model_name}' may not be supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
             )
@@ -2733,14 +2726,7 @@ Subtask Breakdown:
 
             return output
 
-        except (
-            AgentRunError,
-            AgentLLMError,
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
-            Exception,
-        ) as e:
+        except Exception as e:
 
             # Try fallback models if available
             if self.is_fallback_available():
