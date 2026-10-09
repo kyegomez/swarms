@@ -464,5 +464,24 @@ def test_run_many_names_the_missing_key(spec, missing):
         CronJob.run_many([spec], block=False)
 
 
+def test_stop_many_does_not_wait_out_each_jobs_sleep():
+    jobs = CronJob.run_many(
+        [
+            {"agent": MockAgent(), "interval": "1hour", "task": "t"}
+            for _ in range(10)
+        ],
+        block=False,
+    )
+
+    started = time.monotonic()
+    CronJob.stop_many(jobs)
+    elapsed = time.monotonic() - started
+
+    assert all(not job.thread.is_alive() for job in jobs)
+    assert (
+        elapsed < 1.0
+    ), f"stop_many took {elapsed:.2f}s for 10 idle jobs"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
