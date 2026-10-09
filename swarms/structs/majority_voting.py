@@ -159,7 +159,10 @@ class MajorityVoting:
             system_prompt=consensus_agent_prompt,
             description=consensus_agent_description,
             model_name=consensus_agent_model_name,
-            **additional_consensus_agent_kwargs,
+            **{
+                "print_on": verbose,
+                **additional_consensus_agent_kwargs,
+            },
         )
 
         self.reliability_check()
@@ -174,6 +177,9 @@ class MajorityVoting:
 
         if self.max_loops <= 0:
             raise ValueError("max_loops must be greater than 0")
+
+        if not self.verbose:
+            return
 
         # Log the agents in a more formatted, readable way
         agent_list = "\n".join(
