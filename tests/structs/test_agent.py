@@ -146,6 +146,36 @@ class TestBasicAgent:
         assert restored.max_loops == 3
         assert restored.agent_name == "basic-flow"
 
+    def test_autosave_keeps_conversation_out_of_config(
+        self, mocked_llm, tmp_path
+    ):
+        agent = Agent(
+            agent_name="autosaved",
+            llm=mocked_llm,
+            max_loops=2,
+            print_on=False,
+            verbose=False,
+            persistent_memory=False,
+            autosave=True,
+        )
+        agent.run("Remember the code word heliotrope")
+
+        with open(
+            os.path.join(agent.workspace.dir, "config.json")
+        ) as f:
+            assert "short_memory" not in json.load(f)
+
+        restored = _flow("restored", mocked_llm, tmp_path)
+        restored.short_memory.load(
+            os.path.join(
+                agent.workspace.dir, "conversation_history.json"
+            )
+        )
+        assert (
+            restored.short_memory.conversation_history
+            == agent.short_memory.conversation_history
+        )
+
     def test_flow_call(self, basic_flow):
         """__call__ forwards to run() rather than doing its own thing.
 
