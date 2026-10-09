@@ -1246,12 +1246,6 @@ class Agent:
 
                         success = True  # Mark as successful to exit the retry loop
 
-                        # Autosave config after successful step
-                        if self.autosave:
-                            self._autosave_config_step(
-                                loop_count=loop_count
-                            )
-
                     except AgentToolExecutionError as e:
                         # A tool failure is not a provider failure, re-running the model cannot fix it
                         if use_transcript and turn_calls:
@@ -1429,7 +1423,8 @@ class Agent:
             return
 
         path = self.workspace.save_config(
-            additional_metadata={"loop_count": loop_count}
+            additional_metadata={"loop_count": loop_count},
+            exclude=("short_memory",),
         )
 
         if path and self.verbose and loop_count is not None:
@@ -1924,6 +1919,8 @@ Subtask Breakdown:
         Save the agent state to a file using SafeStateManager with atomic writing
         and backup functionality. Automatically handles complex objects and class instances.
         Files are saved in the agent-specific workspace directory: workspace_dir/agent-{agent_name}-{uuid}/
+        The conversation is also written to ``conversation_history.json`` in the
+        agent workspace, where ``Conversation.load()`` restores it.
 
         Args:
             file_path (str, optional): Custom path to save the state. If relative, will be saved in
@@ -1995,6 +1992,7 @@ Subtask Breakdown:
 
             # Handle additional component saves
             self._save_additional_components(full_path)
+            self.workspace.save_conversation(self.short_memory)
 
         except OSError as e:
             logger.error(
