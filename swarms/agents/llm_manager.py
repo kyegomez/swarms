@@ -29,6 +29,7 @@ import itertools
 import random
 import time
 import traceback
+from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
 from litellm.exceptions import (
@@ -50,6 +51,50 @@ from swarms.utils.index import exists
 from swarms.utils.litellm_wrapper import LiteLLM
 
 DEFAULT_MODEL_NAME = "gpt-5.4"
+
+# Messages already logged, so a capability gap is reported once per process.
+_logged_capability_messages = set()
+
+
+@lru_cache(maxsize=None)
+def _model_supports_function_calling(model_name: str) -> bool:
+    """Whether the model supports function calling.
+
+    Args:
+        model_name: The model to look up.
+
+    Returns:
+        bool: The lookup result.
+    """
+    return supports_function_calling(model_name)
+
+
+@lru_cache(maxsize=None)
+def _model_supports_parallel_function_calling(
+    model_name: str,
+) -> bool:
+    """Whether the model supports parallel function calling.
+
+    Args:
+        model_name: The model to look up.
+
+    Returns:
+        bool: The lookup result.
+    """
+    return supports_parallel_function_calling(model_name)
+
+
+def _log_once(level: str, message: str) -> None:
+    """Log a message the first time it occurs in this process.
+
+    Args:
+        level: The log level name.
+        message: The message to log.
+    """
+    if message in _logged_capability_messages:
+        return
+    _logged_capability_messages.add(message)
+    logger.log(level, message)
 
 
 class LLMManager:
@@ -318,11 +363,7 @@ class LLMManager:
         self, img: Optional[str] = None
     ) -> None:
         """
-        Log an error for each capability the current model is missing.
-
-        Checks vision support when an image is supplied, function calling when
-        a tool schema is set, and parallel function calling when more than two
-        tools are registered. Logging only — never raises.
+        Log the capabilities the current model lacks for this run.
 
         Args:
             img (str, optional): Image input to check vision support for.
@@ -339,24 +380,27 @@ class LLMManager:
                     f"Please use a vision-enabled model."
                 )
 
-        if agent.tools_list_dictionary is not None:
-            out = supports_function_calling(agent.model_name)
+        if agent.tools_list_dictionary:
+            out = _model_supports_function_calling(agent.model_name)
             if out is False:
-                logger.error(
-                    f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support function calling capabilities. "
-                    f"tools_list_dictionary is set: {agent.tools_list_dictionary}. "
-                    f"Please use a function calling-enabled model."
+                _log_once(
+                    "ERROR",
+                    f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support function calling capabilities, "
+                    f"but tools are configured. "
+                    f"Please use a function calling-enabled model.",
                 )
 
         if agent.tools is not None:
             if len(agent.tools) > 2:
-                out = supports_parallel_function_calling(
+                out = _model_supports_parallel_function_calling(
                     agent.model_name
                 )
+                # litellm's capability data lags new models, so this is only a hint.
                 if out is False:
-                    logger.error(
-                        f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support parallel function calling capabilities. "
-                        f"Please use a parallel function calling-enabled model."
+                    _log_once(
+                        "WARNING",
+                        f"Model '{agent.model_name}' is not listed as supporting parallel function calling, "
+                        f"so its tool calls may arrive one per turn.",
                     )
 
         return None
