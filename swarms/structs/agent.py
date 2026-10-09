@@ -2618,8 +2618,9 @@ Subtask Breakdown:
             n (int): How many outputs to generate (number of runs). Defaults to 1.
             messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
                 e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
-                They are added to the agent's conversation and sent as the context
-                this task continues from. Defaults to the agent's own ``messages``.
+                They are sent as the context this task continues from, and held in
+                the agent's conversation only until this call returns, so only the
+                task and the answer remain. Defaults to the agent's own ``messages``.
             *args: Additional positional arguments for extensibility.
             **kwargs: Additional keyword arguments passed to LLM/tool execution.
 
@@ -2693,8 +2694,11 @@ Subtask Breakdown:
                 streaming_callback = self.streaming_callback
 
         # Constructor messages are already in short_memory; per-call ones are not.
-        if messages:
+        copied = (
             self.short_memory.add_messages(messages)
+            if messages
+            else []
+        )
 
         try:
             if self.max_loops == "auto":
@@ -2778,6 +2782,17 @@ Subtask Breakdown:
                 "For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
             )
             raise KeyboardInterrupt
+
+        finally:
+            if copied:
+                copied_ids = {id(message) for message in copied}
+                kept = [
+                    message
+                    for message in self.short_memory.conversation_history
+                    if id(message) not in copied_ids
+                ]
+                self.short_memory.clear()
+                self.short_memory.batch_add(kept)
 
     def run_stream(
         self,
