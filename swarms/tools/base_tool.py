@@ -1,5 +1,13 @@
 import json
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from pydantic import BaseModel, Field
@@ -2389,6 +2397,39 @@ class BaseTool(BaseModel):
 
         return function_calls
 
+    def _parse_openai_function_call(
+        self, function_info: Any, call_id: Any
+    ) -> Optional[Dict[str, Any]]:
+        if isinstance(function_info, dict):
+            name = function_info.get("name")
+            arguments_str = function_info.get("arguments", "{}")
+        else:
+            name = getattr(function_info, "name", None)
+            arguments_str = getattr(function_info, "arguments", "{}")
+
+        if not name:
+            return None
+
+        try:
+            arguments = (
+                json.loads(arguments_str)
+                if isinstance(arguments_str, str)
+                else arguments_str
+            )
+        except json.JSONDecodeError as e:
+            self._log_if_verbose(
+                "error",
+                f"Failed to parse arguments for {name}: {e}",
+            )
+            return None
+
+        return {
+            "name": name,
+            "arguments": arguments,
+            "id": call_id,
+            "type": "openai",
+        }
+
     def _extract_openai_function_calls(
         self, response: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
@@ -2401,32 +2442,11 @@ class BaseTool(BaseModel):
                 response.get("type") == "function"
                 and "function" in response
             ):
-                function_info = response.get("function", {})
-                name = function_info.get("name")
-                arguments_str = function_info.get("arguments", "{}")
-
-                if name:
-                    try:
-                        # Parse arguments JSON string
-                        arguments = (
-                            json.loads(arguments_str)
-                            if isinstance(arguments_str, str)
-                            else arguments_str
-                        )
-
-                        function_calls.append(
-                            {
-                                "name": name,
-                                "arguments": arguments,
-                                "id": response.get("id"),
-                                "type": "openai",
-                            }
-                        )
-                    except json.JSONDecodeError as e:
-                        self._log_if_verbose(
-                            "error",
-                            f"Failed to parse arguments for {name}: {e}",
-                        )
+                call = self._parse_openai_function_call(
+                    response.get("function", {}), response.get("id")
+                )
+                if call:
+                    function_calls.append(call)
 
             # Check for choices[].message.tool_calls format
             choices = response.get("choices", [])
@@ -2436,34 +2456,12 @@ class BaseTool(BaseModel):
 
                 for tool_call in tool_calls:
                     if tool_call.get("type") == "function":
-                        function_info = tool_call.get("function", {})
-                        name = function_info.get("name")
-                        arguments_str = function_info.get(
-                            "arguments", "{}"
+                        call = self._parse_openai_function_call(
+                            tool_call.get("function", {}),
+                            tool_call.get("id"),
                         )
-
-                        if name:
-                            try:
-                                # Parse arguments JSON string
-                                arguments = (
-                                    json.loads(arguments_str)
-                                    if isinstance(arguments_str, str)
-                                    else arguments_str
-                                )
-
-                                function_calls.append(
-                                    {
-                                        "name": name,
-                                        "arguments": arguments,
-                                        "id": tool_call.get("id"),
-                                        "type": "openai",
-                                    }
-                                )
-                            except json.JSONDecodeError as e:
-                                self._log_if_verbose(
-                                    "error",
-                                    f"Failed to parse arguments for {name}: {e}",
-                                )
+                        if call:
+                            function_calls.append(call)
 
             # Also check for direct tool_calls in response root (array of function calls)
             if "tool_calls" in response:
@@ -2471,37 +2469,12 @@ class BaseTool(BaseModel):
                 if isinstance(tool_calls, list):
                     for tool_call in tool_calls:
                         if tool_call.get("type") == "function":
-                            function_info = tool_call.get(
-                                "function", {}
+                            call = self._parse_openai_function_call(
+                                tool_call.get("function", {}),
+                                tool_call.get("id"),
                             )
-                            name = function_info.get("name")
-                            arguments_str = function_info.get(
-                                "arguments", "{}"
-                            )
-
-                            if name:
-                                try:
-                                    arguments = (
-                                        json.loads(arguments_str)
-                                        if isinstance(
-                                            arguments_str, str
-                                        )
-                                        else arguments_str
-                                    )
-
-                                    function_calls.append(
-                                        {
-                                            "name": name,
-                                            "arguments": arguments,
-                                            "id": tool_call.get("id"),
-                                            "type": "openai",
-                                        }
-                                    )
-                                except json.JSONDecodeError as e:
-                                    self._log_if_verbose(
-                                        "error",
-                                        f"Failed to parse arguments for {name}: {e}",
-                                    )
+                            if call:
+                                function_calls.append(call)
 
         except Exception as e:
             self._log_if_verbose(
@@ -2611,6 +2584,30 @@ class BaseTool(BaseModel):
 
         return function_calls
 
+    def _build_call_dict(
+        self,
+        data: Dict[str, Any],
+        call_type: str,
+        arg_keys: Tuple[str, ...] = ("arguments", "parameters"),
+    ) -> Optional[Dict[str, Any]]:
+        name = data.get("name")
+        if not name:
+            return None
+
+        arguments = {}
+        for key in arg_keys:
+            value = data.get(key)
+            if value:
+                arguments = value
+                break
+
+        return {
+            "name": name,
+            "arguments": arguments,
+            "id": data.get("id"),
+            "type": call_type,
+        }
+
     def _extract_generic_function_calls(
         self, response: Dict[str, Any]
     ) -> List[Dict[str, Any]]:
@@ -2622,39 +2619,17 @@ class BaseTool(BaseModel):
             if "name" in response and (
                 "arguments" in response or "parameters" in response
             ):
-                name = response.get("name")
-                arguments = response.get("arguments") or response.get(
-                    "parameters", {}
-                )
-
-                if name:
-                    function_calls.append(
-                        {
-                            "name": name,
-                            "arguments": arguments,
-                            "id": response.get("id"),
-                            "type": "generic",
-                        }
-                    )
+                call = self._build_call_dict(response, "generic")
+                if call:
+                    function_calls.append(call)
 
             # Check for function_calls list
             if "function_calls" in response:
                 for call in response["function_calls"]:
                     if isinstance(call, dict) and "name" in call:
-                        name = call.get("name")
-                        arguments = call.get("arguments") or call.get(
-                            "parameters", {}
-                        )
-
-                        if name:
-                            function_calls.append(
-                                {
-                                    "name": name,
-                                    "arguments": arguments,
-                                    "id": call.get("id"),
-                                    "type": "generic",
-                                }
-                            )
+                        built = self._build_call_dict(call, "generic")
+                        if built:
+                            function_calls.append(built)
 
         except Exception as e:
             self._log_if_verbose(
@@ -2886,48 +2861,30 @@ class BaseTool(BaseModel):
                     function_calls.extend(extracted_calls)
 
                     # Also try direct extraction in case it's a simple function call BaseModel
-                    if self._is_direct_function_call(tool_call_dict):
-                        function_calls.extend(
-                            self._extract_direct_function_call(
-                                tool_call_dict
-                            )
+                    if "name" in tool_call_dict and (
+                        "arguments" in tool_call_dict
+                        or "parameters" in tool_call_dict
+                        or "input" in tool_call_dict
+                    ):
+                        direct_call = self._build_call_dict(
+                            tool_call_dict,
+                            "direct",
+                            ("arguments", "parameters", "input"),
                         )
+                        if direct_call:
+                            function_calls.append(direct_call)
 
                 # Handle OpenAI ChatCompletionMessageToolCall objects
                 elif hasattr(tool_call, "function") and hasattr(
                     tool_call, "type"
                 ):
                     if tool_call.type == "function":
-                        function_info = tool_call.function
-                        name = getattr(function_info, "name", None)
-                        arguments_str = getattr(
-                            function_info, "arguments", "{}"
+                        call = self._parse_openai_function_call(
+                            tool_call.function,
+                            getattr(tool_call, "id", None),
                         )
-
-                        if name:
-                            try:
-                                # Parse arguments JSON string
-                                arguments = (
-                                    json.loads(arguments_str)
-                                    if isinstance(arguments_str, str)
-                                    else arguments_str
-                                )
-
-                                function_calls.append(
-                                    {
-                                        "name": name,
-                                        "arguments": arguments,
-                                        "id": getattr(
-                                            tool_call, "id", None
-                                        ),
-                                        "type": "openai",
-                                    }
-                                )
-                            except json.JSONDecodeError as e:
-                                self._log_if_verbose(
-                                    "error",
-                                    f"Failed to parse arguments for {name}: {e}",
-                                )
+                        if call:
+                            function_calls.append(call)
 
                 # Handle dictionary representations of tool calls
                 elif isinstance(tool_call, dict):
@@ -2935,33 +2892,12 @@ class BaseTool(BaseModel):
                         tool_call.get("type") == "function"
                         and "function" in tool_call
                     ):
-                        function_info = tool_call["function"]
-                        name = function_info.get("name")
-                        arguments_str = function_info.get(
-                            "arguments", "{}"
+                        call = self._parse_openai_function_call(
+                            tool_call["function"],
+                            tool_call.get("id"),
                         )
-
-                        if name:
-                            try:
-                                arguments = (
-                                    json.loads(arguments_str)
-                                    if isinstance(arguments_str, str)
-                                    else arguments_str
-                                )
-
-                                function_calls.append(
-                                    {
-                                        "name": name,
-                                        "arguments": arguments,
-                                        "id": tool_call.get("id"),
-                                        "type": "openai",
-                                    }
-                                )
-                            except json.JSONDecodeError as e:
-                                self._log_if_verbose(
-                                    "error",
-                                    f"Failed to parse arguments for {name}: {e}",
-                                )
+                        if call:
+                            function_calls.append(call)
 
                     # Also try other dictionary extraction methods
                     else:
@@ -3020,58 +2956,3 @@ class BaseTool(BaseModel):
                 )
 
         return formatted_results
-
-    def _is_direct_function_call(self, data: Dict[str, Any]) -> bool:
-        """
-        Check if a dictionary represents a direct function call.
-
-        Args:
-            data: Dictionary to check
-
-        Returns:
-            bool: True if it's a direct function call
-        """
-        return (
-            isinstance(data, dict)
-            and "name" in data
-            and (
-                "arguments" in data
-                or "parameters" in data
-                or "input" in data
-            )
-        )
-
-    def _extract_direct_function_call(
-        self, data: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        """
-        Extract a direct function call from a dictionary.
-
-        Args:
-            data: Dictionary containing function call data
-
-        Returns:
-            List[Dict[str, Any]]: List containing the extracted function call
-        """
-        function_calls = []
-
-        name = data.get("name")
-        if name:
-            # Try different argument key names
-            arguments = (
-                data.get("arguments")
-                or data.get("parameters")
-                or data.get("input")
-                or {}
-            )
-
-            function_calls.append(
-                {
-                    "name": name,
-                    "arguments": arguments,
-                    "id": data.get("id"),
-                    "type": "direct",
-                }
-            )
-
-        return function_calls
