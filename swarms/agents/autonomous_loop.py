@@ -120,14 +120,6 @@ class AutonomousAgentLoop:
         """Rebuild the agent's client when its tools, prompt or model changed."""
         if self.agent.llm is None:
             return
-        if self.agent.llm is self._caller_llm:
-            raise AgentLLMInitializationError(
-                f"Agent '{self.agent.agent_name}' was given llm="
-                f"{type(self.agent.llm).__name__}, but max_loops='auto' "
-                "needs a client built by swarms to send its planning "
-                "tools. Pass model_name (and llm_args) instead of llm, "
-                "or use an integer max_loops."
-            )
         signature = json.dumps(
             [
                 self.agent.tools_list_dictionary,
@@ -286,6 +278,17 @@ class AutonomousAgentLoop:
             >>> # 2. Execute each subtask with tool calls
             >>> # 3. Generate a comprehensive summary
         """
+        if (
+            self.agent.llm is not None
+            and self.agent.llm is self._caller_llm
+        ):
+            raise AgentLLMInitializationError(
+                f"Agent '{self.agent.agent_name}' was given llm="
+                f"{type(self.agent.llm).__name__}, but max_loops='auto' "
+                "needs a client built by swarms to send its planning "
+                "tools. Pass model_name (and llm_args) instead of llm, "
+                "or use an integer max_loops."
+            )
         try:
 
             # Cleared before seeding, or the opening turn is lost.
