@@ -74,7 +74,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [tools/](tools/) | Tool integration examples including agent-as-tools, base tool implementations, browser automation, Claude integration, Exa search, Firecrawl, multi-tool usage, and Stagehand integration |
 | [README.md](tools/README.md) | Complete tools examples documentation |
 | [agent_as_tools.py](tools/agent_as_tools.py) | Using agents as tools |
-| [browser_use_as_tool.py](tools/browser_use_as_tool.py) | Browser automation tool |
+| [browser_use_as_tool.py](tools/browser_use/browser_use_as_tool.py) | Browser automation tool |
 | [browser_use_demo.py](tools/browser_use_demo.py) | Browser automation demonstration |
 | [claude_as_a_tool.py](tools/claude_as_a_tool.py) | Claude model integration as a tool |
 | [exa_search_agent.py](tools/exa_search_agent.py) | Exa search integration |
@@ -355,7 +355,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | Example | Description |
 |---------|-------------|
 | [Agent as Tools](tools/agent_as_tools.py) | Using agents as tools |
-| [Browser Automation](tools/browser_use_as_tool.py) | Browser control |
+| [Browser Automation](tools/browser_use/browser_use_as_tool.py) | Browser control |
 | [Browser Demo](tools/browser_use_demo.py) | Browser automation demonstration |
 | [Claude as Tool](tools/claude_as_a_tool.py) | Claude model as a tool |
 | [Exa Search](tools/exa_search_agent.py) | Search integration |
