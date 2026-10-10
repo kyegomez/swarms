@@ -17,7 +17,6 @@ from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
     multi_base_model_to_openai_function,
 )
-from swarms.tools.tool_registry import ToolStorage, tool_registry
 from swarms.tools.tool_utils import (
     scrape_tool_func_docs,
     tool_find_by_name,
@@ -37,8 +36,6 @@ __all__ = [
     "Function",
     "ToolFunction",
     "BaseTool",
-    "ToolStorage",
-    "tool_registry",
     "MCPManager",
     "MCPFileTokenStorage",
 ]
