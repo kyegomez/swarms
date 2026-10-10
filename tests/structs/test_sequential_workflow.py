@@ -1,4 +1,6 @@
+import asyncio
 import os
+import threading
 from unittest.mock import patch
 
 import pytest
@@ -736,3 +738,51 @@ def test_collab_prompt_is_delivered_as_a_system_turn_at_run_time():
     # ...and the caller's agents are still untouched afterwards.
     for agent, original in zip(agents, originals):
         assert agent.system_prompt == original
+
+
+@pytest.mark.skipif(
+    (os.cpu_count() or 1) < 2,
+    reason="run_concurrent sizes its pool with os.cpu_count(); needs >= 2 workers",
+)
+def test_run_concurrent_returns_results_in_task_order():
+    tasks = ["task-0", "task-1", "task-2"]
+    finished = []
+    lock = threading.Lock()
+    later_tasks_done = threading.Event()
+
+    def call_llm(task=None, *args, **kwargs):
+        text = str(task) + " ".join(
+            str(m["content"]) for m in kwargs.get("messages") or []
+        )
+        current = next((t for t in tasks if t in text), None)
+        assert (
+            current is not None
+        ), f"no task found in prompt: {text!r}"
+        if current == "task-0":
+            later_tasks_done.wait(timeout=5)
+        with lock:
+            finished.append(current)
+            if len(finished) == 2:
+                later_tasks_done.set()
+        return f"answer to {current}"
+
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        agent = Agent(
+            agent_name="A",
+            model_name="gpt-4o",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+    agent.call_llm = call_llm
+    workflow = SequentialWorkflow(
+        agents=[agent],
+        max_loops=1,
+        output_type="final",
+        autosave=False,
+    )
+
+    results = asyncio.run(workflow.run_concurrent(tasks))
+
+    assert finished[-1] == "task-0"
+    assert results == [f"answer to {t}" for t in tasks]

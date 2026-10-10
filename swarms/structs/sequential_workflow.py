@@ -1,7 +1,6 @@
 import ast
 import json
 import os
-from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from swarms.prompts.agent_acknowledgement_prompt import (
@@ -550,10 +549,7 @@ class SequentialWorkflow:
                     )
                     for task in tasks
                 ]
-                return [
-                    result.result()
-                    for result in as_completed(results)
-                ]
+                return [result.result() for result in results]
         except Exception as e:
             logger.error(
                 f"An error occurred while executing the batch of tasks concurrently: {e}"
