@@ -21,14 +21,13 @@ import copy
 import socket
 import traceback
 from functools import lru_cache
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
-import litellm
 import requests
-from litellm import acompletion, completion, supports_vision
 from loguru import logger
 from pydantic import BaseModel
 
+from swarms.utils import llm_backend
 from swarms.utils.formatter import formatter
 from swarms.utils.image_file_b64 import (
     get_image_base64,
@@ -36,18 +35,34 @@ from swarms.utils.image_file_b64 import (
     is_base64_encoded,
     save_base64_as_image,
 )
+from swarms.utils.llm_backend import acompletion, completion
 
 
-@lru_cache(maxsize=None)
+# Only a yes is remembered: RouteHub answers no while OpenRouter's model list is unreachable.
+_VISION_MODELS = set()
+
+
 def _model_supports_vision(model: str) -> bool:
-    """Cached litellm.supports_vision lookup (pure function of model name)."""
-    return supports_vision(model=model)
+    """Whether the model accepts images.
+
+    Args:
+        model (str): The model name.
+
+    Returns:
+        bool: The LLM backend's answer.
+    """
+    if model in _VISION_MODELS:
+        return True
+    if llm_backend.supports_vision(model=model):
+        _VISION_MODELS.add(model)
+        return True
+    return False
 
 
 @lru_cache(maxsize=None)
 def _model_supports_reasoning(model: str) -> bool:
-    """Cached litellm.supports_reasoning lookup (pure function of model name)."""
-    return litellm.supports_reasoning(model=model)
+    """Cached supports_reasoning lookup (pure function of model name)."""
+    return llm_backend.supports_reasoning(model=model)
 
 
 class LiteLLMException(Exception):
@@ -375,19 +390,27 @@ class LiteLLM:
         self.agent_name = agent_name
         self.usage_hook = usage_hook
         self.usage = empty_usage()
+        self.last_finish_reason: Optional[str] = None
+        self.last_response_model: Optional[str] = None
+        self.last_request: Optional[dict] = None
+        self.last_response: Any = None
         self.modalities = []
         self.messages = []  # Initialize messages list
 
-        # Configure litellm settings
-        litellm.set_verbose = (
-            verbose  # Disable verbose mode for better performance
-        )
-        litellm.ssl_verify = ssl_verify
-        litellm.num_retries = (
-            retries  # Add retries for better reliability
-        )
-
-        litellm.drop_params = drop_params
+        # litellm reads these from module globals shared by every agent; RouteHub takes them per call.
+        self._backend_options = {}
+        backend_options = {
+            "set_verbose": verbose,
+            "ssl_verify": ssl_verify,
+            "num_retries": retries,
+            "drop_params": drop_params,
+        }
+        if llm_backend.BACKEND == "litellm":
+            litellm = llm_backend.backend_module()
+            for name, value in backend_options.items():
+                setattr(litellm, name, value)
+        else:
+            self._backend_options = backend_options
 
         # Add system prompt if present (Anthropic rejects empty system blocks)
         if isinstance(self.system_prompt, str):
@@ -1188,7 +1211,16 @@ class LiteLLM:
         if img is not None:
             out = _model_supports_vision(self.model_name)
 
-            if out is False:
+            # RouteHub's catalog comes from the network, so a model it can't find may still take images.
+            if (
+                out is False
+                and llm_backend.BACKEND == "routehub"
+                and self.model_name not in llm_backend.model_list
+            ):
+                logger.warning(
+                    f"Can't confirm that {self.model_name} accepts images, sending the image anyway."
+                )
+            elif out is False:
                 raise ValueError(
                     f"Model {self.model_name} does not support vision"
                 )
@@ -1257,6 +1289,7 @@ class LiteLLM:
             5. Defaults from __init__
         """
         completion_params = {
+            **self._backend_options,
             "model": self.model_name,
             "messages": self._prepare_messages(
                 task=task, img=img, imgs=imgs, messages=messages
@@ -1386,6 +1419,11 @@ class LiteLLM:
         if self.stream or response is None:
             return
         self._accumulate_usage(usage_from_response(response))
+        choices = _field(response, "choices") or []
+        self.last_finish_reason = (
+            _field(choices[0], "finish_reason") if choices else None
+        )
+        self.last_response_model = _field(response, "model")
 
     def _track_streaming_usage(self, stream: any):
         """Yield the stream's chunks, recording the trailing usage chunk.
@@ -1395,10 +1433,20 @@ class LiteLLM:
         It is consumed for accounting and not forwarded, so consumers never
         see an empty token.
         """
+        self.last_finish_reason = None
+        self.last_response_model = None
         for chunk in stream:
+            choices = _field(chunk, "choices") or []
+            if choices and _field(choices[0], "finish_reason"):
+                self.last_finish_reason = _field(
+                    choices[0], "finish_reason"
+                )
+            self.last_response_model = (
+                _field(chunk, "model") or self.last_response_model
+            )
             if _field(chunk, "usage"):
                 self._accumulate_usage(usage_from_response(chunk))
-                if not _field(chunk, "choices"):
+                if not choices:
                     continue
             yield chunk
 
@@ -1510,6 +1558,8 @@ class LiteLLM:
             llm.run("Write a story", temperature=0.9, max_tokens=2000)
             ```
         """
+        self.last_request = None
+        self.last_response = None
         try:
             completion_params = self._build_completion_params(
                 task,
@@ -1519,6 +1569,7 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
+            self.last_request = completion_params
             try:
                 response = completion(**completion_params)
             except Exception as error:
@@ -1530,7 +1581,10 @@ class LiteLLM:
                 logger.warning(
                     f"{self.model_name} rejected the output-token key, retrying: {error}"
                 )
+                self.last_request = retry_params
                 response = completion(**retry_params)
+            if not self.stream:
+                self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
@@ -1562,6 +1616,8 @@ class LiteLLM:
         Accepts the same arguments and returns the same output types as
         `run` (see its docstring).
         """
+        self.last_request = None
+        self.last_response = None
         try:
             completion_params = self._build_completion_params(
                 task,
@@ -1571,6 +1627,7 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
+            self.last_request = completion_params
             try:
                 response = await acompletion(**completion_params)
             except Exception as error:
@@ -1582,7 +1639,10 @@ class LiteLLM:
                 logger.warning(
                     f"{self.model_name} rejected the output-token key, retrying: {error}"
                 )
+                self.last_request = retry_params
                 response = await acompletion(**retry_params)
+            if not self.stream:
+                self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:

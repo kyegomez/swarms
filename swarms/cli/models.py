@@ -8,8 +8,9 @@ Backs the ``swarms models`` command:
 - ``swarms models --search opus``    fuzzy-search by name
 - ``swarms models --info <name>``    show context window, capabilities, pricing
 
-All metadata comes from LiteLLM (``litellm.model_list`` and
-``litellm.get_model_info``), so this stays in sync as providers ship models.
+All metadata comes from the LLM backend's ``model_list`` and
+``get_model_info``: litellm's bundled table, or OpenRouter's live list when
+RouteHub is installed. Either way it stays in sync as providers ship models.
 """
 
 from __future__ import annotations
@@ -45,10 +46,10 @@ def _provider_of(name: str) -> str:
 
 
 def _load_model_list() -> List[str]:
-    """Lazy import of LiteLLM to avoid slowing every CLI invocation."""
-    from litellm import model_list
+    """Lazy import of the LLM backend to avoid slowing every CLI invocation."""
+    from swarms.utils import llm_backend
 
-    return list(model_list)
+    return list(llm_backend.model_list)
 
 
 def _group_by_provider(names: List[str]) -> Dict[str, List[str]]:
@@ -191,10 +192,10 @@ def show_model_info(console: Console, name: str) -> None:
         )
         return
 
-    from litellm import get_model_info
+    from swarms.utils import llm_backend
 
     try:
-        info = get_model_info(name)
+        info = llm_backend.get_model_info(name)
     except Exception as e:
         suggestions = get_close_matches(
             name, _load_model_list(), n=5, cutoff=0.4

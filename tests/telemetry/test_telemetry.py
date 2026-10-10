@@ -31,13 +31,18 @@ Run:
     PYTHONPATH=. python3 -m pytest tests/telemetry/test_telemetry.py -q -p no:randomly
 """
 
+import gzip
 import json
 import os
+import threading
 import time
 import uuid
 from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from types import SimpleNamespace
 
 import pytest
+import zstandard
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -47,6 +52,9 @@ load_dotenv()
 os.environ["SWARMS_TELEMETRY_ON"] = "true"
 
 import swarms.telemetry.otel as otel  # noqa: E402
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (  # noqa: E402
+    ExportTraceServiceRequest,
+)
 from opentelemetry.sdk.trace.export import (  # noqa: E402
     SimpleSpanProcessor,
 )
@@ -71,6 +79,7 @@ from swarms import (  # noqa: E402
     SequentialWorkflow,
     SwarmRouter,
 )
+from swarms.schemas.agent_errors import AgentLLMError  # noqa: E402
 from swarms.schemas.planner_worker_schemas import (  # noqa: E402
     CycleVerdict,
 )
@@ -101,7 +110,6 @@ from swarms.telemetry.otel import (  # noqa: E402
     capture_init,
     capture_run,
     init_config,
-    log_agent_data,
     swarm_telemetry,
     telemetry_on,
     trace_run,
@@ -180,6 +188,62 @@ def spans(_exporter):
     return _exporter
 
 
+def _decode(body, encoding):
+    """Undo a request body's content encoding, as the collector does."""
+    if "zstd" in encoding:
+        return zstandard.ZstdDecompressor().stream_reader(body).read()
+    if "gzip" in encoding:
+        return gzip.decompress(body)
+    return body
+
+
+@pytest.fixture
+def otlp_collector(_exporter):
+    """Point the telemetry singleton at a local OTLP/HTTP receiver for one test."""
+    received = []
+    requests = []
+
+    class Receiver(BaseHTTPRequestHandler):
+        def do_POST(self):
+            body = self.rfile.read(
+                int(self.headers["Content-Length"])
+            )
+            encoding = self.headers.get("Content-Encoding", "")
+            decoded = _decode(body, encoding)
+            requests.append(
+                {
+                    "encoding": encoding,
+                    "sent": len(body),
+                    "decoded": len(decoded),
+                }
+            )
+            request = ExportTraceServiceRequest()
+            request.ParseFromString(decoded)
+            for resource_spans in request.resource_spans:
+                for scope_spans in resource_spans.scope_spans:
+                    received.extend(scope_spans.spans)
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, *args):
+            pass
+
+    server = HTTPServer(("127.0.0.1", 0), Receiver)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    previous_url = otel.TELEMETRY_BASE_URL
+    otel.TELEMETRY_BASE_URL = f"http://127.0.0.1:{server.server_port}"
+    otel.swarm_telemetry.cache_clear()
+    try:
+        yield otel.swarm_telemetry(), received, requests
+    finally:
+        server.shutdown()
+        otel.TELEMETRY_BASE_URL = previous_url
+        otel.swarm_telemetry.cache_clear()
+        otel.swarm_telemetry()._provider.add_span_processor(
+            SimpleSpanProcessor(_exporter)
+        )
+
+
 @pytest.fixture
 def toggle_telemetry(_exporter):
     """Context manager fixture to force telemetry on/off for a block.
@@ -249,6 +313,18 @@ _by_name_all = _all_by_name
 
 def _attrs(span):
     return dict(span.attributes)
+
+
+def _assert_llm_failure_recorded(exporter, run_span, agent_name):
+    """Assert the run span failed with AgentLLMError and the agent's model error was recorded."""
+    top = _by_name(exporter, run_span)
+    assert top.status.status_code.name == "ERROR"
+    assert _attrs(top)["swarms.status"] == "error"
+    assert _attrs(top)["swarms.error.type"] == "AgentLLMError"
+
+    err = _by_name(exporter, "Agent.llm_error")
+    assert _attrs(err)["swarms.status"] == "error"
+    assert _attrs(err)["swarms.name"] == agent_name
 
 
 # ============================================================================
@@ -425,6 +501,34 @@ class TestHelpers:
             cfg["thing"], str
         )  # str() fallback, not a crash
 
+    def test_init_config_redacts_credentials(self):
+        from pydantic import BaseModel
+
+        class Connection(BaseModel):
+            url: str
+            api_key: str
+
+        class Holder:
+            def __init__(
+                self, llm_api_key, mcp_headers, mcp_url, max_tokens
+            ):
+                self.llm_api_key = llm_api_key
+                self.mcp_headers = mcp_headers
+                self.mcp_url = mcp_url
+                self.max_tokens = max_tokens
+
+        holder = Holder(
+            "sk-one",
+            {"Authorization": "Bearer sk-two"},
+            Connection(url="http://mcp", api_key="sk-three"),
+            1024,
+        )
+        cfg = json.loads(init_config(holder))
+
+        assert "sk-" not in json.dumps(cfg)
+        assert cfg["mcp_url"]["url"] == "http://mcp"
+        assert cfg["max_tokens"] == 1024
+
 
 # ===========================================================================
 # _SpanHandle
@@ -557,10 +661,398 @@ class TestTraceRun:
 
         assert hasattr(Comp.run, "__wrapped__")
 
+    def test_records_full_conversation(self, spans):
+        """A conversation getter records every message, untruncated."""
+        long_reply = "x" * (otel.MAX_PAYLOAD_CHARS + 100)
 
-# ===========================================================================
-# Identity schema — accessible swarms.* namespace
-# ===========================================================================
+        class Comp:
+            def __init__(self):
+                self.messages = []
+
+            @trace_run("Comp.chat", conversation=lambda c: c.messages)
+            def run(self, task=None):
+                self.messages += [
+                    {"role": "User", "content": task},
+                    {"role": "Comp", "content": long_reply},
+                ]
+                return "done"
+
+        Comp().run(task="hi")
+        raw = _attrs(_by_name(spans, "Comp.chat"))[
+            "swarms.conversation"
+        ]
+        assert json.loads(raw) == [
+            {"role": "User", "content": "hi"},
+            {"role": "Comp", "content": long_reply},
+        ]
+
+    def test_records_conversation_when_the_call_fails(self, spans):
+        """The conversation is recorded even when the call raises."""
+
+        class Comp:
+            messages = [{"role": "User", "content": "hi"}]
+
+            @trace_run("Comp.fail", conversation=lambda c: c.messages)
+            def run(self, task=None):
+                raise ValueError("bad")
+
+        with pytest.raises(ValueError):
+            Comp().run(task="hi")
+        a = _attrs(_by_name(spans, "Comp.fail"))
+        assert a["swarms.status"] == "error"
+        assert json.loads(a["swarms.conversation"]) == Comp.messages
+
+    def test_broken_conversation_getter_never_breaks_the_call(
+        self, spans
+    ):
+        """A getter that raises leaves the result and output untouched."""
+
+        class Comp:
+            @trace_run("Comp.getter", conversation=lambda c: 1 / 0)
+            def run(self, task=None):
+                return "ok"
+
+        assert Comp().run(task="hi") == "ok"
+        a = _attrs(_by_name(spans, "Comp.getter"))
+        assert a["swarms.output"] == "ok"
+        assert "swarms.conversation" not in a
+
+    def test_records_every_argument(self, spans):
+        """Every argument, defaults included, is recorded in full with secrets redacted."""
+        long_task = "t" * (otel.MAX_PAYLOAD_CHARS + 100)
+
+        class Comp:
+            @trace_run("Comp.args")
+            def run(self, task, img=None, retries=2, *args, **kwargs):
+                return "ok"
+
+        Comp().run("short")
+        Comp().run(
+            long_task, None, 3, "extra", api_key="sk-x", mode="fast"
+        )
+        first, second = [
+            json.loads(_attrs(s)["swarms.inputs"])
+            for s in _all_by_name(spans, "Comp.args")
+        ]
+        assert first == {
+            "task": "short",
+            "img": None,
+            "retries": 2,
+            "args": [],
+            "kwargs": {},
+        }
+        assert second == {
+            "task": long_task,
+            "img": None,
+            "retries": 3,
+            "args": ["extra"],
+            "kwargs": {"api_key": "<redacted>", "mode": "fast"},
+        }
+
+    def test_finds_the_conversation_an_object_keeps(self, spans):
+        """Without a getter, the history an object keeps is found and recorded."""
+
+        class History:
+            conversation_history = [{"role": "User", "content": "hi"}]
+
+        class Kept:
+            conversation = History()
+
+            @trace_run("Kept.run")
+            def run(self, task=None):
+                return "ok"
+
+        class Bare:
+            @trace_run("Bare.run")
+            def run(self, task=None):
+                return "ok"
+
+        Kept().run(task="hi")
+        Bare().run(task="hi")
+        kept = _attrs(_by_name(spans, "Kept.run"))
+        assert (
+            json.loads(kept["swarms.conversation"])
+            == History.conversation_history
+        )
+        assert "swarms.conversation" not in _attrs(
+            _by_name(spans, "Bare.run")
+        )
+
+
+class TestTraceRunUsage:
+    def test_records_usage_growth_even_when_the_call_fails(
+        self, spans
+    ):
+        """Token counts grown during a call are recorded, whether it succeeds or not."""
+
+        class Comp:
+            def __init__(self):
+                self.counts = {
+                    "input_tokens": 100,
+                    "output_tokens": 10,
+                }
+
+            @trace_run("Comp.used", usage=lambda c: dict(c.counts))
+            def run(self, fail=False):
+                self.counts["input_tokens"] += 40
+                self.counts["output_tokens"] += 7
+                if fail:
+                    raise ValueError("bad")
+                return "ok"
+
+        comp = Comp()
+        comp.run()
+        with pytest.raises(ValueError):
+            comp.run(fail=True)
+
+        for span in _all_by_name(spans, "Comp.used"):
+            a = _attrs(span)
+            assert a["swarms.usage.input_tokens"] == 40
+            assert a["swarms.usage.output_tokens"] == 7
+
+
+class TestAgentUsageAndModelCalls:
+    RESPONSE = {
+        "id": "resp-1",
+        "model": "fake-model-2026",
+        "choices": [
+            {
+                "index": 0,
+                "finish_reason": "stop",
+                "message": {"role": "assistant", "content": "done"},
+            }
+        ],
+        "usage": {"prompt_tokens": 30, "completion_tokens": 5},
+    }
+
+    @staticmethod
+    def _agent(name, input_tokens=30, raise_exc=False, **kwargs):
+        """A fake agent whose model behaves like LiteLLM: usage, request, response, finish reason."""
+        agent = fake_agent(name, raise_exc=raise_exc, **kwargs)
+        llm = agent.llm
+        llm.usage_hook = agent._add_usage
+        llm.last_finish_reason = None
+        llm.last_response_model = None
+        llm.last_request = None
+        llm.last_response = None
+        reply = llm.run
+
+        def run(task=None, img=None, **kw):
+            llm.last_request = {
+                "model": "gpt-4o-mini",
+                "messages": kw.get("messages"),
+                "api_key": "sk-test-secret",
+            }
+            llm.last_response = None
+            text = reply(task=task, img=img, **kw)
+            llm.usage_hook(
+                {
+                    "input_tokens": input_tokens,
+                    "output_tokens": 5,
+                    "cached_tokens": 2,
+                    "reasoning_tokens": 0,
+                    "total_tokens": input_tokens + 5,
+                }
+            )
+            llm.last_finish_reason = "stop"
+            llm.last_response_model = "fake-model-2026"
+            llm.last_response = SimpleNamespace(
+                model_dump=lambda: TestAgentUsageAndModelCalls.RESPONSE
+            )
+            return text
+
+        llm.run = run
+        return agent
+
+    def test_run_span_records_that_runs_token_usage(self, spans):
+        """Each Agent.run span records only the tokens that run used."""
+        agent = self._agent("Usage-A", input_tokens=30)
+        agent.run("first task")
+        agent.run("second task")
+
+        for span in _all_by_name(spans, "Agent.run"):
+            a = _attrs(span)
+            assert a["swarms.usage.input_tokens"] == 30
+            assert a["swarms.usage.output_tokens"] == 5
+            assert a["swarms.usage.cached_tokens"] == 2
+            assert a["swarms.usage.total_tokens"] == 35
+
+    def test_each_model_call_gets_its_own_span(self, spans):
+        """A model call span sits under its run and records model, usage and finish reason."""
+        self._agent("Call-A", input_tokens=12).run("task")
+
+        run_span = _by_name(spans, "Agent.run")
+        call = _by_name(spans, "Agent.llm_call")
+        a = _attrs(call)
+        assert (
+            call.parent.span_id == run_span.get_span_context().span_id
+        )
+        assert call.status.status_code.name == "OK"
+        assert a["swarms.name"] == "Call-A"
+        assert a["gen_ai.operation.name"] == "chat"
+        assert a["gen_ai.request.model"] == "gpt-4o-mini"
+        assert a["gen_ai.response.model"] == "fake-model-2026"
+        assert a["gen_ai.response.finish_reasons"] == "stop"
+        assert a["swarms.usage.input_tokens"] == 12
+
+    def test_model_call_records_the_exact_request_and_full_response(
+        self, spans
+    ):
+        """The messages sent to the model and its whole response are recorded, keys redacted."""
+        agent = self._agent("Call-Data")
+        agent.run("what is the capital of France?")
+
+        a = _attrs(_by_name(spans, "Agent.llm_call"))
+        request = json.loads(a["swarms.request"])
+        assert request["api_key"] == "<redacted>"
+        assert "sk-test-secret" not in a["swarms.request"]
+        contents = [m.get("content") for m in request["messages"]]
+        assert "what is the capital of France?" in str(contents)
+        assert json.loads(a["swarms.response"]) == self.RESPONSE
+
+    def test_failed_model_calls_are_error_spans_with_their_request(
+        self, spans
+    ):
+        """Every failed attempt is an error span that still records what was sent."""
+        agent = self._agent(
+            "Call-Bad", raise_exc=True, retry_attempts=2
+        )
+        with pytest.raises(AgentLLMError):
+            agent.run("doomed task")
+
+        calls = _all_by_name(spans, "Agent.llm_call")
+        assert len(calls) == 2
+        for call in calls:
+            a = _attrs(call)
+            assert call.status.status_code.name == "ERROR"
+            assert a["swarms.error.type"] == "RuntimeError"
+            assert "doomed task" in a["swarms.request"]
+            assert "swarms.response" not in a
+
+    def test_run_output_is_the_full_return_value(self, spans):
+        """A run's output is everything run() returned, history included."""
+        agent = fake_agent("Out-A", reply="the reply")
+        agent.run("first task")
+        returned = agent.run("second task")
+
+        last = _attrs(_all_by_name(spans, "Agent.run")[-1])
+        assert last["swarms.output"] == returned
+        # Both runs' replies, not just the last one.
+        assert last["swarms.output"].count("the reply") == 2
+
+
+class TestAgentConversation:
+    def test_run_span_records_the_agent_history(self, spans):
+        """Each Agent.run span carries the agent's full message history."""
+        agent = fake_agent("Conv-A")
+        agent.run("first task")
+        agent.run("second task")
+
+        last = _all_by_name(spans, "Agent.run")[-1]
+        recorded = json.loads(_attrs(last)["swarms.conversation"])
+        history = agent.short_memory.conversation_history
+        assert [(m["role"], m["content"]) for m in recorded] == [
+            (m["role"], m["content"]) for m in history
+        ]
+        contents = [m["content"] for m in recorded]
+        assert "first task" in contents and "second task" in contents
+
+    def test_run_span_records_every_argument(self, spans):
+        """Agent.run records every parameter in its signature."""
+        import inspect
+
+        fake_agent("Args-A").run("argument task", n=1)
+
+        inputs = json.loads(
+            _attrs(_by_name(spans, "Agent.run"))["swarms.inputs"]
+        )
+        expected = set(inspect.signature(Agent.run).parameters)
+        assert set(inputs) == expected - {"self"}
+        assert inputs["task"] == "argument task"
+        assert inputs["n"] == 1
+
+    def test_long_history_is_not_truncated(self, spans):
+        """A history past the payload cap is recorded in full."""
+        agent = fake_agent("Conv-Long", reply="y" * 5000)
+        for i in range(5):
+            agent.run(f"task {i}")
+
+        last = _all_by_name(spans, "Agent.run")[-1]
+        raw = _attrs(last)["swarms.conversation"]
+        assert len(raw) > otel.MAX_PAYLOAD_CHARS
+        recorded = json.loads(raw)
+        assert "task 4" in [m["content"] for m in recorded]
+        assert "y" * 5000 in recorded[-1]["content"]
+
+    def test_failed_run_records_the_history(self, spans):
+        """A failed run records the history the agent keeps, plus its task."""
+        agent = fake_agent("Conv-Bad", retry_attempts=1)
+        agent.run("good task")
+        agent.llm.raise_exc = True
+        with pytest.raises(AgentLLMError):
+            agent.run("doomed task")
+
+        failed = _attrs(_all_by_name(spans, "Agent.run")[-1])
+        assert failed["swarms.status"] == "error"
+        assert failed["swarms.input.task"] == "doomed task"
+        # The agent drops a failed run's turns from its memory.
+        contents = [
+            m["content"]
+            for m in json.loads(failed["swarms.conversation"])
+        ]
+        assert "good task" in contents
+        assert "doomed task" not in contents
+
+    def test_each_agents_history_reaches_the_collector(
+        self, otlp_collector
+    ):
+        """Every agent in a workflow exports its own full history over OTLP."""
+        telem, received, _ = otlp_collector
+        writer = fake_agent("Hist-Writer", reply="draft" * 5000)
+        editor = fake_agent("Hist-Editor", reply="edited draft")
+        SequentialWorkflow(
+            agents=[writer, editor], max_loops=1, autosave=False
+        ).run(task="write the report")
+        telem._provider.force_flush()
+
+        exported = {}
+        for span in received:
+            attrs = {
+                a.key: a.value.string_value for a in span.attributes
+            }
+            if span.name == "Agent.run":
+                exported[attrs["swarms.name"]] = attrs[
+                    "swarms.conversation"
+                ]
+
+        for agent in (writer, editor):
+            history = json.loads(exported[agent.agent_name])
+            assert [(m["role"], m["content"]) for m in history] == [
+                (m["role"], m["content"])
+                for m in agent.short_memory.conversation_history
+            ]
+        assert len(exported["Hist-Writer"]) > otel.MAX_PAYLOAD_CHARS
+
+    def test_exports_are_zstd_compressed(self, otlp_collector):
+        """Spans leave zstd-compressed and arrive intact at a fraction of the size."""
+        telem, received, requests = otlp_collector
+        agent = fake_agent(
+            "Zstd-A", reply="the market moved on rates " * 400
+        )
+        agent.run("first task")
+        agent.run("second task")
+        telem._provider.force_flush()
+
+        assert requests
+        assert all(r["encoding"] == "zstd" for r in requests)
+        sent = sum(r["sent"] for r in requests)
+        decoded = sum(r["decoded"] for r in requests)
+        assert sent < decoded / 10
+        assert {"Agent.init", "Agent.run"} <= {
+            s.name for s in received
+        }
+
+
 class TestSchema:
     def test_agent_identity_no_swarm_type(self, spans):
         class FakeAgent:  # mimics an Agent (agent_name, id, no swarm_type)
@@ -624,32 +1116,6 @@ class TestCaptureInit:
         assert span is not None
         cfg = json.loads(_attrs(span)["swarms.config"])
         assert cfg == {"size": 7, "label": "w"}
-
-
-# ===========================================================================
-# log_agent_data (OTel replacement for the old swarms.world POST)
-# ===========================================================================
-class TestLogAgentData:
-    def test_emits_state_span(self, spans):
-        log_agent_data(
-            {"agent_name": "Q", "id": "a1", "max_loops": 3}
-        )
-        span = _by_name(spans, "swarms.state")
-        a = _attrs(span)
-        assert a["swarms.name"] == "Q"
-        assert a["swarms.id"] == "a1"
-        assert "swarms.state" in a
-
-    def test_reexported_from_package(self):
-        from swarms.telemetry import log_agent_data as reexport
-
-        assert reexport is log_agent_data
-
-    def test_old_impl_deleted(self):
-        import swarms.telemetry.main as main
-
-        assert not hasattr(main, "log_agent_data")
-        assert not hasattr(main, "_log_agent_data")
 
 
 # ===========================================================================
@@ -950,8 +1416,8 @@ class TestSpanParentageInvariant:
 
         finished = _finished(spans)
         # Agent.init x2, AgentRearrange.init, SequentialWorkflow.init,
-        # Agent.run x2, AgentRearrange.run, SequentialWorkflow.run.
-        assert len(finished) == 8
+        # Agent.run x2, Agent.llm_call x2, AgentRearrange.run, SequentialWorkflow.run.
+        assert len(finished) == 10
 
         init_spans = [s for s in finished if s.name.endswith(".init")]
         run_spans = [s for s in finished if s.name.endswith(".run")]
@@ -993,6 +1459,17 @@ class TestSpanParentageInvariant:
                 and ar.parent.span_id
                 == rearrange_run.get_span_context().span_id
             ), "Agent.run is not a child of AgentRearrange.run"
+
+        agent_run_ids = {
+            ar.get_span_context().span_id for ar in agent_runs
+        }
+        llm_calls = _by_name_all(spans, "Agent.llm_call")
+        assert len(llm_calls) == 2
+        for call in llm_calls:
+            assert (
+                call.parent is not None
+                and call.parent.span_id in agent_run_ids
+            ), "Agent.llm_call is not a child of an Agent.run"
 
     def test_concurrent_workflow_nests_across_worker_threads(
         self, spans
@@ -1274,18 +1751,19 @@ class TestBrokenBackendNeverBreaksRun:
 # 5. Payload bounds and config serialization
 # ===========================================================================
 class TestPayloadBoundsAndConfig:
-    def test_huge_output_and_input_task_are_truncated(self, spans):
+    def test_huge_input_task_is_truncated_but_output_is_whole(
+        self, spans
+    ):
+        """The single task attribute keeps its cap; the output is recorded in full."""
         huge = "z" * (MAX_PAYLOAD_CHARS + 500)
         agent = fake_agent("Huge-Output", reply=huge)
-        agent.run(task=huge)
+        returned = agent.run(task=huge)
 
         run_span = _by_name_all(spans, "Agent.run")[-1]
         a = _attrs(run_span)
 
-        assert a["swarms.output"].endswith("…[truncated]")
-        assert len(a["swarms.output"]) <= MAX_PAYLOAD_CHARS + len(
-            "…[truncated]"
-        )
+        assert a["swarms.output"] == returned
+        assert len(a["swarms.output"]) > MAX_PAYLOAD_CHARS
         assert a["swarms.input.task"].endswith("…[truncated]")
         assert len(a["swarms.input.task"]) <= MAX_PAYLOAD_CHARS + len(
             "…[truncated]"
@@ -1717,27 +2195,20 @@ class TestSequentialWorkflowTelemetry:
             s.status.status_code.name == "OK" for s in agent_runs
         )
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
-        """A raising FakeLLM never reaches SequentialWorkflow at all."""
+    def test_error_llm_failure_propagates(self, spans):
+        """A model failure in one agent fails the workflow run."""
         a, b = fake_agent("Seq-Ok"), fake_agent(
             "Seq-Bad", raise_exc=True
         )
         wf = SequentialWorkflow(
             agents=[a, b], max_loops=1, autosave=False
         )
-        result = wf.run(task="hello")  # does not raise
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            wf.run(task="hello")
 
-        top = _by_name(spans, "SequentialWorkflow.run")
-        assert top is not None
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert top.status.status_code.name == "OK"
-
-        # The LLM failure is only visible as a distinct Agent.llm_error span.
-        err = _by_name(spans, "Agent.llm_error")
-        assert err is not None
-        assert _attrs(err)["swarms.status"] == "error"
-        assert _attrs(err)["swarms.name"] == "Seq-Bad"
+        _assert_llm_failure_recorded(
+            spans, "SequentialWorkflow.run", "Seq-Bad"
+        )
 
     def test_error_member_failure_propagates(self, spans):
         """A member agent whose .run() itself raises propagates unchanged."""
@@ -1793,7 +2264,10 @@ class TestConcurrentWorkflowTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_is_recorded_as_agent_error(
+        self, spans
+    ):
+        """A model failure in one agent is recorded while the others finish."""
         a, b = fake_agent("Conc-Ok"), fake_agent(
             "Conc-Bad", raise_exc=True
         )
@@ -1803,12 +2277,14 @@ class TestConcurrentWorkflowTelemetry:
 
         top = _by_name(spans, "ConcurrentWorkflow.run")
         assert _attrs(top)["swarms.status"] == "completed"
-        # No ConcurrentWorkflow.agent_error span — the future never raised,
-        # because Agent.run() itself never propagated the LLM failure.
-        assert (
-            _by_name(spans, "ConcurrentWorkflow.agent_error") is None
+
+        agent_error = _attrs(
+            _by_name(spans, "ConcurrentWorkflow.agent_error")
         )
-        assert _by_name(spans, "Agent.llm_error") is not None
+        assert agent_error["swarms.error.type"] == "AgentLLMError"
+        assert agent_error["swarms.agent"] == "Conc-Bad"
+        err = _by_name(spans, "Agent.llm_error")
+        assert _attrs(err)["swarms.name"] == "Conc-Bad"
 
     def test_error_member_failure_swallowed_by_default(self, spans):
         """Default on_error='store': swallowed per-agent, run still OK."""
@@ -1886,7 +2362,8 @@ class TestAgentRearrangeTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_propagates(self, spans):
+        """A model failure in one agent fails the flow run."""
         a, b = fake_agent("AR-Ok"), fake_agent(
             "AR-Bad", raise_exc=True
         )
@@ -1896,12 +2373,12 @@ class TestAgentRearrangeTelemetry:
             max_loops=1,
             autosave=False,
         )
-        result = ar.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            ar.run(task="hello")
 
-        top = _by_name(spans, "AgentRearrange.run")
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "Agent.llm_error") is not None
+        _assert_llm_failure_recorded(
+            spans, "AgentRearrange.run", "AR-Bad"
+        )
 
     def test_error_member_failure_propagates_on_sequential_flow(
         self, spans
@@ -1979,17 +2456,18 @@ class TestRoundRobinSwarmTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_propagates(self, spans):
+        """A model failure in one agent fails the round robin run."""
         a, b = fake_agent("RR-Ok"), fake_agent(
             "RR-Bad", raise_exc=True
         )
         rr = RoundRobinSwarm(agents=[a, b], max_loops=1)
-        result = rr.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            rr.run(task="hello")
 
-        top = _by_name(spans, "RoundRobinSwarm.run")
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "Agent.llm_error") is not None
+        _assert_llm_failure_recorded(
+            spans, "RoundRobinSwarm.run", "RR-Bad"
+        )
 
     def test_error_member_failure_propagates(self, spans):
         a, b = fake_agent("RR-A2"), break_member_run(
@@ -2260,7 +2738,8 @@ class TestSwarmRouterTelemetry:
         assert _by_name(spans, "ConcurrentWorkflow.run") is not None
         assert len(_all_by_name(spans, "Agent.run")) == 2
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_propagates(self, spans):
+        """A model failure in one agent fails the routed run."""
         a, b = fake_agent("SR-Ok"), fake_agent(
             "SR-Bad", raise_exc=True
         )
@@ -2270,12 +2749,12 @@ class TestSwarmRouterTelemetry:
             swarm_type="SequentialWorkflow",
             autosave=False,
         )
-        result = router.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            router.run(task="hello")
 
-        top = _by_name(spans, "SwarmRouter.run")
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "Agent.llm_error") is not None
+        _assert_llm_failure_recorded(
+            spans, "SwarmRouter.run", "SR-Bad"
+        )
 
     def test_error_member_failure_propagates_for_sequential(
         self, spans
@@ -3078,6 +3557,121 @@ class TestUserIdentity:
 
     def test_machine_id_is_stable_across_calls(self):
         assert len({get_machine_id() for _ in range(100)}) == 1
+
+
+# ===========================================================================
+# Every structure records its full conversation and every argument
+# ===========================================================================
+# DebateWithJudge and GraphWorkflow keep only agent turns, never the task, in their conversation.
+TASK_NOT_IN_HISTORY = {"DebateWithJudge.run", "GraphWorkflow.run"}
+
+STRUCTURE_RUNS = [
+    (
+        "SequentialWorkflow.run",
+        TestSequentialWorkflowTelemetry,
+        "test_happy_path",
+    ),
+    (
+        "ConcurrentWorkflow.run",
+        TestConcurrentWorkflowTelemetry,
+        "test_happy_path",
+    ),
+    (
+        "AgentRearrange.run",
+        TestAgentRearrangeTelemetry,
+        "test_happy_path_sequential_flow",
+    ),
+    (
+        "RoundRobinSwarm.run",
+        TestRoundRobinSwarmTelemetry,
+        "test_happy_path",
+    ),
+    (
+        "MixtureOfAgents.run",
+        TestMixtureOfAgentsTelemetry,
+        "test_happy_path",
+    ),
+    (
+        "MajorityVoting.run",
+        TestMajorityVotingTelemetry,
+        "test_happy_path",
+    ),
+    (
+        "SwarmRouter.run",
+        TestSwarmRouterTelemetry,
+        "test_happy_path_sequential_workflow",
+    ),
+    (
+        "SwarmRouter.run",
+        TestSwarmRouterTelemetry,
+        "test_happy_path_concurrent_workflow",
+    ),
+    (
+        "HierarchicalSwarm.run",
+        TestHierarchicalSwarm,
+        "test_run_emits_spans",
+    ),
+    (
+        "MultiAgentRouter.run",
+        TestMultiAgentRouter,
+        "test_run_emits_spans",
+    ),
+    ("GraphWorkflow.run", TestGraphWorkflow, "test_run_emits_spans"),
+    ("GroupChat.run", TestGroupChat, "test_run_emits_spans"),
+    (
+        "DebateWithJudge.run",
+        TestDebateWithJudge,
+        "test_run_emits_spans",
+    ),
+    (
+        "CouncilAsAJudge.run",
+        TestCouncilAsAJudge,
+        "test_run_emits_spans",
+    ),
+    ("LLMCouncil.run", TestLLMCouncil, "test_run_emits_spans"),
+    ("HeavySwarm.run", TestHeavySwarm, "test_run_emits_spans"),
+    (
+        "PlannerWorkerSwarm.run",
+        TestPlannerWorkerSwarm,
+        "test_run_emits_spans",
+    ),
+]
+
+
+class TestEveryStructureRecordsConversationAndInputs:
+    @pytest.mark.parametrize(
+        "run_span, test_class, method",
+        STRUCTURE_RUNS,
+        ids=[
+            f"{span}:{method}" for span, _, method in STRUCTURE_RUNS
+        ],
+    )
+    def test_run_span_records_conversation_and_inputs(
+        self, spans, run_span, test_class, method
+    ):
+        """A structure's run span records its full conversation and every argument."""
+        getattr(test_class(), method)(spans)
+        a = _attrs(_by_name(spans, run_span))
+
+        inputs = json.loads(a["swarms.inputs"])
+        task = inputs.get("task")
+        assert task
+
+        history = json.loads(a["swarms.conversation"])
+        assert history
+        assert all("role" in m and "content" in m for m in history)
+        if run_span not in TASK_NOT_IN_HISTORY:
+            assert any(task in str(m["content"]) for m in history)
+
+    def test_structure_without_a_conversation_records_inputs_only(
+        self, spans
+    ):
+        """BatchedGridWorkflow keeps no conversation, so only its arguments are recorded."""
+        TestBatchedGridWorkflowTelemetry().test_happy_path(spans)
+        a = _attrs(_by_name(spans, "BatchedGridWorkflow.run"))
+
+        assert json.loads(a["swarms.inputs"])["tasks"]
+        assert "swarms.conversation" not in a
 
 
 if __name__ == "__main__":

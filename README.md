@@ -83,23 +83,36 @@ $ cd swarms
 $ pip install -r requirements.txt
 ```
 
-<!-- ### Using Docker
+### Faster model calls with RouteHub
 
-The easiest way to get started with Swarms is using our pre-built Docker image:
+`swarms[fast]` installs [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub), a lightweight LLM gateway with litellm's API, and swarms then makes every model call through it instead of litellm. Your code doesn't change.
 
 ```bash
-# Pull and run the latest image
-$ docker pull kyegomez/swarms:latest
-$ docker run --rm kyegomez/swarms:latest python -c "import swarms; print('Swarms is ready!')"
-
-# Run interactively for development
-$ docker run -it --rm -v $(pwd):/app kyegomez/swarms:latest bash
-
-# Using docker-compose (recommended for development)
-$ docker-compose up -d
+$ pip3 install -U "swarms[fast]"
 ```
 
-For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md). -->
+In our benchmarks, a new process got an agent's first answer in about 0.6 s instead of 1.2 s, and each model call spent about half as long in the client library.
+
+- **Model details** such as context windows come from [OpenRouter's model list](https://openrouter.ai/api/v1/models), fetched once when the first agent is built. If it can't be reached, agents fall back to a 16,000-token context window.
+- **Local servers** need their full OpenAI-compatible URL, such as `llm_base_url="http://localhost:11434/v1"` for Ollama.
+- **To switch back** to litellm without uninstalling, set `SWARMS_LLM_BACKEND=litellm`.
+
+### Using Docker
+
+The official image, [`swarmscorp/swarms`](https://hub.docker.com/r/swarmscorp/swarms) on Docker Hub, has swarms and its CLI installed on Python 3.13, for `linux/amd64` and `linux/arm64`.
+
+```bash
+# Pull the image
+$ docker pull swarmscorp/swarms:latest
+
+# Run a script from the current directory, passing your API key from the shell
+$ docker run --rm -e OPENAI_API_KEY -v "$PWD:/app" swarmscorp/swarms python agent.py
+
+# Open a Python shell with swarms installed
+$ docker run -it --rm -e OPENAI_API_KEY swarmscorp/swarms
+```
+
+To build the image yourself, run `docker build -t swarms .` from the repository root.
 
 ---
 

@@ -112,6 +112,7 @@ class CronJob:
         self.interval = interval
         self.job_id = job_id or f"job_{id(self)}"
         self.is_running = False
+        self._stop_event = threading.Event()
         self.thread = None
         self.schedule = schedule.Scheduler()
         self.callback = callback
@@ -288,7 +289,7 @@ class CronJob:
         """Block until interrupted or stopped."""
         try:
             while self.is_running:
-                time.sleep(1)
+                self._stop_event.wait(1)
         except KeyboardInterrupt:
             logger.info(
                 f"CronJob: {self.job_id} received keyboard interrupt, stopping cron jobs..."
@@ -451,7 +452,7 @@ class CronJob:
                     f"{self.max_consecutive_errors}"
                 )
                 self._stopped_due_to_error = True
-                self.is_running = False
+                self._signal_stop()
             return None
 
     def every_seconds(self, seconds: int, task: str, **kwargs):
@@ -492,6 +493,7 @@ class CronJob:
         """
         try:
             if not self.is_running:
+                self._stop_event.clear()
                 self.is_running = True
                 self.start_time = time.time()
                 self.thread = threading.Thread(
@@ -529,7 +531,7 @@ class CronJob:
         """
         try:
             logger.info(f"Stopping job {self.job_id}")
-            self.is_running = False
+            self._signal_stop()
             if self.thread:
                 self.thread.join(
                     timeout=5
@@ -548,12 +550,17 @@ class CronJob:
                 f"Failed to stop job: {str(e)}"
             )
 
+    def _signal_stop(self):
+        """Mark the job stopped and wake every loop waiting on it."""
+        self.is_running = False
+        self._stop_event.set()
+
     def _run_schedule(self):
         """Internal method to run the schedule loop."""
         logger.debug(f"Starting schedule loop for job {self.job_id}")
         while self.is_running:
             self.schedule.run_pending()
-            time.sleep(1)
+            self._stop_event.wait(1)
 
     def set_callback(self, callback: Callable[[Any, str, dict], Any]):
         """Set or update the callback function for output customization.
@@ -684,8 +691,9 @@ class CronJob:
 
         try:
             # Wait while the per-job threads work; exit once every job has stopped.
-            while any(job.is_running for job in jobs):
-                time.sleep(1)
+            for job in jobs:
+                while job.is_running:
+                    job._stop_event.wait(1)
         except KeyboardInterrupt:
             logger.info(
                 "run_many received keyboard interrupt, stopping all jobs"
@@ -715,6 +723,8 @@ class CronJob:
             jobs: The jobs to stop, typically the return value of
                 :meth:`run_many` called with ``block=False``.
         """
+        for job in jobs:
+            job._signal_stop()
         for job in jobs:
             try:
                 job.stop()

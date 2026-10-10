@@ -57,9 +57,20 @@ class _AsyncClient(_Client):
         return _Response(_Client.data)
 
 
+# The backend's own list, fixed so the tests behave the same on litellm and RouteHub.
+BASE_MODELS = (
+    "gpt-4o",
+    "claude-sonnet-4-6",
+    "openrouter/openai/gpt-4o-mini",
+)
+
+
 @pytest.fixture(autouse=True)
 def fake_openrouter(monkeypatch):
     _Client.calls = 0
+    monkeypatch.setattr(
+        check_models, "_base_models", lambda: BASE_MODELS
+    )
     monkeypatch.setattr(check_models.httpx, "Client", _Client)
     monkeypatch.setattr(
         check_models.httpx, "AsyncClient", _AsyncClient
@@ -115,10 +126,9 @@ def test_available_models_without_openrouter_skips_the_fetch():
     report = get_available_models(include_openrouter=False)
 
     assert _Client.calls == 0
-    # litellm's own list already carries some openrouter/ names; only the
-    # live-fetched ones must be absent.
+    # The backend's own list carries some openrouter/ names; only the live-fetched ones must be absent.
     assert "openrouter/fake-lab/alpha" not in report["models"]
-    assert report["count"] == len(check_models._BASE_MODELS)
+    assert report["count"] == len(BASE_MODELS)
 
 
 def test_openrouter_duplicates_of_litellm_models_are_dropped(
@@ -157,9 +167,7 @@ def test_is_model_available():
 
 def test_model_count_matches_report():
     assert model_count() == get_available_models()["count"]
-    assert model_count(include_openrouter=False) == len(
-        check_models._BASE_MODELS
-    )
+    assert model_count(include_openrouter=False) == len(BASE_MODELS)
     assert model_count(exclude_keywords=["gpt"]) < model_count()
 
 

@@ -57,7 +57,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
-setuptools = "*"
 asyncio = ">=3.4.3,<5.0"
 toml = "*"
 loguru = "*"
@@ -75,6 +74,12 @@ mcp = "*"
 schedule = "*"
 opentelemetry-sdk = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
+zstandard = "*"
+routehub = { version = ">=0.2.0", extras = ["fast"], optional = true }
+
+[tool.poetry.extras]
+# RouteHub replaces litellm for model calls when installed.
+fast = ["routehub"]
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

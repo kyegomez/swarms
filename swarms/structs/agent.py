@@ -18,17 +18,6 @@ from typing import (
 
 import toml
 import yaml
-from litellm import model_list
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    get_max_tokens,
-    get_model_info,
-    supports_function_calling,
-)
 from loguru import logger
 from pydantic import BaseModel
 
@@ -36,11 +25,11 @@ from swarms.agents.agent_marketplace_handler import (
     AgentMarketplaceHandler,
 )
 from swarms.agents.ape_agent import auto_generate_prompt
-from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.llm_manager import LLMManager
-from swarms.agents.tool_manager import ToolManager
 from swarms.agents.skills_manager import SkillsManager
+from swarms.agents.tool_manager import ToolManager
 from swarms.prompts.agent_system_prompts import (
     build_agent_system_prompt,
 )
@@ -56,7 +45,7 @@ from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
-    AgentRunError,
+    AgentRunError,  # noqa: F401  re-exported from this module
     AgentToolExecutionError,
 )
 from swarms.schemas.mcp_schemas import (
@@ -72,15 +61,12 @@ from swarms.structs.autonomous_loop_utils import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
-from swarms.structs.transcript import Transcript
-from swarms.tools.dynamic_tool_loader import (
-    DynamicToolLoader,
-)
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
 from swarms.structs.serialization import SerializableMixin
+from swarms.structs.transcript import Transcript
 from swarms.structs.transforms import (
     MessageTransforms,
     TransformConfig,
@@ -90,8 +76,10 @@ from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_error,
     capture_init,
-    log_agent_data,
     trace_run,
+)
+from swarms.tools.dynamic_tool_loader import (
+    DynamicToolLoader,
 )
 from swarms.tools.mcp_manager import MCPManager
 from swarms.utils.file_processing import create_file_in_folder
@@ -106,6 +94,7 @@ from swarms.utils.index import (
     exists,
     format_data_structure,
 )
+from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
@@ -333,7 +322,6 @@ class Agent(SerializableMixin):
         dynamic_loops: Optional[bool] = False,
         interactive: Optional[bool] = False,
         dashboard: Optional[bool] = False,
-        # TODO: Change to callable, then parse the callable to a string
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
@@ -354,7 +342,6 @@ class Agent(SerializableMixin):
         verbose: Optional[bool] = False,
         stopping_func: Optional[Callable] = None,
         custom_exit_command: Optional[str] = "exit",
-        # [Tools]
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
         output_cleaner: Optional[Callable] = None,
@@ -664,9 +651,6 @@ class Agent(SerializableMixin):
 
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
-
-        if self.autosave is True:
-            log_agent_data(self.to_dict())
 
         self.tool_manager.load_tools()
 
@@ -1126,7 +1110,6 @@ class Agent(SerializableMixin):
 
             # Autosave
             if self.autosave:
-                log_agent_data(self.to_dict())
                 self.save()
                 self._autosave_config_step(loop_count=0)
 
@@ -1297,12 +1280,7 @@ class Agent(SerializableMixin):
                         # Exit the retry loop, not the run, so the model can read the failure
                         success = True
 
-                    except (
-                        BadRequestError,
-                        InternalServerError,
-                        AuthenticationError,
-                        Exception,
-                    ) as e:
+                    except Exception as e:
                         last_error = e
 
                         # Answer the recorded tool calls so the retried request is well formed
@@ -1320,7 +1298,6 @@ class Agent(SerializableMixin):
                         )
 
                         if self.autosave is True:
-                            log_agent_data(self.to_dict())
                             self.save()
                             self._autosave_config_step(
                                 loop_count=loop_count
@@ -1411,7 +1388,6 @@ class Agent(SerializableMixin):
                     time.sleep(self.loop_interval)
 
             if self.autosave is True:
-                log_agent_data(self.to_dict())
                 self.save()
                 self._autosave_config_step(loop_count=loop_count)
 
@@ -1463,7 +1439,6 @@ class Agent(SerializableMixin):
         if self.autosave is True:
             # Save full state
             self.save()
-            log_agent_data(self.to_dict())
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
@@ -1477,7 +1452,6 @@ class Agent(SerializableMixin):
             f"Error Type: {error_type}\n"
             f"Error Message: {error_message}\n"
             f"Traceback:\n{traceback_info}\n"
-            f"Agent State: {self.to_dict()}\n"
             f"Please optimize your input parameters, or create an issue on the Swarms GitHub and contact our team on Discord for support. "
             f"For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
         )
@@ -1856,7 +1830,7 @@ Subtask Breakdown:
         """
         try:
             return (
-                get_model_info(self.model_name).get(
+                llm_backend.get_model_info(self.model_name).get(
                     "max_input_tokens"
                 )
                 or 16000
@@ -1878,7 +1852,7 @@ Subtask Breakdown:
         # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
         try:
             return (
-                get_model_info(self.model_name).get(
+                llm_backend.get_model_info(self.model_name).get(
                     "max_output_tokens"
                 )
                 or 16000
@@ -1908,7 +1882,9 @@ Subtask Breakdown:
 
         # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
         if self.max_tokens is None or self.max_tokens <= 0:
-            suggested_tokens = get_max_tokens(self.model_name)
+            suggested_tokens = llm_backend.get_max_tokens(
+                self.model_name
+            )
             if suggested_tokens is not None and suggested_tokens > 0:
                 self.max_tokens = suggested_tokens
             else:
@@ -1924,21 +1900,27 @@ Subtask Breakdown:
 
         # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
         if self.tools_list_dictionary:
-            if not supports_function_calling(self.model_name):
+            if not llm_backend.supports_function_calling(
+                self.model_name
+            ):
                 logger.warning(
                     f"The model '{self.model_name}' does not support function calling. Please use a model that supports function calling."
                 )
 
         try:
-            if self.max_tokens > get_max_tokens(self.model_name):
+            if self.max_tokens > llm_backend.get_max_tokens(
+                self.model_name
+            ):
                 logger.warning(
-                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' may or may not support {get_max_tokens(self.model_name)} tokens. Please set max tokens to {get_max_tokens(self.model_name)} or less."
+                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' may or may not support {llm_backend.get_max_tokens(self.model_name)} tokens. Please set max tokens to {llm_backend.get_max_tokens(self.model_name)} or less."
                 )
 
         except Exception:
             pass
 
-        if self.model_name not in model_list:
+        model_list = llm_backend.model_list
+        # Empty when RouteHub cannot reach OpenRouter, which says nothing about the model.
+        if model_list and self.model_name not in model_list:
             logger.warning(
                 f"The model '{self.model_name}' may not be supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
             )
@@ -2240,6 +2222,17 @@ Subtask Breakdown:
             logger.info(f"Error sending agent message: {error}")
             raise error
 
+    def list_tools(self) -> List[str]:
+        """
+        Names of every tool this agent can call.
+
+        See :meth:`swarms.agents.tool_manager.ToolManager.list_tools`.
+
+        Returns:
+            List[str]: Tool names, without duplicates, in a stable order.
+        """
+        return self.tool_manager.list_tools()
+
     def add_tool(self, tool: Callable):
         """Add a single tool to the agent's tools list.
 
@@ -2525,7 +2518,11 @@ Subtask Breakdown:
         """
         return self.skills.load_full_skill(skill_name)
 
-    @trace_run("Agent.run", input_params=("task", "img", "imgs"))
+    @trace_run(
+        "Agent.run",
+        input_params=("task", "img", "imgs"),
+        usage=lambda agent: agent.usage,
+    )
     def run(
         self,
         task: Optional[Union[str, Any]] = None,
@@ -2679,14 +2676,7 @@ Subtask Breakdown:
 
             return output
 
-        except (
-            AgentRunError,
-            AgentLLMError,
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
-            Exception,
-        ) as e:
+        except Exception as e:
 
             # Try fallback models if available
             if self.is_fallback_available():

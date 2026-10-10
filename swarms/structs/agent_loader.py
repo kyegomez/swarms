@@ -14,10 +14,10 @@ from typing import (
 )
 
 import yaml
-from litellm import model_list
 from pydantic import BaseModel
 from tqdm import tqdm
 
+from swarms.utils import llm_backend
 from swarms.agents.create_agents_from_yaml import (
     create_agents_from_yaml,
 )
@@ -103,18 +103,18 @@ class AgentValidator:
             if isinstance(config, BaseModel):
                 config = config.model_dump()
 
-            # Validate model name using litellm model list
+            # Validate model name using the LLM backend's model list
             model_name = str(config["model_name"])
-            # model_list from litellm is a list of strings, not dicts
+            model_list = llm_backend.model_list
             if isinstance(model_list, list) and len(model_list) > 0:
                 if isinstance(model_list[0], str):
-                    # model_list is list of strings
-                    if not any(
+                    # RouteHub's list resolves aliases in membership tests, which a substring scan misses.
+                    if model_name not in model_list and not any(
                         model_name in model or model in model_name
                         for model in model_list
                     ):
                         raise AgentValidationError(
-                            "Invalid model name. Must be one of the supported litellm models",
+                            "Invalid model name. Must be one of the models the LLM backend supports",
                             "model_name",
                             model_name,
                         )
@@ -125,7 +125,7 @@ class AgentValidator:
                         for model in model_list
                     ):
                         raise AgentValidationError(
-                            "Invalid model name. Must be one of the supported litellm models",
+                            "Invalid model name. Must be one of the models the LLM backend supports",
                             "model_name",
                             model_name,
                         )
