@@ -110,6 +110,27 @@ def test_multiple_functions_to_dict_on_one_cpu(monkeypatch):
     ]
 
 
+class LineItem(BaseModel):
+    sku: str
+    qty: int
+
+
+def place_order(items: list[LineItem], note: str = "") -> str:
+    """Place an order."""
+    return note
+
+
+def test_func_to_dict_resolves_nested_model_refs():
+    params = BaseTool().func_to_dict(place_order)["function"][
+        "parameters"
+    ]
+
+    items = params["properties"]["items"]
+    assert items["items"] == {"$ref": "#/$defs/LineItem"}
+    assert "$defs" not in items
+    assert params["$defs"]["LineItem"]["required"] == ["sku", "qty"]
+
+
 def run_all_tests():
     print("Starting all tests")
 
