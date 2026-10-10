@@ -2190,3 +2190,35 @@ class TestLLMFailureRaises:
             "claude-sonnet-4-6",
             "claude-sonnet-4-6",
         ]
+
+
+def test_every_loop_request_ends_on_a_user_turn():
+    requests = []
+
+    def fake_completion(**params):
+        requests.append([m["role"] for m in params["messages"]])
+        message = SimpleNamespace(
+            content=f"answer {len(requests)}",
+            tool_calls=None,
+            reasoning_content=None,
+        )
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(message=message, finish_reason="stop")
+            ],
+            usage=None,
+        )
+
+    agent = Agent(
+        agent_name="LoopAgent",
+        model_name="claude-sonnet-4-6",
+        max_loops=3,
+        print_on=False,
+        persistent_memory=False,
+    )
+    with patch.object(
+        litellm_wrapper, "completion", side_effect=fake_completion
+    ):
+        agent.run("Explain X")
+
+    assert [roles[-1] for roles in requests] == ["user"] * 3
