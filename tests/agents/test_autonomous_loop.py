@@ -1558,7 +1558,7 @@ class TestIterationLimitsAreConfigurable:
         monkeypatch.setattr(litellm_wrapper, "completion", refuse)
         agent = build_agent()
 
-        with pytest.raises(Exception, match=finish_reason):
+        with pytest.raises(Exception, match="refused"):
             agent.run("demo")
 
         assert len(calls) == 1
