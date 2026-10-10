@@ -2199,3 +2199,14 @@ class TestToDictPlaceholder:
         )
         with pytest.raises(TypeError, match="Agent.placeholder_lock"):
             agent.to_dict(strict=True)
+
+    def test_default_agent_has_no_placeholders(self):
+        agent = Agent(
+            agent_name="placeholder-free", model_name="gpt-4o-mini"
+        )
+
+        assert [
+            key
+            for key, value in agent.to_dict().items()
+            if str(value).startswith("<Non-serializable")
+        ] == []
