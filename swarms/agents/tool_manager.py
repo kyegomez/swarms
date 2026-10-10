@@ -68,6 +68,7 @@ class ToolManager:
 
     def __init__(self, agent: Any):
         self.agent = agent
+        self._caller_llm: Any = getattr(agent, "llm", None)
 
     def setup_tools(self) -> BaseTool:
         """
@@ -425,7 +426,10 @@ class ToolManager:
         )
         agent.tools_list_dictionary = agent.tool_loader.schemas()
         # Rebuilt so the newly loaded schemas are sent on the next request.
-        if agent.llm is not None:
+        if (
+            agent.llm is not None
+            and agent.llm is not self._caller_llm
+        ):
             agent.llm = agent.llm_handling()
 
         if agent.verbose:
