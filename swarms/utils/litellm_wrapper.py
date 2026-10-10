@@ -1445,7 +1445,6 @@ class LiteLLM:
                 self.last_finish_reason = _field(
                     choices[0], "finish_reason"
                 )
-                self._raise_on_refusal()
             self.last_response_model = (
                 _field(chunk, "model") or self.last_response_model
             )
@@ -1454,6 +1453,7 @@ class LiteLLM:
                 if not choices:
                     continue
             yield chunk
+        self._raise_on_refusal()
 
     def _raise_on_refusal(self) -> None:
         if self.last_finish_reason in ("refusal", "content_filter"):
