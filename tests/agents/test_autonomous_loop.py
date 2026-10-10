@@ -33,6 +33,7 @@ import json
 import os
 
 import pytest
+from litellm import ModelResponse
 
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
@@ -47,6 +48,7 @@ from swarms.structs.autonomous_loop_utils import (
     TOOL_OUTPUT_CONTEXT_SHARE,
     read_file_tool,
 )
+from swarms.utils import litellm_wrapper
 from swarms.utils.litellm_tokenizer import count_tokens
 
 
@@ -1528,6 +1530,38 @@ class TestIterationLimitsAreConfigurable:
             agent.run("demo")
 
         assert len(calls) == 2
+
+    @pytest.mark.parametrize(
+        "finish_reason", ["refusal", "content_filter"]
+    )
+    def test_a_refusal_ends_planning_after_one_request(
+        self, monkeypatch, finish_reason
+    ):
+        calls = []
+
+        def refuse(**params):
+            calls.append(params["model"])
+            return ModelResponse(
+                model=params["model"],
+                choices=[
+                    {
+                        "index": 0,
+                        "finish_reason": finish_reason,
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                        },
+                    }
+                ],
+            )
+
+        monkeypatch.setattr(litellm_wrapper, "completion", refuse)
+        agent = build_agent()
+
+        with pytest.raises(Exception, match=finish_reason):
+            agent.run("demo")
+
+        assert len(calls) == 1
 
     @pytest.mark.parametrize(
         "name",

@@ -74,6 +74,10 @@ class LiteLLMException(Exception):
     """
 
 
+class ModelRefusalError(LiteLLMException):
+    pass
+
+
 class NetworkConnectionError(Exception):
     """
     Exception raised when network connectivity issues are detected.
@@ -1441,6 +1445,7 @@ class LiteLLM:
                 self.last_finish_reason = _field(
                     choices[0], "finish_reason"
                 )
+                self._raise_on_refusal()
             self.last_response_model = (
                 _field(chunk, "model") or self.last_response_model
             )
@@ -1449,6 +1454,13 @@ class LiteLLM:
                 if not choices:
                     continue
             yield chunk
+
+    def _raise_on_refusal(self) -> None:
+        if self.last_finish_reason in ("refusal", "content_filter"):
+            raise ModelRefusalError(
+                f"{self.model_name} refused the request "
+                f"(finish_reason={self.last_finish_reason!r})"
+            )
 
     def _process_response(self, response: any):
         """
@@ -1464,6 +1476,8 @@ class LiteLLM:
         # Streaming: hand back the generator, with usage recorded as it drains
         if self.stream:
             return self._track_streaming_usage(response)
+
+        self._raise_on_refusal()
 
         # Before the reasoning branch: reasoning models still emit tool_calls, which would be dropped.
         if self.tools_list_dictionary is not None and getattr(
