@@ -27,6 +27,13 @@ from loguru import logger
 from swarms.utils.generate_id import generate_id
 
 
+class _ConversationDumper(
+    getattr(yaml, "CSafeDumper", yaml.SafeDumper)
+):
+    def ignore_aliases(self, data) -> bool:
+        return True
+
+
 def generate_conversation_id() -> str:
     """Deprecated: use ``generate_id()``."""
     return generate_id()
@@ -130,6 +137,7 @@ class Conversation:
         self._suppress_memory_md = True
 
         self.conversation_history = []
+        self._autosave_count = 0
         self._str_cache: Optional[str] = None
         self._cache_hits: int = 0
         self._cache_misses: int = 0
@@ -230,9 +238,53 @@ class Conversation:
         if self.custom_rules_prompt is not None:
             self.add(self.user or "User", self.custom_rules_prompt)
 
+    def _append_json_messages(
+        self, messages: list[dict[str, Any]]
+    ) -> None:
+        """Append messages to a nonempty JSON array saved by this class."""
+        if not messages:
+            return
+
+        payload = json.dumps(messages, default=str)[1:-1]
+
+        with open(self.save_filepath, "r+b") as f:
+            f.seek(-1, os.SEEK_END)
+            f.write((",\n" + payload + "]").encode("utf-8"))
+
+    def _append_yaml_messages(
+        self, messages: list[dict[str, Any]]
+    ) -> None:
+        """Append messages to a nonempty YAML block sequence."""
+        if not messages:
+            return
+
+        payload = yaml.dump(
+            messages,
+            Dumper=_ConversationDumper,
+            indent=4,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+
+        with open(self.save_filepath, "a", encoding="utf-8") as f:
+            f.write(payload)
+
     def _autosave(self):
         """Automatically save the conversation if autosave is enabled."""
-        return self.export()
+        count = len(self.conversation_history)
+        if self._autosave_count > 0 and os.path.exists(
+            self.save_filepath
+        ):
+            messages = self.conversation_history[
+                self._autosave_count :
+            ]
+            if self.export_method == "json":
+                self._append_json_messages(messages)
+            else:
+                self._append_yaml_messages(messages)
+        else:
+            self.export()
+        self._autosave_count = count
 
     def _init_memory_md(self) -> None:
         """Create the MEMORY.md folder and header file if they don't exist."""
@@ -347,7 +399,7 @@ class Conversation:
                 logger.error(
                     f"Failed to reset {self.memory_md_path}: {e}"
                 )
-
+        self._autosave_count = 0
         self.add(summary_role, summary)
 
     def _archive_memory_md(self) -> None:
@@ -581,12 +633,7 @@ class Conversation:
     def add_multiple_messages(
         self, roles: List[str], contents: List[Union[str, dict, list]]
     ):
-        added = self.add_multiple(roles, contents)
-
-        if self.autosave:
-            self._autosave()
-
-        return added
+        return self.add_multiple(roles, contents)
 
     def add_multiple(
         self,
@@ -607,10 +654,15 @@ class Conversation:
                 "Number of roles and contents must match."
             )
 
-        return [
-            self.add(role, content)
+        added = [
+            self.add_in_memory(role, content)
             for role, content in zip(roles, contents)
         ]
+
+        if self.autosave and added:
+            self._autosave()
+
+        return added
 
     def add_messages(self, messages: List[Dict[str, Any]]):
         """Add chat-format messages to the conversation history, in order.
@@ -653,6 +705,7 @@ class Conversation:
         """Delete a message from the conversation history."""
         self.conversation_history.pop(int(index))
         self._str_cache = None
+        self._autosave_count = 0
 
     def update(self, index: str, role, content):
         """Update a message in the conversation history.
@@ -666,6 +719,7 @@ class Conversation:
             self.conversation_history[int(index)]["role"] = role
             self.conversation_history[int(index)]["content"] = content
             self._str_cache = None
+            self._autosave_count = 0
         else:
             logger.warning(f"Invalid index: {index}")
 
@@ -905,12 +959,14 @@ class Conversation:
 
             # Save with proper formatting
             with open(self.save_filepath, "w", encoding="utf-8") as f:
-                json.dump(
-                    self.conversation_history,
-                    f,
-                    indent=4,
-                    default=str,
+                f.write(
+                    json.dumps(
+                        self.conversation_history,
+                        indent=4,
+                        default=str,
+                    )
                 )
+            self._autosave_count = len(self.conversation_history)
 
             logger.info(f"Conversation saved to {self.save_filepath}")
 
@@ -945,6 +1001,7 @@ class Conversation:
                 yaml.dump(
                     self.conversation_history,
                     f,
+                    Dumper=_ConversationDumper,
                     indent=4,
                     default_flow_style=False,
                     sort_keys=False,
@@ -952,6 +1009,7 @@ class Conversation:
                 logger.info(
                     f"Conversation saved to {self.save_filepath}"
                 )
+            self._autosave_count = len(self.conversation_history)
 
         except Exception as e:
             logger.error(
@@ -1016,6 +1074,7 @@ class Conversation:
         if isinstance(data, list):
             self.conversation_history = data
             self._str_cache = None
+            self._autosave_count = 0
             return
 
         if not isinstance(data, dict):
@@ -1034,6 +1093,7 @@ class Conversation:
             "conversation_history", []
         )
         self._str_cache = None
+        self._autosave_count = 0
 
     def load_from_json(self, filename: str):
         """Load the conversation history and metadata from a JSON file.
@@ -1184,6 +1244,7 @@ class Conversation:
 
         # Update conversation history
         self.conversation_history = truncated_history
+        self._autosave_count = 0
         self._str_cache = None
 
     def _binary_search_truncate(
@@ -1247,6 +1308,7 @@ class Conversation:
         """Clear the conversation history."""
         self.conversation_history = []
         self._str_cache = None
+        self._autosave_count = 0
 
     def to_json(self):
         """Convert the conversation history to a JSON string.
