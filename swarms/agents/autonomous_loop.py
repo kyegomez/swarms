@@ -27,6 +27,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from loguru import logger
 
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
+from swarms.schemas.agent_errors import AgentLLMInitializationError
 from swarms.structs.autonomous_loop_utils import (
     assign_task_tool,
     cancel_sub_agent_tasks_tool,
@@ -113,11 +114,20 @@ class AutonomousAgentLoop:
         # The client this loop last built, and the inputs it was built from.
         self._built_llm: Any = None
         self._built_llm_signature: Optional[str] = None
+        self._caller_llm: Any = agent.llm
 
     def _refresh_llm(self) -> None:
         """Rebuild the agent's client when its tools, prompt or model changed."""
         if self.agent.llm is None:
             return
+        if self.agent.llm is self._caller_llm:
+            raise AgentLLMInitializationError(
+                f"Agent '{self.agent.agent_name}' was given llm="
+                f"{type(self.agent.llm).__name__}, but max_loops='auto' "
+                "needs a client built by swarms to send its planning "
+                "tools. Pass model_name (and llm_args) instead of llm, "
+                "or use an integer max_loops."
+            )
         signature = json.dumps(
             [
                 self.agent.tools_list_dictionary,
