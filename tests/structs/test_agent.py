@@ -1078,6 +1078,30 @@ class TestArunForwarding:
         with pytest.raises(ValueError, match="boom"):
             asyncio.run(Agent.arun(agent, "T"))
 
+    def test_arun_awaits_the_llm_on_the_event_loop(self):
+        """arun awaits llm.arun instead of running run() in a thread (#2392)."""
+        agent = Agent(
+            agent_name="arun-native",
+            model_name="gpt-5.4",
+            max_loops=1,
+            print_on=False,
+            output_type="final",
+        )
+        threads = []
+
+        async def fake_arun(task=None, **kwargs):
+            threads.append(threading.get_ident())
+            return "async answer"
+
+        def fail_run(*args, **kwargs):
+            raise AssertionError("arun reached the sync llm.run")
+
+        agent.llm.arun = fake_arun
+        agent.llm.run = fail_run
+
+        assert asyncio.run(agent.arun("hello")) == "async answer"
+        assert threads == [threading.get_ident()]
+
 
 class TestEmptyTaskGuard:
     """run() must not read stdin for an empty task when interactive=False."""

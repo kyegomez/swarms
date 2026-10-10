@@ -25,6 +25,8 @@ so serialization, ``save``/``load``, and every existing ``agent.llm`` reference
 keep working unchanged.
 """
 
+import asyncio
+import inspect
 import itertools
 import random
 import time
@@ -675,6 +677,56 @@ class LLMManager:
                 f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
             )
             raise e
+
+    async def acall(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Async :meth:`call`: awaits ``llm.arun`` on the non-streaming path.
+
+        Streaming, and an llm without a coroutine ``arun``, run :meth:`call`
+        in a thread instead. Takes and returns the same as :meth:`call`.
+        """
+        agent = self.agent
+        streaming = (agent.stream or agent.streaming_on) and hasattr(
+            agent.llm, "stream"
+        )
+        if streaming or not inspect.iscoroutinefunction(
+            getattr(agent.llm, "arun", None)
+        ):
+            return await asyncio.to_thread(
+                self.call,
+                task,
+                img,
+                imgs,
+                current_loop,
+                streaming_callback,
+                *args,
+                **kwargs,
+            )
+
+        kwargs.pop("is_last", None)
+        run_args = {"task": task}
+        if img is not None:
+            run_args["img"] = img
+        if imgs:
+            run_args["imgs"] = imgs
+
+        try:
+            return await agent.llm.arun(**run_args, **kwargs)
+        except Exception as e:
+            logger.error(
+                f"Error calling LLM with model '{self.get_current_model()}': {e}. "
+                f"Task: {task}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
+            )
+            raise
 
     def _run_stream(
         self, task: str, img: Optional[str], *args, **kwargs
