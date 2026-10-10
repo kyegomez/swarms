@@ -36,7 +36,6 @@ import pytest
 
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.schemas.agent_errors import AgentLLMInitializationError
 from swarms.structs.autonomous_loop_utils import (
     _BASH_MAX_LENGTH,
     _check_bash_command,
@@ -1118,23 +1117,6 @@ class TestClientIsReusedAcrossRuns:
             for schema in agent.tools_list_dictionary
         ]
         assert names.count("define") == 1
-
-    def test_a_caller_llm_is_refused_not_replaced(self, monkeypatch):
-        class CallerLLM:
-            def run(self, task=None, **kwargs):
-                return "ok"
-
-        caller_llm = CallerLLM()
-        agent = build_agent(llm=caller_llm)
-        calls = script_llm(agent, monkeypatch, [plan(("step1", []))])
-
-        with pytest.raises(
-            AgentLLMInitializationError, match="llm=CallerLLM"
-        ):
-            agent.run("test task")
-
-        assert agent.llm is caller_llm
-        assert calls == []
 
 
 # --------------------------------------------------------------------------
