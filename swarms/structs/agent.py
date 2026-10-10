@@ -536,6 +536,9 @@ class Agent:
             retry_attempts=self.tool_retry_attempts,
         )
 
+        if self.random_models_on is True:
+            self.model_name = set_random_models_for_agents()
+
         if self.context_length is None:
             self.context_length = self._default_context_length()
 
@@ -648,9 +651,6 @@ class Agent:
         ) is None and hasattr(self.llm, "usage_hook"):
             # A caller-supplied LiteLLM reports into this agent too.
             self.llm.usage_hook = self._add_usage
-
-        if self.random_models_on is True:
-            self.model_name = set_random_models_for_agents()
 
         if self.dashboard is True:
             self.print_dashboard()
