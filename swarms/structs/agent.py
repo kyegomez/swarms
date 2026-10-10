@@ -174,6 +174,12 @@ class Agent:
             Each subdirectory should contain a SKILL.md file with YAML frontmatter (name, description)
             and markdown instructions. Skills are auto-loaded into system prompt for context-aware activation.
             Example: skills_dir="./skills" loads from ./skills/*/SKILL.md
+        workspace_sandbox (bool): Whether the autonomous loop's file
+            tools are confined to the agent workspace. When True, a
+            path that resolves outside the workspace is refused and
+            the refusal reaches the model as a tool result. Defaults
+            to False, which keeps today's behavior of accepting any
+            path the process can reach.
         think_tool (bool): Whether the autonomous looper (max_loops="auto") offers the
             `think` tool. Defaults to False. A `think` call spends a full round-trip to
             produce reasoning the model could emit inline alongside its actions, so it is
@@ -394,6 +400,7 @@ class Agent:
         context_compression: bool = True,
         persistent_memory: bool = False,
         messages: Optional[List[Dict[str, Any]]] = None,
+        workspace_sandbox: bool = False,
         *args,
         **kwargs,
     ):
@@ -553,6 +560,8 @@ class Agent:
 
         # When False the agent does not read or write MEMORY.md across sessions.
         self.persistent_memory = persistent_memory
+
+        self.workspace_sandbox = workspace_sandbox
 
         # Prior turns, seeded into short_memory and re-sent as context on every run.
         self.messages = messages
