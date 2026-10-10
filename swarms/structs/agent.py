@@ -628,9 +628,10 @@ class Agent:
         if self.interactive is True:
             self.reasoning_prompt_on = False
 
-        if self.reasoning_prompt_on is True and (
-            (isinstance(self.max_loops, int) and self.max_loops >= 2)
-            or self.max_loops == "auto"
+        if (
+            self.reasoning_prompt_on is True
+            and isinstance(self.max_loops, int)
+            and self.max_loops >= 2
         ):
             self.system_prompt += generate_reasoning_prompt(
                 self.max_loops
