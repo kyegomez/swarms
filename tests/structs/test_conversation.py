@@ -1435,6 +1435,18 @@ def test_trimmed_history_counts_messages_not_the_transcript(
     assert count_tokens(history) <= 40
 
 
+def test_export_conversation_writes_the_named_json_file(tmp_path):
+    conv = Conversation(conversations_dir=str(tmp_path))
+    conv.add("User", "keep this")
+    target = tmp_path / "backup.json"
+
+    conv.export_conversation(str(target))
+
+    fresh = Conversation(conversations_dir=str(tmp_path))
+    fresh.import_conversation(str(target))
+    assert fresh.conversation_history == conv.conversation_history
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()

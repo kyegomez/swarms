@@ -703,9 +703,14 @@ class Conversation:
         Args:
             filename (str): Filename to export to.
         """
-        # If the filename ends with .json, use save_as_json
         if filename.endswith(".json"):
-            self.save_as_json(force=True)
+            with open(filename, "w", encoding="utf-8") as f:
+                json.dump(
+                    self.conversation_history,
+                    f,
+                    indent=4,
+                    default=str,
+                )
         else:
             # Simple text export for non-JSON files
             with open(filename, "w", encoding="utf-8") as f:
