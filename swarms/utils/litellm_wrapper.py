@@ -1439,12 +1439,12 @@ class LiteLLM:
         """
         self.last_finish_reason = None
         self.last_response_model = None
+        finish_reason = None
         for chunk in stream:
             choices = _field(chunk, "choices") or []
             if choices and _field(choices[0], "finish_reason"):
-                self.last_finish_reason = _field(
-                    choices[0], "finish_reason"
-                )
+                finish_reason = _field(choices[0], "finish_reason")
+                self.last_finish_reason = finish_reason
             self.last_response_model = (
                 _field(chunk, "model") or self.last_response_model
             )
@@ -1453,13 +1453,13 @@ class LiteLLM:
                 if not choices:
                     continue
             yield chunk
-        self._raise_on_refusal()
+        self._raise_on_refusal(finish_reason)
 
-    def _raise_on_refusal(self) -> None:
-        if self.last_finish_reason in ("refusal", "content_filter"):
+    def _raise_on_refusal(self, finish_reason: Optional[str]) -> None:
+        if finish_reason in ("refusal", "content_filter"):
             raise ModelRefusalError(
                 f"{self.model_name} refused the request "
-                f"(finish_reason={self.last_finish_reason!r})"
+                f"(finish_reason={finish_reason!r})"
             )
 
     def _process_response(self, response: any):
@@ -1477,7 +1477,11 @@ class LiteLLM:
         if self.stream:
             return self._track_streaming_usage(response)
 
-        self._raise_on_refusal()
+        choices = _field(response, "choices") or []
+        if choices:
+            self._raise_on_refusal(
+                _field(choices[0], "finish_reason")
+            )
 
         # Before the reasoning branch: reasoning models still emit tool_calls, which would be dropped.
         if self.tools_list_dictionary is not None and getattr(
