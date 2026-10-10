@@ -1005,25 +1005,15 @@ _BASH_BLOCKLIST = [
     ("| php",),
     # Raw disk writes
     ("dd", "if="),
-    ("mkfs",),
     ("> /dev/sd",),
     ("> /dev/nvme",),
     ("> /dev/mem",),
-    ("> /dev/null",),
     # Fork bomb pattern
     (":(){",),
-    # System shutdown / reboot
-    ("shutdown",),
-    ("reboot",),
-    ("halt",),
-    ("poweroff",),
     # Privilege escalation
     ("chmod 777 /",),
     ("chown", "/etc"),
     ("chown", "/bin"),
-    ("sudo",),
-    ("su -",),
-    ("pkexec",),
     # Reading sensitive system files
     ("/etc/passwd",),
     ("/etc/shadow",),
@@ -1034,13 +1024,33 @@ _BASH_BLOCKLIST = [
     ("nc ", "-e"),
     ("ncat", "-e"),
     # Environment/credential exposure
-    ("printenv",),
     ("env |",),
     ("set |",),
     # History manipulation
     ("history -c",),
     ("unset histfile",),
 ]
+
+_BASH_COMMAND_WORDS = (
+    "sudo",
+    "sudoedit",
+    r"su(?![\w.-])",
+    "pkexec",
+    "shutdown",
+    "reboot",
+    "halt",
+    "poweroff",
+    "mkfs",
+    "printenv",
+)
+
+_BASH_COMMAND_WORD_REGEX = _re.compile(
+    r"(?:^|[\n;&|({!`]|\b(?:if|then|elif|else|while|until|do"
+    r"|time|env|exec|eval|nohup|xargs|nice|timeout|ionice|setsid"
+    r"|stdbuf|sh|bash|zsh)\s)\s*(?:\w+=\S*\s+|-\S*\s+|\d[^\s=]*\s+)*"
+    r"[\\\"']*(?:\S*/)?(" + "|".join(_BASH_COMMAND_WORDS) + r")\b",
+    _re.IGNORECASE,
+)
 
 _BASH_BLOCKLIST_REGEX = [
     # Command substitution feeding into sensitive commands
@@ -1054,7 +1064,7 @@ _BASH_BLOCKLIST_REGEX = [
     _re.compile(r">\s*/root/"),
 ]
 
-_BASH_MAX_LENGTH = 512
+_BASH_MAX_LENGTH = 4096
 
 
 def _check_bash_command(command: str) -> str | None:
@@ -1077,6 +1087,12 @@ def _check_bash_command(command: str) -> str | None:
     for pattern in _BASH_BLOCKLIST:
         if all(token in cmd_lower for token in pattern):
             return f"Command blocked: matches dangerous pattern {pattern!r}."
+    match = _BASH_COMMAND_WORD_REGEX.search(command)
+    if match:
+        return (
+            "Command blocked: runs the privileged or system-level "
+            f"command {match.group(1)!r}."
+        )
     for regex in _BASH_BLOCKLIST_REGEX:
         if regex.search(command):
             return "Command blocked: matches dangerous regex pattern."
