@@ -2008,7 +2008,9 @@ class TestSeededMessages:
         assert "My project is called Helios." in contents
         assert "What is my project called?" in contents
 
-    def test_run_messages_are_recorded_and_sent(self):
+    def test_run_messages_are_sent_but_not_kept(self):
+        from swarms.structs.context_utils import agent_answer
+
         agent = _patched_agent("SeedAgent")
         sent = {}
 
@@ -2017,7 +2019,10 @@ class TestSeededMessages:
             return "Helios"
 
         agent.call_llm = fake_call_llm
-        agent.run("What is my project called?", messages=self.PRIOR)
+        for _ in range(2):
+            agent.run(
+                "What is my project called?", messages=self.PRIOR
+            )
 
         assert [m["role"] for m in sent["messages"]] == [
             "user",
@@ -2029,8 +2034,10 @@ class TestSeededMessages:
             m["content"]
             for m in agent.short_memory.conversation_history
         ]
-        assert "My project is called Helios." in recorded
-        assert "Noted: Helios." in recorded
+        assert "My project is called Helios." not in recorded
+        assert "Noted: Helios." not in recorded
+        assert recorded.count("What is my project called?") == 2
+        assert agent_answer(agent) == "Helios"
 
 
 class TestRunSamples:
