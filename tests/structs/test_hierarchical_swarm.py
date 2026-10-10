@@ -1196,3 +1196,30 @@ def test_harness_result_reflects_conversation_state(tmp_path):
     assert after["conversation"][-1]["role"] == "System"
     assert after["conversation"][-1]["content"] == "step one passed"
     assert after["id"] == before["id"]
+
+
+def test_collaboration_prompt_is_sent_without_mutating_workers():
+    """multi_agent_prompt_improvements reaches the worker's request."""
+    from swarms.prompts.multi_agent_collab_prompt import (
+        MULTI_AGENT_COLLAB_PROMPT_TWO,
+    )
+
+    seen = []
+    worker = _scripted_hs_agent("W1", seen)
+    original_prompt = worker.system_prompt
+
+    HierarchicalSwarm(
+        director=_scripted_hs_agent("Director", seen, director=True),
+        agents=[worker],
+        max_loops=1,
+        multi_agent_prompt_improvements=True,
+    ).run("Build something.")
+
+    assert worker.system_prompt == original_prompt
+    worker_messages = [msgs for name, msgs in seen if name == "W1"]
+    assert worker_messages
+    assert worker_messages[-1][0]["role"] == "system"
+    assert (
+        MULTI_AGENT_COLLAB_PROMPT_TWO
+        in worker_messages[-1][0]["content"]
+    )
