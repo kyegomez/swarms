@@ -26,6 +26,9 @@ if TYPE_CHECKING:
 from loguru import logger
 from swarms.utils.generate_id import generate_id
 
+# Heads the System message that carries prior MEMORY.md content.
+MEMORY_MD_PREAMBLE = "[Persistent Memory — MEMORY.md]\n"
+
 
 def generate_conversation_id() -> str:
     """Deprecated: use ``generate_id()``."""
@@ -281,8 +284,8 @@ class Conversation:
             {
                 "role": "System",
                 "content": (
-                    "[Persistent Memory — MEMORY.md]\n"
-                    "The following is this conversation's persistent "
+                    MEMORY_MD_PREAMBLE
+                    + "The following is this conversation's persistent "
                     "memory from prior sessions. Use it to continue "
                     "context coherently.\n\n"
                     f"{content}"

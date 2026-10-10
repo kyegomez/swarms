@@ -851,13 +851,16 @@ class ToolManager:
 
     def mcp_tool_handling(
         self, response: Any, current_loop: Optional[int] = 0
-    ) -> None:
+    ) -> Any:
         """
         Execute the MCP tool calls in a response and record a summary.
 
         Args:
             response: The model response holding MCP tool calls.
             current_loop: The current loop number, used when printing.
+
+        Returns:
+            The MCP tool output, or None when the response held no MCP calls.
 
         Raises:
             AgentMCPConnectionError: If no MCP server could be reached.
@@ -901,6 +904,7 @@ class ToolManager:
             agent.short_memory.add(
                 role=agent.agent_name, content=summary
             )
+            return tool_response
         except Exception as e:
             logger.error(
                 f"Error in MCP tool handling for {agent.agent_name}: {e} Traceback: {traceback.format_exc()}"

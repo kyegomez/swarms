@@ -1578,3 +1578,176 @@ class TestRunStreamUsesTheAutonomousLoop:
 
         assert len(calls) == 3
         assert status_of(agent, "step1") == "completed"
+
+
+# --------------------------------------------------------------------------
+# #2411 - MCP output, plan detection, and loaded memory in auto mode
+# --------------------------------------------------------------------------
+
+
+def call_with_id(call_id, name, **arguments):
+    """A tool call carrying the provider id the transcript pairs results on."""
+    return {**tool_call(name, **arguments), "id": call_id}
+
+
+def capture_llm(agent, monkeypatch, responses):
+    """Like ``script_llm``, but records the ``messages`` of every request."""
+    queue = list(responses)
+    requests = []
+
+    def fake_call_llm(task=None, *args, **kwargs):
+        requests.append(
+            json.dumps(kwargs.get("messages"), default=str)
+        )
+        return queue.pop(0) if queue else "no further action"
+
+    monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+    return requests
+
+
+def done(task_id="step1"):
+    return [
+        call_with_id(
+            "done1",
+            "subtask_done",
+            task_id=task_id,
+            summary="d",
+            success=True,
+        )
+    ]
+
+
+def finish():
+    return [
+        call_with_id(
+            "fin1",
+            "complete_task",
+            task_id="main",
+            summary="d",
+            success=True,
+        )
+    ]
+
+
+def tool_result(agent, call_id):
+    return [
+        m["content"]
+        for m in agent.autonomous_loop._transcript.messages
+        if m["role"] == "tool" and m.get("tool_call_id") == call_id
+    ]
+
+
+class TestMcpOutputReachesTheModel:
+
+    def test_the_mcp_result_is_the_tool_message(self, monkeypatch):
+        agent = build_agent()
+        monkeypatch.setattr(
+            Agent, "mcp_enabled", property(lambda self: True)
+        )
+        agent._mcp_schemas_cache = [
+            {"type": "function", "function": {"name": "get_weather"}}
+        ]
+        monkeypatch.setattr(
+            agent.mcp_manager,
+            "execute_tool_calls",
+            lambda response, output_type="dict": [
+                {"result": "SUNNY"}
+            ],
+        )
+        monkeypatch.setattr(
+            agent.tool_manager,
+            "temp_llm_instance_for_tool_summary",
+            lambda: type("Stub", (), {"run": lambda s, task: "ok"})(),
+        )
+        capture_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [call_with_id("w1", "get_weather", city="x")],
+                done(),
+                finish(),
+            ],
+        )
+
+        agent.run("weather")
+
+        (result,) = tool_result(agent, "w1")
+        assert "SUNNY" in result
+
+
+class TestOnlyCreatePlanCreatesAPlan:
+
+    def test_create_plan_after_another_call_still_runs(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        first = [
+            call_with_id("r1", "respond_to_user", message="starting"),
+            {**plan(("step1", []))[0], "id": "p1"},
+        ]
+        capture_llm(agent, monkeypatch, [first, done(), finish()])
+
+        agent.run("demo")
+
+        assert [s["step_id"] for s in agent.autonomous_subtasks] == [
+            "step1"
+        ]
+        assert status_of(agent, "step1") == "completed"
+        assert tool_result(
+            agent, "r1"
+        ), "the other call went unanswered"
+
+    def test_a_lone_non_plan_call_does_not_end_planning(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        requests = capture_llm(
+            agent,
+            monkeypatch,
+            [
+                [call_with_id("t1", "respond_to_user", message="hi")],
+                plan(("step1", [])),
+                done(),
+                finish(),
+            ],
+        )
+
+        agent.run("demo")
+
+        assert [s["step_id"] for s in agent.autonomous_subtasks] == [
+            "step1"
+        ]
+        assert "create_plan" in requests[1], "the model was not told"
+
+
+class TestAutoTranscriptStartsFromLoadedMemory:
+
+    def test_memory_md_and_constructor_messages_reach_the_model(
+        self, monkeypatch, tmp_path
+    ):
+        # get_workspace_dir is lru_cached, so patch it rather than the env.
+        monkeypatch.setattr(
+            "swarms.structs.agent.get_workspace_dir",
+            lambda: str(tmp_path),
+        )
+        memory = (
+            tmp_path / "agents" / "AutoLoopTestAgent" / "MEMORY.md"
+        )
+        memory.parent.mkdir(parents=True)
+        memory.write_text("# Memory\n\n### earlier\nproject HELIOS\n")
+
+        agent = build_agent(
+            persistent_memory=True,
+            messages=[{"role": "user", "content": "codename ORION"}],
+        )
+        requests = capture_llm(agent, monkeypatch, [finish()])
+
+        agent.run(
+            "go", messages=[{"role": "user", "content": "LYRA"}]
+        )
+
+        assert "HELIOS" in requests[0]
+        assert "ORION" in requests[0]
+        assert "LYRA" in requests[0]
+        assert agent.system_prompt[:60] not in requests[0]
