@@ -770,6 +770,7 @@ class TestLLMArgsAndHandling:
 
         assert agent.model_name == "gpt-4.1-nano"
         assert agent.llm.model_name == "gpt-4.1-nano"
+        assert agent.max_tokens == agent._default_max_tokens()
 
 
 class TestConstructorWindows:
