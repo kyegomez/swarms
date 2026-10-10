@@ -32,8 +32,8 @@ from swarms.structs.graph_workflow import (
 )
 from swarms.structs.groupchat import RESPOND_TOOL, GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
-from swarms.structs.hybrid_hiearchical_peer_swarm import (
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
+from swarms.structs.hybrid_hierarchical_peer_swarm import (
     HybridHierarchicalClusterSwarm,
 )
 from swarms.structs.llm_council import LLMCouncil
@@ -91,7 +91,6 @@ from swarms.structs.check_models import (
     get_available_models,
     is_model_available,
 )
-
 
 __all__ = [
     "AdvisorSwarm",
