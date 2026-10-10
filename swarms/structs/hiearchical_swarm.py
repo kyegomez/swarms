@@ -1,7 +1,8 @@
 import inspect
 import json
+import time
 import traceback
-from concurrent.futures import as_completed
+from concurrent.futures import TimeoutError, as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
@@ -88,6 +89,9 @@ class HierarchicalSwarm:
         director_settings: Optional[Dict[str, Any]] = None,
         max_agent_retries: int = 1,
         max_reassignment_attempts: int = 1,
+        worker_timeout: float = 300.0,
+        heartbeat_interval: float = 30.0,
+        max_retries: int = 2,
         *args,
         **kwargs,
     ):
@@ -121,6 +125,10 @@ class HierarchicalSwarm:
             director_settings: Additional director settings.
             max_agent_retries: Retries per failed order.
             max_reassignment_attempts: Recovery attempts.
+            worker_timeout: Maximum seconds to wait for one worker attempt.
+            heartbeat_interval: Maximum seconds between timeout checks.
+            max_retries: Retries per timed-out worker (default: 2).
+                Timed-out threads cannot be stopped; retry only idempotent tasks.
             *args: Reserved positional arguments.
             **kwargs: Reserved keyword arguments.
 
@@ -163,7 +171,14 @@ class HierarchicalSwarm:
         self.director_top_p = self.director_settings.get(
             "top_p", self.director_top_p
         )
+        if worker_timeout <= 0 or heartbeat_interval <= 0:
+            raise ValueError(
+                "worker_timeout and heartbeat_interval must be positive"
+            )
+        self.worker_timeout = worker_timeout
+        self.heartbeat_interval = heartbeat_interval
         self.max_agent_retries = max_agent_retries
+        self.max_retries = max_retries
         self.max_reassignment_attempts = max_reassignment_attempts
         self.planning_enabled = planning_enabled
         self.autosave = autosave
@@ -806,32 +821,72 @@ class HierarchicalSwarm:
         add_to_conversation: bool = True,
     ):
         """Execute one order and return an explicit failure if retries expire."""
-        attempts = self.max_agent_retries + 1
+        attempt = 0
         last_error = None
 
-        for attempt in range(1, attempts + 1):
+        while True:
+            attempt += 1
             try:
-                output = self.call_single_agent(
-                    order.agent_name,
-                    order.task,
-                    _add_to_conversation=add_to_conversation,
-                    _raise_on_failure=True,
-                )
+                output = self._call_worker_with_timeout(order)
+                if add_to_conversation:
+                    self.conversation.add(
+                        role=order.agent_name, content=output
+                    )
                 return output, None
             except Exception as error:
                 last_error = error
-                if attempt < attempts:
-                    logger.warning(
-                        f"Retrying worker {order.agent_name} for task "
-                        f"{order.task!r} ({attempt}/{attempts})"
-                    )
+                retries = (
+                    self.max_retries
+                    if isinstance(error, TimeoutError)
+                    else self.max_agent_retries
+                )
+                if attempt > retries:
+                    break
+                logger.warning(
+                    f"Retrying worker {order.agent_name} for task "
+                    f"{order.task!r} ({attempt}/{retries + 1})"
+                )
 
         failure = self._record_agent_failure(
             order=order,
             error=last_error,
-            attempts=attempts,
+            attempts=attempt,
         )
         return failure, failure
+
+    def _call_worker_with_timeout(self, order: HierarchicalOrder):
+        """Bound caller waiting, without claiming to stop an external tool.
+
+        A timed-out worker may still finish in the background. Its late result
+        is not written to the conversation. Retried tools must be idempotent.
+        """
+        executor = ContextThreadPoolExecutor(max_workers=1)
+        future = executor.submit(
+            self.call_single_agent,
+            order.agent_name,
+            order.task,
+            _add_to_conversation=False,
+            _raise_on_failure=True,
+        )
+        deadline = time.monotonic() + self.worker_timeout
+        try:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError(
+                        f"Worker {order.agent_name} timed out after "
+                        f"{self.worker_timeout}s"
+                    )
+                try:
+                    return future.result(
+                        timeout=min(remaining, self.heartbeat_interval)
+                    )
+                except TimeoutError:
+                    if future.done():
+                        raise
+        finally:
+            future.cancel()
+            executor.shutdown(wait=False, cancel_futures=True)
 
     @staticmethod
     def _agent_display_name(agent: Any) -> str:

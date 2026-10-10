@@ -1196,3 +1196,55 @@ def test_harness_result_reflects_conversation_state(tmp_path):
     assert after["conversation"][-1]["role"] == "System"
     assert after["conversation"][-1]["content"] == "step one passed"
     assert after["id"] == before["id"]
+
+
+@pytest.mark.parametrize("parallel_execution", [True, False])
+def test_worker_timeout_returns_without_waiting_for_stalled_worker(
+    parallel_execution, tmp_path, monkeypatch
+):
+    from threading import Event, Timer
+    from time import monotonic
+
+    monkeypatch.chdir(tmp_path)
+    released = Event()
+    finished = Event()
+
+    class StalledWorker(StubAgent):
+        def run(self, *args, **kwargs):
+            self.calls += 1
+            released.wait(3)
+            finished.set()
+            return "late worker result"
+
+    stalled = StalledWorker("Stalled", [])
+    healthy = StubAgent("Healthy", ["healthy result"])
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [stalled, healthy],
+        max_retries=1,
+        max_reassignment_attempts=0,
+        worker_timeout=0.05,
+        heartbeat_interval=0.01,
+        parallel_execution=parallel_execution,
+    )
+    # Also let the pre-fix implementation terminate after exposing the wait.
+    release_timer = Timer(0.6, released.set)
+    release_timer.start()
+    started = monotonic()
+    try:
+        outputs = swarm.execute_orders(
+            [
+                HierarchicalOrder(agent_name="Stalled", task="blocked task"),
+                HierarchicalOrder(agent_name="Healthy", task="quick task"),
+            ]
+        )
+        elapsed = monotonic() - started
+        assert elapsed < 0.45
+        assert "healthy result" in outputs
+        assert stalled.calls == 2
+        assert "[WORKER UNAVAILABLE]" in swarm.conversation.get_str()
+    finally:
+        released.set()
+        release_timer.cancel()
+    assert finished.wait(1)
+    assert "late worker result" not in swarm.conversation.get_str()
