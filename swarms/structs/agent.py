@@ -2689,6 +2689,7 @@ Subtask Breakdown:
         if messages:
             self.short_memory.add_messages(messages)
 
+        self.mcp_manager.begin_run()
         try:
             if self.max_loops == "auto":
                 # Use autonomous loop structure: plan -> execute subtasks -> summary
@@ -2764,6 +2765,9 @@ Subtask Breakdown:
                 "For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
             )
             raise KeyboardInterrupt
+
+        finally:
+            self.mcp_manager.end_run()
 
     def run_stream(
         self,

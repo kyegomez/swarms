@@ -22,7 +22,9 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -132,11 +134,12 @@ def second_open_server():
 
 @pytest.fixture
 def open_manager(open_server):
-    return MCPManager(
+    with MCPManager(
         mcp_url=open_server.url,
         agent_name="test-agent",
         retry_attempts=1,
-    )
+    ) as manager:
+        yield manager
 
 
 ########################################################
@@ -815,6 +818,86 @@ class TestToolExecution:
         )
         assert results[0]["result"] == "42"
 
+    def test_session_reused_across_turns(
+        self, open_manager, monkeypatch
+    ):
+        open_manager.get_tools()
+        opened = []
+        original = MCPManager._session
+
+        def counting(self, connection):
+            opened.append(connection)
+            return original(self, connection)
+
+        monkeypatch.setattr(MCPManager, "_session", counting)
+        call = [
+            {
+                "function": {
+                    "name": "add",
+                    "arguments": '{"a": 1, "b": 2}',
+                }
+            }
+        ]
+        for _ in range(2):
+            assert (
+                open_manager.execute_tool_calls(call)[0]["result"]
+                == "3"
+            )
+
+        assert len(opened) == 1
+        open_manager.close()
+
+    def test_ending_one_run_keeps_another_runs_session(
+        self, open_manager, monkeypatch
+    ):
+        open_manager.get_tools()
+        entered = threading.Event()
+        gate = threading.Event()
+        original = MCPManager._acall_tool
+
+        async def gated(self, session, connection, call):
+            if call["name"] == "greet":
+                entered.set()
+                await asyncio.to_thread(gate.wait, 10)
+            return await original(self, session, connection, call)
+
+        monkeypatch.setattr(MCPManager, "_acall_tool", gated)
+        greet = [
+            {
+                "function": {
+                    "name": "greet",
+                    "arguments": '{"name": "A"}',
+                }
+            }
+        ]
+        add = [
+            {
+                "function": {
+                    "name": "add",
+                    "arguments": '{"a": 1, "b": 2}',
+                }
+            }
+        ]
+
+        open_manager.begin_run()
+        open_manager.begin_run()
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            run_a = pool.submit(
+                open_manager.execute_tool_calls, greet
+            )
+            assert entered.wait(10)
+            assert (
+                open_manager.execute_tool_calls(add)[0]["result"]
+                == "3"
+            )
+            open_manager.end_run()
+            gate.set()
+            result_a = run_a.result(timeout=30)
+        open_manager.end_run()
+
+        assert result_a[0]["is_error"] is False
+        assert result_a[0]["result"] == "Hello, A!"
+
     def test_calls_routed_to_owning_server(
         self, open_server, second_open_server
     ):
@@ -1148,14 +1231,15 @@ class TestAgentIntegration:
             tool_call_summary=False,
             llm=object(),
         )
-        results = agent.mcp_manager.execute_tool_calls(
-            {
-                "function": {
-                    "name": "add",
-                    "arguments": '{"a": 21, "b": 21}',
+        with agent.mcp_manager as manager:
+            results = manager.execute_tool_calls(
+                {
+                    "function": {
+                        "name": "add",
+                        "arguments": '{"a": 21, "b": 21}',
+                    }
                 }
-            }
-        )
+            )
         assert results[0]["result"] == "42"
 
 
