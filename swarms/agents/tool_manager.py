@@ -742,9 +742,21 @@ class ToolManager:
                     call_id=call.get("id"),
                 )
 
-        output = agent.tool_struct.execute_function_calls_from_api_response(
-            response
-        )
+        success = True
+        try:
+            output = agent.tool_struct.execute_function_calls_from_api_response(
+                response
+            )
+        except Exception:
+            success = False
+            raise
+        finally:
+            loader = agent.tool_loader
+            if loader is not None:
+                for call in calls:
+                    name = _name(call)
+                    if name:
+                        loader.record_outcome(name, success)
         # Stored so a transcript builder can map it to tool_call ids.
         agent._last_tool_output = output
 
