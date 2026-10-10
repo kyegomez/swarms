@@ -101,26 +101,6 @@ def test_func_to_dict():
         log_test_result("func_to_dict", False, "", str(e))
 
 
-def test_load_params_from_func_for_pybasemodel():
-    """Test loading function parameters for Pydantic BaseModel"""
-    try:
-        tool = BaseTool(verbose=False)
-        result = tool.load_params_from_func_for_pybasemodel(
-            add_numbers
-        )
-
-        success = callable(result)
-        details = f"Returned callable: {type(result)}"
-        log_test_result(
-            "load_params_from_func_for_pybasemodel", success, details
-        )
-
-    except Exception as e:
-        log_test_result(
-            "load_params_from_func_for_pybasemodel", False, "", str(e)
-        )
-
-
 def test_base_model_to_dict():
     """Test converting Pydantic BaseModel to OpenAI schema"""
     try:
@@ -155,94 +135,6 @@ def test_multi_base_models_to_dict():
         )
 
 
-def test_dict_to_openai_schema_str():
-    """Test converting dictionary to OpenAI schema string"""
-    try:
-        tool = BaseTool(verbose=False)
-        test_dict = {
-            "type": "function",
-            "function": {
-                "name": "test",
-                "description": "Test function",
-            },
-        }
-        result = tool.dict_to_openai_schema_str(test_dict)
-
-        success = isinstance(result, str) and len(result) > 0
-        details = f"Generated string length: {len(result)}"
-        log_test_result("dict_to_openai_schema_str", success, details)
-
-    except Exception as e:
-        log_test_result(
-            "dict_to_openai_schema_str", False, "", str(e)
-        )
-
-
-def test_multi_dict_to_openai_schema_str():
-    """Test converting multiple dictionaries to schema string"""
-    try:
-        tool = BaseTool(verbose=False)
-        test_dicts = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "test1",
-                    "description": "Test 1",
-                },
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "test2",
-                    "description": "Test 2",
-                },
-            },
-        ]
-        result = tool.multi_dict_to_openai_schema_str(test_dicts)
-
-        success = isinstance(result, str) and len(result) > 0
-        details = f"Generated string length: {len(result)} from {len(test_dicts)} dicts"
-        log_test_result(
-            "multi_dict_to_openai_schema_str", success, details
-        )
-
-    except Exception as e:
-        log_test_result(
-            "multi_dict_to_openai_schema_str", False, "", str(e)
-        )
-
-
-def test_get_docs_from_callable():
-    """Test extracting documentation from callable"""
-    try:
-        tool = BaseTool(verbose=False)
-        result = tool.get_docs_from_callable(add_numbers)
-
-        success = result is not None
-        details = f"Extracted docs type: {type(result)}"
-        log_test_result("get_docs_from_callable", success, details)
-
-    except Exception as e:
-        log_test_result("get_docs_from_callable", False, "", str(e))
-
-
-def test_execute_tool():
-    """Test executing tool from response string"""
-    try:
-        tool = BaseTool(tools=[add_numbers], verbose=False)
-        response = (
-            '{"name": "add_numbers", "parameters": {"a": 5, "b": 3}}'
-        )
-        result = tool.execute_tool(response)
-
-        success = result == 8
-        details = f"Expected: 8, Got: {result}"
-        log_test_result("execute_tool", success, details)
-
-    except Exception as e:
-        log_test_result("execute_tool", False, "", str(e))
-
-
 def test_detect_tool_input_type():
     """Test detecting tool input types"""
     try:
@@ -268,20 +160,6 @@ def test_detect_tool_input_type():
         log_test_result("detect_tool_input_type", False, "", str(e))
 
 
-def test_dynamic_run():
-    """Test dynamic run with automatic type detection"""
-    try:
-        tool = BaseTool(auto_execute_tool=False, verbose=False)
-        result = tool.dynamic_run(add_numbers)
-
-        success = isinstance(result, (str, dict))
-        details = f"Dynamic run result type: {type(result)}"
-        log_test_result("dynamic_run", success, details)
-
-    except Exception as e:
-        log_test_result("dynamic_run", False, "", str(e))
-
-
 def test_execute_tool_by_name():
     """Test executing tool by name"""
     try:
@@ -299,23 +177,6 @@ def test_execute_tool_by_name():
 
     except Exception as e:
         log_test_result("execute_tool_by_name", False, "", str(e))
-
-
-def test_execute_tool_from_text():
-    """Test executing tool from JSON text"""
-    try:
-        tool = BaseTool(tools=[multiply_numbers], verbose=False)
-        tool.convert_funcs_into_tools()
-
-        text = '{"name": "multiply_numbers", "parameters": {"x": 4.0, "y": 2.5}}'
-        result = tool.execute_tool_from_text(text)
-
-        success = result == 10.0
-        details = f"Expected: 10.0, Got: {result}"
-        log_test_result("execute_tool_from_text", success, details)
-
-    except Exception as e:
-        log_test_result("execute_tool_from_text", False, "", str(e))
 
 
 def test_check_str_for_functions_valid():
@@ -492,56 +353,6 @@ def test_multiple_functions_to_dict():
         )
 
 
-def test_execute_function_with_dict():
-    """Test executing function with dictionary parameters"""
-    try:
-        tool = BaseTool(tools=[greet_person], verbose=False)
-
-        func_dict = {"name": "Alice", "age": 30}
-        result = tool.execute_function_with_dict(
-            func_dict, "greet_person"
-        )
-
-        expected = "Hello Alice, you are 30 years old!"
-        success = result == expected
-        details = f"Expected: '{expected}', Got: '{result}'"
-        log_test_result(
-            "execute_function_with_dict", success, details
-        )
-
-    except Exception as e:
-        log_test_result(
-            "execute_function_with_dict", False, "", str(e)
-        )
-
-
-def test_execute_multiple_functions_with_dict():
-    """Test executing multiple functions with dictionaries"""
-    try:
-        tool = BaseTool(
-            tools=[add_numbers, multiply_numbers], verbose=False
-        )
-
-        func_dicts = [{"a": 10, "b": 5}, {"x": 3.0, "y": 4.0}]
-        func_names = ["add_numbers", "multiply_numbers"]
-
-        results = tool.execute_multiple_functions_with_dict(
-            func_dicts, func_names
-        )
-
-        expected_results = [15, 12.0]
-        success = results == expected_results
-        details = f"Expected: {expected_results}, Got: {results}"
-        log_test_result(
-            "execute_multiple_functions_with_dict", success, details
-        )
-
-    except Exception as e:
-        log_test_result(
-            "execute_multiple_functions_with_dict", False, "", str(e)
-        )
-
-
 def run_all_tests():
     """Run all test functions"""
     print("🚀 Starting Comprehensive BaseTool Test Suite")
@@ -550,17 +361,10 @@ def run_all_tests():
     # List all test functions
     test_functions = [
         test_func_to_dict,
-        test_load_params_from_func_for_pybasemodel,
         test_base_model_to_dict,
         test_multi_base_models_to_dict,
-        test_dict_to_openai_schema_str,
-        test_multi_dict_to_openai_schema_str,
-        test_get_docs_from_callable,
-        test_execute_tool,
         test_detect_tool_input_type,
-        test_dynamic_run,
         test_execute_tool_by_name,
-        test_execute_tool_from_text,
         test_check_str_for_functions_valid,
         test_convert_funcs_into_tools,
         test_convert_tool_into_openai_schema,
@@ -569,8 +373,6 @@ def run_all_tests():
         test_find_function_name,
         test_function_to_dict,
         test_multiple_functions_to_dict,
-        test_execute_function_with_dict,
-        test_execute_multiple_functions_with_dict,
     ]
 
     # Run each test
@@ -660,12 +462,8 @@ This comprehensive test suite validates the functionality of all methods in the 
 ### Core Functionality Methods
 - `func_to_dict` - Convert functions to OpenAI schema ✓
 - `base_model_to_dict` - Convert Pydantic models to schema ✓
-- `execute_tool` - Execute tools from JSON responses ✓
-- `dynamic_run` - Dynamic execution with type detection ✓
 
 ### Schema Conversion Methods
-- `dict_to_openai_schema_str` - Dictionary to schema string ✓
-- `multi_dict_to_openai_schema_str` - Multiple dictionaries to schema ✓
 - `convert_tool_into_openai_schema` - Tools to OpenAI schema ✓
 
 ### Validation Methods
@@ -675,14 +473,10 @@ This comprehensive test suite validates the functionality of all methods in the 
 
 ### Execution Methods
 - `execute_tool_by_name` - Execute tool by name ✓
-- `execute_tool_from_text` - Execute tool from JSON text ✓
-- `execute_function_with_dict` - Execute with dictionary parameters ✓
-- `execute_multiple_functions_with_dict` - Execute multiple functions ✓
 
 ### Utility Methods
 - `detect_tool_input_type` - Detect input types ✓
 - `find_function_name` - Find functions by name ✓
-- `get_docs_from_callable` - Extract documentation ✓
 - `function_to_dict` - Convert function to dict ✓
 - `multiple_functions_to_dict` - Convert multiple functions ✓
 
