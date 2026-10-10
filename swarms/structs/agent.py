@@ -608,6 +608,9 @@ class Agent:
         if self.fallback_models and not self.model_name:
             self.model_name = self.fallback_models[0]
 
+        if self.random_models_on is True:
+            self.model_name = set_random_models_for_agents()
+
         # Reads config off this agent, so it must come after the config is set
         self.llm_manager = LLMManager(agent=self)
         self.tool_manager = ToolManager(agent=self)
@@ -648,9 +651,6 @@ class Agent:
         ) is None and hasattr(self.llm, "usage_hook"):
             # A caller-supplied LiteLLM reports into this agent too.
             self.llm.usage_hook = self._add_usage
-
-        if self.random_models_on is True:
-            self.model_name = set_random_models_for_agents()
 
         if self.dashboard is True:
             self.print_dashboard()

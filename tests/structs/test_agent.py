@@ -755,6 +755,22 @@ class TestLLMArgsAndHandling:
         assert "api_key" not in params
         assert "base_url" not in params
 
+    def test_random_models_on_builds_the_client_for_that_model(
+        self, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "swarms.structs.agent.set_random_models_for_agents",
+            lambda: "gpt-4.1-nano",
+        )
+        agent = Agent(
+            agent_name="random-models-agent",
+            model_name="gpt-4o-mini",
+            random_models_on=True,
+        )
+
+        assert agent.model_name == "gpt-4.1-nano"
+        assert agent.llm.model_name == "gpt-4.1-nano"
+
 
 class TestConstructorWindows:
     """context_length and max_tokens must survive __init__ rather than being
