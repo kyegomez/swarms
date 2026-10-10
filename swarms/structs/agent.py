@@ -1498,7 +1498,10 @@ class Agent:
                 continue
             role = message.get("role")
             content = message.get("content")
-            if content is None or str(role).lower() == "system":
+            if content is None or (
+                str(role).lower() == "system"
+                and content == self.short_memory.system_prompt
+            ):
                 continue
             if role == self.agent_name:
                 transcript.append_assistant_text(content)

@@ -2190,3 +2190,28 @@ class TestLLMFailureRaises:
             "claude-sonnet-4-6",
             "claude-sonnet-4-6",
         ]
+
+
+def test_system_rows_after_the_prompt_reach_the_model(monkeypatch):
+    agent = Agent(
+        agent_name="MemoryAgent",
+        model_name="gpt-5.4",
+        max_loops=1,
+        print_on=False,
+        persistent_memory=False,
+    )
+    agent.short_memory.add(
+        "System", "[Persistent Memory]\nProject: Helios"
+    )
+    seen = {}
+
+    def capture(*args, **kwargs):
+        seen["messages"] = kwargs["messages"]
+        return "Helios"
+
+    monkeypatch.setattr(agent, "call_llm", capture)
+    agent.run("What is my project called?")
+
+    contents = [message["content"] for message in seen["messages"]]
+    assert any("Project: Helios" in content for content in contents)
+    assert agent.short_memory.system_prompt not in contents
