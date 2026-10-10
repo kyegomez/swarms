@@ -1174,6 +1174,37 @@ def test_task_queue_failed_count_only_counts_exhausted_retries():
     assert queue.get_pending_count() == 0
 
 
+def test_task_queue_is_done_when_pending_tasks_can_never_run():
+    queue = TaskQueue()
+    fetch = PlannerTask(
+        title="Fetch", description="Fetch the data", max_retries=0
+    )
+    report = PlannerTask(
+        title="Report",
+        description="Write the report",
+        depends_on=[fetch.id],
+    )
+    queue.add_tasks([fetch, report])
+
+    claimed = queue.claim("worker-1")
+
+    assert not queue.is_all_done()
+    assert queue.start(fetch.id, claimed.version)
+    assert queue.fail(fetch.id, "boom", claimed.version + 1)
+    assert queue.claim("worker-1") is None
+    assert queue.is_all_done()
+
+    cycle = TaskQueue()
+    first = PlannerTask(title="A", description="A")
+    second = PlannerTask(
+        title="B", description="B", depends_on=[first.id]
+    )
+    first.depends_on = [second.id]
+    cycle.add_tasks([first, second])
+
+    assert cycle.is_all_done()
+
+
 def test_harness_result_reflects_conversation_state(tmp_path):
     """get_harness_result reports identity plus the live conversation history."""
     harness = PlannerGeneratorEvaluator(
