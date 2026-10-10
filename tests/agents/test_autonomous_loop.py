@@ -33,7 +33,6 @@ import json
 import os
 
 import pytest
-from litellm import ModelResponse
 
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
@@ -1541,7 +1540,7 @@ class TestIterationLimitsAreConfigurable:
 
         def refuse(**params):
             calls.append(params["model"])
-            return ModelResponse(
+            return dict(
                 model=params["model"],
                 choices=[
                     {
