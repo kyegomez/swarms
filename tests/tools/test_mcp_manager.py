@@ -1158,6 +1158,55 @@ class TestAgentIntegration:
         )
         assert results[0]["result"] == "42"
 
+    @staticmethod
+    def _mcp_agent(summary_calls, **kwargs):
+        from types import SimpleNamespace
+
+        from swarms import Agent
+
+        agent = Agent(
+            agent_name="MCPSummaryAgent",
+            model_name="gpt-5.4",
+            mcp_url="http://localhost:9/mcp",
+            max_loops=1,
+            print_on=False,
+            llm=object(),
+            **kwargs,
+        )
+        agent.mcp_manager.execute_tool_calls = lambda *a, **k: [
+            {"tool": "add", "result": "42"}
+        ]
+        agent.tool_manager.temp_llm_instance_for_tool_summary = (
+            lambda: SimpleNamespace(
+                run=lambda task: summary_calls.append(task)
+                or "SUMMARY"
+            )
+        )
+        return agent
+
+    def test_mcp_tool_turn_skips_the_summary_when_it_is_off(self):
+        summary_calls = []
+        agent = self._mcp_agent(
+            summary_calls, tool_call_summary=False
+        )
+
+        agent.tool_manager.mcp_tool_handling(response=[{"id": "c1"}])
+
+        history = agent.short_memory.conversation_history
+        assert summary_calls == []
+        assert history[-1]["role"] == "Tool Executor"
+        assert "42" in history[-1]["content"]
+
+    def test_mcp_tool_turn_summarises_when_asked(self):
+        summary_calls = []
+        agent = self._mcp_agent(summary_calls, tool_call_summary=True)
+
+        agent.tool_manager.mcp_tool_handling(response=[{"id": "c1"}])
+
+        history = agent.short_memory.conversation_history
+        assert len(summary_calls) == 1
+        assert history[-1]["content"] == "SUMMARY"
+
 
 ########################################################
 # Real remote MCP server (network)
