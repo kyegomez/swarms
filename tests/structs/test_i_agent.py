@@ -82,3 +82,68 @@ def test_ire_agent_workflow():
 
     # Check that conversation was populated during execution
     assert agent.conversation is not None
+
+
+def test_low_scoring_paths_do_not_multiply_without_bound():
+    """Every low score used to add a full set of revisions, each revisable
+    again, so one run of the reported repro made tens of thousands of model
+    calls and never finished iteration 1 (#1261)."""
+    from unittest.mock import MagicMock, patch
+
+    calls = {"simulate": 0}
+
+    with patch("swarms.agents.i_agent.Agent"):
+        ire = IterativeReflectiveExpansion(max_loops=5, max_paths=4)
+
+    def simulate(path):
+        calls["simulate"] += 1
+        assert calls["simulate"] < 500, "path expansion is unbounded"
+        return ("out", 0.5, "err")
+
+    ire.generate_initial_hypotheses = lambda task: [
+        f"h{i}" for i in range(9)
+    ]
+    ire.simulate_path = simulate
+    ire.meta_reflect = lambda err: "feedback"
+    ire.revise_path = lambda path, fb: [
+        f"{path}-r{i}" for i in range(9)
+    ]
+    ire.select_promising_paths = lambda paths: paths
+    ire.synthesize_solution = lambda paths, pool: "done"
+    ire.conversation = MagicMock()
+
+    with patch(
+        "swarms.agents.i_agent.history_output_formatter",
+        return_value="ok",
+    ):
+        ire.run("What is the 2nd prime number?")
+
+    assert calls["simulate"] <= ire.max_loops * ire.max_paths
+
+
+def test_a_run_where_every_path_scores_well_stops_early():
+    """Nothing to revise means another iteration re-simulates the same paths."""
+    from unittest.mock import MagicMock, patch
+
+    calls = {"simulate": 0}
+
+    with patch("swarms.agents.i_agent.Agent"):
+        ire = IterativeReflectiveExpansion(max_loops=5, max_paths=4)
+
+    def simulate(path):
+        calls["simulate"] += 1
+        return ("out", 0.95, "")
+
+    ire.generate_initial_hypotheses = lambda task: ["only-path"]
+    ire.simulate_path = simulate
+    ire.select_promising_paths = lambda paths: paths
+    ire.synthesize_solution = lambda paths, pool: "done"
+    ire.conversation = MagicMock()
+
+    with patch(
+        "swarms.agents.i_agent.history_output_formatter",
+        return_value="ok",
+    ):
+        ire.run("trivial")
+
+    assert calls["simulate"] == 1
