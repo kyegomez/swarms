@@ -1,5 +1,4 @@
 import concurrent.futures
-import json
 import os
 import threading
 import time
@@ -23,6 +22,9 @@ from swarms.schemas.planner_worker_schemas import (
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
+from swarms.structs.hierarchical_order_parser import (
+    parse_tool_call_output,
+)
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.history_output_formatter import (
@@ -621,75 +623,10 @@ class PlannerWorkerSwarm:
     def _parse_structured_output(self, output: Any, model_class):
         """Parse structured output from an agent, handling various output formats.
 
-        Follows the same pattern as HierarchicalSwarm.parse_orders().
+        Shares the tool-call walk with ``HierarchicalSwarm.parse_orders()``.
         """
         try:
-            if isinstance(output, model_class):
-                return output
-
-            if isinstance(output, dict):
-                return model_class(**output)
-
-            if isinstance(output, list):
-                for item in output:
-                    if isinstance(item, dict):
-                        # Conversation format with role/content
-                        if "content" in item and isinstance(
-                            item["content"], list
-                        ):
-                            for content_item in item["content"]:
-                                if (
-                                    isinstance(content_item, dict)
-                                    and "function" in content_item
-                                ):
-                                    function_data = content_item[
-                                        "function"
-                                    ]
-                                    if "arguments" in function_data:
-                                        try:
-                                            args = json.loads(
-                                                function_data[
-                                                    "arguments"
-                                                ]
-                                            )
-                                            return model_class(**args)
-                                        except (
-                                            json.JSONDecodeError,
-                                            TypeError,
-                                        ):
-                                            pass
-                        # Direct function call format
-                        elif "function" in item:
-                            function_data = item["function"]
-                            if "arguments" in function_data:
-                                try:
-                                    args = json.loads(
-                                        function_data["arguments"]
-                                    )
-                                    return model_class(**args)
-                                except (
-                                    json.JSONDecodeError,
-                                    TypeError,
-                                ):
-                                    pass
-                        # Try direct dict parse
-                        try:
-                            return model_class(**item)
-                        except (TypeError, ValueError):
-                            pass
-
-            # Try parsing as JSON string
-            if isinstance(output, str):
-                try:
-                    data = json.loads(output)
-                    return model_class(**data)
-                except (json.JSONDecodeError, TypeError):
-                    pass
-
-            raise ValueError(
-                f"Unable to parse output as {model_class.__name__}: {type(output)}"
-            )
-
+            return parse_tool_call_output(output, model_class)
         except Exception as e:
             logger.error(
                 f"[PlannerWorkerSwarm] Failed to parse output: {e}\n"
