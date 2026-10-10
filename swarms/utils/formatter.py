@@ -45,22 +45,8 @@ class MarkdownOutputHandler:
 
         # Remove log prefixes and timestamps
         output = re.sub(
-            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| INFO.*?\|.*?\|",
-            "",
-            output,
-        )
-        output = re.sub(
-            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| DEBUG.*?\|.*?\|",
-            "",
-            output,
-        )
-        output = re.sub(
-            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| WARNING.*?\|.*?\|",
-            "",
-            output,
-        )
-        output = re.sub(
-            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| ERROR.*?\|.*?\|",
+            r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \| "
+            r"(?:INFO|DEBUG|WARNING|ERROR).*?\|.*?\|",
             "",
             output,
         )
@@ -74,10 +60,11 @@ class MarkdownOutputHandler:
         output = re.sub(rf"{spinner_chars} Loop \d+/\d+", "", output)
 
         # Remove any remaining log messages
-        output = re.sub(r"INFO.*?\|.*?\|.*?\|", "", output)
-        output = re.sub(r"DEBUG.*?\|.*?\|.*?\|", "", output)
-        output = re.sub(r"WARNING.*?\|.*?\|.*?\|", "", output)
-        output = re.sub(r"ERROR.*?\|.*?\|.*?\|", "", output)
+        output = re.sub(
+            r"(?:INFO|DEBUG|WARNING|ERROR).*?\|.*?\|.*?\|",
+            "",
+            output,
+        )
 
         # Clean up extra whitespace and empty lines
         output = re.sub(r"\n\s*\n\s*\n", "\n\n", output)
