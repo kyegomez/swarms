@@ -2173,3 +2173,40 @@ class TestLLMFailureRaises:
             "claude-sonnet-4-6",
             "claude-sonnet-4-6",
         ]
+
+
+class TestToDictPlaceholder:
+    def test_warns_once_skips_excluded_and_raises_when_strict(self):
+        from swarms.structs import serialization as _serialization
+
+        _serialization._warned.clear()
+        agent = Agent.__new__(Agent)
+        vars(agent).update(
+            agent_name="placeholder-agent",
+            llm_manager=threading.Lock(),
+            placeholder_lock=threading.Lock(),
+        )
+        with patch.object(_serialization, "logger") as mock_logger:
+            results = [agent.to_dict() for _ in range(3)]
+
+        assert results[-1] == {
+            "agent_name": "placeholder-agent",
+            "placeholder_lock": "<Non-serializable: lock>",
+        }
+        mock_logger.warning.assert_called_once_with(
+            "swarms.structs.agent.Agent.placeholder_lock (lock)"
+            " is not serializable, replaced with a placeholder"
+        )
+        with pytest.raises(TypeError, match="Agent.placeholder_lock"):
+            agent.to_dict(strict=True)
+
+    def test_default_agent_has_no_placeholders(self):
+        agent = Agent(
+            agent_name="placeholder-free", model_name="gpt-4o-mini"
+        )
+
+        assert [
+            key
+            for key, value in agent.to_dict().items()
+            if str(value).startswith("<Non-serializable")
+        ] == []
