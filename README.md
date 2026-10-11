@@ -54,23 +54,14 @@ Swarms is the most reliable, scalable, and adaptive multi-agent orchestration fr
 
 ## Install
 
-### Using pip
-
 ```bash
+# pip
 $ pip3 install -U swarms
-```
 
-### Using uv (Recommended)
-
-[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver, written in Rust.
-
-```bash
+# uv (recommended) — https://github.com/astral-sh/uv
 $ uv pip install swarms
-```
 
-### Using poetry
-
-```bash
+# poetry
 $ poetry add swarms
 ```
 
@@ -85,7 +76,7 @@ $ pip install -r requirements.txt
 
 ### Faster model calls with RouteHub
 
-`swarms[fast]` installs [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub), a lightweight LLM gateway with litellm's API, and swarms then makes every model call through it instead of litellm, with no changes required to your code. In our benchmarks, a new process got an agent's first answer in about 0.6 s instead of 1.2 s, and each model call spent about half as long in the client library; to switch back to litellm without uninstalling, set `SWARMS_LLM_BACKEND=litellm`.
+`swarms[fast]` uses [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub) for faster model calls through a drop-in LLM gateway. No code changes needed. To switch back to litellm, set `SWARMS_LLM_BACKEND=litellm`.
 
 ```bash
 $ pip3 install -U "swarms[fast]"
@@ -120,6 +111,7 @@ OPENAI_API_KEY=""
 WORKSPACE_DIR="agent_workspace"
 ANTHROPIC_API_KEY=""
 GROQ_API_KEY=""
+SWARMS_TELEMETRY_ON
 ```
 
 
@@ -410,7 +402,7 @@ print(outputs)
 
 `GraphWorkflow` orchestrates agents as nodes in a Directed Acyclic Graph (DAG). Each node is an agent and each edge declares a dependency, so a node only runs after every upstream node has finished. A topological sort guarantees correct execution order, while independent branches run in parallel automatically. 
 
-This makes `GraphWorkflow` the right choice when your workflow has fan-out / fan-in patterns, conditional dependencies, or any structure that doesn't fit a strict line or a flat parallel batch. [Learn more about GraphWorkflow](https://docs.swarms.world/api/graph-workflow)
+This makes `GraphWorkflow` the right choice when your workflow has fan-out / fan-in or diamond patterns, conditional dependencies, or any structure that doesn't fit a strict line or a flat parallel batch. Per-node callbacks let you hook into node completion for streaming and progress tracking. [Learn more about GraphWorkflow](https://docs.swarms.world/api/graph-workflow)
 
 ```python
 from swarms import Agent, GraphWorkflow, Node, Edge, NodeType
@@ -439,11 +431,6 @@ workflow.set_end_points(["publisher"])
 results = workflow.run("Produce a short article on the rise of small language models.")
 print(results)
 ```
-
-`GraphWorkflow` excels at:
-- **Complex Dependencies**: Express any DAG, including fan-out, fan-in, and diamond patterns
-- **Automatic Parallelism**: Independent branches execute concurrently without extra configuration
-- **Per-node Observability**: Hook into node completion via callbacks for streaming and progress tracking
 
 ----
 
@@ -498,14 +485,11 @@ aggregated_output = moa_router.run(task)
 print(f"Final Aggregated Output:\n{aggregated_output}\n")
 ```
 
-
-The `SwarmRouter` is a powerful tool for simplifying multi-agent orchestration. It provides a consistent and flexible way to deploy different collaborative strategies, allowing you to build more sophisticated applications with less code.
-
 -------
 
 ### AutoSwarmBuilder: Autonomous Agent Generation
 
-The `AutoSwarmBuilder` automatically generates specialized agents and their workflows based on your task description. Simply describe what you need, and it will create a complete multi-agent system with detailed prompts and optimal agent configurations. [Learn more about AutoSwarmBuilder](https://docs.swarms.world/api/auto-swarm-builder)
+The `AutoSwarmBuilder` automatically generates specialized agents and their workflows based on your task description. Simply describe what you need, and it will create a complete multi-agent system with detailed prompts and optimal agent configurations, which makes it ideal for rapid prototyping and building specialized teams without manual configuration. [Learn more about AutoSwarmBuilder](https://docs.swarms.world/api/auto-swarm-builder)
 
 ```python
 from swarms import AutoSwarmBuilder
@@ -532,16 +516,6 @@ result = swarm.run(
 # The result contains the generated agents and their configurations
 print(json.dumps(result, indent=4))
 ```
-
-The `AutoSwarmBuilder` provides:
-
-- **Automatic Agent Generation**: Creates specialized agents based on task requirements
-- **Intelligent Prompt Engineering**: Generates comprehensive, detailed prompts for each agent
-- **Optimal Workflow Design**: Determines the best agent interactions and workflow structure
-- **Production-Ready Configurations**: Returns fully configured agents ready for deployment
-- **Flexible Architecture**: Supports various swarm types and agent specializations
-
-This feature is perfect for rapid prototyping, complex task decomposition, and creating specialized agent teams without manual configuration.
 
 -------
 
@@ -667,17 +641,11 @@ result = marketing_swarm.run(
 print(result)
 ```
 
-The `HierarchicalSwarm` excels at:
-- **Complex Project Management**: Breaking down large tasks into specialized subtasks
-- **Team Coordination**: Ensuring all agents work toward unified goals
-- **Quality Control**: Director provides feedback and refinement loops
-- **Scalable Workflows**: Easy to add new specialized agents as needed
-
 ---
 
 ### HeavySwarm
 
-`HeavySwarm` implements a sophisticated 5-phase workflow inspired by X.AI's Grok heavy implementation. It uses specialized agents (Research, Analysis, Alternatives, Verification) to provide comprehensive task analysis through intelligent question generation, parallel execution, and synthesis. This architecture excels at complex research and analysis tasks requiring thorough investigation and multiple perspectives.
+`HeavySwarm` implements a sophisticated 5-phase workflow inspired by X.AI's Grok heavy implementation. It uses specialized agents (Research, Analysis, Alternatives, Verification) to provide comprehensive task analysis through intelligent question generation, parallel execution, and synthesis. An optional real-time dashboard shows the analysis as it runs. This architecture excels at financial analysis, strategic planning, research reports, and any task requiring thorough investigation and multiple perspectives. [Learn more about HeavySwarm](https://docs.swarms.world/api/heavy-swarm)
 
 ```python
 from swarms import HeavySwarm
@@ -706,22 +674,7 @@ prompt = (
 
 out = swarm.run(prompt)
 print(out)
-
 ```
-
-The `HeavySwarm` provides:
-
-- **5-Phase Analysis**: Question generation, research, analysis, alternatives, and verification
-
-- **Specialized Agents**: Each phase uses purpose-built agents for optimal results
-
-- **Comprehensive Coverage**: Multiple perspectives and thorough investigation
-
-- **Real-time Dashboard**: Optional visualization of the analysis process
-
-- **Structured Output**: Well-organized and actionable results
-
-This architecture is perfect for financial analysis, strategic planning, research reports, and any task requiring deep, multi-faceted analysis. [Learn more about HeavySwarm](https://docs.swarms.world/api/heavy-swarm)
 
 ---
 
@@ -778,8 +731,6 @@ social_alg = SocialAlgorithms(
 result = social_alg.run("The impact of AI on healthcare")
 print(result.final_outputs)
 ```
-
-Perfect for implementing complex multi-agent workflows, collaborative problem-solving, and custom communication protocols.
 
 ---
 
@@ -870,11 +821,12 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
 </a>
 
 
-## We're Hiring
+## Join Swarms
 
-Swarms is hiring. We're building the infrastructure for a world of autonomous agents, and we're looking for engineers, researchers, and operators who want to ship at the frontier of multi-agent AI.
+Our mission is to advance humanity by building the infrastructure that powers the agent economy. We’re actively recruiting talented individuals across multiple roles to accelerate this vision. Join our team to help build, maintain, and scale the Swarms Python package, Swarms Marketplace, and our growing suite of products.
 
-- **Open roles:** [swarms.ai/hiring](https://swarms.ai/hiring)
+- **Check Open roles:** [swarms.ai/hiring](https://swarms.ai/hiring)
+
 - **Get in touch:** email [kye@swarms.world](mailto:kye@swarms.world) to learn more
 
 
