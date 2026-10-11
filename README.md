@@ -57,7 +57,7 @@ Build, deploy, and scale high-performance multi-agent systems with Swarms Python
 # pip
 $ pip3 install -U swarms
 
-# uv (recommended) — https://github.com/astral-sh/uv
+# uv (recommended): https://github.com/astral-sh/uv
 $ uv pip install swarms
 
 # poetry
@@ -116,7 +116,7 @@ SWARMS_TELEMETRY_ON
 
 ### Your First Agent
 
-An **Agent** is the fundamental building block of a swarm—an autonomous entity powered by an LLM + Tools + Memory. [Learn more Here](https://docs.swarms.world/api/agent)
+An **Agent** is the fundamental building block of a swarm: an autonomous entity powered by an LLM + Tools + Memory. [Learn more Here](https://docs.swarms.world/api/agent)
 
 ```python
 from swarms import Agent
@@ -135,7 +135,7 @@ agent.run("What are the key benefits of using a multi-agent system?")
 
 ### Autonomous Agent with `max_loops="auto"`
 
-Setting `max_loops="auto"` lets the agent decide for itself when the task is complete — it keeps reasoning and acting until it reaches a stopping condition, rather than halting after a fixed number of iterations. This is the recommended mode for open-ended, multi-step tasks where the number of steps isn't known in advance.
+Setting `max_loops="auto"` lets the agent decide for itself when the task is complete. It keeps reasoning and acting until it reaches a stopping condition, rather than halting after a fixed number of iterations. This is the recommended mode for open-ended, multi-step tasks where the number of steps isn't known in advance.
 
 ```python
 from swarms import Agent
@@ -148,12 +148,12 @@ agent = Agent(
         "execute each step thoroughly, and signal completion only when the full task is done."
     ),
     model_name="gpt-5.4",
-    max_loops="auto",       # Agent decides when it's done — no fixed iteration cap
+    max_loops="auto",       # Agent decides when it's done; no fixed iteration cap
     autosave=True,
     verbose=True,
 )
 
-# The agent will keep looping — planning, executing, and reflecting — until it
+# The agent will keep looping (planning, executing, and reflecting) until it
 # determines the task is fully complete.
 result = agent.run(
     "Research the current state of quantum computing, identify the top three "
@@ -552,7 +552,7 @@ print(recommendation)
 
 ### GroupChat
 
-`GroupChat` is an asynchronous, self-selecting groupchat. All agents listen in parallel; for each broadcast message, every other agent runs a forced `respond(score, message)` function call to decide whether to chime in, and replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds. There is no turn order — multiple agents can react to the same message at the same time, and silent agents stay silent.
+`GroupChat` is an asynchronous, self-selecting groupchat. All agents listen in parallel; for each broadcast message, every other agent runs a forced `respond(score, message)` function call to decide whether to chime in, and replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds. There is no turn order: multiple agents can react to the same message at the same time, and silent agents stay silent.
 
 ```python
 from swarms import Agent, GroupChat, RESPOND_TOOL
@@ -735,7 +735,7 @@ print(result.final_outputs)
 
 ## Documentation
 
-The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)**. Below are the resources most useful when building with Swarms — both for humans and for AI coding assistants.
+The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)**. Below are the resources most useful when building with Swarms, both for humans and for AI coding assistants.
 
 | Resource | Link | What it's for |
 |---|---|---|
@@ -751,9 +751,9 @@ The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)
 
 ## Using Swarms with AI Coding Assistants
 
-The repo ships with a [`CLAUDE.md`](./CLAUDE.md) at the root — a focused guide that teaches Claude Code, Cursor, and other AI coding assistants how to build with Swarms. It covers the `Agent` primitive, every multi-agent architecture (`SequentialWorkflow`, `ConcurrentWorkflow`, `AgentRearrange`, `GraphWorkflow`, `MixtureOfAgents`, `HierarchicalSwarm`, `SwarmRouter`, and more), tools, streaming, memory, MCP integration, and the patterns to reach for in each situation.
+The repo ships with a [`CLAUDE.md`](./CLAUDE.md) at the root, a focused guide that teaches Claude Code, Cursor, and other AI coding assistants how to build with Swarms. It covers the `Agent` primitive, every multi-agent architecture (`SequentialWorkflow`, `ConcurrentWorkflow`, `AgentRearrange`, `GraphWorkflow`, `MixtureOfAgents`, `HierarchicalSwarm`, `SwarmRouter`, and more), tools, streaming, memory, MCP integration, and the patterns to reach for in each situation.
 
-Drop `CLAUDE.md` (or symlink it as `AGENTS.md` / `.cursorrules`) into any project that depends on `swarms` and your assistant will write idiomatic Swarms code on the first try — no extra prompting required.
+Drop `CLAUDE.md` (or symlink it as `AGENTS.md` / `.cursorrules`) into any project that depends on `swarms` and your assistant will write idiomatic Swarms code on the first try, with no extra prompting required.
 
 ---
 
@@ -779,7 +779,7 @@ Swarms seamlessly integrates with industry-standard protocols and open specifica
 | **[MCP (Model Context Protocol)](https://docs.swarms.world/integrations/mcp)** | Standardized protocol for AI agents to interact with external tools and services through MCP servers. Enables dynamic tool discovery and execution. | [MCP Integration Guide](https://docs.swarms.world/integrations/mcp) |
 | **[X402](https://docs.swarms.world/examples/integrations/x402-payment)** | Cryptocurrency payment protocol for API endpoints. Enables monetization of agents with pay-per-use models. | [X402 Quickstart](https://docs.swarms.world/examples/integrations/x402-payment) |
 | **[Swarms Marketplace](https://swarms.world)** | Platform for discovering and sharing production-ready prompts, agents, and tools. Enables automatic prompt loading from the marketplace and publishing your own prompts directly from code. | [Marketplace Tutorial](https://docs.swarms.world/integrations/marketplace) |
-| **[Open Responses](https://www.openresponses.org/)** | Open-source specification and ecosystem for multi-provider, interoperable LLM interfaces based on the OpenAI Responses API. Provides a unified schema and tooling for calling language models, streaming results, and composing agentic workflows—independent of provider. | [Open Responses Website](https://www.openresponses.org/) |
+| **[Open Responses](https://www.openresponses.org/)** | Open-source specification and ecosystem for multi-provider, interoperable LLM interfaces based on the OpenAI Responses API. Provides a unified schema and tooling for calling language models, streaming results, and composing agentic workflows, independent of provider. | [Open Responses Website](https://www.openresponses.org/) |
 | **[Agent Skills](https://docs.swarms.world/agents/agent-skills)** | Lightweight, markdown-based format for defining modular, reusable agent capabilities introduced by Anthropic. Enables specialization of agents without modifying code by loading skill definitions from simple SKILL.md files. | [Agent Skills Documentation](https://docs.swarms.world/agents/agent-skills) |
 
 
@@ -801,7 +801,7 @@ Learn more about how you can make a meaningful impact in our [Contributor's Guid
 
 We've made it easy to start contributing. Here's how you can help:
 
-1. **Find an Issue to Tackle:** The best way to begin is by visiting our [**contributing project board**](https://github.com/users/kyegomez/projects/1). Look for issues tagged with `good first issue`—these are specifically selected for new contributors.
+1. **Find an Issue to Tackle:** The best way to begin is by visiting our [**contributing project board**](https://github.com/users/kyegomez/projects/1). Look for issues tagged with `good first issue`; these are specifically selected for new contributors.
 
 2. **Report a Bug or Request a Feature:** Have a new idea or found something that isn't working right? We'd love to hear from you. Please [**file a Bug Report or Feature Request**](https://github.com/kyegomez/swarms/issues) on our GitHub Issues page.
 
