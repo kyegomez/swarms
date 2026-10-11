@@ -1,4 +1,7 @@
 import re
+
+from pydantic import BaseModel
+
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.agent import Agent
 
@@ -510,9 +513,10 @@ def test_aggregator_can_tell_which_layer_produced_each_answer():
         ), f"layer {layer} not attributed: {contents}"
 
 
-def _llm_recording_agents(names, sops=None):
+def _llm_recording_agents(names, sops=None, tool_schemas=None):
     """Real agents whose call_llm records the request it was sent."""
     sops = sops or {}
+    tool_schemas = tool_schemas or {}
     requests = {}
     agents = []
     for name in names:
@@ -524,6 +528,7 @@ def _llm_recording_agents(names, sops=None):
             print_on=False,
             autosave=False,
             sop=sops.get(name),
+            tool_schema=tool_schemas.get(name),
         )
 
         def _make(agent_name):
@@ -586,4 +591,27 @@ def test_worker_sop_survives_the_memory_reset():
     first, second = requests["W1"]
     assert "SOP-MARKER" in first
     assert "SOP-MARKER" in second
+    assert "FIRST-TASK-alpha" not in second
+
+
+def test_worker_tool_schema_survives_the_memory_reset():
+    class SchemaMarkerLookup(BaseModel):
+        """Look up a city."""
+
+        city: str
+
+    agents, requests = _llm_recording_agents(
+        ["W1", "Agg"], tool_schemas={"W1": SchemaMarkerLookup}
+    )
+    moa = MixtureOfAgents(
+        agents=agents[:1], aggregator_agent=agents[1], layers=1
+    )
+
+    moa.run("FIRST-TASK-alpha")
+    moa.run("SECOND-TASK-beta")
+
+    assert len(requests["W1"]) == 2
+    first, second = requests["W1"]
+    assert "SchemaMarkerLookup" in first
+    assert "SchemaMarkerLookup" in second
     assert "FIRST-TASK-alpha" not in second
