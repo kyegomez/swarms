@@ -204,9 +204,14 @@ class MixtureOfAgents:
             A mapping of agent names to their outputs.
         """
         # Workers start clean; prior context arrives only through ``task``.
+        # The reset drops the SOP, so it is re-added afterwards.
         for agent in self.agents:
             if hasattr(agent, "short_memory_init"):
                 agent.short_memory = agent.short_memory_init()
+                if getattr(agent, "sop", None) or getattr(
+                    agent, "sop_list", None
+                ):
+                    agent.handle_sop_ops()
 
         agent_outputs = run_agents_concurrently(
             agents=self.agents,

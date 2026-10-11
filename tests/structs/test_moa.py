@@ -510,8 +510,9 @@ def test_aggregator_can_tell_which_layer_produced_each_answer():
         ), f"layer {layer} not attributed: {contents}"
 
 
-def _llm_recording_agents(names):
+def _llm_recording_agents(names, sops=None):
     """Real agents whose call_llm records the request it was sent."""
+    sops = sops or {}
     requests = {}
     agents = []
     for name in names:
@@ -522,6 +523,7 @@ def _llm_recording_agents(names):
             persistent_memory=False,
             print_on=False,
             autosave=False,
+            sop=sops.get(name),
         )
 
         def _make(agent_name):
@@ -567,3 +569,21 @@ def test_later_layers_still_receive_previous_layer_synthesis():
         assert "Previous layer synthesis" in layer_two
         assert "W1: W1-answer" in layer_two
         assert "W2: W2-answer" in layer_two
+
+
+def test_worker_sop_survives_the_memory_reset():
+    agents, requests = _llm_recording_agents(
+        ["W1", "Agg"], sops={"W1": "SOP-MARKER"}
+    )
+    moa = MixtureOfAgents(
+        agents=agents[:1], aggregator_agent=agents[1], layers=1
+    )
+
+    moa.run("FIRST-TASK-alpha")
+    moa.run("SECOND-TASK-beta")
+
+    assert len(requests["W1"]) == 2
+    first, second = requests["W1"]
+    assert "SOP-MARKER" in first
+    assert "SOP-MARKER" in second
+    assert "FIRST-TASK-alpha" not in second
