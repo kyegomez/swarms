@@ -1405,9 +1405,9 @@ def test_history_reads_reuse_message_token_counts(monkeypatch):
 
     for _ in range(3):
         conv.return_history_as_string()
-    assert counted == [
-        "User: first message",
+    assert sorted(counted) == [
         "Assistant: second message",
+        "User: first message",
     ]
 
     conv.add("User", "third message")
@@ -1433,6 +1433,59 @@ def test_trimmed_history_counts_messages_not_the_transcript(
     assert full.endswith(history)
     assert history.endswith(contents[-1])
     assert count_tokens(history) <= 40
+
+
+def test_trimmed_history_skips_messages_that_cannot_fit(monkeypatch):
+    conv = Conversation(context_length=40)
+    contents = [
+        f"message {i} " + " ".join(["word"] * 10) for i in range(20)
+    ]
+    for content in contents:
+        conv.add("User", content)
+    counted = _record_token_counts(monkeypatch)
+
+    conv.return_history_as_string()
+
+    assert not any(contents[0] in text for text in counted)
+    assert not any(contents[10] in text for text in counted)
+
+
+def test_token_count_on_add_is_reused_by_history_reads(monkeypatch):
+    counted = _record_token_counts(monkeypatch)
+    conv = Conversation(token_count=True, context_length=10_000)
+    message = conv.add("User", "first message")
+    conv.add("Assistant", "second message")
+
+    conv.return_history_as_string()
+    conv.count_history_tokens()
+
+    assert sorted(counted) == [
+        "Assistant: second message",
+        "User: first message",
+    ]
+    assert message["token_count"] == count_tokens(
+        "User: first message"
+    )
+
+
+def test_token_count_cache_stays_bounded_after_updates():
+    conv = Conversation(context_length=10_000)
+    for i in range(5):
+        conv.add("User", f"message {i}")
+    conv.return_history_as_string()
+
+    for i in range(50):
+        conv.update(0, "User", f"edit {i}")
+        conv.return_history_as_string()
+
+    assert len(conv._token_count_cache) <= 2 * len(
+        conv.conversation_history
+    )
+    lines = conv._format_messages()
+    assert (
+        conv.count_history_tokens()
+        == sum(count_tokens(line) for line in lines) + len(lines) - 1
+    )
 
 
 if __name__ == "__main__":
