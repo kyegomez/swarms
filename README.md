@@ -49,8 +49,7 @@
 >
 > Swarms, The Enterprise-Grade Production-Ready Multi-Agent Orchestration Framework 
 
-Build, deploy, and scale high-performance multi-agent systems at lightning speed with Swarms Python, one of the fastest, most flexible, and highly optimized agent frameworks available. Designed for performance and scalability, Swarms provides a comprehensive suite of production-ready, prebuilt multi-agent harnesses, supporting sequential, concurrent, and hierarchical architectures. With seamless backward compatibility across leading agent frameworks and interoperability with MCP, x402, skills, and more, Swarms gives developers the speed, flexibility, and infrastructure needed to build powerful, scalable, and production-ready agent systems.
-
+Build, deploy, and scale high-performance multi-agent systems with Swarms Python, a fast, flexible, and optimized agent framework. Featuring production-ready harnesses for sequential, concurrent, and hierarchical architectures, seamless framework compatibility, and integrations with MCP, x402, and skills.
 
 ## Install
 
