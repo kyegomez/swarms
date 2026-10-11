@@ -1468,6 +1468,41 @@ class TestTextReplyFromAToolAgent:
         assert "100" in history[-1]["content"]
 
 
+def test_handoff_returns_each_delegates_answer_not_its_transcript(
+    tmp_path,
+):
+    from swarms.tools.handoffs_tool import handoff_task
+
+    class NumberedLLM:
+        calls = 0
+
+        def run(self, task=None, *args, **kwargs):
+            NumberedLLM.calls += 1
+            return f"answer {NumberedLLM.calls}"
+
+    registry = {
+        name: _flow(name, NumberedLLM(), tmp_path)
+        for name in ("Researcher", "Writer")
+    }
+
+    def delegate(*names):
+        return handoff_task(
+            [
+                {"agent_name": name, "task": "t", "reasoning": "r"}
+                for name in names
+            ],
+            agent_registry=registry,
+        )
+
+    delegate("Researcher")
+    single = delegate("Researcher")
+    parallel = delegate("Researcher", "Writer")
+
+    assert "answer 2" in single
+    assert "answer 1" not in single
+    assert "answer 2" not in parallel
+
+
 class TestListTools:
     """#2426: Agent.list_tools names every tool the agent can call."""
 
