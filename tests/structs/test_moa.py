@@ -508,3 +508,62 @@ def test_aggregator_can_tell_which_layer_produced_each_answer():
         assert (
             f"layer {layer}/3" in contents
         ), f"layer {layer} not attributed: {contents}"
+
+
+def _llm_recording_agents(names):
+    """Real agents whose call_llm records the request it was sent."""
+    requests = {}
+    agents = []
+    for name in names:
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+            autosave=False,
+        )
+
+        def _make(agent_name):
+            def _call_llm(task, *args, **kwargs):
+                requests.setdefault(agent_name, []).append(
+                    str((task, args, kwargs))
+                )
+                return f"{agent_name}-answer"
+
+            return _call_llm
+
+        agent.call_llm = _make(name)
+        agents.append(agent)
+    return agents, requests
+
+
+def test_reused_mixture_does_not_leak_earlier_task_to_workers():
+    agents, requests = _llm_recording_agents(["W1", "W2", "Agg"])
+    moa = MixtureOfAgents(
+        agents=agents[:2], aggregator_agent=agents[2], layers=1
+    )
+
+    moa.run("FIRST-TASK-alpha")
+    requests.clear()
+    moa.run("SECOND-TASK-beta")
+
+    for worker in ("W1", "W2"):
+        assert requests[worker], f"{worker} was never called"
+        for request in requests[worker]:
+            assert "SECOND-TASK-beta" in request
+            assert "FIRST-TASK-alpha" not in request
+
+
+def test_later_layers_still_receive_previous_layer_synthesis():
+    agents, requests = _llm_recording_agents(["W1", "W2", "Agg"])
+    MixtureOfAgents(
+        agents=agents[:2], aggregator_agent=agents[2], layers=2
+    ).run("Question?")
+
+    for worker in ("W1", "W2"):
+        assert len(requests[worker]) == 2
+        layer_two = requests[worker][1]
+        assert "Previous layer synthesis" in layer_two
+        assert "W1: W1-answer" in layer_two
+        assert "W2: W2-answer" in layer_two

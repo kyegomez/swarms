@@ -203,6 +203,11 @@ class MixtureOfAgents:
         Returns:
             A mapping of agent names to their outputs.
         """
+        # Workers start clean; prior context arrives only through ``task``.
+        for agent in self.agents:
+            if hasattr(agent, "short_memory_init"):
+                agent.short_memory = agent.short_memory_init()
+
         agent_outputs = run_agents_concurrently(
             agents=self.agents,
             task=task,
