@@ -59,6 +59,23 @@ def test_zstd_body_arrives_intact(collector):
     assert collector["bodies"] == [payload]
 
 
+def test_compresses_bodies_sent_through_request(collector):
+    session = CompressingSession()
+    payload = b"span data " * 1000
+
+    response = session.request(
+        method="POST",
+        url=collector["url"],
+        headers={"content-type": "application/x-protobuf"},
+        data=payload,
+        timeout=10,
+    )
+
+    assert response.ok
+    assert collector["seen"] == ["zstd"]
+    assert collector["bodies"] == [payload]
+
+
 def test_falls_back_to_gzip_when_zstd_is_rejected(collector):
     """A collector without zstd gets the same batch in gzip, and gzip from then on."""
     collector["accept"] = {"gzip"}
