@@ -4,7 +4,6 @@ import os
 import threading
 import time
 import traceback
-import warnings
 from contextlib import nullcontext
 from typing import (
     Any,
@@ -38,9 +37,6 @@ from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
-from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
-    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
-)
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
@@ -144,7 +140,6 @@ class Agent:
         context_length (int): The context length
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
-        multi_modal (bool): Deprecated; does not enable vision
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
@@ -319,7 +314,6 @@ class Agent:
         context_length: Optional[int] = None,
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
-        multi_modal: Optional[bool] = None,
         long_term_memory: Optional[Union[Callable, Any]] = None,
         fallback_model_name: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
@@ -429,7 +423,6 @@ class Agent:
             f"{generate_api_key(prefix='agent-')}_state.json"
         )
         self.autosave = autosave
-        self.multi_modal = multi_modal
         self.long_term_memory = long_term_memory
         self.preset_stopping_token = preset_stopping_token
         self.streaming_on = streaming_on
@@ -828,19 +821,6 @@ class Agent:
         if self.dynamic_loops is True:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
-
-        if self.multi_modal is not None:
-            warnings.warn(
-                "multi_modal is deprecated and will be removed in "
-                "the next major version. It does not enable vision; "
-                "image support is detected from model_name.",
-                FutureWarning,
-                stacklevel=3,
-            )
-
-        # If multimodal = yes then set the sop to the multimodal sop
-        if self.multi_modal is True and self.sop is None:
-            self.sop = MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1
 
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token
         if self.preset_stopping_token is not None:
