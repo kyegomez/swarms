@@ -1488,6 +1488,28 @@ def test_token_count_cache_stays_bounded_after_updates():
     )
 
 
+def test_token_count_cache_prune_does_not_iterate_the_shared_cache():
+    class AddsWhileIterated(dict):
+        def items(self):
+            for item in super().items():
+                self[
+                    ("model", f"added by another thread {len(self)}")
+                ] = 1
+                yield item
+
+    conv = Conversation(context_length=10_000)
+    conv.add("User", "kept message")
+    conv._token_count_cache = AddsWhileIterated(
+        {("model", f"stale line {i}"): 1 for i in range(4)}
+    )
+
+    conv.return_history_as_string()
+
+    assert set(conv._token_count_cache) == {
+        (conv.tokenizer_model_name, "User: kept message")
+    }
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()

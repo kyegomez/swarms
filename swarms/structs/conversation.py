@@ -819,7 +819,8 @@ class Conversation:
                     (self.tokenizer_model_name, live_line)
                     for live_line in self._format_messages()
                 }
-                cache = {k: v for k, v in cache.items() if k in live}
+                # Iterates the live lines, not the cache another thread may be adding to.
+                cache = {k: cache[k] for k in live if k in cache}
                 self._token_count_cache = cache
             cache[key] = count_tokens(line, self.tokenizer_model_name)
         return cache[key]
