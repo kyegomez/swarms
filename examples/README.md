@@ -86,12 +86,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [conver_funcs_to_schema.py](tools/base_tool_examples/conver_funcs_to_schema.py) | Convert functions to schema |
 | [exa_search_test.py](tools/base_tool_examples/exa_search_test.py) | Exa search test |
 | [example_usage.py](tools/base_tool_examples/example_usage.py) | Base tool usage example |
-| [schema_validation_example.py](tools/base_tool_examples/schema_validation_example.py) | Schema validation example |
-| [test_anthropic_specific.py](tools/base_tool_examples/test_anthropic_specific.py) | Anthropic-specific test |
-| [test_base_tool_comprehensive_fixed.py](tools/base_tool_examples/test_base_tool_comprehensive_fixed.py) | Comprehensive base tool test (fixed) |
-| [test_base_tool_comprehensive.py](tools/base_tool_examples/test_base_tool_comprehensive.py) | Comprehensive base tool test |
-| [test_function_calls_anthropic.py](tools/base_tool_examples/test_function_calls_anthropic.py) | Function calls test (Anthropic) |
-| [test_function_calls.py](tools/base_tool_examples/test_function_calls.py) | Function calls test |
 | [multii_tool_use/](tools/multii_tool_use/) | Multi-tool usage examples |
 | [stagehand/](tools/stagehand/) | Stagehand UI automation |
 | [1_stagehand_wrapper_agent.py](tools/stagehand/1_stagehand_wrapper_agent.py) | Stagehand wrapper agent |
