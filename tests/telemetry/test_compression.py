@@ -3,6 +3,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
+import requests
 import zstandard
 
 from swarms.telemetry import compression
@@ -47,6 +48,56 @@ def collector():
         yield state
     finally:
         server.shutdown()
+
+
+@pytest.mark.parametrize("method", ["POST", "post"])
+def test_direct_request_body_arrives_intact(collector, method):
+    """Exporter requests compress bytes without changing caller headers."""
+    session = CompressingSession()
+    payload = b"span data " * 1000
+    headers = {"Content-Type": "application/x-protobuf"}
+
+    assert session.request(
+        method, collector["url"], data=payload, headers=headers
+    ).ok
+    assert collector["seen"] == ["zstd"]
+    assert collector["bodies"] == [payload]
+    assert headers == {"Content-Type": "application/x-protobuf"}
+
+
+@pytest.mark.parametrize(
+    "method,data",
+    [
+        ("POST", None),
+        ("POST", "text"),
+        ("POST", {"key": "value"}),
+        ("PUT", b"bytes"),
+        ("GET", b"bytes"),
+    ],
+)
+def test_non_export_requests_pass_through(monkeypatch, method, data):
+    """Only POST requests with byte bodies are compressed."""
+    sent = []
+
+    def request(self, method, url, **kwargs):
+        sent.append((method, url, kwargs))
+        return requests.Response()
+
+    monkeypatch.setattr(requests.Session, "request", request)
+    session = CompressingSession()
+    headers = {"X-Test": "value"}
+
+    session.request(
+        method, "http://localhost/", data=data, headers=headers
+    )
+
+    assert sent == [
+        (
+            method,
+            "http://localhost/",
+            {"data": data, "headers": headers},
+        )
+    ]
 
 
 def test_zstd_body_arrives_intact(collector):
