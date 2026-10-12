@@ -4,6 +4,7 @@ import os
 import threading
 import time
 import traceback
+import warnings
 from contextlib import nullcontext
 from typing import (
     Any,
@@ -143,7 +144,7 @@ class Agent:
         context_length (int): The context length
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
-        multi_modal (bool): Enable multimodal
+        multi_modal (bool): Deprecated; does not enable vision
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
@@ -828,8 +829,17 @@ class Agent:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
 
+        if self.multi_modal is not None:
+            warnings.warn(
+                "multi_modal is deprecated and will be removed in "
+                "the next major version. It does not enable vision; "
+                "image support is detected from model_name.",
+                FutureWarning,
+                stacklevel=3,
+            )
+
         # If multimodal = yes then set the sop to the multimodal sop
-        if self.multi_modal is True:
+        if self.multi_modal is True and self.sop is None:
             self.sop = MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1
 
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token

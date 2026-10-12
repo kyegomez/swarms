@@ -822,6 +822,12 @@ class TestConstructorWindows:
     def test_saved_state_path_defaults_when_unset(self):
         assert self._agent().saved_state_path.endswith("_state.json")
 
+    def test_multi_modal_warns_and_keeps_the_caller_sop(self):
+        with pytest.deprecated_call():
+            agent = self._agent(sop="MY OWN SOP", multi_modal=True)
+
+        assert agent.sop == "MY OWN SOP"
+
     def test_unknown_model_falls_back_for_both(self):
         """An unrecognised model must not raise out of __init__."""
         agent = self._agent(model_name="totally-made-up-model-xyz")
