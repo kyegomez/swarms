@@ -2332,3 +2332,24 @@ class TestIntegerLoopRequest:
         agent.run("task", messages=[{"role": "user", "content": "x"}])
 
         assert sent[1][1] == [{"role": "user", "content": "SUMMARY"}]
+
+    def test_each_sample_starts_at_the_callers_messages(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(monkeypatch, agent, ["one", "two"])
+
+        agent.run(
+            "task",
+            messages=[{"role": "user", "content": "context"}],
+            n=2,
+        )
+
+        expected = [
+            {"role": "user", "content": "context"},
+            {"role": "user", "content": "task"},
+        ]
+        assert [messages for _, messages in sent] == [
+            expected,
+            expected,
+        ]

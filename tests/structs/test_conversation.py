@@ -1627,6 +1627,18 @@ def test_to_messages_maps_roles_and_pairs_results():
     ]
 
 
+def test_record_assistant_sends_a_non_text_reply_as_text():
+    conv = Conversation()
+    conv.record_assistant({"answer": 1})
+    conv.record_assistant({"answer": 2}, role="Bot")
+
+    assert conv.to_messages("Bot") == [
+        {"role": "assistant", "content": "{'answer': 1}"},
+        {"role": "assistant", "content": "{'answer': 2}"},
+    ]
+    assert conv.conversation_history[-1]["content"] == {"answer": 2}
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()

@@ -1057,6 +1057,10 @@ class Agent:
                 self.short_memory.conversation_history
             )
 
+            # Added per run so each of n samples starts its request at these messages.
+            if messages:
+                self.short_memory.add_messages(messages)
+
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.check_model_supports_utilities(img=img)
@@ -1070,11 +1074,7 @@ class Agent:
             loop_count = 0
 
             # A caller's messages stand in for the earlier history.
-            request_start = (
-                0
-                if messages is None
-                else history_start - len(messages)
-            )
+            request_start = 0 if messages is None else history_start
 
             # Clear the short memory
             response = None
@@ -2578,12 +2578,11 @@ Subtask Breakdown:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
 
-        # Constructor messages are already in short_memory; per-call ones are not.
-        if messages:
-            self.short_memory.add_messages(messages)
-
         try:
             if self.max_loops == "auto":
+                # Constructor messages are already in short_memory; per-call ones are not.
+                if messages:
+                    self.short_memory.add_messages(messages)
                 # Use autonomous loop structure: plan -> execute subtasks -> summary
                 output = self._run_autonomous_loop(
                     task=task,

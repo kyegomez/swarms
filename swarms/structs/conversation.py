@@ -745,7 +745,11 @@ class Conversation:
                     }
                 )
 
-        message = self.add(role, parsed)
+        # A chat-form assistant turn must carry text; other roles keep the raw response.
+        message = self.add(
+            role,
+            (parsed if calls or role != "assistant" else str(parsed)),
+        )
         if calls:
             message["tool_results"] = {}
             message["tool_calls"] = [
