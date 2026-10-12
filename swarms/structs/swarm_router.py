@@ -1072,6 +1072,7 @@ class SwarmRouter(SerializableMixin):
     @trace_run(
         "SwarmRouter.run",
         input_params=("task", "tasks", "img"),
+        usage=lambda router: router.usage,
     )
     def run(
         self,
