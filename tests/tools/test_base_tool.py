@@ -298,10 +298,6 @@ def test_execute_function_calls_from_each_response_format(response):
     assert results == [BOSTON]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="#2560: a list of Anthropic-style tool calls runs each tool twice",
-)
 def test_a_list_of_anthropic_tool_calls_runs_each_tool_once():
     ran = []
 

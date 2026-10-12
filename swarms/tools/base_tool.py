@@ -1499,8 +1499,12 @@ class BaseTool(BaseModel):
                     )
                     function_calls.extend(extracted_calls)
 
-                    # Also try direct extraction in case it's a simple function call BaseModel
-                    if self._is_direct_function_call(tool_call_dict):
+                    if (
+                        not extracted_calls
+                        and self._is_direct_function_call(
+                            tool_call_dict
+                        )
+                    ):
                         function_calls.extend(
                             self._extract_direct_function_call(
                                 tool_call_dict
