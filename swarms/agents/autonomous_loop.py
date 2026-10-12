@@ -49,7 +49,7 @@ from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
-from swarms.structs.transcript import Transcript
+from swarms.structs.conversation import Conversation
 from swarms.tools.dynamic_tool_loader import SEARCH_TOOL_NAME
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists, format_data_structure
@@ -107,7 +107,7 @@ class AutonomousAgentLoop:
     def __init__(self, agent: Any):
         self.agent = agent
         # The real body sent to the model; short_memory mirrors it.
-        self._transcript = Transcript()
+        self._transcript = Conversation()
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
         # The client this loop last built, and the inputs it was built from.
@@ -137,7 +137,7 @@ class AutonomousAgentLoop:
 
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
-        self._transcript.append_user(content)
+        self._transcript.add("user", str(content))
         if mirror:
             self.agent.short_memory.add(
                 role=self.agent.user_name, content=content
@@ -191,7 +191,7 @@ class AutonomousAgentLoop:
             return False
 
         # compact() already re-seeded short_memory, do not mirror the summary twice
-        self._transcript = Transcript()
+        self._transcript = Conversation()
         self._say_user(
             "[Compressed Memory Summary]\n"
             "Earlier turns were compressed to stay within the "
@@ -279,7 +279,10 @@ class AutonomousAgentLoop:
         try:
 
             # Cleared before seeding, or the opening turn is lost.
-            self._transcript = Transcript(list(messages or []))
+            self._transcript = Conversation()
+            self._transcript.conversation_history.extend(
+                messages or []
+            )
             self.agent.autonomous_subtasks = []
             self.agent.current_subtask_index = 0
             self.agent.subtask_status = {}
@@ -494,7 +497,7 @@ class AutonomousAgentLoop:
                         img=img,
                         current_loop=0,
                         streaming_callback=streaming_callback,
-                        messages=self._transcript.messages,
+                        messages=self._transcript.to_messages(),
                         *args,
                         **kwargs,
                     )
@@ -760,7 +763,7 @@ class AutonomousAgentLoop:
                             img=img,
                             current_loop=subtask_iterations,
                             streaming_callback=streaming_callback,
-                            messages=self._transcript.messages,
+                            messages=self._transcript.to_messages(),
                             *args,
                             **kwargs,
                         )
@@ -1085,7 +1088,7 @@ class AutonomousAgentLoop:
                             if task_complete:
                                 return self.agent._generate_final_summary(
                                     streaming_callback=streaming_callback,
-                                    messages=self._transcript.messages,
+                                    messages=self._transcript.to_messages(),
                                 )
                         else:
                             # Handle regular tool execution
@@ -1220,7 +1223,7 @@ class AutonomousAgentLoop:
                             self.agent.short_memory.add(
                                 role="system", content=nudge
                             )
-                            self._transcript.append_user(nudge)
+                            self._transcript.add("user", nudge)
 
                             # Give the nudge a chance before refiring.
                             self.agent.think_call_count = 0
