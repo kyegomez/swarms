@@ -133,8 +133,6 @@ class Agent:
         system_prompt (str): The system prompt
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
-        sop (str): The standard operating procedure
-        sop_list (List[str]): The standard operating procedure list
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
         context_length (int): The context length
@@ -307,8 +305,6 @@ class Agent:
         dashboard: Optional[bool] = False,
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
-        sop: Optional[str] = None,
-        sop_list: Optional[List[str]] = None,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = None,
@@ -410,8 +406,6 @@ class Agent:
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
-        self.sop = sop
-        self.sop_list = sop_list
         self.tools = tools
         if system_prompt is None:
             system_prompt = build_agent_system_prompt()
@@ -618,9 +612,6 @@ class Agent:
 
         # Initialize the tools
         self.tool_manager.setup_tools()
-
-        if exists(self.sop) or exists(self.sop_list):
-            self.handle_sop_ops()
 
         if self.interactive is True:
             self.reasoning_prompt_on = False
@@ -2499,21 +2490,6 @@ Subtask Breakdown:
             *args,
             **kwargs,
         )
-
-    def handle_sop_ops(self):
-        # If the user inputs a list of strings for the sop then join them and set the sop
-        if exists(self.sop_list):
-            self.sop = "\n".join(self.sop_list)
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
-
-        if exists(self.sop):
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
-
-        logger.info("SOP Uploaded into the memory")
 
     def load_skills_metadata(
         self, skills_dir: str = None
