@@ -77,14 +77,14 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [browser_use_as_tool.py](tools/browser_use_as_tool.py) | Browser automation tool |
 | [browser_use_demo.py](tools/browser_use_demo.py) | Browser automation demonstration |
 | [claude_as_a_tool.py](tools/claude_as_a_tool.py) | Claude model integration as a tool |
-| [exa_search_agent.py](tools/exa_search_agent.py) | Exa search integration |
-| [exa_search_agent_quant.py](tools/exa_search_agent_quant.py) | Exa search with quantitative analysis |
-| [exa_search_test.py](tools/exa_search_test.py) | Exa search testing examples |
+| [exa_search_agent.py](tools/exa_search/exa_search_agent.py) | Exa search integration |
+| [exa_search_agent_quant.py](tools/exa_search/exa_search_agent_quant.py) | Exa search with quantitative analysis |
+| [exa_search_test.py](tools/exa_search/exa_search_test.py) | Exa search testing examples |
 | [firecrawl_agents_example.py](tools/firecrawl_agents_example.py) | Firecrawl integration |
 | [base_tool_examples/](tools/base_tool_examples/) | Base tool implementation examples |
 | [base_tool_examples.py](tools/base_tool_examples/base_tool_examples.py) | Base tool examples |
 | [conver_funcs_to_schema.py](tools/base_tool_examples/conver_funcs_to_schema.py) | Convert functions to schema |
-| [exa_search_test.py](tools/base_tool_examples/exa_search_test.py) | Exa search test |
+| [exa_search_deep_research.py](tools/base_tool_examples/exa_search_deep_research.py) | Exa search through the deep research swarm |
 | [example_usage.py](tools/base_tool_examples/example_usage.py) | Base tool usage example |
 | [multii_tool_use/](tools/multii_tool_use/) | Multi-tool usage examples |
 | [stagehand/](tools/stagehand/) | Stagehand UI automation |
@@ -352,8 +352,8 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Browser Automation](tools/browser_use_as_tool.py) | Browser control |
 | [Browser Demo](tools/browser_use_demo.py) | Browser automation demonstration |
 | [Claude as Tool](tools/claude_as_a_tool.py) | Claude model as a tool |
-| [Exa Search](tools/exa_search_agent.py) | Search integration |
-| [Exa Search Quant](tools/exa_search_agent_quant.py) | Exa search with quantitative analysis |
+| [Exa Search](tools/exa_search/exa_search_agent.py) | Search integration |
+| [Exa Search Quant](tools/exa_search/exa_search_agent_quant.py) | Exa search with quantitative analysis |
 | [Firecrawl](tools/firecrawl_agents_example.py) | Firecrawl web scraping integration |
 | [Stagehand](tools/stagehand/) | UI automation |
 | [Base Tools](tools/base_tool_examples/) | Base tool implementation examples |
