@@ -21,6 +21,7 @@ from swarms.structs.cron_job import CronJob
 from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.decision_model import (
     DecisionModel,
+    get_decision_model_prices,
     get_decision_models,
 )
 from swarms.structs.graph_workflow import (
@@ -153,6 +154,7 @@ __all__ = [
     "SelfMoASeq",
     "DebateWithJudge",
     "DecisionModel",
+    "get_decision_model_prices",
     "get_decision_models",
     "PlannerGeneratorEvaluator",
     "StepContract",

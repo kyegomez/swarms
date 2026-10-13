@@ -271,17 +271,26 @@ class TaskQueue:
             )
 
     def is_all_done(self) -> bool:
-        """True if all tasks are in a terminal state."""
-        terminal = {
-            PlannerTaskStatus.COMPLETED,
-            PlannerTaskStatus.FAILED,
-            PlannerTaskStatus.CANCELLED,
+        """True once no task is in flight and none can still be claimed."""
+        in_flight = {
+            PlannerTaskStatus.CLAIMED,
+            PlannerTaskStatus.RUNNING,
         }
         with self._lock:
-            if not self._tasks:
-                return True
-            return all(
-                t.status in terminal for t in self._tasks.values()
+            completed_ids = {
+                tid
+                for tid, t in self._tasks.items()
+                if t.status == PlannerTaskStatus.COMPLETED
+            }
+            return not any(
+                t.status in in_flight
+                or (
+                    t.status == PlannerTaskStatus.PENDING
+                    and all(
+                        dep in completed_ids for dep in t.depends_on
+                    )
+                )
+                for t in self._tasks.values()
             )
 
     def get_results_summary(self) -> Dict[str, str]:

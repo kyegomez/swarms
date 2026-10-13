@@ -1089,6 +1089,25 @@ Full specification: the [WARP Git Message Skill](https://swarms.world/prompt/32d
 
 ---
 
+## Contributing: Disclose AI authorship (required)
+
+Every commit, PR and issue that an AI agent wrote, in whole or in part, must say so. The disclosure must be accurate: name the agent and the model that actually did the work. Never leave it out, and never name a different agent or model.
+
+- **Commits:** end the message with a co-author trailer naming the model.
+  ```
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  ```
+  Other agents use the trailer they add by default, for example `Co-authored-by: Cursor <cursoragent@cursor.com>`.
+- **PRs and issues:** end the body with a line naming the agent and the model.
+  ```
+  🤖 Generated with [Claude Code](https://claude.com/claude-code) (Claude Opus 5.5)
+  ```
+- **No private links:** never add `Claude-Session:` trailers or `claude.ai/code/session_...` URLs.
+
+These markers are also what labels a PR or issue `ai-generated`, so never strip them.
+
+---
+
 ## Comments: one line, only when needed
 
 A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.

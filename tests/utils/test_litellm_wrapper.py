@@ -127,6 +127,34 @@ class TestLiteLLMProviders:
         assert isinstance(result, str)
         assert _has_answer(result)
 
+    def test_anthropic_prompt_caching_keeps_markers_off_the_transcript(
+        self,
+    ):
+        llm = LiteLLM(
+            model_name=ANTHROPIC_MODEL,
+            system_prompt=SIMPLE_PROMPT,
+            prompt_caching=True,
+        )
+        transcript = [{"role": "user", "content": SIMPLE_TASK}]
+        for turn in range(5):
+            prepared = llm._prepare_messages(messages=transcript)
+            markers = sum(
+                1
+                for m in prepared
+                if isinstance(m["content"], list)
+                for block in m["content"]
+                if "cache_control" in block
+            )
+            assert markers == 2
+            transcript += [
+                {"role": "assistant", "content": f"answer {turn}"},
+                {"role": "user", "content": f"next {turn}"},
+            ]
+        assert all(
+            isinstance(m["content"], str)
+            for m in llm.messages + transcript
+        )
+
 
 # ===================================================================
 # Agent — single agent per provider (OpenAI + Anthropic with keys)
@@ -406,7 +434,7 @@ class TestGroqProvider:
             max_tokens=50,
         )
         assert llm.reasoning_effort is None
-        assert llm.top_p == 1.0
+        assert llm.top_p is None
 
     def test_groq_litellm_messages_prepared_correctly(self):
         llm = LiteLLM(
@@ -477,7 +505,7 @@ class TestGrokProvider:
             max_tokens=50,
         )
         assert llm.reasoning_effort is None
-        assert llm.top_p == 1.0
+        assert llm.top_p is None
 
     def test_grok_litellm_messages_prepared_correctly(self):
         llm = LiteLLM(
@@ -541,7 +569,7 @@ class TestGeminiProvider:
             max_tokens=50,
         )
         assert llm.reasoning_effort is None
-        assert llm.top_p == 1.0
+        assert llm.top_p is None
 
     def test_gemini_litellm_messages_prepared_correctly(self):
         llm = LiteLLM(
