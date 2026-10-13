@@ -29,7 +29,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [heavy_swarm_examples/](multi_agent/heavy_swarm_examples/) | Heavy swarm implementations for complex tasks |
 | [hiearchical_swarm/](multi_agent/hiearchical_swarm/) | Hierarchical swarm structures and patterns |
 | [hscf/](multi_agent/hscf/) | Hierarchical Swarm Control Framework examples |
-| [llm_council_examples/](multi_agent/llm_council_examples/) | LLM Council collaboration patterns |
+| [council/llm_council/](multi_agent/council/llm_council/) | LLM Council collaboration patterns |
 | [majority_voting/](multi_agent/majority_voting/) | Majority voting and consensus examples |
 | [mar/](multi_agent/mar/) | Multi-agent rearrangement examples |
 | [moa_examples/](multi_agent/moa_examples/) | Mixture of Agents (MOA) examples |
@@ -86,12 +86,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [conver_funcs_to_schema.py](tools/base_tool_examples/conver_funcs_to_schema.py) | Convert functions to schema |
 | [exa_search_test.py](tools/base_tool_examples/exa_search_test.py) | Exa search test |
 | [example_usage.py](tools/base_tool_examples/example_usage.py) | Base tool usage example |
-| [schema_validation_example.py](tools/base_tool_examples/schema_validation_example.py) | Schema validation example |
-| [test_anthropic_specific.py](tools/base_tool_examples/test_anthropic_specific.py) | Anthropic-specific test |
-| [test_base_tool_comprehensive_fixed.py](tools/base_tool_examples/test_base_tool_comprehensive_fixed.py) | Comprehensive base tool test (fixed) |
-| [test_base_tool_comprehensive.py](tools/base_tool_examples/test_base_tool_comprehensive.py) | Comprehensive base tool test |
-| [test_function_calls_anthropic.py](tools/base_tool_examples/test_function_calls_anthropic.py) | Function calls test (Anthropic) |
-| [test_function_calls.py](tools/base_tool_examples/test_function_calls.py) | Function calls test |
 | [multii_tool_use/](tools/multii_tool_use/) | Multi-tool usage examples |
 | [stagehand/](tools/stagehand/) | Stagehand UI automation |
 | [1_stagehand_wrapper_agent.py](tools/stagehand/1_stagehand_wrapper_agent.py) | Stagehand wrapper agent |
@@ -164,6 +158,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [example2_technical_evaluation.py](reasoning_agents/agent_judge_examples/example2_technical_evaluation.py) | Technical evaluation example |
 | [example3_creative_evaluation.py](reasoning_agents/agent_judge_examples/example3_creative_evaluation.py) | Creative evaluation example |
 | [reasoning_agent_router_examples/](reasoning_agents/reasoning_agent_router_examples/) | Reasoning agent router examples |
+| [tree_of_thoughts_examples/](reasoning_agents/tree_of_thoughts_examples/) | Tree of Thoughts search on mathematics, physics and reasoning problems |
 | [agent_judge_example.py](reasoning_agents/reasoning_agent_router_examples/agent_judge_example.py) | Agent judge example |
 | [gkp_agent_example.py](reasoning_agents/reasoning_agent_router_examples/gkp_agent_example.py) | GKP agent example |
 | [ire_example.py](reasoning_agents/reasoning_agent_router_examples/ire_example.py) | IRE example |
@@ -321,7 +316,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Heavy Swarm](multi_agent/heavy_swarm_examples/) | Heavy swarm for complex tasks |
 | [Group Chat](multi_agent/groupchat/) | Asynchronous self-selecting group chat where agents choose when to reply |
 | [Graph Workflow](multi_agent/graphworkflow_examples/graph_workflow_example.py) | Graph-based workflows |
-| [LLM Council](multi_agent/llm_council_examples/) | LLM Council collaboration |
+| [LLM Council](multi_agent/council/llm_council/) | LLM Council collaboration |
 | [Majority Voting](multi_agent/majority_voting/) | Majority voting and consensus |
 | [Mixture of Agents](multi_agent/moa_examples/) | Mixture of Agents (MOA) examples |
 | [Orchestration](multi_agent/orchestration_examples/) | Agent orchestration patterns |

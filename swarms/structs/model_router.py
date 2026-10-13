@@ -184,7 +184,7 @@ class ModelRouter:
         self,
         system_prompt: str = model_router_system_prompt,
         max_tokens: int = 4000,
-        temperature: float = 0.5,
+        temperature: Optional[float] = None,
         max_workers: int = 10,
         api_key: str = None,
         max_loops: int = 1,
@@ -239,7 +239,9 @@ class ModelRouter:
         Raises:
             RuntimeError: If model selection or execution fails
         """
-        model_router_output = self.model_caller.run(task)
+        model_router_output = ModelOutput.model_validate_json(
+            self.model_caller.run(task)
+        )
 
         selected_model = model_router_output.model
         selected_provider = model_router_output.provider

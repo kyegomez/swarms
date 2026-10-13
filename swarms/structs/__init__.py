@@ -19,6 +19,11 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.debate_with_judge import DebateWithJudge
+from swarms.structs.decision_model import (
+    DecisionModel,
+    get_decision_model_prices,
+    get_decision_models,
+)
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
@@ -148,6 +153,9 @@ __all__ = [
     "BatchedGridWorkflow",
     "SelfMoASeq",
     "DebateWithJudge",
+    "DecisionModel",
+    "get_decision_model_prices",
+    "get_decision_models",
     "PlannerGeneratorEvaluator",
     "StepContract",
     "EvaluationReport",

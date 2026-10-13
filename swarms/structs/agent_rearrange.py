@@ -25,7 +25,6 @@ from swarms.structs.serialization import SerializableMixin
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
-    log_agent_data,
     trace_run,
 )
 from swarms.utils.any_to_str import any_to_str
@@ -638,21 +637,14 @@ class AgentRearrange(SerializableMixin):
                 future_to_index[future] = index
 
             for future in as_completed(future_to_index):
-                index = future_to_index[future]
-                try:
-                    results[index] = future.result()
-                except Exception as error:
-                    results[index] = error
+                results[future_to_index[future]] = future.result()
 
         response_dict = {}
         for i, agent_name in enumerate(agent_names):
             result = results[i]
 
             # run() returns the agent's whole conversation by default, record the answer
-            if not isinstance(result, Exception):
-                result = agent_answer(
-                    agents_to_run[i], fallback=result
-                )
+            result = agent_answer(agents_to_run[i], fallback=result)
 
             self.conversation.add(agent_name, result)
             response_dict[agent_name] = result
@@ -855,26 +847,7 @@ class AgentRearrange(SerializableMixin):
         )
 
     def _catch_error(self, e: Exception):
-        """
-        Handles errors that occur during swarm execution.
-
-        Provides comprehensive error handling including logging, data persistence,
-        and error reporting. This method is called whenever an exception occurs
-        during the execution of the swarm.
-
-        Args:
-            e (Exception): The exception that occurred during execution.
-
-        Returns:
-            Exception: The original exception for potential re-raising.
-
-        Note:
-            If autosave is enabled, the current state of the swarm will be
-            automatically saved to the logging system before error reporting.
-        """
-        if self.autosave is True:
-            log_agent_data(self.to_dict())
-
+        """Log an error from the swarm run and re-raise it."""
         self._log(
             "error",
             f"AgentRearrange: Id: {self.id}, Name: {self.name}. An error occurred with your agent '{self.name}': Error: {e}. Traceback: {e.__traceback__}",

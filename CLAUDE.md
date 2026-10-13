@@ -111,7 +111,7 @@ print(result)
 | `context_length` | int | `None` | Token budget; triggers compression at 90 % |
 | `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
 | `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
-| `temperature` | float | `0.5` | Sampling temperature |
+| `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
 | `max_tokens` | int | model's max output | Max tokens per LLM call. Unset resolves to the model's own output limit |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
 | `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
@@ -1086,6 +1086,25 @@ Every commit message, PR title and issue title you write for this repository mus
 ```
 
 Full specification: the [WARP Git Message Skill](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1) on the Swarms marketplace. Load it before writing a commit message, PR or issue for this repo.
+
+---
+
+## Contributing: Disclose AI authorship (required)
+
+Every commit, PR and issue that an AI agent wrote, in whole or in part, must say so. The disclosure must be accurate: name the agent and the model that actually did the work. Never leave it out, and never name a different agent or model.
+
+- **Commits:** end the message with a co-author trailer naming the model.
+  ```
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  ```
+  Other agents use the trailer they add by default, for example `Co-authored-by: Cursor <cursoragent@cursor.com>`.
+- **PRs and issues:** end the body with a line naming the agent and the model.
+  ```
+  🤖 Generated with [Claude Code](https://claude.com/claude-code) (Claude Opus 5.5)
+  ```
+- **No private links:** never add `Claude-Session:` trailers or `claude.ai/code/session_...` URLs.
+
+These markers are also what labels a PR or issue `ai-generated`, so never strip them.
 
 ---
 

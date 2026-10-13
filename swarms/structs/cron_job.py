@@ -112,6 +112,7 @@ class CronJob:
         self.interval = interval
         self.job_id = job_id or f"job_{id(self)}"
         self.is_running = False
+        self._stop_event = threading.Event()
         self.thread = None
         self.schedule = schedule.Scheduler()
         self.callback = callback
@@ -288,7 +289,7 @@ class CronJob:
         """Block until interrupted or stopped."""
         try:
             while self.is_running:
-                time.sleep(1)
+                self._stop_event.wait(1)
         except KeyboardInterrupt:
             logger.info(
                 f"CronJob: {self.job_id} received keyboard interrupt, stopping cron jobs..."
@@ -379,10 +380,10 @@ class CronJob:
                      (e.g., img=image_path, streaming_callback=callback_func)
 
         Returns:
-            Any: The result of the task execution (original or customized by callback)
-
-        Raises:
-            CronJobExecutionError: If task execution fails
+            Any: The result of the task execution (original or customized
+            by callback), or ``None`` when the execution failed. A failure
+            is recorded in the error counters rather than raised, so the
+            scheduler still moves the job to its next interval.
         """
         try:
             logger.debug(f"Executing task for job {self.job_id}")
@@ -396,6 +397,7 @@ class CronJob:
 
             # Increment execution count
             self.execution_count += 1
+            self.consecutive_errors = 0
 
             # Prepare metadata for callback
             metadata = {
@@ -428,12 +430,30 @@ class CronJob:
             return original_output
 
         except Exception as e:
+            self.error_count += 1
+            self.consecutive_errors += 1
+            self.last_error = e
             logger.error(
-                f"Task execution failed for job {self.job_id}: {str(e)}"
+                f"Execution failed for job {self.job_id} "
+                f"(failure {self.consecutive_errors} in a row, "
+                f"{self.error_count} total): {str(e)}\n"
+                f"{traceback.format_exc()}"
             )
-            raise CronJobExecutionError(
-                f"Task execution failed: {str(e)}"
-            )
+
+            if (
+                self.max_consecutive_errors is not None
+                and self.consecutive_errors
+                >= self.max_consecutive_errors
+            ):
+                logger.error(
+                    f"Job {self.job_id} stopping: "
+                    f"{self.consecutive_errors} consecutive failures "
+                    f"reached max_consecutive_errors="
+                    f"{self.max_consecutive_errors}"
+                )
+                self._stopped_due_to_error = True
+                self._signal_stop()
+            return None
 
     def every_seconds(self, seconds: int, task: str, **kwargs):
         """Schedule the job to run every specified number of seconds.
@@ -473,6 +493,7 @@ class CronJob:
         """
         try:
             if not self.is_running:
+                self._stop_event.clear()
                 self.is_running = True
                 self.start_time = time.time()
                 self.thread = threading.Thread(
@@ -510,7 +531,7 @@ class CronJob:
         """
         try:
             logger.info(f"Stopping job {self.job_id}")
-            self.is_running = False
+            self._signal_stop()
             if self.thread:
                 self.thread.join(
                     timeout=5
@@ -529,41 +550,17 @@ class CronJob:
                 f"Failed to stop job: {str(e)}"
             )
 
+    def _signal_stop(self):
+        """Mark the job stopped and wake every loop waiting on it."""
+        self.is_running = False
+        self._stop_event.set()
+
     def _run_schedule(self):
         """Internal method to run the schedule loop."""
         logger.debug(f"Starting schedule loop for job {self.job_id}")
         while self.is_running:
-            try:
-                self.schedule.run_pending()
-                self.consecutive_errors = 0
-            except Exception as e:
-                # Log and keep going: one failed execution must not kill the scheduler.
-                self.error_count += 1
-                self.consecutive_errors += 1
-                self.last_error = e
-                logger.error(
-                    f"Execution failed for job {self.job_id} "
-                    f"(failure {self.consecutive_errors} in a row, "
-                    f"{self.error_count} total): {str(e)}\n"
-                    f"{traceback.format_exc()}"
-                )
-
-                if (
-                    self.max_consecutive_errors is not None
-                    and self.consecutive_errors
-                    >= self.max_consecutive_errors
-                ):
-                    logger.error(
-                        f"Job {self.job_id} stopping: "
-                        f"{self.consecutive_errors} consecutive failures "
-                        f"reached max_consecutive_errors="
-                        f"{self.max_consecutive_errors}"
-                    )
-                    self._stopped_due_to_error = True
-                    self.is_running = False
-                    return
-
-            time.sleep(1)
+            self.schedule.run_pending()
+            self._stop_event.wait(1)
 
     def set_callback(self, callback: Callable[[Any, str, dict], Any]):
         """Set or update the callback function for output customization.
@@ -694,8 +691,9 @@ class CronJob:
 
         try:
             # Wait while the per-job threads work; exit once every job has stopped.
-            while any(job.is_running for job in jobs):
-                time.sleep(1)
+            for job in jobs:
+                while job.is_running:
+                    job._stop_event.wait(1)
         except KeyboardInterrupt:
             logger.info(
                 "run_many received keyboard interrupt, stopping all jobs"
@@ -725,6 +723,8 @@ class CronJob:
             jobs: The jobs to stop, typically the return value of
                 :meth:`run_many` called with ``block=False``.
         """
+        for job in jobs:
+            job._signal_stop()
         for job in jobs:
             try:
                 job.stop()

@@ -2,6 +2,10 @@
 
 This directory contains comprehensive guides and tutorials for using Swarms effectively.
 
+## AgentSH Implementation
+- [agentsh.py](agentsh_implementation/agentsh.py) - Self-organized multi-agent harness with no orchestrator (Agensh, arXiv:2609.26781)
+- [README.md](agentsh_implementation/README.md) - How the implementation works
+
 ## Generation Length Blog
 - [longform_generator.py](generation_length_blog/longform_generator.py) - Long-form content generation
 - [universal_api.py](generation_length_blog/universal_api.py) - Universal API implementation

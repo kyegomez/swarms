@@ -10,12 +10,6 @@ This directory contains examples demonstrating various tool integrations and usa
 - [conver_funcs_to_schema.py](base_tool_examples/conver_funcs_to_schema.py) - Function to schema conversion
 - [exa_search_test.py](base_tool_examples/exa_search_test.py) - Exa search testing
 - [example_usage.py](base_tool_examples/example_usage.py) - Basic usage examples
-- [schema_validation_example.py](base_tool_examples/schema_validation_example.py) - Schema validation
-- [test_anthropic_specific.py](base_tool_examples/test_anthropic_specific.py) - Anthropic-specific testing
-- [test_base_tool_comprehensive_fixed.py](base_tool_examples/test_base_tool_comprehensive_fixed.py) - Comprehensive testing (fixed)
-- [test_base_tool_comprehensive.py](base_tool_examples/test_base_tool_comprehensive.py) - Comprehensive testing
-- [test_function_calls_anthropic.py](base_tool_examples/test_function_calls_anthropic.py) - Anthropic function calls
-- [test_function_calls.py](base_tool_examples/test_function_calls.py) - Function call testing
 
 ## Browser Integration
 - [browser_use_as_tool.py](browser_use_as_tool.py) - Browser automation as a tool

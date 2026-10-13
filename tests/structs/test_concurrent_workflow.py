@@ -1,4 +1,7 @@
 import os
+import time
+from types import SimpleNamespace
+
 import pytest
 
 from swarms import Agent
@@ -540,6 +543,89 @@ def test_concurrent_workflow_batch_run_leaves_the_instance_conversation_alone():
 
     assert workflow.conversation is conversation
     assert conversation.conversation_history == []
+
+
+class _DraftingAgent(_EchoAgent):
+    def __init__(self, agent_name: str):
+        super().__init__(agent_name)
+        self.short_memory = SimpleNamespace(
+            get_final_message_content=lambda: "DRAFT 2"
+        )
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        return f"{task}\nDRAFT 1\nDRAFT 2"
+
+
+def test_concurrent_workflow_records_each_agents_answer_not_its_transcript():
+    workflow = ConcurrentWorkflow(
+        name="Answer-Workflow",
+        agents=[_DraftingAgent("Alpha"), _EchoAgent("Beta")],
+        output_type="dict",
+    )
+
+    result = workflow.run("summarise the filing")
+
+    assert [m["content"] for m in result] == [
+        "summarise the filing",
+        "DRAFT 2",
+        "Beta answered: summarise the filing",
+    ]
+
+
+def test_concurrent_workflow_run_twice_returns_only_each_task():
+    workflow = ConcurrentWorkflow(
+        name="Rerun-Workflow",
+        agents=[_EchoAgent("Alpha"), _EchoAgent("Beta")],
+        output_type="dict",
+    )
+
+    first = workflow.run("first filing")
+    second = workflow.run("second filing")
+
+    assert [m["content"] for m in first] == [
+        "first filing",
+        "Alpha answered: first filing",
+        "Beta answered: first filing",
+    ]
+    assert [m["content"] for m in second] == [
+        "second filing",
+        "Alpha answered: second filing",
+        "Beta answered: second filing",
+    ]
+
+
+class _SlowEchoAgent(_EchoAgent):
+    """Echoes like _EchoAgent, but only after a fixed delay."""
+
+    def __init__(self, agent_name: str, delay: float):
+        super().__init__(agent_name)
+        self.delay = delay
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        time.sleep(self.delay)
+        return super().run(task, img=img, imgs=imgs, **kwargs)
+
+
+def test_concurrent_workflow_returns_results_in_agent_order():
+    """Declared slowest first, so completion order is the reverse of agent order (#2317)."""
+    workflow = ConcurrentWorkflow(
+        name="Agent-Order-Workflow",
+        agents=[
+            _SlowEchoAgent("Alpha", 0.30),
+            _SlowEchoAgent("Beta", 0.15),
+            _SlowEchoAgent("Gamma", 0.01),
+        ],
+        output_type="dict",
+    )
+
+    result = workflow.run("rank these")
+
+    assert [message["role"] for message in result] == [
+        "User",
+        "Alpha",
+        "Beta",
+        "Gamma",
+    ]
 
 
 if __name__ == "__main__":
