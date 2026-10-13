@@ -433,8 +433,7 @@ class AgentRearrange(SerializableMixin):
         Args:
             agent_name (str): The name of the current agent.
             steps (List[List[str]]): The parsed flow, one list of agent names
-                per step. Passed in rather than read from ``self.steps`` so a
-                ``custom_tasks`` run reflects the spliced flow it executes.
+                per step.
             task_idx (int, optional): The exact position index of this agent invocation
                 in the flow. When provided, uses this directly instead of searching by name.
                 This is essential for repeated agents (e.g., "writer -> reviewer -> writer")
@@ -540,7 +539,10 @@ class AgentRearrange(SerializableMixin):
                 self.conversation.add("system", sequential_info)
 
     def _messages_for(
-        self, agent_name: str, extra_system: Optional[str] = None
+        self,
+        agent_name: str,
+        extra_system: Optional[str] = None,
+        custom_task: Optional[str] = None,
     ) -> tuple:
         """
         The shared conversation as typed turns for one agent.
@@ -550,14 +552,18 @@ class AgentRearrange(SerializableMixin):
             extra_system: Per-agent guidance - collaboration rules, flow
                 position - prepended as a system turn. It is not written to
                 the shared conversation, so other agents never see it.
+            custom_task: Replaces the newest turn as this run's task. The
+                whole conversation is then the prefix.
 
         Returns:
             ``(prior_messages, task)`` - the conversation prefix as chat
             messages, and the newest turn as this run's task.
         """
-        prior, task = split_last_turn(
-            messages_for(agent_name, self.conversation)
-        )
+        messages = messages_for(agent_name, self.conversation)
+        if custom_task is None:
+            prior, task = split_last_turn(messages)
+        else:
+            prior, task = messages, custom_task
 
         preamble = "\n\n".join(
             part
@@ -574,6 +580,7 @@ class AgentRearrange(SerializableMixin):
         agent_names: List[str],
         img: str = None,
         *args,
+        custom_tasks: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -626,7 +633,9 @@ class AgentRearrange(SerializableMixin):
             for index, (agent, name) in enumerate(
                 zip(agents_to_run, agent_names)
             ):
-                prior, step_task = self._messages_for(name)
+                prior, step_task = self._messages_for(
+                    name, custom_task=(custom_tasks or {}).get(name)
+                )
                 future = executor.submit(
                     agent.run,
                     task=step_task,
@@ -659,6 +668,7 @@ class AgentRearrange(SerializableMixin):
         task_idx: int = None,
         img: str = None,
         *args,
+        custom_task: Optional[str] = None,
         **kwargs,
     ) -> str:
         """
@@ -707,7 +717,9 @@ class AgentRearrange(SerializableMixin):
             )
 
         prior, step_task = self._messages_for(
-            agent_name, extra_system=awareness_info
+            agent_name,
+            extra_system=awareness_info,
+            custom_task=custom_task,
         )
         current_task = agent.run(
             task=step_task,
@@ -770,29 +782,24 @@ class AgentRearrange(SerializableMixin):
             based on the flow syntax. It also supports custom task injection
             and multiple execution loops as configured.
         """
+        steps = self.steps
+        custom_tasks = custom_tasks or {}
+        unknown = set(custom_tasks) - {n for s in steps for n in s}
+        if unknown:
+            raise ValueError(
+                f"custom_tasks names {sorted(unknown)}, not in the flow."
+            )
+
         # A reused instance would otherwise carry the previous task's transcript
         self._reset_conversation()
 
         self.conversation.add("User", task)
 
-        # A raw copy, custom_tasks splices into it and self.steps stays unmutated
-        tasks = self.flow.split("->")
         response_dict = {}
 
         self._log(
-            "info", f"Starting task execution with {len(tasks)} steps"
+            "info", f"Starting task execution with {len(steps)} steps"
         )
-
-        # Handle custom tasks
-        if custom_tasks is not None:
-            self._log("info", "Processing custom tasks")
-            c_agent_name, c_task = next(iter(custom_tasks.items()))
-            position = tasks.index(c_agent_name)
-
-            if position > 0:
-                tasks[position - 1] += "->" + c_task
-            else:
-                tasks.insert(position, c_task)
 
         loop_count = 0
         while loop_count < self.max_loops:
@@ -800,8 +807,6 @@ class AgentRearrange(SerializableMixin):
                 "info",
                 f"Starting loop {loop_count + 1}/{self.max_loops}",
             )
-
-            steps = _split_steps(tasks)
 
             for task_idx, agent_names in enumerate(steps):
 
@@ -812,6 +817,7 @@ class AgentRearrange(SerializableMixin):
                             agent_names=agent_names,
                             img=img,
                             *args,
+                            custom_tasks=custom_tasks,
                             **kwargs,
                         )
                     )
@@ -826,6 +832,7 @@ class AgentRearrange(SerializableMixin):
                         task_idx=task_idx,
                         img=img,
                         *args,
+                        custom_task=custom_tasks.get(agent_name),
                         **kwargs,
                     )
 
