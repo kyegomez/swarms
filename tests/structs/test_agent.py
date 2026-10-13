@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
@@ -882,6 +883,21 @@ class TestToolsListIsolation:
             ).tools_list_dictionary
             == given
         )
+
+
+def test_list_base_models_schema_reaches_short_memory():
+    class Order(BaseModel):
+        item: str
+        qty: int
+
+    agent = _patched_agent(
+        "Order-Agent",
+        model_name="gpt-5.4-mini",
+        list_base_models=[Order],
+    )
+
+    schema = agent.short_memory.conversation_history[-1]["content"]
+    assert "Order" in schema and "item" in schema and "qty" in schema
 
 
 class TestAutonomousAgentLoop:
