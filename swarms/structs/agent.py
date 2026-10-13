@@ -103,12 +103,6 @@ def stop_when_repeats(response: str) -> bool:
     return "stop" in response.lower()
 
 
-# Agent ID generator
-def agent_id() -> str:
-    """Deprecated: use ``generate_id("agent")``."""
-    return generate_id("agent")
-
-
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
