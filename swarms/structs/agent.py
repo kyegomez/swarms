@@ -18,17 +18,6 @@ from typing import (
 
 import toml
 import yaml
-from litellm import model_list
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    get_max_tokens,
-    get_model_info,
-    supports_function_calling,
-)
 from loguru import logger
 from pydantic import BaseModel
 
@@ -48,15 +37,12 @@ from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
-from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
-    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
-)
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
-    AgentRunError,
+    AgentRunError,  # noqa: F401  re-exported from this module
     AgentToolExecutionError,
 )
 from swarms.schemas.mcp_schemas import (
@@ -104,6 +90,7 @@ from swarms.utils.index import (
     exists,
     format_data_structure,
 )
+from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
@@ -114,12 +101,6 @@ from swarms.utils.workspace_utils import get_workspace_dir
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
     return "stop" in response.lower()
-
-
-# Agent ID generator
-def agent_id() -> str:
-    """Deprecated: use ``generate_id("agent")``."""
-    return generate_id("agent")
 
 
 # Agent output types
@@ -146,14 +127,11 @@ class Agent:
         system_prompt (str): The system prompt
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
-        sop (str): The standard operating procedure
-        sop_list (List[str]): The standard operating procedure list
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
         context_length (int): The context length
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
-        multi_modal (bool): Enable multimodal
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
@@ -321,14 +299,11 @@ class Agent:
         dashboard: Optional[bool] = False,
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
-        sop: Optional[str] = None,
-        sop_list: Optional[List[str]] = None,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = None,
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
-        multi_modal: Optional[bool] = None,
         long_term_memory: Optional[Union[Callable, Any]] = None,
         fallback_model_name: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
@@ -425,8 +400,6 @@ class Agent:
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
-        self.sop = sop
-        self.sop_list = sop_list
         self.tools = tools
         if system_prompt is None:
             system_prompt = build_agent_system_prompt()
@@ -438,7 +411,6 @@ class Agent:
             f"{generate_api_key(prefix='agent-')}_state.json"
         )
         self.autosave = autosave
-        self.multi_modal = multi_modal
         self.long_term_memory = long_term_memory
         self.preset_stopping_token = preset_stopping_token
         self.streaming_on = streaming_on
@@ -546,6 +518,9 @@ class Agent:
             retry_attempts=self.tool_retry_attempts,
         )
 
+        if self.random_models_on is True:
+            self.model_name = set_random_models_for_agents()
+
         if self.context_length is None:
             self.context_length = self._default_context_length()
 
@@ -623,7 +598,6 @@ class Agent:
         self.tool_manager = ToolManager(agent=self)
         self.autonomous_loop = AutonomousAgentLoop(agent=self)
 
-        # self.init_handling()
         self.setup_config()
 
         # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
@@ -631,9 +605,6 @@ class Agent:
 
         # Initialize the tools
         self.tool_manager.setup_tools()
-
-        if exists(self.sop) or exists(self.sop_list):
-            self.handle_sop_ops()
 
         if self.interactive is True:
             self.reasoning_prompt_on = False
@@ -658,9 +629,6 @@ class Agent:
         ) is None and hasattr(self.llm, "usage_hook"):
             # A caller-supplied LiteLLM reports into this agent too.
             self.llm.usage_hook = self._add_usage
-
-        if self.random_models_on is True:
-            self.model_name = set_random_models_for_agents()
 
         if self.dashboard is True:
             self.print_dashboard()
@@ -837,10 +805,6 @@ class Agent:
         if self.dynamic_loops is True:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
-
-        # If multimodal = yes then set the sop to the multimodal sop
-        if self.multi_modal is True:
-            self.sop = MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1
 
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token
         if self.preset_stopping_token is not None:
@@ -1277,12 +1241,7 @@ class Agent:
                         # Exit the retry loop, not the run, so the model can read the failure
                         success = True
 
-                    except (
-                        BadRequestError,
-                        InternalServerError,
-                        AuthenticationError,
-                        Exception,
-                    ) as e:
+                    except Exception as e:
                         last_error = e
 
                         # Answer the recorded tool calls so the retried request is well formed
@@ -1832,7 +1791,7 @@ Subtask Breakdown:
         """
         try:
             return (
-                get_model_info(self.model_name).get(
+                llm_backend.get_model_info(self.model_name).get(
                     "max_input_tokens"
                 )
                 or 16000
@@ -1854,7 +1813,7 @@ Subtask Breakdown:
         # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
         try:
             return (
-                get_model_info(self.model_name).get(
+                llm_backend.get_model_info(self.model_name).get(
                     "max_output_tokens"
                 )
                 or 16000
@@ -1884,7 +1843,9 @@ Subtask Breakdown:
 
         # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
         if self.max_tokens is None or self.max_tokens <= 0:
-            suggested_tokens = get_max_tokens(self.model_name)
+            suggested_tokens = llm_backend.get_max_tokens(
+                self.model_name
+            )
             if suggested_tokens is not None and suggested_tokens > 0:
                 self.max_tokens = suggested_tokens
             else:
@@ -1900,21 +1861,27 @@ Subtask Breakdown:
 
         # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
         if self.tools_list_dictionary:
-            if not supports_function_calling(self.model_name):
+            if not llm_backend.supports_function_calling(
+                self.model_name
+            ):
                 logger.warning(
                     f"The model '{self.model_name}' does not support function calling. Please use a model that supports function calling."
                 )
 
         try:
-            if self.max_tokens > get_max_tokens(self.model_name):
+            if self.max_tokens > llm_backend.get_max_tokens(
+                self.model_name
+            ):
                 logger.warning(
-                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' may or may not support {get_max_tokens(self.model_name)} tokens. Please set max tokens to {get_max_tokens(self.model_name)} or less."
+                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' may or may not support {llm_backend.get_max_tokens(self.model_name)} tokens. Please set max tokens to {llm_backend.get_max_tokens(self.model_name)} or less."
                 )
 
         except Exception:
             pass
 
-        if self.model_name not in model_list:
+        model_list = llm_backend.model_list
+        # Empty when RouteHub cannot reach OpenRouter, which says nothing about the model.
+        if model_list and self.model_name not in model_list:
             logger.warning(
                 f"The model '{self.model_name}' may not be supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
             )
@@ -2517,21 +2484,6 @@ Subtask Breakdown:
             **kwargs,
         )
 
-    def handle_sop_ops(self):
-        # If the user inputs a list of strings for the sop then join them and set the sop
-        if exists(self.sop_list):
-            self.sop = "\n".join(self.sop_list)
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
-
-        if exists(self.sop):
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
-
-        logger.info("SOP Uploaded into the memory")
-
     def load_skills_metadata(
         self, skills_dir: str = None
     ) -> List[Dict[str, str]]:
@@ -2733,14 +2685,7 @@ Subtask Breakdown:
 
             return output
 
-        except (
-            AgentRunError,
-            AgentLLMError,
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
-            Exception,
-        ) as e:
+        except Exception as e:
 
             # Try fallback models if available
             if self.is_fallback_available():

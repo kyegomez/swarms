@@ -637,21 +637,14 @@ class AgentRearrange(SerializableMixin):
                 future_to_index[future] = index
 
             for future in as_completed(future_to_index):
-                index = future_to_index[future]
-                try:
-                    results[index] = future.result()
-                except Exception as error:
-                    results[index] = error
+                results[future_to_index[future]] = future.result()
 
         response_dict = {}
         for i, agent_name in enumerate(agent_names):
             result = results[i]
 
             # run() returns the agent's whole conversation by default, record the answer
-            if not isinstance(result, Exception):
-                result = agent_answer(
-                    agents_to_run[i], fallback=result
-                )
+            result = agent_answer(agents_to_run[i], fallback=result)
 
             self.conversation.add(agent_name, result)
             response_dict[agent_name] = result

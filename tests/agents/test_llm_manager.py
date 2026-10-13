@@ -33,7 +33,9 @@ No test makes a network call or requires an API key. Run with:
 from unittest.mock import Mock
 
 import pytest
+from loguru import logger
 
+import swarms.agents.llm_manager as llm_manager
 from swarms import Agent
 from swarms.utils.litellm_wrapper import LiteLLM
 
@@ -442,6 +444,67 @@ class TestCheckModelSupportsUtilities:
         assert (
             agent.llm_manager.check_model_supports_utilities() is None
         )
+
+    def test_agent_without_tools_skips_function_calling_lookup(
+        self, agent, monkeypatch
+    ):
+        """An agent without tools makes no function-calling lookup."""
+        lookup = Mock(return_value=True)
+        monkeypatch.setattr(
+            llm_manager.llm_backend,
+            "supports_function_calling",
+            lookup,
+        )
+        agent.model_name = "no-tools-model-2517"
+        agent.tools = None
+        agent.tools_list_dictionary = []
+
+        agent.llm_manager.check_model_supports_utilities()
+
+        lookup.assert_not_called()
+
+    def test_tool_lookups_are_cached_and_reported_once(
+        self, agent, monkeypatch
+    ):
+        """Repeated checks look a model up once and warn once."""
+        function_calling = Mock(return_value=True)
+        parallel = Mock(return_value=False)
+        monkeypatch.setattr(
+            llm_manager.llm_backend,
+            "supports_function_calling",
+            function_calling,
+        )
+        monkeypatch.setattr(
+            llm_manager.llm_backend,
+            "supports_parallel_function_calling",
+            parallel,
+        )
+        agent.model_name = "cached-model-2517"
+        agent.tools = [lambda a: a, lambda b: b, lambda c: c]
+        agent.tools_list_dictionary = [
+            {"type": "function", "function": {"name": "f"}}
+        ]
+        records = []
+        sink = logger.add(
+            lambda message: records.append(message.record),
+            level="DEBUG",
+        )
+        try:
+            for _ in range(5):
+                agent.llm_manager.check_model_supports_utilities()
+        finally:
+            logger.remove(sink)
+
+        assert function_calling.call_count == 1
+        assert parallel.call_count == 1
+        reports = [
+            record
+            for record in records
+            if "parallel function calling" in record["message"]
+        ]
+        assert [record["level"].name for record in reports] == [
+            "WARNING"
+        ]
 
 
 ########################################################
@@ -1098,3 +1161,44 @@ class TestGetParameters:
         result = agent.llm_manager.get_parameters()
         assert isinstance(result, str)
         assert "0.42" in result
+
+
+class TestChunksWithNothingToShow:
+    """RouteHub forwards chunks that litellm drops: no choices, or a role and no text."""
+
+    def test_collect_stream_skips_a_chunk_without_choices(
+        self, agent
+    ):
+        stream = iter(
+            [
+                FakeChunk(choices=[]),
+                FakeChunk([FakeChoice(FakeDelta(content="hi"))]),
+            ]
+        )
+        assert agent.llm_manager._collect_stream(stream) == "hi"
+
+    def test_panel_shows_thinking_after_a_role_only_chunk(
+        self, agent, monkeypatch
+    ):
+        panels = Mock()
+        monkeypatch.setattr(
+            llm_manager.formatter, "print_thinking_panel", panels
+        )
+        monkeypatch.setattr(
+            llm_manager.formatter,
+            "print_streaming_panel",
+            lambda chunks, **kwargs: "".join(map(str, chunks)),
+        )
+        stream = iter(
+            [
+                FakeChunk([FakeChoice(FakeDelta(content=""))]),
+                FakeChunk(
+                    [FakeChoice(FakeDelta(reasoning_content="hmm"))]
+                ),
+                FakeChunk([FakeChoice(FakeDelta(content="answer"))]),
+            ]
+        )
+
+        agent.llm_manager._stream_to_panel(stream, [], current_loop=1)
+
+        assert panels.call_args.args[0] == "hmm"

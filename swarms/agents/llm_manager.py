@@ -29,27 +29,63 @@ import itertools
 import random
 import time
 import traceback
+from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    supports_function_calling,
-    supports_parallel_function_calling,
-    supports_vision,
-)
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentLLMInitializationError
 from swarms.telemetry.otel import swarm_telemetry
+from swarms.utils import llm_backend
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists
 from swarms.utils.litellm_wrapper import LiteLLM
 
 DEFAULT_MODEL_NAME = "gpt-5.4"
+
+# Messages already logged, so a capability gap is reported once per process.
+_logged_capability_messages = set()
+
+
+@lru_cache(maxsize=None)
+def _model_supports_function_calling(model_name: str) -> bool:
+    """Whether the model supports function calling.
+
+    Args:
+        model_name: The model to look up.
+
+    Returns:
+        bool: The lookup result.
+    """
+    return llm_backend.supports_function_calling(model_name)
+
+
+@lru_cache(maxsize=None)
+def _model_supports_parallel_function_calling(
+    model_name: str,
+) -> bool:
+    """Whether the model supports parallel function calling.
+
+    Args:
+        model_name: The model to look up.
+
+    Returns:
+        bool: The lookup result.
+    """
+    return llm_backend.supports_parallel_function_calling(model_name)
+
+
+def _log_once(level: str, message: str) -> None:
+    """Log a message the first time it occurs in this process.
+
+    Args:
+        level: The log level name.
+        message: The message to log.
+    """
+    if message in _logged_capability_messages:
+        return
+    _logged_capability_messages.add(message)
+    logger.log(level, message)
 
 
 class LLMManager:
@@ -318,11 +354,7 @@ class LLMManager:
         self, img: Optional[str] = None
     ) -> None:
         """
-        Log an error for each capability the current model is missing.
-
-        Checks vision support when an image is supplied, function calling when
-        a tool schema is set, and parallel function calling when more than two
-        tools are registered. Logging only — never raises.
+        Log the capabilities the current model lacks for this run.
 
         Args:
             img (str, optional): Image input to check vision support for.
@@ -331,7 +363,7 @@ class LLMManager:
 
         # Only check vision support if an image is provided
         if img is not None:
-            out = supports_vision(agent.model_name)
+            out = llm_backend.supports_vision(agent.model_name)
             if out is False:
                 logger.error(
                     f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support vision capabilities. "
@@ -339,24 +371,27 @@ class LLMManager:
                     f"Please use a vision-enabled model."
                 )
 
-        if agent.tools_list_dictionary is not None:
-            out = supports_function_calling(agent.model_name)
+        if agent.tools_list_dictionary:
+            out = _model_supports_function_calling(agent.model_name)
             if out is False:
-                logger.error(
-                    f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support function calling capabilities. "
-                    f"tools_list_dictionary is set: {agent.tools_list_dictionary}. "
-                    f"Please use a function calling-enabled model."
+                _log_once(
+                    "ERROR",
+                    f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support function calling capabilities, "
+                    f"but tools are configured. "
+                    f"Please use a function calling-enabled model.",
                 )
 
         if agent.tools is not None:
             if len(agent.tools) > 2:
-                out = supports_parallel_function_calling(
+                out = _model_supports_parallel_function_calling(
                     agent.model_name
                 )
+                # litellm's capability data lags new models, so this is only a hint.
                 if out is False:
-                    logger.error(
-                        f"[Agent: {agent.agent_name}] Model '{agent.model_name}' does not support parallel function calling capabilities. "
-                        f"Please use a parallel function calling-enabled model."
+                    _log_once(
+                        "WARNING",
+                        f"Model '{agent.model_name}' is not listed as supporting parallel function calling, "
+                        f"so its tool calls may arrive one per turn.",
                     )
 
         return None
@@ -634,12 +669,7 @@ class LLMManager:
 
             return agent.llm.run(**run_args, **kwargs)
 
-        except (
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
-            Exception,
-        ) as e:
+        except Exception as e:
             logger.error(
                 f"Error calling LLM with model '{self.get_current_model()}': {e}. "
                 f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
@@ -694,8 +724,9 @@ class LLMManager:
             if first_chunk is None:
                 first_chunk = chunk
 
+            # RouteHub forwards chunks with no choices, which litellm drops.
             if (
-                hasattr(chunk, "choices")
+                getattr(chunk, "choices", None)
                 and chunk.choices[0].delta.content
             ):
                 content = chunk.choices[0].delta.content
@@ -852,8 +883,9 @@ class LLMManager:
         chunks = []
 
         for chunk in stream:
+            # RouteHub forwards chunks with no choices, which litellm drops.
             if (
-                hasattr(chunk, "choices")
+                getattr(chunk, "choices", None)
                 and chunk.choices[0].delta.content
             ):
                 content = chunk.choices[0].delta.content
@@ -893,6 +925,12 @@ class LLMManager:
             )
             if reasoning:
                 thinking_parts.append(reasoning)
+            elif delta is not None and not (
+                getattr(delta, "content", None)
+                or getattr(delta, "tool_calls", None)
+            ):
+                # A role-only opening chunk, sent by RouteHub, carries nothing to show.
+                continue
             else:
                 first_content_chunk = chunk
                 break

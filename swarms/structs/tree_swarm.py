@@ -3,7 +3,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, List, Optional
 
-from litellm import embedding
+from swarms.utils.llm_backend import embedding
 from pydantic import BaseModel, Field
 
 from swarms.structs.execution_utils import batched_run

@@ -1,7 +1,7 @@
 import math
 from typing import Any, Callable, List, Optional, Union
 
-from litellm import embedding
+from swarms.utils.llm_backend import embedding
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from swarms.structs.ma_blocks import find_agent_by_name
