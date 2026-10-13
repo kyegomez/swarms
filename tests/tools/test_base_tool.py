@@ -26,11 +26,7 @@ def test_func_to_dict():
     print("Testing func_to_dict")
     tool = BaseTool()
 
-    result = tool.func_to_dict(
-        function=sample_function,
-        name="sample_function",
-        description="Test function",
-    )
+    result = tool.func_to_dict(sample_function)
 
     assert result["type"] == "function"
     assert result["function"]["name"] == "sample_function"
@@ -44,9 +40,8 @@ def test_base_model_to_dict():
 
     result = tool.base_model_to_dict(TestModel)
 
-    assert "type" in result
-    assert "properties" in result["properties"]
-    assert "name" in result["properties"]["properties"]
+    assert result["type"] == "function"
+    assert "name" in result["function"]["parameters"]["properties"]
     print("base_model_to_dict test passed")
 
 
@@ -76,7 +71,7 @@ def test_execute_tool_by_name():
     )
 
     result = tool.execute_tool_by_name("sample_function", response)
-    assert result == 3
+    assert json.loads(result)["results"] == {"sample_function": "3"}
     print("execute_tool_by_name test passed")
 
 
