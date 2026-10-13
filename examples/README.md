@@ -84,7 +84,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [base_tool_examples/](tools/base_tool_examples/) | Base tool implementation examples |
 | [base_tool_examples.py](tools/base_tool_examples/base_tool_examples.py) | Base tool examples |
 | [conver_funcs_to_schema.py](tools/base_tool_examples/conver_funcs_to_schema.py) | Convert functions to schema |
-| [exa_search_deep_research.py](tools/base_tool_examples/exa_search_deep_research.py) | Exa search through the deep research swarm |
 | [example_usage.py](tools/base_tool_examples/example_usage.py) | Base tool usage example |
 | [multii_tool_use/](tools/multii_tool_use/) | Multi-tool usage examples |
 | [stagehand/](tools/stagehand/) | Stagehand UI automation |

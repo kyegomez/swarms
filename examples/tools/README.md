@@ -8,7 +8,6 @@ This directory contains examples demonstrating various tool integrations and usa
 ## Base Tool Examples
 - [base_tool_examples.py](base_tool_examples/base_tool_examples.py) - Core base tool functionality
 - [conver_funcs_to_schema.py](base_tool_examples/conver_funcs_to_schema.py) - Function to schema conversion
-- [exa_search_deep_research.py](base_tool_examples/exa_search_deep_research.py) - Exa search through the deep research swarm
 - [example_usage.py](base_tool_examples/example_usage.py) - Basic usage examples
 
 ## Browser Integration
