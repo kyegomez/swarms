@@ -241,27 +241,27 @@ class BaseTool(BaseModel):
 
     def multi_base_models_to_dict(
         self, base_models: List[BaseModel], output_str: bool = False
-    ) -> Union[dict[str, Any], str]:
+    ) -> Union[List[Dict[str, Any]], str]:
         """
-        Convert multiple Pydantic BaseModels to OpenAI function calling schema.
+        Convert multiple Pydantic BaseModels to OpenAI tool schemas.
 
-        This method processes multiple Pydantic models and converts them into
-        a unified OpenAI function calling schema format.
+        Each model is converted with ``base_model_to_dict``, in order.
 
         Args:
             base_models (List[BaseModel]): List of Pydantic models to convert
             output_str (bool): Whether to return string format. Defaults to False.
 
         Returns:
-            dict[str, Any] or str: Combined OpenAI function calling schema or JSON string
+            List[Dict[str, Any]] or str: One tool schema per model, or
+            that list as a JSON string when ``output_str`` is True
 
         Raises:
             ToolValidationError: If base_models validation fails
             FunctionSchemaError: If schema conversion fails
 
         Examples:
-            >>> tool = BaseTool(base_models=[Model1, Model2])
-            >>> schema = tool.multi_base_models_to_dict()
+            >>> tool = BaseTool()
+            >>> schemas = tool.multi_base_models_to_dict([Model1, Model2])
         """
         if base_models is None:
             raise ToolValidationError(
@@ -270,7 +270,7 @@ class BaseTool(BaseModel):
 
         try:
             results = [
-                self.base_model_to_dict(model, output_str=output_str)
+                self.base_model_to_dict(model)
                 for model in base_models
             ]
 
