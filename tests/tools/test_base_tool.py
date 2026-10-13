@@ -150,14 +150,21 @@ def test_multi_base_models_to_dict():
     class ProductModel(BaseModel):
         title: str
 
-    result = BaseTool().multi_base_models_to_dict(
-        [TestModel, ProductModel]
-    )
+    tool = BaseTool()
+    result = tool.multi_base_models_to_dict([TestModel, ProductModel])
 
     assert [r["function"]["name"] for r in result] == [
         "TestModel",
         "ProductModel",
     ]
+    assert (
+        json.loads(
+            tool.multi_base_models_to_dict(
+                [TestModel, ProductModel], output_str=True
+            )
+        )
+        == result
+    )
 
 
 def test_convert_tool_into_openai_schema():
