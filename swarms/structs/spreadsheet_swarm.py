@@ -194,6 +194,10 @@ class SpreadSheetSwarm:
 
     def load_from_csv(self):
         self._load_from_csv()
+        if not self.agents:
+            raise ValueError(
+                f"No agents could be loaded from {self.load_path}"
+            )
 
     @trace_run("SpreadSheetSwarm.run_from_config", input_params=())
     def run_from_config(self):
