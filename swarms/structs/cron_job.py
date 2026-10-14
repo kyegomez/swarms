@@ -452,6 +452,7 @@ class CronJob:
                     f"{self.max_consecutive_errors}"
                 )
                 self._stopped_due_to_error = True
+                self.schedule.clear()
                 self._signal_stop()
             return None
 
@@ -494,13 +495,15 @@ class CronJob:
         try:
             if not self.is_running:
                 self._stop_event.clear()
-                self.is_running = True
                 self.start_time = time.time()
+                self.consecutive_errors = 0
+                self._stopped_due_to_error = False
                 self.thread = threading.Thread(
                     target=self._run_schedule,
                     daemon=True,
                     name=f"cronjob_{self.job_id}",
                 )
+                self.is_running = True
                 self.thread.start()
                 logger.info(f"Started job {self.job_id}")
             else:
@@ -558,7 +561,10 @@ class CronJob:
     def _run_schedule(self):
         """Internal method to run the schedule loop."""
         logger.debug(f"Starting schedule loop for job {self.job_id}")
-        while self.is_running:
+        while (
+            self.is_running
+            and self.thread is threading.current_thread()
+        ):
             self.schedule.run_pending()
             self._stop_event.wait(1)
 

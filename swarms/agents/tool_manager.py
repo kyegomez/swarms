@@ -107,7 +107,7 @@ class ToolManager:
             agent.short_memory.add(
                 role=agent.agent_name,
                 content=agent.tool_struct.multi_base_models_to_dict(
-                    output_str=True
+                    agent.list_base_models, output_str=True
                 ),
             )
 

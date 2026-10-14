@@ -26,11 +26,6 @@ from loguru import logger
 from swarms.utils.generate_id import generate_id
 
 
-def generate_conversation_id() -> str:
-    """Deprecated: use ``generate_id()``."""
-    return generate_id()
-
-
 def get_conversation_dir():
     """Get the directory for storing conversation logs.
 

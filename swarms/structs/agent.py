@@ -102,12 +102,6 @@ def stop_when_repeats(response: str) -> bool:
     return "stop" in response.lower()
 
 
-# Agent ID generator
-def agent_id() -> str:
-    """Deprecated: use ``generate_id("agent")``."""
-    return generate_id("agent")
-
-
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
@@ -603,7 +597,6 @@ class Agent:
         self.tool_manager = ToolManager(agent=self)
         self.autonomous_loop = AutonomousAgentLoop(agent=self)
 
-        # self.init_handling()
         self.setup_config()
 
         # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
