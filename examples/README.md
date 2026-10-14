@@ -40,7 +40,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [social_algorithms_examples/](multi_agent/social_algorithms_examples/) | Social algorithm patterns and implementations |
 | [spreadsheet_examples/](multi_agent/spreadsheet_examples/) | Spreadsheet-based agent examples |
 | [swarm_router/](multi_agent/swarm_router/) | Swarm routing and routing patterns |
-| [swarmarrange/](multi_agent/swarmarrange/) | Swarm arrangement examples |
 | [swarms_api_examples/](multi_agent/swarms_api_examples/) | Swarms API integration examples |
 | [utils/](multi_agent/utils/) | Multi-agent utility functions |
 

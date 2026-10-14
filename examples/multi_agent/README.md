@@ -147,9 +147,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 ## Swarm Router
 - [swarm_router/](swarm_router/) - Routing and load balancing
 
-## Swarm Arrange
-- [swarmarrange/](swarmarrange/) - Agent arrangement utilities
-
 ## Swarms API
 - [swarms_api_examples/](swarms_api_examples/) - API integration examples
 

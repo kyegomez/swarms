@@ -10,7 +10,7 @@ This folder contains comprehensive examples demonstrating all the new features i
 | 02 | [02_round_robin_swarm_routing.py](02_round_robin_swarm_routing.py) | Round Robin Swarm Routing | Multi-Agent Structures |
 | 03 | [03_graph_workflow_rustworkx.py](03_graph_workflow_rustworkx.py) | Graph Workflow with Rustworkx | Workflow Orchestration |
 | 04 | [04_agent_rearrange.py](04_agent_rearrange.py) | Agent Rearrangement | Multi-Agent Structures |
-| 05 | [05_swarm_rearrange.py](05_swarm_rearrange.py) | Swarm Rearrangement | Multi-Agent Structures |
+| 05 | [05_nested_swarms.py](05_nested_swarms.py) | Nested Swarms | Multi-Agent Structures |
 | 06 | [06_spreadsheet_swarm.py](06_spreadsheet_swarm.py) | SpreadsheetSwarm | Workflow Orchestration |
 | 07 | [07_model_router.py](07_model_router.py) | ModelRouter | Agent Management |
 | 08 | [08_self_moa_seq.py](08_self_moa_seq.py) | SelfMoASeq | Agent Management |
@@ -148,9 +148,9 @@ python 02_round_robin_swarm_routing.py
 python 04_agent_rearrange.py
 ```
 
-#### [05_swarm_rearrange.py](05_swarm_rearrange.py)
-**Feature:** Swarm Rearrangement  
-**Description:** Rearranging swarms of swarms with dynamic flow patterns for complex orchestration.
+#### [05_nested_swarms.py](05_nested_swarms.py)
+**Feature:** Nested Swarms  
+**Description:** Running whole swarms as the steps of an AgentRearrange flow, each referenced by its name.
 
 **Key Features:**
 - Swarm-level rearrangement
@@ -159,7 +159,7 @@ python 04_agent_rearrange.py
 
 **Usage:**
 ```bash
-python 05_swarm_rearrange.py
+python 05_nested_swarms.py
 ```
 
 #### [12_debate_with_judge.py](12_debate_with_judge.py)

@@ -73,7 +73,6 @@ from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
-from swarms.structs.swarm_rearrange import SwarmRearrange
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -124,7 +123,6 @@ __all__ = [
     "SpreadSheetSwarm",
     "SwarmRouter",
     "SwarmType",
-    "SwarmRearrange",
     "batched_grid_agent_execution",
     "run_agent_async",
     "run_agents_concurrently",
