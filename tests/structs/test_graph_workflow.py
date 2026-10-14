@@ -1345,7 +1345,7 @@ def test_visualize_sanitizes_the_workflow_name_into_the_output_path():
 
     # And the sanitization now runs before graphviz availability is checked,
     # i.e. in the path that actually builds the filename.
-    live_path = source.split("import graphviz")[0]
+    live_path = source.split("if not GRAPHVIZ_AVAILABLE")[0]
     assert "safe_name" in live_path
 
     workflow = GraphWorkflow(name="team/alpha")

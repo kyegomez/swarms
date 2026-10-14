@@ -1,6 +1,8 @@
 import asyncio
 import concurrent.futures
 import hashlib
+import importlib
+import importlib.util
 import json
 import os
 import time
@@ -34,6 +36,36 @@ from swarms.utils.generate_id import generate_id
 from swarms.utils.litellm_wrapper import empty_usage
 
 logger = initialize_logger(log_folder="graph_workflow")
+
+
+class _LazyModule:
+    """
+    A module that is imported the first time one of its attributes is read.
+
+    Args:
+        name (str): The module to import.
+    """
+
+    def __init__(self, name: str):
+        self._name = name
+        self._module = None
+
+    def __getattr__(self, attr: str) -> Any:
+        if self._module is None:
+            self._module = importlib.import_module(self._name)
+        return getattr(self._module, attr)
+
+
+# Loaded on first use, so import swarms does not pay for the graph libraries.
+nx = _LazyModule("networkx")
+
+GRAPHVIZ_AVAILABLE = importlib.util.find_spec("graphviz") is not None
+graphviz = _LazyModule("graphviz") if GRAPHVIZ_AVAILABLE else None
+
+RUSTWORKX_AVAILABLE = (
+    importlib.util.find_spec("rustworkx") is not None
+)
+rx = _LazyModule("rustworkx") if RUSTWORKX_AVAILABLE else None
 
 
 class GraphBackend:
@@ -176,8 +208,6 @@ class NetworkXBackend(GraphBackend):
         """
         Initialize the NetworkX backend.
         """
-        import networkx as nx
-
         self.graph = nx.DiGraph()
 
     def add_node(self, node_id: str, **attrs) -> None:
@@ -231,8 +261,6 @@ class NetworkXBackend(GraphBackend):
             IDs. A cyclic remainder, if any, is appended as a final layer
             rather than raising.
         """
-        import networkx as nx
-
         try:
             return list(nx.topological_generations(self.graph))
         except nx.NetworkXUnfeasible:
@@ -259,16 +287,12 @@ class NetworkXBackend(GraphBackend):
             return layers
 
     def simple_cycles(self) -> List[List[str]]:
-        import networkx as nx
-
         # Enumerating cycles is exponential, short-circuit the acyclic case
         if nx.is_directed_acyclic_graph(self.graph):
             return []
         return list(nx.simple_cycles(self.graph))
 
     def descendants(self, node_id: str) -> Set[str]:
-        import networkx as nx
-
         return nx.descendants(self.graph, node_id)
 
     def is_dag(self) -> bool:
@@ -278,8 +302,6 @@ class NetworkXBackend(GraphBackend):
         Returns:
             bool: True when the graph contains no directed cycle.
         """
-        import networkx as nx
-
         return nx.is_directed_acyclic_graph(self.graph)
 
     def adjacency(
@@ -311,9 +333,7 @@ class RustworkxBackend(GraphBackend):
         """
         Initialize the Rustworkx backend.
         """
-        try:
-            import rustworkx as rx
-        except ImportError:
+        if not RUSTWORKX_AVAILABLE:
             raise ImportError(
                 "rustworkx is not installed. Install it with: pip install rustworkx"
             )
@@ -425,8 +445,6 @@ class RustworkxBackend(GraphBackend):
         return reversed_backend
 
     def topological_generations(self) -> List[List[str]]:
-        import rustworkx as rx
-
         all_indices = list(self._node_id_to_index.values())
         if not all_indices:
             return []
@@ -507,8 +525,6 @@ class RustworkxBackend(GraphBackend):
         return layers or [[index_to_id[idx] for idx in all_indices]]
 
     def simple_cycles(self) -> List[List[str]]:
-        import rustworkx as rx
-
         try:
             # Enumerating cycles is exponential, short-circuit the acyclic case
             if rx.is_directed_acyclic_graph(self.graph):
@@ -525,8 +541,6 @@ class RustworkxBackend(GraphBackend):
             return []
 
     def descendants(self, node_id: str) -> Set[str]:
-        import rustworkx as rx
-
         if node_id not in self._node_id_to_index:
             return set()
         node_index = self._node_id_to_index[node_id]
@@ -544,8 +558,6 @@ class RustworkxBackend(GraphBackend):
         Returns:
             bool: True when the graph contains no directed cycle.
         """
-        import rustworkx as rx
-
         return rx.is_directed_acyclic_graph(self.graph)
 
     def adjacency(
@@ -801,14 +813,13 @@ class GraphWorkflow:
 
         # Initialize graph backend
         if backend.lower() == "rustworkx":
-            try:
-                self.graph_backend = RustworkxBackend()
-            except ImportError:
+            if not RUSTWORKX_AVAILABLE:
                 logger.warning(
                     "rustworkx is not available, falling back to networkx. Install with: pip install rustworkx"
                 )
                 self.graph_backend = NetworkXBackend()
             else:
+                self.graph_backend = RustworkxBackend()
                 if self.verbose:
                     logger.info("Using rustworkx backend")
         else:
@@ -2521,9 +2532,7 @@ class GraphWorkflow:
         )
         output_path = f"{safe_name}_visualization_{str(uuid.uuid4())}"
 
-        try:
-            import graphviz
-        except ImportError:
+        if not GRAPHVIZ_AVAILABLE:
             error_msg = "Graphviz is not installed. Install it with: pip install graphviz"
             logger.error(error_msg)
             raise ImportError(error_msg)
