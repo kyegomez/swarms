@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     Union,
 )
@@ -642,19 +643,23 @@ class Conversation:
         return added
 
     def to_messages(
-        self, agent_name: Optional[str] = None, start: int = 0
+        self,
+        agent_name: Optional[str] = None,
+        start: int = 0,
+        prefix: Sequence[Dict[str, Any]] = (),
     ) -> List[Dict[str, Any]]:
         """Build a chat request body from the history.
 
         Args:
             agent_name (Optional[str]): The role whose rows become assistant turns.
             start (int): Index of the first row to include.
+            prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
         """
         messages = []
-        for row in self.conversation_history[start:]:
+        for row in [*prefix, *self.conversation_history[start:]]:
             role, content = row.get("role"), row.get("content")
             if "tool_results" in row:
                 messages.append(

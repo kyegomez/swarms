@@ -933,6 +933,7 @@ class Agent:
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
+        stored_messages: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -1000,6 +1001,10 @@ class Agent:
             streaming_callback (Optional[Callable[[str], None]]): Optional callback function
                 to receive streaming tokens in real-time. Useful for dashboard integration
                 or real-time UI updates. Defaults to None.
+            stored_messages (Optional[List[Dict[str, Any]]]): Shared by the n samples
+                of one run. The first sample stores messages and fills it with the
+                stored rows, and later samples send those rows instead of storing
+                messages again.
             *args: Additional positional arguments passed to LLM calls. Used for extensibility.
             **kwargs: Additional keyword arguments passed to LLM calls. Used for extensibility.
 
@@ -1050,9 +1055,12 @@ class Agent:
                 self.short_memory.conversation_history
             )
 
-            # Added per run so each of n samples starts its request at these messages.
-            if messages:
-                self.short_memory.add_messages(messages)
+            # A later sample sends the copy the first one stored instead of storing another.
+            prefix = stored_messages or ()
+            if messages and not prefix:
+                added = self.short_memory.add_messages(messages)
+                if stored_messages is not None:
+                    stored_messages.extend(added)
 
             self.check_if_no_prompt_then_autogenerate(task)
 
@@ -1090,6 +1098,7 @@ class Agent:
                 ):
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
+                    prefix = ()
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
@@ -1137,7 +1146,9 @@ class Agent:
                             if self.transforms is None:
                                 llm_kwargs["messages"] = (
                                     self.short_memory.to_messages(
-                                        self.agent_name, request_start
+                                        self.agent_name,
+                                        request_start,
+                                        prefix,
                                     )
                                 )
 
@@ -2586,6 +2597,7 @@ Subtask Breakdown:
                     **kwargs,
                 )
             elif n > 1:
+                stored_messages = []
                 output = [
                     self._run(
                         task=task,
@@ -2594,6 +2606,7 @@ Subtask Breakdown:
                         streaming_callback=streaming_callback,
                         messages=messages,
                         *args,
+                        stored_messages=stored_messages,
                         **kwargs,
                     )
                     for _ in range(n)

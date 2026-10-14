@@ -2404,3 +2404,27 @@ class TestIntegerLoopRequest:
             expected,
             expected,
         ]
+
+    def test_samples_store_the_callers_messages_once(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(
+            monkeypatch, agent, ["one", "two", "three", "four"]
+        )
+
+        agent.run(
+            "task",
+            messages=[{"role": "user", "content": "context"}],
+            n=3,
+        )
+        agent.run("next")
+
+        stored = [
+            row["content"]
+            for row in agent.short_memory.conversation_history
+        ]
+        assert stored.count("context") == 1
+        assert [m["content"] for m in sent[-1][1]].count(
+            "context"
+        ) == 1
