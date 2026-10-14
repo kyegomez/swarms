@@ -64,7 +64,7 @@ class SpreadSheetSwarm:
     ):
         self.name = name
         self.description = description
-        self.agents = agents
+        self.agents = agents or []
         self.save_file_path = save_file_path
         self.autosave = autosave
         self.max_loops = max_loops
@@ -113,8 +113,10 @@ class SpreadSheetSwarm:
                 f"SpreadSheetSwarm Name: {self.name} reliability checks in progress..."
             )
 
-        if not self.agents:
-            raise ValueError("No agents are provided.")
+        if not self.agents and not self.load_path:
+            raise ValueError(
+                "No agents are provided and no load_path to load them from."
+            )
 
         if not self.max_loops:
             raise ValueError("No max loops are provided.")
@@ -155,7 +157,7 @@ class SpreadSheetSwarm:
                     new_agent = Agent(
                         agent_name=agent_name,
                         system_prompt=row["system_prompt"],
-                        description=row["description"],
+                        agent_description=row["description"],
                         model_name=(
                             row["model_name"]
                             if "model_name" in row
