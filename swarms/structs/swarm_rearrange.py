@@ -149,7 +149,7 @@ class SwarmRearrange:
         Validates the flow pattern.
 
         Raises:
-            ValueError: If the flow pattern is incorrectly formatted or contains duplicate swarm names.
+            ValueError: If the flow pattern is incorrectly formatted or repeats a swarm name within one step.
 
         Returns:
             bool: True if the flow pattern is valid.
@@ -158,8 +158,6 @@ class SwarmRearrange:
             raise ValueError(
                 "Flow must include '->' to denote the direction of the task."
             )
-
-        swarms_in_flow = []
 
         # Arrow
         tasks = self.flow.split("->")
@@ -177,13 +175,11 @@ class SwarmRearrange:
                     raise ValueError(
                         f"swarm '{swarm_name}' is not registered."
                     )
-                swarms_in_flow.append(swarm_name)
 
-        # If the length of the swarms does not equal the length of the swarms in flow
-        if len(set(swarms_in_flow)) != len(swarms_in_flow):
-            raise ValueError(
-                "Duplicate swarm names in the flow are not allowed."
-            )
+            if len(set(swarm_names)) != len(swarm_names):
+                raise ValueError(
+                    f"Duplicate swarm names in one step are not allowed: '{task.strip()}'."
+                )
 
         logger.info("Flow is valid.")
         return True
@@ -337,7 +333,7 @@ class SwarmRearrange:
 
         except Exception as e:
             logger.error(f"An error occurred: {e}")
-            return str(e)
+            raise
 
 
 def swarm_arrange(
@@ -368,11 +364,11 @@ def swarm_arrange(
     """
     try:
         swarm_arrangement = SwarmRearrange(
-            name,
-            description,
-            swarms,
-            output_type,
-            flow,
+            name=name,
+            description=description,
+            swarms=swarms,
+            output_type=output_type,
+            flow=flow,
         )
         result = swarm_arrangement.run(task, *args, **kwargs)
         result = any_to_str(result)
@@ -384,4 +380,4 @@ def swarm_arrange(
         logger.error(
             f"An error occurred during swarm arrangement execution: {e}"
         )
-        return str(e)
+        raise
