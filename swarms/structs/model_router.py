@@ -368,22 +368,14 @@ class ModelRouter:
                 f"Concurrent execution failed: {str(e)}"
             )
 
-    async def async_run(self, task: str, *args, **kwargs):
+    async def async_run(self, task: str):
         """
-        Run a task asynchronously.
+        Run a task in a worker thread without blocking the event loop.
 
         Args:
             task (str): Task to execute asynchronously
 
         Returns:
-            asyncio.Task: Async task object
-
-        Raises:
-            RuntimeError: If async execution fails
+            str: Model output
         """
-        try:
-            return asyncio.create_task(
-                self.run(task, *args, **kwargs)
-            )
-        except Exception as e:
-            raise RuntimeError(f"Async execution failed: {str(e)}")
+        return await asyncio.to_thread(self.run, task)
