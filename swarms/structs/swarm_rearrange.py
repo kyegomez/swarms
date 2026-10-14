@@ -340,7 +340,7 @@ def swarm_arrange(
     name: str = "SwarmArrange-01",
     description: str = "Combine multiple swarms and execute them sequentially",
     swarms: List[Callable] = None,
-    output_type: str = "json",
+    output_type: HistoryOutputType = "json",
     flow: str = None,
     task: str = None,
     *args,
