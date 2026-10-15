@@ -14,44 +14,25 @@ from swarms.telemetry.otel import (
 
 model_recommendations = {
     "gpt-5.4": {
-        "description": "Fast and efficient for simple tasks and general queries",
+        "description": "OpenAI's flagship model and the strongest OpenAI option here, for hard reasoning, coding and agentic work",
         "best_for": [
-            "Simple queries",
-            "Basic text generation",
-            "Quick responses",
-            "Everyday tasks",
+            "Complex reasoning",
+            "Coding and debugging",
+            "Multi-step agentic tasks",
         ],
         "provider": "openai",
     },
-    "gpt-4-turbo": {
-        "description": "Latest GPT-4 model with improved capabilities and knowledge cutoff",
+    "openai/gpt-oss-120b": {
+        "description": "OpenAI's open-weight model served by Groq for very fast, low-cost inference",
         "best_for": [
-            "Complex tasks",
-            "Up-to-date knowledge",
-            "Long context understanding",
-        ],
-        "provider": "openai",
-    },
-    "gpt-3.5-turbo": {
-        "description": "Fast and cost-effective model for straightforward tasks",
-        "best_for": [
-            "Chat applications",
-            "Content generation",
-            "Basic assistance",
-        ],
-        "provider": "openai",
-    },
-    "o3-mini": {
-        "description": "Lightweight model good for basic tasks with lower compute requirements",
-        "best_for": [
-            "Basic text completion",
+            "Low-latency responses",
             "Simple classification",
-            "Resource-constrained environments",
+            "Cost-sensitive workloads",
         ],
         "provider": "groq",
     },
-    "deepseek-reasoner": {
-        "description": "Specialized for complex reasoning and analytical tasks",
+    "deepseek-v4-pro": {
+        "description": "DeepSeek's flagship model with a reasoning mode, strong at analysis for a low price",
         "best_for": [
             "Complex problem solving",
             "Logical reasoning",
@@ -60,17 +41,17 @@ model_recommendations = {
         ],
         "provider": "deepseek",
     },
-    "claude-3-5-sonnet": {
-        "description": "Well-rounded model with strong reasoning and creativity",
+    "claude-sonnet-5-5": {
+        "description": "Balanced Claude model with strong coding and agent skills at half the price of Opus",
         "best_for": [
-            "Creative writing",
+            "Everyday coding",
             "Detailed analysis",
-            "Nuanced responses",
+            "Agentic tool use",
         ],
         "provider": "anthropic",
     },
-    "claude-3-opus": {
-        "description": "Most capable Claude model with enhanced reasoning and analysis",
+    "claude-opus-5-5": {
+        "description": "Anthropic's current Opus model and the strongest Claude option here, for deep analysis, long tasks and code",
         "best_for": [
             "Research",
             "Complex analysis",
@@ -79,17 +60,17 @@ model_recommendations = {
         ],
         "provider": "anthropic",
     },
-    "gemini-pro": {
-        "description": "Google's advanced model with strong general capabilities",
+    "gemini-2.5-pro": {
+        "description": "Google's Gemini Pro model with a 1M-token context window and strong multimodal skills",
         "best_for": [
             "Multimodal tasks",
             "Code generation",
-            "Creative content",
+            "Very long documents",
         ],
-        "provider": "google",
+        "provider": "gemini",
     },
-    "mistral-large": {
-        "description": "Open source model with strong performance across tasks",
+    "mistral-large-latest": {
+        "description": "Mistral's flagship model with strong general performance at low cost",
         "best_for": [
             "General purpose tasks",
             "Code assistance",
@@ -128,20 +109,10 @@ class ModelOutput(BaseModel):
     )
 
 
-providers = any_to_str(providers)
-model_recommendations = any_to_str(model_recommendations)
-data = f"Providers: {providers}\nModel Recommendations: {model_recommendations}"
+data = f"Providers: {any_to_str(providers)}\nModel Recommendations: {any_to_str(model_recommendations)}"
 
 model_router_system_prompt = f"""
 You are an expect model router responsible for recommending the optimal AI model for specific tasks.
-
-Available Models and Their Strengths:
-- GPT-4: Best for complex reasoning, coding, and analysis requiring strong logical capabilities
-- GPT-3.5-Turbo: Efficient for straightforward tasks, chat, and basic content generation
-- Claude-3-Opus: Excels at research, technical writing, and in-depth analysis with strong reasoning
-- Claude-3-Sonnet: Well-balanced for creative writing and nuanced responses
-- Gemini Pro: Strong at multimodal tasks and code generation
-- Mistral Large: Versatile open source model good for general tasks
 
 Provider Considerations:
 - OpenAI: Industry standard with consistent performance
@@ -159,6 +130,8 @@ When Making Recommendations Consider:
 3. Special capabilities required (code generation, analysis, etc)
 4. Cost and efficiency tradeoffs
 5. Provider-specific strengths and limitations
+
+Set model to a key of Model Recommendations and provider to that entry's provider, exactly as written.
 
 Provide clear rationale for your model selection based on the specific task requirements.
 """

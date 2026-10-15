@@ -2,10 +2,13 @@ import asyncio
 import json
 import threading
 
+import litellm
+
 from swarms.structs.model_router import (
     LiteLLM,
     ModelOutput,
     ModelRouter,
+    model_recommendations,
 )
 
 
@@ -69,3 +72,8 @@ def test_async_run_returns_the_output_without_blocking_the_loop(
         )
 
     assert asyncio.run(run_both()) == ["answer to a", "answer to b"]
+
+
+def test_every_recommended_provider_is_a_litellm_prefix():
+    for model, entry in model_recommendations.items():
+        assert entry["provider"] in litellm.provider_list, model
