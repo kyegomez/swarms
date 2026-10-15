@@ -1,4 +1,6 @@
 import hashlib
+import subprocess
+import sys
 
 import pytest
 
@@ -874,6 +876,20 @@ def test_graph_workflow_backend_fallback():
         )
 
 
+def test_import_swarms_does_not_load_graph_libraries():
+    loaded = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys, swarms; print(sorted({'networkx', 'rustworkx', 'graphviz'} & set(sys.modules)))",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert loaded.strip() == "[]"
+
+
 @pytest.mark.parametrize("backend", ["networkx", "rustworkx"])
 def test_graph_workflow_max_loops_accumulates_results(backend):
     """Test that max_loops > 1 actually executes multiple iterations and
@@ -1556,7 +1572,7 @@ def _usage_agent(name, input_tokens=0, output_tokens=0):
     """An offline Agent whose run() reports a fixed usage per call through the real hook."""
     from unittest.mock import patch
 
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         agent = Agent(
             agent_name=name,
             model_name="gpt-5.4",

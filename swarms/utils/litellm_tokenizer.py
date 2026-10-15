@@ -1,7 +1,8 @@
-from litellm import encode, model_list
 from loguru import logger
 from typing import Optional
 from functools import lru_cache
+
+from swarms.utils import llm_backend
 
 # Use consistent default model
 DEFAULT_MODEL = "gpt-5.4"
@@ -35,7 +36,7 @@ def count_tokens(
 
     # First attempt with the requested model
     try:
-        tokens = encode(model=model, text=text)
+        tokens = llm_backend.encode(model=model, text=text)
         return len(tokens)
 
     except Exception as e:
@@ -51,7 +52,9 @@ def count_tokens(
                 logger.info(
                     f"Falling back to default encoder: {fallback_model}"
                 )
-                tokens = encode(model=fallback_model, text=text)
+                tokens = llm_backend.encode(
+                    model=fallback_model, text=text
+                )
                 return len(tokens)
 
             except Exception as fallback_error:
@@ -72,9 +75,9 @@ def count_tokens(
 
 @lru_cache(maxsize=100)
 def get_supported_models() -> list:
-    """Get list of supported models from litellm."""
+    """Get list of supported models from the LLM backend."""
     try:
-        return model_list
+        return llm_backend.model_list
     except Exception as e:
         logger.warning(f"Could not retrieve model list: {e}")
         return []

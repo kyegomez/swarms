@@ -1,0 +1,6 @@
+*
+!pyproject.toml
+!README.md
+!swarms
+**/__pycache__
+**/*.pyc
