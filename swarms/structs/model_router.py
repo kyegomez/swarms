@@ -69,6 +69,24 @@ model_recommendations = {
         ],
         "provider": "gemini",
     },
+    "minimax/minimax-m3": {
+        "description": "MiniMax's flagship model served through OpenRouter, with a 1M-token context window, built for long agentic work and coding at a low price",
+        "best_for": [
+            "Long-horizon agentic tasks",
+            "Coding",
+            "Very long documents",
+        ],
+        "provider": "openrouter",
+    },
+    "z-ai/glm-5.3": {
+        "description": "Z.ai's flagship GLM reasoning model served through OpenRouter, with a 1M-token context window, built for software engineering and agent tasks",
+        "best_for": [
+            "Complex software engineering",
+            "Long-horizon agent tasks",
+            "Step-by-step reasoning",
+        ],
+        "provider": "openrouter",
+    },
     "mistral-large-latest": {
         "description": "Mistral's flagship model with strong general performance at low cost",
         "best_for": [
@@ -88,6 +106,7 @@ providers = {
     "azure": "Cloud platform for various model deployments",
     "deepseek": "Provider of specialized reasoning models",
     "mistral": "Provider of open source and commercial language models",
+    "openrouter": "Gateway to many providers' models, including MiniMax and Z.ai GLM",
 }
 
 
