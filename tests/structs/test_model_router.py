@@ -2,14 +2,13 @@ import asyncio
 import json
 import threading
 
-import litellm
-
 from swarms.structs.model_router import (
     LiteLLM,
     ModelOutput,
     ModelRouter,
     model_recommendations,
 )
+from swarms.utils import llm_backend
 
 
 def test_run_executes_the_task_on_the_model_the_router_picked(
@@ -76,4 +75,6 @@ def test_async_run_returns_the_output_without_blocking_the_loop(
 
 def test_every_recommended_provider_is_a_litellm_prefix():
     for model, entry in model_recommendations.items():
-        assert entry["provider"] in litellm.provider_list, model
+        provider = entry["provider"]
+        resolved = llm_backend.get_llm_provider(f"{provider}/{model}")
+        assert resolved[1] == provider, model
