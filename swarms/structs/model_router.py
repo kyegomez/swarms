@@ -97,14 +97,31 @@ model_recommendations = {
         ],
         "provider": "mistral",
     },
+    "gpt-5.4-mini": {
+        "description": "Smaller, cheaper GPT-5.4 for fast everyday tasks",
+        "best_for": [
+            "Everyday tasks",
+            "Quick responses",
+            "High-volume workloads",
+        ],
+        "provider": "openai",
+    },
+    "claude-haiku-5-5": {
+        "description": "Fastest and cheapest Claude model for simple, high-volume tasks",
+        "best_for": [
+            "Classification",
+            "Summarization",
+            "Simple queries",
+        ],
+        "provider": "anthropic",
+    },
 }
 
 providers = {
     "openai": "Primary provider for GPT models",
     "groq": "High-performance inference provider",
     "anthropic": "Provider of Claude models",
-    "google": "Provider of PaLM and Gemini models",
-    "azure": "Cloud platform for various model deployments",
+    "gemini": "Provider of Gemini models",
     "deepseek": "Provider of specialized reasoning models",
     "mistral": "Provider of open source and commercial language models",
 }
@@ -188,6 +205,7 @@ class ModelRouter:
         max_workers: int = 10,
         api_key: str = None,
         max_loops: int = 1,
+        model_name: str = "gpt-5.4",
         *args,
         **kwargs,
     ):
@@ -199,6 +217,7 @@ class ModelRouter:
             max_tokens (int): Maximum output tokens
             temperature (float): Model temperature parameter
             max_workers (int): Max concurrent workers
+            model_name (str): Model that picks the route for each task
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
         """
@@ -214,7 +233,7 @@ class ModelRouter:
                 self.max_workers = os.cpu_count()
 
             self.model_caller = LiteLLM(
-                model_name="gpt-4o",
+                model_name=model_name,
                 response_format=ModelOutput,
                 temperature=self.temperature,
                 system_prompt=self.system_prompt,
