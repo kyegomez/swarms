@@ -784,6 +784,20 @@ class TestUsage:
 
         assert swarm.usage["input_tokens"] == 30
 
+    @pytest.mark.parametrize("show_dashboard", [False, True])
+    def test_every_agent_runs_on_a_one_cpu_host(
+        self, monkeypatch, show_dashboard
+    ):
+        monkeypatch.setattr("os.cpu_count", lambda: 1)
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+        swarm.show_dashboard = show_dashboard
+        self._stub_agents(swarm)
+
+        swarm.run("task")
+
+        assert swarm.usage["input_tokens"] == 30 + 100 * 5
+
 
 class TestSwarmRouterGrokIntegration:
     """Verify SwarmRouter passes through grok flag."""

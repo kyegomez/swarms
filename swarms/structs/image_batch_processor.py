@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from loguru import logger
 
 from swarms.structs import Agent
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 
 class ImageProcessingError(Exception):
@@ -49,14 +50,14 @@ class ImageAgentBatchProcessor:
 
         Args:
             agents: Single agent or list of agents to process images
-            max_workers: Maximum number of parallel workers (default: 4)
+            max_workers: Maximum number of parallel workers (default: 95% of the CPU cores, at least 1)
             supported_formats: List of supported image formats (default: ['.jpg', '.jpeg', '.png'])
 
         Raises:
             InvalidAgentError: If agents parameter is invalid
         """
         self.agents = agents
-        self.max_workers = max_workers
+        self.max_workers = max_workers or max_workers_95_percent()
         self.supported_formats = supported_formats
 
         self.agents = (
@@ -66,9 +67,6 @@ class ImageAgentBatchProcessor:
             raise InvalidAgentError(
                 "At least one agent must be provided"
             )
-
-        # Get 95% of the total number of cores
-        self.max_workers = int(os.cpu_count() * 0.95)
 
         self.supported_formats = set(
             supported_formats or [".jpg", ".jpeg", ".png"]
