@@ -166,9 +166,9 @@ class SpreadSheetSwarm:
                         docs=[row["docs"]] if "docs" in row else "",
                         dynamic_temperature_enabled=True,
                         max_loops=(
-                            row["max_loops"]
-                            if "max_loops" in row
-                            else 1
+                            int(row["max_loops"])
+                            if (row.get("max_loops") or "").isdigit()
+                            else row.get("max_loops") or 1
                         ),
                         user_name=(
                             row["user_name"]
