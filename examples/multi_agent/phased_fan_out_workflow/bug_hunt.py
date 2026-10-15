@@ -1,4 +1,6 @@
-from swarms.structs.dynamic_workflow import DynamicWorkflow
+from swarms.structs.phased_fan_out_workflow import (
+    PhasedFanOutWorkflow,
+)
 
 CODE = {
     "stats.py": "def mean(xs):\n    return sum(xs) / len(xs) - 1\n",
@@ -13,8 +15,10 @@ task = (
     + "\n\n".join(f"# {path}\n{code}" for path, code in CODE.items())
 )
 
-workflow = DynamicWorkflow(
-    model_name="gpt-5.4-mini", size_guideline="small"
+workflow = PhasedFanOutWorkflow(
+    model_name="gpt-5.4",
+    worker_model_name="gpt-5.4-mini",
+    size_guideline="small",
 )
 print(workflow.run(task))
 print(workflow.usage)

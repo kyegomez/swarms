@@ -1,5 +1,7 @@
 from swarms import Agent
-from swarms.structs.dynamic_workflow import DynamicWorkflow
+from swarms.structs.phased_fan_out_workflow import (
+    PhasedFanOutWorkflow,
+)
 
 CONTRACTS = {
     "acme_supply.txt": "If Supplier undergoes a change of control, Buyer may terminate this Agreement on 30 days' notice.",
@@ -32,8 +34,8 @@ task = (
     )
 )
 
-workflow = DynamicWorkflow(
-    model_name="gpt-5.4-mini",
+workflow = PhasedFanOutWorkflow(
+    model_name="gpt-5.4",
     agents=[reader, checker],
     allow_inline_agents=False,
     size_guideline="small",

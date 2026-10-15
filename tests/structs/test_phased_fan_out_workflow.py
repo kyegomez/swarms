@@ -4,10 +4,10 @@ import time
 
 import pytest
 
-from swarms.structs import dynamic_workflow as dw
-from swarms.structs.dynamic_workflow import (
-    DynamicWorkflow,
-    DynamicWorkflowError,
+from swarms.structs import phased_fan_out_workflow as dw
+from swarms.structs.phased_fan_out_workflow import (
+    PhasedFanOutWorkflow,
+    PhasedFanOutWorkflowError,
 )
 
 
@@ -105,7 +105,7 @@ def fan_out_plan():
                     {
                         "id": "scan",
                         "agent": "worker",
-                        "prompt": "List files",
+                        "prompt": "List files in {task}",
                         "output_schema": LIST_SCHEMA,
                     }
                 ],
@@ -148,7 +148,7 @@ def test_phases_run_in_order_and_outputs_flow_forward():
                             {
                                 "id": "a",
                                 "agent": "worker",
-                                "prompt": "A",
+                                "prompt": "A {task}",
                             }
                         ],
                     },
@@ -168,19 +168,23 @@ def test_phases_run_in_order_and_outputs_flow_forward():
         ]
     )
     FakeAgent.handler = lambda agent, task: f"out<{task}>"
-    workflow = DynamicWorkflow(lead_agent=lead)
+    workflow = PhasedFanOutWorkflow(lead_agent=lead)
 
     assert workflow.run("task") == "FINAL"
     assert workflow.last_run["outputs"] == {
-        "a": "out<A>",
-        "b": "out<use out<A>>",
+        "a": "out<A task>",
+        "b": "out<use out<A task>>",
     }
-    assert "out<use out<A>>" in lead.prompts[-1]
+    assert "out<use out<A task>>" in lead.prompts[-1]
 
 
 def test_steps_in_a_phase_run_in_parallel():
     steps = [
-        {"id": f"s{i}", "agent": "worker", "prompt": "wait"}
+        {
+            "id": f"s{i}",
+            "agent": "worker",
+            "prompt": f"wait {i} {{task}}",
+        }
         for i in range(4)
     ]
     lead = FakeLead([plan([{"title": "P", "steps": steps}], ["s0"])])
@@ -191,13 +195,17 @@ def test_steps_in_a_phase_run_in_parallel():
         return "ok"
 
     FakeAgent.handler = handler
-    DynamicWorkflow(lead_agent=lead).run("task")
+    PhasedFanOutWorkflow(lead_agent=lead).run("task")
     assert not barrier.broken
 
 
 def test_max_concurrent_agents_bounds_parallelism():
     steps = [
-        {"id": f"s{i}", "agent": "worker", "prompt": "x"}
+        {
+            "id": f"s{i}",
+            "agent": "worker",
+            "prompt": f"x {i} {{task}}",
+        }
         for i in range(6)
     ]
     lead = FakeLead([plan([{"title": "P", "steps": steps}], ["s0"])])
@@ -214,16 +222,16 @@ def test_max_concurrent_agents_bounds_parallelism():
         return "ok"
 
     FakeAgent.handler = handler
-    DynamicWorkflow(lead_agent=lead, max_concurrent_agents=2).run(
-        "task"
-    )
+    PhasedFanOutWorkflow(
+        lead_agent=lead, max_concurrent_agents=2
+    ).run("task")
     assert active["peak"] == 2
 
 
 def test_fan_out_width_comes_from_runtime_output():
     lead = FakeLead([fan_out_plan()])
     FakeAgent.handler = file_handler(7)
-    workflow = DynamicWorkflow(lead_agent=lead)
+    workflow = PhasedFanOutWorkflow(lead_agent=lead)
     workflow.run("task")
 
     assert workflow.last_run["outputs"]["review"] == [
@@ -235,9 +243,9 @@ def test_fan_out_width_comes_from_runtime_output():
 def test_fan_out_over_max_agents_stops_before_starting():
     lead = FakeLead([fan_out_plan()])
     FakeAgent.handler = file_handler(5)
-    workflow = DynamicWorkflow(lead_agent=lead, max_agents=4)
+    workflow = PhasedFanOutWorkflow(lead_agent=lead, max_agents=4)
 
-    with pytest.raises(DynamicWorkflowError, match="max_agents"):
+    with pytest.raises(PhasedFanOutWorkflowError, match="max_agents"):
         workflow.run("task")
     assert len(FakeAgent.instances) == 1
 
@@ -252,7 +260,7 @@ def test_failed_fan_out_agent_leaves_none_and_run_continues():
         return base(agent, task)
 
     FakeAgent.handler = handler
-    workflow = DynamicWorkflow(lead_agent=lead, max_retries=1)
+    workflow = PhasedFanOutWorkflow(lead_agent=lead, max_retries=1)
 
     assert workflow.run("task") == "FINAL"
     assert workflow.last_run["outputs"]["review"] == [
@@ -278,7 +286,7 @@ def test_failed_agent_retries_then_succeeds():
                             {
                                 "id": "a",
                                 "agent": "worker",
-                                "prompt": "x",
+                                "prompt": "x {task}",
                             }
                         ],
                     }
@@ -296,7 +304,7 @@ def test_failed_agent_retries_then_succeeds():
         return "ok"
 
     FakeAgent.handler = handler
-    workflow = DynamicWorkflow(lead_agent=lead, max_retries=1)
+    workflow = PhasedFanOutWorkflow(lead_agent=lead, max_retries=1)
     workflow.run("task")
     assert workflow.last_run["outputs"]["a"] == "ok"
     assert workflow.last_run["failures"] == []
@@ -313,7 +321,7 @@ def test_failed_single_step_raises():
                             {
                                 "id": "a",
                                 "agent": "worker",
-                                "prompt": "x",
+                                "prompt": "x {task}",
                             }
                         ],
                     }
@@ -327,8 +335,10 @@ def test_failed_single_step_raises():
         raise RuntimeError("down")
 
     FakeAgent.handler = handler
-    with pytest.raises(DynamicWorkflowError, match="Step 'a'"):
-        DynamicWorkflow(lead_agent=lead, max_retries=2).run("task")
+    with pytest.raises(PhasedFanOutWorkflowError, match="Step 'a'"):
+        PhasedFanOutWorkflow(lead_agent=lead, max_retries=2).run(
+            "task"
+        )
     assert len(FakeAgent.instances) == 3
 
 
@@ -343,7 +353,11 @@ def test_invalid_plan_is_repaired_and_never_executed():
                         "agent": "ghost",
                         "prompt": "use {b}",
                     },
-                    {"id": "b", "agent": "worker", "prompt": "x"},
+                    {
+                        "id": "b",
+                        "agent": "worker",
+                        "prompt": "x {task}",
+                    },
                 ],
             }
         ],
@@ -354,14 +368,20 @@ def test_invalid_plan_is_repaired_and_never_executed():
             {
                 "title": "P",
                 "steps": [
-                    {"id": "a", "agent": "worker", "prompt": "x"}
+                    {
+                        "id": "a",
+                        "agent": "worker",
+                        "prompt": "x {task}",
+                    }
                 ],
             }
         ],
         ["a"],
     )
     lead = FakeLead(["not json at all", bad, good])
-    workflow = DynamicWorkflow(lead_agent=lead, max_plan_attempts=3)
+    workflow = PhasedFanOutWorkflow(
+        lead_agent=lead, max_plan_attempts=3
+    )
     workflow.run("task")
 
     assert len(FakeAgent.instances) == 1
@@ -376,20 +396,28 @@ def test_plan_attempts_run_out():
             {
                 "title": "P",
                 "steps": [
-                    {"id": "a", "agent": "ghost", "prompt": "x"}
+                    {
+                        "id": "a",
+                        "agent": "ghost",
+                        "prompt": "x {task}",
+                    }
                 ],
             }
         ],
         ["a"],
     )
     lead = FakeLead([bad, bad])
-    with pytest.raises(DynamicWorkflowError, match="No valid plan"):
-        DynamicWorkflow(lead_agent=lead, max_plan_attempts=2).run("t")
+    with pytest.raises(
+        PhasedFanOutWorkflowError, match="No valid plan"
+    ):
+        PhasedFanOutWorkflow(
+            lead_agent=lead, max_plan_attempts=2
+        ).run("t")
     assert FakeAgent.instances == []
 
 
 def test_validate_plan_rules():
-    workflow = DynamicWorkflow(
+    workflow = PhasedFanOutWorkflow(
         lead_agent=FakeLead([]),
         agents=[FakeAgent("analyst", "Analyses things.")],
         allow_inline_agents=False,
@@ -405,7 +433,7 @@ def test_validate_plan_rules():
                             {
                                 "id": "a",
                                 "agent": "analyst",
-                                "prompt": "x",
+                                "prompt": "x {task}",
                             },
                             {
                                 "id": "b",
@@ -446,8 +474,16 @@ def test_predefined_agents_are_copied_per_use():
             {
                 "title": "P",
                 "steps": [
-                    {"id": "a", "agent": "analyst", "prompt": "x"},
-                    {"id": "b", "agent": "analyst", "prompt": "y"},
+                    {
+                        "id": "a",
+                        "agent": "analyst",
+                        "prompt": "x {task}",
+                    },
+                    {
+                        "id": "b",
+                        "agent": "analyst",
+                        "prompt": "y {task}",
+                    },
                 ],
             }
         ],
@@ -455,7 +491,7 @@ def test_predefined_agents_are_copied_per_use():
         inline=(),
     )
     lead = FakeLead([one_step, one_step])
-    workflow = DynamicWorkflow(lead_agent=lead, agents=[analyst])
+    workflow = PhasedFanOutWorkflow(lead_agent=lead, agents=[analyst])
     workflow.run("first")
     workflow.run("second")
 
@@ -467,7 +503,7 @@ def test_predefined_agents_are_copied_per_use():
 def test_usage_sums_lead_and_workers():
     lead = FakeLead([fan_out_plan()])
     FakeAgent.handler = file_handler(2)
-    workflow = DynamicWorkflow(lead_agent=lead)
+    workflow = PhasedFanOutWorkflow(lead_agent=lead)
     workflow.run("task")
     assert workflow.usage["input_tokens"] == 100 + 3 * 10
     assert workflow.last_run["usage"]["output_tokens"] == 5 + 3
@@ -494,9 +530,61 @@ def test_task_placeholder_inserts_the_original_task():
         ]
     )
     FakeAgent.handler = lambda agent, task: task
-    workflow = DynamicWorkflow(lead_agent=lead)
+    workflow = PhasedFanOutWorkflow(lead_agent=lead)
     workflow.run("CONTRACT TEXT")
     assert (
         workflow.last_run["outputs"]["a"]
         == "Read this: CONTRACT TEXT"
     )
+
+
+def test_step_without_placeholders_is_rejected():
+    workflow = PhasedFanOutWorkflow(lead_agent=FakeLead([]))
+    errors = workflow.validate_plan(
+        dw.WorkflowPlan.model_validate(
+            plan(
+                [
+                    {
+                        "title": "P",
+                        "steps": [
+                            {
+                                "id": "a",
+                                "agent": "worker",
+                                "prompt": "Read the contracts in the task.",
+                            },
+                            {
+                                "id": "b",
+                                "agent": "worker",
+                                "prompt": "Read {task}",
+                            },
+                        ],
+                    }
+                ],
+                ["a"],
+            )
+        )
+    )
+    assert any("Step 'a' has no {task}" in e for e in errors)
+    assert not any("Step 'b'" in e for e in errors)
+
+
+def test_identical_steps_in_a_phase_are_rejected():
+    workflow = PhasedFanOutWorkflow(lead_agent=FakeLead([]))
+    same = {"agent": "worker", "prompt": "Read {task}"}
+    errors = workflow.validate_plan(
+        dw.WorkflowPlan.model_validate(
+            plan(
+                [
+                    {
+                        "title": "P",
+                        "steps": [
+                            {"id": "a", **same},
+                            {"id": "b", **same},
+                        ],
+                    }
+                ],
+                ["a", "b"],
+            )
+        )
+    )
+    assert any("Steps 'a' and 'b'" in e for e in errors)

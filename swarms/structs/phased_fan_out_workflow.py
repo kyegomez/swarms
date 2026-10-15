@@ -7,9 +7,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from loguru import logger
 from pydantic import BaseModel, Field, ValidationError
 
-from swarms.prompts.dynamic_workflow_prompts import (
-    DYNAMIC_WORKFLOW_LEAD_PROMPT,
-    DYNAMIC_WORKFLOW_SIZE_GUIDELINES as SIZE_GUIDELINES,
+from swarms.prompts.phased_fan_out_workflow_prompts import (
+    PHASED_FAN_OUT_WORKFLOW_LEAD_PROMPT,
+    PHASED_FAN_OUT_WORKFLOW_SIZE_GUIDELINES as SIZE_GUIDELINES,
 )
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -27,8 +27,8 @@ from swarms.utils.output_types import OutputType
 PLACEHOLDER = re.compile(r"\{([A-Za-z_][\w\-]*)\}")
 
 
-class DynamicWorkflowError(Exception):
-    """Raised when a dynamic workflow cannot plan or finish its run."""
+class PhasedFanOutWorkflowError(Exception):
+    """Raised when a phased fan-out workflow cannot plan or finish its run."""
 
 
 class InlineAgentSpec(BaseModel):
@@ -146,7 +146,7 @@ def _as_text(value: Any) -> str:
     return json.dumps(value, indent=2, default=str)
 
 
-class DynamicWorkflow:
+class PhasedFanOutWorkflow:
     """A lead agent plans a phased multi-agent run, the plan executes, and the lead combines the results.
 
     Args:
@@ -167,7 +167,7 @@ class DynamicWorkflow:
 
     def __init__(
         self,
-        name: str = "DynamicWorkflow",
+        name: str = "PhasedFanOutWorkflow",
         description: str = "A lead agent plans a phased multi-agent run and combines the results.",
         lead_agent: Optional[Agent] = None,
         model_name: str = "gpt-5.4",
@@ -187,7 +187,7 @@ class DynamicWorkflow:
         self.lead_agent = lead_agent or Agent(
             agent_name=f"{name}-lead",
             agent_description="Plans the workflow and combines its results.",
-            system_prompt=DYNAMIC_WORKFLOW_LEAD_PROMPT,
+            system_prompt=PHASED_FAN_OUT_WORKFLOW_LEAD_PROMPT,
             model_name=model_name,
             max_loops=1,
             output_type="final",
@@ -346,7 +346,15 @@ class DynamicWorkflow:
                     errors.append(
                         f"Step '{step.id}' uses unknown agent '{step.agent}'."
                     )
-                for ref in PLACEHOLDER.findall(step.prompt):
+                refs = PLACEHOLDER.findall(step.prompt)
+                if not any(
+                    ref in ("task", "item") or ref in phase_of
+                    for ref in refs
+                ):
+                    errors.append(
+                        f"Step '{step.id}' has no {{task}}, {{item}} or {{step_id}} placeholder, so its agent sees none of the task's material. Add {{task}} or an earlier step's output."
+                    )
+                for ref in refs:
                     if ref == "item" and not step.for_each:
                         errors.append(
                             f"Step '{step.id}' uses {{item}} without for_each."
@@ -361,6 +369,16 @@ class DynamicWorkflow:
                             step, index, phase_of, schema_of
                         )
                     )
+
+        for phase in plan.phases:
+            seen_work = {}
+            for step in phase.steps:
+                key = (step.agent, step.prompt, step.for_each)
+                if key in seen_work:
+                    errors.append(
+                        f"Steps '{seen_work[key]}' and '{step.id}' in phase '{phase.title}' have the same agent and prompt, so they would return the same output. Say in each prompt which part of the work that agent owns."
+                    )
+                seen_work.setdefault(key, step.id)
 
         for step_id in plan.return_steps:
             if step_id not in phase_of:
@@ -433,7 +451,7 @@ class DynamicWorkflow:
             WorkflowPlan: A plan that passed validation.
 
         Raises:
-            DynamicWorkflowError: If no valid plan is written within max_plan_attempts.
+            PhasedFanOutWorkflowError: If no valid plan is written within max_plan_attempts.
         """
         lead = self._lead
         prompt = self._planning_prompt(task)
@@ -460,7 +478,7 @@ class DynamicWorkflow:
                 + "\n\nWrite a corrected plan.\n\n"
                 + self._planning_prompt(task)
             )
-        raise DynamicWorkflowError(
+        raise PhasedFanOutWorkflowError(
             f"No valid plan after {self.max_plan_attempts} attempt(s): {errors}"
         )
 
@@ -500,7 +518,7 @@ class DynamicWorkflow:
             list: The items, flattened across a fan-out source's slots.
 
         Raises:
-            DynamicWorkflowError: If the field is missing or not a list.
+            PhasedFanOutWorkflowError: If the field is missing or not a list.
         """
         source, _, field = step.for_each.partition(".")
         value = outputs.get(source)
@@ -512,7 +530,7 @@ class DynamicWorkflow:
             if not isinstance(slot, dict) or not isinstance(
                 slot.get(field), list
             ):
-                raise DynamicWorkflowError(
+                raise PhasedFanOutWorkflowError(
                     f"Step '{step.id}' needs a list at '{step.for_each}', got {type(slot).__name__}."
                 )
             items.extend(slot[field])
@@ -572,7 +590,7 @@ class DynamicWorkflow:
             state: Run bookkeeping; updated in place.
 
         Raises:
-            DynamicWorkflowError: If a fan-out would pass max_agents or a single step fails.
+            PhasedFanOutWorkflowError: If a fan-out would pass max_agents or a single step fails.
         """
         jobs = []
         for step in phase.steps:
@@ -588,7 +606,7 @@ class DynamicWorkflow:
                 jobs.append((step, None, None))
 
         if state["agent_count"] + len(jobs) > self.max_agents:
-            raise DynamicWorkflowError(
+            raise PhasedFanOutWorkflowError(
                 f"Phase '{phase.title}' needs {len(jobs)} agents, which would pass "
                 f"max_agents={self.max_agents} ({state['agent_count']} already run)."
             )
@@ -640,7 +658,7 @@ class DynamicWorkflow:
 
         if single_failures:
             step_id, error = single_failures[0]
-            raise DynamicWorkflowError(
+            raise PhasedFanOutWorkflowError(
                 f"Step '{step_id}' in phase '{phase.title}' failed after "
                 f"{self.max_retries + 1} attempt(s): {error}"
             ) from error
@@ -686,7 +704,7 @@ class DynamicWorkflow:
         return total
 
     @trace_run(
-        "DynamicWorkflow.run",
+        "PhasedFanOutWorkflow.run",
         input_params=("task", "img"),
         usage=lambda workflow: workflow.usage,
     )
@@ -701,7 +719,7 @@ class DynamicWorkflow:
             Any: The conversation formatted by output_type.
 
         Raises:
-            DynamicWorkflowError: If planning fails, a limit is passed, or a single step fails.
+            PhasedFanOutWorkflowError: If planning fails, a limit is passed, or a single step fails.
         """
         self._lead = self._fresh_lead()
         state: Dict[str, Any] = {
