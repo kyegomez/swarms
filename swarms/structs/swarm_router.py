@@ -1023,7 +1023,7 @@ class SwarmRouter(SerializableMixin):
         for position, swarm_type in enumerate(chain):
             try:
                 self.swarm = self._create_swarm(
-                    task, swarm_type, *args, **kwargs
+                    task, swarm_type, *args
                 )
                 self.active_swarm_type = swarm_type
                 result = self.swarm.run(**run_kwargs, **kwargs)
@@ -1072,6 +1072,7 @@ class SwarmRouter(SerializableMixin):
     @trace_run(
         "SwarmRouter.run",
         input_params=("task", "tasks", "img"),
+        usage=lambda router: router.usage,
     )
     def run(
         self,

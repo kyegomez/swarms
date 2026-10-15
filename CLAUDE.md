@@ -111,7 +111,7 @@ print(result)
 | `context_length` | int | `None` | Token budget; triggers compression at 90 % |
 | `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
 | `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
-| `temperature` | float | `0.5` | Sampling temperature |
+| `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
 | `max_tokens` | int | model's max output | Max tokens per LLM call. Unset resolves to the model's own output limit |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
 | `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
@@ -1086,6 +1086,40 @@ Every commit message, PR title and issue title you write for this repository mus
 ```
 
 Full specification: the [WARP Git Message Skill](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1) on the Swarms marketplace. Load it before writing a commit message, PR or issue for this repo.
+
+---
+
+## Contributing: Disclose AI authorship (required)
+
+Every commit, PR and issue that an AI agent wrote, in whole or in part, must say so. The disclosure must be accurate: name the agent and the model that actually did the work. Never leave it out, and never name a different agent or model.
+
+- **Commits:** end the message with a co-author trailer naming the model.
+  ```
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  ```
+  Other agents use the trailer they add by default, for example `Co-authored-by: Cursor <cursoragent@cursor.com>`.
+- **PRs and issues:** end the body with a line naming the agent and the model.
+  ```
+  🤖 Generated with [Claude Code](https://claude.com/claude-code) (Claude Opus 5.5)
+  ```
+- **No private links:** never add `Claude-Session:` trailers or `claude.ai/code/session_...` URLs.
+
+These markers are also what labels a PR or issue `ai-generated`, so never strip them.
+
+---
+
+## Contributing: Update the framework docs (required)
+
+The docs site lives in a separate repo, [The-Swarm-Corporation/swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs). Every change to the framework that users can see must come with a matching docs update there:
+
+- **New features:** a new class, structure, function or module gets its own page, or a section on the page it belongs to.
+- **Input parameters:** an added, removed or renamed parameter, or a changed default.
+- **Output:** a changed return value, return type or output format.
+- **Removals and renames:** delete or rename the page, and add a redirect in `docs.json` so old links still work.
+
+Open the docs PR alongside the framework PR and link each from the other. If the docs can't change until the framework PR merges, open a docs issue that links the framework PR instead, and link that issue from the framework PR. Changes users can't see, such as tests or a refactor that keeps the same API, need no docs update.
+
+The docs are a Mintlify site: pages are `.mdx` files and the navigation is in `docs.json`. Run `mint broken-links` and `mint validate` in the docs repo before opening the PR.
 
 ---
 

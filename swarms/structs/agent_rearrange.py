@@ -2,15 +2,7 @@ import asyncio
 import copy
 import os
 from concurrent.futures import as_completed
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Union,
-    get_args,
-)
+from typing import Any, Dict, List, Optional, get_args
 
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import (
@@ -25,7 +17,6 @@ from swarms.structs.serialization import SerializableMixin
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
-    log_agent_data,
     trace_run,
 )
 from swarms.utils.any_to_str import any_to_str
@@ -54,6 +45,98 @@ def _split_steps(segments: List[str]) -> List[List[str]]:
     ]
 
 
+class _SwarmMember:
+    """
+    A nested swarm that a flow runs like an agent.
+
+    Args:
+        swarm (Any): A structure with a name and a run method that takes a task.
+    """
+
+    def __init__(self, swarm: Any):
+        name = getattr(swarm, "name", None)
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(
+                f"{type(swarm).__name__} needs a name to appear in a flow"
+            )
+        self.swarm = swarm
+        self.name = name
+        self.agent_name = name
+
+    def run(
+        self,
+        task: str = None,
+        messages: Optional[List[Dict[str, str]]] = None,
+        img: str = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Run the swarm on the conversation so far, flattened into one task.
+
+        Args:
+            task (str): The newest turn of the shared conversation.
+            messages (Optional[List[Dict[str, str]]]): The earlier turns.
+            img (str): Optional image input.
+
+        Returns:
+            str: The swarm's output.
+        """
+        # A swarm takes no chat history, so the turns travel as text, its own labelled by name.
+        turns = [
+            (
+                f"{self.name}: {m['content']}"
+                if m["role"] == "assistant"
+                else m["content"]
+            )
+            for m in messages or []
+        ]
+        text = "\n\n".join([*turns, task or ""]).strip()
+        if img is not None:
+            kwargs["img"] = img
+        output = self.swarm.run(text, *args, **kwargs)
+        return (
+            output if isinstance(output, str) else any_to_str(output)
+        )
+
+    async def arun_stream(
+        self,
+        task: str = None,
+        messages: Optional[List[Dict[str, str]]] = None,
+        img: str = None,
+        **kwargs,
+    ):
+        """
+        Yield the swarm's whole output as one chunk.
+
+        Args:
+            task (str): The newest turn of the shared conversation.
+            messages (Optional[List[Dict[str, str]]]): The earlier turns.
+            img (str): Optional image input.
+
+        Returns:
+            AsyncIterator[str]: A single chunk holding the output.
+        """
+        yield await asyncio.to_thread(
+            self.run, task, messages, img, **kwargs
+        )
+
+
+def _as_member(member: Any) -> Any:
+    """
+    Wrap a swarm so the flow can run it, leaving agents as they are.
+
+    Args:
+        member (Any): An agent, or a swarm with a name and a run method.
+
+    Returns:
+        Any: The agent itself, or the wrapped swarm.
+    """
+    if hasattr(member, "agent_name"):
+        return member
+    return _SwarmMember(member)
+
+
 # Derived from the Literal so it cannot drift from HistoryOutputType
 _VALID_OUTPUT_TYPES = set(get_args(OutputType))
 
@@ -69,6 +152,7 @@ class AgentRearrange(SerializableMixin):
 
     Key Features:
     - Sequential and concurrent agent execution
+    - Nested swarms as steps of the flow, referenced by name
     - Custom flow patterns with arrow (->) and comma (,) syntax
     - Team awareness and sequential flow information
     - Memory system support
@@ -84,7 +168,7 @@ class AgentRearrange(SerializableMixin):
         id (str): Unique identifier for the agent rearrange system
         name (str): Human-readable name for the system
         description (str): Description of the system's purpose
-        agents (List[Agent]): The agents in the swarm, in flow order
+        agents (List[Any]): The agents and nested swarms, in flow order
         flow (str): Flow pattern defining agent execution order
         max_loops (int): Maximum number of execution loops
         verbose (bool): Whether to enable verbose logging
@@ -124,7 +208,7 @@ class AgentRearrange(SerializableMixin):
         id: Optional[str] = None,
         name: str = "AgentRearrange",
         description: str = "A swarm of agents for rearranging tasks.",
-        agents: List[Union[Agent, Callable]] = None,
+        agents: List[Any] = None,
         flow: str = None,
         max_loops: int = 1,
         verbose: bool = False,
@@ -146,8 +230,9 @@ class AgentRearrange(SerializableMixin):
                 Defaults to "AgentRearrange".
             description (str): Description of the system's purpose.
                 Defaults to "A swarm of agents for rearranging tasks.".
-            agents (List[Union[Agent, Callable]], optional): List of agents to include
-                in the system. Can be Agent objects or callable functions.
+            agents (List[Any], optional): The agents to include in the
+                system. A nested swarm with a name and a run method can stand
+                in for an agent and is referenced in the flow by its name.
                 Defaults to None.
             flow (str, optional): Flow pattern defining agent execution order.
                 Uses '->' for sequential and ',' for concurrent execution.
@@ -183,7 +268,7 @@ class AgentRearrange(SerializableMixin):
         self.name = name
         self.description = description
         self.id = id or generate_id("agent-rearrange")
-        self.agents = list(agents) if agents else []
+        self.agents = [_as_member(a) for a in agents or []]
         self.flow = flow if flow is not None else ""
         self.verbose = verbose
         self.max_loops = max_loops if max_loops > 0 else 1
@@ -325,13 +410,14 @@ class AgentRearrange(SerializableMixin):
         print(plan)
         return None
 
-    def add_agent(self, agent: Agent):
+    def add_agent(self, agent: Any):
         """
-        Adds an agent to the swarm.
+        Adds an agent, or a nested swarm, to the swarm.
 
         Args:
-            agent (Agent): The agent to be added.
+            agent (Any): The agent or swarm to be added.
         """
+        agent = _as_member(agent)
         self._log(
             "info", f"Adding agent {agent.agent_name} to the swarm."
         )
@@ -359,14 +445,14 @@ class AgentRearrange(SerializableMixin):
             f"No agent named {agent_name!r} in the swarm."
         )
 
-    def add_agents(self, agents: List[Agent]):
+    def add_agents(self, agents: List[Any]):
         """
-        Adds multiple agents to the swarm.
+        Adds multiple agents, or nested swarms, to the swarm.
 
         Args:
-            agents (List[Agent]): A list of Agent objects.
+            agents (List[Any]): The agents or swarms to be added.
         """
-        self.agents.extend(agents)
+        self.agents.extend(_as_member(a) for a in agents)
 
     @property
     def steps(self) -> List[List[str]]:
@@ -638,21 +724,14 @@ class AgentRearrange(SerializableMixin):
                 future_to_index[future] = index
 
             for future in as_completed(future_to_index):
-                index = future_to_index[future]
-                try:
-                    results[index] = future.result()
-                except Exception as error:
-                    results[index] = error
+                results[future_to_index[future]] = future.result()
 
         response_dict = {}
         for i, agent_name in enumerate(agent_names):
             result = results[i]
 
             # run() returns the agent's whole conversation by default, record the answer
-            if not isinstance(result, Exception):
-                result = agent_answer(
-                    agents_to_run[i], fallback=result
-                )
+            result = agent_answer(agents_to_run[i], fallback=result)
 
             self.conversation.add(agent_name, result)
             response_dict[agent_name] = result
@@ -855,26 +934,7 @@ class AgentRearrange(SerializableMixin):
         )
 
     def _catch_error(self, e: Exception):
-        """
-        Handles errors that occur during swarm execution.
-
-        Provides comprehensive error handling including logging, data persistence,
-        and error reporting. This method is called whenever an exception occurs
-        during the execution of the swarm.
-
-        Args:
-            e (Exception): The exception that occurred during execution.
-
-        Returns:
-            Exception: The original exception for potential re-raising.
-
-        Note:
-            If autosave is enabled, the current state of the swarm will be
-            automatically saved to the logging system before error reporting.
-        """
-        if self.autosave is True:
-            log_agent_data(self.to_dict())
-
+        """Log an error from the swarm run and re-raise it."""
         self._log(
             "error",
             f"AgentRearrange: Id: {self.id}, Name: {self.name}. An error occurred with your agent '{self.name}': Error: {e}. Traceback: {e.__traceback__}",

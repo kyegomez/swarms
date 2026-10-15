@@ -6,6 +6,7 @@ from swarms.prompts.auto_agent_builder_prompt import (
 from swarms.structs.agent import Agent
 from swarms.structs.execution_utils import batched_run
 from swarms.telemetry.otel import capture_init, trace_run
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.str_to_dict import tool_call_arguments
 
@@ -244,6 +245,7 @@ class AutoAgentBuilder:
             )
         self.return_dict = return_dict
         self.verbose = verbose
+        self._usage = empty_usage()
 
         capture_init(self)
 
@@ -268,7 +270,19 @@ class AutoAgentBuilder:
             tools_list_dictionary=[BUILD_AGENTS_TOOL],
         )
 
-    @trace_run("AutoAgentBuilder.build_configs")
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every build_configs call.
+
+        Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens``,
+        ``reasoning_tokens``, ``total_tokens``, as in :attr:`Agent.usage`.
+        """
+        return dict(self._usage)
+
+    @trace_run(
+        "AutoAgentBuilder.build_configs",
+        usage=lambda builder: builder.usage,
+    )
     def build_configs(self, task: str) -> List[Dict[str, str]]:
         """Generate agent configurations for a task, always as dicts.
 
@@ -312,7 +326,12 @@ class AutoAgentBuilder:
 
         prompt = f"Task:\n{task}\n\n{instruction}"
 
-        output = self._builder_agent().run(prompt)
+        builder = self._builder_agent()
+        try:
+            output = builder.run(prompt)
+        finally:
+            for key, value in builder.usage.items():
+                self._usage[key] += value
         agents = _extract_agents(output)
 
         if not agents:

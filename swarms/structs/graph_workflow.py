@@ -1,6 +1,8 @@
 import asyncio
 import concurrent.futures
 import hashlib
+import importlib
+import importlib.util
 import json
 import os
 import time
@@ -21,24 +23,6 @@ from typing import (
     Union,
 )
 
-import networkx as nx
-
-try:
-    import graphviz
-
-    GRAPHVIZ_AVAILABLE = True
-except ImportError:
-    GRAPHVIZ_AVAILABLE = False
-    graphviz = None
-
-try:
-    import rustworkx as rx
-
-    RUSTWORKX_AVAILABLE = True
-except ImportError:
-    RUSTWORKX_AVAILABLE = False
-    rx = None
-
 from swarms.structs.agent import Agent  # noqa: F401
 from swarms.structs.conversation import Conversation
 from swarms.utils.get_cpu_cores import get_cpu_cores
@@ -52,6 +36,36 @@ from swarms.utils.generate_id import generate_id
 from swarms.utils.litellm_wrapper import empty_usage
 
 logger = initialize_logger(log_folder="graph_workflow")
+
+
+class _LazyModule:
+    """
+    A module that is imported the first time one of its attributes is read.
+
+    Args:
+        name (str): The module to import.
+    """
+
+    def __init__(self, name: str):
+        self._name = name
+        self._module = None
+
+    def __getattr__(self, attr: str) -> Any:
+        if self._module is None:
+            self._module = importlib.import_module(self._name)
+        return getattr(self._module, attr)
+
+
+# Loaded on first use, so import swarms does not pay for the graph libraries.
+nx = _LazyModule("networkx")
+
+GRAPHVIZ_AVAILABLE = importlib.util.find_spec("graphviz") is not None
+graphviz = _LazyModule("graphviz") if GRAPHVIZ_AVAILABLE else None
+
+RUSTWORKX_AVAILABLE = (
+    importlib.util.find_spec("rustworkx") is not None
+)
+rx = _LazyModule("rustworkx") if RUSTWORKX_AVAILABLE else None
 
 
 class GraphBackend:

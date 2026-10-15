@@ -1,5 +1,4 @@
 import concurrent.futures
-import os
 import traceback
 from typing import Any, Dict, List, Optional
 
@@ -17,6 +16,7 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.heavy_swarm_dashboard import HeavySwarmDashboard
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -165,7 +165,7 @@ class HeavySwarm(SerializableMixin):
         self.question_agent_model_name = question_agent_model_name
         self.worker_model_name = worker_model_name
         self.verbose = verbose
-        self.max_workers = int(os.cpu_count() * 0.9)
+        self.max_workers = max_workers_95_percent()
         self.show_dashboard = show_dashboard
         self.agent_prints_on = agent_prints_on
         self.output_type = output_type
