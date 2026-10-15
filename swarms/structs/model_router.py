@@ -70,7 +70,7 @@ model_recommendations = {
         "provider": "anthropic",
     },
     "claude-opus-5-5": {
-        "description": "Anthropic's current Opus model and the strongest Claude option here, for deep analysis, long tasks and code",
+        "description": "Anthropic's current Opus model for deep analysis, long tasks and code, at 40 percent of Fable's price",
         "best_for": [
             "Research",
             "Complex analysis",
@@ -96,6 +96,15 @@ model_recommendations = {
             "Content generation",
         ],
         "provider": "mistral",
+    },
+    "claude-fable-5-1": {
+        "description": "Anthropic's newest and most capable Claude model, for the hardest reasoning, long agentic coding and knowledge work, at 2.5 times the price of Opus",
+        "best_for": [
+            "Hardest reasoning tasks",
+            "Long agentic coding",
+            "Large refactors",
+        ],
+        "provider": "anthropic",
     },
     "gpt-5.4-mini": {
         "description": "Smaller, cheaper GPT-5.4 for fast everyday tasks",
