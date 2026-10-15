@@ -97,7 +97,11 @@ def _parse_json(raw: Any) -> Any:
         )
         if start == -1:
             raise
-        return json.loads(text[start:])
+        rest = text[start:]
+        value, end = json.JSONDecoder().raw_decode(rest)
+        if re.fullmatch(r"[ \t]*(\n[^\[{]*)?", rest[end:]):
+            return value
+        return json.loads(rest)
 
 
 def fresh_agent(agent: Any) -> Any:
