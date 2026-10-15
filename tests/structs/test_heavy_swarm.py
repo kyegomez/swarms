@@ -42,6 +42,7 @@ from swarms.prompts.heavy_swarm_prompts import (
 )
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.swarm_router import SwarmRouter
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 load_dotenv()
 
@@ -789,8 +790,11 @@ class TestUsage:
         self, monkeypatch, show_dashboard
     ):
         monkeypatch.setattr("os.cpu_count", lambda: 1)
+        max_workers_95_percent.cache_clear()
         self._fake_question_llm(monkeypatch)
         swarm = self._swarm()
+        max_workers_95_percent.cache_clear()
+        assert swarm.max_workers == 1
         swarm.show_dashboard = show_dashboard
         self._stub_agents(swarm)
 
