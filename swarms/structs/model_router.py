@@ -60,17 +60,17 @@ model_recommendations = {
         ],
         "provider": "deepseek",
     },
-    "claude-3-5-sonnet": {
-        "description": "Well-rounded model with strong reasoning and creativity",
+    "claude-sonnet-5-5": {
+        "description": "Balanced Claude model with strong coding and agent skills at half the price of Opus",
         "best_for": [
-            "Creative writing",
+            "Everyday coding",
             "Detailed analysis",
-            "Nuanced responses",
+            "Agentic tool use",
         ],
         "provider": "anthropic",
     },
-    "claude-3-opus": {
-        "description": "Most capable Claude model with enhanced reasoning and analysis",
+    "claude-opus-5-5": {
+        "description": "Anthropic's current Opus model and the strongest Claude option here, for deep analysis, long tasks and code",
         "best_for": [
             "Research",
             "Complex analysis",
@@ -269,6 +269,9 @@ class ModelRouter:
         max_tokens = model_router_output.max_tokens
         temperature = model_router_output.temperature
         system_prompt = model_router_output.system_prompt
+
+        if selected_provider == "anthropic":
+            temperature = None
 
         formatter.print_panel(
             f"Model: {selected_model}\n\n"
