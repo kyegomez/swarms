@@ -41,17 +41,17 @@ model_recommendations = {
         ],
         "provider": "deepseek",
     },
-    "claude-sonnet-5-5": {
-        "description": "Balanced Claude model with strong coding and agent skills at half the price of Opus",
+    "claude-3-5-sonnet": {
+        "description": "Well-rounded model with strong reasoning and creativity",
         "best_for": [
-            "Everyday coding",
+            "Creative writing",
             "Detailed analysis",
-            "Agentic tool use",
+            "Nuanced responses",
         ],
         "provider": "anthropic",
     },
-    "claude-opus-5-5": {
-        "description": "Anthropic's current Opus model and the strongest Claude option here, for deep analysis, long tasks and code",
+    "claude-3-opus": {
+        "description": "Most capable Claude model with enhanced reasoning and analysis",
         "best_for": [
             "Research",
             "Complex analysis",
