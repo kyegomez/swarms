@@ -24,7 +24,7 @@ from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.groupchat import GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
+from swarms.structs.hierarchical_swarm import HierarchicalSwarm
 from swarms.structs.llm_council import LLMCouncil
 from swarms.structs.ma_utils import list_all_agents
 from swarms.utils.loguru_logger import initialize_logger
