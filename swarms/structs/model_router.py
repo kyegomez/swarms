@@ -41,17 +41,17 @@ model_recommendations = {
         ],
         "provider": "deepseek",
     },
-    "claude-3-5-sonnet": {
-        "description": "Well-rounded model with strong reasoning and creativity",
+    "claude-sonnet-5-5": {
+        "description": "Balanced Claude model with strong coding and agent skills at half the price of Opus",
         "best_for": [
-            "Creative writing",
+            "Everyday coding",
             "Detailed analysis",
-            "Nuanced responses",
+            "Agentic tool use",
         ],
         "provider": "anthropic",
     },
-    "claude-3-opus": {
-        "description": "Most capable Claude model with enhanced reasoning and analysis",
+    "claude-opus-5-5": {
+        "description": "Anthropic's current Opus model for deep analysis, long tasks and code, at 40 percent of Fable's price",
         "best_for": [
             "Research",
             "Complex analysis",
@@ -96,14 +96,40 @@ model_recommendations = {
         ],
         "provider": "mistral",
     },
+    "claude-fable-5-1": {
+        "description": "Anthropic's newest and most capable Claude model, for the hardest reasoning, long agentic coding and knowledge work, at 2.5 times the price of Opus",
+        "best_for": [
+            "Hardest reasoning tasks",
+            "Long agentic coding",
+            "Large refactors",
+        ],
+        "provider": "anthropic",
+    },
+    "gpt-5.4-mini": {
+        "description": "Smaller, cheaper GPT-5.4 for fast everyday tasks",
+        "best_for": [
+            "Everyday tasks",
+            "Quick responses",
+            "High-volume workloads",
+        ],
+        "provider": "openai",
+    },
+    "claude-haiku-5-5": {
+        "description": "Fastest and cheapest Claude model for simple, high-volume tasks",
+        "best_for": [
+            "Classification",
+            "Summarization",
+            "Simple queries",
+        ],
+        "provider": "anthropic",
+    },
 }
 
 providers = {
     "openai": "Primary provider for GPT models",
     "groq": "High-performance inference provider",
     "anthropic": "Provider of Claude models",
-    "google": "Provider of PaLM and Gemini models",
-    "azure": "Cloud platform for various model deployments",
+    "gemini": "Provider of Gemini models",
     "deepseek": "Provider of specialized reasoning models",
     "mistral": "Provider of open source and commercial language models",
     "openrouter": "Gateway to many providers' models, including MiniMax and Z.ai GLM",
@@ -180,6 +206,7 @@ class ModelRouter:
         max_workers: int = 10,
         api_key: str = None,
         max_loops: int = 1,
+        model_name: str = "gpt-5.4",
         *args,
         **kwargs,
     ):
@@ -191,6 +218,7 @@ class ModelRouter:
             max_tokens (int): Maximum output tokens
             temperature (float): Model temperature parameter
             max_workers (int): Max concurrent workers
+            model_name (str): Model that picks the route for each task
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
         """
@@ -206,7 +234,7 @@ class ModelRouter:
                 self.max_workers = os.cpu_count()
 
             self.model_caller = LiteLLM(
-                model_name="gpt-4o",
+                model_name=model_name,
                 response_format=ModelOutput,
                 temperature=self.temperature,
                 system_prompt=self.system_prompt,
@@ -242,6 +270,9 @@ class ModelRouter:
         max_tokens = model_router_output.max_tokens
         temperature = model_router_output.temperature
         system_prompt = model_router_output.system_prompt
+
+        if selected_provider == "anthropic":
+            temperature = None
 
         formatter.print_panel(
             f"Model: {selected_model}\n\n"
