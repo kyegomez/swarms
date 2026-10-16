@@ -1,4 +1,4 @@
-from swarms import Agent, AgentRearrange, SwarmRearrange
+from swarms import Agent, AgentRearrange
 
 company = "NVDA"
 
@@ -195,10 +195,10 @@ blackstone_market_analysis = AgentRearrange(
     flow=flows[2],
 )
 
-swarm_arrange = SwarmRearrange(
+blackstone_swarm = AgentRearrange(
     name="Blackstone-Swarm",
     description="A swarm that processes tasks concurrently using multiple agents and rearranges the flow based on the task requirements.",
-    swarms=[
+    agents=[
         blackstone_acquisition_analysis,
         blackstone_investment_strategy,
         blackstone_market_analysis,
@@ -208,7 +208,7 @@ swarm_arrange = SwarmRearrange(
 )
 
 print(
-    swarm_arrange.run(
+    blackstone_swarm.run(
         "Analyze NVIDIA's performance, market trends, and potential for growth in the AI industry"
     )
 )

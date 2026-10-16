@@ -177,6 +177,29 @@ def test_consecutive_errors_stop_the_job_when_a_budget_is_set():
     assert job.is_running is False
 
 
+def test_a_job_that_gave_up_can_be_run_again():
+    agent = FailingAgent(fail_times=3)
+    job = CronJob(
+        agent=agent, interval="1second", max_consecutive_errors=2
+    )
+    with pytest.raises(CronJobExecutionError):
+        job.run("t")
+    assert job.schedule.jobs == []
+
+    returned = []
+    t = run_in_thread(lambda: returned.append(job.run("t")))
+    deadline = time.monotonic() + 10
+    while agent.successes < 2 and time.monotonic() < deadline:
+        if not t.is_alive():
+            break
+        time.sleep(0.05)
+    job.stop()
+    t.join(timeout=3)
+
+    assert agent.successes >= 2
+    assert returned, "a clean stop of the restarted run raised"
+
+
 def test_without_a_budget_the_job_retries_indefinitely():
     agent = FailingAgent(fail_times=99)
     job = CronJob(agent=agent, interval="1second")
@@ -291,6 +314,29 @@ def test_stop_joins_the_scheduler_thread():
         if thread.name.startswith(f"cronjob_{job.job_id}")
     ]
     assert leftover == []
+
+
+def test_restart_after_a_timed_out_stop_retires_the_old_thread():
+    entered, release = threading.Event(), threading.Event()
+
+    def slow(task):
+        entered.set()
+        release.wait(10)
+
+    job = CronJob(agent=slow, interval="1second")
+    run_in_thread(lambda: job.run("t"))
+    assert entered.wait(5)
+    job.stop()
+    old = job.thread
+    assert old.is_alive()
+
+    job.start()
+    release.set()
+    old.join(timeout=3)
+    still_alive = old.is_alive()
+    job.stop()
+
+    assert not still_alive, "two scheduler threads share one job"
 
 
 def test_callback_customizes_output_and_a_broken_one_is_survivable():

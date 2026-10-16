@@ -468,6 +468,9 @@ def get_openai_function_schema_from_func(
     parameters = get_parameters(
         required, param_annotations, default_values=default_values
     )
+    defs = {}
+    for schema in parameters.properties.values():
+        defs.update(schema.pop("$defs", {}))
 
     function = ToolFunction(
         function=Function(
@@ -477,7 +480,10 @@ def get_openai_function_schema_from_func(
         )
     )
 
-    return model_dump(function)
+    result = model_dump(function)
+    if defs:
+        result["function"]["parameters"]["$defs"] = defs
+    return result
 
 
 def convert_multiple_functions_to_openai_function_schema(

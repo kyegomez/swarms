@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
@@ -755,6 +756,23 @@ class TestLLMArgsAndHandling:
         assert "api_key" not in params
         assert "base_url" not in params
 
+    def test_random_models_on_builds_the_client_for_that_model(
+        self, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "swarms.structs.agent.set_random_models_for_agents",
+            lambda: "gpt-4.1-nano",
+        )
+        agent = Agent(
+            agent_name="random-models-agent",
+            model_name="gpt-4o-mini",
+            random_models_on=True,
+        )
+
+        assert agent.model_name == "gpt-4.1-nano"
+        assert agent.llm.model_name == "gpt-4.1-nano"
+        assert agent.max_tokens == agent._default_max_tokens()
+
 
 class TestConstructorWindows:
     """context_length and max_tokens must survive __init__ rather than being
@@ -865,6 +883,21 @@ class TestToolsListIsolation:
             ).tools_list_dictionary
             == given
         )
+
+
+def test_list_base_models_schema_reaches_short_memory():
+    class Order(BaseModel):
+        item: str
+        qty: int
+
+    agent = _patched_agent(
+        "Order-Agent",
+        model_name="gpt-5.4-mini",
+        list_base_models=[Order],
+    )
+
+    schema = agent.short_memory.conversation_history[-1]["content"]
+    assert "Order" in schema and "item" in schema and "qty" in schema
 
 
 class TestAutonomousAgentLoop:
@@ -1449,6 +1482,41 @@ class TestTextReplyFromAToolAgent:
         assert summary_calls == []
         assert history[-1]["role"] == "Tool Executor"
         assert "100" in history[-1]["content"]
+
+
+def test_handoff_returns_each_delegates_answer_not_its_transcript(
+    tmp_path,
+):
+    from swarms.tools.handoffs_tool import handoff_task
+
+    class NumberedLLM:
+        calls = 0
+
+        def run(self, task=None, *args, **kwargs):
+            NumberedLLM.calls += 1
+            return f"answer {NumberedLLM.calls}"
+
+    registry = {
+        name: _flow(name, NumberedLLM(), tmp_path)
+        for name in ("Researcher", "Writer")
+    }
+
+    def delegate(*names):
+        return handoff_task(
+            [
+                {"agent_name": name, "task": "t", "reasoning": "r"}
+                for name in names
+            ],
+            agent_registry=registry,
+        )
+
+    delegate("Researcher")
+    single = delegate("Researcher")
+    parallel = delegate("Researcher", "Writer")
+
+    assert "answer 2" in single
+    assert "answer 1" not in single
+    assert "answer 2" not in parallel
 
 
 class TestListTools:

@@ -37,9 +37,6 @@ from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
-from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
-    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
-)
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
@@ -106,12 +103,6 @@ def stop_when_repeats(response: str) -> bool:
     return "stop" in response.lower()
 
 
-# Agent ID generator
-def agent_id() -> str:
-    """Deprecated: use ``generate_id("agent")``."""
-    return generate_id("agent")
-
-
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
@@ -136,14 +127,11 @@ class Agent:
         system_prompt (str): The system prompt
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
-        sop (str): The standard operating procedure
-        sop_list (List[str]): The standard operating procedure list
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
         context_length (int): The context length
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
-        multi_modal (bool): Enable multimodal
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
@@ -311,14 +299,11 @@ class Agent:
         dashboard: Optional[bool] = False,
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
-        sop: Optional[str] = None,
-        sop_list: Optional[List[str]] = None,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = None,
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
-        multi_modal: Optional[bool] = None,
         long_term_memory: Optional[Union[Callable, Any]] = None,
         fallback_model_name: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
@@ -415,8 +400,6 @@ class Agent:
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
-        self.sop = sop
-        self.sop_list = sop_list
         self.tools = tools
         if system_prompt is None:
             system_prompt = build_agent_system_prompt()
@@ -428,7 +411,6 @@ class Agent:
             f"{generate_api_key(prefix='agent-')}_state.json"
         )
         self.autosave = autosave
-        self.multi_modal = multi_modal
         self.long_term_memory = long_term_memory
         self.preset_stopping_token = preset_stopping_token
         self.streaming_on = streaming_on
@@ -536,6 +518,9 @@ class Agent:
             retry_attempts=self.tool_retry_attempts,
         )
 
+        if self.random_models_on is True:
+            self.model_name = set_random_models_for_agents()
+
         if self.context_length is None:
             self.context_length = self._default_context_length()
 
@@ -613,7 +598,6 @@ class Agent:
         self.tool_manager = ToolManager(agent=self)
         self.autonomous_loop = AutonomousAgentLoop(agent=self)
 
-        # self.init_handling()
         self.setup_config()
 
         # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
@@ -621,9 +605,6 @@ class Agent:
 
         # Initialize the tools
         self.tool_manager.setup_tools()
-
-        if exists(self.sop) or exists(self.sop_list):
-            self.handle_sop_ops()
 
         if self.interactive is True:
             self.reasoning_prompt_on = False
@@ -648,9 +629,6 @@ class Agent:
         ) is None and hasattr(self.llm, "usage_hook"):
             # A caller-supplied LiteLLM reports into this agent too.
             self.llm.usage_hook = self._add_usage
-
-        if self.random_models_on is True:
-            self.model_name = set_random_models_for_agents()
 
         if self.dashboard is True:
             self.print_dashboard()
@@ -827,10 +805,6 @@ class Agent:
         if self.dynamic_loops is True:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
-
-        # If multimodal = yes then set the sop to the multimodal sop
-        if self.multi_modal is True:
-            self.sop = MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1
 
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token
         if self.preset_stopping_token is not None:
@@ -2509,21 +2483,6 @@ Subtask Breakdown:
             *args,
             **kwargs,
         )
-
-    def handle_sop_ops(self):
-        # If the user inputs a list of strings for the sop then join them and set the sop
-        if exists(self.sop_list):
-            self.sop = "\n".join(self.sop_list)
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
-
-        if exists(self.sop):
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
-
-        logger.info("SOP Uploaded into the memory")
 
     def load_skills_metadata(
         self, skills_dir: str = None
