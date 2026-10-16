@@ -197,6 +197,7 @@ class SubagentRegistry:
         self,
         strategy: str = "wait_all",
         timeout: Optional[float] = None,
+        task_ids: Optional[List[str]] = None,
     ) -> List[Any]:
         """
         Wait for tasks and return results.
@@ -204,14 +205,30 @@ class SubagentRegistry:
         Args:
             strategy: "wait_all" or "wait_first"
             timeout: Max seconds to wait
+            task_ids: Only wait for and return these tasks. None
+                means every task in the registry. Their order does
+                not set the result order; duplicates count once.
 
         Returns:
             List of results (or exceptions for failed tasks)
+
+        Raises:
+            KeyError: If an ID in task_ids is not in the registry.
         """
+        # Copy under the lock: spawn() can add tasks from other threads.
+        with self._lock:
+            tasks = dict(self._tasks)
+        if task_ids is not None:
+            wanted = set(task_ids)
+            missing = wanted - tasks.keys()
+            if missing:
+                raise KeyError(f"Tasks {sorted(missing)} not found")
+            tasks = {k: st for k, st in tasks.items() if k in wanted}
+
         # Collect already-completed results
         already_done = []
         pending_futures = {}
-        for st in self._tasks.values():
+        for st in tasks.values():
             if st.status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
                 already_done.append(st)
             elif st.future is not None:
