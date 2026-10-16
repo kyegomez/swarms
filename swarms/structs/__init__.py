@@ -13,11 +13,17 @@ from swarms.structs.auto_agent_builder import (
 from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
+from swarms.structs.broadcast import Broadcast, broadcast
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.debate_with_judge import DebateWithJudge
+from swarms.structs.decision_model import (
+    DecisionModel,
+    get_decision_model_prices,
+    get_decision_models,
+)
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
@@ -52,7 +58,10 @@ from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
     run_single_agent,
 )
+from swarms.structs.mcp_deployer import MCPDeployer, deploy_as_mcp
 from swarms.structs.multi_agent_router import MultiAgentRouter
+from swarms.structs.one_to_one import OneToOne, one_to_one
+from swarms.structs.one_to_three import OneToThree, one_to_three
 from swarms.structs.planner_generator_evaluator import (
     EvaluationReport,
     HarnessResult,
@@ -64,20 +73,24 @@ from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
-from swarms.structs.swarm_rearrange import SwarmRearrange
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
 )
 from swarms.structs.swarming_architectures import (
-    broadcast,
     circular_swarm,
     grid_swarm,
     mesh_swarm,
-    one_to_one,
     pyramid_swarm,
     star_swarm,
 )
+
+from swarms.structs.check_models import (
+    model_count,
+    get_available_models,
+    is_model_available,
+)
+
 
 __all__ = [
     "AdvisorSwarm",
@@ -101,12 +114,15 @@ __all__ = [
     "grid_swarm",
     "mesh_swarm",
     "one_to_one",
+    "one_to_three",
+    "OneToOne",
+    "OneToThree",
+    "Broadcast",
     "pyramid_swarm",
     "star_swarm",
     "SpreadSheetSwarm",
     "SwarmRouter",
     "SwarmType",
-    "SwarmRearrange",
     "batched_grid_agent_execution",
     "run_agent_async",
     "run_agents_concurrently",
@@ -135,6 +151,9 @@ __all__ = [
     "BatchedGridWorkflow",
     "SelfMoASeq",
     "DebateWithJudge",
+    "DecisionModel",
+    "get_decision_model_prices",
+    "get_decision_models",
     "PlannerGeneratorEvaluator",
     "StepContract",
     "EvaluationReport",
@@ -143,4 +162,9 @@ __all__ = [
     "SubagentTask",
     "TaskStatus",
     "RESPOND_TOOL",
+    "model_count",
+    "MCPDeployer",
+    "deploy_as_mcp",
+    "get_available_models",
+    "is_model_available",
 ]

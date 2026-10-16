@@ -1,12 +1,16 @@
 import json
 import concurrent.futures
+import os
+import re
 import shutil
 from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
 
+from swarms.structs import conversation as conversation_module
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 def setup_temp_conversations_dir():
@@ -558,9 +562,9 @@ def test_save_and_load_json():
     file_path = temp_dir / "test_save.json"
 
     try:
-        conv = Conversation()
+        conv = Conversation(save_filepath=str(file_path))
         conv.add("user", "Hello")
-        conv.save_as_json(str(file_path))
+        conv.save_as_json(force=True)
 
         conv2 = Conversation()
         conv2.load_from_json(str(file_path))
@@ -575,6 +579,23 @@ def test_save_and_load_json():
             return False
     finally:
         shutil.rmtree(temp_dir)
+
+
+def test_load_filepath_restores_the_saved_history(tmp_path):
+    saved = tmp_path / "saved.json"
+    conv = Conversation(save_filepath=str(saved))
+    conv.add("user", "remember Helios")
+    conv.save_as_json(force=True)
+
+    restored = Conversation(
+        load_filepath=str(saved),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+
+    assert [
+        message["content"]
+        for message in restored.conversation_history
+    ] == ["remember Helios"]
 
 
 # ── memory_md_path initialization ──
@@ -698,6 +719,35 @@ def test_add_appends_to_memory_md(tmp_path):
     assert "### user — " in content
     assert "Test message" in content
     assert "---" in content
+
+
+def test_add_multiple_returns_one_result_per_message():
+    """add_multiple_messages reports what it added, rather than None."""
+    conv = Conversation()
+    added = conv.add_multiple_messages(
+        ["user", "assistant"], ["Hello", "Hi there"]
+    )
+    assert added is not None
+    assert len(added) == 2
+
+
+def test_add_multiple_does_not_depend_on_the_cpu_count(monkeypatch):
+    """A machine reporting fewer than four CPUs can still add messages.
+
+    int(os.cpu_count() * 0.25) is 0 for 1, 2 and 3 CPUs, which is a
+    ValueError from ThreadPoolExecutor rather than a slow path.
+    """
+    monkeypatch.setattr(os, "cpu_count", lambda: 1)
+    conv = Conversation()
+    conv.add_multiple_messages(
+        ["user", "assistant", "system"],
+        ["Hello", "Hi there", "System message"],
+    )
+    assert [msg["role"] for msg in conv.conversation_history] == [
+        "user",
+        "assistant",
+        "system",
+    ]
 
 
 def test_concurrent_add_thread_safety(tmp_path):
@@ -1107,15 +1157,22 @@ class TestDefaultConversationDoesNotResumeFromDisk:
     """
     Regression for cross-contamination between unrelated conversations.
 
-    ``name`` defaults to "conversation-test", so every anonymous
+    ``name`` used to default to "conversation-test", so every anonymous
     ``Conversation()`` resolved to the same file under the conversations
     directory and silently loaded whatever a previous, unrelated run had left
     there. Every swarm in the process started with someone else's messages and
     re-sent them on every agent call.
     """
 
-    def test_anonymous_conversation_starts_empty(self, tmp_path):
-        stale = tmp_path / "conversation_conversation-test.json"
+    def test_anonymous_conversation_starts_empty(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.setattr(
+            conversation_module,
+            "generate_conversation_name",
+            lambda: "conversation-deadbeef",
+        )
+        stale = tmp_path / "conversation_conversation-deadbeef.json"
         stale.write_text(
             json.dumps(
                 [
@@ -1140,14 +1197,19 @@ class TestDefaultConversationDoesNotResumeFromDisk:
             conversations_dir=str(tmp_path), autosave=True
         )
         first.add("user", "private to the first conversation")
-        first.save_as_json(
-            str(tmp_path / "conversation_conversation-test.json")
-        )
+        first.save_as_json(force=True)
 
         second = Conversation(conversations_dir=str(tmp_path))
 
         contents = [m["content"] for m in second.conversation_history]
         assert "private to the first conversation" not in contents
+
+    def test_anonymous_conversations_get_distinct_names_and_ids(self):
+        first, second = Conversation(), Conversation()
+
+        assert re.fullmatch(r"conversation-[0-9a-f]{8}", first.name)
+        assert first.name != second.name
+        assert first.id != second.id
 
     def test_a_named_conversation_still_resumes(self, tmp_path):
         """Resume-by-name is deliberate and must keep working."""
@@ -1244,6 +1306,208 @@ def test_return_messages_as_dictionary_preserves_roles():
     assert messages[0]["content"] == "Hello, world!"
     assert messages[1]["role"] == "assistant"
     assert messages[1]["content"] == "Hello, user!"
+
+
+def test_return_all_except_first_without_a_system_prompt():
+    conv = Conversation()
+    conv.add("User", "Task")
+    conv.add("Agent-1", "First answer")
+    conv.add("Agent-2", "Second answer")
+
+    assert [m["role"] for m in conv.return_all_except_first()] == [
+        "Agent-1",
+        "Agent-2",
+    ]
+
+    text = conv.return_all_except_first_string()
+    assert "First answer" in text
+    assert "Second answer" in text
+    assert "Task" not in text
+
+
+def test_return_all_except_first_with_a_system_prompt():
+    conv = Conversation(system_prompt="You are helpful.")
+    conv.add("User", "Task")
+    conv.add("Agent-1", "First answer")
+    conv.add("Agent-2", "Second answer")
+
+    assert [m["role"] for m in conv.return_all_except_first()] == [
+        "Agent-1",
+        "Agent-2",
+    ]
+
+    text = conv.return_all_except_first_string()
+    assert "You are helpful." not in text
+    assert "Task" not in text
+    assert "First answer" in text
+
+
+def test_construction_does_not_create_a_conversations_dir(tmp_path):
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        conv = Conversation()
+        assert not (tmp_path / "conversations").exists()
+
+        conv.add("User", "Task")
+        conv.save_as_json(force=True)
+        assert (tmp_path / "conversations").is_dir()
+    finally:
+        os.chdir(cwd)
+
+
+def test_construction_does_not_touch_the_home_dir(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    Conversation(name="demo")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_resuming_a_named_conversation_keeps_one_system_prompt(
+    tmp_path,
+):
+    kwargs = dict(
+        name="demo",
+        system_prompt="You are helpful.",
+        autosave=True,
+        conversations_dir=str(tmp_path),
+    )
+    conv = Conversation(**kwargs)
+    conv.add("User", "hello")
+    conv.add("Assistant", "hi")
+
+    for _ in range(2):
+        conv = Conversation(**kwargs)
+        assert [m["role"] for m in conv.conversation_history] == [
+            "System",
+            "User",
+            "Assistant",
+        ]
+
+
+def _record_token_counts(monkeypatch):
+    counted = []
+
+    def counting(text, *args, **kwargs):
+        counted.append(text)
+        return count_tokens(text, *args, **kwargs)
+
+    monkeypatch.setattr(conversation_module, "count_tokens", counting)
+    return counted
+
+
+def test_history_reads_reuse_message_token_counts(monkeypatch):
+    conv = Conversation(context_length=10_000)
+    conv.add("User", "first message")
+    conv.add("Assistant", "second message")
+    counted = _record_token_counts(monkeypatch)
+
+    for _ in range(3):
+        conv.return_history_as_string()
+    assert sorted(counted) == [
+        "Assistant: second message",
+        "User: first message",
+    ]
+
+    conv.add("User", "third message")
+    conv.return_history_as_string()
+    assert counted[2:] == ["User: third message"]
+
+
+def test_trimmed_history_counts_messages_not_the_transcript(
+    monkeypatch,
+):
+    conv = Conversation(context_length=40)
+    contents = [
+        f"message {i} " + " ".join(["word"] * 10) for i in range(20)
+    ]
+    for content in contents:
+        conv.add("User", content)
+    counted = _record_token_counts(monkeypatch)
+
+    history = conv.return_history_as_string()
+
+    assert all("\n\n" not in text for text in counted)
+    full = "\n\n".join(f"User: {content}" for content in contents)
+    assert full.endswith(history)
+    assert history.endswith(contents[-1])
+    assert count_tokens(history) <= 40
+
+
+def test_trimmed_history_skips_messages_that_cannot_fit(monkeypatch):
+    conv = Conversation(context_length=40)
+    contents = [
+        f"message {i} " + " ".join(["word"] * 10) for i in range(20)
+    ]
+    for content in contents:
+        conv.add("User", content)
+    counted = _record_token_counts(monkeypatch)
+
+    conv.return_history_as_string()
+
+    assert not any(contents[0] in text for text in counted)
+    assert not any(contents[10] in text for text in counted)
+
+
+def test_token_count_on_add_is_reused_by_history_reads(monkeypatch):
+    counted = _record_token_counts(monkeypatch)
+    conv = Conversation(token_count=True, context_length=10_000)
+    message = conv.add("User", "first message")
+    conv.add("Assistant", "second message")
+
+    conv.return_history_as_string()
+    conv.count_history_tokens()
+
+    assert sorted(counted) == [
+        "Assistant: second message",
+        "User: first message",
+    ]
+    assert message["token_count"] == count_tokens(
+        "User: first message"
+    )
+
+
+def test_token_count_cache_stays_bounded_after_updates():
+    conv = Conversation(context_length=10_000)
+    for i in range(5):
+        conv.add("User", f"message {i}")
+    conv.return_history_as_string()
+
+    for i in range(50):
+        conv.update(0, "User", f"edit {i}")
+        conv.return_history_as_string()
+
+    assert len(conv._token_count_cache) <= 2 * len(
+        conv.conversation_history
+    )
+    lines = conv._format_messages()
+    assert (
+        conv.count_history_tokens()
+        == sum(count_tokens(line) for line in lines) + len(lines) - 1
+    )
+
+
+def test_token_count_cache_prune_does_not_iterate_the_shared_cache():
+    class AddsWhileIterated(dict):
+        def items(self):
+            for item in super().items():
+                self[
+                    ("model", f"added by another thread {len(self)}")
+                ] = 1
+                yield item
+
+    conv = Conversation(context_length=10_000)
+    conv.add("User", "kept message")
+    conv._token_count_cache = AddsWhileIterated(
+        {("model", f"stale line {i}"): 1 for i in range(4)}
+    )
+
+    conv.return_history_as_string()
+
+    assert set(conv._token_count_cache) == {
+        (conv.tokenizer_model_name, "User: kept message")
+    }
 
 
 if __name__ == "__main__":

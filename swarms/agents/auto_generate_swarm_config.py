@@ -49,8 +49,7 @@ def parse_yaml_from_swarm_markdown(markdown_text: str) -> dict:
     Returns:
         dict: A parsed Python dictionary of the YAML content.
     """
-    # Match YAML blocks inside triple backticks — use the last match
-    # because the LLM's generated YAML comes after any examples in the prompt
+    # Last match: the generated YAML comes after any examples in the prompt
     pattern = r"```yaml\s*\n(.*?)```"
     matches = re.findall(pattern, markdown_text, re.DOTALL)
 

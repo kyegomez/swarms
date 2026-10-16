@@ -108,7 +108,10 @@ def show_ascii_art():
     info = Text()
     info.append("Swarms", style="bold white")
     info.append(f"  v{version}\n", style="dim white")
-    info.append(provider + "\n", style="dim white")
+    # The provider label carries Rich markup, which a plain append prints literally.
+    info.append_text(
+        Text.from_markup(provider + "\n", style="dim white")
+    )
     info.append(cwd + "\n", style="dim white")
     info.append(
         "https://github.com/kyegomez/swarms", style="dim white"
@@ -119,8 +122,7 @@ def show_ascii_art():
     header.add_column(vertical="top")
     header.add_row(icon, info)
 
-    # Two rotating tips: a quick command hint inside the panel + a longer
-    # contextual tip below it. Both pull from swarms.cli.tips for variety.
+    # A command hint inside the panel and a longer tip below it
     panel_tip = render_tip(category="commands")
     startup_tip = render_tip()
 

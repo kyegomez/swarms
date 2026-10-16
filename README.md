@@ -12,6 +12,8 @@
   <a href="https://docs.swarms.world">Documentation</a>
   <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
   <a href="https://swarms.world">Swarms Marketplace</a>
+  <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+  <a href="./README_zh.md">中文</a>
 </p>
 
 
@@ -47,28 +49,18 @@
 >
 > Swarms, The Enterprise-Grade Production-Ready Multi-Agent Orchestration Framework 
 
-Swarms is the most reliable, scalable, and adaptive multi-agent orchestration framework available today. We provide a comprehensive suite of production-ready, prebuilt multi-agent architectures, including sequential, concurrent, and hierarchical systems. Additionally, Swarms offers backward compatibility with leading agent frameworks and interoperability with protocols such as MCP, x402, skills, and much more.
-
+Build, deploy, and scale high-performance multi-agent systems with Swarms Python, a fast, flexible, and optimized agent framework. Featuring production-ready harnesses for sequential, concurrent, and hierarchical architectures, seamless framework compatibility, and integrations with MCP, x402, and skills.
 
 ## Install
 
-### Using pip
-
 ```bash
+# pip
 $ pip3 install -U swarms
-```
 
-### Using uv (Recommended)
-
-[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver, written in Rust.
-
-```bash
+# uv (recommended): https://github.com/astral-sh/uv
 $ uv pip install swarms
-```
 
-### Using poetry
-
-```bash
+# poetry
 $ poetry add swarms
 ```
 
@@ -81,23 +73,34 @@ $ cd swarms
 $ pip install -r requirements.txt
 ```
 
-<!-- ### Using Docker
+### Faster model calls and graphs with `swarms[fast]`
 
-The easiest way to get started with Swarms is using our pre-built Docker image:
+`swarms[fast]` adds two optional speedups:
+
+- [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub) for faster model calls through a drop-in LLM gateway. No code changes needed. To switch back to litellm, set `SWARMS_LLM_BACKEND=litellm`.
+- [rustworkx](https://github.com/Qiskit/rustworkx), a graph library written in Rust, for faster `GraphWorkflow` graphs. Turn it on with `GraphWorkflow(backend="rustworkx")`.
 
 ```bash
-# Pull and run the latest image
-$ docker pull kyegomez/swarms:latest
-$ docker run --rm kyegomez/swarms:latest python -c "import swarms; print('Swarms is ready!')"
-
-# Run interactively for development
-$ docker run -it --rm -v $(pwd):/app kyegomez/swarms:latest bash
-
-# Using docker-compose (recommended for development)
-$ docker-compose up -d
+$ pip3 install -U "swarms[fast]"
 ```
 
-For more Docker options and advanced usage, see our [Docker documentation](/scripts/docker/DOCKER.md). -->
+
+### Using Docker
+
+The official image, [`swarmscorp/swarms`](https://hub.docker.com/r/swarmscorp/swarms) on Docker Hub, has swarms and its CLI installed on Python 3.13, for `linux/amd64` and `linux/arm64`.
+
+```bash
+# Pull the image
+$ docker pull swarmscorp/swarms:latest
+
+# Run a script from the current directory, passing your API key from the shell
+$ docker run --rm -e OPENAI_API_KEY -v "$PWD:/app" swarmscorp/swarms python agent.py
+
+# Open a Python shell with swarms installed
+$ docker run -it --rm -e OPENAI_API_KEY swarmscorp/swarms
+```
+
+To build the image yourself, run `docker build -t swarms .` from the repository root.
 
 ---
 
@@ -110,12 +113,13 @@ OPENAI_API_KEY=""
 WORKSPACE_DIR="agent_workspace"
 ANTHROPIC_API_KEY=""
 GROQ_API_KEY=""
+SWARMS_TELEMETRY_ON
 ```
 
 
 ### Your First Agent
 
-An **Agent** is the fundamental building block of a swarm—an autonomous entity powered by an LLM + Tools + Memory. [Learn more Here](https://docs.swarms.world/api/agent)
+An **Agent** is the fundamental building block of a swarm: an autonomous entity powered by an LLM + Tools + Memory. [Learn more Here](https://docs.swarms.world/api/agent)
 
 ```python
 from swarms import Agent
@@ -134,7 +138,7 @@ agent.run("What are the key benefits of using a multi-agent system?")
 
 ### Autonomous Agent with `max_loops="auto"`
 
-Setting `max_loops="auto"` lets the agent decide for itself when the task is complete — it keeps reasoning and acting until it reaches a stopping condition, rather than halting after a fixed number of iterations. This is the recommended mode for open-ended, multi-step tasks where the number of steps isn't known in advance.
+Setting `max_loops="auto"` lets the agent decide for itself when the task is complete. It keeps reasoning and acting until it reaches a stopping condition, rather than halting after a fixed number of iterations. This is the recommended mode for open-ended, multi-step tasks where the number of steps isn't known in advance.
 
 ```python
 from swarms import Agent
@@ -147,12 +151,12 @@ agent = Agent(
         "execute each step thoroughly, and signal completion only when the full task is done."
     ),
     model_name="gpt-5.4",
-    max_loops="auto",       # Agent decides when it's done — no fixed iteration cap
+    max_loops="auto",       # Agent decides when it's done; no fixed iteration cap
     autosave=True,
     verbose=True,
 )
 
-# The agent will keep looping — planning, executing, and reflecting — until it
+# The agent will keep looping (planning, executing, and reflecting) until it
 # determines the task is fully complete.
 result = agent.run(
     "Research the current state of quantum computing, identify the top three "
@@ -193,6 +197,50 @@ print(
     )
 )
 ```
+
+### Serve an Agent as an MCP Server
+
+The reverse direction works too. `MCPDeployer` turns any agent, or any swarm, into an MCP server that other agents and MCP hosts can call, with an auth layer in front of it. Each target becomes one tool; pass a list or a dict to serve several from one server. [See the MCPDeployer examples](examples/mcp/mcp_deployer/)
+
+```python
+from swarms import Agent, MCPDeployer
+
+researcher = Agent(
+    agent_name="Researcher",
+    agent_description="Answers research questions with a short summary.",
+    model_name="gpt-5.4",
+    max_loops=1,
+)
+
+# Serves http://127.0.0.1:8000/mcp as the tool "researcher".
+MCPDeployer(researcher, api_keys=["sk-local-dev"], port=8000).run()
+```
+
+Any other agent can then use it by pointing at the URL with the key:
+
+```python
+from swarms import Agent
+from swarms.schemas.mcp_schemas import MCPConnection
+
+client = Agent(
+    agent_name="Client",
+    model_name="gpt-5.4",
+    mcp_url=MCPConnection(url="http://127.0.0.1:8000/mcp", api_key="sk-local-dev"),
+    max_loops=2,
+)
+client.run("Use the researcher tool to summarise the state of solid-state batteries.")
+```
+
+Auth can be static API keys, your own `auth` callable that reads the request headers, or an `mcp` `TokenVerifier` with required scopes. A server with no auth configured refuses to start unless you pass `allow_anonymous=True`. Transports: streamable HTTP (default), SSE, or stdio for desktop MCP hosts.
+
+| Example | What it shows |
+|---|---|
+| [single_agent_api_key.py](examples/mcp/mcp_deployer/single_agent_api_key.py) | One agent behind a static key |
+| [multiple_agents_one_server.py](examples/mcp/mcp_deployer/multiple_agents_one_server.py) | Two agents, a `SequentialWorkflow` and two functions as separate tools |
+| [custom_auth_per_tenant.py](examples/mcp/mcp_deployer/custom_auth_per_tenant.py) | Your own async auth callable reading an `x-tenant` header |
+| [token_verifier_with_scopes.py](examples/mcp/mcp_deployer/token_verifier_with_scopes.py) | `TokenVerifier` with required scopes |
+| [background_server_and_client_agent.py](examples/mcp/mcp_deployer/background_server_and_client_agent.py) | Serve, call from a second agent, and stop, all in one process |
+| [All MCPDeployer examples](examples/mcp/mcp_deployer/) | Every target kind, auth mode and transport |
 
 ### Your First Swarm: Multi-Agent Collaboration
 
@@ -356,7 +404,7 @@ print(outputs)
 
 `GraphWorkflow` orchestrates agents as nodes in a Directed Acyclic Graph (DAG). Each node is an agent and each edge declares a dependency, so a node only runs after every upstream node has finished. A topological sort guarantees correct execution order, while independent branches run in parallel automatically. 
 
-This makes `GraphWorkflow` the right choice when your workflow has fan-out / fan-in patterns, conditional dependencies, or any structure that doesn't fit a strict line or a flat parallel batch. [Learn more about GraphWorkflow](https://docs.swarms.world/api/graph-workflow)
+This makes `GraphWorkflow` the right choice when your workflow has fan-out / fan-in or diamond patterns, conditional dependencies, or any structure that doesn't fit a strict line or a flat parallel batch. Per-node callbacks let you hook into node completion for streaming and progress tracking. [Learn more about GraphWorkflow](https://docs.swarms.world/api/graph-workflow)
 
 ```python
 from swarms import Agent, GraphWorkflow, Node, Edge, NodeType
@@ -385,11 +433,6 @@ workflow.set_end_points(["publisher"])
 results = workflow.run("Produce a short article on the rise of small language models.")
 print(results)
 ```
-
-`GraphWorkflow` excels at:
-- **Complex Dependencies**: Express any DAG, including fan-out, fan-in, and diamond patterns
-- **Automatic Parallelism**: Independent branches execute concurrently without extra configuration
-- **Per-node Observability**: Hook into node completion via callbacks for streaming and progress tracking
 
 ----
 
@@ -444,14 +487,11 @@ aggregated_output = moa_router.run(task)
 print(f"Final Aggregated Output:\n{aggregated_output}\n")
 ```
 
-
-The `SwarmRouter` is a powerful tool for simplifying multi-agent orchestration. It provides a consistent and flexible way to deploy different collaborative strategies, allowing you to build more sophisticated applications with less code.
-
 -------
 
 ### AutoSwarmBuilder: Autonomous Agent Generation
 
-The `AutoSwarmBuilder` automatically generates specialized agents and their workflows based on your task description. Simply describe what you need, and it will create a complete multi-agent system with detailed prompts and optimal agent configurations. [Learn more about AutoSwarmBuilder](https://docs.swarms.world/api/auto-swarm-builder)
+The `AutoSwarmBuilder` automatically generates specialized agents and their workflows based on your task description. Simply describe what you need, and it will create a complete multi-agent system with detailed prompts and optimal agent configurations, which makes it ideal for rapid prototyping and building specialized teams without manual configuration. [Learn more about AutoSwarmBuilder](https://docs.swarms.world/api/auto-swarm-builder)
 
 ```python
 from swarms import AutoSwarmBuilder
@@ -478,16 +518,6 @@ result = swarm.run(
 # The result contains the generated agents and their configurations
 print(json.dumps(result, indent=4))
 ```
-
-The `AutoSwarmBuilder` provides:
-
-- **Automatic Agent Generation**: Creates specialized agents based on task requirements
-- **Intelligent Prompt Engineering**: Generates comprehensive, detailed prompts for each agent
-- **Optimal Workflow Design**: Determines the best agent interactions and workflow structure
-- **Production-Ready Configurations**: Returns fully configured agents ready for deployment
-- **Flexible Architecture**: Supports various swarm types and agent specializations
-
-This feature is perfect for rapid prototyping, complex task decomposition, and creating specialized agent teams without manual configuration.
 
 -------
 
@@ -525,7 +555,7 @@ print(recommendation)
 
 ### GroupChat
 
-`GroupChat` is an asynchronous, self-selecting groupchat. All agents listen in parallel; for each broadcast message, every other agent runs a forced `respond(score, message)` function call to decide whether to chime in, and replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds. There is no turn order — multiple agents can react to the same message at the same time, and silent agents stay silent.
+`GroupChat` is an asynchronous, self-selecting groupchat. All agents listen in parallel; for each broadcast message, every other agent runs a forced `respond(score, message)` function call to decide whether to chime in, and replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds. There is no turn order: multiple agents can react to the same message at the same time, and silent agents stay silent.
 
 ```python
 from swarms import Agent, GroupChat, RESPOND_TOOL
@@ -613,17 +643,11 @@ result = marketing_swarm.run(
 print(result)
 ```
 
-The `HierarchicalSwarm` excels at:
-- **Complex Project Management**: Breaking down large tasks into specialized subtasks
-- **Team Coordination**: Ensuring all agents work toward unified goals
-- **Quality Control**: Director provides feedback and refinement loops
-- **Scalable Workflows**: Easy to add new specialized agents as needed
-
 ---
 
 ### HeavySwarm
 
-`HeavySwarm` implements a sophisticated 5-phase workflow inspired by X.AI's Grok heavy implementation. It uses specialized agents (Research, Analysis, Alternatives, Verification) to provide comprehensive task analysis through intelligent question generation, parallel execution, and synthesis. This architecture excels at complex research and analysis tasks requiring thorough investigation and multiple perspectives.
+`HeavySwarm` implements a sophisticated 5-phase workflow inspired by X.AI's Grok heavy implementation. It uses specialized agents (Research, Analysis, Alternatives, Verification) to provide comprehensive task analysis through intelligent question generation, parallel execution, and synthesis. An optional real-time dashboard shows the analysis as it runs. This architecture excels at financial analysis, strategic planning, research reports, and any task requiring thorough investigation and multiple perspectives. [Learn more about HeavySwarm](https://docs.swarms.world/api/heavy-swarm)
 
 ```python
 from swarms import HeavySwarm
@@ -652,22 +676,7 @@ prompt = (
 
 out = swarm.run(prompt)
 print(out)
-
 ```
-
-The `HeavySwarm` provides:
-
-- **5-Phase Analysis**: Question generation, research, analysis, alternatives, and verification
-
-- **Specialized Agents**: Each phase uses purpose-built agents for optimal results
-
-- **Comprehensive Coverage**: Multiple perspectives and thorough investigation
-
-- **Real-time Dashboard**: Optional visualization of the analysis process
-
-- **Structured Output**: Well-organized and actionable results
-
-This architecture is perfect for financial analysis, strategic planning, research reports, and any task requiring deep, multi-faceted analysis. [Learn more about HeavySwarm](https://docs.swarms.world/api/heavy-swarm)
 
 ---
 
@@ -725,13 +734,11 @@ result = social_alg.run("The impact of AI on healthcare")
 print(result.final_outputs)
 ```
 
-Perfect for implementing complex multi-agent workflows, collaborative problem-solving, and custom communication protocols.
-
 ---
 
 ## Documentation
 
-The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)**. Below are the resources most useful when building with Swarms — both for humans and for AI coding assistants.
+The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)**. Below are the resources most useful when building with Swarms, both for humans and for AI coding assistants.
 
 | Resource | Link | What it's for |
 |---|---|---|
@@ -747,9 +754,9 @@ The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)
 
 ## Using Swarms with AI Coding Assistants
 
-The repo ships with a [`CLAUDE.md`](./CLAUDE.md) at the root — a focused guide that teaches Claude Code, Cursor, and other AI coding assistants how to build with Swarms. It covers the `Agent` primitive, every multi-agent architecture (`SequentialWorkflow`, `ConcurrentWorkflow`, `AgentRearrange`, `GraphWorkflow`, `MixtureOfAgents`, `HierarchicalSwarm`, `SwarmRouter`, and more), tools, streaming, memory, MCP integration, and the patterns to reach for in each situation.
+The repo ships with a [`CLAUDE.md`](./CLAUDE.md) at the root, a focused guide that teaches Claude Code, Cursor, and other AI coding assistants how to build with Swarms. It covers the `Agent` primitive, every multi-agent architecture (`SequentialWorkflow`, `ConcurrentWorkflow`, `AgentRearrange`, `GraphWorkflow`, `MixtureOfAgents`, `HierarchicalSwarm`, `SwarmRouter`, and more), tools, streaming, memory, MCP integration, and the patterns to reach for in each situation.
 
-Drop `CLAUDE.md` (or symlink it as `AGENTS.md` / `.cursorrules`) into any project that depends on `swarms` and your assistant will write idiomatic Swarms code on the first try — no extra prompting required.
+Drop `CLAUDE.md` (or symlink it as `AGENTS.md` / `.cursorrules`) into any project that depends on `swarms` and your assistant will write idiomatic Swarms code on the first try, with no extra prompting required.
 
 ---
 
@@ -775,7 +782,7 @@ Swarms seamlessly integrates with industry-standard protocols and open specifica
 | **[MCP (Model Context Protocol)](https://docs.swarms.world/integrations/mcp)** | Standardized protocol for AI agents to interact with external tools and services through MCP servers. Enables dynamic tool discovery and execution. | [MCP Integration Guide](https://docs.swarms.world/integrations/mcp) |
 | **[X402](https://docs.swarms.world/examples/integrations/x402-payment)** | Cryptocurrency payment protocol for API endpoints. Enables monetization of agents with pay-per-use models. | [X402 Quickstart](https://docs.swarms.world/examples/integrations/x402-payment) |
 | **[Swarms Marketplace](https://swarms.world)** | Platform for discovering and sharing production-ready prompts, agents, and tools. Enables automatic prompt loading from the marketplace and publishing your own prompts directly from code. | [Marketplace Tutorial](https://docs.swarms.world/integrations/marketplace) |
-| **[Open Responses](https://www.openresponses.org/)** | Open-source specification and ecosystem for multi-provider, interoperable LLM interfaces based on the OpenAI Responses API. Provides a unified schema and tooling for calling language models, streaming results, and composing agentic workflows—independent of provider. | [Open Responses Website](https://www.openresponses.org/) |
+| **[Open Responses](https://www.openresponses.org/)** | Open-source specification and ecosystem for multi-provider, interoperable LLM interfaces based on the OpenAI Responses API. Provides a unified schema and tooling for calling language models, streaming results, and composing agentic workflows, independent of provider. | [Open Responses Website](https://www.openresponses.org/) |
 | **[Agent Skills](https://docs.swarms.world/agents/agent-skills)** | Lightweight, markdown-based format for defining modular, reusable agent capabilities introduced by Anthropic. Enables specialization of agents without modifying code by loading skill definitions from simple SKILL.md files. | [Agent Skills Documentation](https://docs.swarms.world/agents/agent-skills) |
 
 
@@ -797,13 +804,15 @@ Learn more about how you can make a meaningful impact in our [Contributor's Guid
 
 We've made it easy to start contributing. Here's how you can help:
 
-1. **Find an Issue to Tackle:** The best way to begin is by visiting our [**contributing project board**](https://github.com/users/kyegomez/projects/1). Look for issues tagged with `good first issue`—these are specifically selected for new contributors.
+1. **Find an Issue to Tackle:** The best way to begin is by visiting our [**contributing project board**](https://github.com/users/kyegomez/projects/1). Look for issues tagged with `good first issue`; these are specifically selected for new contributors.
 
 2. **Report a Bug or Request a Feature:** Have a new idea or found something that isn't working right? We'd love to hear from you. Please [**file a Bug Report or Feature Request**](https://github.com/kyegomez/swarms/issues) on our GitHub Issues page.
 
 3. **Understand Our Workflow and Standards:** Before submitting your work, please review our complete [**Contribution Guidelines**](https://github.com/kyegomez/swarms/blob/master/CONTRIBUTING.md). To help maintain code quality, we also encourage you to read our guide on [**Code Cleanliness**](https://docs.swarms.world/community/contributing-to-docs).
 
 4. **Join the Discussion:** To participate in roadmap discussions and connect with other developers, join our community on [**Discord**](https://discord.gg/EamjgSaEQf).
+
+5. **Use WARP for Every Commit, PR and Issue:** All contributors, people and AI agents alike, must write commit messages, PR titles and issue titles in the WARP (Warp Speed Protocol) shorthand: `[TYPE][Function/FileName][Short Description]`, for example `[FIX][Agent._run][Raise AgentLLMError after retry exhaustion]`. The full spec is the [**WARP Git Message Skill**](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1). Issues and PRs that skip WARP are triaged after the ones that use it, so expect a delay without it.
 
 ### Thank You to Our Contributors
 
@@ -814,11 +823,12 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
 </a>
 
 
-## We're Hiring
+## Join Swarms
 
-Swarms is hiring. We're building the infrastructure for a world of autonomous agents, and we're looking for engineers, researchers, and operators who want to ship at the frontier of multi-agent AI.
+Our mission is to advance humanity by building the infrastructure that powers the agent economy. We’re actively recruiting talented individuals across multiple roles to accelerate this vision. Join our team to help build, maintain, and scale the Swarms Python package, Swarms Marketplace, and our growing suite of products.
 
-- **Open roles:** [swarms.ai/hiring](https://swarms.ai/hiring)
+- **Check Open roles:** [swarms.ai/hiring](https://swarms.ai/hiring)
+
 - **Get in touch:** email [kye@swarms.world](mailto:kye@swarms.world) to learn more
 
 

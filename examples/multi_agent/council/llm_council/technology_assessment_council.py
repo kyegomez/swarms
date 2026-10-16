@@ -5,13 +5,13 @@ This example demonstrates using the LLM Council to assess emerging technologies
 and their business implications.
 """
 
-from swarms.structs.llm_council import LLMCouncil
+from swarms import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
-# Technology assessment query
-query = """
+# Technology assessment task
+task = """
 Evaluate the business potential and implementation strategy for integrating 
 quantum computing capabilities into a financial services company. Consider:
 1. Current state of quantum computing technology
@@ -25,7 +25,7 @@ quantum computing capabilities into a financial services company. Consider:
 """
 
 # Run the council
-result = council.run(query)
+result = council.run(task=task)
 
 # Print final response
-print(result["final_response"])
+print(result)

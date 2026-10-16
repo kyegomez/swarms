@@ -563,6 +563,44 @@ class TestAutonomousLoopCreateAndAssignTools:
         assert sub_entry["name"] == "worker-1"
         assert sub_entry["description"] == "Does work"
 
+    def test_sub_agent_inherits_the_parent_tools(self):
+        """A sub-agent with no tools is strictly weaker than asking the parent."""
+
+        def parent_tool(query: str) -> str:
+            """Look something up.
+
+            Args:
+                query: what to look up.
+            """
+            return query
+
+        class ParentAgentStub:
+            def __init__(self):
+                self.model_name = MODEL
+                self.verbose = False
+                self.print_on = False
+                self.tools = [parent_tool]
+                self.short_memory = (
+                    TestAutonomousLoopCreateAndAssignTools._ShortMemoryStub()
+                )
+
+        parent = ParentAgentStub()
+
+        create_sub_agent_tool(
+            parent,
+            agents=[
+                {
+                    "agent_name": "worker-1",
+                    "agent_description": "Does work",
+                }
+            ],
+        )
+
+        sub_agent = next(iter(parent.sub_agents.values()))["agent"]
+        assert sub_agent.tools == [parent_tool]
+        # Tools are unusable without a turn to read the result in.
+        assert sub_agent.max_loops > 1
+
     def test_create_sub_agent_missing_required_fields(self):
         """create_sub_agent_tool returns error if required fields are missing."""
 

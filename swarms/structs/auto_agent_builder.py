@@ -7,18 +7,17 @@ from swarms.prompts.auto_agent_builder_prompt import (
 from swarms.structs.agent import Agent
 from swarms.structs.execution_utils import batched_run
 from swarms.telemetry.otel import capture_init, trace_run
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="auto_agent_builder")
 
 DEFAULT_MODEL_NAME = "gpt-5.4"
 
-# Kept as a module-level alias so existing imports of BUILDER_SYSTEM_PROMPT keep
-# working now that the text lives in swarms/prompts/.
+# Alias kept for existing imports now that the text lives in swarms/prompts/
 BUILDER_SYSTEM_PROMPT = AUTO_AGENT_BUILDER_SYSTEM_PROMPT
 
-# The builder is forced to call this, so the provider enforces the shape and
-# there is no free-form JSON to parse out of a prose response.
+# Forced tool call, so the provider enforces the shape instead of a JSON parse
 BUILD_AGENTS_TOOL = {
     "type": "function",
     "function": {
@@ -80,8 +79,7 @@ REQUIRED_FIELDS = (
     "model_name",
 )
 
-# Agent keyword arguments the builder fills in from the generated roster.
-# Passing any of these in agent_kwargs would collide with the generated value.
+# Filled in from the roster, passing them in agent_kwargs would collide
 GENERATED_AGENT_FIELDS = (
     "agent_name",
     "agent_description",
@@ -153,16 +151,14 @@ def _extract_agents(tool_output: Any) -> List[Dict[str, str]]:
     for entry in raw:
         if not isinstance(entry, dict):
             continue
-        # Drop partial entries rather than constructing an Agent with a missing
-        # system_prompt, which would silently fall back to the default persona.
+        # A missing system_prompt would silently fall back to the default persona
         if any(not entry.get(f) for f in REQUIRED_FIELDS):
             logger.warning(
                 f"Skipping incomplete agent config: {entry!r}"
             )
             continue
         config = {f: str(entry[f]).strip() for f in REQUIRED_FIELDS}
-        # Agent memory is keyed on agent_name, so duplicates would share and
-        # corrupt each other's state.
+        # Memory is keyed on agent_name, duplicates would corrupt each other
         if config["name"] in seen:
             logger.warning(
                 f"Skipping duplicate agent name: {config['name']!r}"
@@ -281,6 +277,7 @@ class AutoAgentBuilder:
             )
         self.return_dict = return_dict
         self.verbose = verbose
+        self._usage = empty_usage()
 
         capture_init(self)
 
@@ -296,8 +293,7 @@ class AutoAgentBuilder:
             system_prompt=self.system_prompt,
             model_name=self.model_name,
             max_loops=1,
-            # The roster depends only on the task, so carrying state across runs
-            # would let an earlier task's team leak into a later one.
+            # The roster depends only on the task, no state may leak across runs
             output_type="final",
             persistent_memory=False,
             temperature=None,
@@ -306,7 +302,19 @@ class AutoAgentBuilder:
             tools_list_dictionary=[BUILD_AGENTS_TOOL],
         )
 
-    @trace_run("AutoAgentBuilder.build_configs")
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every build_configs call.
+
+        Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens``,
+        ``reasoning_tokens``, ``total_tokens``, as in :attr:`Agent.usage`.
+        """
+        return dict(self._usage)
+
+    @trace_run(
+        "AutoAgentBuilder.build_configs",
+        usage=lambda builder: builder.usage,
+    )
     def build_configs(self, task: str) -> List[Dict[str, str]]:
         """Generate agent configurations for a task, always as dicts.
 
@@ -330,8 +338,7 @@ class AutoAgentBuilder:
             raise ValueError("task must be a non-empty string.")
 
         if self.num_agents is not None:
-            # Stated twice, and as a hard requirement, because the system
-            # prompt's prefer-fewer guidance otherwise pulls the count down.
+            # Stated as a hard requirement, the prefer-fewer guidance otherwise wins
             instruction = (
                 f"Design exactly {self.num_agents} agents for this task — not "
                 f"fewer, not more. This exact count is a hard requirement and "
@@ -351,7 +358,12 @@ class AutoAgentBuilder:
 
         prompt = f"Task:\n{task}\n\n{instruction}"
 
-        output = self._builder_agent().run(prompt)
+        builder = self._builder_agent()
+        try:
+            output = builder.run(prompt)
+        finally:
+            for key, value in builder.usage.items():
+                self._usage[key] += value
         agents = _extract_agents(output)
 
         if not agents:
@@ -368,8 +380,7 @@ class AutoAgentBuilder:
             )
             agents = agents[:limit]
 
-        # An exact count is a request, not something we can fabricate — surface
-        # the shortfall rather than silently handing back a smaller roster.
+        # Surface a shortfall rather than hand back a smaller roster silently
         if (
             self.num_agents is not None
             and len(agents) < self.num_agents

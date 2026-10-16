@@ -15,9 +15,11 @@ back, which is exactly the case that previously went silent.
 """
 
 import json
+import threading
 
 import pytest
 
+from swarms.structs.concurrent_workflow import MAX_CONCURRENT_AGENTS
 from swarms.structs.groupchat import (
     GroupChat,
     RESPOND_TOOL,
@@ -230,6 +232,30 @@ class TestConstructorValidation:
 # --------------------------------------------------------------------------
 
 
+class HistoryAgent(ScriptedAgent):
+    """Prefixes the history to its reply unless output_type is final."""
+
+    def __init__(self, name, bids=()):
+        super().__init__(name, bids)
+        self.output_type = "str-all-except-first"
+
+    def run(self, task=None, *args, **kwargs):
+        output = super().run(task, *args, **kwargs)
+        if self.output_type == "final":
+            return output
+        return f"User: {task}\n\n{self.agent_name}: {output!r}"
+
+
+class TestBidOutputType:
+    def test_bids_parse_whatever_the_agents_output_type(self):
+        speaker = HistoryAgent("A", [(0.9, "a real reply")])
+        chat = make_chat([speaker, HistoryAgent("B")])
+        chat.run("topic")
+
+        assert roles(chat)[:2] == ["User", "A"]
+        assert speaker.output_type == "str-all-except-first"
+
+
 class TestScheduling:
     def test_the_highest_bidder_takes_the_floor(self):
         eager = ScriptedAgent("Eager", [(0.9, "eager speaks")])
@@ -253,6 +279,23 @@ class TestScheduling:
         # Turn 1: everyone bids. Turn 2: everyone bids again and the
         # exhausted scripts fall silent, ending the chat on a lull.
         assert all(agent.calls >= 1 for agent in agents)
+
+    def test_every_bid_runs_at_once_up_to_the_cap(self):
+        barrier = threading.Barrier(MAX_CONCURRENT_AGENTS, timeout=5)
+
+        class BarrierAgent(ScriptedAgent):
+            def run(self, task=None, *args, **kwargs):
+                barrier.wait()
+                return super().run(task, *args, **kwargs)
+
+        agents = [
+            BarrierAgent(f"A{i}")
+            for i in range(MAX_CONCURRENT_AGENTS)
+        ]
+        make_chat(agents).run("topic")
+
+        assert not barrier.broken
+        assert all(agent.calls == 1 for agent in agents)
 
     def test_a_lull_ends_the_chat(self):
         quiet = [
@@ -477,6 +520,36 @@ class TestGroupChatSilenceBias:
         chat.run("Task")
 
         assert roles(chat) == ["User", "AgentA"]
+
+
+class TestRunsAreIndependent:
+    @staticmethod
+    def _chat():
+        speaker = ScriptedAgent(
+            "AgentA", [(0.8, "about cats"), (0.8, "about dogs")]
+        )
+        silent = ScriptedAgent("AgentB", [(0.0, ""), (0.0, "")])
+        return make_chat(
+            [speaker, silent], threshold=0.5, max_loops=2
+        )
+
+    def test_a_second_run_does_not_inherit_the_first(self):
+        """The shared Conversation used to grow across runs."""
+        chat = self._chat()
+
+        chat.run("talk about cats")
+        chat.run("talk about dogs")
+
+        assert contents(chat) == ["talk about dogs", "about dogs"]
+
+    def test_run_batch_returns_one_transcript_per_task(self):
+        chat = self._chat()
+
+        outputs = chat.run_batch(
+            ["talk about cats", "talk about dogs"]
+        )
+
+        assert "cats" not in str(outputs[1])
 
 
 if __name__ == "__main__":

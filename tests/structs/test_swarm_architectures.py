@@ -1,12 +1,12 @@
 import pytest
 
 from swarms.structs.agent import Agent
+from swarms.structs.broadcast import broadcast
+from swarms.structs.one_to_one import one_to_one
 from swarms.structs.swarming_architectures import (
-    broadcast,
     circular_swarm,
     grid_swarm,
     mesh_swarm,
-    one_to_one,
     pyramid_swarm,
     star_swarm,
 )

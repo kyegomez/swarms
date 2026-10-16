@@ -181,8 +181,7 @@ def _msg_collab_prompt_ignored(swarm_type: str) -> str:
     )
 
 
-# Swarm types whose constructor carries the collaboration preamble through to
-# the agents. Everywhere else the flag has nothing to deliver it.
+# The only constructors that carry the collaboration preamble to the agents
 _COLLAB_PROMPT_SWARM_TYPES = frozenset(
     {"SequentialWorkflow", "AgentRearrange"}
 )
@@ -589,8 +588,7 @@ class SwarmRouter(SerializableMixin):
             self.multi_agent_collab_prompt is True
             and self.swarm_type not in _COLLAB_PROMPT_SWARM_TYPES
         ):
-            # Not self._log: that is gated on verbose, and a flag that
-            # silently does nothing is the thing being warned about.
+            # Not self._log, that is gated on verbose and this must always show
             logger.warning(
                 _msg_collab_prompt_ignored(self.swarm_type)
             )
@@ -603,7 +601,7 @@ class SwarmRouter(SerializableMixin):
         agent a built swarm holds on its own — a ``HierarchicalSwarm``
         director, a ``MixtureOfAgents`` aggregator, a judge. Keys:
         ``input_tokens``, ``output_tokens``, ``cached_tokens``,
-        ``total_tokens``. Agent totals are lifetime totals, so an agent
+        ``reasoning_tokens``, ``total_tokens``. Agent totals are lifetime totals, so an agent
         shared with another router contributes what it spent there too.
         Streaming calls are not counted.
         """
@@ -1025,7 +1023,7 @@ class SwarmRouter(SerializableMixin):
         for position, swarm_type in enumerate(chain):
             try:
                 self.swarm = self._create_swarm(
-                    task, swarm_type, *args, **kwargs
+                    task, swarm_type, *args
                 )
                 self.active_swarm_type = swarm_type
                 result = self.swarm.run(**run_kwargs, **kwargs)
@@ -1074,6 +1072,7 @@ class SwarmRouter(SerializableMixin):
     @trace_run(
         "SwarmRouter.run",
         input_params=("task", "tasks", "img"),
+        usage=lambda router: router.usage,
     )
     def run(
         self,
@@ -1147,9 +1146,9 @@ class SwarmRouter(SerializableMixin):
         Returns:
             Any: Result returned by :meth:`run`.
         """
-        result = self.run(
-            task=task, img=img, imgs=imgs, *args, **kwargs
-        )
+        if imgs is not None:
+            kwargs["imgs"] = imgs
+        result = self.run(task=task, img=img, *args, **kwargs)
         return result
 
     def batch_run(
@@ -1177,13 +1176,13 @@ class SwarmRouter(SerializableMixin):
             RuntimeError: If any task execution fails.
         """
         self._log("info", f"Executing batch of tasks: {tasks}")
+        if imgs is not None:
+            kwargs["imgs"] = imgs
         try:
             results = []
             for task in tasks:
                 try:
-                    result = self.run(
-                        task, img=img, imgs=imgs, *args, **kwargs
-                    )
+                    result = self.run(task, img=img, *args, **kwargs)
                     results.append(result)
                 except Exception as e:
                     raise RuntimeError(

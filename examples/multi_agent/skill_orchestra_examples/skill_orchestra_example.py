@@ -60,9 +60,10 @@ orchestra = SkillOrchestra(
 )
 
 # The handbook was auto-generated. Inspect it:
+handbook = orchestra.get_handbook()
 print("Generated Skill Handbook:")
-for skill in orchestra.skill_handbook.skills:
-    print(f"  - {skill.name}: {skill.description}")
+for skill in handbook["skills"]:
+    print(f"  - {skill['name']}: {skill['description']}")
 print()
 
 # --- Run tasks: each should route to the most competent agent ---

@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "15.0.0"
+version = "16.0.2"
 description = "Swarms - TGSC"
 license = "Apache-2.0"
 authors = ["Kye Gomez <kye@swarms.world>"]
@@ -57,8 +57,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
-setuptools = "*"
-asyncio = ">=3.4.3,<5.0"
 toml = "*"
 loguru = "*"
 pydantic = "*"
@@ -75,6 +73,14 @@ mcp = "*"
 schedule = "*"
 opentelemetry-sdk = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
+zstandard = "*"
+routehub = { version = ">=0.2.0", extras = ["fast"], optional = true }
+rustworkx = { version = "*", optional = true }
+
+[tool.poetry.extras]
+# RouteHub replaces litellm for model calls when installed.
+# rustworkx backs GraphWorkflow(backend="rustworkx") in place of networkx.
+fast = ["routehub", "rustworkx"]
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

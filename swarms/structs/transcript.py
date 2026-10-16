@@ -87,7 +87,7 @@ class Transcript:
         Add the model's turn and return the tool calls it made.
 
         Args:
-            parsed: The model's response after ``Agent.parse_llm_output`` -
+            parsed: The model's response after ``ToolManager.parse_llm_output`` -
                 either a list of tool-call dicts or plain text.
 
         Returns:
@@ -106,8 +106,7 @@ class Transcript:
                 name = function.get("name")
                 if not name:
                     continue
-                # Providers normally supply an id; synthesise a stable one if
-                # not, since result pairing depends on it.
+                # Result pairing needs an id, synthesise one if the provider gave none
                 call_id = (
                     item.get("id")
                     or f"call_{len(self._messages)}_{index}"

@@ -109,7 +109,7 @@ ENV_TIPS: List[str] = [
     "Run [bold]swarms setup-check --verbose[/bold] to spot missing env vars",
     "Set [bold]OPENAI_API_KEY[/bold] and [bold]ANTHROPIC_API_KEY[/bold] together — Swarms picks per-agent",
     "Override the workspace per command with [bold]WORKSPACE_DIR=/tmp/runX swarms agent ...[/bold]",
-    "[bold]~/.swarms/[/bold] holds conversation logs and saved agent state",
+    "Conversations save to [bold]./conversations/[/bold], agent state and logs to [bold]WORKSPACE_DIR[/bold]; [bold]~/.swarms/[/bold] only caches MCP OAuth tokens",
 ]
 
 MODEL_FLAG_TIPS: List[str] = [
@@ -146,8 +146,7 @@ TIP_CATEGORIES: Dict[str, List[str]] = {
 
 # Random labels.
 
-# (emoji, label, accent style). Sampling these gives the startup banner the
-# "feels fresh every time" quality.
+# (emoji, label, accent style), sampled so the startup banner varies
 TIP_LABELS: List[tuple[str, str, str]] = [
     ("※", "Tip", "bold red"),
     ("⚡", "Pro tip", "bold yellow"),
