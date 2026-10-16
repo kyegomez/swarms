@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from litellm import traceback
+import traceback
 from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -503,7 +503,7 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
             )
 
             # Run the council
-            result = council.run(query=task)
+            result = council.run(task=task)
 
             # Update progress on completion
             progress.update(

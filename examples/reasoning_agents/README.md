@@ -21,6 +21,14 @@ The `agent_judge_examples/` folder contains detailed examples of the AgentJudge 
 - [example2_technical_evaluation.py](agent_judge_examples/example2_technical_evaluation.py) - Technical evaluation criteria
 - [example3_creative_evaluation.py](agent_judge_examples/example3_creative_evaluation.py) - Creative evaluation patterns
 
+## Tree of Thoughts Examples
+
+The `tree_of_thoughts_examples/` folder contains `TreeOfThoughts` examples in mathematics, physics and general reasoning, each with a checkable answer. See its [README](tree_of_thoughts_examples/README.md) for how to choose settings.
+
+- [mathematics/](tree_of_thoughts_examples/mathematics/) - Number theory counting, an irrationality proof, and calculus optimization
+- [physics/](tree_of_thoughts_examples/physics/) - Projectile motion, a loop-the-loop energy problem, and a Fermi estimate
+- [reasoning/](tree_of_thoughts_examples/reasoning/) - Knights and knaves, constraint scheduling, and bridge-and-torch planning
+
 ## Self-MoA Sequential Examples
 
 - [moa_seq_example.py](moa_seq_example.py) - Self-MoA Sequential reasoning example for complex problem-solving

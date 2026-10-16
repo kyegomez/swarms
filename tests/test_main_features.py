@@ -174,9 +174,7 @@ def test_tool_execution_with_agent():
 
 def test_multimodal_execution():
     """Test agent's ability to process images"""
-    agent = create_test_agent(
-        "VisionAgent", model_name="gpt-5.4", multi_modal=True
-    )
+    agent = create_test_agent("VisionAgent", model_name="gpt-5.4")
 
     try:
         # Check if test images exist, if not skip the test

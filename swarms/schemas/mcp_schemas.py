@@ -150,7 +150,7 @@ class MCPConnection(BaseModel):
         description="OAuth 2.1 configuration for this server.",
     )
     transport: Optional[str] = Field(
-        default="streamable_http",
+        default="auto",
         description="Transport protocol: 'streamable_http', 'sse', 'stdio', or 'auto'",
     )
     headers: Optional[Dict[str, str]] = Field(

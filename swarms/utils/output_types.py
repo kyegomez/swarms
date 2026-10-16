@@ -11,7 +11,6 @@ HistoryOutputType = Literal[
     "json",
     "all",
     "yaml",
-    "xml",
     "dict-all-except-first",
     "str-all-except-first",
     "basemodel",
@@ -20,5 +19,3 @@ HistoryOutputType = Literal[
 ]
 
 OutputType = HistoryOutputType
-
-output_type: HistoryOutputType  # OutputType now includes 'xml'

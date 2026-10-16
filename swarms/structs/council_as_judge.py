@@ -235,7 +235,7 @@ class CouncilAsAJudge:
         model_name: str = "gpt-5.4",
         output_type: str = "final",
         cache_size: int = 128,
-        random_model_name: bool = True,
+        random_model_name: bool = False,
         max_loops: int = 1,
         aggregation_model_name: str = "gpt-5.4",
         judge_agent_model_name: Optional[str] = None,
@@ -337,7 +337,8 @@ class CouncilAsAJudge:
                 dim: Agent(
                     agent_name=f"{dim}_judge",
                     system_prompt=judge_system_prompt(),
-                    model_name=self.judge_agent_model_name,
+                    model_name=self.judge_agent_model_name
+                    or self.model_name,
                     max_loops=1,
                     output_type="final",
                     dynamic_temperature_enabled=True,
