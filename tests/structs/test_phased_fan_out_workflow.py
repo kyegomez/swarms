@@ -240,6 +240,34 @@ def test_fan_out_width_comes_from_runtime_output():
     assert workflow.last_run["agent_count"] == 8
 
 
+def test_json_followed_by_prose_is_parsed():
+    def handler(agent, task):
+        if task.startswith("List files"):
+            return (
+                "Files found:\n"
+                + json.dumps({"files": ["a.py", "b.py"]})
+                + "\nLet me know if you need more."
+            )
+        return f"reviewed {task.split()[1]}"
+
+    FakeAgent.handler = handler
+    workflow = PhasedFanOutWorkflow(
+        lead_agent=FakeLead([fan_out_plan()])
+    )
+    workflow.run("repo")
+
+    assert workflow.last_run["outputs"]["review"] == [
+        "reviewed a.py",
+        "reviewed b.py",
+    ]
+    with pytest.raises(json.JSONDecodeError):
+        dw._parse_json('{"files": ["a.py"],} Thanks!')
+    with pytest.raises(json.JSONDecodeError):
+        dw._parse_json(
+            "I reviewed [3] files and found nothing wrong."
+        )
+
+
 def test_fan_out_over_max_agents_stops_before_starting():
     lead = FakeLead([fan_out_plan()])
     FakeAgent.handler = file_handler(5)
