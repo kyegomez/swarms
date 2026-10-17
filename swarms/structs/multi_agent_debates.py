@@ -1,6 +1,7 @@
 from typing import Callable, Union, List
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -153,8 +154,9 @@ class ExpertPanelDiscussion:
             moderator_prompt = (
                 f"Round {round_num + 1}: {current_topic}"
             )
-            moderator_response = self.moderator.run(
-                task=moderator_prompt
+            moderator_response = agent_answer(
+                self.moderator,
+                fallback=self.moderator.run(task=moderator_prompt),
             )
             conversation.add(
                 self.moderator.agent_name, moderator_response
@@ -163,7 +165,9 @@ class ExpertPanelDiscussion:
             # Each expert responds
             for i, expert in enumerate(self.agents):
                 expert_prompt = f"Expert {expert.agent_name}, please respond to: {moderator_response}"
-                expert_response = expert.run(task=expert_prompt)
+                expert_response = agent_answer(
+                    expert, fallback=expert.run(task=expert_prompt)
+                )
                 conversation.add(expert.agent_name, expert_response)
 
             # Moderator synthesizes and asks follow-up
@@ -177,7 +181,10 @@ class ExpertPanelDiscussion:
                 "Synthesize the expert responses below and ask a "
                 f"follow-up question.\n\n{transcript}"
             )
-            synthesis = self.moderator.run(task=synthesis_prompt)
+            synthesis = agent_answer(
+                self.moderator,
+                fallback=self.moderator.run(task=synthesis_prompt),
+            )
             conversation.add(self.moderator.agent_name, synthesis)
 
             current_topic = synthesis
