@@ -293,6 +293,7 @@ class MarkdownAgentLoader:
             )
 
         # Validate file sizes to prevent memory issues
+        within_limit = []
         for file_path in paths_to_process:
             try:
                 file_size_mb = os.path.getsize(file_path) / (
@@ -302,11 +303,13 @@ class MarkdownAgentLoader:
                     logger.warning(
                         f"Skipping {file_path}: size {file_size_mb:.2f}MB exceeds limit {max_file_size_mb}MB"
                     )
-                    paths_to_process.remove(file_path)
+                    continue
             except OSError:
                 logger.warning(
                     f"Could not check size of {file_path}, skipping validation"
                 )
+            within_limit.append(file_path)
+        paths_to_process = within_limit
 
         # Use concurrent processing for multiple files if enabled
         if concurrent and len(paths_to_process) > 1:
