@@ -87,7 +87,7 @@ class Transcript:
         Add the model's turn and return the tool calls it made.
 
         Args:
-            parsed: The model's response after ``Agent.parse_llm_output`` -
+            parsed: The model's response after ``ToolManager.parse_llm_output`` -
                 either a list of tool-call dicts or plain text.
 
         Returns:

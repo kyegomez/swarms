@@ -26,30 +26,6 @@ class HierarchicalOrder(BaseModel):
     )
 
 
-class HierarchicalOrderRearrange(BaseModel):
-    """
-    Represents a rearrangement specification for task assignments within the hierarchical swarm.
-
-    This class defines the structure for rearranging how tasks are assigned and managed through the initial task and flow of communication between agents.
-
-    Attributes:
-        initial_task (str): The initial task that the director has to execute.
-        flow_of_communication (str): How the agents will communicate with each other to accomplish the task. Can use arrows (->) and commas to denote sequential and parallel communication.
-    """
-
-    initial_task: str = Field(
-        ...,
-        description="The initial task that the director has to execute.",
-    )
-    flow_of_communication: str = Field(
-        ...,
-        description="How the agents will communicate with each other to accomplish the task. \
-                      Example: agent_one -> agent_two -> agent_three -> agent_four -> agent_one, \
-                      can use arrows (->) for sequential communication and commas for parallel communication. \
-                      For example: agent_one -> agent_two, agent_three -> agent_four means agent_one passes to agent_two and agent_three passes to agent_four in parallel.",
-    )
-
-
 class OrderBatch(BaseModel):
     """Defines the task assignments emitted by a hierarchical director.
 

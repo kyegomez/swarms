@@ -1110,15 +1110,17 @@ class TestExecutionPromptBatching:
 
 
 class TestNoDuplicatePanelRealAgent:
-    """Use real Agent._visualize_function_call routing logic, patch formatter to count calls."""
+    """Use real ToolManager.visualize_function_call routing logic, patch formatter to count calls."""
 
     def _dispatch(self, agent, function_name, arguments, result=None):
         """Mirror the fixed dispatch in _run_autonomous_loop."""
         if function_name not in ("subtask_done", "complete_task"):
-            agent._visualize_function_call(function_name, arguments)
+            agent.tool_manager.visualize_function_call(
+                function_name, arguments
+            )
         # execute (skipped here)
         if function_name in ("subtask_done", "complete_task"):
-            agent._visualize_function_call(
+            agent.tool_manager.visualize_function_call(
                 function_name, arguments, result
             )
 
@@ -1136,7 +1138,7 @@ class TestNoDuplicatePanelRealAgent:
     def test_subtask_done_panel_shown_once_with_result(self):
         agent = self._agent()
         calls = []
-        agent._visualize_function_call = (
+        agent.tool_manager.visualize_function_call = (
             lambda name, args, result=None: calls.append(
                 (name, result)
             )
@@ -1156,7 +1158,7 @@ class TestNoDuplicatePanelRealAgent:
     def test_regular_tool_shown_before_execution_no_result(self):
         agent = self._agent()
         calls = []
-        agent._visualize_function_call = (
+        agent.tool_manager.visualize_function_call = (
             lambda name, args, result=None: calls.append(
                 (name, result)
             )
@@ -1170,7 +1172,7 @@ class TestNoDuplicatePanelRealAgent:
     def test_complete_task_shown_once_with_result(self):
         agent = self._agent()
         calls = []
-        agent._visualize_function_call = (
+        agent.tool_manager.visualize_function_call = (
             lambda name, args, result=None: calls.append(
                 (name, result)
             )
@@ -1216,7 +1218,7 @@ class TestGenerateFinalSummaryCallbackRealAgent:
             return "summary text"
 
         agent.call_llm = fake_call_llm
-        agent.parse_llm_output = lambda r: r
+        agent.tool_manager.parse_llm_output = lambda r: r
 
         def my_cb(t):
             pass
@@ -1233,7 +1235,7 @@ class TestGenerateFinalSummaryCallbackRealAgent:
             return "plain summary"
 
         agent.call_llm = fake_call_llm
-        agent.parse_llm_output = lambda r: r
+        agent.tool_manager.parse_llm_output = lambda r: r
 
         result = agent._generate_final_summary(
             streaming_callback=None
@@ -1264,7 +1266,7 @@ class TestTempLlmInstanceRealAgent:
             top_p=None,
             print_on=False,
         )
-        tmp = agent.temp_llm_instance_for_tool_summary()
+        tmp = agent.tool_manager.temp_llm_instance_for_tool_summary()
         assert tmp.top_p is None
 
     def test_returns_litellm_instance(self):
@@ -1277,7 +1279,7 @@ class TestTempLlmInstanceRealAgent:
             max_loops=1,
             print_on=False,
         )
-        tmp = agent.temp_llm_instance_for_tool_summary()
+        tmp = agent.tool_manager.temp_llm_instance_for_tool_summary()
         assert isinstance(tmp, LiteLLM)
 
 
@@ -1315,7 +1317,7 @@ class TestConversationHistoryAttributeFix:
             return "plain text"  # not a list → triggers fallback path
 
         agent.call_llm = fake_call_llm
-        agent.parse_llm_output = lambda r: r
+        agent.tool_manager.parse_llm_output = lambda r: r
 
         # Should not raise AttributeError: 'Conversation' has no attribute 'messages'
         result = agent._generate_final_summary()

@@ -136,7 +136,7 @@ def test_create_reasoning_duo():
     router = ReasoningAgentRouter(
         swarm_type="reasoning-duo",
         agent_name="rd",
-        model_name="gpt-5.4",
+        model_name="claude-sonnet-4-6",
         system_prompt="SP",
         max_loops=2,
         reasoning_model_name="gpt-4o",
@@ -145,10 +145,22 @@ def test_create_reasoning_duo():
     assert isinstance(agent, ReasoningDuo)
     assert agent.agent_name == "rd"
     assert agent.agent_description == router.description
-    assert agent.model_name == [router.model_name, router.model_name]
-    assert agent.system_prompt == "SP"
+    assert agent.main_agent.model_name == "claude-sonnet-4-6"
+    assert agent.reasoning_agent.model_name == "gpt-4o"
+    assert agent.main_agent.system_prompt == "SP"
     assert agent.max_loops == 2
-    assert agent.reasoning_model_name == "gpt-4o"
+
+    router.reasoning_model_name = None
+    agent = router._create_reasoning_duo()
+    assert agent.reasoning_agent.model_name == "claude-sonnet-4-6"
+
+
+def test_reasoning_duo_runs_its_main_agent_on_model_name():
+    from swarms.agents.reasoning_duo import ReasoningDuo
+
+    duo = ReasoningDuo(model_name="claude-sonnet-4-6")
+    assert duo.main_agent.model_name == "claude-sonnet-4-6"
+    assert duo.reasoning_agent.model_name == "gpt-4o"
 
 
 def test_create_consistency_agent():
@@ -420,3 +432,26 @@ def test_reasoning_agent_initialization_error_subclass():
 def test_reasoning_agent_executor_error_subclass():
     """ReasoningAgentExecutorError is a subclass of Exception."""
     assert issubclass(ReasoningAgentExecutorError, Exception)
+
+
+def test_self_consistency_samples_get_distinct_agents():
+    """One shared agent let each sample read the answers of the samples before it."""
+    from swarms.structs.agent import Agent
+
+    agent_ids = []
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        agent_ids.append(id(self))
+        return "ANSWER"
+
+    router = ReasoningAgentRouter(
+        swarm_type="self-consistency",
+        agent_name="sc",
+        model_name="gpt-5.4",
+        num_samples=3,
+    )
+
+    with patch.object(Agent, "call_llm", fake_call_llm):
+        router.run("What is 2 + 2?")
+
+    assert len(set(agent_ids[:3])) == 3
