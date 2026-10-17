@@ -72,6 +72,19 @@ class TrialSimulation:
         if not self.phases:
             self.phases = ["opening", "testimony", "cross", "closing"]
 
+        if (
+            self.witnesses
+            and "cross" in self.phases
+            and (
+                "testimony" not in self.phases
+                or self.phases.index("cross")
+                < self.phases.index("testimony")
+            )
+        ):
+            raise ValueError(
+                "The testimony phase must precede cross-examination."
+            )
+
         # Create trial participant list for context
         witness_names = [
             witness.agent_name for witness in (self.witnesses or [])
@@ -100,6 +113,7 @@ class TrialSimulation:
             witness.run(task=witness_intro)
 
         current_case = task
+        witness_testimonies = {}
 
         for phase in self.phases:
             # Judge opens the phase
@@ -132,15 +146,16 @@ class TrialSimulation:
                     witness_testimony = witness.run(
                         task=f"Provide testimony for: {current_case}"
                     )
+                    witness_testimonies[i] = witness_testimony
                     conversation.add(
                         witness.agent_name, witness_testimony
                     )
 
             elif phase == "cross":
                 # Cross-examination
-                for witness in self.witnesses or []:
+                for i, witness in enumerate(self.witnesses or []):
                     cross_exam = self.prosecution.run(
-                        task=f"Cross-examine this testimony: {witness_testimony}"
+                        task=f"Cross-examine this testimony: {witness_testimonies[i]}"
                     )
                     conversation.add(
                         self.prosecution.agent_name, cross_exam
@@ -211,8 +226,7 @@ if __name__ == "__main__":
         )
     ]
 
-    # NOTE: keep "testimony" in `phases` before "cross" -- the cross phase reads
-    # the testimony produced by the testimony phase.
+    # Include testimony before cross for trials with witnesses.
     trial = TrialSimulation(
         prosecution=prosecution,
         defense=defense,

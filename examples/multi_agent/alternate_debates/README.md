@@ -63,12 +63,12 @@ change the role nouns and prompts.
 idea. `TrialSimulation` is genuinely different — a phase state machine rather
 than a symmetric participant loop.
 
-## Known issue in `trial_simulation.py`
+## Trial phase order
 
-The `cross` phase reads `witness_testimony`, a loop variable left over from the
-`testimony` phase. As a result every witness is cross-examined on the **last**
-witness's testimony, and passing a `phases` list that omits `"testimony"` raises
-`NameError`. Keep `"testimony"` before `"cross"` until this is fixed.
+When you provide witnesses, include `"testimony"` before `"cross"` in `phases`.
+Invalid ordering raises `ValueError` before any agent runs. Each cross-examination
+uses that witness's latest testimony from the current run. Without witnesses,
+the cross phase has no examinations.
 
 ## Tests
 
@@ -76,4 +76,11 @@ witness's testimony, and passing a `phases` list that omits `"testimony"` raises
 
 ```bash
 pytest examples/multi_agent/alternate_debates/test_alternate_debates.py
+```
+
+Run the trial regression tests with only the Python standard library and no
+model calls:
+
+```bash
+python -m unittest discover -s examples/multi_agent/alternate_debates -p test_trial_simulation_offline.py
 ```
