@@ -5,6 +5,7 @@ import random
 import re
 import threading
 import time
+import weakref
 from typing import Any, Dict, List, Optional, Union
 
 import httpx
@@ -337,6 +338,9 @@ class DecisionModel:
         ).strip()
         self._headers = headers or {}
         self._client: Optional[httpx.Client] = None
+        self._async_clients: weakref.WeakKeyDictionary = (
+            weakref.WeakKeyDictionary()
+        )
         self._price: Optional[Dict[str, float]] = None
         self._usage = {"input_tokens": 0, "output_tokens": 0}
         self._usage_lock = threading.Lock()
@@ -644,6 +648,14 @@ class DecisionModel:
             self._client.close()
             self._client = None
 
+    async def aclose(self) -> None:
+        """Close the pooled async HTTP client of the running event loop."""
+        client = self._async_clients.pop(
+            asyncio.get_running_loop(), None
+        )
+        if client is not None:
+            await client.aclose()
+
     def _ask_one(
         self, state: State, question: Dict[str, Any]
     ) -> Dict[str, Any]:
@@ -693,25 +705,27 @@ class DecisionModel:
         path: str,
         payload: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        # A fresh client per call, since a pooled one breaks across asyncio.run event loops.
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            for attempt in range(self.max_retries + 1):
-                response = None
-                try:
-                    response = await client.request(
-                        method,
-                        self.base_url + path,
-                        json=payload,
-                        headers=self.build_headers(),
-                    )
-                except httpx.TransportError:
-                    if attempt == self.max_retries:
-                        raise
-                if not self._should_retry(attempt, response):
-                    return self._decode(response)
-                await asyncio.sleep(
-                    self._retry_delay(attempt, response)
+        loop = asyncio.get_running_loop()
+        client = self._async_clients.get(loop)
+        if client is None or client.is_closed:
+            client = httpx.AsyncClient(timeout=self.timeout)
+            self._async_clients[loop] = client
+
+        for attempt in range(self.max_retries + 1):
+            response = None
+            try:
+                response = await client.request(
+                    method,
+                    self.base_url + path,
+                    json=payload,
+                    headers=self.build_headers(),
                 )
+            except httpx.TransportError:
+                if attempt == self.max_retries:
+                    raise
+            if not self._should_retry(attempt, response):
+                return self._decode(response)
+            await asyncio.sleep(self._retry_delay(attempt, response))
 
     def _should_retry(
         self, attempt: int, response: Optional[httpx.Response]
