@@ -289,8 +289,14 @@ class SelfConsistencyAgent:
                     )
                     return None
 
-        # Aggregate responses using AI-powered aggregation
-        final_answer = aggregation_agent(responses)
+        # Aggregate responses using AI-powered aggregation, on the same
+        # model and prompt this agent was configured with.
+        final_answer = aggregation_agent(
+            responses,
+            prompt=self.majority_voting_prompt
+            or majority_voting_prompt,
+            model_name=self.model_name,
+        )
 
         self.conversation.add(
             role="Majority Voting Agent", content=final_answer
