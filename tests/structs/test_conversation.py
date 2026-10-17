@@ -1510,6 +1510,135 @@ def test_token_count_cache_prune_does_not_iterate_the_shared_cache():
     }
 
 
+def _tool_call(name, call_id="call_1", **arguments):
+    return {
+        "id": call_id,
+        "type": "function",
+        "function": {
+            "name": name,
+            "arguments": json.dumps(arguments),
+        },
+    }
+
+
+def _assert_calls_answered(messages):
+    for index, message in enumerate(messages):
+        expected = [c["id"] for c in message.get("tool_calls") or []]
+        following = [
+            m.get("tool_call_id")
+            for m in messages[index + 1 : index + 1 + len(expected)]
+        ]
+        assert following == expected
+
+
+def test_record_assistant_tool_call_and_result():
+    conv = Conversation()
+    conv.add("user", "read it")
+    calls = conv.record_assistant(
+        [_tool_call("read_file", file_path="a")]
+    )
+    conv.flush_tool_results(calls, {calls[0]["id"]: "contents"})
+
+    assert [c["name"] for c in calls] == ["read_file"]
+    assert [m["role"] for m in conv.to_messages()] == [
+        "user",
+        "assistant",
+        "tool",
+    ]
+    assert conv.to_messages()[-1]["content"] == "contents"
+    _assert_calls_answered(conv.to_messages())
+
+
+def test_record_assistant_text_is_an_assistant_turn():
+    conv = Conversation()
+
+    assert conv.record_assistant("just talking") == []
+    assert conv.to_messages() == [
+        {"role": "assistant", "content": "just talking"}
+    ]
+
+
+def test_flush_tool_results_fills_missing_results():
+    conv = Conversation()
+    calls = conv.record_assistant(
+        [
+            _tool_call("grep", call_id="a"),
+            _tool_call("f", call_id="b"),
+        ]
+    )
+    conv.flush_tool_results(calls, {"a": "one"})
+
+    assert [m["role"] for m in conv.to_messages()] == [
+        "assistant",
+        "tool",
+        "tool",
+    ]
+    assert (
+        "no result recorded for f"
+        in conv.to_messages()[-1]["content"]
+    )
+    _assert_calls_answered(conv.to_messages())
+
+
+def test_record_assistant_synthesises_a_missing_call_id():
+    conv = Conversation()
+    calls = conv.record_assistant(
+        [{"function": {"name": "f", "arguments": "{}"}}]
+    )
+    conv.flush_tool_results(calls, {})
+
+    assert calls[0]["id"]
+    _assert_calls_answered(conv.to_messages())
+
+
+def test_map_batch_results_per_call_and_combined():
+    calls = [{"id": "a"}, {"id": "b"}]
+    per_call, combined = {}, {}
+    Conversation.map_batch_results(calls, ["one", "two"], per_call)
+    Conversation.map_batch_results(calls, "both", combined)
+
+    assert per_call == {"a": "one", "b": "two"}
+    assert combined == {"a": "both", "b": "both"}
+
+
+def test_to_messages_maps_roles_and_pairs_results():
+    conv = Conversation(system_prompt="be brief", time_enabled=True)
+    conv.add("Human", "earlier")
+    conv.add("Human", "weather?")
+    calls = conv.record_assistant(
+        [_tool_call("get_weather", call_id="w1")], role="Bot"
+    )
+    conv.add("Tool Executor", "prose copy of the result")
+    conv.add("Bot", "summary written before the result")
+    conv.flush_tool_results(calls, {"w1": "sunny"})
+
+    assert conv.to_messages("Bot", start=2) == [
+        {"role": "user", "content": "weather?"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": conv.conversation_history[3]["tool_calls"],
+        },
+        {"role": "tool", "tool_call_id": "w1", "content": "sunny"},
+        {
+            "role": "assistant",
+            "content": "summary written before the result",
+        },
+    ]
+
+
+def test_record_assistant_sends_a_non_text_reply_as_text():
+    conv = Conversation()
+    conv.record_assistant({"answer": 1})
+    conv.record_assistant({"answer": 2}, role="Bot")
+
+    assert conv.to_messages("Bot") == [
+        {"role": "assistant", "content": "{'answer': 1}"},
+        {"role": "assistant", "content": "{'answer': 2}"},
+    ]
+    assert conv.conversation_history[-1]["content"] == {"answer": 2}
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()
