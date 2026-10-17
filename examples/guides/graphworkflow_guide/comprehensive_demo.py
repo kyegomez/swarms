@@ -588,43 +588,40 @@ def demonstrate_serialization_features():
 
     print("✅ Created test workflow for serialization")
 
-    # Test JSON serialization
-    print("\n📄 Testing JSON serialization...")
+    print("\n📄 Testing topology spec serialization...")
+    registry = {
+        "SerializationTestAgent1": agent1,
+        "SerializationTestAgent2": agent2,
+    }
     try:
-        json_data = workflow.to_json(
-            include_conversation=True, include_runtime_state=True
-        )
+        spec = workflow.to_spec()
         print(
-            f"✅ JSON serialization successful ({len(json_data)} characters)"
+            f"✅ Spec serialization successful ({len(spec['nodes'])} nodes)"
         )
 
         # Test deserialization
-        print("\n📥 Testing JSON deserialization...")
-        restored_workflow = GraphWorkflow.from_json(
-            json_data, restore_runtime_state=True
+        print("\n📥 Testing spec deserialization...")
+        restored_workflow = GraphWorkflow.from_topology_spec(
+            spec, registry
         )
-        print("✅ JSON deserialization successful")
+        print("✅ Spec deserialization successful")
         print(
             f"   Restored {len(restored_workflow.nodes)} nodes, {len(restored_workflow.edges)} edges"
         )
 
     except Exception as e:
-        print(f"❌ JSON serialization failed: {e}")
+        print(f"❌ Spec serialization failed: {e}")
 
     # Test file persistence
     print("\n💾 Testing file persistence...")
     try:
-        filepath = workflow.save_to_file(
-            "test_workflow.json",
-            include_conversation=True,
-            include_runtime_state=True,
-            overwrite=True,
-        )
+        filepath = "test_workflow.json"
+        workflow.save_spec(filepath)
         print(f"✅ File save successful: {filepath}")
 
         # Test file loading
-        loaded_workflow = GraphWorkflow.load_from_file(
-            filepath, restore_runtime_state=True
+        loaded_workflow = GraphWorkflow.load(
+            filepath, agent_registry=registry
         )
         print("✅ File load successful")
         print(

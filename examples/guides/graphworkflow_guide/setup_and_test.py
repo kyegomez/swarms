@@ -296,21 +296,23 @@ def test_serialization() -> bool:
 
         workflow.add_node(agent)
 
-        # Test JSON serialization
-        json_data = workflow.to_json()
+        spec = workflow.to_spec()
 
-        if len(json_data) > 0:
-            print("✅ JSON serialization successful")
-            print(f"   JSON size: {len(json_data)} characters")
+        if len(spec["nodes"]) > 0:
+            print("✅ Spec serialization successful")
+            print(f"   Nodes: {len(spec['nodes'])}")
 
             # Test deserialization
-            restored = GraphWorkflow.from_json(json_data)
-            print("✅ JSON deserialization successful")
+            registry = {"SerializationTestAgent": agent}
+            restored = GraphWorkflow.from_topology_spec(
+                spec, registry
+            )
+            print("✅ Spec deserialization successful")
             print(f"   Restored nodes: {len(restored.nodes)}")
 
             return True
         else:
-            print("❌ JSON serialization failed - empty result")
+            print("❌ Spec serialization failed - no nodes")
             return False
 
     except Exception as e:
