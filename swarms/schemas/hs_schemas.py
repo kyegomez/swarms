@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -118,4 +118,21 @@ class JudgeReport(BaseModel):
     summary: str = Field(
         ...,
         description="A narrative summary of the evaluation findings and key points.",
+    )
+
+    verdict: Optional[Literal["ACCEPT", "REVISE"]] = Field(
+        default=None,
+        description=(
+            "ACCEPT if the plan satisfies the task, or REVISE when the "
+            "director must change the plan. Decide explicitly; scores "
+            "alone do not determine acceptance."
+        ),
+    )
+    failed_subtasks: List[str] = Field(
+        default_factory=list,
+        description=(
+            "Exact task descriptions from the executed orders whose "
+            "outputs cannot be reused. On REVISE, include every task "
+            "that must be retried; other completed outputs are reused."
+        ),
     )
