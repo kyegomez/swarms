@@ -1523,7 +1523,11 @@ def assign_task_tool(
         # Execute tasks
         if wait_for_completion:
             # Completion order is not guaranteed, results are mapped by spawned_task_id
-            registry.gather(strategy="wait_all", timeout=None)
+            registry.gather(
+                strategy="wait_all",
+                timeout=None,
+                task_ids=spawned_task_ids,
+            )
 
             # Format results based on registry state
             results_by_spawned_id = registry.get_results()
