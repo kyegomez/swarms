@@ -16,6 +16,7 @@ from swarms.structs.execution_utils import (
 )
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.multi_agent_exec import run_agents_concurrently
+from swarms.structs.phased_fan_out_workflow import fresh_agent
 from swarms.telemetry.otel import (
     capture_init,
     trace_run,
@@ -322,13 +323,14 @@ class MixtureOfAgents:
         return batched_run(self.run, tasks)
 
     def _clone_for_task(self) -> "MixtureOfAgents":
-        """Build a copy of this mixture with its own ``Conversation``.
+        """Copy this mixture with its own agents and ``Conversation``.
 
         ``_run`` resets and appends to ``self.conversation``, so one
-        instance cannot serve several threads. The copy shares the agents,
-        as the instance already did, and only the transcript is isolated.
+        instance cannot serve several threads.
         """
         clone = copy.copy(self)
+        clone.agents = [fresh_agent(agent) for agent in self.agents]
+        clone.aggregator_agent = fresh_agent(self.aggregator_agent)
         clone._reset_conversation()
         return clone
 
