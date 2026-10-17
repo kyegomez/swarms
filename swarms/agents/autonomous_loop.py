@@ -53,6 +53,7 @@ from swarms.structs.transcript import Transcript
 from swarms.tools.dynamic_tool_loader import SEARCH_TOOL_NAME
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists, format_data_structure
+from swarms.utils.litellm_wrapper import ModelRefusalError
 
 
 def _format_tool_error(function_name: str, error: Exception) -> str:
@@ -609,6 +610,8 @@ class AutonomousAgentLoop:
                         plan_created = True
                         break
 
+                except ModelRefusalError:
+                    raise
                 except Exception as e:
                     if self.agent.verbose:
                         logger.error(
@@ -1225,6 +1228,8 @@ class AutonomousAgentLoop:
                             # Give the nudge a chance before refiring.
                             self.agent.think_call_count = 0
 
+                    except ModelRefusalError:
+                        raise
                     except Exception as e:
                         if self.agent.verbose:
                             logger.error(
