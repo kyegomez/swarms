@@ -1146,13 +1146,11 @@ class HierarchicalStructuredCommunicationFramework:
             f"{len(self.evaluators)} evaluators, {len(self.refiners)} refiners"
         )
 
-    def _create_supervisor_agent(self) -> Agent:
-        """Create the main supervisor agent"""
-        supervisor_prompt = self._get_supervisor_prompt()
-
+    def _make_agent(self, name: str, prompt: str) -> Agent:
+        """Build an agent with the framework's shared kwargs and Ollama overrides"""
         agent_kwargs = {
-            "agent_name": self.supervisor_name,
-            "system_prompt": supervisor_prompt,
+            "agent_name": name,
+            "system_prompt": prompt,
             "model_name": self.model_name,
             "verbose": self.verbose,
             "reliability_check": False,
@@ -1167,96 +1165,35 @@ class HierarchicalStructuredCommunicationFramework:
             )
 
         return Agent(**agent_kwargs)
+
+    def _create_supervisor_agent(self) -> Agent:
+        """Create the main supervisor agent"""
+        return self._make_agent(
+            self.supervisor_name, self._get_supervisor_prompt()
+        )
 
     def _create_evaluation_supervisor_agent(self) -> Agent:
         """Create the evaluation team supervisor"""
-        eval_supervisor_prompt = (
-            self._get_evaluation_supervisor_prompt()
+        return self._make_agent(
+            self.evaluation_supervisor_name,
+            self._get_evaluation_supervisor_prompt(),
         )
-
-        agent_kwargs = {
-            "agent_name": self.evaluation_supervisor_name,
-            "system_prompt": eval_supervisor_prompt,
-            "model_name": self.model_name,
-            "verbose": self.verbose,
-            "reliability_check": False,
-        }
-
-        if self.use_ollama:
-            agent_kwargs.update(
-                {
-                    "openai_api_base": self.ollama_base_url,
-                    "openai_api_key": self.ollama_api_key,
-                }
-            )
-
-        return Agent(**agent_kwargs)
 
     def _create_default_generator(self) -> Agent:
         """Create a default generator agent"""
-        generator_prompt = self._get_generator_prompt()
-
-        agent_kwargs = {
-            "agent_name": "Generator",
-            "system_prompt": generator_prompt,
-            "model_name": self.model_name,
-            "verbose": self.verbose,
-            "reliability_check": False,
-        }
-
-        if self.use_ollama:
-            agent_kwargs.update(
-                {
-                    "openai_api_base": self.ollama_base_url,
-                    "openai_api_key": self.ollama_api_key,
-                }
-            )
-
-        return Agent(**agent_kwargs)
+        return self._make_agent(
+            "Generator", self._get_generator_prompt()
+        )
 
     def _create_default_evaluator(self) -> Agent:
         """Create a default evaluator agent"""
-        evaluator_prompt = self._get_evaluator_prompt()
-
-        agent_kwargs = {
-            "agent_name": "Evaluator",
-            "system_prompt": evaluator_prompt,
-            "model_name": self.model_name,
-            "verbose": self.verbose,
-            "reliability_check": False,
-        }
-
-        if self.use_ollama:
-            agent_kwargs.update(
-                {
-                    "openai_api_base": self.ollama_base_url,
-                    "openai_api_key": self.ollama_api_key,
-                }
-            )
-
-        return Agent(**agent_kwargs)
+        return self._make_agent(
+            "Evaluator", self._get_evaluator_prompt()
+        )
 
     def _create_default_refiner(self) -> Agent:
         """Create a default refiner agent"""
-        refiner_prompt = self._get_refiner_prompt()
-
-        agent_kwargs = {
-            "agent_name": "Refiner",
-            "system_prompt": refiner_prompt,
-            "model_name": self.model_name,
-            "verbose": self.verbose,
-            "reliability_check": False,
-        }
-
-        if self.use_ollama:
-            agent_kwargs.update(
-                {
-                    "openai_api_base": self.ollama_base_url,
-                    "openai_api_key": self.ollama_api_key,
-                }
-            )
-
-        return Agent(**agent_kwargs)
+        return self._make_agent("Refiner", self._get_refiner_prompt())
 
     def _get_supervisor_prompt(self) -> str:
         """Get the supervisor system prompt"""
