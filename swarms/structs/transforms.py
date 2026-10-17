@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 from swarms.structs.conversation import Conversation
+from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
 
 
@@ -357,6 +358,15 @@ class MessageTransforms:
         Returns:
             Token limit or None if unknown
         """
+        try:
+            limit = llm_backend.get_model_info(model_name).get(
+                "max_input_tokens"
+            )
+        except Exception:
+            limit = None
+        if limit:
+            return limit
+
         # Common model context limits (in tokens)
         model_limits = {
             "gpt-4": 8192,
