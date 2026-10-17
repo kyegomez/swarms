@@ -1,4 +1,6 @@
+import asyncio
 import concurrent.futures
+import inspect
 import time
 from typing import Callable, List, Optional, Union
 
@@ -63,6 +65,7 @@ class ConcurrentWorkflow:
 
     Methods:
         run: Execute all agents concurrently on a given task
+        arun: Execute all agents concurrently on the event loop
         batch_run: Execute workflow on multiple tasks sequentially
         run_with_dashboard: Execute agents with real-time dashboard monitoring
         cleanup: Clean up resources and connections
@@ -212,7 +215,8 @@ class ConcurrentWorkflow:
 
     def _resolve_max_workers(self) -> int:
         """
-        Determine the thread pool size for concurrent agent execution.
+        Determine how many agents run at once: the thread pool size for
+        :meth:`run`, and the semaphore limit for :meth:`arun`.
 
         Each submitted task is one agent's LLM call, which is network-bound, so
         CPU count is not the limiting factor. The pool never receives more than
@@ -498,34 +502,45 @@ class ConcurrentWorkflow:
             ]
 
             for future, agent in zip(futures, self.agents):
-                try:
-                    output = agent_answer(
-                        agent, fallback=future.result()
-                    )
-                    self.conversation.add(
-                        role=agent.agent_name, content=output
-                    )
-                except Exception as e:
-                    if self.on_error == "raise":
-                        raise
-                    # Track the swallowed per-agent failure so it isn't lost.
-                    capture_error(
-                        e,
-                        self,
-                        name="ConcurrentWorkflow.agent_error",
-                        agent=getattr(agent, "agent_name", None),
-                    )
-                    logger.error(
-                        f"Agent {agent.agent_name} failed: {str(e)}"
-                    )
-                    self.conversation.add(
-                        role=f"{agent.agent_name} (failed)",
-                        content=f"Error: {str(e)}",
-                    )
+                self._record(agent, future.result)
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
         )
+
+    def _record(
+        self, agent: Union[Agent, Callable], result: Callable
+    ) -> None:
+        """
+        Add one agent's answer to the conversation, or its failure.
+
+        Args:
+            agent (Union[Agent, Callable]): The agent that ran.
+            result (Callable): Returns the agent's output, or raises its
+                error, like ``Future.result``.
+
+        Raises:
+            Exception: The agent's error, when ``on_error`` is ``"raise"``.
+        """
+        try:
+            output = agent_answer(agent, fallback=result())
+            self.conversation.add(
+                role=agent.agent_name, content=output
+            )
+        except Exception as e:
+            if self.on_error == "raise":
+                raise
+            capture_error(
+                e,
+                self,
+                name="ConcurrentWorkflow.agent_error",
+                agent=getattr(agent, "agent_name", None),
+            )
+            logger.error(f"Agent {agent.agent_name} failed: {str(e)}")
+            self.conversation.add(
+                role=f"{agent.agent_name} (failed)",
+                content=f"Error: {str(e)}",
+            )
 
     def _run_agent_with_streaming(
         self,
@@ -648,6 +663,67 @@ class ConcurrentWorkflow:
         except Exception:
             self.workspace.save_conversation()
             raise
+
+    async def arun(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+    ):
+        """
+        Execute all agents concurrently on the event loop.
+
+        Awaits each agent's ``arun``, at most :meth:`_resolve_max_workers` at a
+        time. Agents wait on their providers without holding a thread each, so
+        the cap only guards against rate limits, and ``max_workers`` can go
+        past ``MAX_CONCURRENT_AGENTS``. An agent without a coroutine ``arun``
+        runs ``run`` in a thread. Results and failures are recorded exactly as
+        :meth:`run` records them. With ``show_dashboard``, :meth:`run` runs in
+        a thread.
+
+        Args:
+            task (str): The task to be executed by all agents.
+            img (Optional[str]): Single image path for agents that support image input.
+            imgs (Optional[List[str]]): List of image paths for agents that support multiple images.
+
+        Returns:
+            Union[Dict, List, str]: Formatted conversation history based on output_type.
+
+        Example:
+            >>> workflow = ConcurrentWorkflow(agents=agents, max_workers=100)
+            >>> result = asyncio.run(workflow.arun("Analyze this data"))
+        """
+        if self.show_dashboard:
+            return await asyncio.to_thread(self.run, task, img, imgs)
+
+        self.conversation = self._new_conversation()
+        self.conversation.add(role="User", content=task)
+        semaphore = asyncio.Semaphore(self._resolve_max_workers())
+
+        async def run_agent(agent):
+            async with semaphore:
+                if inspect.iscoroutinefunction(
+                    getattr(agent, "arun", None)
+                ):
+                    return await agent.arun(task, img, imgs=imgs)
+                return await asyncio.to_thread(
+                    agent.run, task=task, img=img, imgs=imgs
+                )
+
+        runs = [
+            asyncio.ensure_future(run_agent(agent))
+            for agent in self.agents
+        ]
+        try:
+            await asyncio.gather(*runs, return_exceptions=True)
+            for run, agent in zip(runs, self.agents):
+                self._record(agent, run.result)
+        finally:
+            self.workspace.save_conversation()
+
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )
 
     def batch_run(
         self,
