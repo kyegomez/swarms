@@ -1521,49 +1521,26 @@ class Conversation:
             return []
 
         conversations = []
-        seen_ids = (
-            set()
-        )  # Track seen conversation IDs to avoid duplicates
-
         for filename in os.listdir(conv_dir):
-            if filename.endswith(".json"):
-                try:
-                    filepath = os.path.join(conv_dir, filename)
-                    with open(filepath) as f:
-                        data = json.load(f)
-                        metadata = data.get("metadata", {})
-                        conv_id = metadata.get("id")
-                        name = metadata.get("name")
-                        created_at = metadata.get("created_at")
+            stem, ext = os.path.splitext(filename)
+            if ext not in (".json", ".yaml", ".yml"):
+                continue
+            filepath = os.path.join(conv_dir, filename)
+            name = stem.removeprefix("conversation_")
+            saved_at = datetime.datetime.fromtimestamp(
+                os.path.getmtime(filepath)
+            )
+            conversations.append(
+                {
+                    "id": name,
+                    "name": name,
+                    "created_at": saved_at.strftime(
+                        "%Y-%m-%d_%H-%M-%S"
+                    ),
+                    "filepath": filepath,
+                }
+            )
 
-                        # Skip if we've already seen this ID or if required fields are missing
-                        if (
-                            not all([conv_id, name, created_at])
-                            or conv_id in seen_ids
-                        ):
-                            continue
-
-                        seen_ids.add(conv_id)
-                        conversations.append(
-                            {
-                                "id": conv_id,
-                                "name": name,
-                                "created_at": created_at,
-                                "filepath": filepath,
-                            }
-                        )
-                except json.JSONDecodeError:
-                    logger.warning(
-                        f"Skipping corrupted conversation file: {filename}"
-                    )
-                    continue
-                except Exception as e:
-                    logger.error(
-                        f"Failed to read conversation {filename}: {str(e)}"
-                    )
-                    continue
-
-        # Sort by creation date, newest first
         return sorted(
             conversations, key=lambda x: x["created_at"], reverse=True
         )

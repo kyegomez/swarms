@@ -598,6 +598,24 @@ def test_load_filepath_restores_the_saved_history(tmp_path):
     ] == ["remember Helios"]
 
 
+def test_list_conversations_lists_saved_conversations(tmp_path):
+    for name, export_method in [("alpha", "json"), ("beta", "yaml")]:
+        conv = Conversation(
+            name=name,
+            conversations_dir=str(tmp_path),
+            export_method=export_method,
+        )
+        conv.add("user", f"hello {name}")
+        conv.export()
+
+    listed = Conversation.list_conversations(str(tmp_path))
+
+    assert {c["name"]: c["filepath"] for c in listed} == {
+        "alpha": str(tmp_path / "conversation_alpha.json"),
+        "beta": str(tmp_path / "conversation_beta.yaml"),
+    }
+
+
 # ── memory_md_path initialization ──
 
 
