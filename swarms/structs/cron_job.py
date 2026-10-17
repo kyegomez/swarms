@@ -521,9 +521,10 @@ class CronJob:
     def stop(self):
         """Stop the job and join its scheduler thread.
 
-        Safe to call from another thread while :meth:`run` is blocking, and safe
-        to call on a job that is already stopped. Waits up to 5 seconds for the
-        scheduler thread to exit.
+        Safe to call from another thread while :meth:`run` is blocking, from the
+        job's own callback or agent, and on a job that is already stopped. From
+        another thread it waits up to 5 seconds for the scheduler thread to
+        exit; from the job itself the current tick finishes and the loop ends.
 
         Raises:
             CronJobExecutionError: If the job fails to stop properly.
@@ -534,16 +535,19 @@ class CronJob:
         """
         try:
             logger.info(f"Stopping job {self.job_id}")
-            self._signal_stop()
-            if self.thread:
-                self.thread.join(
-                    timeout=5
-                )  # Wait up to 5 seconds for thread to finish
-                if self.thread.is_alive():
-                    logger.warning(
-                        f"Job {self.job_id} thread did not terminate gracefully"
-                    )
+            thread = self.thread
+            # Clear before signalling: a run() woken by the signal may schedule again at once.
+            if thread:
                 self.schedule.clear()
+            self._signal_stop()
+            if thread:
+                # A thread cannot join itself, as when the callback or agent calls stop().
+                if thread is not threading.current_thread():
+                    thread.join(timeout=5)
+                    if thread.is_alive():
+                        logger.warning(
+                            f"Job {self.job_id} thread did not terminate gracefully"
+                        )
                 logger.info(f"Successfully stopped job {self.job_id}")
         except Exception as e:
             logger.error(
