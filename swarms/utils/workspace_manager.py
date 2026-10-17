@@ -344,7 +344,9 @@ class WorkspaceManager:
         )
 
     def save_config(
-        self, additional_metadata: Optional[Dict[str, Any]] = None
+        self,
+        additional_metadata: Optional[Dict[str, Any]] = None,
+        exclude: Sequence[str] = (),
     ) -> Optional[str]:
         """
         Write the owner's configuration to ``config.json``.
@@ -352,6 +354,7 @@ class WorkspaceManager:
         Args:
             additional_metadata (Optional[Dict[str, Any]]): Merged into
                 the ``_autosave_metadata`` block.
+            exclude (Sequence[str]): Top-level keys left out of the file.
 
         Returns:
             Optional[str]: The written path, or ``None`` if skipped.
@@ -369,6 +372,8 @@ class WorkspaceManager:
                     for k, v in vars(self.owner).items()
                     if not k.startswith("_") and not callable(v)
                 }
+            for key in exclude:
+                config.pop(key, None)
 
             base = self.metadata_base
             if base is None:
