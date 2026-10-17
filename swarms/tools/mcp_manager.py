@@ -25,6 +25,7 @@ import threading
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -642,6 +643,10 @@ class MCPManager:
         self._client_credentials: Dict[
             str, _ClientCredentialsToken
         ] = {}
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop_lock = threading.Lock()
+        self._sessions: Dict[str, Tuple[Any, Any, Any]] = {}
+        self._runs = 0
 
     # Config normalization.
 
@@ -986,6 +991,17 @@ class MCPManager:
                 "No MCP servers are configured for this agent."
             )
 
+        loop = self._owner_loop()
+        if asyncio.get_running_loop() is not loop:
+            return await asyncio.wrap_future(
+                asyncio.run_coroutine_threadsafe(
+                    self.aexecute_tool_calls(
+                        response, output_type=output_type
+                    ),
+                    loop,
+                )
+            )
+
         calls = self._normalize_tool_calls(response)
         if not calls:
             if self.verbose:
@@ -1023,14 +1039,19 @@ class MCPManager:
         async def _run_group(items):
             connection = self._route(items[0][1]["name"])
             try:
-                async with self._session(connection) as session:
-                    for index, call in items:
-                        results[index] = await self._acall_tool(
-                            session, connection, call
-                        )
+                session = await self._shared_session(connection)
+                for index, call in items:
+                    results[index] = await self._acall_tool(
+                        session, connection, call
+                    )
             except (asyncio.CancelledError, KeyboardInterrupt):
                 raise
             except BaseException as e:
+                held = self._sessions.pop(
+                    self._connection_key(connection), None
+                )
+                if held:
+                    held[2].set()
                 message = _describe_exception(e)
                 logger.error(
                     f"MCP [{self.agent_name}]: session error on "
@@ -1524,6 +1545,117 @@ class MCPManager:
             sse_read_timeout=timedelta(seconds=sse_read_timeout),
             auth=auth,
         )
+
+    def _owner_loop(self) -> asyncio.AbstractEventLoop:
+        """The background event loop that owns the reused sessions."""
+        with self._loop_lock:
+            loop = self._loop
+            if loop is None:
+                loop = asyncio.new_event_loop()
+                self._loop = loop
+                threading.Thread(
+                    target=self._serve, args=(loop,), daemon=True
+                ).start()
+            return loop
+
+    @staticmethod
+    def _serve(loop: asyncio.AbstractEventLoop) -> None:
+        """Run the loop until it is stopped, then close it."""
+        loop.run_forever()
+        loop.close()
+
+    async def _shared_session(
+        self, connection: MCPConnection
+    ) -> "ClientSession":
+        """
+        Return the open session for a server, connecting on first use.
+
+        Each session is held open by its own task, so anyio's task groups
+        enter and exit in one task. A session whose task has ended is
+        replaced on the next call.
+        """
+        key = self._connection_key(connection)
+        held = self._sessions.get(key)
+        if held and not held[1].done():
+            return await held[0]
+
+        ready = asyncio.get_running_loop().create_future()
+        stop = asyncio.Event()
+
+        async def _hold():
+            try:
+                async with self._session(connection) as session:
+                    ready.set_result(session)
+                    await stop.wait()
+            except BaseException as e:
+                if not ready.done():
+                    ready.set_exception(e)
+
+        self._sessions[key] = (
+            ready,
+            asyncio.ensure_future(_hold()),
+            stop,
+        )
+        return await ready
+
+    def begin_run(self) -> None:
+        """Mark an agent run as using the reused sessions."""
+        with self._loop_lock:
+            self._runs += 1
+
+    def end_run(self) -> None:
+        """End an agent run, closing the sessions once no run is left."""
+        with self._loop_lock:
+            self._runs = max(0, self._runs - 1)
+            if self._runs:
+                return
+            loop, self._loop = self._loop, None
+            sessions, self._sessions = self._sessions, {}
+        self._shutdown(loop, sessions)
+
+    def __enter__(self) -> "MCPManager":
+        return self
+
+    def __exit__(self, *exc_info: Any) -> None:
+        self.close()
+
+    def close(self) -> None:
+        """Close every reused session and stop the background loop."""
+        with self._loop_lock:
+            loop, self._loop = self._loop, None
+            sessions, self._sessions = self._sessions, {}
+        self._shutdown(loop, sessions)
+
+    @staticmethod
+    def _shutdown(
+        loop: Optional[asyncio.AbstractEventLoop],
+        sessions: Dict[str, Tuple[Any, Any, Any]],
+    ) -> None:
+        """Stop the given sessions, then the loop that holds them."""
+        if loop is None:
+            return
+
+        async def _close():
+            for _, _, stop in sessions.values():
+                stop.set()
+            held = [task for _, task, _ in sessions.values()]
+            if held:
+                await asyncio.wait(held, timeout=5)
+            left = asyncio.all_tasks() - {asyncio.current_task()}
+            for task in left:
+                task.cancel()
+            if left:
+                await asyncio.wait(left, timeout=1)
+
+        try:
+            asyncio.run_coroutine_threadsafe(_close(), loop).result(
+                timeout=10
+            )
+        except FutureTimeoutError:
+            logger.warning(
+                "MCP: sessions did not close within 10s; stopping the loop anyway."
+            )
+        loop.call_soon_threadsafe(loop.stop)
 
     @asynccontextmanager
     async def _session(self, connection: MCPConnection):
