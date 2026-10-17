@@ -1110,14 +1110,16 @@ def run_bash_tool(
         )
         return f"Error: {rejection}"
     try:
-        # Runs in the process cwd, not the agent workspace
+        workspace_dir = agent._get_agent_workspace_dir()
+        os.makedirs(workspace_dir, exist_ok=True)
+
         result = subprocess.run(
             command,
             shell=True,
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
-            cwd=None,  # use process current working directory
+            cwd=workspace_dir,
             encoding="utf-8",
             errors="replace",
         )
