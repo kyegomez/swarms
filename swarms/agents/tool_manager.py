@@ -572,10 +572,6 @@ class ToolManager:
                 arguments = {}
 
             result = self.tool_search_tool(**arguments)
-            agent.short_memory.add(
-                role="Tool Executor",
-                content=f"tool_search result: {result}",
-            )
             turn_results[call.get("id", "")] = result
             if agent.print_on:
                 formatter.print_panel(result, title="Tool Search")
@@ -598,10 +594,6 @@ class ToolManager:
             self.visualize_handoff_call(handoffs, call)
 
             result = self.handoff_task_tool(handoffs=handoffs)
-            agent.short_memory.add(
-                role="Tool Executor",
-                content=f"Handoff Result:\n{result}",
-            )
             turn_results[call.get("id", "")] = result
 
             if agent.print_on:
