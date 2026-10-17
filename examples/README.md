@@ -75,7 +75,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [README.md](tools/README.md) | Complete tools examples documentation |
 | [agent_as_tools.py](tools/agent_as_tools.py) | Using agents as tools |
 | [browser_use_as_tool.py](tools/browser_use/browser_use_as_tool.py) | Browser automation tool |
-| [browser_use_demo.py](tools/browser_use_demo.py) | Browser automation demonstration |
+| [browser_use_demo.py](tools/browser_use/browser_use_demo.py) | Browser automation demonstration |
 | [claude_as_a_tool.py](tools/claude_as_a_tool.py) | Claude model integration as a tool |
 | [exa_search_agent.py](tools/exa_search_agent.py) | Exa search integration |
 | [exa_search_agent_quant.py](tools/exa_search_agent_quant.py) | Exa search with quantitative analysis |
@@ -356,7 +356,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 |---------|-------------|
 | [Agent as Tools](tools/agent_as_tools.py) | Using agents as tools |
 | [Browser Automation](tools/browser_use/browser_use_as_tool.py) | Browser control |
-| [Browser Demo](tools/browser_use_demo.py) | Browser automation demonstration |
+| [Browser Demo](tools/browser_use/browser_use_demo.py) | Browser automation demonstration |
 | [Claude as Tool](tools/claude_as_a_tool.py) | Claude model as a tool |
 | [Exa Search](tools/exa_search_agent.py) | Search integration |
 | [Exa Search Quant](tools/exa_search_agent_quant.py) | Exa search with quantitative analysis |
