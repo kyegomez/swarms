@@ -200,6 +200,56 @@ def test_a_job_that_gave_up_can_be_run_again():
     assert returned, "a clean stop of the restarted run raised"
 
 
+def _run_and_wait(job, task):
+    """Run ``job`` on a helper thread and fail the test if it never stops."""
+    t = run_in_thread(lambda: job.run(task))
+    t.join(timeout=10)
+    assert not t.is_alive(), f"run({task!r}) never stopped"
+    # run() returns once stop() signals, which can be before the tick that called stop() finishes.
+    job.thread.join(timeout=5)
+
+
+def test_stop_from_the_callback_clears_the_schedule():
+    calls, stop_errors = [], []
+    job = CronJob(agent=MockAgent(calls), interval="1second")
+
+    def stop_every_second_execution(output, task, metadata):
+        if metadata["execution_count"] % 2 == 0:
+            try:
+                job.stop()
+            except Exception as e:
+                stop_errors.append(e)
+        return output
+
+    job.set_callback(stop_every_second_execution)
+
+    _run_and_wait(job, "A")
+    assert stop_errors == []
+    assert job.schedule.jobs == []
+
+    _run_and_wait(job, "B")
+    assert calls == ["A", "A", "B", "B"]
+
+
+def test_stop_from_the_agent_clears_the_schedule():
+    calls = []
+
+    def stop_on_second_call(task: str = None, **kwargs):
+        calls.append(task)
+        if len(calls) % 2 == 0:
+            job.stop()
+        return task
+
+    job = CronJob(agent=stop_on_second_call, interval="1second")
+
+    _run_and_wait(job, "A")
+    assert job.error_count == 0
+    assert job.schedule.jobs == []
+
+    _run_and_wait(job, "B")
+    assert calls == ["A", "A", "B", "B"]
+
+
 def test_without_a_budget_the_job_retries_indefinitely():
     agent = FailingAgent(fail_times=99)
     job = CronJob(agent=agent, interval="1second")
