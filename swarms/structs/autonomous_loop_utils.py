@@ -138,6 +138,70 @@ Instructions:
 """
 
 
+BUDGET_FOCUS_REMAINING = 0.5
+BUDGET_CONSOLIDATE_REMAINING = 0.2
+
+
+def budget_mode(iterations_used: int, iterations_total: int) -> str:
+    """Name the working mode for how much of a subtask's budget is left.
+
+    Args:
+        iterations_used: Iterations this subtask has spent.
+        iterations_total: Iterations this subtask may spend.
+
+    Returns:
+        str: ``"normal"`` above half the budget, ``"focus"`` from there down to
+            a fifth, ``"consolidate"`` below that.
+    """
+    if iterations_total <= 0:
+        return "consolidate"
+
+    remaining = (
+        iterations_total - iterations_used
+    ) / iterations_total
+
+    if remaining <= BUDGET_CONSOLIDATE_REMAINING:
+        return "consolidate"
+    if remaining <= BUDGET_FOCUS_REMAINING:
+        return "focus"
+    return "normal"
+
+
+def get_budget_mode_prompt(
+    mode: str, iterations_used: int, iterations_total: int
+) -> str:
+    """Get the instruction that winds the subtask down as its budget depletes.
+
+    Args:
+        mode: A mode from :func:`budget_mode`.
+        iterations_used: Iterations this subtask has spent.
+        iterations_total: Iterations this subtask may spend.
+
+    Returns:
+        str: Prompt text, empty for ``"normal"``.
+    """
+    remaining = max(0, iterations_total - iterations_used)
+
+    if mode == "focus":
+        return (
+            f"Budget check: {remaining} of {iterations_total} iterations left on this subtask.\n"
+            "Finish what this subtask already needs. Do not explore alternatives "
+            "and do not run optional verification. Take the shortest path to a "
+            "usable result, then call subtask_done."
+        )
+
+    if mode == "consolidate":
+        return (
+            f"Budget check: {remaining} of {iterations_total} iterations left on this subtask.\n"
+            "Stop starting new work and make no further tool calls except to "
+            "finish one already in flight. Record what is known now: call "
+            "subtask_done with an honest summary, marking success false if the "
+            "work is incomplete, so the run keeps what this subtask found."
+        )
+
+    return ""
+
+
 def get_summary_prompt() -> str:
     """
     Get the final summary phase prompt.
