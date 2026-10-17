@@ -223,12 +223,16 @@ agent = Agent(
 
 ### Conversation.compact()
 
-Manually collapse history to a single summary; creates a timestamped archive before rewriting:
+Manually collapse history to a single summary. Set `memory_md_path` to archive and rewrite `MEMORY.md`; `name` identifies the conversation but does not select its memory file:
 
 ```python
-from swarms.structs.conversation import Conversation
+from swarms import Conversation
 
-conv = Conversation(agent_name="MyAgent", system_prompt="You are helpful.")
+conv = Conversation(
+    name="MyAgent",
+    system_prompt="You are helpful.",
+    memory_md_path="agent_workspace/agents/MyAgent/MEMORY.md",
+)
 conv.add("user", "Tell me about X")
 conv.add("assistant", "X is ...")
 
@@ -647,27 +651,15 @@ result = mv.run("Is Python or Rust better for building a high-performance web se
 
 ### CouncilAsAJudge
 
-A council of agents each deliberate, then a judge agent makes the final ruling based on the council's reasoning.
+`CouncilAsAJudge` creates its dimension-specific judge agents and an aggregator internally. Set `judge_agent_model_name` to choose the judges' model (otherwise they use `model_name`), and `aggregation_model_name` for the aggregator. It does not accept caller-supplied `agents` or `judge` arguments.
 
 ```python
-from swarms import Agent, CouncilAsAJudge
-
-council = [
-    Agent(agent_name="Expert-Security", model_name="gpt-5.4", max_loops=1),
-    Agent(agent_name="Expert-Privacy",  model_name="gpt-5.4", max_loops=1),
-    Agent(agent_name="Expert-Legal",    model_name="gpt-5.4", max_loops=1),
-]
-
-judge = Agent(
-    agent_name="Judge",
-    system_prompt="Given the council's analysis, deliver a final verdict.",
-    model_name="gpt-5.4",
-    max_loops=1,
-)
+from swarms import CouncilAsAJudge
 
 council_swarm = CouncilAsAJudge(
-    agents=council,
-    judge=judge,
+    model_name="gpt-5.4",
+    judge_agent_model_name="gpt-5.4",
+    aggregation_model_name="gpt-5.4",
     max_loops=1,
 )
 result = council_swarm.run("Should we store user biometric data on-device only?")
@@ -889,14 +881,15 @@ tools = asyncio.run(aget_mcp_tools(server_url="http://localhost:8000/sse"))
 
 ## Conversation Management
 
-`Conversation` manages message history with optional disk persistence.
+`Conversation` manages message history with optional disk persistence. Configure `memory_md_path` explicitly to read, append to and compact `MEMORY.md`; `name` alone does not enable that file. This example shares memory with an agent when `WORKSPACE_DIR=agent_workspace` and `persistent_memory=True`:
 
 ```python
-from swarms.structs.conversation import Conversation
+from swarms import Agent, Conversation
 
 conv = Conversation(
     system_prompt="You are a helpful assistant.",
-    agent_name="MyAgent",      # keys MEMORY.md to this name
+    name="MyAgent",
+    memory_md_path="agent_workspace/agents/MyAgent/MEMORY.md",
     time_enabled=True,         # include ISO timestamps in history
 )
 
@@ -909,11 +902,11 @@ history_str = conv.return_history_as_string()
 # Compact + archive
 conv.compact(summary="User asked basic arithmetic. Answer: 4.")
 
-# Pass to an agent
+# Resume the same MEMORY.md in an agent
 agent = Agent(
     agent_name="MyAgent",
     model_name="gpt-5.4",
-    # agent reads MEMORY.md automatically when persistent_memory=True
+    persistent_memory=True,
 )
 ```
 
