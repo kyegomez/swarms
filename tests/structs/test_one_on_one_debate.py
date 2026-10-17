@@ -677,3 +677,40 @@ def test_one_on_one_debate_forwards_the_answer_not_the_transcript():
         ] * len(
             agent.prompts[1:]
         ), f"{agent.agent_name} prompts: {agent.prompts}"
+
+
+def test_one_on_one_debate_retains_first_speaker_in_default_output():
+    """Default output_type='str' should retain the first speaker's answer."""
+
+    class EchoAgent:
+        def __init__(self, name):
+            self.agent_name = name
+
+        def run(self, task=None, **kwargs):
+            return f"{self.agent_name} answer"
+
+    # 1 loop: must not return an empty string
+    agents_1 = [EchoAgent("DebaterA"), EchoAgent("DebaterB")]
+    fn_result_1 = one_on_one_debate(
+        agents=agents_1, task="topic", max_loops=1
+    )
+    class_result_1 = OneOnOneDebate(
+        agents=agents_1, max_loops=1
+    ).run("topic")
+
+    assert "DebaterA: DebaterA answer" in fn_result_1
+    assert "DebaterA: DebaterA answer" in class_result_1
+
+    # 2 loops: both speakers' answers must be present in order
+    agents_2 = [EchoAgent("DebaterA"), EchoAgent("DebaterB")]
+    fn_result_2 = one_on_one_debate(
+        agents=agents_2, task="topic", max_loops=2
+    )
+    class_result_2 = OneOnOneDebate(
+        agents=agents_2, max_loops=2
+    ).run("topic")
+
+    assert "DebaterA: DebaterA answer" in fn_result_2
+    assert "DebaterB: DebaterB answer" in fn_result_2
+    assert "DebaterA: DebaterA answer" in class_result_2
+    assert "DebaterB: DebaterB answer" in class_result_2
