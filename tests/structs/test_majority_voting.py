@@ -1,5 +1,77 @@
+import pytest
+
 from swarms.structs.agent import Agent
 from swarms.structs.majority_voting import MajorityVoting
+
+
+class _FixedAnswerLLM:
+    """Return a deterministic answer without calling a model provider."""
+
+    def run(self, task: str, **kwargs) -> str:
+        """Answer a voter or consensus request locally."""
+        return "A fixed answer."
+
+
+def _offline_voting_system(
+    verbose: bool, **consensus_kwargs
+) -> MajorityVoting:
+    """Build real agents backed by local, deterministic models."""
+    voter = Agent(
+        agent_name="Voter",
+        llm=_FixedAnswerLLM(),
+        model_name="gpt-4o",
+        max_loops=1,
+        print_on=False,
+        persistent_memory=False,
+        autosave=False,
+    )
+    return MajorityVoting(
+        agents=[voter],
+        verbose=verbose,
+        consensus_agent_model_name="gpt-4o",
+        additional_consensus_agent_kwargs={
+            "llm": _FixedAnswerLLM(),
+            "persistent_memory": False,
+            "autosave": False,
+            **consensus_kwargs,
+        },
+    )
+
+
+@pytest.mark.parametrize("verbose", [False, True])
+def test_majority_voting_verbose_controls_panels(
+    verbose: bool, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Verbose controls both initialization and consensus output."""
+    voting = _offline_voting_system(verbose)
+    initialization_output = capsys.readouterr().out
+
+    voting.run("Reach a consensus.")
+    consensus_output = capsys.readouterr().out
+
+    assert voting.consensus_agent.print_on is verbose
+    if verbose:
+        assert "Majority Voting" in initialization_output
+        assert "Consensus-Agent" in consensus_output
+    else:
+        assert initialization_output == ""
+        assert consensus_output == ""
+
+
+@pytest.mark.parametrize("verbose", [False, True])
+def test_majority_voting_preserves_explicit_consensus_print_on(
+    verbose: bool, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """An explicit consensus print setting takes priority over verbose."""
+    print_on = not verbose
+    voting = _offline_voting_system(verbose, print_on=print_on)
+    capsys.readouterr()
+
+    voting.run("Reach a consensus.")
+    consensus_output = capsys.readouterr().out
+
+    assert voting.consensus_agent.print_on is print_on
+    assert ("Consensus-Agent" in consensus_output) is print_on
 
 
 def test_majority_voting_basic_execution():
