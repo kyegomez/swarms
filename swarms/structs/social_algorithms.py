@@ -1,7 +1,8 @@
+import signal
+import threading
 import time
 import uuid
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FuturesTimeoutError
+from concurrent.futures import ThreadPoolExecutor, wait
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
@@ -311,15 +312,6 @@ class SocialAlgorithms:
         """
         Execute a function with a timeout.
 
-        Runs ``func`` on a worker thread and joins it with a deadline,
-        rather than installing a ``signal.SIGALRM`` handler. A signal
-        handler can only be installed from the interpreter's main
-        thread, so it raises ``ValueError`` whenever ``run()`` is
-        itself called off the main thread (e.g. from another thread
-        pool). This approach works from any thread, keeps a fractional
-        ``max_execution_time`` instead of truncating it to whole
-        seconds, and is portable to platforms without ``SIGALRM``.
-
         Args:
             func (Callable): The function to execute.
             *args: Positional arguments for the function.
@@ -331,17 +323,37 @@ class SocialAlgorithms:
         Raises:
             TimeoutError: If the function execution exceeds max_execution_time.
         """
+        message = f"Algorithm execution exceeded {self.max_execution_time} seconds"
+
+        if (
+            hasattr(signal, "setitimer")
+            and threading.current_thread() is threading.main_thread()
+        ):
+
+            def timeout_handler(signum, frame):
+                raise TimeoutError(message)
+
+            old_handler = signal.signal(
+                signal.SIGALRM, timeout_handler
+            )
+            signal.setitimer(
+                signal.ITIMER_REAL, self.max_execution_time
+            )
+            try:
+                return func(*args, **kwargs)
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, old_handler)
+
         pool = ThreadPoolExecutor(max_workers=1)
         future = pool.submit(func, *args, **kwargs)
-        try:
-            result = future.result(timeout=self.max_execution_time)
-        except FuturesTimeoutError:
-            pool.shutdown(wait=False)
-            raise TimeoutError(
-                f"Algorithm execution exceeded {self.max_execution_time} seconds"
-            )
         pool.shutdown(wait=False)
-        return result
+        if not wait([future], timeout=self.max_execution_time).done:
+            raise TimeoutError(
+                f"{message}; off the main thread the call cannot be "
+                "interrupted and keeps running in the background"
+            )
+        return future.result()
 
     def _format_output(self, result: Any) -> Any:
         """
