@@ -597,7 +597,6 @@ agent = loader.load_agent_from_markdown("agents/researcher.md")
 | `HeavySwarm(num_agents=4, model_name=...)` | `question_agent_model_name=`, `worker_model_name=` | Those kwarg names don't exist |
 | `from swarms import PlannerWorkerSwarm` | `from swarms.structs.planner_worker_swarm import ...` | Not exported at the top level |
 | `swarm_type="AutoSwarmBuilder"` | Use the class directly | Not one of the 16 router types |
-| `GraphWorkflow.add_node(Node(...))` | `add_node(agent)` | It takes the agent itself |
 | Building agents inside a loop | Build once, reuse | Construction is expensive |
 | `context_compression=False` on long runs | Leave it `True` | The run will hit the context wall |
 | Bare `max_loops="auto"` in production | Integer `max_loops` | Autonomous runs have no natural stopping point |
