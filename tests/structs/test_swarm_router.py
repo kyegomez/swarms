@@ -655,6 +655,50 @@ class TestConcurrentRun:
         with pytest.raises(ValueError, match="nope"):
             r.concurrent_run(["a"])
 
+    def test_tasks_do_not_share_the_cached_swarm(self):
+        import threading
+
+        from swarms import Agent, SwarmRouter
+
+        with patch("swarms.structs.agent.LiteLLM"):
+            agents = [
+                Agent(
+                    agent_name=name,
+                    model_name="gpt-5.4",
+                    max_loops=1,
+                    autosave=False,
+                    print_on=False,
+                )
+                for name in ("A", "B")
+            ]
+        barrier = threading.Barrier(4, timeout=5)
+        for agent in agents:
+
+            def run(task=None, _name=agent.agent_name, **kwargs):
+                if task != "warm-up":
+                    barrier.wait()
+                return f"{_name}:{task}"
+
+            agent.run = run
+            agent.short_memory = None
+
+        router = SwarmRouter(
+            name="r",
+            agents=agents,
+            swarm_type="ConcurrentWorkflow",
+            output_type="dict",
+            autosave=False,
+        )
+        router.run("warm-up")
+        results = router.concurrent_run(["t1", "t2"])
+
+        for task, result in zip(["t1", "t2"], results):
+            assert [m["content"] for m in result] == [
+                task,
+                f"A:{task}",
+                f"B:{task}",
+            ]
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
