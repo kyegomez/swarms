@@ -1510,6 +1510,18 @@ def test_token_count_cache_prune_does_not_iterate_the_shared_cache():
     }
 
 
+def test_return_dict_final_returns_last_message_dict():
+    conv = Conversation()
+    conv.add("user", "First")
+    conv.add("assistant", "Last")
+
+    result = conv.return_dict_final()
+
+    assert isinstance(result, dict)
+    assert result["role"] == "assistant"
+    assert result["content"] == "Last"
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()
