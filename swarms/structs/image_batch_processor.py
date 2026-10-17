@@ -1,13 +1,13 @@
 import copy
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 
 from swarms.structs import Agent
+from swarms.structs.execution_utils import run_concurrently
 from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 
@@ -213,41 +213,29 @@ class ImageAgentBatchProcessor:
         logger.info(
             f"Starting batch processing of {len(validated_paths)} images"
         )
+        jobs = [
+            (path, agent, self._isolate(agent))
+            for path in validated_paths
+            for agent in self.agents
+        ]
+        outcomes = run_concurrently(
+            lambda job: self._process_single_image(
+                job[0], tasks, job[2]
+            ),
+            jobs,
+            max_workers=self.max_workers,
+            return_exceptions=True,
+        )
+
         results = []
-
-        with ThreadPoolExecutor(
-            max_workers=self.max_workers
-        ) as executor:
-            future_to_path = {}
-
-            # Submit all tasks
-            for path in validated_paths:
-                for agent in self.agents:
-                    future = executor.submit(
-                        self._process_single_image,
-                        path,
-                        tasks,
-                        self._isolate(agent),
-                    )
-                    future_to_path[future] = (path, agent)
-
-            # Collect results as they complete
-            for future in as_completed(future_to_path):
-                path, agent = future_to_path[future]
-                try:
-                    result = future.result()
-                    results.append(result)
-                except Exception as e:
-                    logger.error(
-                        f"Failed to process {path} with {agent.__class__.__name__}: {str(e)}"
-                    )
-                    results.append(
-                        {
-                            "image_path": str(path),
-                            "error": str(e),
-                            "agent": agent.__class__.__name__,
-                        }
-                    )
+        for (path, agent, _), out in zip(jobs, outcomes):
+            name = getattr(agent, "agent_name", type(agent).__name__)
+            if isinstance(out, Exception):
+                logger.error(
+                    f"Failed to process {path} with {name}: {out}"
+                )
+                out = {"image_path": str(path), "error": str(out)}
+            results.append({**out, "agent": name})
 
         logger.info(
             f"Completed batch processing of {len(validated_paths)} images"
