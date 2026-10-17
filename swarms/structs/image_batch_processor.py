@@ -229,7 +229,7 @@ class ImageAgentBatchProcessor:
 
         results = []
         for (path, agent, _), out in zip(jobs, outcomes):
-            name = getattr(agent, "agent_name", type(agent).__name__)
+            name = agent.agent_name
             if isinstance(out, Exception):
                 logger.error(
                     f"Failed to process {path} with {name}: {out}"
