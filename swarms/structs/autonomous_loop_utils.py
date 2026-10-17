@@ -396,6 +396,39 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
         {
             "type": "function",
             "function": {
+                "name": "edit_file",
+                "description": "Replace an exact string in a file. The string must occur exactly once unless replace_all is true. Prefer this over update_file for changing part of a file: update_file rewrites the whole thing.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "file_path": {
+                            "type": "string",
+                            "description": "Path to the file to edit (relative to workspace or absolute)",
+                        },
+                        "old_string": {
+                            "type": "string",
+                            "description": "Exact text to find, copied from the file including indentation",
+                        },
+                        "new_string": {
+                            "type": "string",
+                            "description": "Text to put in its place",
+                        },
+                        "replace_all": {
+                            "type": "boolean",
+                            "description": "Replace every occurrence instead of requiring exactly one (default: false)",
+                        },
+                    },
+                    "required": [
+                        "file_path",
+                        "old_string",
+                        "new_string",
+                    ],
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "read_file",
                 "description": "Read the contents of a file. Returns the file content as a string.",
                 "parameters": {
@@ -803,6 +836,110 @@ def update_file_tool(
         return f"Successfully {action} file: {full_path}"
     except Exception as e:
         error_msg = f"Error updating file {file_path}: {str(e)}"
+        logger.error(error_msg)
+        agent.short_memory.add(
+            role="File Operations",
+            content=f"Error: {error_msg}",
+        )
+        return error_msg
+
+
+def edit_file_tool(
+    agent: Any,
+    file_path: str,
+    old_string: str,
+    new_string: str,
+    replace_all: bool = False,
+    **kwargs,
+) -> str:
+    """
+    Replace an exact string in a file, leaving everything else untouched.
+
+    Args:
+        agent: The agent instance
+        file_path: Path to the file (relative to workspace or absolute)
+        old_string: Exact text to find. Must occur once unless ``replace_all``.
+        new_string: Text to put in its place.
+        replace_all: Replace every occurrence instead of requiring one.
+        **kwargs: Additional arguments
+
+    Returns:
+        str: What was changed, or an error message
+
+    Notes:
+        Zero or several matches are refused and the count is named, rather
+        than guessed at. A model that asked to change one thing and is told
+        "3 matches" can add surrounding context and try again; one that had
+        the first match silently edited cannot tell that happened.
+
+        The alternative the loop offers today is update_file, which rewrites
+        the whole file: it clobbers anything the model did not mean to touch
+        and pays output tokens for every unchanged line.
+    """
+    try:
+        if old_string == new_string:
+            return (
+                "Error: old_string and new_string are identical, so this "
+                "edit would change nothing"
+            )
+
+        if not os.path.isabs(file_path):
+            workspace_dir = agent._get_agent_workspace_dir()
+            full_path = os.path.join(workspace_dir, file_path)
+        else:
+            full_path = file_path
+
+        if not os.path.exists(full_path):
+            return (
+                f"Error: File does not exist at {full_path}. Use "
+                "create_file to create new files."
+            )
+
+        with open(full_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        occurrences = content.count(old_string)
+
+        if occurrences == 0:
+            return (
+                f"Error: found 0 occurrences of that string in "
+                f"{full_path}. Read the file and copy the text exactly, "
+                "including indentation."
+            )
+
+        if occurrences > 1 and not replace_all:
+            return (
+                f"Error: found {occurrences} occurrences of that string in "
+                f"{full_path}. Include surrounding lines so the match is "
+                "unique, or pass replace_all=true."
+            )
+
+        updated = (
+            content.replace(old_string, new_string)
+            if replace_all
+            else content.replace(old_string, new_string, 1)
+        )
+
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(updated)
+
+        replaced = occurrences if replace_all else 1
+        summary = (
+            f"Replaced {replaced} occurrence"
+            f"{'s' if replaced != 1 else ''} in {full_path}"
+        )
+
+        agent.short_memory.add(
+            role="File Operations",
+            content=summary,
+        )
+
+        if agent.verbose:
+            logger.info(summary)
+
+        return summary
+    except Exception as e:
+        error_msg = f"Error editing file {file_path}: {str(e)}"
         logger.error(error_msg)
         agent.short_memory.add(
             role="File Operations",
