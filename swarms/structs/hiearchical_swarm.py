@@ -49,6 +49,7 @@ from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 
@@ -367,6 +368,19 @@ class HierarchicalSwarm:
 
         if self.director is None:
             self.director = self.setup_director()
+        elif (
+            isinstance(self.director, Agent)
+            and isinstance(self.director.llm, LiteLLM)
+            and not self.director.mcp_enabled
+            and not self.director.tools_list_dictionary
+            and not self.director.llm.tools_list_dictionary
+        ):
+            self.director.tools_list_dictionary = [
+                _ORDER_BATCH_SCHEMA
+            ]
+            self.director.llm.tools_list_dictionary = [
+                _ORDER_BATCH_SCHEMA
+            ]
 
     def agents_no_print(self):
         for agent in self.agents:
