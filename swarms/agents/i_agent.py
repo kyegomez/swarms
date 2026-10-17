@@ -248,6 +248,8 @@ class IterativeReflectiveExpansion:
         :param task: The problem statement.
         :return: The final solution generated after iterative reasoning.
         """
+        self.conversation = Conversation()
+        self.agent.short_memory = self.agent.short_memory_init()
         logger.info(
             f"Starting iterative reflective expansion for problem: {task}"
         )

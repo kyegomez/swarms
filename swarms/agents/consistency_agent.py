@@ -256,6 +256,7 @@ class SelfConsistencyAgent:
         """
         responses = []
 
+        self.conversation = Conversation()
         self.conversation.add(role="User", content=task)
 
         # Generate multiple independent responses concurrently

@@ -455,3 +455,23 @@ def test_self_consistency_samples_get_distinct_agents():
         router.run("What is 2 + 2?")
 
     assert len(set(agent_ids[:3])) == 3
+
+
+def test_self_consistency_second_run_returns_only_its_own_task():
+    from swarms.agents.consistency_agent import SelfConsistencyAgent
+    from swarms.structs.agent import Agent
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        return "ANSWER"
+
+    agent = SelfConsistencyAgent(model_name="gpt-5.4", num_samples=2)
+
+    with patch.object(Agent, "call_llm", fake_call_llm):
+        first = agent.run("Task one")
+        second = agent.run("Task two")
+
+    def tasks(result):
+        return [m["content"] for m in result if m["role"] == "User"]
+
+    assert tasks(first) == ["Task one"]
+    assert tasks(second) == ["Task two"]
