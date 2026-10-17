@@ -14,7 +14,7 @@ swarm = HeavySwarm(
     question_agent_model_name="gpt-5.4",
     variant="heavy",
     show_dashboard=True,
-    loops_per_agent=1,
+    max_loops=1,
 )
 
 result = swarm.run(
