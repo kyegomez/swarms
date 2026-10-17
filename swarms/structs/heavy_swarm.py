@@ -322,6 +322,8 @@ class HeavySwarm(SerializableMixin):
             self.dashboard.show_task_init(task)
 
         self.conversation.clear()
+        for agent in self.agents.values():
+            agent.short_memory = agent.short_memory_init()
 
         # Add initial task to conversation
         self.conversation.add(
