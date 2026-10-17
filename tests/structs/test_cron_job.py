@@ -177,6 +177,29 @@ def test_consecutive_errors_stop_the_job_when_a_budget_is_set():
     assert job.is_running is False
 
 
+def test_a_job_that_gave_up_can_be_run_again():
+    agent = FailingAgent(fail_times=3)
+    job = CronJob(
+        agent=agent, interval="1second", max_consecutive_errors=2
+    )
+    with pytest.raises(CronJobExecutionError):
+        job.run("t")
+    assert job.schedule.jobs == []
+
+    returned = []
+    t = run_in_thread(lambda: returned.append(job.run("t")))
+    deadline = time.monotonic() + 10
+    while agent.successes < 2 and time.monotonic() < deadline:
+        if not t.is_alive():
+            break
+        time.sleep(0.05)
+    job.stop()
+    t.join(timeout=3)
+
+    assert agent.successes >= 2
+    assert returned, "a clean stop of the restarted run raised"
+
+
 def test_without_a_budget_the_job_retries_indefinitely():
     agent = FailingAgent(fail_times=99)
     job = CronJob(agent=agent, interval="1second")
@@ -205,6 +228,18 @@ def test_stats_expose_the_failure_picture():
     assert stats["consecutive_errors"] >= 1
     assert "transient failure" in stats["last_error"]
     assert stats["stopped_due_to_error"] is False
+
+
+def test_a_failed_execution_waits_for_the_next_interval():
+    agent = FailingAgent(fail_times=99)
+    job = CronJob(agent=agent, interval="1hour")
+    job._interval_method("t")
+
+    job.schedule.run_all()
+
+    assert agent.attempts == 1
+    assert job.error_count == 1
+    assert job.schedule.idle_seconds > 3000
 
 
 # ---------------------------------------------------------------------------
@@ -279,6 +314,29 @@ def test_stop_joins_the_scheduler_thread():
         if thread.name.startswith(f"cronjob_{job.job_id}")
     ]
     assert leftover == []
+
+
+def test_restart_after_a_timed_out_stop_retires_the_old_thread():
+    entered, release = threading.Event(), threading.Event()
+
+    def slow(task):
+        entered.set()
+        release.wait(10)
+
+    job = CronJob(agent=slow, interval="1second")
+    run_in_thread(lambda: job.run("t"))
+    assert entered.wait(5)
+    job.stop()
+    old = job.thread
+    assert old.is_alive()
+
+    job.start()
+    release.set()
+    old.join(timeout=3)
+    still_alive = old.is_alive()
+    job.stop()
+
+    assert not still_alive, "two scheduler threads share one job"
 
 
 def test_callback_customizes_output_and_a_broken_one_is_survivable():
@@ -450,6 +508,25 @@ def test_run_many_rejects_an_empty_schedule_list():
 def test_run_many_names_the_missing_key(spec, missing):
     with pytest.raises(CronJobConfigError, match=missing):
         CronJob.run_many([spec], block=False)
+
+
+def test_stop_many_does_not_wait_out_each_jobs_sleep():
+    jobs = CronJob.run_many(
+        [
+            {"agent": MockAgent(), "interval": "1hour", "task": "t"}
+            for _ in range(10)
+        ],
+        block=False,
+    )
+
+    started = time.monotonic()
+    CronJob.stop_many(jobs)
+    elapsed = time.monotonic() - started
+
+    assert all(not job.thread.is_alive() for job in jobs)
+    assert (
+        elapsed < 1.0
+    ), f"stop_many took {elapsed:.2f}s for 10 idle jobs"
 
 
 if __name__ == "__main__":

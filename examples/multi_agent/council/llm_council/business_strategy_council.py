@@ -5,13 +5,13 @@ This example demonstrates using the LLM Council to develop comprehensive
 business strategies for new ventures.
 """
 
-from swarms.structs.llm_council import LLMCouncil
+from swarms import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
-# Business strategy query
-query = """
+# Business strategy task
+task = """
 A tech startup wants to launch an AI-powered personal finance app targeting 
 millennials and Gen Z. Develop a comprehensive business strategy including:
 1. Market opportunity and competitive landscape analysis
@@ -25,7 +25,7 @@ millennials and Gen Z. Develop a comprehensive business strategy including:
 """
 
 # Run the council
-result = council.run(query)
+result = council.run(task=task)
 
 # Print final response
-print(result["final_response"])
+print(result)

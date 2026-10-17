@@ -13,6 +13,7 @@ from swarms.structs.conversation import (
     MEMORY_MD_PRELOAD_OMITTED_MARKER,
     Conversation,
 )
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 def setup_temp_conversations_dir():
@@ -581,6 +582,23 @@ def test_save_and_load_json():
             return False
     finally:
         shutil.rmtree(temp_dir)
+
+
+def test_load_filepath_restores_the_saved_history(tmp_path):
+    saved = tmp_path / "saved.json"
+    conv = Conversation(save_filepath=str(saved))
+    conv.add("user", "remember Helios")
+    conv.save_as_json(force=True)
+
+    restored = Conversation(
+        load_filepath=str(saved),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+
+    assert [
+        message["content"]
+        for message in restored.conversation_history
+    ] == ["remember Helios"]
 
 
 # ── memory_md_path initialization ──
@@ -1399,20 +1417,6 @@ def test_return_messages_as_dictionary_preserves_roles():
     assert messages[1]["content"] == "Hello, user!"
 
 
-if __name__ == "__main__":
-    logger.info("Starting test execution")
-    results = run_all_tests()
-    report = generate_markdown_report(results)
-
-    # Save report to file
-    with open("test_results.md", "w") as f:
-        f.write(report)
-
-    logger.success(
-        "Test execution completed. Results saved to test_results.md"
-    )
-
-
 def test_return_all_except_first_without_a_system_prompt():
     conv = Conversation()
     conv.add("User", "Task")
@@ -1459,3 +1463,171 @@ def test_construction_does_not_create_a_conversations_dir(tmp_path):
         assert (tmp_path / "conversations").is_dir()
     finally:
         os.chdir(cwd)
+
+
+def test_construction_does_not_touch_the_home_dir(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    Conversation(name="demo")
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_resuming_a_named_conversation_keeps_one_system_prompt(
+    tmp_path,
+):
+    kwargs = dict(
+        name="demo",
+        system_prompt="You are helpful.",
+        autosave=True,
+        conversations_dir=str(tmp_path),
+    )
+    conv = Conversation(**kwargs)
+    conv.add("User", "hello")
+    conv.add("Assistant", "hi")
+
+    for _ in range(2):
+        conv = Conversation(**kwargs)
+        assert [m["role"] for m in conv.conversation_history] == [
+            "System",
+            "User",
+            "Assistant",
+        ]
+
+
+def _record_token_counts(monkeypatch):
+    counted = []
+
+    def counting(text, *args, **kwargs):
+        counted.append(text)
+        return count_tokens(text, *args, **kwargs)
+
+    monkeypatch.setattr(conversation_module, "count_tokens", counting)
+    return counted
+
+
+def test_history_reads_reuse_message_token_counts(monkeypatch):
+    conv = Conversation(context_length=10_000)
+    conv.add("User", "first message")
+    conv.add("Assistant", "second message")
+    counted = _record_token_counts(monkeypatch)
+
+    for _ in range(3):
+        conv.return_history_as_string()
+    assert sorted(counted) == [
+        "Assistant: second message",
+        "User: first message",
+    ]
+
+    conv.add("User", "third message")
+    conv.return_history_as_string()
+    assert counted[2:] == ["User: third message"]
+
+
+def test_trimmed_history_counts_messages_not_the_transcript(
+    monkeypatch,
+):
+    conv = Conversation(context_length=40)
+    contents = [
+        f"message {i} " + " ".join(["word"] * 10) for i in range(20)
+    ]
+    for content in contents:
+        conv.add("User", content)
+    counted = _record_token_counts(monkeypatch)
+
+    history = conv.return_history_as_string()
+
+    assert all("\n\n" not in text for text in counted)
+    full = "\n\n".join(f"User: {content}" for content in contents)
+    assert full.endswith(history)
+    assert history.endswith(contents[-1])
+    assert count_tokens(history) <= 40
+
+
+def test_trimmed_history_skips_messages_that_cannot_fit(monkeypatch):
+    conv = Conversation(context_length=40)
+    contents = [
+        f"message {i} " + " ".join(["word"] * 10) for i in range(20)
+    ]
+    for content in contents:
+        conv.add("User", content)
+    counted = _record_token_counts(monkeypatch)
+
+    conv.return_history_as_string()
+
+    assert not any(contents[0] in text for text in counted)
+    assert not any(contents[10] in text for text in counted)
+
+
+def test_token_count_on_add_is_reused_by_history_reads(monkeypatch):
+    counted = _record_token_counts(monkeypatch)
+    conv = Conversation(token_count=True, context_length=10_000)
+    message = conv.add("User", "first message")
+    conv.add("Assistant", "second message")
+
+    conv.return_history_as_string()
+    conv.count_history_tokens()
+
+    assert sorted(counted) == [
+        "Assistant: second message",
+        "User: first message",
+    ]
+    assert message["token_count"] == count_tokens(
+        "User: first message"
+    )
+
+
+def test_token_count_cache_stays_bounded_after_updates():
+    conv = Conversation(context_length=10_000)
+    for i in range(5):
+        conv.add("User", f"message {i}")
+    conv.return_history_as_string()
+
+    for i in range(50):
+        conv.update(0, "User", f"edit {i}")
+        conv.return_history_as_string()
+
+    assert len(conv._token_count_cache) <= 2 * len(
+        conv.conversation_history
+    )
+    lines = conv._format_messages()
+    assert (
+        conv.count_history_tokens()
+        == sum(count_tokens(line) for line in lines) + len(lines) - 1
+    )
+
+
+def test_token_count_cache_prune_does_not_iterate_the_shared_cache():
+    class AddsWhileIterated(dict):
+        def items(self):
+            for item in super().items():
+                self[
+                    ("model", f"added by another thread {len(self)}")
+                ] = 1
+                yield item
+
+    conv = Conversation(context_length=10_000)
+    conv.add("User", "kept message")
+    conv._token_count_cache = AddsWhileIterated(
+        {("model", f"stale line {i}"): 1 for i in range(4)}
+    )
+
+    conv.return_history_as_string()
+
+    assert set(conv._token_count_cache) == {
+        (conv.tokenizer_model_name, "User: kept message")
+    }
+
+
+if __name__ == "__main__":
+    logger.info("Starting test execution")
+    results = run_all_tests()
+    report = generate_markdown_report(results)
+
+    # Save report to file
+    with open("test_results.md", "w") as f:
+        f.write(report)
+
+    logger.success(
+        "Test execution completed. Results saved to test_results.md"
+    )

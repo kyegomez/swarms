@@ -11,12 +11,12 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
 import yaml
 
-from swarms.utils.any_to_str import any_to_str
 from swarms.utils.litellm_tokenizer import count_tokens
 
 if TYPE_CHECKING:
@@ -24,11 +24,6 @@ if TYPE_CHECKING:
 
 from loguru import logger
 from swarms.utils.generate_id import generate_id
-
-
-def generate_conversation_id() -> str:
-    """Deprecated: use ``generate_id()``."""
-    return generate_id()
 
 
 def get_conversation_dir():
@@ -144,9 +139,11 @@ class Conversation:
         self._cache_hits: int = 0
         self._cache_misses: int = 0
         self._last_cached_tokens: int = 0
+        self._token_count_cache: Dict[Tuple[str, str], int] = {}
 
         self.setup_file_path()
-        self.setup()
+        if not self.conversation_history:
+            self._initialize_new_conversation()
 
         # Prior MEMORY.md content becomes one System preamble message
         self._suppress_memory_md = False
@@ -204,55 +201,28 @@ class Conversation:
             or self._explicit_name
         )
 
-        # Check if file exists and load it
-        if wants_persistence and os.path.exists(self.save_filepath):
+        path = self.load_filepath
+        if not path or not os.path.exists(path):
+            path = self.save_filepath
+        if wants_persistence and os.path.exists(path):
             logger.debug(
-                f"Found existing conversation file at: {self.save_filepath}"
+                f"Found existing conversation file at: {path}"
             )
             try:
-                self.load(self.save_filepath)
+                self.load(path)
                 logger.info(
-                    f"Loaded existing conversation from {self.save_filepath}"
+                    f"Loaded existing conversation from {path}"
                 )
             except Exception as e:
                 logger.error(
-                    f"Failed to load existing conversation from {self.save_filepath}: {str(e)}"
+                    f"Failed to load existing conversation from {path}: {str(e)}"
                 )
                 # Keep the empty conversation_history initialized in __init__
 
         else:
             logger.debug(
-                f"No existing conversation file found at: {self.save_filepath}"
+                f"No existing conversation file found at: {path}"
             )
-
-    def setup(self):
-        # Set up conversations directory
-        self.conversations_dir = (
-            self.conversations_dir
-            or os.path.join(
-                os.path.expanduser("~"), ".swarms", "conversations"
-            )
-        )
-        os.makedirs(self.conversations_dir, exist_ok=True)
-
-        # Try to load existing conversation if it exists
-        conversation_file = os.path.join(
-            self.conversations_dir, f"{self.name}.json"
-        )
-        if os.path.exists(conversation_file):
-            with open(conversation_file, "r") as f:
-                saved_data = json.load(f)
-                # Update attributes from saved data
-                for key, value in saved_data.get(
-                    "metadata", {}
-                ).items():
-                    if hasattr(self, key):
-                        setattr(self, key, value)
-                self.conversation_history = saved_data.get(
-                    "history", []
-                )
-        else:
-            self._initialize_new_conversation()
 
     def _initialize_new_conversation(self):
         """Initialize a new conversation with system prompt and rules."""
@@ -542,13 +512,11 @@ class Conversation:
         if self.memory_md_path:
             self._append_to_memory_md(role, content)
 
-        # Handle token counting in a separate thread if enabled
+        # Counts the history line, so history reads reuse it instead of tokenizing again.
         if self.token_count is True:
-            tokens = count_tokens(
-                text=any_to_str(content),
-                model=self.tokenizer_model_name,
+            message["token_count"] = self._line_token_count(
+                self._format_message(message)
             )
-            message["token_count"] = tokens
 
         return message
 
@@ -839,9 +807,7 @@ class Conversation:
         if self._str_cache is None:
             self._cache_misses += 1
             self._str_cache = self._build_history_string()
-            self._last_cached_tokens = count_tokens(
-                self._str_cache, self.tokenizer_model_name
-            )
+            self._last_cached_tokens = self.count_history_tokens()
         else:
             self._cache_hits += 1
 
@@ -854,20 +820,81 @@ class Conversation:
         return self._return_history_as_string_worker()
 
     def _return_history_as_string_worker(self):
-        formatted_messages = []
+        return "\n\n".join(self._format_messages())
 
-        for message in self.conversation_history:
-            timestamp = message.get("timestamp")
-            if timestamp:
-                formatted_messages.append(
-                    f"[{timestamp}] {message['role']}: {message['content']}"
-                )
-            else:
-                formatted_messages.append(
-                    f"{message['role']}: {message['content']}"
-                )
+    @staticmethod
+    def _format_message(message: Dict[str, Any]) -> str:
+        """Format one message as a history line.
 
-        return "\n\n".join(formatted_messages)
+        Args:
+            message (Dict[str, Any]): The message to format.
+
+        Returns:
+            str: The history line.
+        """
+        timestamp = message.get("timestamp")
+        if timestamp:
+            return f"[{timestamp}] {message['role']}: {message['content']}"
+        return f"{message['role']}: {message['content']}"
+
+    def _format_messages(self) -> List[str]:
+        """Format each message as one history line.
+
+        Returns:
+            List[str]: One line per message, oldest first.
+        """
+        return [
+            self._format_message(message)
+            for message in self.conversation_history
+        ]
+
+    def _line_token_count(self, line: str) -> int:
+        """Count the tokens in one history line, reusing earlier counts.
+
+        Args:
+            line (str): A formatted history line.
+
+        Returns:
+            int: The line's token count.
+        """
+        key = (self.tokenizer_model_name, line)
+        cache = self._token_count_cache
+        if key not in cache:
+            # Drop lines no longer in the history once the cache is twice its size.
+            if len(cache) >= 2 * len(self.conversation_history):
+                live = {
+                    (self.tokenizer_model_name, live_line)
+                    for live_line in self._format_messages()
+                }
+                # Iterates the live lines, not the cache another thread may be adding to.
+                cache = {k: cache[k] for k in live if k in cache}
+                self._token_count_cache = cache
+            cache[key] = count_tokens(line, self.tokenizer_model_name)
+        return cache[key]
+
+    def _message_token_counts(self, lines: List[str]) -> List[int]:
+        """Count the tokens in each line, reusing earlier counts.
+
+        Args:
+            lines (List[str]): Formatted history lines.
+
+        Returns:
+            List[int]: One token count per line.
+        """
+        return [self._line_token_count(line) for line in lines]
+
+    def count_history_tokens(self) -> int:
+        """Count the tokens in the history string from per-message counts.
+
+        Returns:
+            int: Token count, capped at context_length when the dynamic context window is on.
+        """
+        counts = self._message_token_counts(self._format_messages())
+        # One token per "\n\n" separator between messages.
+        total = sum(counts) + max(len(counts) - 1, 0)
+        if self.dynamic_context_window is True:
+            return min(total, self.context_length)
+        return total
 
     def get_str(self) -> str:
         """Alias for :meth:`return_history_as_string` (kept for compatibility).
@@ -1622,42 +1649,53 @@ class Conversation:
         Returns:
             str: The chunked conversation history as a string that fits within context_length tokens.
         """
-        all_tokens = self._return_history_as_string_worker()
+        # Keep the newest messages that fit, then the tail of the first one that does not.
+        budget = self.context_length
+        kept = []
+        for message in reversed(self.conversation_history):
+            line = self._format_message(message)
+            tokens = self._line_token_count(line)
+            # One token per "\n\n" separator between messages.
+            separator = 1 if kept else 0
+            if tokens + separator > budget:
+                tail = self._binary_search_tail(
+                    line, budget - separator
+                )
+                if tail:
+                    kept.append(tail)
+                break
+            kept.append(line)
+            budget -= tokens + separator
 
-        total_tokens = count_tokens(
-            all_tokens, self.tokenizer_model_name
-        )
+        return "\n\n".join(reversed(kept))
 
-        if total_tokens <= self.context_length:
-            return all_tokens
+    def _binary_search_tail(
+        self, text: str, target_tokens: int
+    ) -> str:
+        """Find the longest suffix of the text that fits the token budget.
 
-        # Drop characters from the front until the string fits
-        target_tokens = self.context_length
-        current_string = all_tokens
+        Args:
+            text (str): Text to trim from the front.
+            target_tokens (int): Maximum tokens the suffix may hold.
 
-        # Binary search approach to find the right cutoff point
-        left, right = 0, len(all_tokens)
+        Returns:
+            str: The longest fitting suffix, or an empty string if none fits.
+        """
+        if target_tokens <= 0:
+            return ""
 
+        left, right = 0, len(text)
         while left < right:
             mid = (left + right) // 2
-            test_string = all_tokens[mid:]
-
-            if not test_string:
-                break
-
-            test_tokens = count_tokens(
-                test_string, self.tokenizer_model_name
-            )
-
-            if test_tokens <= target_tokens:
-                # We can remove more from the beginning
+            if (
+                count_tokens(text[mid:], self.tokenizer_model_name)
+                <= target_tokens
+            ):
                 right = mid
-                current_string = test_string
             else:
-                # We need to keep more from the beginning
                 left = mid + 1
 
-        return current_string
+        return text[left:]
 
     def dynamic_auto_chunking(self):
         """

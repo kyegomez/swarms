@@ -265,6 +265,9 @@ class SequentialWorkflow:
         budget is spent.
         """
         for attempt in range(self.drift_max_retries + 1):
+            self.drift_agent.short_memory = (
+                self.drift_agent.short_memory_init()
+            )
             try:
                 raw = self.drift_agent.run(
                     f"Original task: {task}\n\nFinal output: {result}"
@@ -304,7 +307,11 @@ class SequentialWorkflow:
         )
 
     @trace_run(
-        "SequentialWorkflow.run", input_params=("task", "img", "imgs")
+        "SequentialWorkflow.run",
+        input_params=("task", "img", "imgs"),
+        conversation=lambda workflow: (
+            workflow.agent_rearrange.conversation.conversation_history
+        ),
     )
     def run(
         self,

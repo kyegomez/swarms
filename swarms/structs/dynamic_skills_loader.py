@@ -9,9 +9,64 @@ cosine similarity to determine which skills should be loaded into the agent.
 import math
 import os
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import yaml
+from loguru import logger
+
+
+def skill_dirs(
+    skills_dir: Optional[Union[str, List[str]]],
+) -> List[str]:
+    """
+    Normalise a ``skills_dir`` setting to a list of directories.
+
+    Args:
+        skills_dir: One directory, a list of directories, or ``None``.
+
+    Returns:
+        The directories in the order given.
+    """
+    if isinstance(skills_dir, str):
+        return [skills_dir]
+    return list(skills_dir or [])
+
+
+def load_skill_dirs(
+    skills_dir: Optional[Union[str, List[str]]],
+    load_dir: Callable[[str], List[Dict[str, str]]],
+) -> List[Dict[str, str]]:
+    """
+    Load the skills of every directory, in order.
+
+    When two directories hold a skill with the same name, the skill from
+    the later directory replaces the earlier one and a warning is logged.
+
+    Args:
+        skills_dir: One directory or a list of directories.
+        load_dir: Loads the skills of a single directory.
+
+    Returns:
+        List of skill metadata dictionaries.
+    """
+    skills: List[Dict[str, str]] = []
+
+    for directory in skill_dirs(skills_dir):
+        loaded = load_dir(directory)
+        names = {skill["name"] for skill in loaded}
+
+        for skill in skills:
+            if skill["name"] in names:
+                logger.warning(
+                    f"Skill '{skill['name']}' in {directory} "
+                    f"overrides {skill['path']}"
+                )
+
+        skills = [
+            skill for skill in skills if skill["name"] not in names
+        ] + loaded
+
+    return skills
 
 
 class DynamicSkillsLoader:
@@ -21,33 +76,43 @@ class DynamicSkillsLoader:
     """
 
     def __init__(
-        self, skills_dir: str, similarity_threshold: float = 0.3
+        self,
+        skills_dir: Union[str, List[str]],
+        similarity_threshold: float = 0.3,
     ):
         """
         Initialize the dynamic skills loader.
 
         Args:
-            skills_dir: Path to directory containing skill folders with SKILL.md files
+            skills_dir: Path, or list of paths, to directories containing skill folders with SKILL.md files.
+                A later directory's skill replaces an earlier one with the same name.
             similarity_threshold: Minimum similarity score (0-1) for skill loading
         """
         self.skills_dir = skills_dir
         self.similarity_threshold = similarity_threshold
-        self.skills_metadata = self._load_all_skills_metadata()
+        self.skills_metadata = load_skill_dirs(
+            skills_dir, self._load_all_skills_metadata
+        )
 
-    def _load_all_skills_metadata(self) -> List[Dict[str, str]]:
+    def _load_all_skills_metadata(
+        self, skills_dir: str
+    ) -> List[Dict[str, str]]:
         """
-        Load metadata for all available skills from the skills directory.
+        Load metadata for all available skills from one skills directory.
+
+        Args:
+            skills_dir: Path to a directory containing skill folders.
 
         Returns:
             List of skill metadata dictionaries with name, description, and path
         """
         skills = []
 
-        if not os.path.exists(self.skills_dir):
+        if not os.path.exists(skills_dir):
             return skills
 
-        for skill_folder in os.listdir(self.skills_dir):
-            skill_path = os.path.join(self.skills_dir, skill_folder)
+        for skill_folder in os.listdir(skills_dir):
+            skill_path = os.path.join(skills_dir, skill_folder)
 
             if not os.path.isdir(skill_path):
                 continue

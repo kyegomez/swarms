@@ -1023,7 +1023,7 @@ class SwarmRouter(SerializableMixin):
         for position, swarm_type in enumerate(chain):
             try:
                 self.swarm = self._create_swarm(
-                    task, swarm_type, *args, **kwargs
+                    task, swarm_type, *args
                 )
                 self.active_swarm_type = swarm_type
                 result = self.swarm.run(**run_kwargs, **kwargs)
@@ -1072,6 +1072,7 @@ class SwarmRouter(SerializableMixin):
     @trace_run(
         "SwarmRouter.run",
         input_params=("task", "tasks", "img"),
+        usage=lambda router: router.usage,
     )
     def run(
         self,
@@ -1145,9 +1146,9 @@ class SwarmRouter(SerializableMixin):
         Returns:
             Any: Result returned by :meth:`run`.
         """
-        result = self.run(
-            task=task, img=img, imgs=imgs, *args, **kwargs
-        )
+        if imgs is not None:
+            kwargs["imgs"] = imgs
+        result = self.run(task=task, img=img, *args, **kwargs)
         return result
 
     def batch_run(
@@ -1175,13 +1176,13 @@ class SwarmRouter(SerializableMixin):
             RuntimeError: If any task execution fails.
         """
         self._log("info", f"Executing batch of tasks: {tasks}")
+        if imgs is not None:
+            kwargs["imgs"] = imgs
         try:
             results = []
             for task in tasks:
                 try:
-                    result = self.run(
-                        task, img=img, imgs=imgs, *args, **kwargs
-                    )
+                    result = self.run(task, img=img, *args, **kwargs)
                     results.append(result)
                 except Exception as e:
                     raise RuntimeError(

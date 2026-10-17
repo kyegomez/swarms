@@ -5,6 +5,7 @@ import uuid
 from typing import List
 
 from swarms.structs.agent import Agent
+from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
 )
@@ -34,7 +35,7 @@ class SpreadSheetSwarm:
         name (str, optional): The name of the swarm. Defaults to "Spreadsheet-Swarm".
         description (str, optional): The description of the swarm. Defaults to "A swarm that processes tasks concurrently using multiple agents.".
         agents (Union[Agent, List[Agent], None], optional): The agents participating in the swarm. If None, agents will be loaded from load_path. Defaults to None.
-        autosave (bool, optional): Whether to enable autosave of swarm metadata. Defaults to True.
+        autosave (bool, optional): Whether to enable autosave of swarm metadata. Defaults to False.
         save_file_path (str, optional): The file path to save the swarm metadata as a CSV file. Defaults to "spreedsheet_swarm.csv".
         max_loops (int, optional): The number of times to repeat the swarm tasks. Defaults to 1.
         load_path (str, optional): Path to CSV file containing agent configurations. Required if agents is None.
@@ -53,7 +54,7 @@ class SpreadSheetSwarm:
         name: str = "Spreadsheet-Swarm",
         description: str = "A swarm that processes tasks concurrently using multiple agents and saves the metadata to a CSV file.",
         agents: List[AgentType] = None,
-        autosave: bool = True,
+        autosave: bool = False,
         save_file_path: str = None,
         max_loops: int = 1,
         load_path: str = None,
@@ -94,6 +95,7 @@ class SpreadSheetSwarm:
         self.outputs = []
         self.tasks_completed = 0
         self.agent_tasks = {}  # Simple dict to store agent tasks
+        self.conversation = Conversation()
 
         self.reliability_check()
 
@@ -210,6 +212,14 @@ class SpreadSheetSwarm:
             if self.agent_tasks.get(agent.agent_name)
         ]
 
+        self.conversation = Conversation()
+        for agent, task in agent_task_pairs:
+            self.conversation.add(
+                role="User",
+                content=task,
+                metadata={"agent_name": agent.agent_name},
+            )
+
         for _ in range(self.max_loops):
             for agent, _task in agent_task_pairs:
                 agent.short_memory = agent.short_memory_init()
@@ -316,6 +326,9 @@ class SpreadSheetSwarm:
         if not self.agents and self.load_path:
             self.load_from_csv()
 
+        self.conversation = Conversation()
+        self.conversation.add(role="User", content=task)
+
         for _ in range(self.max_loops):
             for agent in self.agents:
                 agent.short_memory = agent.short_memory_init()
@@ -337,6 +350,7 @@ class SpreadSheetSwarm:
             result (str): The result of the completed task.
         """
         self.tasks_completed += 1
+        self.conversation.add(role=agent_name, content=result)
         self.outputs.append(
             {
                 "agent_name": agent_name,
