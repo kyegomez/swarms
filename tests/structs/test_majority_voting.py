@@ -1,3 +1,6 @@
+import itertools
+import threading
+
 from swarms.structs.agent import Agent
 from swarms.structs.majority_voting import MajorityVoting
 
@@ -417,3 +420,36 @@ def test_consensus_agent_sees_its_own_prior_consensus_as_assistant():
             assert not any(
                 call["answer"] in content for content in assistant
             ), f"{name}'s vote arrived as the consensus agent's own turn"
+
+
+def test_run_concurrently_keeps_each_tasks_votes():
+    """Two tasks voting through the same agent at once each keep their own vote."""
+    agents, _ = _recording_agents(["Voter-A"])
+    voter = agents[0]
+    order = itertools.count()
+    second_voted = threading.Event()
+
+    def _vote(task=None, messages=None, **kwargs):
+        voter.short_memory.add(
+            role=voter.agent_name, content=f"vote:{task}"
+        )
+        if next(order) == 0:
+            second_voted.wait(timeout=2)
+        else:
+            second_voted.set()
+        return f"vote:{task}"
+
+    voter.run = _vote
+    mv = MajorityVoting(
+        agents=[voter], max_loops=1, output_type="list"
+    )
+    _record(mv.consensus_agent, [])
+
+    tasks = ["task-1", "task-2"]
+    results = mv.run_concurrently(tasks)
+
+    for task, result in zip(tasks, results):
+        votes = [
+            m["content"] for m in result if m["role"] == "Voter-A"
+        ]
+        assert votes == [f"vote:{task}"]
