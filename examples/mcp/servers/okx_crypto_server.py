@@ -50,11 +50,15 @@ def get_okx_crypto_price(symbol: str) -> str:
             return f"Could not find data for {symbol}. Please check the trading pair."
 
         price = float(ticker_data.get("last", 0))
-        float(ticker_data.get("last24h", 0))
-        change_percent = float(ticker_data.get("change24h", 0))
+        opening_price = float(ticker_data.get("open24h") or 0)
+        change_display = (
+            f"{(price - opening_price) / opening_price * 100:.2f}%"
+            if opening_price
+            else "N/A"
+        )
 
         base_currency = symbol.split("-")[0]
-        return f"Current price of {base_currency}/USDT: ${price:,.2f}\n24h Change: {change_percent:.2f}%"
+        return f"Current price of {base_currency}/USDT: ${price:,.2f}\n24h Change: {change_display}"
 
     except requests.exceptions.RequestException as e:
         return f"Error fetching OKX data: {str(e)}"
@@ -78,7 +82,7 @@ def get_okx_crypto_volume(symbol: str) -> str:
 
     Example:
         >>> get_okx_crypto_volume('BTC-USDT')
-        '24h Trading Volume for BTC/USDT: $1,234,567'
+        '24h Trading Volume for BTC/USDT: 1,234,567.00 USDT'
     """
     try:
         if not symbol:
@@ -105,9 +109,9 @@ def get_okx_crypto_volume(symbol: str) -> str:
         if not ticker_data:
             return f"Could not find data for {symbol}. Please check the trading pair."
 
-        volume_24h = float(ticker_data.get("vol24h", 0))
+        volume_24h = float(ticker_data.get("volCcy24h", 0))
         base_currency = symbol.split("-")[0]
-        return f"24h Trading Volume for {base_currency}/USDT: ${volume_24h:,.2f}"
+        return f"24h Trading Volume for {base_currency}/USDT: {volume_24h:,.2f} USDT"
 
     except requests.exceptions.RequestException as e:
         return f"Error fetching OKX data: {str(e)}"
