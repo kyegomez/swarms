@@ -1,5 +1,3 @@
-import concurrent.futures
-import os
 from typing import Any
 
 from loguru import logger
@@ -134,15 +132,17 @@ class VLLMWrapper:
         Returns:
             List[str]: List of model responses.
         """
-        # Calculate the worker count based on 95% of available CPU cores
-        num_workers = max(1, int((os.cpu_count() or 1) * 0.95))
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=num_workers
-        ) as executor:
-            futures = [
-                executor.submit(self.run, task) for task in tasks
+        if batch_size <= 0:
+            raise ValueError("batch_size must be positive")
+
+        responses = []
+        for start in range(0, len(tasks), batch_size):
+            prompts = [
+                self._prepare_prompt(task)
+                for task in tasks[start : start + batch_size]
             ]
-            return [
-                future.result()
-                for future in concurrent.futures.as_completed(futures)
-            ]
+            outputs = self.llm.generate(prompts, self.sampling_params)
+            responses.extend(
+                output.outputs[0].text.strip() for output in outputs
+            )
+        return responses
