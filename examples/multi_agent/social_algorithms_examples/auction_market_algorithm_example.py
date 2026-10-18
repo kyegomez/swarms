@@ -124,7 +124,7 @@ def auction_market_algorithm(agents, task, **kwargs):
     5. Overall competitiveness
     
     Provide:
-    1. Winner selection
+    1. Winner selection on a plain line: Winner: <exact agent name>
     2. Detailed reasoning
     3. Ranking of all proposals
     4. Recommendations for improvement
@@ -134,9 +134,16 @@ def auction_market_algorithm(agents, task, **kwargs):
 
     # Phase 4: Contract Negotiation (simulated)
     winner_name = None
-    for bidder_name, proposal_data in proposals.items():
-        if proposal_data["bidder_name"] in auction_result:
-            winner_name = bidder_name
+    for line in auction_result.splitlines():
+        label, separator, selected_name = line.partition(":")
+        if separator and label.strip().lower() == "winner":
+            for bidder_name, proposal_data in proposals.items():
+                if (
+                    proposal_data["bidder_name"]
+                    == selected_name.strip()
+                ):
+                    winner_name = bidder_name
+                    break
             break
 
     if winner_name:
