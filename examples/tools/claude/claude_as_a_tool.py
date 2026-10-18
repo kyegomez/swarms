@@ -31,7 +31,11 @@ from typing import Any, Dict
 
 from claude_code_sdk import ClaudeCodeOptions, ClaudeSDKClient
 from dotenv import load_dotenv
-from tenacity import retry, stop_after_attempt, wait_exponential
+from tenacity import (
+    AsyncRetrying,
+    stop_after_attempt,
+    wait_exponential,
+)
 from loguru import logger
 
 load_dotenv()
@@ -60,8 +64,8 @@ class ClaudeAppGenerator:
         Args:
             name: Name of the app
             description: Description of the app
-            retries: Number of retries
-            retry_delay: Delay between retries
+            retries: Maximum number of attempts, including the first
+            retry_delay: Initial exponential retry delay in seconds
             system_prompt: System prompt
             debug_mode: Enable extra verbose logging for Claude outputs
             max_steps: Maximum number of steps
@@ -77,13 +81,21 @@ class ClaudeAppGenerator:
         self.max_steps = max_steps
         self.max_thinking_tokens = max_thinking_tokens
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=15),
-    )
     async def generate_app_with_claude(
         self, task: str
     ) -> Dict[str, Any]:
+        """Generate an app using this instance's retry settings."""
+        retrying = AsyncRetrying(
+            stop=stop_after_attempt(self.retries),
+            wait=wait_exponential(
+                multiplier=self.retry_delay, max=15
+            ),
+        )
+        return await retrying(self._generate_app_with_claude, task)
+
+    async def _generate_app_with_claude(
+        self, task: str
+    ) -> list[str]:
         """
         Generate app using Claude Code SDK with robust error handling and retry logic.
 
