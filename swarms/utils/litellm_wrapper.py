@@ -412,19 +412,6 @@ class LiteLLM:
         else:
             self._backend_options = backend_options
 
-        # Add system prompt if present (Anthropic rejects empty system blocks)
-        if isinstance(self.system_prompt, str):
-            self.system_prompt = self.system_prompt.strip()
-            if self.system_prompt:
-                self.messages.append(
-                    {"role": "system", "content": self.system_prompt}
-                )
-        elif self.system_prompt is not None:
-            # Non-string system prompt (rare) - only include if not None
-            self.messages.append(
-                {"role": "system", "content": self.system_prompt}
-            )
-
         # Store additional args and kwargs for use in run method
         self.init_args = args
         self.init_kwargs = kwargs
@@ -717,8 +704,15 @@ class LiteLLM:
                     # If splitting fails for any reason, fall back to original task
                     pass
 
+        system_prompt = self.system_prompt
+        if isinstance(system_prompt, str):
+            system_prompt = system_prompt.strip()
         # Named `base` so it cannot shadow the `messages` parameter below.
-        base = []
+        base = (
+            [{"role": "system", "content": system_prompt}]
+            if system_prompt
+            else []
+        )
         for m in self.messages:
             if not isinstance(m, dict):
                 continue

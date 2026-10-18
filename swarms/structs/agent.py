@@ -2158,6 +2158,8 @@ Subtask Breakdown:
     def update_system_prompt(self, system_prompt: str):
         """Upddate the system message"""
         self.system_prompt = system_prompt
+        if hasattr(self.llm, "system_prompt"):
+            self.llm.system_prompt = system_prompt
 
     def update_max_loops(self, max_loops: Union[int, str]):
         """Update the max loops"""
