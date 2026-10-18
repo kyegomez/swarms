@@ -287,7 +287,12 @@ class CouncilJudgeEvaluator:
     ) -> str:
         """Extract correct answer based on dataset structure."""
         if dataset_name == "gsm8k":
-            return str(example["answer"])
+            return (
+                str(example["answer"])
+                .rsplit("####", 1)[-1]
+                .strip()
+                .replace(",", "")
+            )
         elif dataset_name == "squad":
             return (
                 example["answers"]["text"][0]
@@ -322,12 +327,14 @@ class CouncilJudgeEvaluator:
                 import re
 
                 final_answer = re.search(
-                    r"(?:the answer is|answer:)\s*(\d+)",
+                    r"(?:the answer is|answer:|####)\s*"
+                    r"(-?\d[\d,]*(?:\.\d+)?)",
                     evaluation_lower,
                 )
                 if final_answer:
                     return (
-                        final_answer.group(1) == correct_answer_lower
+                        final_answer.group(1).replace(",", "")
+                        == correct_answer_lower
                     )
             except Exception as e:
                 logger.error(f"Error checking answer: {str(e)}")
