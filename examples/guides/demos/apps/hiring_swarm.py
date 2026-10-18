@@ -211,7 +211,7 @@ class HiringSwarm:
 
     def initial_talent_acquisition(self):
         elena_agent = find_agent_by_name(
-            self.agents, "Talent-Acquisition"
+            self.agents, "Elena-Talent-Acquisition"
         )
         elena_output = elena_agent.run(
             f"History: {self.conversation.get_str()}\n"
@@ -223,7 +223,7 @@ class HiringSwarm:
 
     def candidate_screening(self):
         marcus_agent = find_agent_by_name(
-            self.agents, "Candidate-Screening"
+            self.agents, "Marcus-Candidate-Screening"
         )
         marcus_output = marcus_agent.run(
             f"History: {self.conversation.get_str()}\n"
@@ -235,7 +235,7 @@ class HiringSwarm:
 
     def interview_coordination(self):
         olivia_agent = find_agent_by_name(
-            self.agents, "Interview-Coordinator"
+            self.agents, "Olivia-Interview-Coordinator"
         )
         olivia_output = olivia_agent.run(
             f"History: {self.conversation.get_str()}\n"
@@ -247,7 +247,7 @@ class HiringSwarm:
 
     def onboarding_preparation(self):
         nathan_agent = find_agent_by_name(
-            self.agents, "Onboarding-Specialist"
+            self.agents, "Nathan-Onboarding-Specialist"
         )
         nathan_output = nathan_agent.run(
             f"History: {self.conversation.get_str()}\n"
@@ -259,7 +259,7 @@ class HiringSwarm:
 
     def employee_engagement_strategy(self):
         sophia_agent = find_agent_by_name(
-            self.agents, "Employee-Engagement"
+            self.agents, "Sophia-Employee-Engagement"
         )
         sophia_output = sophia_agent.run(
             f"History: {self.conversation.get_str()}\n"
