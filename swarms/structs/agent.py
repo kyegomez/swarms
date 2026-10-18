@@ -2648,6 +2648,9 @@ Subtask Breakdown:
         if messages:
             self.short_memory.add_messages(messages)
 
+        # Side calls such as the tool summary stream to this run's callback too.
+        self._run_streaming_callback = streaming_callback
+        self.llm_manager.stream_mid_line = False
         try:
             if self.max_loops == "auto":
                 # Use autonomous loop structure: plan -> execute subtasks -> summary
@@ -2723,6 +2726,9 @@ Subtask Breakdown:
                 "For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
             )
             raise KeyboardInterrupt
+
+        finally:
+            self._run_streaming_callback = None
 
     def run_stream(
         self,
