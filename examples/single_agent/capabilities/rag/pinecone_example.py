@@ -1,5 +1,5 @@
 from swarms.structs.agent import Agent
-import pinecone
+from pinecone import Pinecone, ServerlessSpec
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -9,9 +9,8 @@ from sentence_transformers import SentenceTransformer
 load_dotenv()
 
 # Initialize Pinecone
-pinecone.init(
+pc = Pinecone(
     api_key=os.getenv("PINECONE_API_KEY"),
-    environment=os.getenv("PINECONE_ENVIRONMENT"),
 )
 
 # Initialize the embedding model
@@ -19,15 +18,19 @@ embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Create or get the index
 index_name = "financial-agent-memory"
-if index_name not in pinecone.list_indexes():
-    pinecone.create_index(
+if index_name not in pc.list_indexes().names():
+    pc.create_index(
         name=index_name,
-        dimension=768,  # Dimension for all-MiniLM-L6-v2
+        dimension=embedding_model.get_sentence_embedding_dimension(),
         metric="cosine",
+        spec=ServerlessSpec(
+            cloud=os.getenv("PINECONE_CLOUD", "aws"),
+            region=os.getenv("PINECONE_REGION", "us-east-1"),
+        ),
     )
 
 # Get the index
-pinecone_index = pinecone.Index(index_name)
+pinecone_index = pc.Index(index_name)
 
 # Initialize the agent
 agent = Agent(
