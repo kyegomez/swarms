@@ -852,8 +852,8 @@ class Agent:
                 logger.warning(
                     "No agent details found. Using task as fallback for prompt generation."
                 )
-                self.system_prompt = auto_generate_prompt(
-                    task=task, model=self.llm
+                self.update_system_prompt(
+                    auto_generate_prompt(task=task, model=self.llm)
                 )
             else:
                 # Combine all available components
@@ -861,8 +861,8 @@ class Agent:
                 logger.info(
                     f"Auto-generating prompt from: {', '.join(components)}"
                 )
-                self.system_prompt = auto_generate_prompt(
-                    combined_prompt, self.llm
+                self.update_system_prompt(
+                    auto_generate_prompt(combined_prompt, self.llm)
                 )
                 self.short_memory.add(
                     role="system", content=self.system_prompt
