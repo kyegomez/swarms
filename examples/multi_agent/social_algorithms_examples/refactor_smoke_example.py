@@ -1,8 +1,8 @@
 """Minimal example for `SocialAlgorithms`.
 
 Defines a tiny custom algorithm where a researcher hands off to an analyst
-who hands off to a writer. Demonstrates add/remove agent flow via the
-shared `find_agent_by_name` utility.
+who hands off to a writer. Demonstrates adding and removing agents and
+reading their names from the swarm's agent list.
 """
 
 from swarms import Agent
@@ -49,7 +49,9 @@ def main() -> None:
         verbose=False,
     )
 
-    print("agent names:", swarm.get_agent_names())
+    print(
+        "agent names:", [agent.agent_name for agent in swarm.agents]
+    )
 
     extra = Agent(
         agent_name="Reviewer",
@@ -58,9 +60,11 @@ def main() -> None:
         print_on=False,
     )
     swarm.add_agent(extra)
-    print("after add:", swarm.get_agent_names())
+    print("after add:", [agent.agent_name for agent in swarm.agents])
     swarm.remove_agent("Reviewer")
-    print("after remove:", swarm.get_agent_names())
+    print(
+        "after remove:", [agent.agent_name for agent in swarm.agents]
+    )
 
     result = swarm.run("the rise of vector databases")
     print("final writeup:\n", result.final_outputs["writeup"])
