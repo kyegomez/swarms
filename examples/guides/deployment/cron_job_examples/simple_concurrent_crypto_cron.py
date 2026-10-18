@@ -119,23 +119,27 @@ def main():
         show_dashboard=True,  # Shows real-time progress
     )
 
-    # Step 3: Create CronJob with the workflow
+    def analyze_current_data(task: str):
+        """Fetch current prices before running the analysis workflow."""
+        return workflow.run(
+            task=f"{task}\n\nCryptocurrency Data:\n"
+            f"{get_specific_crypto_data(coin_ids)}"
+        )
+
+    # Step 3: Schedule the data fetch and workflow together.
     cron_job = CronJob(
-        agent=workflow,  # Use workflow as the agent
+        agent=analyze_current_data,
         interval="60seconds",  # Run every minute
         job_id="simple-crypto-specific-cron",
     )
 
     # Step 4: Define the analysis task
-    task = f"""
+    task = """
     Analyze the cryptocurrency data below. Each agent should focus ONLY on their assigned cryptocurrency:
     
     - Bitcoin-Analyst: Analyze Bitcoin (BTC) data only
     - Ethereum-Analyst: Analyze Ethereum (ETH) data only
     - Solana-Analyst: Analyze Solana (SOL) data only
-    
-    Cryptocurrency Data:
-    {get_specific_crypto_data(coin_ids)}
     
     Each agent should:
     1. Extract and analyze data for YOUR ASSIGNED cryptocurrency only

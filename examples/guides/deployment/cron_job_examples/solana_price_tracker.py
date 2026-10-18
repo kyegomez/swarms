@@ -203,7 +203,7 @@ def analyze_solana_data(data: str) -> str:
 agent = Agent(
     agent_name="Solana-Price-Analyzer",
     agent_description="Specialized agent for analyzing Solana (SOL) cryptocurrency price data and market trends",
-    system_prompt=f"""You are an expert cryptocurrency analyst specializing in Solana (SOL) analysis. Your expertise includes:
+    system_prompt="""You are an expert cryptocurrency analyst specializing in Solana (SOL) analysis. Your expertise includes:
 
 - Technical analysis and chart patterns
 - Market sentiment analysis
@@ -225,7 +225,6 @@ When analyzing Solana data, you should:
 
 You communicate clearly and provide practical analysis that helps users understand Solana's current market position and potential future movements.
 
-Current Solana Data: {get_solana_price()}
 """,
     max_loops=1,
     model_name="gpt-5.4",
@@ -237,6 +236,13 @@ Current Solana Data: {get_solana_price()}
 )
 
 
+def run_solana_analysis(task: str) -> str:
+    """Fetch the latest market data before each scheduled analysis."""
+    return agent.run(
+        task=f"{task}\n\nCurrent Solana Data: {get_solana_price()}"
+    )
+
+
 def main():
     """
     Main function to run the Solana price tracking cron job.
@@ -245,7 +251,9 @@ def main():
     logger.info("📊 Fetching Solana price every 10 seconds...")
 
     # Create cron job that runs every 10 seconds
-    cron_job = CronJob(agent=agent, interval="30seconds")
+    cron_job = CronJob(
+        agent=run_solana_analysis, interval="30seconds"
+    )
 
     # Run the cron job with analysis task
     cron_job.run(
