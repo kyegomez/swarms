@@ -226,7 +226,7 @@ class Swarm:
 
         self.conversation.add(role="User", content=task)
 
-        function_call = model.run(task)
+        function_call = CallLog.model_validate_json(model.run(task))
 
         self.conversation.add(
             role="Master-SARASWATI", content=function_call
