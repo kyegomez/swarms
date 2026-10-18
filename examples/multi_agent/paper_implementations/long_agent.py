@@ -131,8 +131,9 @@ class LongAgent:
         Count the number of tokens in a document.
 
         Args:
-            document (str): The document to count tokens for
+            file_path (Union[str, Path]): Path to the document.
         """
+        file_path = str(file_path)
         if file_path.endswith(".pdf"):
             count = count_tokens(self.load_pdf(file_path))
             formatter.print_panel(
@@ -148,7 +149,11 @@ class LongAgent:
             )
             print(f"Token count for {file_path}: {count}")
         elif file_path.endswith(".txt"):
-            count = count_tokens(self.load_text(file_path))
+            count = count_tokens(
+                self.load_text(
+                    Path(file_path).read_text(encoding="utf-8")
+                )
+            )
             formatter.print_panel(
                 f"Token count for {file_path}: {count}",
                 title="Token Count",
@@ -211,7 +216,9 @@ class LongAgent:
             elif str(file_path).endswith(".md"):
                 content = self.load_markdown(file_path)
             else:
-                content = self.load_text(str(file_path))
+                content = self.load_text(
+                    Path(file_path).read_text(encoding="utf-8")
+                )
 
             # Split content into chunks based on token count
             chunks = self._split_into_chunks(content)
