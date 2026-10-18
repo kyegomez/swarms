@@ -1047,7 +1047,8 @@ class AutonomousAgentLoop:
                                         temp_llm = (
                                             self.agent.tool_manager.temp_llm_instance_for_tool_summary()
                                         )
-                                        tool_response = temp_llm.run(
+                                        tool_response = self.agent.llm_manager.run_side_call(
+                                            temp_llm,
                                             f"""
                                             Please analyze and summarize the following tool execution output in a clear and concise way. 
                                             Focus on the key information and insights that would be most relevant to the user's original request.
@@ -1055,7 +1056,7 @@ class AutonomousAgentLoop:
                                             
                                             Tool Output:
                                             {tool_output}
-                                            """
+                                            """,
                                         )
                                         self.agent.short_memory.add(
                                             role=self.agent.agent_name,
@@ -1158,7 +1159,8 @@ class AutonomousAgentLoop:
                                         temp_llm = (
                                             self.agent.tool_manager.temp_llm_instance_for_tool_summary()
                                         )
-                                        tool_response = temp_llm.run(
+                                        tool_response = self.agent.llm_manager.run_side_call(
+                                            temp_llm,
                                             f"""
                                             Please analyze and summarize the following tool execution output in a clear and concise way. 
                                             Focus on the key information and insights that would be most relevant to the user's original request.
@@ -1166,7 +1168,7 @@ class AutonomousAgentLoop:
                                             
                                             Tool Output:
                                             {tool_output}
-                                            """
+                                            """,
                                         )
                                         self.agent.short_memory.add(
                                             role=self.agent.agent_name,
