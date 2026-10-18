@@ -113,7 +113,7 @@ def fetch_wallet_transactions(wallet_address: str) -> str:
         # Validate wallet address format (basic check)
         if (
             not isinstance(wallet_address, str)
-            or len(wallet_address) != 44
+            or not 32 <= len(wallet_address) <= 44
         ):
             raise ValueError(
                 f"Invalid Solana wallet address format: {wallet_address}"
