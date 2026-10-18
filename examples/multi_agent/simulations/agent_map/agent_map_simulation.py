@@ -155,12 +155,15 @@ class ConversationManager:
 
             # Add agent to conversation
             conversation["participants"].append(agent)
-            other_participants = [
-                p for p in conversation["participants"] if p != agent
-            ]
-            self._add_agent_to_conversation(
-                agent, conversation_id, other_participants
-            )
+            for participant in conversation["participants"]:
+                other_participants = [
+                    p
+                    for p in conversation["participants"]
+                    if p != participant
+                ]
+                self._add_agent_to_conversation(
+                    participant, conversation_id, other_participants
+                )
 
             # Update conversation center
             conversation["conversation_center"] = (
