@@ -479,11 +479,12 @@ class SharedWorkspace:
                 if self._touched.get(path, 0) > branch.base_revision:
                     mine = self._conflict_text(mine, theirs)
                     branch.dirty[path] = mine
-                    conflicts.append(path)
                 if mine is None:
                     files.pop(path, None)
                 else:
                     files[path] = mine
+                    if self.CONFLICT_MARKER in mine:
+                        conflicts.append(path)
             branch.files = files
             branch.base_revision = self.revision
             return conflicts
