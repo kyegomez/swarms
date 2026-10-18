@@ -330,6 +330,9 @@ class MortgageUnderwritingSwarm:
                 c.drawString(50, current_height, line[:max_chars])
                 line = line[max_chars:]
                 current_height -= 15  # line spacing
+                if current_height <= 50:
+                    c.showPage()
+                    current_height = height - 50
             c.drawString(50, current_height, line)
             current_height -= 15
 
