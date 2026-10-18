@@ -37,15 +37,18 @@ tool_schema = BaseTool(
     tools=[get_stock_data]
 ).convert_tool_into_openai_schema()
 
-tool_schema = tool_schema["functions"][0]
+tool_schema = {
+    "type": "function",
+    "function": tool_schema["functions"][0],
+}
 
 llm = LiteLLM(
     model_name="gpt-5.4",
+    tools_list_dictionary=[tool_schema],
 )
 
 print(
     llm.run(
         "What is the stock data for Apple Inc. (AAPL)?",
-        tools=[tool_schema],
     )
 )
