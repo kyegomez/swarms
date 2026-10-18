@@ -1,6 +1,10 @@
+from pathlib import Path
+
 from swarms import load_agents_from_markdown
 
-agents = load_agents_from_markdown(["finance_advisor.md"])
+agents = load_agents_from_markdown(
+    [str(Path(__file__).resolve().with_name("finance_advisor.md"))]
+)
 
 # Use the agent
 response = agents[0].run(

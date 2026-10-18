@@ -1,6 +1,10 @@
+from pathlib import Path
+
 from swarms.utils import load_agent_from_markdown
 
-agent = load_agent_from_markdown("finance_advisor.md")
+agent = load_agent_from_markdown(
+    str(Path(__file__).resolve().with_name("finance_advisor.md"))
+)
 
 agent.run(task="What were the best performing etfs in 2023")
 
