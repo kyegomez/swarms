@@ -181,7 +181,7 @@ async def list_available_agents():
 
 
 @app.post("/agent/run", response_model=AgentResponse)
-async def run_agent(request: AgentRequest):
+def run_agent(request: AgentRequest):
     """Run an agent with the specified task"""
     try:
         start_time = time.time()
@@ -218,7 +218,7 @@ async def run_agent(request: AgentRequest):
 
 
 @app.post("/agent/chat")
-async def chat_with_agent(request: AgentRequest):
+def chat_with_agent(request: AgentRequest):
     """Chat with an agent (conversational mode)"""
     try:
         agent = create_agent(
@@ -242,7 +242,7 @@ async def chat_with_agent(request: AgentRequest):
 
 
 @app.post("/agent/quantitative-trading")
-async def run_quantitative_trading_agent(request: AgentRequest):
+def run_quantitative_trading_agent(request: AgentRequest):
     """Run the quantitative trading agent specifically"""
     try:
         start_time = time.time()
