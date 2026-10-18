@@ -78,7 +78,7 @@ class ProfessionPersonaGenerator:
         self.processed_count: int = 0
         self.current_data: List[Dict[str, str]] = []
         self.progress_lock = (
-            threading.Lock()
+            threading.RLock()
         )  # Thread safety for progress updates
 
         # Calculate optimal worker count (90% of CPU cores, minimum 1, maximum 8)
