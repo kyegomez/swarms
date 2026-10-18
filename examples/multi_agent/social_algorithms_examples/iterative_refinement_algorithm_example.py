@@ -194,15 +194,15 @@ def iterative_refinement_algorithm(agents, task, **kwargs):
             }
         )
 
+        # Keep this version even when its quality ends the loop.
+        current_version = style_improved
+
         # Coordinator decides whether to continue or finalize
         if quality_score >= quality_threshold:
             coordinator_agent.run(
                 f"Quality threshold reached ({quality_score} >= {quality_threshold}). Preparing for finalization."
             )
             break
-
-        # Update current version for next iteration
-        current_version = style_improved
 
         # Coordinator provides integration guidance
         integration_prompt = f"""
