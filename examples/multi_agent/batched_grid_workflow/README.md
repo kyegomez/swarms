@@ -22,7 +22,7 @@ Comprehensive examples covering different use cases:
 
 ### 3. `batched_grid_advanced_example.py`
 Advanced configuration examples:
-- Custom conversation settings
+- Custom workflow identifiers and names
 - Iterative refinement workflows
 - Specialized domain expertise
 - Parallel analysis scenarios
@@ -42,7 +42,6 @@ python batched_grid_advanced_example.py
 ## Key Features Demonstrated
 
 - **Parallel Execution**: Multiple agents working on different tasks simultaneously
-- **Conversation Management**: Maintaining state across execution loops
 - **Error Handling**: Built-in error logging and exception handling
 - **Flexible Configuration**: Custom names, descriptions, and loop counts
 - **Agent Specialization**: Different agents with specific roles and expertise

@@ -9,8 +9,8 @@ from swarms import Agent
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 
 
-def custom_conversation_workflow():
-    """Example with custom conversation configuration."""
+def custom_configuration_workflow():
+    """Example with a custom workflow identifier and name."""
     # Create agents with specific roles
     researcher = Agent(
         model="gpt-4",
@@ -27,16 +27,12 @@ def custom_conversation_workflow():
         system_prompt="You are a quality reviewer who ensures accuracy and completeness.",
     )
 
-    # Create workflow with custom conversation settings
+    # Create workflow with a custom identifier and name
     workflow = BatchedGridWorkflow(
         id="custom-research-workflow",
         name="Custom Research Pipeline",
-        description="Research, writing, and review pipeline with custom conversation tracking",
+        description="Research, writing, and review with a custom workflow identifier",
         agents=[researcher, writer, reviewer],
-        conversation_args={
-            "message_id_on": True,
-            "conversation_id": "research-pipeline-001",
-        },
         max_loops=2,
     )
 
@@ -248,8 +244,8 @@ def quality_assurance_workflow():
 
 # Advanced configuration examples
 if __name__ == "__main__":
-    # Run custom conversation example
-    custom_result = custom_conversation_workflow()
+    # Run custom workflow configuration example
+    custom_result = custom_configuration_workflow()
 
     # Run iterative refinement example
     refinement_result = iterative_refinement_workflow()

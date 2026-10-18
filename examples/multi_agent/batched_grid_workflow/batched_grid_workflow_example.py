@@ -59,12 +59,11 @@ def multi_agent_research_workflow():
         system_prompt="You are a scientific researcher focused on breakthrough discoveries.",
     )
 
-    # Create workflow with conversation tracking
+    # Create a named workflow with multiple execution loops
     workflow = BatchedGridWorkflow(
         name="Multi-Domain Research",
         description="Parallel research across technology, business, and science",
         agents=[tech_agent, business_agent, science_agent],
-        conversation_args={"message_id_on": True},
         max_loops=2,
     )
 
