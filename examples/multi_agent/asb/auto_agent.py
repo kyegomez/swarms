@@ -23,10 +23,7 @@ class DynamicParser:
         model: Type[BaseModel], data: Dict[str, Any]
     ) -> Type[BaseModel]:
         fields = {
-            field_name: (
-                field.annotation,
-                ... if field.is_required() else None,
-            )
+            field_name: (field.annotation, field)
             for field_name, field in model.model_fields.items()
             if field_name in data
         }
@@ -45,6 +42,9 @@ class DynamicParser:
         # Try full model first
         with suppress(ValidationError):
             return model.model_validate(data)
+
+        if not isinstance(data, dict):
+            return None
 
         # Create and try partial model
         partial_model = cls.create_partial_model(model, data)
