@@ -7,12 +7,15 @@ workspace = tempfile.mkdtemp(prefix="swarms_v12_conv_")
 
 print(f"Workspace: {workspace}")
 
+memory_path = os.path.join(
+    workspace, "agents", "DemoAgent", "MEMORY.md"
+)
+
 # --- Create a conversation and add some messages ---
 conv = Conversation(
     system_prompt="You are a helpful assistant.",
-    agent_name="DemoAgent",
-    workspace_dir=workspace,
-    # MEMORY.md will be written to workspace/agents/DemoAgent/MEMORY.md
+    memory_md_path=memory_path,
+    time_enabled=True,
 )
 
 conv.add("user", "What is the capital of France?")
@@ -27,21 +30,17 @@ print("\n=== History with ISO timestamps ===")
 print(conv.return_history_as_string())
 
 # Confirm MEMORY.md was written
-memory_path = os.path.join(
-    workspace, "agents", "DemoAgent", "MEMORY.md"
-)
 if os.path.exists(memory_path):
     print(f"\n=== MEMORY.md exists at {memory_path} ===")
     with open(memory_path) as f:
         print(f.read()[:400])
 
 # --- Reload the conversation from disk ---
-# A brand-new Conversation object with the same agent_name and workspace
-# will read MEMORY.md as a preamble — state persists across instantiations.
+# A brand-new Conversation with the same memory_md_path reads MEMORY.md
+# as a preamble — state persists across instantiations.
 conv2 = Conversation(
     system_prompt="You are a helpful assistant.",
-    agent_name="DemoAgent",
-    workspace_dir=workspace,
+    memory_md_path=memory_path,
 )
 print("\n=== Reloaded conversation history ===")
 print(conv2.return_history_as_string()[:400])
