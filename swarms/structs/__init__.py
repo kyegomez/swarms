@@ -21,6 +21,7 @@ from swarms.structs.cron_job import CronJob
 from swarms.structs.debate_with_judge import DebateWithJudge
 from swarms.structs.decision_model import (
     DecisionModel,
+    get_decision_model_prices,
     get_decision_models,
 )
 from swarms.structs.graph_workflow import (
@@ -72,7 +73,6 @@ from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
-from swarms.structs.swarm_rearrange import SwarmRearrange
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -123,7 +123,6 @@ __all__ = [
     "SpreadSheetSwarm",
     "SwarmRouter",
     "SwarmType",
-    "SwarmRearrange",
     "batched_grid_agent_execution",
     "run_agent_async",
     "run_agents_concurrently",
@@ -153,6 +152,7 @@ __all__ = [
     "SelfMoASeq",
     "DebateWithJudge",
     "DecisionModel",
+    "get_decision_model_prices",
     "get_decision_models",
     "PlannerGeneratorEvaluator",
     "StepContract",

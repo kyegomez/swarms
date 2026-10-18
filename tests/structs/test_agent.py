@@ -10,6 +10,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
@@ -756,6 +757,23 @@ class TestLLMArgsAndHandling:
         assert "api_key" not in params
         assert "base_url" not in params
 
+    def test_random_models_on_builds_the_client_for_that_model(
+        self, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "swarms.structs.agent.set_random_models_for_agents",
+            lambda: "gpt-4.1-nano",
+        )
+        agent = Agent(
+            agent_name="random-models-agent",
+            model_name="gpt-4o-mini",
+            random_models_on=True,
+        )
+
+        assert agent.model_name == "gpt-4.1-nano"
+        assert agent.llm.model_name == "gpt-4.1-nano"
+        assert agent.max_tokens == agent._default_max_tokens()
+
 
 class TestConstructorWindows:
     """context_length and max_tokens must survive __init__ rather than being
@@ -820,7 +838,7 @@ class TestFunctionCallingWarning:
     @staticmethod
     def _warnings_for(**kwargs):
         with patch(
-            "swarms.structs.agent.supports_function_calling",
+            "swarms.utils.llm_backend.supports_function_calling",
             return_value=False,
         ), patch("swarms.structs.agent.logger") as log:
             _patched_agent(
@@ -866,6 +884,21 @@ class TestToolsListIsolation:
             ).tools_list_dictionary
             == given
         )
+
+
+def test_list_base_models_schema_reaches_short_memory():
+    class Order(BaseModel):
+        item: str
+        qty: int
+
+    agent = _patched_agent(
+        "Order-Agent",
+        model_name="gpt-5.4-mini",
+        list_base_models=[Order],
+    )
+
+    schema = agent.short_memory.conversation_history[-1]["content"]
+    assert "Order" in schema and "item" in schema and "qty" in schema
 
 
 class TestAutonomousAgentLoop:
@@ -1493,6 +1526,45 @@ class TestToolFailureIsNotAnLLMError:
         ), f"a tool failure re-ran the model {len(llm_calls)} times"
 
 
+def test_failed_worker_keeps_its_error_instead_of_its_prompt():
+    from swarms.structs.context_utils import (
+        agent_answer,
+        get_final_agent_answer,
+    )
+    from swarms.structs.multi_agent_exec import (
+        run_agents_concurrently,
+    )
+
+    def _down(*args, **kwargs):
+        raise RuntimeError("provider down")
+
+    ok = _patched_agent("Ok", retry_attempts=1, retry_interval=0)
+    ok.call_llm = lambda task=None, *a, **k: "4"
+    failed = _patched_agent(
+        "Failed", retry_attempts=1, retry_interval=0
+    )
+    failed.call_llm = _down
+
+    outputs = run_agents_concurrently(
+        agents=[ok, failed],
+        task="What is 2+2?",
+        return_agent_output_dict=True,
+    )
+    answers = get_final_agent_answer([ok, failed], outputs)
+
+    assert isinstance(outputs["Failed"], Exception)
+    assert answers == {
+        "Ok": "4",
+        "Failed": f"Error: {outputs['Failed']}",
+    }
+
+    failed.short_memory.add(role="Failed", content="partial answer")
+    assert (
+        agent_answer(failed, outputs["Failed"])
+        == f"Error: {outputs['Failed']}"
+    )
+
+
 class TestTextReplyFromAToolAgent:
     """A tool-carrying agent that answers in plain text made no tool call,
     yet execute_tools recorded "[] (empty list)" after the answer and, with
@@ -1561,7 +1633,9 @@ class TestTextReplyFromAToolAgent:
                 "arguments": '{"ticker": "X"}',
             },
         }
-        agent = self._agent([tool_call], summary_calls)
+        agent = self._agent(
+            [tool_call], summary_calls, tool_call_summary=True
+        )
 
         agent.run("price of X")
 
@@ -1572,6 +1646,171 @@ class TestTextReplyFromAToolAgent:
         assert len(executor) == 1 and "100" in executor[0]["content"]
         assert len(summary_calls) == 1
         assert history[-1]["content"] == "SUMMARY"
+
+    def test_a_tool_turn_makes_no_summary_call_by_default(self):
+        summary_calls = []
+        tool_call = {
+            "type": "function",
+            "id": "call-1",
+            "function": {
+                "name": "_price",
+                "arguments": '{"ticker": "X"}',
+            },
+        }
+        agent = self._agent([tool_call], summary_calls)
+
+        agent.run("price of X")
+
+        history = agent.short_memory.conversation_history
+        assert agent.tool_call_summary is False
+        assert summary_calls == []
+        assert history[-1]["role"] == "Tool Executor"
+        assert "100" in history[-1]["content"]
+
+
+def test_handoff_returns_each_delegates_answer_not_its_transcript(
+    tmp_path,
+):
+    from swarms.tools.handoffs_tool import handoff_task
+
+    class NumberedLLM:
+        calls = 0
+
+        def run(self, task=None, *args, **kwargs):
+            NumberedLLM.calls += 1
+            return f"answer {NumberedLLM.calls}"
+
+    registry = {
+        name: _flow(name, NumberedLLM(), tmp_path)
+        for name in ("Researcher", "Writer")
+    }
+
+    def delegate(*names):
+        return handoff_task(
+            [
+                {"agent_name": name, "task": "t", "reasoning": "r"}
+                for name in names
+            ],
+            agent_registry=registry,
+        )
+
+    delegate("Researcher")
+    single = delegate("Researcher")
+    parallel = delegate("Researcher", "Writer")
+
+    assert "answer 2" in single
+    assert "answer 1" not in single
+    assert "answer 2" not in parallel
+
+
+class TestListTools:
+    """#2426: Agent.list_tools names every tool the agent can call."""
+
+    @staticmethod
+    def _weather(city: str) -> str:
+        """Get the weather.
+
+        Args:
+            city: The city.
+        """
+        return "sunny"
+
+    @staticmethod
+    def _agent(**kwargs):
+        kwargs.setdefault("max_loops", 1)
+        return Agent(
+            agent_name="ListToolsAgent",
+            model_name="gpt-5.4",
+            print_on=False,
+            **kwargs,
+        )
+
+    @staticmethod
+    def _mcp_agent(get_tools, **kwargs):
+        agent = TestListTools._agent(
+            mcp_url="http://localhost:9/mcp", llm=object(), **kwargs
+        )
+        agent.mcp_manager.get_tools = get_tools
+        return agent
+
+    @staticmethod
+    def _stock_schemas(*args, **kwargs):
+        return [
+            {"type": "function", "function": {"name": "lookup_stock"}}
+        ]
+
+    def test_local_tools_only(self):
+        agent = self._agent(
+            tools=[self._weather], dynamic_tools=False
+        )
+        assert agent.list_tools() == ["_weather"]
+
+    def test_mcp_tools_only(self):
+        agent = self._mcp_agent(
+            self._stock_schemas, dynamic_tools=False
+        )
+        assert agent.list_tools() == ["lookup_stock"]
+
+    def test_local_tools_come_before_mcp_tools(self):
+        agent = self._mcp_agent(
+            self._stock_schemas,
+            tools=[self._weather],
+            dynamic_tools=False,
+        )
+        assert agent.list_tools() == ["_weather", "lookup_stock"]
+
+    def test_handoffs_add_handoff_task_last(self):
+        agent = self._agent(
+            tools=[self._weather],
+            dynamic_tools=False,
+            handoffs=[self._agent()],
+        )
+        assert agent.list_tools() == ["_weather", "handoff_task"]
+
+    def test_dynamic_tools_include_deferred_tools_and_tool_search(
+        self,
+    ):
+        agent = self._agent(tools=[self._weather], dynamic_tools=True)
+        assert agent.tool_loader.deferred_names == ["_weather"]
+        assert agent.list_tools() == ["_weather", "tool_search"]
+
+    def test_autonomous_loop_tools_follow_local_tools(self):
+        from swarms.structs.autonomous_loop_utils import (
+            get_autonomous_loop_tool_names,
+        )
+
+        agent = self._agent(
+            tools=[self._weather],
+            dynamic_tools=False,
+            max_loops="auto",
+        )
+        loop_tools = [
+            name
+            for name in get_autonomous_loop_tool_names()
+            if name != "think"
+        ]
+        assert agent.list_tools() == ["_weather", *loop_tools]
+
+    def test_an_unreachable_mcp_server_leaves_the_other_names(self):
+        def unreachable(*args, **kwargs):
+            raise ConnectionError("server down")
+
+        agent = self._mcp_agent(
+            unreachable, tools=[self._weather], dynamic_tools=False
+        )
+        assert agent.list_tools() == ["_weather"]
+
+    def test_mcp_tools_are_fetched_once(self):
+        calls = []
+
+        def get_tools(*args, **kwargs):
+            calls.append(1)
+            return self._stock_schemas()
+
+        agent = self._mcp_agent(get_tools, dynamic_tools=False)
+        agent.list_tools()
+        agent.list_tools()
+        assert len(calls) == 1
 
 
 class TestConcurrentExecutionPool:
@@ -1885,7 +2124,9 @@ class TestAgentUsage:
                 return response
             return self._response(100 * n, n)
 
-        agent = self._agent(tools=[add], dynamic_tools=False)
+        agent = self._agent(
+            tools=[add], dynamic_tools=False, tool_call_summary=True
+        )
         agent.max_loops = 3
         with patch(
             "swarms.utils.litellm_wrapper.completion",

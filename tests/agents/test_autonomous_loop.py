@@ -1000,6 +1000,125 @@ class TestHandoffPromptIsNotReappended:
         assert agent.system_prompt == before
 
 
+def lookup(query: str) -> str:
+    """Look up a query.
+
+    Args:
+        query: The text to look up.
+
+    Returns:
+        str: The query, unchanged.
+    """
+    return query
+
+
+def define(term: str) -> str:
+    """Define a term.
+
+    Args:
+        term: The term to define.
+
+    Returns:
+        str: The term, unchanged.
+    """
+    return term
+
+
+class TestClientIsReusedAcrossRuns:
+    """Runs with unchanged tools reuse the client and the tool schemas."""
+
+    def _complete_one_run(self, agent, monkeypatch):
+        """Run the loop through one planned step to completion."""
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+        agent.run("test task")
+
+    def _count_builds_and_conversions(self, agent, monkeypatch):
+        """Record every client build and every schema conversion."""
+        import swarms.agents.autonomous_loop as loop_module
+
+        builds, conversions = [], []
+        real_build = agent.llm_handling
+        real_convert = (
+            loop_module.convert_multiple_functions_to_openai_function_schema
+        )
+
+        def build(*args, **kwargs):
+            builds.append(1)
+            return real_build(*args, **kwargs)
+
+        def convert(functions):
+            conversions.append([f.__name__ for f in functions])
+            return real_convert(functions)
+
+        monkeypatch.setattr(agent, "llm_handling", build)
+        monkeypatch.setattr(
+            loop_module,
+            "convert_multiple_functions_to_openai_function_schema",
+            convert,
+        )
+        return builds, conversions
+
+    def test_second_run_rebuilds_and_converts_nothing(
+        self, monkeypatch
+    ):
+        """A second run with the same tools builds no client and converts no schema."""
+        agent = build_agent(tools=[lookup])
+        builds, conversions = self._count_builds_and_conversions(
+            agent, monkeypatch
+        )
+
+        self._complete_one_run(agent, monkeypatch)
+        builds_after_first_run = len(builds)
+        self._complete_one_run(agent, monkeypatch)
+
+        assert builds_after_first_run == 1
+        assert len(builds) == 1
+        assert conversions == []
+
+    def test_a_new_tool_is_converted_and_rebuilds_the_client(
+        self, monkeypatch
+    ):
+        """A tool added between runs is converted alone and the client is rebuilt."""
+        agent = build_agent(tools=[lookup])
+        builds, conversions = self._count_builds_and_conversions(
+            agent, monkeypatch
+        )
+
+        self._complete_one_run(agent, monkeypatch)
+        agent.tools.append(define)
+        self._complete_one_run(agent, monkeypatch)
+
+        assert conversions == [["define"]]
+        assert len(builds) == 2
+        names = [
+            schema["function"]["name"]
+            for schema in agent.tools_list_dictionary
+        ]
+        assert names.count("define") == 1
+
+
 # --------------------------------------------------------------------------
 # #1962 — context compression in the auto loop
 # --------------------------------------------------------------------------

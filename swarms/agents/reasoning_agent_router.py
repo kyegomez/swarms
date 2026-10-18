@@ -163,7 +163,7 @@ class ReasoningAgentRouter:
         return ReasoningDuo(
             agent_name=self.agent_name,
             agent_description=self.description,
-            model_name=[self.model_name, self.model_name],
+            model_name=self.model_name,
             system_prompt=self.system_prompt,
             output_type=self.output_type,
             reasoning_model_name=self.reasoning_model_name,

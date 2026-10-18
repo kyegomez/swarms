@@ -1224,3 +1224,26 @@ def test_call_and_batch_run_do_not_send_an_absent_imgs():
         {"task": "go"},
         {"task": "go"},
     ]
+
+
+def test_run_kwargs_reach_swarm_run_not_its_constructor(monkeypatch):
+    from swarms.structs.concurrent_workflow import ConcurrentWorkflow
+
+    seen = {}
+
+    def fake_run(self, task=None, **kwargs):
+        seen.update(kwargs)
+        return "done"
+
+    def callback(*args):
+        return None
+
+    monkeypatch.setattr(ConcurrentWorkflow, "run", fake_run)
+    router = SwarmRouter(
+        agents=create_sample_agents(),
+        swarm_type="ConcurrentWorkflow",
+        verbose=False,
+    )
+
+    assert router.run("hi", streaming_callback=callback) == "done"
+    assert seen["streaming_callback"] is callback

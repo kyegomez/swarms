@@ -5,12 +5,18 @@ import pytest
 
 from swarms import Agent, PlannerGeneratorEvaluator
 from swarms.schemas.hs_schemas import OrderBatch
-from swarms.schemas.planner_worker_schemas import PlannerTask
+from swarms.schemas.planner_worker_schemas import (
+    CycleVerdict,
+    PlannerTask,
+)
 from swarms.structs.hiearchical_swarm import (
     HierarchicalOrder,
     HierarchicalSwarm,
 )
-from swarms.structs.planner_worker_swarm import TaskQueue
+from swarms.structs.planner_worker_swarm import (
+    PlannerWorkerSwarm,
+    TaskQueue,
+)
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
@@ -1172,6 +1178,71 @@ def test_task_queue_failed_count_only_counts_exhausted_retries():
     assert queue.fail(task.id, "boom again", retry.version + 1)
     assert queue.get_failed_count() == 1
     assert queue.get_pending_count() == 0
+
+
+def test_task_queue_is_done_when_pending_tasks_can_never_run():
+    queue = TaskQueue()
+    fetch = PlannerTask(
+        title="Fetch", description="Fetch the data", max_retries=0
+    )
+    report = PlannerTask(
+        title="Report",
+        description="Write the report",
+        depends_on=[fetch.id],
+    )
+    queue.add_tasks([fetch, report])
+
+    claimed = queue.claim("worker-1")
+
+    assert not queue.is_all_done()
+    assert queue.start(fetch.id, claimed.version)
+    assert queue.fail(fetch.id, "boom", claimed.version + 1)
+    assert queue.claim("worker-1") is None
+    assert queue.is_all_done()
+
+    cycle = TaskQueue()
+    first = PlannerTask(title="A", description="A")
+    second = PlannerTask(
+        title="B", description="B", depends_on=[first.id]
+    )
+    first.depends_on = [second.id]
+    cycle.add_tasks([first, second])
+
+    assert cycle.is_all_done()
+
+
+def test_planner_worker_swarm_run_starts_with_an_empty_task_queue():
+    goals = ["Write a haiku", "Fix the login bug"]
+    planner = StubAgent(
+        "Planner",
+        [
+            {
+                "plan": goal,
+                "tasks": [{"title": goal, "description": goal}],
+            }
+            for goal in goals
+        ],
+    )
+    worker = StubAgent("Worker", ["haiku", "fixed"])
+    worker.short_memory_init = lambda: None
+    swarm = PlannerWorkerSwarm(agents=[worker])
+    swarm._create_planner_agent = lambda name="Planner": planner
+    judged = []
+
+    def judge(img=None):
+        judged.append(
+            [task.title for task in swarm.task_queue.get_all_tasks()]
+        )
+        return CycleVerdict(
+            is_complete=True, overall_quality=9, summary="done"
+        )
+
+    swarm._run_judge = judge
+
+    for goal in goals:
+        swarm.run(goal)
+
+    assert judged == [[goal] for goal in goals]
 
 
 def test_harness_result_reflects_conversation_state(tmp_path):
