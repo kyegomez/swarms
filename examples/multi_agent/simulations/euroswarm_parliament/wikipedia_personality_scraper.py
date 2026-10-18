@@ -10,6 +10,7 @@ import json
 import os
 import time
 import re
+import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
 import requests
@@ -121,27 +122,23 @@ class WikipediaPersonalityScraper:
         meps = []
 
         try:
-            with open(xml_file, "r", encoding="utf-8") as f:
-                content = f.read()
-
-            # Use regex to extract MEP data
-            mep_pattern = r"<mep>\s*<fullName>(.*?)</fullName>\s*<country>(.*?)</country>\s*<politicalGroup>(.*?)</politicalGroup>\s*<id>(.*?)</id>\s*<nationalPoliticalGroup>(.*?)</nationalPoliticalGroup>\s*</mep>"
-            mep_matches = re.findall(mep_pattern, content, re.DOTALL)
-
-            for (
-                full_name,
-                country,
-                political_group,
-                mep_id,
-                national_party,
-            ) in mep_matches:
+            root = ET.parse(xml_file).getroot()
+            for mep in root.iter("mep"):
                 meps.append(
                     {
-                        "full_name": full_name.strip(),
-                        "country": country.strip(),
-                        "political_group": political_group.strip(),
-                        "mep_id": mep_id.strip(),
-                        "national_party": national_party.strip(),
+                        "full_name": mep.findtext(
+                            "fullName", ""
+                        ).strip(),
+                        "country": mep.findtext(
+                            "country", ""
+                        ).strip(),
+                        "political_group": mep.findtext(
+                            "politicalGroup", ""
+                        ).strip(),
+                        "mep_id": mep.findtext("id", "").strip(),
+                        "national_party": mep.findtext(
+                            "nationalPoliticalGroup", ""
+                        ).strip(),
                     }
                 )
 
