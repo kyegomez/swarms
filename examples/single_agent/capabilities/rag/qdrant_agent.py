@@ -108,12 +108,12 @@ class QdrantMemory:
         Returns:
             List of matching memories with their metadata
         """
-        results = self.client.search(
+        results = self.client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_embedding,
+            query=query_embedding,
             limit=limit,
             score_threshold=score_threshold,
-        )
+        ).points
 
         memories = []
         for res in results:
