@@ -1,9 +1,8 @@
 agents:
   - agent_name: "Financial-Analysis-Agent"
-    model:
-      model_name: "gpt-4"
-      temperature: 0.1
-      max_tokens: 2000
+    model_name: "gpt-4"
+    temperature: 0.1
+    max_tokens: 2000
     system_prompt: "financial_agent_sys_prompt"
     max_loops: 1
     autosave: true
@@ -19,10 +18,9 @@ agents:
     task: "How can I establish a ROTH IRA to buy stocks and get a tax break?"
 
   - agent_name: "Stock-Analysis-Agent"
-    model:
-      model_name: "gpt-4"
-      temperature: 0.2
-      max_tokens: 1500
+    model_name: "gpt-4"
+    temperature: 0.2
+    max_tokens: 1500
     system_prompt: "stock_agent_sys_prompt"
     max_loops: 2
     autosave: true

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -6,9 +8,9 @@ from swarms import create_agents_from_yaml
 # Load environment variables
 load_dotenv()
 
-# Path to your YAML file. Each agent's model is chosen by the model_name
-# field inside the YAML, so no model object is built here.
-yaml_file = "agents.yaml"
+# Load the bundled YAML beside this script. Each agent uses its
+# model_name field, so no model object is built here.
+yaml_file = str(Path(__file__).resolve().with_name("agents.yaml"))
 
 try:
     # Create agents and return them without running any task
