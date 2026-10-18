@@ -2,6 +2,7 @@ import http.client
 import json
 import os
 from typing import List
+from urllib.parse import quote
 
 from dotenv import load_dotenv
 
@@ -34,9 +35,7 @@ def get_realtor_data_from_one_source(location: str):
     }
 
     # URL encode the location parameter
-    encoded_location = location.replace(" ", "%20").replace(
-        ",", "%2C"
-    )
+    encoded_location = quote(location, safe="")
     endpoint = f"/properties/search-rent?location=city%3A{encoded_location}&sortBy=best_match"
 
     conn.request(
