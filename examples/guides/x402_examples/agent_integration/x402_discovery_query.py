@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import List, Optional, Dict, Any
 from swarms import Agent
 import httpx
@@ -203,7 +204,7 @@ def get_x402_services_sync(
             limit=limit, max_price=max_price, offset=offset
         )
     )
-    return str(services)
+    return json.dumps(services)
 
 
 agent = Agent(
