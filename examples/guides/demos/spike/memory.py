@@ -21,8 +21,10 @@ class LlamaIndexDB:
             VectorStoreIndex kwargs:
                 - service_context: Custom service context
                 - embed_model: Custom embedding model
-                - similarity_top_k (int): Number of similar docs to retrieve
                 - store_nodes_override (bool): Override node storage
+
+            Query engine kwargs:
+                - similarity_top_k (int): Default number of similar docs to retrieve
     """
 
     def __init__(self, data_dir: str = "docs", **kwargs) -> None:
@@ -33,6 +35,7 @@ class LlamaIndexDB:
             **kwargs: Additional arguments for SimpleDirectoryReader and VectorStoreIndex
         """
         self.data_dir = data_dir
+        self.similarity_top_k = kwargs.pop("similarity_top_k", None)
         self.index: Optional[VectorStoreIndex] = None
         self.reader_kwargs = {
             k: v
@@ -90,6 +93,10 @@ class LlamaIndexDB:
             raise ValueError("Must add documents before querying")
 
         try:
+            if self.similarity_top_k is not None:
+                kwargs.setdefault(
+                    "similarity_top_k", self.similarity_top_k
+                )
             query_engine = self.index.as_query_engine(**kwargs)
             response = query_engine.query(query)
             print(response)
