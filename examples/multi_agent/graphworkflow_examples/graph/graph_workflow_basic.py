@@ -1,11 +1,4 @@
-from swarms import Agent, Edge, GraphWorkflow, Node, NodeType
-
-
-def sample_task():
-    """Simple callable task."""
-    print("Running sample task")
-    return "Task completed"
-
+from swarms import Agent, GraphWorkflow
 
 if __name__ == "__main__":
     # Initialize two basic agents
@@ -29,27 +22,29 @@ if __name__ == "__main__":
         dashboard=True,
     )
 
-    # Build the workflow graph
+    # Current GraphWorkflow nodes run agents or nested workflows.
+    # Use a model-backed summarizer to combine the two entry agents.
+    summarizer = Agent(
+        agent_name="Summary",
+        model_name="openai/gpt-4o-mini",
+        system_prompt="Summarize both agents' findings.",
+        max_loops=1,
+    )
+
+    # Build a fan-in graph using the agents' names as node IDs.
     wf_graph = GraphWorkflow()
-    wf_graph.add_node(
-        Node(id="agent1", type=NodeType.AGENT, agent=agent1)
+    wf_graph.add_nodes([agent1, agent2, summarizer])
+    wf_graph.add_edge("Agent1", "Summary")
+    wf_graph.add_edge("Agent2", "Summary")
+
+    wf_graph.set_entry_points(["Agent1", "Agent2"])
+    wf_graph.set_end_points(["Summary"])
+
+    # Show a text visualization without requiring Graphviz.
+    wf_graph.visualize_simple()
+
+    # Execute the graph with a task for the entry agents.
+    results = wf_graph.run(
+        "Explain the benefits of multi-agent systems."
     )
-    wf_graph.add_node(
-        Node(id="agent2", type=NodeType.AGENT, agent=agent2)
-    )
-    wf_graph.add_node(
-        Node(id="task1", type=NodeType.TASK, callable=sample_task)
-    )
-
-    wf_graph.add_edge(Edge(source="agent1", target="task1"))
-    wf_graph.add_edge(Edge(source="agent2", target="task1"))
-
-    wf_graph.set_entry_points(["agent1", "agent2"])
-    wf_graph.set_end_points(["task1"])
-
-    # Optional visualization in Mermaid format
-    print(wf_graph.visualize())
-
-    # Execute the graph
-    results = wf_graph.run()
     print("Execution results:", results)
