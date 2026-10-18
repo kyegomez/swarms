@@ -357,7 +357,9 @@ class ChartCitor:
 
         table_data = self.extract_table(chart_image)
         facts = self.reformulate_answer(
-            answer, table_data, chart_image
+            f"Question: {question}\nAnswer: {answer}",
+            table_data,
+            chart_image,
         )
         captions = self.generate_captions(table_data, chart_image)
         evidence = self.retrieve_evidence(
