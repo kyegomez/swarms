@@ -8,7 +8,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, PropertyMock, call, patch
 
-EXAMPLE_DIR = Path(__file__).resolve().parents[2] / "examples/guides/demos"
+EXAMPLE_DIR = (
+    Path(__file__).resolve().parents[2] / "examples/guides/demos"
+)
 EXAMPLE = EXAMPLE_DIR / "crypto/ethchain_agent.py"
 
 
@@ -29,7 +31,9 @@ class TestEthereumBlockMonitor(unittest.TestCase):
         }
         with (
             patch.dict(sys.modules, imports),
-            patch("socket.socket.connect", side_effect=AssertionError),
+            patch(
+                "socket.socket.connect", side_effect=AssertionError
+            ),
             patch(
                 "socket.socket.connect_ex",
                 side_effect=AssertionError("No network"),
@@ -65,7 +69,9 @@ class TestEthereumBlockMonitor(unittest.TestCase):
                     else None
                 )
             )
-            analyzer.prepare_analysis_prompt = Mock(return_value="Analyze")
+            analyzer.prepare_analysis_prompt = Mock(
+                return_value="Analyze"
+            )
             analyzer.agent = Mock()
             analyzer.agent.run.return_value = "Offline analysis"
             analyzer.save_to_csv = Mock()
@@ -77,7 +83,9 @@ class TestEthereumBlockMonitor(unittest.TestCase):
                     raise asyncio.CancelledError
 
             with (
-                patch.object(namespace["asyncio"], "sleep", side_effect=sleep),
+                patch.object(
+                    namespace["asyncio"], "sleep", side_effect=sleep
+                ),
                 self.assertRaises(asyncio.CancelledError),
             ):
                 asyncio.run(analyzer.monitor_transactions())
@@ -95,7 +103,9 @@ class TestEthereumBlockMonitor(unittest.TestCase):
         self.assertEqual(analyzer.save_to_csv.call_count, 1)
         self.assertEqual(processed, [101, 101, 101])
 
-    def test_new_block_is_processed_after_unchanged_height(self) -> None:
+    def test_new_block_is_processed_after_unchanged_height(
+        self,
+    ) -> None:
         analyzer, processed, _ = self.monitor([101, 101, 102])
         self.assertEqual(
             analyzer.w3.eth.get_block.call_args_list,
@@ -113,9 +123,12 @@ class TestEthereumBlockMonitor(unittest.TestCase):
         analyzer.agent.run.assert_not_called()
         self.assertEqual(processed, [100, 100])
 
-    def test_failed_fetch_retries_before_advancing_height(self) -> None:
+    def test_failed_fetch_retries_before_advancing_height(
+        self,
+    ) -> None:
         analyzer, processed, logger = self.monitor(
-            [101, 101, 101], block_effect=RuntimeError("Offline unavailable")
+            [101, 101, 101],
+            block_effect=RuntimeError("Offline unavailable"),
         )
         self.assertEqual(analyzer.w3.eth.get_block.call_count, 2)
         self.assertEqual(analyzer.agent.run.call_count, 1)
@@ -123,8 +136,12 @@ class TestEthereumBlockMonitor(unittest.TestCase):
         self.assertEqual(processed, [100, 101, 101])
         logger.error.assert_called_once()
 
-    def test_filtered_transactions_mark_the_block_processed(self) -> None:
-        analyzer, processed, _ = self.monitor([101, 101], qualifies=False)
+    def test_filtered_transactions_mark_the_block_processed(
+        self,
+    ) -> None:
+        analyzer, processed, _ = self.monitor(
+            [101, 101], qualifies=False
+        )
         self.assertEqual(analyzer.w3.eth.get_block.call_count, 1)
         analyzer.agent.run.assert_not_called()
         analyzer.save_to_csv.assert_not_called()
