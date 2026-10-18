@@ -244,4 +244,5 @@ def get_figma_stock_data(stock: str) -> str:
 #     task="Analyze the Figma (FIG) stock comprehensively using the available stock data. Provide a detailed quantitative analysis"
 # )
 
-print(get_figma_stock_data("FIG"))
+if __name__ == "__main__":
+    print(get_figma_stock_data("FIG"))

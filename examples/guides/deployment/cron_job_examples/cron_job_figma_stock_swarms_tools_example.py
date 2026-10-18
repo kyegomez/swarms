@@ -86,11 +86,9 @@ def main():
         print("METHOD 3: Comparison with custom function")
         print("=" * 60)
 
-        from cron_job_examples.cron_job_example import (
-            get_figma_stock_data_simple,
-        )
+        from cron_job_example import get_figma_stock_data
 
-        custom_data = get_figma_stock_data_simple()
+        custom_data = get_figma_stock_data("FIG")
         print("Custom function output:")
         print(custom_data)
 
