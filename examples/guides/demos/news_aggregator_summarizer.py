@@ -21,6 +21,8 @@ def fetch_hackernews_headlines(limit: int = 5):
         ).json()
     except Exception:
         return []
+    if not isinstance(ids, list):
+        return []
     headlines = []
     for story_id in ids[:limit]:
         try:
@@ -29,6 +31,8 @@ def fetch_hackernews_headlines(limit: int = 5):
                 timeout=10,
             ).json()
         except Exception:
+            continue
+        if not isinstance(item, dict):
             continue
         headlines.append(
             {
