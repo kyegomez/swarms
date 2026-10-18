@@ -10,11 +10,9 @@ This file demonstrates the multi-agent communication methods available in the Ag
 Run: python agent_communication_examples.py
 """
 
-import os
 from swarms import Agent
 
-# Set up your API key
-os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
+# Set OPENAI_API_KEY in your environment before running this example.
 
 
 def example_1_direct_agent_communication():
