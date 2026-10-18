@@ -83,7 +83,7 @@ def generate_content(
     response = requests.post(url, headers=headers, json=data)
 
     # Check for errors
-    if response.status_code != 200:
+    if not 200 <= response.status_code < 300:
         raise RuntimeError(
             f"API request failed with status {response.status_code}: {response.text}"
         )
