@@ -14,7 +14,6 @@ Outcomes:
 
 import json
 import random
-import re
 from swarms import Agent
 
 
@@ -90,17 +89,19 @@ Respond with JSON only."""
 
 
 def _parse_json(text: str) -> dict:
-    text = re.sub(r"```(?:json)?", "", text).strip()
-    # Try all matches from last to first — multi-call agents accumulate history,
-    # so the current round's JSON is at the end of the returned string.
-    for match in reversed(
-        list(re.finditer(r"\{.*?\}", text, re.DOTALL))
-    ):
+    decoder = json.JSONDecoder()
+    parsed = {}
+    position = 0
+    # Keep the last complete object in accumulated agent history.
+    while True:
+        start = text.find("{", position)
+        if start == -1:
+            break
         try:
-            return json.loads(match.group())
+            parsed, position = decoder.raw_decode(text, start)
         except json.JSONDecodeError:
-            continue
-    return {}
+            position = start + 1
+    return parsed
 
 
 def _fmt_proposals(proposals: dict) -> str:
