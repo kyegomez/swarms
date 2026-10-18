@@ -259,12 +259,10 @@ class SelfConsistencyAgent:
         self.conversation.add(role="User", content=task)
 
         # Generate multiple independent responses concurrently
-        reasoning_agent = self._create_reasoning_agent()
-
         with ThreadPoolExecutor() as executor:
             futures = {
                 executor.submit(
-                    reasoning_agent.run,
+                    self._create_reasoning_agent().run,
                     task=task,
                     img=img,
                     *args,

@@ -6,7 +6,7 @@ from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.structs.agent import Agent
 
 
-def _duo(max_loops=1):
+def _duo(monkeypatch, max_loops=1):
     """A duo whose LLM answers locally, recording what each agent received."""
     calls = []
     duo = ReasoningDuo(
@@ -22,21 +22,23 @@ def _duo(max_loops=1):
         )
         return f"{self.agent_name}-out"
 
-    Agent.call_llm = fake_call_llm
+    monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
     return duo, calls
 
 
-def test_the_two_agents_have_distinct_names():
+def test_the_two_agents_have_distinct_names(monkeypatch):
     """A shared name made both agents the same speaker in the conversation."""
-    duo, _ = _duo()
+    duo, _ = _duo(monkeypatch)
 
     assert (
         duo.reasoning_agent.agent_name != duo.main_agent.agent_name
     ), "both agents answer to one name, so neither can be attributed"
 
 
-def test_the_main_agent_sees_the_reasoner_as_a_labelled_turn():
-    duo, calls = _duo()
+def test_the_main_agent_sees_the_reasoner_as_a_labelled_turn(
+    monkeypatch,
+):
+    duo, calls = _duo(monkeypatch)
     duo.run("think about it")
 
     main = [c for c in calls if c["agent"].endswith("-main")][0]
@@ -50,8 +52,8 @@ def test_the_main_agent_sees_the_reasoner_as_a_labelled_turn():
     ), f"the main agent never saw the task: {contents}"
 
 
-def test_each_agent_reads_its_own_output_as_assistant():
-    duo, calls = _duo(max_loops=2)
+def test_each_agent_reads_its_own_output_as_assistant(monkeypatch):
+    duo, calls = _duo(monkeypatch, max_loops=2)
     duo.run("think about it")
 
     second_reasoning = [
@@ -67,9 +69,9 @@ def test_each_agent_reads_its_own_output_as_assistant():
     assert own[0]["role"] == "assistant"
 
 
-def test_the_task_is_not_duplicated_across_the_loop():
+def test_the_task_is_not_duplicated_across_the_loop(monkeypatch):
     """run() used to seed the task and then step() appended it again."""
-    duo, calls = _duo(max_loops=2)
+    duo, calls = _duo(monkeypatch, max_loops=2)
     duo.run("think about it")
 
     first = calls[0]
@@ -78,9 +80,9 @@ def test_the_task_is_not_duplicated_across_the_loop():
     assert contents.count("think about it") == 1, contents
 
 
-def test_no_agent_receives_a_flattened_transcript():
+def test_no_agent_receives_a_flattened_transcript(monkeypatch):
     """The old form passed conversation.get_str() as the task."""
-    duo, calls = _duo(max_loops=2)
+    duo, calls = _duo(monkeypatch, max_loops=2)
     duo.run("think about it")
 
     for call in calls:
@@ -93,3 +95,21 @@ def test_no_agent_receives_a_flattened_transcript():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_a_second_run_starts_from_an_empty_conversation(monkeypatch):
+    """batched_run answered task 2 with task 1 still in the prompt."""
+    duo, calls = _duo(monkeypatch)
+
+    first, second = duo.batched_run(
+        ["what is 2 + 2", "who painted Guernica"]
+    )
+
+    assert len(second) == len(first), second
+
+    later = [
+        message["content"]
+        for call in calls[2:]
+        for message in call["messages"]
+    ]
+    assert not any("2 + 2" in content for content in later), later

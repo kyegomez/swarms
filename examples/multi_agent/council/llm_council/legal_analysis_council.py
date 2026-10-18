@@ -5,13 +5,13 @@ This example demonstrates using the LLM Council to analyze legal scenarios
 and provide comprehensive legal insights.
 """
 
-from swarms.structs.llm_council import LLMCouncil
+from swarms import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
-# Legal analysis query
-query = """
+# Legal analysis task
+task = """
 A startup is considering using AI-generated content for their marketing materials.
 Analyze the legal implications including:
 1. Intellectual property rights and ownership of AI-generated content
@@ -25,7 +25,7 @@ Analyze the legal implications including:
 """
 
 # Run the council
-result = council.run(query)
+result = council.run(task=task)
 
 # Print final response
-print(result["final_response"])
+print(result)

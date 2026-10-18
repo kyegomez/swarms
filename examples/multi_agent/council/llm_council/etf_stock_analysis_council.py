@@ -5,13 +5,13 @@ This example demonstrates using the LLM Council to analyze ETF holdings
 and provide stock investment recommendations.
 """
 
-from swarms.structs.llm_council import LLMCouncil
+from swarms import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
-# ETF and stock analysis query
-query = """
+# ETF and stock analysis task
+task = """
 Analyze the top energy ETFs (including nuclear, solar, gas, and renewable energy)
 and provide:
 1. Top 5 best-performing energy stocks across all energy sectors
@@ -23,7 +23,7 @@ and provide:
 """
 
 # Run the council
-result = council.run(query)
+result = council.run(task=task)
 
 # Print final response
-print(result["final_response"])
+print(result)

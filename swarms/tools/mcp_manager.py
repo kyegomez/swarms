@@ -17,6 +17,7 @@ This module owns every piece of MCP behaviour that used to be inlined in
 """
 
 import asyncio
+import functools
 import json
 import os
 import re
@@ -28,12 +29,19 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 from urllib.parse import parse_qs, urlparse
 
 from loguru import logger
-from mcp import ClientSession
-from mcp.types import Tool as MCPTool
 
 from swarms.schemas.agent_mcp_errors import (
     AgentMCPConnectionError,
@@ -43,6 +51,11 @@ from swarms.schemas.mcp_schemas import (
     MCPConnection,
     MCPOAuthConfig,
 )
+
+# mcp costs ~0.4s to import, so it loads only once an MCP server is used.
+if TYPE_CHECKING:
+    from mcp import ClientSession
+    from mcp.types import Tool as MCPTool
 
 DEFAULT_TOKEN_CACHE_DIR = Path.home() / ".swarms" / "mcp_auth"
 
@@ -132,6 +145,7 @@ def _server_origin(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
+@functools.lru_cache(maxsize=1)
 def _mcp_is_v2() -> bool:
     """
     True when the installed mcp is 2.x.
@@ -150,12 +164,9 @@ def _mcp_is_v2() -> bool:
         return True
 
 
-MCP_IS_V2 = _mcp_is_v2()
-
-
 def _read_timeout(seconds: float):
     """Session read timeout in the type the installed mcp expects."""
-    return seconds if MCP_IS_V2 else timedelta(seconds=seconds)
+    return seconds if _mcp_is_v2() else timedelta(seconds=seconds)
 
 
 def _http_timeout(connect: float, read: float):
@@ -904,8 +915,6 @@ class MCPManager:
         if isinstance(tool, dict):
             function = tool.get("function") or {}
             return function.get("name") or tool.get("name")
-        if isinstance(tool, MCPTool):
-            return tool.name
         return getattr(tool, "name", None)
 
     async def _alist_tools(
@@ -926,7 +935,7 @@ class MCPManager:
         )
 
     @staticmethod
-    def _mcp_tool_to_openai(tool: MCPTool) -> Dict[str, Any]:
+    def _mcp_tool_to_openai(tool: "MCPTool") -> Dict[str, Any]:
         """Convert an MCP tool definition into an OpenAI tool schema."""
         # mcp 2.x renamed `inputSchema` to `input_schema`.
         parameters = (
@@ -1046,7 +1055,7 @@ class MCPManager:
 
     async def _acall_tool(
         self,
-        session: ClientSession,
+        session: "ClientSession",
         connection: MCPConnection,
         call: Dict[str, Any],
     ) -> Dict[str, Any]:
@@ -1115,12 +1124,7 @@ class MCPManager:
             return await self._acall_tool(session, connection, call)
 
     def _route(self, name: str) -> Optional[MCPConnection]:
-        if name in self._tool_routes:
-            return self._tool_routes[name]
-        # Single-server setups do not need a discovery round-trip.
-        if len(self.connections) == 1:
-            return self.connections[0]
-        return None
+        return self._tool_routes.get(name)
 
     @staticmethod
     def _extract_result(result: Any) -> Any:
@@ -1422,7 +1426,7 @@ class MCPManager:
             "callback_handler": callback_handler,
         }
         # 2.x dropped the kwarg; callback_handler already bounds the wait.
-        if not MCP_IS_V2:
+        if not _mcp_is_v2():
             provider_kwargs["timeout"] = float(oauth.callback_timeout)
 
         provider = OAuthClientProvider(**provider_kwargs)
@@ -1530,6 +1534,8 @@ class MCPManager:
         task groups unwind correctly; connection failures surface as
         :class:`AgentMCPConnectionError` with the underlying cause attached.
         """
+        from mcp import ClientSession
+
         label = self.label(connection)
         detail = (
             f"transport '{self._resolve_transport(connection)}', "
