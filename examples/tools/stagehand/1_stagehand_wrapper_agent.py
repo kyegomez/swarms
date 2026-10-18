@@ -153,11 +153,12 @@ class StagehandAgent(SwarmsAgent):
 
             url_pattern = r"https?://[^\s]+"
             urls = re.findall(url_pattern, task)
-            if not urls and any(
-                domain in task for domain in [".com", ".org", ".net"]
-            ):
+            if not urls:
                 # Try to extract domain names
-                domain_pattern = r"(\w+\.\w+)"
+                domain_pattern = (
+                    r"(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}"
+                    r"(?::\d+)?(?:[/?#][^\s]*)?"
+                )
                 domains = re.findall(domain_pattern, task)
                 if domains:
                     urls = [f"https://{domain}" for domain in domains]
