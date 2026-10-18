@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import time
 import psutil
 
@@ -29,6 +30,21 @@ agent = Agent(
 
 # Helper decorator to measure time and memory usage
 def measure_time_and_memory(func):
+    if inspect.iscoroutinefunction(func):
+
+        async def async_wrapper(*args, **kwargs):
+            start = time.time()
+            result = await func(*args, **kwargs)
+            elapsed = time.time() - start
+            mem_mb = psutil.Process().memory_info().rss / 1024**2
+            print(
+                f"[{func.__name__}] Time: {elapsed:.2f}s"
+                f" | Memory: {mem_mb:.2f} MB"
+            )
+            return result
+
+        return async_wrapper
+
     def wrapper(*args, **kwargs):
         start = time.time()
         result = func(*args, **kwargs)
