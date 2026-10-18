@@ -97,7 +97,7 @@ Note: Access tokens expire. For production, implement token refresh logic.
 For more details: https://developers.google.com/calendar/api/guides/auth
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Optional, Any
 
 import httpx
@@ -160,7 +160,7 @@ def create_calendar_event(
         start_dt = datetime.fromisoformat(
             start_datetime.replace("Z", "+00:00")
         )
-        end_dt = start_dt.replace(hour=start_dt.hour + 1)
+        end_dt = start_dt + timedelta(hours=1)
         end_datetime = end_dt.isoformat().replace("+00:00", "Z")
 
     event_data = {
