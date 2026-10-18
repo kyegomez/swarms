@@ -29,7 +29,17 @@ def chunk_text(
 
     Returns:
         List[str]: List of text chunks.
+
+    Raises:
+        ValueError: If chunk_size is not positive or overlap is outside
+            the range 0 <= overlap < chunk_size.
     """
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be positive")
+    if not 0 <= overlap < chunk_size:
+        raise ValueError(
+            "overlap must satisfy 0 <= overlap < chunk_size"
+        )
     if len(text) <= chunk_size:
         return [text]
 
