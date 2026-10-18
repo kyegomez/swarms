@@ -80,7 +80,7 @@ def browser_agent_tool(task: str):
         )
         print(result)
     """
-    return BrowserAgent().run(task)
+    return BrowserUseAgent().run(task)
 
 
 agent = Agent(
