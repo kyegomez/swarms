@@ -39,9 +39,12 @@ def get_crypto_price(coin_id: str) -> str:
             return f"Could not find data for {coin_id}. Please check the cryptocurrency ID."
 
         price = data[coin_id]["usd"]
-        change_24h = data[coin_id].get("usd_24h_change", "N/A")
+        change_24h = data[coin_id].get("usd_24h_change")
+        change_display = (
+            f"{change_24h:.2f}%" if change_24h is not None else "N/A"
+        )
 
-        return f"Current price of {coin_id.capitalize()}: ${price:,.2f}\n24h Change: {change_24h:.2f}%"
+        return f"Current price of {coin_id.capitalize()}: ${price:,.2f}\n24h Change: {change_display}"
 
     except requests.exceptions.RequestException as e:
         return f"Error fetching crypto data: {str(e)}"
