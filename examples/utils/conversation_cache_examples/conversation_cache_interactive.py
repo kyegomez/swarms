@@ -15,6 +15,7 @@ def main() -> None:
         verbose=False,
         temperature=1.0,
     )
+    agent.short_memory.caching = True
 
     print("\n=== Conversation Cache Interactive Test ===")
     print(

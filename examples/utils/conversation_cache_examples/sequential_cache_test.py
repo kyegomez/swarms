@@ -16,7 +16,7 @@ from swarms.structs.sequential_workflow import SequentialWorkflow
 
 
 def make_agent(name: str, role: str) -> Agent:
-    return Agent(
+    agent = Agent(
         agent_name=name,
         system_prompt=role,
         model_name="claude-sonnet-4-5",
@@ -24,6 +24,8 @@ def make_agent(name: str, role: str) -> Agent:
         verbose=False,
         temperature=1.0,
     )
+    agent.short_memory.caching = True
+    return agent
 
 
 def cache_stats(agent: Agent) -> dict:
