@@ -11,13 +11,16 @@ from xml.etree import ElementTree
 import pytest
 
 markdown = pytest.importorskip("markdown")
-EXAMPLE_DIR = (
-    Path(__file__).resolve().parents[2]
-    / "examples/guides/demos/medical"
+ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture(
+    params=[
+        "examples/guides/demos/medical/medical_coder_agent.py",
+        "examples/guides/demos/medical/ollama_demo.py",
+        "examples/models/openai/4o_mini_demo.py",
+    ]
 )
-
-
-@pytest.fixture(params=["medical_coder_agent.py", "ollama_demo.py"])
 def report(
     monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
 ) -> Callable:
@@ -33,7 +36,7 @@ def report(
     )
     monkeypatch.setattr("socket.socket", blocked)
     monkeypatch.setattr("socket.create_connection", blocked)
-    return runpy.run_path(str(EXAMPLE_DIR / request.param))[
+    return runpy.run_path(str(ROOT / request.param))[
         "generate_coding_report"
     ]
 
