@@ -588,7 +588,7 @@ def get_database_schema(database_path: str) -> str:
 
         # Get all tables
         cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '_%'"
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT GLOB '_*'"
         )
         tables = cursor.fetchall()
 
