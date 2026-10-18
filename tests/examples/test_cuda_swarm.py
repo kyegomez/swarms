@@ -8,12 +8,16 @@ from tempfile import TemporaryDirectory
 from types import ModuleType
 from unittest.mock import Mock, patch
 
-EXAMPLE_DIR = Path(__file__).resolve().parents[2] / "examples/guides/demos"
+EXAMPLE_DIR = (
+    Path(__file__).resolve().parents[2] / "examples/guides/demos"
+)
 EXAMPLE = EXAMPLE_DIR / "cuda_swarm.py"
 
 
 class TestCudaSwarmOutput(unittest.TestCase):
-    def assert_saved_output(self, response: str, expected: str) -> None:
+    def assert_saved_output(
+        self, response: str, expected: str
+    ) -> None:
         swarms_stub = ModuleType("swarms")
         swarms_stub.Agent = Mock()
         agent = Mock(spec=["run"])
@@ -21,9 +25,15 @@ class TestCudaSwarmOutput(unittest.TestCase):
         with (
             patch.dict(
                 sys.modules,
-                {"swarms": swarms_stub, "litellm": ModuleType("litellm")},
+                {
+                    "swarms": swarms_stub,
+                    "litellm": ModuleType("litellm"),
+                },
             ),
-            patch("socket.socket", side_effect=AssertionError("No network")),
+            patch(
+                "socket.socket",
+                side_effect=AssertionError("No network"),
+            ),
             patch(
                 "socket.create_connection",
                 side_effect=AssertionError("No network"),
@@ -33,7 +43,9 @@ class TestCudaSwarmOutput(unittest.TestCase):
         ):
             namespace = runpy.run_path(str(EXAMPLE))
             path = Path(directory) / "kernel.cu"
-            swarm = namespace["CudaSwarm"](agents=[agent], file_path=str(path))
+            swarm = namespace["CudaSwarm"](
+                agents=[agent], file_path=str(path)
+            )
             result = swarm.run("Translate the kernel")
             self.assertEqual(path.read_bytes(), expected.encode())
             self.assertEqual(result, expected)
@@ -56,7 +68,9 @@ class TestCudaSwarmOutput(unittest.TestCase):
         )
 
     def test_unlabeled_fence_is_removed(self) -> None:
-        self.assert_saved_output("```\nint value;\n```", "int value;\n")
+        self.assert_saved_output(
+            "```\nint value;\n```", "int value;\n"
+        )
 
     def test_multiple_blocks_exclude_prose(self) -> None:
         self.assert_saved_output(

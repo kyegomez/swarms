@@ -19,7 +19,9 @@ def extract_code_blocks(text: str) -> str:
         str: Joined code blocks, or the original text if no blocks are found.
     """
     # Regular expression to match code blocks enclosed in triple backticks
-    code_block_pattern = re.compile(r"```[^\r\n`]*\r?\n(.*?)```", re.DOTALL)
+    code_block_pattern = re.compile(
+        r"```[^\r\n`]*\r?\n(.*?)```", re.DOTALL
+    )
 
     # Find all matches and join them into a single string
     matches = code_block_pattern.findall(text)
