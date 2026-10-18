@@ -81,28 +81,6 @@ def example_check_internet_connection():
         print(f"Error: {e}")
 
 
-def example_is_local_model():
-    """
-    Example of checking if a model is a local model.
-
-    This function demonstrates how to determine if a model
-    is local or requires internet connectivity.
-    """
-    # Check various model names
-    models = [
-        "gpt-5.4",
-        "ollama/llama2",
-        "anthropic/claude-3",
-        "ollama/mistral",
-        "local/custom-model",
-    ]
-
-    for model_name in models:
-        is_local = LiteLLM.is_local_model(model_name)
-        status = "Local" if is_local else "Cloud"
-        print(f"{model_name}: {status}")
-
-
 def example_with_custom_base_url():
     """
     Example of using LiteLLM with a custom base URL.
@@ -139,11 +117,6 @@ if __name__ == "__main__":
     example_check_internet_connection()
 
     print("\n" + "=" * 70)
-    print("Example 3: Check if Model is Local")
-    print("=" * 70)
-    example_is_local_model()
-
-    print("\n" + "=" * 70)
-    print("Example 4: Custom Base URL")
+    print("Example 3: Custom Base URL")
     print("=" * 70)
     example_with_custom_base_url()
