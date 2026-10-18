@@ -21,6 +21,7 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
@@ -1016,7 +1017,7 @@ class SharedTodoList:
             {
                 "action": action,
                 "todo_id": todo_id,
-                "details": details,
+                "details": deepcopy(details),
                 "version": self.version,
                 "timestamp": time.time(),
             }
