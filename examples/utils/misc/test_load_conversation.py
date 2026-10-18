@@ -21,11 +21,10 @@ def main():
     print("\nExample 1: In-memory conversation (no saving)")
     conv_memory = Conversation(
         name="memory_only_chat",
-        save_enabled=False,  # Don't save to disk
         autosave=False,
     )
     conv_memory.add("user", "This conversation won't be saved!")
-    conv_memory.display_conversation()
+    print(conv_memory.return_history_as_string())
 
     # Example 2: Conversation with autosaving
     print("\nExample 2: Conversation with autosaving")
@@ -35,7 +34,6 @@ def main():
     conv_autosave = Conversation(
         name="autosave_chat",
         conversations_dir=conversation_dir,
-        save_enabled=True,  # Enable saving
         autosave=True,  # Enable autosaving
     )
     print(f"Created new conversation with ID: {conv_autosave.id}")
@@ -58,7 +56,6 @@ def main():
     conv_custom = Conversation(
         name="custom_chat",
         save_filepath=custom_file,
-        save_enabled=True,
     )
     conv_custom.add("user", "This is a custom saved conversation")
     conv_custom.add(
@@ -71,15 +68,15 @@ def main():
         name="custom_chat", load_filepath=custom_file
     )
     print("Loaded custom conversation:")
-    loaded_conv.display_conversation()
+    print(loaded_conv.return_history_as_string())
 
     # List all saved conversations
     print("\nAll saved conversations:")
-    conversations = Conversation.list_conversations(conversation_dir)
-    for conv_info in conversations:
-        print(
-            f"- {conv_info['name']} (ID: {conv_info['id']}, Created: {conv_info['created_at']})"
-        )
+    conversations = Conversation.list_cached_conversations(
+        conversation_dir
+    )
+    for name in conversations:
+        print(f"- {name}")
 
 
 main()
