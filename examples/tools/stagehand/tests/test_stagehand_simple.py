@@ -18,7 +18,7 @@ class TestStagehandIntegrationStructure:
         """Test that examples directory structure is correct."""
         import os
 
-        base_path = "examples/stagehand"
+        base_path = "examples/tools/stagehand"
         assert os.path.exists(base_path)
 
         expected_files = [
@@ -37,7 +37,8 @@ class TestStagehandIntegrationStructure:
     def test_wrapper_agent_imports(self):
         """Test that wrapper agent has correct imports."""
         with open(
-            "examples/stagehand/1_stagehand_wrapper_agent.py", "r"
+            "examples/tools/stagehand/1_stagehand_wrapper_agent.py",
+            "r",
         ) as f:
             content = f.read()
 
@@ -50,7 +51,7 @@ class TestStagehandIntegrationStructure:
     def test_tools_agent_imports(self):
         """Test that tools agent has correct imports."""
         with open(
-            "examples/stagehand/2_stagehand_tools_agent.py", "r"
+            "examples/tools/stagehand/2_stagehand_tools_agent.py", "r"
         ) as f:
             content = f.read()
 
@@ -63,7 +64,7 @@ class TestStagehandIntegrationStructure:
     def test_mcp_agent_imports(self):
         """Test that MCP agent has correct imports."""
         with open(
-            "examples/stagehand/3_stagehand_mcp_agent.py", "r"
+            "examples/tools/stagehand/3_stagehand_mcp_agent.py", "r"
         ) as f:
             content = f.read()
 
@@ -75,7 +76,7 @@ class TestStagehandIntegrationStructure:
     def test_workflow_agent_imports(self):
         """Test that workflow agent has correct imports."""
         with open(
-            "examples/stagehand/4_stagehand_multi_agent_workflow.py",
+            "examples/tools/stagehand/4_stagehand_multi_agent_workflow.py",
             "r",
         ) as f:
             content = f.read()
@@ -182,7 +183,8 @@ class TestSwarmsPatternsCompliance:
 
         # Read the wrapper agent file
         with open(
-            "examples/stagehand/1_stagehand_wrapper_agent.py", "r"
+            "examples/tools/stagehand/1_stagehand_wrapper_agent.py",
+            "r",
         ) as f:
             content = f.read()
 
@@ -196,7 +198,7 @@ class TestSwarmsPatternsCompliance:
 
         # Read the tools agent file
         with open(
-            "examples/stagehand/2_stagehand_tools_agent.py", "r"
+            "examples/tools/stagehand/2_stagehand_tools_agent.py", "r"
         ) as f:
             content = f.read()
 
@@ -211,7 +213,7 @@ class TestSwarmsPatternsCompliance:
 
         # Read the MCP agent file
         with open(
-            "examples/stagehand/3_stagehand_mcp_agent.py", "r"
+            "examples/tools/stagehand/3_stagehand_mcp_agent.py", "r"
         ) as f:
             content = f.read()
 
@@ -224,7 +226,7 @@ class TestSwarmsPatternsCompliance:
 
         # Read the workflow file
         with open(
-            "examples/stagehand/4_stagehand_multi_agent_workflow.py",
+            "examples/tools/stagehand/4_stagehand_multi_agent_workflow.py",
             "r",
         ) as f:
             content = f.read()
@@ -241,7 +243,7 @@ class TestDocumentationAndExamples:
     def test_readme_completeness(self):
         """Test that README contains essential information."""
 
-        with open("examples/stagehand/README.md", "r") as f:
+        with open("examples/tools/stagehand/README.md", "r") as f:
             content = f.read()
 
         required_sections = [
@@ -259,7 +261,9 @@ class TestDocumentationAndExamples:
     def test_requirements_file(self):
         """Test that requirements file has necessary dependencies."""
 
-        with open("examples/stagehand/requirements.txt", "r") as f:
+        with open(
+            "examples/tools/stagehand/requirements.txt", "r"
+        ) as f:
             content = f.read()
 
         required_deps = [
@@ -277,10 +281,10 @@ class TestDocumentationAndExamples:
         """Test that example files have proper docstrings."""
 
         example_files = [
-            "examples/stagehand/1_stagehand_wrapper_agent.py",
-            "examples/stagehand/2_stagehand_tools_agent.py",
-            "examples/stagehand/3_stagehand_mcp_agent.py",
-            "examples/stagehand/4_stagehand_multi_agent_workflow.py",
+            "examples/tools/stagehand/1_stagehand_wrapper_agent.py",
+            "examples/tools/stagehand/2_stagehand_tools_agent.py",
+            "examples/tools/stagehand/3_stagehand_mcp_agent.py",
+            "examples/tools/stagehand/4_stagehand_multi_agent_workflow.py",
         ]
 
         for file_path in example_files:

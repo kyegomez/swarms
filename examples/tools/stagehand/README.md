@@ -207,10 +207,10 @@ browser_agent.cleanup()  # For wrapper agents
 
 ## Testing
 
-Run the test suite to verify the integration:
+Run the offline test suite from the repository root:
 
 ```bash
-pytest tests/stagehand/test_stagehand_integration.py -v
+pytest examples/tools/stagehand/tests/test_stagehand_simple.py -v
 ```
 
 ## Troubleshooting
