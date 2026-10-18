@@ -51,7 +51,9 @@ def transform_output_callback(
             "running" if metadata["is_running"] else "stopped"
         ),
         "uptime_seconds": (
-            metadata["uptime"] if metadata["start_time"] else 0
+            metadata["timestamp"] - metadata["start_time"]
+            if metadata["start_time"]
+            else 0
         ),
     }
 
