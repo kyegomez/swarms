@@ -99,9 +99,9 @@ Begin your comprehensive analysis:"""
 
         # Create agent for initial generation
         agent = Agent(
-            name="LongForm Content Generator",
+            agent_name="LongForm Content Generator",
             system_prompt=initial_prompt,
-            model=self.model,
+            model_name=self.model,
             max_loops=1,
             temperature=0.7,
             max_tokens=4000,
@@ -125,9 +125,9 @@ Continue the analysis:"""
 
             # Create continuation agent
             continuation_agent = Agent(
-                name="Content Continuation Agent",
+                agent_name="Content Continuation Agent",
                 system_prompt=continuation_prompt,
-                model=self.model,
+                model_name=self.model,
                 max_loops=1,
                 temperature=0.7,
                 max_tokens=4000,
@@ -179,9 +179,9 @@ Write the complete section:"""
 
             # Create agent for this section
             section_agent = Agent(
-                name=f"Section Generator - {section['title']}",
+                agent_name=f"Section Generator - {section['title']}",
                 system_prompt=section_prompt,
-                model=self.model,
+                model_name=self.model,
                 max_loops=1,
                 temperature=0.7,
                 max_tokens=3000,
