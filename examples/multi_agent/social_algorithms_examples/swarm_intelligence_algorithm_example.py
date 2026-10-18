@@ -362,9 +362,7 @@ if __name__ == "__main__":
 
     print("=== SWARM INTELLIGENCE ALGORITHM RESULTS ===")
     print(f"Task: {result.final_outputs['task']}")
-    print(
-        f"Total Iterations: {result.final_outputs['total_iterations']}"
-    )
+    print(f"Total Iterations: {result.final_outputs['total_loops']}")
     print(
         f"Total Discoveries: {result.final_outputs['total_discoveries']}"
     )
