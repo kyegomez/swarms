@@ -347,12 +347,9 @@ Always:
                     if (
                         analysis_data["next_action"]["type"]
                         == "complete"
+                        and context.current_step
+                        == len(context.steps) - 1
                     ):
-                        if (
-                            context.current_step
-                            < len(context.steps) - 1
-                        ):
-                            continue
                         break
 
                     context.current_step += 1
