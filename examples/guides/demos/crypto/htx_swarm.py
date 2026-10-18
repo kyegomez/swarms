@@ -218,13 +218,14 @@ def fetch_htx_data(coin_name: str):
             },
             "recent_trades": [
                 {
-                    "price": trade["data"][0].get("price"),
-                    "amount": trade["data"][0].get("amount"),
-                    "direction": trade["data"][0].get("direction"),
-                    "trade_id": trade["data"][0].get("id"),
-                    "timestamp": trade["data"][0].get("ts"),
+                    "price": trade.get("price"),
+                    "amount": trade.get("amount"),
+                    "direction": trade.get("direction"),
+                    "trade_id": trade.get("id"),
+                    "timestamp": trade.get("ts"),
                 }
-                for trade in trades_data.get("data", [])
+                for batch in trades_data.get("data", [])
+                for trade in batch.get("data", [])
             ],
             "kline_data": [
                 {
