@@ -243,6 +243,9 @@ Analyze market impact, patterns, risks, and strategic implications."""
         while True:
             try:
                 current_block = self.w3.eth.block_number
+                if current_block <= self.last_processed_block:
+                    await asyncio.sleep(1)
+                    continue
                 block = self.w3.eth.get_block(
                     current_block, full_transactions=True
                 )
@@ -279,6 +282,7 @@ Analyze market impact, patterns, risks, and strategic implications."""
                         print(ai_analysis)
                         print("=" * 50 + "\n")
 
+                self.last_processed_block = current_block
                 await asyncio.sleep(1)  # Wait for next block
 
             except Exception as e:
