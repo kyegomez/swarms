@@ -177,7 +177,7 @@ When discussing products, always reference accurate prices, coverage amounts, an
 
                 if menu_choice == "1":
                     # Use agent to provide personalized product recommendations
-                    return await self.agent.run(
+                    return await self.agent.arun(
                         """Por favor ayude al cliente a elegir un producto:
                     
 Productos disponibles:
@@ -191,7 +191,7 @@ Explique brevemente cada uno y solicite información sobre sus necesidades espec
                 elif menu_choice == "2":
                     self.current_node = WorkflowNode.QUOTE_REQUEST
                     # Use agent to handle quote requests
-                    return await self.agent.run(
+                    return await self.agent.arun(
                         """Inicie el proceso de cotización.
                     Solicite la siguiente información de manera conversacional:
                     1. Tipo de seguro
@@ -200,7 +200,7 @@ Explique brevemente cada uno y solicite información sobre sus necesidades espec
                     )
 
                 elif menu_choice == "3":
-                    return await self.agent.run(
+                    return await self.agent.arun(
                         """Explique el proceso de reclamos para cada tipo de seguro,
                     incluyendo documentación necesaria y tiempos estimados."""
                     )
@@ -208,7 +208,7 @@ Explique brevemente cada uno y solicite información sobre sus necesidades espec
                 elif menu_choice == "4":
                     self.current_node = WorkflowNode.LOCATE_OFFICE
                     # Use agent to provide location guidance
-                    return await self.agent.run(
+                    return await self.agent.arun(
                         f"""Based on our office locations: {LATAM_LOCATIONS}
                     Ask the customer for their location and help them find the nearest office.
                     Provide the response in Spanish."""
@@ -216,26 +216,26 @@ Explique brevemente cada uno y solicite información sobre sus necesidades espec
 
                 elif menu_choice == "5":
                     # Use agent to explain payment options
-                    return await self.agent.run(
+                    return await self.agent.arun(
                         """Explique todas las opciones de pago disponibles,
                     incluyendo métodos, frecuencias y cualquier descuento por pago anticipado."""
                     )
 
                 elif menu_choice == "6":
                     # Use agent to handle advisor connection
-                    return await self.agent.run(
+                    return await self.agent.arun(
                         """Explique el proceso para conectar con un asesor personal,
                     horarios de atención y canales disponibles."""
                     )
 
                 else:
-                    return await self.agent.run(
+                    return await self.agent.arun(
                         "Explain that the option is invalid and list the main menu options."
                     )
 
             elif self.current_node == WorkflowNode.LOCATE_OFFICE:
                 # Use agent to process location request
-                return await self.agent.run(
+                return await self.agent.arun(
                     f"""Based on user input: '{user_input}'
                 and our office locations: {LATAM_LOCATIONS}
                 Help them find the most relevant office. Response in Spanish."""
@@ -245,7 +245,7 @@ Explique brevemente cada uno y solicite información sobre sus necesidades espec
             if user_input.upper() in INSURANCE_PRODUCTS:
                 product = self.get_product_info(user_input.upper())
                 # Use agent to provide detailed product information
-                return await self.agent.run(
+                return await self.agent.arun(
                     f"""Provide detailed information about this product:
                 {self.format_product_info(product)}
                 Include additional benefits and comparison with similar products.
@@ -253,7 +253,7 @@ Explique brevemente cada uno y solicite información sobre sus necesidades espec
                 )
 
             # Handle general queries
-            return await self.agent.run(
+            return await self.agent.arun(
                 f"""The user said: '{user_input}'
             Provide a helpful response based on our insurance products and services.
             Response in Spanish."""
@@ -261,7 +261,7 @@ Explique brevemente cada uno y solicite información sobre sus necesidades espec
 
         except Exception:
             self.current_node = WorkflowNode.MAIN_MENU
-            return await self.agent.run(
+            return await self.agent.arun(
                 "Explain that there was an error and list the main menu options. Response in Spanish."
             )
 
