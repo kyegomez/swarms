@@ -318,6 +318,7 @@ def example_5_advanced_scenarios():
         max_tokens=2000,  # Restrictive token limit
         preserve_system_messages=True,
     )
+    transforms = MessageTransforms(config)
     result = transforms.transform_messages(token_heavy_messages)
     print(
         f"Token-heavy content: {result.original_token_count} -> {result.compressed_token_count} tokens"
