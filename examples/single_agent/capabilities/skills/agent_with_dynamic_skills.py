@@ -3,24 +3,22 @@ Dynamic Skills Loading Example
 
 This example demonstrates how to use dynamic skills loading with an agent.
 Instead of loading all skills statically, the agent loads only the skills that are
-relevant to the specified task based on cosine similarity during initialization.
+relevant to the specified task based on cosine similarity.
 
-The dynamic loading happens in the `handle_skills()` method when a `task` parameter
-is provided to the Agent constructor. Skills are loaded once during initialization
-based on the task description.
+The dynamic loading happens in the `handle_skills()` method during `agent.run()`.
+Skills are selected for each task from the bundled skill folders beside this script.
 """
+
+from pathlib import Path
 
 from swarms import Agent
 
-# Step 1: Create skills directory structure (using existing skills)
-# We'll use the existing skills in agent_skill_examples
-
-# Step 2: Create agent with dynamic skills loading enabled
+# Create an agent using the bundled skill folders beside this script.
 agent = Agent(
     agent_name="Dynamic Skills Agent",
     model_name="gpt-4o",
     max_loops=1,
-    skills_dir="./agent_skill_examples",  # Directory containing skill folders
+    skills_dir=str(Path(__file__).resolve().parent),
 )
 
 # Task 1: Financial analysis task (should load financial-analysis skill)

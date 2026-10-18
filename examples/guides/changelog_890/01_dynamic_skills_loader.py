@@ -12,6 +12,8 @@ Key features demonstrated:
 - Skill similarity matching using embeddings
 """
 
+from pathlib import Path
+
 from swarms import Agent
 
 # Create an agent with DynamicSkillsLoader integration
@@ -20,7 +22,10 @@ agent = Agent(
     agent_name="Adaptive Research Agent",
     model_name="gpt-5.4",
     max_loops=1,
-    skills_dir="./examples/single_agent/agent_skill_examples",  # Directory with skill folders
+    skills_dir=str(
+        Path(__file__).resolve().parents[2]
+        / "single_agent/capabilities/skills"
+    ),
 )
 
 # Task that should trigger loading of research/analysis skills
