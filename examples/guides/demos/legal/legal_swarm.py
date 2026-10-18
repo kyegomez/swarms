@@ -1,4 +1,3 @@
-from functools import lru_cache
 from io import BytesIO
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -186,7 +185,6 @@ class LegalSwarm:
             # ),
         ]
 
-    @lru_cache(maxsize=1)
     def handle_documents(self, documents: List[str]) -> str:
         """
         Handle a list of documents concurrently, extracting text from PDFs and other documents.
