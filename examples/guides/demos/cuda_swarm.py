@@ -10,22 +10,20 @@ litellm.drop_params = True
 
 def extract_code_blocks(text: str) -> str:
     """
-    Extracts code blocks enclosed in triple backticks from the given text.
+    Extracts fenced code blocks, or preserves unfenced output unchanged.
 
     Args:
-        text (str): The input text containing code blocks.
+        text (str): The agent output, with or without code fences.
 
     Returns:
-        str: The extracted code blocks joined together as a single string.
+        str: Joined code blocks, or the original text if no blocks are found.
     """
     # Regular expression to match code blocks enclosed in triple backticks
-    code_block_pattern = re.compile(
-        r"```(?:[a-zA-Z]*)\n(.*?)```", re.DOTALL
-    )
+    code_block_pattern = re.compile(r"```[^\r\n`]*\r?\n(.*?)```", re.DOTALL)
 
     # Find all matches and join them into a single string
     matches = code_block_pattern.findall(text)
-    return "\n".join(matches)
+    return "\n".join(matches) if matches else text
 
 
 # Prompt #1: Translate PyTorch code into CUDA (extensive instructions)
