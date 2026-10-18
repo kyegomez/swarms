@@ -293,7 +293,7 @@ def backtest_summary(report: str) -> str:
     return f"The backtest report is: {report}"
 
 
-def get_coin_price(coin_id: str, vs_currency: str) -> str:
+def get_coin_price(coin_id: str, vs_currency: str = "usd") -> str:
     """
     Get the current price of a specific cryptocurrency.
 
