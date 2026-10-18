@@ -88,6 +88,12 @@ class ArticleExtractor:
         ):
             element.decompose()
 
+        for element in soup.find_all(
+            ["br", "p", "div", "h1", "h2", "h3", "h4", "h5", "h6"]
+        ):
+            element.insert_before(" ")
+            element.insert_after(" ")
+
         # Try domain-specific selector first
         if domain in cls.DOMAIN_SELECTORS:
             selector = cls.DOMAIN_SELECTORS[domain]["article"]
