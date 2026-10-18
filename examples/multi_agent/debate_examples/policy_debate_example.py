@@ -78,5 +78,5 @@ result = debate_system.run(task=topic)
 print(result)
 
 # Get the final refined answer
-final_answer = debate_system.get_final_answer()
+final_answer = debate_system.conversation.get_final_message_content()
 print(final_answer)

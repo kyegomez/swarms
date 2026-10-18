@@ -78,9 +78,11 @@ result = strategy_debate.run(task=strategy_question)
 print(result)
 
 # Get the full conversation history for detailed analysis
-history = strategy_debate.get_conversation_history()
+history = strategy_debate.conversation.get_str()
 print(history)
 
 # Get the final refined answer
-final_answer = strategy_debate.get_final_answer()
+final_answer = (
+    strategy_debate.conversation.get_final_message_content()
+)
 print(final_answer)
