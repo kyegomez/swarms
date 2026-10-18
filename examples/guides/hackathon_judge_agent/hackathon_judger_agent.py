@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from swarms import Agent
 
 HACKATHON_JUDGER_AGENT_PROMPT = """
@@ -107,7 +109,9 @@ agent = Agent(
 )
 
 
-def read_csv_file(file_path: str = "projects.csv") -> str:
+def read_csv_file(
+    file_path: str = str(Path(__file__).with_name("projects.csv")),
+) -> str:
     """Reads the entire CSV file and returns its content as a string."""
     with open(file_path, mode="r", encoding="utf-8") as f:
         return f.read()
