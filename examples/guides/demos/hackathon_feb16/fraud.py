@@ -94,7 +94,7 @@ class FraudClassifier:
             retry_attempts=1,
             context_length=200000,
             return_step_meta=False,
-            output_type="json",  # Expect JSON output
+            output_type="final",
             streaming_on=False,
         )
 
@@ -112,7 +112,7 @@ class FraudClassifier:
             retry_attempts=1,
             context_length=200000,
             return_step_meta=False,
-            output_type="json",
+            output_type="final",
             streaming_on=False,
         )
 
@@ -130,7 +130,7 @@ class FraudClassifier:
             retry_attempts=1,
             context_length=200000,
             return_step_meta=False,
-            output_type="json",
+            output_type="final",
             streaming_on=False,
         )
 
@@ -148,7 +148,7 @@ class FraudClassifier:
             retry_attempts=1,
             context_length=200000,
             return_step_meta=False,
-            output_type="json",
+            output_type="final",
             streaming_on=False,
         )
 
