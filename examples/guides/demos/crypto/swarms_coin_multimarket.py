@@ -117,11 +117,11 @@ class MultiExchangeDataFetcher:
     def __init__(self):
         self.base_urls = {
             "coingecko": "https://api.coingecko.com/api/v3",
-            "dexscreener": "https://api.dexscreener.com/latest/dex",
+            "dexscreener": "https://api.dexscreener.com",
             "birdeye": "https://public-api.birdeye.so/public",  # Using Birdeye instead of Jupiter
         }
 
-    async def fetch_data(self, url: str) -> Optional[Dict]:
+    async def fetch_data(self, url: str) -> dict | list | None:
         """Generic async function to fetch data from APIs with error handling"""
         async with aiohttp.ClientSession() as session:
             try:
@@ -166,17 +166,26 @@ class MultiExchangeDataFetcher:
     async def get_dexscreener_data(self) -> Optional[Dict]:
         """Fetch $Swarms data from DexScreener"""
         try:
-            url = (
-                f"{self.base_urls['dexscreener']}/pairs/solana/swarms"
-            )
+            token = "74SBV4zDXxTRgv1pEMoECskKBkZHc2yGPnc7GYVepump"
+            url = f"{self.base_urls['dexscreener']}/token-pairs/v1/solana/{token}"
             data = await self.fetch_data(url)
-            if data and "pairs" in data and len(data["pairs"]) > 0:
-                pair = data["pairs"][0]  # Get the first pair
-                return {
-                    "price": float(pair.get("priceUsd", 0)),
-                    "volume24h": float(pair.get("volume24h", 0)),
-                    "marketCap": float(pair.get("marketCap", 0)),
-                }
+            for pair in data or []:
+                if pair.get("baseToken", {}).get("address") == token:
+                    values = {
+                        "price": pair.get("priceUsd"),
+                        "volume24h": pair.get("volume", {}).get(
+                            "h24"
+                        ),
+                        "marketCap": pair.get("marketCap"),
+                    }
+                    return {
+                        key: (
+                            float(value)
+                            if value is not None
+                            else None
+                        )
+                        for key, value in values.items()
+                    }
             return None
         except Exception as e:
             print(f"Error processing DexScreener data: {str(e)}")
