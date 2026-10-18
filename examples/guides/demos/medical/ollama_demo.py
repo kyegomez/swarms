@@ -188,33 +188,33 @@ def generate_coding_report(diagnosis_output: str) -> str:
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     report = f"""# Medical Diagnosis and Coding Report
-    Generated: {timestamp}
+Generated: {timestamp}
 
-    ## Clinical Summary
-    {diagnosis_output}
+## Clinical Summary
+{diagnosis_output}
 
-    ## Coding Summary
-    ### Primary Diagnosis Codes
-    [Extracted from synthesis]
+## Coding Summary
+### Primary Diagnosis Codes
+[Extracted from synthesis]
 
-    ### Secondary Diagnosis Codes
-    [Extracted from synthesis]
+### Secondary Diagnosis Codes
+[Extracted from synthesis]
 
-    ### Symptom Codes
-    [Extracted from synthesis]
+### Symptom Codes
+[Extracted from synthesis]
 
-    ### Procedure Codes (if applicable)
-    [Extracted from synthesis]
+### Procedure Codes (if applicable)
+[Extracted from synthesis]
 
-    ## Documentation and Compliance Notes
-    - Code justification
-    - Supporting documentation references
-    - Any coding queries or clarifications needed
+## Documentation and Compliance Notes
+- Code justification
+- Supporting documentation references
+- Any coding queries or clarifications needed
 
-    ## Recommendations
-    - Additional documentation needed
-    - Suggested follow-up
-    - Coding optimization opportunities
+## Recommendations
+- Additional documentation needed
+- Suggested follow-up
+- Coding optimization opportunities
     """
     return report
 

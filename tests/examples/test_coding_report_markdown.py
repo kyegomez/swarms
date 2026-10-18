@@ -11,14 +11,16 @@ from xml.etree import ElementTree
 import pytest
 
 markdown = pytest.importorskip("markdown")
-EXAMPLE = (
+EXAMPLE_DIR = (
     Path(__file__).resolve().parents[2]
-    / "examples/guides/demos/medical/medical_coder_agent.py"
+    / "examples/guides/demos/medical"
 )
 
 
-@pytest.fixture
-def report(monkeypatch: pytest.MonkeyPatch) -> Callable:
+@pytest.fixture(params=["medical_coder_agent.py", "ollama_demo.py"])
+def report(
+    monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+) -> Callable:
     blocked = Mock(side_effect=AssertionError("No network or files"))
     monkeypatch.setitem(
         sys.modules,
@@ -31,7 +33,9 @@ def report(monkeypatch: pytest.MonkeyPatch) -> Callable:
     )
     monkeypatch.setattr("socket.socket", blocked)
     monkeypatch.setattr("socket.create_connection", blocked)
-    return runpy.run_path(str(EXAMPLE))["generate_coding_report"]
+    return runpy.run_path(str(EXAMPLE_DIR / request.param))[
+        "generate_coding_report"
+    ]
 
 
 def render(text: str) -> ElementTree.Element:
