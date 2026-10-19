@@ -10,6 +10,7 @@ from loguru import logger
 
 from swarms.structs import conversation as conversation_module
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_tokenizer import count_tokens
 
 
 def setup_temp_conversations_dir():
@@ -578,6 +579,23 @@ def test_save_and_load_json():
             return False
     finally:
         shutil.rmtree(temp_dir)
+
+
+def test_load_filepath_restores_the_saved_history(tmp_path):
+    saved = tmp_path / "saved.json"
+    conv = Conversation(save_filepath=str(saved))
+    conv.add("user", "remember Helios")
+    conv.save_as_json(force=True)
+
+    restored = Conversation(
+        load_filepath=str(saved),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+
+    assert [
+        message["content"]
+        for message in restored.conversation_history
+    ] == ["remember Helios"]
 
 
 # ── memory_md_path initialization ──
@@ -1290,20 +1308,6 @@ def test_return_messages_as_dictionary_preserves_roles():
     assert messages[1]["content"] == "Hello, user!"
 
 
-if __name__ == "__main__":
-    logger.info("Starting test execution")
-    results = run_all_tests()
-    report = generate_markdown_report(results)
-
-    # Save report to file
-    with open("test_results.md", "w") as f:
-        f.write(report)
-
-    logger.success(
-        "Test execution completed. Results saved to test_results.md"
-    )
-
-
 def test_return_all_except_first_without_a_system_prompt():
     conv = Conversation()
     conv.add("User", "Task")
@@ -1380,3 +1384,270 @@ def test_resuming_a_named_conversation_keeps_one_system_prompt(
             "User",
             "Assistant",
         ]
+
+
+def _record_token_counts(monkeypatch):
+    counted = []
+
+    def counting(text, *args, **kwargs):
+        counted.append(text)
+        return count_tokens(text, *args, **kwargs)
+
+    monkeypatch.setattr(conversation_module, "count_tokens", counting)
+    return counted
+
+
+def test_history_reads_reuse_message_token_counts(monkeypatch):
+    conv = Conversation(context_length=10_000)
+    conv.add("User", "first message")
+    conv.add("Assistant", "second message")
+    counted = _record_token_counts(monkeypatch)
+
+    for _ in range(3):
+        conv.return_history_as_string()
+    assert sorted(counted) == [
+        "Assistant: second message",
+        "User: first message",
+    ]
+
+    conv.add("User", "third message")
+    conv.return_history_as_string()
+    assert counted[2:] == ["User: third message"]
+
+
+def test_trimmed_history_counts_messages_not_the_transcript(
+    monkeypatch,
+):
+    conv = Conversation(context_length=40)
+    contents = [
+        f"message {i} " + " ".join(["word"] * 10) for i in range(20)
+    ]
+    for content in contents:
+        conv.add("User", content)
+    counted = _record_token_counts(monkeypatch)
+
+    history = conv.return_history_as_string()
+
+    assert all("\n\n" not in text for text in counted)
+    full = "\n\n".join(f"User: {content}" for content in contents)
+    assert full.endswith(history)
+    assert history.endswith(contents[-1])
+    assert count_tokens(history) <= 40
+
+
+def test_trimmed_history_skips_messages_that_cannot_fit(monkeypatch):
+    conv = Conversation(context_length=40)
+    contents = [
+        f"message {i} " + " ".join(["word"] * 10) for i in range(20)
+    ]
+    for content in contents:
+        conv.add("User", content)
+    counted = _record_token_counts(monkeypatch)
+
+    conv.return_history_as_string()
+
+    assert not any(contents[0] in text for text in counted)
+    assert not any(contents[10] in text for text in counted)
+
+
+def test_token_count_on_add_is_reused_by_history_reads(monkeypatch):
+    counted = _record_token_counts(monkeypatch)
+    conv = Conversation(token_count=True, context_length=10_000)
+    message = conv.add("User", "first message")
+    conv.add("Assistant", "second message")
+
+    conv.return_history_as_string()
+    conv.count_history_tokens()
+
+    assert sorted(counted) == [
+        "Assistant: second message",
+        "User: first message",
+    ]
+    assert message["token_count"] == count_tokens(
+        "User: first message"
+    )
+
+
+def test_token_count_cache_stays_bounded_after_updates():
+    conv = Conversation(context_length=10_000)
+    for i in range(5):
+        conv.add("User", f"message {i}")
+    conv.return_history_as_string()
+
+    for i in range(50):
+        conv.update(0, "User", f"edit {i}")
+        conv.return_history_as_string()
+
+    assert len(conv._token_count_cache) <= 2 * len(
+        conv.conversation_history
+    )
+    lines = conv._format_messages()
+    assert (
+        conv.count_history_tokens()
+        == sum(count_tokens(line) for line in lines) + len(lines) - 1
+    )
+
+
+def test_token_count_cache_prune_does_not_iterate_the_shared_cache():
+    class AddsWhileIterated(dict):
+        def items(self):
+            for item in super().items():
+                self[
+                    ("model", f"added by another thread {len(self)}")
+                ] = 1
+                yield item
+
+    conv = Conversation(context_length=10_000)
+    conv.add("User", "kept message")
+    conv._token_count_cache = AddsWhileIterated(
+        {("model", f"stale line {i}"): 1 for i in range(4)}
+    )
+
+    conv.return_history_as_string()
+
+    assert set(conv._token_count_cache) == {
+        (conv.tokenizer_model_name, "User: kept message")
+    }
+
+
+def _tool_call(name, call_id="call_1", **arguments):
+    return {
+        "id": call_id,
+        "type": "function",
+        "function": {
+            "name": name,
+            "arguments": json.dumps(arguments),
+        },
+    }
+
+
+def _assert_calls_answered(messages):
+    for index, message in enumerate(messages):
+        expected = [c["id"] for c in message.get("tool_calls") or []]
+        following = [
+            m.get("tool_call_id")
+            for m in messages[index + 1 : index + 1 + len(expected)]
+        ]
+        assert following == expected
+
+
+def test_record_assistant_tool_call_and_result():
+    conv = Conversation()
+    conv.add("user", "read it")
+    calls = conv.record_assistant(
+        [_tool_call("read_file", file_path="a")]
+    )
+    conv.flush_tool_results(calls, {calls[0]["id"]: "contents"})
+
+    assert [c["name"] for c in calls] == ["read_file"]
+    assert [m["role"] for m in conv.to_messages()] == [
+        "user",
+        "assistant",
+        "tool",
+    ]
+    assert conv.to_messages()[-1]["content"] == "contents"
+    _assert_calls_answered(conv.to_messages())
+
+
+def test_record_assistant_text_is_an_assistant_turn():
+    conv = Conversation()
+
+    assert conv.record_assistant("just talking") == []
+    assert conv.to_messages() == [
+        {"role": "assistant", "content": "just talking"}
+    ]
+
+
+def test_flush_tool_results_fills_missing_results():
+    conv = Conversation()
+    calls = conv.record_assistant(
+        [
+            _tool_call("grep", call_id="a"),
+            _tool_call("f", call_id="b"),
+        ]
+    )
+    conv.flush_tool_results(calls, {"a": "one"})
+
+    assert [m["role"] for m in conv.to_messages()] == [
+        "assistant",
+        "tool",
+        "tool",
+    ]
+    assert (
+        "no result recorded for f"
+        in conv.to_messages()[-1]["content"]
+    )
+    _assert_calls_answered(conv.to_messages())
+
+
+def test_record_assistant_synthesises_a_missing_call_id():
+    conv = Conversation()
+    calls = conv.record_assistant(
+        [{"function": {"name": "f", "arguments": "{}"}}]
+    )
+    conv.flush_tool_results(calls, {})
+
+    assert calls[0]["id"]
+    _assert_calls_answered(conv.to_messages())
+
+
+def test_map_batch_results_per_call_and_combined():
+    calls = [{"id": "a"}, {"id": "b"}]
+    per_call, combined = {}, {}
+    Conversation.map_batch_results(calls, ["one", "two"], per_call)
+    Conversation.map_batch_results(calls, "both", combined)
+
+    assert per_call == {"a": "one", "b": "two"}
+    assert combined == {"a": "both", "b": "both"}
+
+
+def test_to_messages_maps_roles_and_pairs_results():
+    conv = Conversation(system_prompt="be brief", time_enabled=True)
+    conv.add("Human", "earlier")
+    conv.add("Human", "weather?")
+    calls = conv.record_assistant(
+        [_tool_call("get_weather", call_id="w1")], role="Bot"
+    )
+    conv.add("Tool Executor", "prose copy of the result")
+    conv.add("Bot", "summary written before the result")
+    conv.flush_tool_results(calls, {"w1": "sunny"})
+
+    assert conv.to_messages("Bot", start=2) == [
+        {"role": "user", "content": "weather?"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": conv.conversation_history[3]["tool_calls"],
+        },
+        {"role": "tool", "tool_call_id": "w1", "content": "sunny"},
+        {
+            "role": "assistant",
+            "content": "summary written before the result",
+        },
+    ]
+
+
+def test_record_assistant_sends_a_non_text_reply_as_text():
+    conv = Conversation()
+    conv.record_assistant({"answer": 1})
+    conv.record_assistant({"answer": 2}, role="Bot")
+
+    assert conv.to_messages("Bot") == [
+        {"role": "assistant", "content": "{'answer': 1}"},
+        {"role": "assistant", "content": "{'answer': 2}"},
+    ]
+    assert conv.conversation_history[-1]["content"] == {"answer": 2}
+
+
+if __name__ == "__main__":
+    logger.info("Starting test execution")
+    results = run_all_tests()
+    report = generate_markdown_report(results)
+
+    # Save report to file
+    with open("test_results.md", "w") as f:
+        f.write(report)
+
+    logger.success(
+        "Test execution completed. Results saved to test_results.md"
+    )

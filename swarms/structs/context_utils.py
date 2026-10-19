@@ -197,11 +197,18 @@ def agent_answer(agent: Any, fallback: Any = None) -> Optional[str]:
         agent: Anything agent-like. Structures also nest other structures and
             test doubles here, so a missing or non-string result falls back
             rather than raising.
-        fallback: Returned when no final message is available.
+        fallback: Returned when no final message is available. An
+            exception means the run failed, and it is returned as
+            ``"Error: <message>"`` even when earlier loops left partial
+            output in memory, because an error is more honest than a
+            truncated answer.
 
     Returns:
         The agent's last message, or ``fallback``.
     """
+    if isinstance(fallback, BaseException):
+        return f"Error: {fallback}"
+
     try:
         answer = agent.short_memory.get_final_message_content()
     except Exception:

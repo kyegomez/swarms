@@ -112,6 +112,7 @@ class CronJob:
         self.interval = interval
         self.job_id = job_id or f"job_{id(self)}"
         self.is_running = False
+        self._stop_event = threading.Event()
         self.thread = None
         self.schedule = schedule.Scheduler()
         self.callback = callback
@@ -288,7 +289,7 @@ class CronJob:
         """Block until interrupted or stopped."""
         try:
             while self.is_running:
-                time.sleep(1)
+                self._stop_event.wait(1)
         except KeyboardInterrupt:
             logger.info(
                 f"CronJob: {self.job_id} received keyboard interrupt, stopping cron jobs..."
@@ -304,8 +305,9 @@ class CronJob:
         """Schedule ``task`` and block, running it every interval until stopped.
 
         Blocks the calling thread. The task runs on a background thread, so use
-        ``KeyboardInterrupt`` (Ctrl-C) or :meth:`stop` from another thread to end
-        it. A failing task is logged and retried on the next tick.
+        ``KeyboardInterrupt`` (Ctrl-C) or :meth:`stop` to end it; :meth:`stop`
+        works from another thread and from the job's own agent or callback. A
+        failing task is logged and retried on the next tick.
 
         Args:
             task: The task string handed to the agent on every tick.
@@ -451,7 +453,8 @@ class CronJob:
                     f"{self.max_consecutive_errors}"
                 )
                 self._stopped_due_to_error = True
-                self.is_running = False
+                self.schedule.clear()
+                self._signal_stop()
             return None
 
     def every_seconds(self, seconds: int, task: str, **kwargs):
@@ -492,13 +495,16 @@ class CronJob:
         """
         try:
             if not self.is_running:
-                self.is_running = True
+                self._stop_event.clear()
                 self.start_time = time.time()
+                self.consecutive_errors = 0
+                self._stopped_due_to_error = False
                 self.thread = threading.Thread(
                     target=self._run_schedule,
                     daemon=True,
                     name=f"cronjob_{self.job_id}",
                 )
+                self.is_running = True
                 self.thread.start()
                 logger.info(f"Started job {self.job_id}")
             else:
@@ -514,11 +520,14 @@ class CronJob:
             )
 
     def stop(self):
-        """Stop the job and join its scheduler thread.
+        """Stop the job and clear its schedule.
 
-        Safe to call from another thread while :meth:`run` is blocking, and safe
-        to call on a job that is already stopped. Waits up to 5 seconds for the
-        scheduler thread to exit.
+        Safe to call from another thread while :meth:`run` is blocking, from the
+        job's own agent or callback, and on a job that is already stopped. From
+        another thread it waits up to 5 seconds for the scheduler thread to
+        exit. On the scheduler thread, where the agent and callback run, it
+        returns without waiting: the tick in progress finishes and no later
+        tick runs.
 
         Raises:
             CronJobExecutionError: If the job fails to stop properly.
@@ -529,17 +538,20 @@ class CronJob:
         """
         try:
             logger.info(f"Stopping job {self.job_id}")
-            self.is_running = False
-            if self.thread:
-                self.thread.join(
+            # Snapshot and clear before signalling: run() may restart the job at once.
+            thread = self.thread
+            self.schedule.clear()
+            self._signal_stop()
+            # The agent and callback run on the scheduler thread, which can't join itself.
+            if thread and thread is not threading.current_thread():
+                thread.join(
                     timeout=5
                 )  # Wait up to 5 seconds for thread to finish
-                if self.thread.is_alive():
+                if thread.is_alive():
                     logger.warning(
                         f"Job {self.job_id} thread did not terminate gracefully"
                     )
-                self.schedule.clear()
-                logger.info(f"Successfully stopped job {self.job_id}")
+            logger.info(f"Successfully stopped job {self.job_id}")
         except Exception as e:
             logger.error(
                 f"Error stopping job {self.job_id}: {str(e)}"
@@ -548,12 +560,20 @@ class CronJob:
                 f"Failed to stop job: {str(e)}"
             )
 
+    def _signal_stop(self):
+        """Mark the job stopped and wake every loop waiting on it."""
+        self.is_running = False
+        self._stop_event.set()
+
     def _run_schedule(self):
         """Internal method to run the schedule loop."""
         logger.debug(f"Starting schedule loop for job {self.job_id}")
-        while self.is_running:
+        while (
+            self.is_running
+            and self.thread is threading.current_thread()
+        ):
             self.schedule.run_pending()
-            time.sleep(1)
+            self._stop_event.wait(1)
 
     def set_callback(self, callback: Callable[[Any, str, dict], Any]):
         """Set or update the callback function for output customization.
@@ -684,8 +704,9 @@ class CronJob:
 
         try:
             # Wait while the per-job threads work; exit once every job has stopped.
-            while any(job.is_running for job in jobs):
-                time.sleep(1)
+            for job in jobs:
+                while job.is_running:
+                    job._stop_event.wait(1)
         except KeyboardInterrupt:
             logger.info(
                 "run_many received keyboard interrupt, stopping all jobs"
@@ -715,6 +736,8 @@ class CronJob:
             jobs: The jobs to stop, typically the return value of
                 :meth:`run_many` called with ``block=False``.
         """
+        for job in jobs:
+            job._signal_stop()
         for job in jobs:
             try:
                 job.stop()

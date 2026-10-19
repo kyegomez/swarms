@@ -18,17 +18,6 @@ from typing import (
 
 import toml
 import yaml
-from litellm import model_list
-from litellm.exceptions import (
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-)
-from litellm.utils import (
-    get_max_tokens,
-    get_model_info,
-    supports_function_calling,
-)
 from loguru import logger
 from pydantic import BaseModel
 
@@ -36,11 +25,11 @@ from swarms.agents.agent_marketplace_handler import (
     AgentMarketplaceHandler,
 )
 from swarms.agents.ape_agent import auto_generate_prompt
-from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.llm_manager import LLMManager
-from swarms.agents.tool_manager import ToolManager
 from swarms.agents.skills_manager import SkillsManager
+from swarms.agents.tool_manager import ToolManager
 from swarms.prompts.agent_system_prompts import (
     build_agent_system_prompt,
 )
@@ -48,15 +37,12 @@ from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
 from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
-from swarms.prompts.multi_modal_autonomous_instruction_prompt import (
-    MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1,
-)
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
-    AgentRunError,
+    AgentRunError,  # noqa: F401  re-exported from this module
     AgentToolExecutionError,
 )
 from swarms.schemas.mcp_schemas import (
@@ -72,10 +58,6 @@ from swarms.structs.autonomous_loop_utils import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
-from swarms.structs.transcript import Transcript
-from swarms.tools.dynamic_tool_loader import (
-    DynamicToolLoader,
-)
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
@@ -89,8 +71,10 @@ from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_error,
     capture_init,
-    log_agent_data,
     trace_run,
+)
+from swarms.tools.dynamic_tool_loader import (
+    DynamicToolLoader,
 )
 from swarms.tools.mcp_manager import MCPManager
 from swarms.utils.file_processing import create_file_in_folder
@@ -105,6 +89,7 @@ from swarms.utils.index import (
     exists,
     format_data_structure,
 )
+from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
@@ -117,14 +102,12 @@ def stop_when_repeats(response: str) -> bool:
     return "stop" in response.lower()
 
 
-# Agent ID generator
-def agent_id() -> str:
-    """Deprecated: use ``generate_id("agent")``."""
-    return generate_id("agent")
-
-
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
+
+
+# Identity marks "not passed": None means no system prompt, any other string is the caller's own.
+DEFAULT_SYSTEM_PROMPT = build_agent_system_prompt()
 
 
 class Agent:
@@ -138,27 +121,24 @@ class Agent:
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
         retry_attempts (int): The number of retry attempts
-        stopping_token (str): The stopping token
+        stopping_token (str): A stop sequence sent to the provider, which ends generation when the model produces it.
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
-        system_prompt (str): The system prompt
+        system_prompt (Optional[str]): The system prompt. Defaults to the built-in agent prompt; None sends no system prompt. With max_loops="auto" the default is replaced by the autonomous loop prompt, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
-        sop (str): The standard operating procedure
-        sop_list (List[str]): The standard operating procedure list
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
         context_length (int): The context length
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
-        multi_modal (bool): Enable multimodal
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
-        preset_stopping_token (bool): Enable preset stopping token
+        preset_stopping_token (bool): Use "<DONE>" as the stopping token.
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
         streaming_callback (Optional[Callable[[str], None]]): Callback function to receive streaming tokens in real-time. Defaults to None.
@@ -310,7 +290,7 @@ class Agent:
         agent_description: Optional[
             str
         ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
-        system_prompt: Optional[str] = None,
+        system_prompt: Optional[str] = DEFAULT_SYSTEM_PROMPT,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -320,17 +300,13 @@ class Agent:
         dynamic_loops: Optional[bool] = False,
         interactive: Optional[bool] = False,
         dashboard: Optional[bool] = False,
-        # TODO: Change to callable, then parse the callable to a string
         tools: List[Callable] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
-        sop: Optional[str] = None,
-        sop_list: Optional[List[str]] = None,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
         context_length: Optional[int] = None,
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
-        multi_modal: Optional[bool] = None,
         long_term_memory: Optional[Union[Callable, Any]] = None,
         fallback_model_name: Optional[str] = None,
         fallback_models: Optional[List[str]] = None,
@@ -341,7 +317,6 @@ class Agent:
         verbose: Optional[bool] = False,
         stopping_func: Optional[Callable] = None,
         custom_exit_command: Optional[str] = "exit",
-        # [Tools]
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
         output_cleaner: Optional[Callable] = None,
@@ -383,7 +358,7 @@ class Agent:
         top_p: Optional[float] = None,
         llm_base_url: Optional[str] = None,
         llm_api_key: Optional[str] = None,
-        tool_call_summary: bool = True,
+        tool_call_summary: bool = False,
         tool_retry_attempts: int = 3,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
@@ -428,11 +403,14 @@ class Agent:
         self.dynamic_loops = dynamic_loops
         self.user_name = user_name
         self.context_length = context_length
-        self.sop = sop
-        self.sop_list = sop_list
         self.tools = tools
-        if system_prompt is None:
-            system_prompt = build_agent_system_prompt()
+        if system_prompt is DEFAULT_SYSTEM_PROMPT:
+            # The constant is rendered once at import; re-render so its Time line is current.
+            system_prompt = (
+                None
+                if max_loops == "auto"
+                else build_agent_system_prompt()
+            )
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -441,7 +419,6 @@ class Agent:
             f"{generate_api_key(prefix='agent-')}_state.json"
         )
         self.autosave = autosave
-        self.multi_modal = multi_modal
         self.long_term_memory = long_term_memory
         self.preset_stopping_token = preset_stopping_token
         self.streaming_on = streaming_on
@@ -549,6 +526,9 @@ class Agent:
             retry_attempts=self.tool_retry_attempts,
         )
 
+        if self.random_models_on is True:
+            self.model_name = set_random_models_for_agents()
+
         if self.context_length is None:
             self.context_length = self._default_context_length()
 
@@ -557,11 +537,13 @@ class Agent:
 
         if self.max_loops == "auto":
             # Without this the prompt tells the model to call a think tool it lacks
-            self.system_prompt += (
-                "\n\n"
-                + get_autonomous_agent_prompt(
-                    include_think_tool=self.think_tool
-                )
+            autonomous_prompt = get_autonomous_agent_prompt(
+                include_think_tool=self.think_tool
+            )
+            self.system_prompt = (
+                f"{self.system_prompt}\n\n{autonomous_prompt}"
+                if self.system_prompt
+                else autonomous_prompt
             )
 
         # When False the agent does not read or write MEMORY.md across sessions.
@@ -626,7 +608,6 @@ class Agent:
         self.tool_manager = ToolManager(agent=self)
         self.autonomous_loop = AutonomousAgentLoop(agent=self)
 
-        # self.init_handling()
         self.setup_config()
 
         # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
@@ -634,9 +615,6 @@ class Agent:
 
         # Initialize the tools
         self.tool_manager.setup_tools()
-
-        if exists(self.sop) or exists(self.sop_list):
-            self.handle_sop_ops()
 
         if self.interactive is True:
             self.reasoning_prompt_on = False
@@ -652,9 +630,6 @@ class Agent:
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
 
-        if self.autosave is True:
-            log_agent_data(self.to_dict())
-
         self.tool_manager.load_tools()
 
         if self.llm is None:
@@ -664,9 +639,6 @@ class Agent:
         ) is None and hasattr(self.llm, "usage_hook"):
             # A caller-supplied LiteLLM reports into this agent too.
             self.llm.usage_hook = self._add_usage
-
-        if self.random_models_on is True:
-            self.model_name = set_random_models_for_agents()
 
         if self.dashboard is True:
             self.print_dashboard()
@@ -844,12 +816,8 @@ class Agent:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
 
-        # If multimodal = yes then set the sop to the multimodal sop
-        if self.multi_modal is True:
-            self.sop = MULTI_MODAL_AUTO_AGENT_SYSTEM_PROMPT_1
-
-        # If the preset stopping token is enabled then set the stopping token to the preset stopping token
-        if self.preset_stopping_token is not None:
+        # The default is False, so an "is not None" check gave every agent the preset.
+        if self.preset_stopping_token:
             self.stopping_token = "<DONE>"
 
     def check_model_supports_utilities(
@@ -907,7 +875,7 @@ class Agent:
                     combined_prompt, self.llm
                 )
                 self.short_memory.add(
-                    role="system", content=self.system_prompt
+                    role="System", content=self.system_prompt
                 )
 
             logger.info("Auto-generated prompt successfully.")
@@ -976,6 +944,7 @@ class Agent:
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
+        stored_messages: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -1043,6 +1012,10 @@ class Agent:
             streaming_callback (Optional[Callable[[str], None]]): Optional callback function
                 to receive streaming tokens in real-time. Useful for dashboard integration
                 or real-time UI updates. Defaults to None.
+            stored_messages (Optional[List[Dict[str, Any]]]): Shared by the n samples
+                of one run. The first sample stores messages and fills it with the
+                stored rows, and later samples send those rows instead of storing
+                messages again.
             *args: Additional positional arguments passed to LLM calls. Used for extensibility.
             **kwargs: Additional keyword arguments passed to LLM calls. Used for extensibility.
 
@@ -1093,6 +1066,13 @@ class Agent:
                 self.short_memory.conversation_history
             )
 
+            # A later sample sends the copy the first one stored instead of storing another.
+            prefix = stored_messages or ()
+            if messages and not prefix:
+                added = self.short_memory.add_messages(messages)
+                if stored_messages is not None:
+                    stored_messages.extend(added)
+
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.check_model_supports_utilities(img=img)
@@ -1105,15 +1085,14 @@ class Agent:
             # Set the loop count
             loop_count = 0
 
-            # Built lazily so the transforms path can keep its flattened prompt
-            transcript: Optional[Transcript] = None
+            # A caller's messages stand in for the earlier history.
+            request_start = 0 if messages is None else history_start
 
             # Clear the short memory
             response = None
 
             # Autosave
             if self.autosave:
-                log_agent_data(self.to_dict())
                 self.save()
                 self._autosave_config_step(loop_count=0)
 
@@ -1123,34 +1102,18 @@ class Agent:
             ):
                 loop_count += 1
 
-                if self._context_compressor is not None:
-                    self._context_compressor.maybe_compress(self)
+                if (
+                    self._context_compressor is not None
+                    and self._context_compressor.maybe_compress(self)
+                    is not None
+                ):
+                    # The history is now the compressed summary, so the request starts over.
+                    request_start = 0
+                    prefix = ()
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
                     self._autosave_config_step(loop_count=loop_count)
-
-                if (
-                    isinstance(self.max_loops, int)
-                    and self.max_loops >= 2
-                ):
-                    if self.reasoning_prompt_on is True:
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
-                        )
-
-                # If it is the final loop, then add the final loop message
-                if (
-                    loop_count >= 2
-                    and isinstance(self.max_loops, int)
-                    and loop_count == self.max_loops
-                ):
-                    if self.reasoning_prompt_on is True:
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
-                        )
 
                 # Dynamic temperature
                 if self.dynamic_temperature_enabled is True:
@@ -1158,17 +1121,12 @@ class Agent:
 
                 # Task prompt with optional transforms.
                 task_prompt = None
-                use_transcript = self.transforms is None
 
                 if self.transforms is not None:
                     task_prompt = handle_transforms(
                         transforms=self.transforms,
                         short_memory=self.short_memory,
                         model_name=self.model_name,
-                    )
-                elif transcript is None:
-                    transcript = self._transcript_from_messages(
-                        messages, task
                     )
 
                 # Parameters
@@ -1199,9 +1157,13 @@ class Agent:
 
                         with loading_ctx:
                             llm_kwargs = dict(kwargs)
-                            if use_transcript:
+                            if self.transforms is None:
                                 llm_kwargs["messages"] = (
-                                    transcript.messages
+                                    self.short_memory.to_messages(
+                                        self.agent_name,
+                                        request_start,
+                                        prefix,
+                                    )
                                 )
 
                             response = self.call_llm(
@@ -1218,16 +1180,12 @@ class Agent:
                             response
                         )
 
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=response,
-                        )
-
                         # Every tool call in this turn needs a matching result before the next request.
-                        if use_transcript:
-                            turn_calls = transcript.record_assistant(
-                                response
+                        turn_calls = (
+                            self.short_memory.record_assistant(
+                                response, self.agent_name
                             )
+                        )
 
                         # Print
                         if self.print_on is True:
@@ -1247,9 +1205,6 @@ class Agent:
                         self.tool_manager.handle_tool_calls(
                             response,
                             loop_count,
-                            transcript=(
-                                transcript if use_transcript else None
-                            ),
                             turn_calls=turn_calls,
                             turn_results=turn_results,
                         )
@@ -1264,10 +1219,9 @@ class Agent:
 
                     except AgentToolExecutionError as e:
                         # A tool failure is not a provider failure, re-running the model cannot fix it
-                        if use_transcript and turn_calls:
-                            transcript.flush_tool_results(
-                                turn_calls, turn_results
-                            )
+                        self.short_memory.flush_tool_results(
+                            turn_calls, turn_results
+                        )
 
                         capture_error(
                             e,
@@ -1287,19 +1241,13 @@ class Agent:
                         # Exit the retry loop, not the run, so the model can read the failure
                         success = True
 
-                    except (
-                        BadRequestError,
-                        InternalServerError,
-                        AuthenticationError,
-                        Exception,
-                    ) as e:
+                    except Exception as e:
                         last_error = e
 
                         # Answer the recorded tool calls so the retried request is well formed
-                        if use_transcript and turn_calls:
-                            transcript.flush_tool_results(
-                                turn_calls, turn_results
-                            )
+                        self.short_memory.flush_tool_results(
+                            turn_calls, turn_results
+                        )
 
                         self.short_memory.rollback(memory_checkpoint)
 
@@ -1312,7 +1260,6 @@ class Agent:
                         )
 
                         if self.autosave is True:
-                            log_agent_data(self.to_dict())
                             self.save()
                             self._autosave_config_step(
                                 loop_count=loop_count
@@ -1393,8 +1340,6 @@ class Agent:
                     self.short_memory.add(
                         role=self.user_name, content=user_input
                     )
-                    if transcript is not None:
-                        transcript.append_user(user_input)
 
                 if self.loop_interval:
                     logger.info(
@@ -1403,7 +1348,6 @@ class Agent:
                     time.sleep(self.loop_interval)
 
             if self.autosave is True:
-                log_agent_data(self.to_dict())
                 self.save()
                 self._autosave_config_step(loop_count=loop_count)
 
@@ -1455,25 +1399,12 @@ class Agent:
         if self.autosave is True:
             # Save full state
             self.save()
-            log_agent_data(self.to_dict())
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
-        # Get detailed error information
-        error_type = type(error).__name__
-        error_message = str(error)
-        traceback_info = traceback.format_exc()
-
         logger.error(
-            f"Agent: {self.agent_name} An error occurred while running your agent.\n"
-            f"Error Type: {error_type}\n"
-            f"Error Message: {error_message}\n"
-            f"Traceback:\n{traceback_info}\n"
-            f"Agent State: {self.to_dict()}\n"
-            f"Please optimize your input parameters, or create an issue on the Swarms GitHub and contact our team on Discord for support. "
-            f"For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
+            f"{self.agent_name} error: {error}", exc_info=True
         )
-
         raise error
 
     def _run_autonomous_loop(
@@ -1512,40 +1443,6 @@ class Agent:
             *args,
             **kwargs,
         )
-
-    def _transcript_from_memory(self) -> Transcript:
-        """
-        Seed a structured transcript from ``short_memory``.
-
-        Conversation roles are free-form strings ("User", the agent name,
-        "Tool Executor", ...), so they are mapped onto chat roles here. The
-        system prompt is skipped because the LLM wrapper supplies it. Turns
-        added *during* a run are appended structurally on top of this prefix,
-        which is what preserves tool-call fidelity where it matters most.
-        """
-        transcript = Transcript()
-        for message in self.short_memory.conversation_history:
-            if not isinstance(message, dict):
-                continue
-            role = message.get("role")
-            content = message.get("content")
-            if content is None or str(role).lower() == "system":
-                continue
-            if role == self.agent_name:
-                transcript.append_assistant_text(content)
-            else:
-                transcript.append_user(content)
-        return transcript
-
-    def _memory_and_transcript(
-        self, role: str, content: Any, transcript: Transcript
-    ) -> None:
-        """Record a turn in both ``short_memory`` and the live transcript."""
-        self.short_memory.add(role=role, content=content)
-        if role == self.agent_name:
-            transcript.append_assistant_text(content)
-        else:
-            transcript.append_user(content)
 
     def _generate_final_summary(
         self,
@@ -1848,7 +1745,7 @@ Subtask Breakdown:
         """
         try:
             return (
-                get_model_info(self.model_name).get(
+                llm_backend.get_model_info(self.model_name).get(
                     "max_input_tokens"
                 )
                 or 16000
@@ -1870,7 +1767,7 @@ Subtask Breakdown:
         # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
         try:
             return (
-                get_model_info(self.model_name).get(
+                llm_backend.get_model_info(self.model_name).get(
                     "max_output_tokens"
                 )
                 or 16000
@@ -1900,7 +1797,9 @@ Subtask Breakdown:
 
         # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
         if self.max_tokens is None or self.max_tokens <= 0:
-            suggested_tokens = get_max_tokens(self.model_name)
+            suggested_tokens = llm_backend.get_max_tokens(
+                self.model_name
+            )
             if suggested_tokens is not None and suggested_tokens > 0:
                 self.max_tokens = suggested_tokens
             else:
@@ -1916,21 +1815,27 @@ Subtask Breakdown:
 
         # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
         if self.tools_list_dictionary:
-            if not supports_function_calling(self.model_name):
+            if not llm_backend.supports_function_calling(
+                self.model_name
+            ):
                 logger.warning(
                     f"The model '{self.model_name}' does not support function calling. Please use a model that supports function calling."
                 )
 
         try:
-            if self.max_tokens > get_max_tokens(self.model_name):
+            if self.max_tokens > llm_backend.get_max_tokens(
+                self.model_name
+            ):
                 logger.warning(
-                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' may or may not support {get_max_tokens(self.model_name)} tokens. Please set max tokens to {get_max_tokens(self.model_name)} or less."
+                    f"Max tokens is set to {self.max_tokens}, but the model '{self.model_name}' may or may not support {llm_backend.get_max_tokens(self.model_name)} tokens. Please set max tokens to {llm_backend.get_max_tokens(self.model_name)} or less."
                 )
 
         except Exception:
             pass
 
-        if self.model_name not in model_list:
+        model_list = llm_backend.model_list
+        # Empty when RouteHub cannot reach OpenRouter, which says nothing about the model.
+        if model_list and self.model_name not in model_list:
             logger.warning(
                 f"The model '{self.model_name}' may not be supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
             )
@@ -2232,6 +2137,17 @@ Subtask Breakdown:
             logger.info(f"Error sending agent message: {error}")
             raise error
 
+    def list_tools(self) -> List[str]:
+        """
+        Names of every tool this agent can call.
+
+        See :meth:`swarms.agents.tool_manager.ToolManager.list_tools`.
+
+        Returns:
+            List[str]: Tool names, without duplicates, in a stable order.
+        """
+        return self.tool_manager.list_tools()
+
     def add_tool(self, tool: Callable):
         """Add a single tool to the agent's tools list.
 
@@ -2522,21 +2438,6 @@ Subtask Breakdown:
             **kwargs,
         )
 
-    def handle_sop_ops(self):
-        # If the user inputs a list of strings for the sop then join them and set the sop
-        if exists(self.sop_list):
-            self.sop = "\n".join(self.sop_list)
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
-
-        if exists(self.sop):
-            self.short_memory.add(
-                role=self.user_name, content=self.sop
-            )
-
-        logger.info("SOP Uploaded into the memory")
-
     def load_skills_metadata(
         self, skills_dir: str = None
     ) -> List[Dict[str, str]]:
@@ -2580,7 +2481,11 @@ Subtask Breakdown:
         """
         return self.skills.load_full_skill(skill_name)
 
-    @trace_run("Agent.run", input_params=("task", "img", "imgs"))
+    @trace_run(
+        "Agent.run",
+        input_params=("task", "img", "imgs"),
+        usage=lambda agent: agent.usage,
+    )
     def run(
         self,
         task: Optional[Union[str, Any]] = None,
@@ -2693,12 +2598,15 @@ Subtask Breakdown:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
 
-        # Constructor messages are already in short_memory; per-call ones are not.
-        if messages:
-            self.short_memory.add_messages(messages)
+        # Side calls such as the tool summary stream to this run's callback too.
+        self._run_streaming_callback = streaming_callback
+        self.llm_manager.stream_mid_line = False
 
         try:
             if self.max_loops == "auto":
+                # Constructor messages are already in short_memory; per-call ones are not.
+                if messages:
+                    self.short_memory.add_messages(messages)
                 # Use autonomous loop structure: plan -> execute subtasks -> summary
                 output = self._run_autonomous_loop(
                     task=task,
@@ -2709,6 +2617,7 @@ Subtask Breakdown:
                     **kwargs,
                 )
             elif n > 1:
+                stored_messages = []
                 output = [
                     self._run(
                         task=task,
@@ -2717,6 +2626,7 @@ Subtask Breakdown:
                         streaming_callback=streaming_callback,
                         messages=messages,
                         *args,
+                        stored_messages=stored_messages,
                         **kwargs,
                     )
                     for _ in range(n)
@@ -2734,14 +2644,7 @@ Subtask Breakdown:
 
             return output
 
-        except (
-            AgentRunError,
-            AgentLLMError,
-            BadRequestError,
-            InternalServerError,
-            AuthenticationError,
-            Exception,
-        ) as e:
+        except Exception as e:
 
             # Try fallback models if available
             if self.is_fallback_available():
@@ -2779,6 +2682,9 @@ Subtask Breakdown:
                 "For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
             )
             raise KeyboardInterrupt
+
+        finally:
+            self._run_streaming_callback = None
 
     def run_stream(
         self,
@@ -3204,29 +3110,3 @@ Subtask Breakdown:
 
     def list_output_types(self):
         return OutputType
-
-    def _transcript_from_messages(
-        self,
-        messages: Optional[List[Dict[str, Any]]],
-        task: Optional[Any],
-    ) -> Transcript:
-        """
-        Build this run's transcript, preferring caller-supplied turns.
-
-        Args:
-            messages: Prior conversation as typed chat messages. When given,
-                these replace the memory-derived prefix and ``task`` is
-                appended as the new user turn. ``None`` falls back to
-                :meth:`_transcript_from_memory`.
-            task: The instruction for this turn.
-
-        Returns:
-            The transcript to send with the next request.
-        """
-        if messages is None:
-            return self._transcript_from_memory()
-
-        transcript = Transcript(list(messages))
-        if task is not None:
-            transcript.append_user(task)
-        return transcript

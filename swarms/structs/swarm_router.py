@@ -761,7 +761,7 @@ class SwarmRouter(SerializableMixin):
         return MixtureOfAgents(
             name=self.name,
             description=self.description,
-            agents=self.agents,
+            agents=self.agents[:-1] or self.agents,
             aggregator_agent=self.agents[-1],
             layers=self.max_loops,
             output_type=self.output_type,
@@ -840,12 +840,8 @@ class SwarmRouter(SerializableMixin):
     def _create_round_robin_swarm(self, *args, **kwargs):
         """Create a ``RoundRobinSwarm`` from the configured agents."""
         return RoundRobinSwarm(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
-            verbose=self.verbose,
             *args,
+            **self._base_kwargs(verbose=self.verbose),
             **kwargs,
         )
 
@@ -1023,7 +1019,7 @@ class SwarmRouter(SerializableMixin):
         for position, swarm_type in enumerate(chain):
             try:
                 self.swarm = self._create_swarm(
-                    task, swarm_type, *args, **kwargs
+                    task, swarm_type, *args
                 )
                 self.active_swarm_type = swarm_type
                 result = self.swarm.run(**run_kwargs, **kwargs)
@@ -1072,6 +1068,7 @@ class SwarmRouter(SerializableMixin):
     @trace_run(
         "SwarmRouter.run",
         input_params=("task", "tasks", "img"),
+        usage=lambda router: router.usage,
     )
     def run(
         self,

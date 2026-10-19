@@ -1,5 +1,6 @@
 import sys
 
+from swarms.structs import tree_swarm
 from swarms.structs.tree_swarm import (
     TreeAgent,
     Tree,
@@ -590,6 +591,35 @@ def test_edge_cases():
     assert_equal(
         similarity, 0.0, "cosine_similarity handles empty vectors"
     )
+
+
+def test_common_words_do_not_route_every_task_to_the_first_agent(
+    monkeypatch,
+):
+    def offline(**kwargs):
+        raise ConnectionError("offline")
+
+    monkeypatch.setattr(tree_swarm, "embedding", offline)
+    tax = TreeAgent(
+        agent_name="tax",
+        system_prompt="You are a tax expert who files corporate taxes.",
+    )
+    chef = TreeAgent(
+        agent_name="chef",
+        system_prompt="You are a chef who writes pasta recipes.",
+    )
+    tree = Tree("Experts", [tax, chef])
+
+    assert tree.agents == [tax, chef]
+    assert (
+        tree.find_relevant_agent("Who has a good pasta recipe?")
+        is chef
+    )
+    assert (
+        tree.find_relevant_agent("Can you sort my corporate filings?")
+        is tax
+    )
+    assert tree.find_relevant_agent("Can you write a poem?") is None
 
 
 def run_all_tests():

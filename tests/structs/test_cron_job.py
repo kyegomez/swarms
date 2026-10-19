@@ -49,6 +49,54 @@ def run_in_thread(fn):
     return thread
 
 
+def run_until_it_stops(job, task):
+    """Run ``job`` on a helper thread, failing instead of hanging."""
+    errors = []
+
+    def run():
+        try:
+            job.run(task)
+        except Exception as error:
+            errors.append(error)
+
+    runner = run_in_thread(run)
+    runner.join(timeout=10)
+    try:
+        assert not runner.is_alive(), f"run({task!r}) never returned"
+        assert errors == []
+        # run() can return before the tick that called stop() has finished.
+        job.thread.join(timeout=5)
+        assert not job.thread.is_alive(), "the tick never ended"
+    except AssertionError:
+        job.stop()
+        raise
+
+
+def record_joins(thread, joined):
+    """Make ``thread.join`` also append ``thread`` to ``joined``."""
+    join = thread.join
+
+    def recording_join(timeout=None):
+        joined.append(thread)
+        join(timeout)
+
+    thread.join = recording_join
+
+
+def restart_right_after_the_signal(job, task, joined):
+    """Make the next stop() restart ``job`` with ``task`` right after it
+    signals, as a woken run() could, and record new-thread joins."""
+    signal = job._signal_stop
+
+    def signal_then_restart():
+        signal()
+        job._signal_stop = signal
+        job._run(task)
+        record_joins(job.thread, joined)
+
+    job._signal_stop = signal_then_restart
+
+
 # ---------------------------------------------------------------------------
 # Scheduling
 # ---------------------------------------------------------------------------
@@ -177,6 +225,70 @@ def test_consecutive_errors_stop_the_job_when_a_budget_is_set():
     assert job.is_running is False
 
 
+def test_a_job_that_gave_up_can_be_run_again():
+    agent = FailingAgent(fail_times=3)
+    job = CronJob(
+        agent=agent, interval="1second", max_consecutive_errors=2
+    )
+    with pytest.raises(CronJobExecutionError):
+        job.run("t")
+    assert job.schedule.jobs == []
+
+    returned = []
+    t = run_in_thread(lambda: returned.append(job.run("t")))
+    deadline = time.monotonic() + 10
+    while agent.successes < 2 and time.monotonic() < deadline:
+        if not t.is_alive():
+            break
+        time.sleep(0.05)
+    job.stop()
+    t.join(timeout=3)
+
+    assert agent.successes >= 2
+    assert returned, "a clean stop of the restarted run raised"
+
+
+def test_the_callback_can_stop_its_own_job():
+    """stop() from the callback raised "cannot join current thread" and left
+    the task scheduled, so the next run() ran the old task too."""
+    calls, stop_errors = [], []
+
+    def stop_the_job(output, task, metadata):
+        try:
+            job.stop()
+        except Exception as error:
+            stop_errors.append(error)
+        return output
+
+    job = CronJob(
+        agent=MockAgent(calls),
+        interval="1second",
+        callback=stop_the_job,
+    )
+    run_until_it_stops(job, "A")
+    assert stop_errors == []
+    assert job.schedule.jobs == []
+
+    run_until_it_stops(job, "B")
+    assert stop_errors == []
+    assert calls == ["A", "B"]
+
+
+def test_the_agent_can_stop_its_own_job():
+    """The same failure from the agent counted the tick as a failed one."""
+
+    def stop_the_job(task):
+        job.stop()
+        return task
+
+    job = CronJob(agent=stop_the_job, interval="1second")
+    run_until_it_stops(job, "A")
+
+    assert job.last_error is None
+    assert (job.execution_count, job.error_count) == (1, 0)
+    assert job.schedule.jobs == []
+
+
 def test_without_a_budget_the_job_retries_indefinitely():
     agent = FailingAgent(fail_times=99)
     job = CronJob(agent=agent, interval="1second")
@@ -291,6 +403,136 @@ def test_stop_joins_the_scheduler_thread():
         if thread.name.startswith(f"cronjob_{job.job_id}")
     ]
     assert leftover == []
+
+
+def test_stop_from_another_thread_waits_for_the_running_tick():
+    """Only stop() on the job's own thread may skip the join."""
+    entered, release = threading.Event(), threading.Event()
+    events = []
+
+    def slow(task):
+        entered.set()
+        released = release.wait(10)
+        events.append("tick ended" if released else "tick timed out")
+
+    def join_and_release(timeout=None):
+        signalled = not job.is_running and job._stop_event.is_set()
+        events.append(
+            f"join(5)={timeout == 5}, signalled={signalled}"
+        )
+        release.set()
+        join(timeout)
+
+    def stop():
+        job.stop()
+        events.append("stop() returned")
+
+    job = CronJob(agent=slow, interval="1second")
+    runner = run_in_thread(lambda: job.run("t"))
+    try:
+        assert entered.wait(10)
+        join = job.thread.join
+        # The tick can only end once stop() joins, so the order is fixed.
+        job.thread.join = join_and_release
+        # Named like the scheduler thread: stop() must compare identities.
+        stopper = threading.Thread(
+            target=stop, name=job.thread.name, daemon=True
+        )
+        stopper.start()
+        stopper.join(timeout=15)
+        seen = list(events)
+    finally:
+        release.set()
+        job.stop()
+    runner.join(timeout=5)
+
+    assert seen == [
+        "join(5)=True, signalled=True",
+        "tick ended",
+        "stop() returned",
+    ]
+
+
+def test_stop_clears_a_job_that_never_started():
+    """stop() only cleared the schedule of a job that had started."""
+    job = CronJob(agent=MockAgent(), interval="1second")
+    job.every_seconds(1, "a")
+    job.every_seconds(1, "b")
+    job.stop()
+    assert job.schedule.jobs == []
+
+
+def test_restart_after_a_timed_out_stop_retires_the_old_thread():
+    entered, release = threading.Event(), threading.Event()
+
+    def slow(task):
+        entered.set()
+        release.wait(10)
+
+    job = CronJob(agent=slow, interval="1second")
+    run_in_thread(lambda: job.run("t"))
+    assert entered.wait(5)
+    job.stop()
+    old = job.thread
+    assert old.is_alive()
+
+    job.start()
+    release.set()
+    old.join(timeout=3)
+    still_alive = old.is_alive()
+    job.stop()
+
+    assert not still_alive, "two scheduler threads share one job"
+
+
+def test_a_run_restarted_during_stop_keeps_its_task():
+    """Once signalled, run() can return and restart the job before
+    stop() ends; it then joined the new thread and wiped its task."""
+    calls, joined = [], []
+    job = CronJob(agent=MockAgent(calls), interval="1hour")
+    job._run("A")
+    first = job.thread
+    record_joins(first, joined)
+    restart_right_after_the_signal(job, "B", joined)
+    job.stop()
+    joined_by_stop = list(joined)
+    job.schedule.run_all()
+    job.stop()
+
+    assert job.thread is not first, "the restart hook never ran"
+    assert joined_by_stop == [first], "stop() joined the wrong thread"
+    assert calls == ["B"], "the restarted run lost its task"
+
+
+def test_a_run_restarted_during_a_callback_stop_keeps_its_task():
+    """The same restart while the callback stops the job: stop() runs on
+    the thread it stopped, so it must not join any thread."""
+    joined, stop_errors, stopped = [], [], threading.Event()
+
+    def stop_once(output, task, metadata):
+        job.callback = None
+        try:
+            job.stop()
+        except Exception as error:
+            stop_errors.append(error)
+        stopped.set()
+        return output
+
+    job = CronJob(
+        agent=MockAgent(), interval="1second", callback=stop_once
+    )
+    restart_right_after_the_signal(job, "B", joined)
+    job._run("A")
+    record_joins(job.thread, joined)
+    try:
+        assert stopped.wait(10), "the callback's stop() hung"
+        left, joined_by_stop = len(job.schedule.jobs), list(joined)
+    finally:
+        job.stop()
+
+    assert stop_errors == []
+    assert joined_by_stop == [], "stop() joined from the callback"
+    assert left == 1, "the restarted run lost its task"
 
 
 def test_callback_customizes_output_and_a_broken_one_is_survivable():
@@ -462,6 +704,25 @@ def test_run_many_rejects_an_empty_schedule_list():
 def test_run_many_names_the_missing_key(spec, missing):
     with pytest.raises(CronJobConfigError, match=missing):
         CronJob.run_many([spec], block=False)
+
+
+def test_stop_many_does_not_wait_out_each_jobs_sleep():
+    jobs = CronJob.run_many(
+        [
+            {"agent": MockAgent(), "interval": "1hour", "task": "t"}
+            for _ in range(10)
+        ],
+        block=False,
+    )
+
+    started = time.monotonic()
+    CronJob.stop_many(jobs)
+    elapsed = time.monotonic() - started
+
+    assert all(not job.thread.is_alive() for job in jobs)
+    assert (
+        elapsed < 1.0
+    ), f"stop_many took {elapsed:.2f}s for 10 idle jobs"
 
 
 if __name__ == "__main__":
