@@ -15,6 +15,8 @@ from swarms.agents.context_compressor import (
     COMPRESSION_SYSTEM_PROMPT,
     COMPRESSION_USER_TEMPLATE,
 )
+from swarms import Agent
+from swarms.utils.litellm_wrapper import empty_usage
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -237,6 +239,25 @@ class TestSummarize:
         ):
             result = cc._summarize(agent, "history")
         assert result == expected
+
+    def test_adds_summary_call_to_agent_usage(self):
+        cc = ContextCompressor(summarizer_model="gpt-4o")
+        agent = Agent.__new__(Agent)
+        agent._usage = empty_usage()
+        resp = _make_completion_response()
+        resp.usage = SimpleNamespace(
+            prompt_tokens=1200,
+            completion_tokens=80,
+            total_tokens=1280,
+        )
+        with patch(
+            "swarms.agents.context_compressor.completion",
+            return_value=resp,
+        ):
+            cc._summarize(agent, "history")
+        assert agent.usage["input_tokens"] == 1200
+        assert agent.usage["output_tokens"] == 80
+        assert agent.usage["total_tokens"] == 1280
 
 
 # ---------------------------------------------------------------------------

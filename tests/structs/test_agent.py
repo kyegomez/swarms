@@ -13,14 +13,13 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
-from swarms import Agent
+from swarms import Agent, Conversation
 from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.schemas.agent_errors import (
     AgentLLMError,
     AgentToolExecutionError,
 )
-from swarms.structs.transcript import Transcript
 from swarms.tools.base_tool import BaseTool
 
 load_dotenv()
@@ -109,7 +108,7 @@ class TestBasicAgent:
         assert basic_flow.stopping_condition is None
         assert basic_flow.retry_attempts == 3
         assert basic_flow.task is None
-        assert basic_flow.stopping_token == "<DONE>"
+        assert basic_flow.stopping_token is None
         assert not basic_flow.interactive
 
     @patch("time.sleep", return_value=None)
@@ -1376,13 +1375,12 @@ class TestToolExecutionRetry:
                 },
             },
         ]
-        transcript = Transcript()
+        agent.short_memory = Conversation()
         results = {}
         agent.tool_manager.handle_tool_calls(
             calls,
             1,
-            transcript=transcript,
-            turn_calls=transcript.record_assistant(calls),
+            turn_calls=agent.short_memory.record_assistant(calls),
             turn_results=results,
         )
         assert results == {"n1": "Function 'note' result:\nnoted"}
@@ -2425,3 +2423,190 @@ class TestLLMFailureRaises:
             "claude-sonnet-4-6",
             "claude-sonnet-4-6",
         ]
+
+
+class TestIntegerLoopRequest:
+    """The integer max_loops path sends typed messages, not a flattened string."""
+
+    def _agent(self, **kwargs):
+        return Agent(
+            agent_name="IntPathTest",
+            model_name="gpt-4o-mini",
+            persistent_memory=False,
+            print_on=False,
+            verbose=False,
+            autosave=False,
+            tool_call_summary=False,
+            **kwargs,
+        )
+
+    def _capture(self, monkeypatch, agent, replies):
+        sent = []
+
+        def call_llm(task=None, *args, **kwargs):
+            sent.append((task, kwargs.get("messages")))
+            return replies[len(sent) - 1]
+
+        monkeypatch.setattr(agent, "call_llm", call_llm)
+        return sent
+
+    def test_the_task_is_sent_as_a_user_message(self, monkeypatch):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(monkeypatch, agent, ["done"])
+
+        agent.run("find the bug")
+
+        task, messages = sent[0]
+        assert task is None
+        assert any(
+            m["role"] == "user" and "find the bug" in m["content"]
+            for m in messages
+        )
+
+    def test_tool_results_are_paired_across_loops(self, monkeypatch):
+        def get_weather(city: str) -> str:
+            """Return the weather for a city.
+
+            Args:
+                city: The city name.
+            """
+            return f"{city}: sunny"
+
+        agent = self._agent(max_loops=2, tools=[get_weather])
+        call = {
+            "id": "w1",
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "arguments": json.dumps({"city": "Paris"}),
+            },
+        }
+        sent = self._capture(
+            monkeypatch, agent, [[call], "It is sunny in Paris."]
+        )
+
+        agent.run("weather in Paris?")
+
+        messages = sent[1][1]
+        turn = next(
+            i for i, m in enumerate(messages) if m.get("tool_calls")
+        )
+        assert messages[turn + 1]["role"] == "tool"
+        assert messages[turn + 1]["tool_call_id"] == "w1"
+        assert "sunny" in messages[turn + 1]["content"]
+
+    def test_transforms_keep_the_flattened_prompt(self, monkeypatch):
+        agent = self._agent(max_loops=1)
+        agent.transforms = object()
+        sent = self._capture(monkeypatch, agent, ["done"])
+        monkeypatch.setattr(
+            "swarms.structs.agent.handle_transforms",
+            lambda **kw: "FLATTENED",
+        )
+
+        agent.run("hello")
+
+        assert sent[0] == ("FLATTENED", None)
+
+    def test_caller_messages_pass_through_as_given(self, monkeypatch):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(monkeypatch, agent, ["done"])
+        image = [
+            {"type": "text", "text": "look"},
+            {
+                "type": "image_url",
+                "image_url": {"url": "https://x/a.png"},
+            },
+        ]
+
+        agent.run(
+            "Describe it",
+            messages=[
+                {"role": "system", "content": "Answer in French."},
+                {"role": "user", "content": image},
+            ],
+        )
+
+        assert sent[0][1] == [
+            {"role": "system", "content": "Answer in French."},
+            {"role": "user", "content": image},
+            {"role": "user", "content": "Describe it"},
+        ]
+
+    def test_no_loop_markers_are_sent(self, monkeypatch):
+        agent = self._agent(max_loops=3)
+        sent = self._capture(monkeypatch, agent, ["a", "b", "c"])
+
+        agent.run("Plan a trip")
+
+        assert not any(
+            "Reasoning Loop" in str(m["content"])
+            for _, messages in sent
+            for m in messages
+        )
+
+    def test_a_compressed_history_is_sent_as_its_summary(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=2)
+        sent = self._capture(monkeypatch, agent, ["first", "second"])
+
+        class Compressor:
+            def maybe_compress(self, agent):
+                if len(sent) != 1:
+                    return None
+                agent.short_memory.compact(
+                    summary="SUMMARY", summary_role="user"
+                )
+                return "SUMMARY"
+
+        agent._context_compressor = Compressor()
+
+        agent.run("task", messages=[{"role": "user", "content": "x"}])
+
+        assert sent[1][1] == [{"role": "user", "content": "SUMMARY"}]
+
+    def test_each_sample_starts_at_the_callers_messages(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(monkeypatch, agent, ["one", "two"])
+
+        agent.run(
+            "task",
+            messages=[{"role": "user", "content": "context"}],
+            n=2,
+        )
+
+        expected = [
+            {"role": "user", "content": "context"},
+            {"role": "user", "content": "task"},
+        ]
+        assert [messages for _, messages in sent] == [
+            expected,
+            expected,
+        ]
+
+    def test_samples_store_the_callers_messages_once(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(
+            monkeypatch, agent, ["one", "two", "three", "four"]
+        )
+
+        agent.run(
+            "task",
+            messages=[{"role": "user", "content": "context"}],
+            n=3,
+        )
+        agent.run("next")
+
+        stored = [
+            row["content"]
+            for row in agent.short_memory.conversation_history
+        ]
+        assert stored.count("context") == 1
+        assert [m["content"] for m in sent[-1][1]].count(
+            "context"
+        ) == 1

@@ -561,7 +561,7 @@ class TestAutonomousLoopIntegration:
         )
         agent.run("demo")
 
-        transcript = agent.autonomous_loop._transcript.messages
+        transcript = agent.autonomous_loop._transcript.to_messages()
         tool_results = [
             m["content"] for m in transcript if m["role"] == "tool"
         ]
@@ -710,7 +710,7 @@ class TestPlanPrewarming:
 
         results = [
             str(m["content"])
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._transcript.to_messages()
             if m["role"] == "tool"
         ]
         assert any(
@@ -1257,7 +1257,7 @@ class TestMCPInAutonomousLoop:
         )
         agent.run("post to slack")
 
-        transcript = agent.autonomous_loop._transcript.messages
+        transcript = agent.autonomous_loop._transcript.to_messages()
         assert any(
             m["role"] == "tool" and m["tool_call_id"] == "mcp1"
             for m in transcript
@@ -1307,7 +1307,7 @@ class TestMCPInAutonomousLoop:
 
         results = [
             str(m["content"])
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._transcript.to_messages()
             if m["role"] == "tool"
         ]
         assert any("unreachable" in r for r in results)

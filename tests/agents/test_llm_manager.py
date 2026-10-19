@@ -416,6 +416,45 @@ class TestBuild:
         result = agent.llm_manager.build()
         assert result.tools_list_dictionary is None
 
+    def test_stopping_token_is_sent_as_a_stop_sequence(self, agent):
+        agent.stopping_token = "<END>"
+        result = agent.llm_manager.build()
+        assert result.init_kwargs == {"stop": ["<END>"]}
+
+    def test_no_stopping_token_sends_no_stop(self, agent):
+        assert agent.stopping_token is None
+        result = agent.llm_manager.build()
+        assert "stop" not in result.init_kwargs
+
+    def test_stopping_token_is_not_added_to_the_system_prompt(
+        self, agent
+    ):
+        agent.stopping_token = "<END>"
+        result = agent.llm_manager.build()
+        assert "<END>" not in (result.system_prompt or "")
+
+    def test_llm_args_stop_overrides_stopping_token(self, agent):
+        agent.stopping_token = "<END>"
+        agent.llm_args = {"stop": ["###"]}
+        result = agent.llm_manager.build()
+        assert result.init_kwargs == {"stop": ["###"]}
+
+    def test_preset_stopping_token_applies_only_when_enabled(self):
+        def make(**kwargs):
+            return Agent(
+                agent_name="TestAgent",
+                model_name="gpt-4o-mini",
+                persistent_memory=False,
+                print_on=False,
+                max_loops=1,
+                **kwargs,
+            )
+
+        assert make().stopping_token is None
+        preset = make(preset_stopping_token=True)
+        assert preset.stopping_token == "<DONE>"
+        assert preset.llm.init_kwargs["stop"] == ["<DONE>"]
+
 
 ########################################################
 # Capability checks

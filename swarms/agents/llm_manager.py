@@ -303,6 +303,10 @@ class LLMManager:
             # Additional arguments for LiteLLM initialization
             additional_args = {}
 
+            # The provider stops generating at the token; llm_args can still override stop.
+            if agent.stopping_token:
+                additional_args["stop"] = [agent.stopping_token]
+
             if agent.llm_args is not None:
                 additional_args.update(agent.llm_args)
 

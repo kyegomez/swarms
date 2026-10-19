@@ -761,7 +761,7 @@ class SwarmRouter(SerializableMixin):
         return MixtureOfAgents(
             name=self.name,
             description=self.description,
-            agents=self.agents,
+            agents=self.agents[:-1] or self.agents,
             aggregator_agent=self.agents[-1],
             layers=self.max_loops,
             output_type=self.output_type,
@@ -840,12 +840,8 @@ class SwarmRouter(SerializableMixin):
     def _create_round_robin_swarm(self, *args, **kwargs):
         """Create a ``RoundRobinSwarm`` from the configured agents."""
         return RoundRobinSwarm(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
-            verbose=self.verbose,
             *args,
+            **self._base_kwargs(verbose=self.verbose),
             **kwargs,
         )
 

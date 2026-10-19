@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     Union,
 )
@@ -478,8 +479,7 @@ class Conversation:
         2. Concatenates the content of each category
         3. Counts tokens for each category using the specified tokenizer model
 
-        Args:
-            tokenizer_model_name (str): Name of the model to use for tokenization
+        Tokenization uses `self.tokenizer_model_name`.
 
         Returns:
             Dict[str, int]: A dictionary containing:
@@ -640,6 +640,174 @@ class Conversation:
                 )
             )
         return added
+
+    def to_messages(
+        self,
+        agent_name: Optional[str] = None,
+        start: int = 0,
+        prefix: Sequence[Dict[str, Any]] = (),
+    ) -> List[Dict[str, Any]]:
+        """Build a chat request body from the history.
+
+        Args:
+            agent_name (Optional[str]): The role whose rows become assistant turns.
+            start (int): Index of the first row to include.
+            prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
+
+        Returns:
+            List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
+        """
+        messages = []
+        for row in [*prefix, *self.conversation_history[start:]]:
+            role, content = row.get("role"), row.get("content")
+            if "tool_results" in row:
+                messages.append(
+                    {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": row["tool_calls"],
+                    }
+                )
+                messages.extend(
+                    {
+                        "role": "tool",
+                        "tool_call_id": call["id"],
+                        "content": row["tool_results"].get(
+                            call["id"],
+                            f"(no result recorded for {call['function']['name']})",
+                        ),
+                    }
+                    for call in row["tool_calls"]
+                )
+            elif role in ("system", "user", "assistant", "tool"):
+                # Rows already in chat form, such as a caller's messages, pass through as given.
+                fields = {**(row.get("metadata") or {}), **row}
+                messages.append(
+                    {
+                        key: fields[key]
+                        for key in (
+                            "role",
+                            "content",
+                            "name",
+                            "tool_calls",
+                            "tool_call_id",
+                        )
+                        if key in fields
+                    }
+                )
+            elif content is not None and role not in (
+                "System",
+                "Tool Executor",
+            ):
+                messages.append(
+                    {
+                        "role": (
+                            "assistant"
+                            if role == agent_name
+                            else "user"
+                        ),
+                        "content": str(content),
+                    }
+                )
+        return messages
+
+    def record_assistant(
+        self, parsed: Any, role: str = "assistant"
+    ) -> List[Dict[str, Any]]:
+        """Add the model's turn and return the tool calls it made.
+
+        Args:
+            parsed (Any): The parsed response, a list of tool-call dicts or text.
+            role (str): The role to record the turn under.
+
+        Returns:
+            List[Dict[str, Any]]: Each call's id, name and arguments; empty for a text turn.
+        """
+        calls = []
+        if isinstance(parsed, list):
+            for index, item in enumerate(parsed):
+                if not isinstance(item, dict):
+                    continue
+                function = item.get("function") or {}
+                if not function.get("name"):
+                    continue
+                # Result pairing needs an id, so synthesise one if the provider gave none.
+                call_id = (
+                    item.get("id")
+                    or f"call_{len(self.conversation_history)}_{index}"
+                )
+                calls.append(
+                    {
+                        "id": call_id,
+                        "name": function["name"],
+                        "arguments": function.get("arguments", "{}"),
+                    }
+                )
+
+        # A chat-form assistant turn must carry text; other roles keep the raw response.
+        message = self.add(
+            role,
+            (parsed if calls or role != "assistant" else str(parsed)),
+        )
+        if calls:
+            message["tool_results"] = {}
+            message["tool_calls"] = [
+                {
+                    "id": call["id"],
+                    "type": "function",
+                    "function": {
+                        "name": call["name"],
+                        "arguments": call["arguments"],
+                    },
+                }
+                for call in calls
+            ]
+        return calls
+
+    def flush_tool_results(
+        self, calls: List[Dict[str, Any]], results: Dict[str, Any]
+    ) -> None:
+        """Attach each call's result to the assistant turn that made it.
+
+        Args:
+            calls (List[Dict[str, Any]]): The tool calls from the assistant turn.
+            results (Dict[str, Any]): Results keyed by tool call id.
+        """
+        for row in reversed(self.conversation_history):
+            if "tool_results" in row:
+                row["tool_results"].update(
+                    {
+                        call["id"]: str(results[call["id"]])
+                        for call in calls
+                        if call["id"] in results
+                    }
+                )
+                return
+
+    @staticmethod
+    def map_batch_results(
+        tool_calls: List[Dict[str, Any]],
+        output: Any,
+        results: Dict[str, Any],
+        formatter=str,
+    ) -> None:
+        """Record a batched tool output against each call id.
+
+        Args:
+            tool_calls (List[Dict[str, Any]]): The calls that were run.
+            output (Any): One value per call, or one value for all of them.
+            results (Dict[str, Any]): Results keyed by tool call id, updated in place.
+            formatter (Callable): Turns each value into text.
+        """
+        if isinstance(output, list) and len(output) == len(
+            tool_calls
+        ):
+            pairs = zip(tool_calls, output)
+        else:
+            pairs = ((call, output) for call in tool_calls)
+
+        for call, value in pairs:
+            results[call.get("id", "")] = formatter(value)
 
     def delete(self, index: str):
         """Delete a message from the conversation history."""
