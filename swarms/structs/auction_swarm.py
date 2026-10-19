@@ -61,6 +61,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
+from swarms.telemetry.otel import capture_init, trace_run
 
 BID_TOOL = {
     # Forced tool call, so every bid is a structured (confidence, estimated_cost) pair
@@ -280,6 +281,8 @@ class AuctionSwarm(SerializableMixin):
 
         self.conversation = Conversation()
 
+        capture_init(self)
+
     def _ensure_bid_tool(self) -> None:
         """Inject ``BID_TOOL`` into agents that do not already carry it.
 
@@ -367,6 +370,7 @@ class AuctionSwarm(SerializableMixin):
         bids.sort(key=lambda b: b[3], reverse=True)
         return bids
 
+    @trace_run("AuctionSwarm.run")
     def run(self, task: str) -> Any:
         """Run one auction round and execute the winning agent(s).
 
