@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from swarms import Agent
@@ -85,8 +86,9 @@ def demo_sync():
 
     agent = make_agent()
 
-    out = agent.run(TASK)
-    print(out)
+    for token in agent.run_stream(TASK):
+        print(token, end="", flush=True)
+    print("\n")
 
 
 # ---------------------------------------------------------------------------
@@ -131,9 +133,9 @@ def demo_blocking():
 if __name__ == "__main__":
     mode = "async"
 
-    # if mode == "async":
-    #     asyncio.run(demo_async())
-    # elif mode == "blocking":
-    #     demo_blocking()
-    # else:
-    demo_sync()
+    if mode == "async":
+        asyncio.run(demo_async())
+    elif mode == "blocking":
+        demo_blocking()
+    else:
+        demo_sync()
