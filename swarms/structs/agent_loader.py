@@ -268,7 +268,7 @@ class CSVAgentLoader:
 
             # Use tqdm to show progress
             for future in tqdm(
-                concurrent.futures.as_completed(futures),
+                futures,
                 total=len(futures),
                 desc="Loading agents",
             ):
