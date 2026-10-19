@@ -1,3 +1,4 @@
+from collections import Counter
 from unittest.mock import patch
 
 import pytest
@@ -400,6 +401,31 @@ def test_run_with_mixture_of_agents():
 
     result = router.run("What is 1+1?")
     assert result is not None
+
+
+def test_mixture_of_agents_keeps_the_aggregator_out_of_the_workers():
+    """The last agent only aggregates; it does not also answer as a worker."""
+    router = SwarmRouter(
+        agents=create_sample_agents(),
+        swarm_type="MixtureOfAgents",
+        max_loops=1,
+    )
+    calls = Counter()
+
+    def fake_run(agent, task=None, *args, **kwargs):
+        calls[agent.agent_name] += 1
+        return f"{agent.agent_name} answer"
+
+    with patch.object(
+        Agent, "run", autospec=True, side_effect=fake_run
+    ):
+        router.run("What is 1+1?")
+
+    assert calls == {"ResearchAgent": 1, "CodeAgent": 1}
+    assert [a.agent_name for a in router.swarm.agents] == [
+        "ResearchAgent"
+    ]
+    assert router.swarm.aggregator_agent.agent_name == "CodeAgent"
 
 
 def test_run_with_sequential_workflow_type():
