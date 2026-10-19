@@ -761,7 +761,7 @@ class SwarmRouter(SerializableMixin):
         return MixtureOfAgents(
             name=self.name,
             description=self.description,
-            agents=self.agents,
+            agents=self.agents[:-1] or self.agents,
             aggregator_agent=self.agents[-1],
             layers=self.max_loops,
             output_type=self.output_type,
