@@ -107,6 +107,10 @@ def stop_when_repeats(response: str) -> bool:
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
+# Identity marks "not passed": None means no system prompt, any other string is the caller's own.
+DEFAULT_SYSTEM_PROMPT = build_agent_system_prompt()
+
+
 class Agent:
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
@@ -124,7 +128,7 @@ class Agent:
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
-        system_prompt (str): The system prompt
+        system_prompt (Optional[str]): The system prompt. Defaults to the built-in agent prompt; None sends no system prompt. With max_loops="auto" the default is replaced by the autonomous loop prompt, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
         saved_state_path (str): The path to the saved state
@@ -287,7 +291,7 @@ class Agent:
         agent_description: Optional[
             str
         ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
-        system_prompt: Optional[str] = None,
+        system_prompt: Optional[str] = DEFAULT_SYSTEM_PROMPT,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -401,8 +405,13 @@ class Agent:
         self.user_name = user_name
         self.context_length = context_length
         self.tools = tools
-        if system_prompt is None:
-            system_prompt = build_agent_system_prompt()
+        if system_prompt is DEFAULT_SYSTEM_PROMPT:
+            # The constant is rendered once at import; re-render so its Time line is current.
+            system_prompt = (
+                None
+                if max_loops == "auto"
+                else build_agent_system_prompt()
+            )
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -529,11 +538,13 @@ class Agent:
 
         if self.max_loops == "auto":
             # Without this the prompt tells the model to call a think tool it lacks
-            self.system_prompt += (
-                "\n\n"
-                + get_autonomous_agent_prompt(
-                    include_think_tool=self.think_tool
-                )
+            autonomous_prompt = get_autonomous_agent_prompt(
+                include_think_tool=self.think_tool
+            )
+            self.system_prompt = (
+                f"{self.system_prompt}\n\n{autonomous_prompt}"
+                if self.system_prompt
+                else autonomous_prompt
             )
 
         # When False the agent does not read or write MEMORY.md across sessions.
