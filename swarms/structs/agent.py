@@ -118,7 +118,7 @@ class Agent:
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
         retry_attempts (int): The number of retry attempts
-        stopping_token (str): A token the model writes when the task is complete. It is sent as a stop sequence, the model is told to use it, and the loop ends when a reply contains it.
+        stopping_token (str): A stop sequence sent to the provider, which ends generation when the model produces it.
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
         dashboard (bool): Enable dashboard
@@ -1132,7 +1132,6 @@ class Agent:
                 attempt = 0
                 success = False
                 last_error: Optional[Exception] = None
-                stopping_token_seen = False
                 while attempt < self.retry_attempts and not success:
                     # Outside the try: except must answer tool calls.
                     turn_calls = []
@@ -1172,17 +1171,6 @@ class Agent:
                         response = self.tool_manager.parse_response(
                             response
                         )
-
-                        # Seen only when the provider ignores stop; the token is a signal, not output.
-                        if (
-                            self.stopping_token
-                            and isinstance(response, str)
-                            and self.stopping_token in response
-                        ):
-                            stopping_token_seen = True
-                            response = response.replace(
-                                self.stopping_token, ""
-                            ).rstrip()
 
                         self.short_memory.add(
                             role=self.agent_name,
@@ -1317,12 +1305,6 @@ class Agent:
                     logger.info(
                         f"Agent '{self.agent_name}' stopping function condition met. "
                         f"Loop: {loop_count}, Response length: {len(str(response)) if response else 0}"
-                    )
-                    break
-                elif stopping_token_seen:
-                    logger.info(
-                        f"Agent '{self.agent_name}' stopping token found. "
-                        f"Loop: {loop_count}"
                     )
                     break
 

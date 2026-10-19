@@ -426,6 +426,13 @@ class TestBuild:
         result = agent.llm_manager.build()
         assert "stop" not in result.init_kwargs
 
+    def test_stopping_token_is_not_added_to_the_system_prompt(
+        self, agent
+    ):
+        agent.stopping_token = "<END>"
+        result = agent.llm_manager.build()
+        assert "<END>" not in (result.system_prompt or "")
+
     def test_llm_args_stop_overrides_stopping_token(self, agent):
         agent.stopping_token = "<END>"
         agent.llm_args = {"stop": ["###"]}
