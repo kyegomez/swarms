@@ -40,7 +40,7 @@ agent = Agent(
     interactive=True,
     no_reasoning_prompt=True,
     streaming_on=True,
-    api_version="....",
+    llm_args={"api_version": "...."},
     # dashboard=True
 )
 
