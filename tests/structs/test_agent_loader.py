@@ -400,6 +400,37 @@ def test_load_agents_from_csv_keeps_file_order():
     ]
 
 
+def test_agent_files_accept_max_loops_auto():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        md_file = os.path.join(tmpdir, "researcher.md")
+        with open(md_file, "w", encoding="utf-8") as f:
+            f.write(
+                "---\nname: Researcher\nmax_loops: auto\n---\nResearch.\n"
+            )
+        csv_file = os.path.join(tmpdir, "agents.csv")
+        with open(csv_file, "w", encoding="utf-8", newline="") as f:
+            f.write(
+                "agent_name,max_loops\nResearcher,auto\nWriter,2\n"
+            )
+        yaml_file = os.path.join(tmpdir, "agents.yaml")
+        with open(yaml_file, "w", encoding="utf-8") as f:
+            f.write(
+                "agents:\n  - agent_name: Researcher\n"
+                "    system_prompt: Research.\n    max_loops: auto\n"
+            )
+
+        loader = AgentLoader()
+        markdown = loader.load_agents_from_markdown([md_file])
+        csv_rows = loader.load_agents_from_csv(csv_file)
+        yaml_agent = loader.load_agents_from_yaml(
+            yaml_file, return_type="agents"
+        )
+
+    assert [a.max_loops for a in markdown] == ["auto"]
+    assert [a.max_loops for a in csv_rows] == ["auto", 2]
+    assert yaml_agent.max_loops == "auto"
+
+
 def test_auto_detect_markdown():
     """Test auto-detection of markdown file type."""
     try:
@@ -714,6 +745,7 @@ if __name__ == "__main__":
         "test_load_many_agents_from_yaml": test_load_many_agents_from_yaml,
         "test_load_agents_from_csv": test_load_agents_from_csv,
         "test_load_agents_from_csv_keeps_file_order": test_load_agents_from_csv_keeps_file_order,
+        "test_agent_files_accept_max_loops_auto": test_agent_files_accept_max_loops_auto,
         "test_auto_detect_markdown": test_auto_detect_markdown,
         "test_auto_detect_yaml": test_auto_detect_yaml,
         "test_auto_detect_csv": test_auto_detect_csv,
