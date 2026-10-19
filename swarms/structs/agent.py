@@ -2120,11 +2120,13 @@ Subtask Breakdown:
         """Start the agent over on a fresh conversation.
 
         Rebuilds ``short_memory`` the way ``__init__`` does, so the
-        system prompt, the seeded ``messages`` and the MEMORY.md
-        preload come back, and clears the autonomous loop's plan.
-        ``usage`` is kept: it totals every call this agent has made.
+        system prompt, the seeded ``messages``, the MEMORY.md preload
+        and the ``tool_schema`` / ``list_base_models`` schemas come
+        back, and clears the autonomous loop's plan. ``usage`` is
+        kept: it totals every call this agent has made.
         """
         self.short_memory = self.short_memory_init()
+        self.tool_manager.handle_tool_schema_ops()
         self.autonomous_subtasks = []
         self.current_subtask_index = 0
         self.subtask_status = {}
