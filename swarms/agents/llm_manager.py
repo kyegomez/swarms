@@ -42,6 +42,10 @@ from swarms.utils.litellm_wrapper import LiteLLM
 
 DEFAULT_MODEL_NAME = "gpt-5.4"
 
+STOPPING_TOKEN_INSTRUCTION = (
+    "When the task is complete, end your reply with {token}"
+)
+
 # Messages already logged, so a capability gap is reported once per process.
 _logged_capability_messages = set()
 
@@ -246,13 +250,24 @@ class LLMManager:
         else:
             parallel_tool_calls = False
 
+        system_prompt = agent.system_prompt
+        if agent.stopping_token:
+            instruction = STOPPING_TOKEN_INSTRUCTION.format(
+                token=agent.stopping_token
+            )
+            system_prompt = (
+                f"{system_prompt}\n\n{instruction}"
+                if system_prompt
+                else instruction
+            )
+
         try:
             # Base configuration that's always included
             common_args = {
                 "model_name": current_model,
                 "temperature": agent.temperature,
                 "max_tokens": agent.max_tokens,
-                "system_prompt": agent.system_prompt,
+                "system_prompt": system_prompt,
                 "stream": agent.streaming_on,
                 "top_p": agent.top_p,
                 "retries": agent.retry_attempts,
@@ -302,6 +317,10 @@ class LLMManager:
 
             # Additional arguments for LiteLLM initialization
             additional_args = {}
+
+            # The provider stops generating at the token; llm_args can still override stop.
+            if agent.stopping_token:
+                additional_args["stop"] = [agent.stopping_token]
 
             if agent.llm_args is not None:
                 additional_args.update(agent.llm_args)

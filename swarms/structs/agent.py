@@ -118,7 +118,7 @@ class Agent:
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
         retry_attempts (int): The number of retry attempts
-        stopping_token (str): The stopping token
+        stopping_token (str): A token the model writes when the task is complete. It is sent as a stop sequence, the model is told to use it, and the loop ends when a reply contains it.
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
         dashboard (bool): Enable dashboard
@@ -135,7 +135,7 @@ class Agent:
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
-        preset_stopping_token (bool): Enable preset stopping token
+        preset_stopping_token (bool): Use "<DONE>" as the stopping token.
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
         streaming_callback (Optional[Callable[[str], None]]): Callback function to receive streaming tokens in real-time. Defaults to None.
@@ -806,8 +806,8 @@ class Agent:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
 
-        # If the preset stopping token is enabled then set the stopping token to the preset stopping token
-        if self.preset_stopping_token is not None:
+        # The default is False, so an "is not None" check gave every agent the preset.
+        if self.preset_stopping_token:
             self.stopping_token = "<DONE>"
 
     def check_model_supports_utilities(
@@ -1132,6 +1132,7 @@ class Agent:
                 attempt = 0
                 success = False
                 last_error: Optional[Exception] = None
+                stopping_token_seen = False
                 while attempt < self.retry_attempts and not success:
                     # Outside the try: except must answer tool calls.
                     turn_calls = []
@@ -1171,6 +1172,17 @@ class Agent:
                         response = self.tool_manager.parse_response(
                             response
                         )
+
+                        # Seen only when the provider ignores stop; the token is a signal, not output.
+                        if (
+                            self.stopping_token
+                            and isinstance(response, str)
+                            and self.stopping_token in response
+                        ):
+                            stopping_token_seen = True
+                            response = response.replace(
+                                self.stopping_token, ""
+                            ).rstrip()
 
                         self.short_memory.add(
                             role=self.agent_name,
@@ -1305,6 +1317,12 @@ class Agent:
                     logger.info(
                         f"Agent '{self.agent_name}' stopping function condition met. "
                         f"Loop: {loop_count}, Response length: {len(str(response)) if response else 0}"
+                    )
+                    break
+                elif stopping_token_seen:
+                    logger.info(
+                        f"Agent '{self.agent_name}' stopping token found. "
+                        f"Loop: {loop_count}"
                     )
                     break
 
