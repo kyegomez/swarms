@@ -122,7 +122,7 @@ class Agent:
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
         retry_attempts (int): The number of retry attempts
-        stopping_token (str): The stopping token
+        stopping_token (str): A stop sequence sent to the provider, which ends generation when the model produces it.
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
         dashboard (bool): Enable dashboard
@@ -139,7 +139,7 @@ class Agent:
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
-        preset_stopping_token (bool): Enable preset stopping token
+        preset_stopping_token (bool): Use "<DONE>" as the stopping token.
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
         streaming_callback (Optional[Callable[[str], None]]): Callback function to receive streaming tokens in real-time. Defaults to None.
@@ -817,8 +817,8 @@ class Agent:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
 
-        # If the preset stopping token is enabled then set the stopping token to the preset stopping token
-        if self.preset_stopping_token is not None:
+        # The default is False, so an "is not None" check gave every agent the preset.
+        if self.preset_stopping_token:
             self.stopping_token = "<DONE>"
 
     def check_model_supports_utilities(
