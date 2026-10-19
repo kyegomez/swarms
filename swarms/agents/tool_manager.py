@@ -783,8 +783,10 @@ class ToolManager:
 
         # A temporary LLM instead of mutating the cached one.
         if agent.tool_call_summary is True:
-            summary = self.temp_llm_instance_for_tool_summary().run(
-                TOOL_SUMMARY_PROMPT.format(output=output)
+            summary = agent.llm_manager.run_side_call(
+                self.temp_llm_instance_for_tool_summary(),
+                TOOL_SUMMARY_PROMPT.format(output=output),
+                current_loop=loop_count,
             )
             agent.short_memory.add(
                 role=agent.agent_name, content=summary
@@ -874,10 +876,10 @@ class ToolManager:
             agent.short_memory.add(role="Tool Executor", content=text)
 
             try:
-                summary = (
-                    self.temp_llm_instance_for_tool_summary().run(
-                        task=agent.short_memory.get_str()
-                    )
+                summary = agent.llm_manager.run_side_call(
+                    self.temp_llm_instance_for_tool_summary(),
+                    agent.short_memory.get_str(),
+                    current_loop=current_loop,
                 )
             except Exception as e:
                 logger.error(

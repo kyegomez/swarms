@@ -106,6 +106,10 @@ def stop_when_repeats(response: str) -> bool:
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
+# Identity marks "not passed": None means no system prompt, any other string is the caller's own.
+DEFAULT_SYSTEM_PROMPT = build_agent_system_prompt()
+
+
 class Agent:
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
@@ -117,13 +121,13 @@ class Agent:
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
         retry_attempts (int): The number of retry attempts
-        stopping_token (str): The stopping token
+        stopping_token (str): A stop sequence sent to the provider, which ends generation when the model produces it.
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
-        system_prompt (str): The system prompt
+        system_prompt (Optional[str]): The system prompt. Defaults to the built-in agent prompt; None sends no system prompt. With max_loops="auto" the default is replaced by the autonomous loop prompt, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
         saved_state_path (str): The path to the saved state
@@ -134,7 +138,7 @@ class Agent:
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): The fallback model name to use if primary model fails
         fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
-        preset_stopping_token (bool): Enable preset stopping token
+        preset_stopping_token (bool): Use "<DONE>" as the stopping token.
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
         streaming_callback (Optional[Callable[[str], None]]): Callback function to receive streaming tokens in real-time. Defaults to None.
@@ -286,7 +290,7 @@ class Agent:
         agent_description: Optional[
             str
         ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
-        system_prompt: Optional[str] = None,
+        system_prompt: Optional[str] = DEFAULT_SYSTEM_PROMPT,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -400,8 +404,13 @@ class Agent:
         self.user_name = user_name
         self.context_length = context_length
         self.tools = tools
-        if system_prompt is None:
-            system_prompt = build_agent_system_prompt()
+        if system_prompt is DEFAULT_SYSTEM_PROMPT:
+            # The constant is rendered once at import; re-render so its Time line is current.
+            system_prompt = (
+                None
+                if max_loops == "auto"
+                else build_agent_system_prompt()
+            )
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -528,11 +537,13 @@ class Agent:
 
         if self.max_loops == "auto":
             # Without this the prompt tells the model to call a think tool it lacks
-            self.system_prompt += (
-                "\n\n"
-                + get_autonomous_agent_prompt(
-                    include_think_tool=self.think_tool
-                )
+            autonomous_prompt = get_autonomous_agent_prompt(
+                include_think_tool=self.think_tool
+            )
+            self.system_prompt = (
+                f"{self.system_prompt}\n\n{autonomous_prompt}"
+                if self.system_prompt
+                else autonomous_prompt
             )
 
         # When False the agent does not read or write MEMORY.md across sessions.
@@ -805,8 +816,8 @@ class Agent:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
 
-        # If the preset stopping token is enabled then set the stopping token to the preset stopping token
-        if self.preset_stopping_token is not None:
+        # The default is False, so an "is not None" check gave every agent the preset.
+        if self.preset_stopping_token:
             self.stopping_token = "<DONE>"
 
     def check_model_supports_utilities(
@@ -2582,6 +2593,10 @@ Subtask Breakdown:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
 
+        # Side calls such as the tool summary stream to this run's callback too.
+        self._run_streaming_callback = streaming_callback
+        self.llm_manager.stream_mid_line = False
+
         try:
             if self.max_loops == "auto":
                 # Constructor messages are already in short_memory; per-call ones are not.
@@ -2662,6 +2677,9 @@ Subtask Breakdown:
                 "For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
             )
             raise KeyboardInterrupt
+
+        finally:
+            self._run_streaming_callback = None
 
     def run_stream(
         self,

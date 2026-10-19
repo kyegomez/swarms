@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.tools.dynamic_tool_loader import _tokenize
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="tree_swarm")
@@ -25,9 +26,7 @@ def extract_keywords(prompt: str, top_n: int = 5) -> List[str]:
     Returns:
         List[str]: List of extracted keywords
     """
-    words = prompt.lower().split()
-    filtered_words = [word for word in words if word.isalnum()]
-    word_counts = Counter(filtered_words)
+    word_counts = Counter(_tokenize(prompt))
     return [word for word, _ in word_counts.most_common(top_n)]
 
 
@@ -305,8 +304,9 @@ class TreeAgent(Agent):
             bool: True if the agent is relevant, False otherwise.
         """
         # Check if any of the relevant keywords are present in the task (case-insensitive)
+        task_words = set(_tokenize(task))
         keyword_match = any(
-            keyword.lower() in task.lower()
+            keyword.lower() in task_words
             for keyword in self.relevant_keywords
         )
 

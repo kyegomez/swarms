@@ -375,7 +375,7 @@ class TestTransportResolution:
             ),
             (
                 {"url": "python server.py", "transport": "auto"},
-                "stdio",
+                "streamable_http",
             ),
         ],
     )
@@ -394,7 +394,7 @@ class TestTransportResolution:
         [
             ("http://localhost:8000/sse", "sse"),
             ("https://x/mcp", "streamable_http"),
-            ("python server.py", "stdio"),
+            ("python server.py", "streamable_http"),
         ],
     )
     def test_url_detected_without_explicit_transport(
@@ -405,6 +405,44 @@ class TestTransportResolution:
             manager._resolve_transport(manager.connections[0])
             == expected
         )
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"mcp_url": "touch pwned"},
+            {"mcp_url": "touch pwned", "transport": "stdio"},
+            {"mcp_url": "file:///etc/passwd"},
+        ],
+    )
+    def test_url_is_never_run_as_a_command(self, kwargs):
+        manager = MCPManager(**kwargs)
+        with pytest.raises(AgentMCPConnectionError):
+            manager._client_context(manager.connections[0], {}, None)
+
+    def test_stdio_server_does_not_inherit_parent_env(
+        self, monkeypatch
+    ):
+        import mcp.client.stdio as mcp_stdio
+
+        monkeypatch.setenv("SWARMS_TEST_SECRET", "sk-secret")
+        captured = {}
+        monkeypatch.setattr(
+            mcp_stdio,
+            "stdio_client",
+            lambda params: captured.setdefault("params", params),
+        )
+        manager = MCPManager(
+            mcp_config=MCPConnection(
+                command="python",
+                args=["s.py"],
+                env={"WANTED": "yes"},
+            )
+        )
+        manager._client_context(manager.connections[0], {}, None)
+        env = captured["params"].env
+        assert "SWARMS_TEST_SECRET" not in env
+        assert env["WANTED"] == "yes"
+        assert "PATH" in env
 
     def test_explicit_transport_still_wins_over_url(self):
         manager = MCPManager(

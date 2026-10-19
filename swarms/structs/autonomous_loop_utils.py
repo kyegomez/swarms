@@ -1403,7 +1403,12 @@ def create_sub_agent_tool(
                 id=agent_id,
                 agent_name=agent_name,
                 agent_description=agent_description,
-                system_prompt=system_prompt,  # Use custom system prompt if provided
+                # Omitted when the spec has none, so the sub-agent keeps the default prompt rather than None.
+                **(
+                    {"system_prompt": system_prompt}
+                    if system_prompt is not None
+                    else {}
+                ),
                 model_name=agent.model_name,
                 tools=parent_tools,
                 # Finite even for an auto parent, so sub-agents cannot recurse
