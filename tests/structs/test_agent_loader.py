@@ -227,6 +227,27 @@ def test_load_agents_from_markdown_multiple_files():
         raise
 
 
+def test_load_agents_from_markdown_skips_every_oversized_file():
+    """Every file over max_file_size_mb is skipped and the caller's list is left alone."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        paths = []
+        for name in ["BigAgent1", "BigAgent2", "SmallAgent"]:
+            path = os.path.join(tmpdir, f"{name}.md")
+            create_test_markdown_file(path, name)
+            if name.startswith("Big"):
+                with open(path, "a", encoding="utf-8") as f:
+                    f.write("x" * 4096)
+            paths.append(path)
+        requested = list(paths)
+
+        agents = AgentLoader().load_agents_from_markdown(
+            requested, concurrent=False, max_file_size_mb=0.001
+        )
+
+        assert [a.agent_name for a in agents] == ["SmallAgent"]
+        assert requested == paths
+
+
 def test_load_agents_from_yaml():
     """Test loading agents from YAML file."""
     try:
@@ -681,6 +702,7 @@ if __name__ == "__main__":
         "test_load_agent_from_markdown": test_load_agent_from_markdown,
         "test_load_agents_from_markdown_single_file": test_load_agents_from_markdown_single_file,
         "test_load_agents_from_markdown_multiple_files": test_load_agents_from_markdown_multiple_files,
+        "test_load_agents_from_markdown_skips_every_oversized_file": test_load_agents_from_markdown_skips_every_oversized_file,
         "test_load_agents_from_yaml": test_load_agents_from_yaml,
         "test_load_many_agents_from_yaml": test_load_many_agents_from_yaml,
         "test_load_agents_from_csv": test_load_agents_from_csv,
