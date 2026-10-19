@@ -129,11 +129,11 @@ class TestBasicAgent:
         basic_flow.run("first task")
         basic_flow.autonomous_subtasks = [{"step_id": "old"}]
         basic_flow.reset()
-        assert basic_flow.autonomous_subtasks == []
         basic_flow.run("second task")
 
         history = basic_flow.short_memory.conversation_history
         contents = [str(row["content"]) for row in history]
+        assert basic_flow.autonomous_subtasks == []
         assert history[0]["role"] == "System"
         assert not any("first task" in c for c in contents)
         assert any("second task" in c for c in contents)
