@@ -1639,6 +1639,18 @@ def test_record_assistant_sends_a_non_text_reply_as_text():
     assert conv.conversation_history[-1]["content"] == {"answer": 2}
 
 
+def test_export_conversation_writes_the_named_json_file(tmp_path):
+    conv = Conversation(conversations_dir=str(tmp_path))
+    conv.add("User", "keep this")
+    target = tmp_path / "backup.json"
+
+    conv.export_conversation(str(target))
+
+    fresh = Conversation(conversations_dir=str(tmp_path))
+    fresh.import_conversation(str(target))
+    assert fresh.conversation_history == conv.conversation_history
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()
