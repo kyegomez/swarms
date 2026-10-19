@@ -1676,14 +1676,17 @@ Subtask Breakdown:
         The clone keeps tools, handoffs and MCP configuration but gets its
         own LLM client and ``short_memory``, unlike ``copy.deepcopy``,
         which fails on the agent's thread locks. A passed-in ``llm`` is
-        shared, and the clone never republishes to the marketplace.
+        shared, the clone never republishes to the marketplace, and its
+        token usage counts toward this agent.
 
         Returns:
             Agent: A new agent of the same class.
         """
-        return type(self)(
+        clone = type(self)(
             **{**self._init_config, "publish_to_marketplace": False}
         )
+        clone._usage = self._usage
+        return clone
 
     def run_concurrent_tasks(self, tasks: List[str], *args, **kwargs):
         """
@@ -1702,20 +1705,17 @@ Subtask Breakdown:
         """
         try:
             logger.info(f"Running concurrent tasks: {tasks}")
-            clones = [self.clone() for _ in tasks]
             # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
             with ContextThreadPoolExecutor(
                 max_workers=os.cpu_count()
             ) as executor:
                 futures = [
                     executor.submit(
-                        clone.run, *args, task=task, **kwargs
+                        self.clone().run, *args, task=task, **kwargs
                     )
-                    for clone, task in zip(clones, tasks)
+                    for task in tasks
                 ]
                 results = [future.result() for future in futures]
-            for clone in clones:
-                self._add_usage(clone.usage)
             logger.info(f"Completed tasks: {results}")
             return results
         except Exception as error:
