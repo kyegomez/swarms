@@ -16,6 +16,7 @@ from swarms.agents.context_compressor import (
     COMPRESSION_USER_TEMPLATE,
 )
 from swarms import Agent
+from swarms.structs.conversation import Conversation
 from swarms.utils.litellm_wrapper import empty_usage
 
 # ---------------------------------------------------------------------------
@@ -445,8 +446,11 @@ class TestShouldCompressSkipsTokenizing:
             }
             for text in contents
         ]
-        short_memory = MagicMock()
+        short_memory = MagicMock(spec=Conversation)
         short_memory.conversation_history = history
+        short_memory.history_bytes.return_value = sum(
+            map(Conversation._message_bytes, history)
+        )
         short_memory.return_history_as_string.return_value = (
             "\n\n".join(
                 f"[{m['timestamp']}] {m['role']}: {m['content']}"
@@ -477,9 +481,8 @@ class TestShouldCompressSkipsTokenizing:
             context_length=1,
         )
         text = agent.short_memory.return_history_as_string()
-        assert ContextCompressor._history_bytes(
-            agent.short_memory.conversation_history
-        ) >= count_tokens(text)
+        size = agent.short_memory.history_bytes()
+        assert size >= count_tokens(text)
 
 
 class TestUsageRatioReusesMessageCounts:
