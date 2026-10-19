@@ -232,11 +232,10 @@ def test_different_layouts():
         print(f"\n🔧 Testing {engine} layout: {description}")
         try:
             output = workflow.visualize(
-                output_path=f"complex_workflow_{engine}",
                 format="png",
                 view=False,
                 engine=engine,
-                show_parallel_patterns=True,
+                show_summary=True,
             )
             print(f"✅ {engine} layout saved: {output}")
         except Exception as e:
@@ -261,47 +260,44 @@ def test_different_formats():
         print(f"\n📋 Testing {fmt} format: {description}")
         try:
             output = workflow.visualize(
-                output_path="simple_workflow_test",
                 format=fmt,
                 view=False,
                 engine="dot",
-                show_parallel_patterns=True,
+                show_summary=True,
             )
             print(f"✅ {fmt} format saved: {output}")
         except Exception as e:
             print(f"❌ {fmt} format failed: {e}")
 
 
-def test_parallel_pattern_highlighting():
-    """Test parallel pattern highlighting features."""
-    print("\n\n🔀 TESTING PARALLEL PATTERN HIGHLIGHTING")
+def test_parallel_pattern_summary():
+    """Test optional parallel pattern summaries."""
+    print("\n\n🔀 TESTING PARALLEL PATTERN SUMMARIES")
     print("=" * 60)
 
     workflow = create_complex_parallel_workflow()
 
-    print("\n📊 With parallel patterns highlighted:")
+    print("\n📊 With the parallel processing summary:")
     try:
         output_with = workflow.visualize(
-            output_path="patterns_highlighted",
             format="png",
             view=False,
-            show_parallel_patterns=True,
+            show_summary=True,
         )
-        print(f"✅ Highlighted version saved: {output_with}")
+        print(f"✅ Summary-enabled version saved: {output_with}")
     except Exception as e:
-        print(f"❌ Highlighted version failed: {e}")
+        print(f"❌ Summary-enabled version failed: {e}")
 
-    print("\n📊 Without parallel patterns highlighted:")
+    print("\n📊 Without the parallel processing summary:")
     try:
         output_without = workflow.visualize(
-            output_path="patterns_plain",
             format="png",
             view=False,
-            show_parallel_patterns=False,
+            show_summary=False,
         )
-        print(f"✅ Plain version saved: {output_without}")
+        print(f"✅ Summary-disabled version saved: {output_without}")
     except Exception as e:
-        print(f"❌ Plain version failed: {e}")
+        print(f"❌ Summary-disabled version failed: {e}")
 
 
 def test_large_workflow_visualization():
@@ -378,11 +374,10 @@ def test_large_workflow_visualization():
     # Test with sfdp layout (good for large graphs)
     try:
         output = workflow.visualize(
-            output_path="large_enterprise_workflow",
             format="svg",  # SVG scales better for large graphs
             view=False,
             engine="sfdp",  # Better for large graphs
-            show_parallel_patterns=True,
+            show_summary=True,
         )
         print(f"✅ Large workflow visualization saved: {output}")
     except Exception as e:
@@ -398,8 +393,8 @@ def test_fallback_visualization():
 
     print("\n📝 Testing fallback text visualization:")
     try:
-        # Call the fallback method directly
-        result = workflow._fallback_text_visualization()
+        # Use the public text visualizer without Graphviz.
+        result = workflow.visualize_simple()
         print(f"✅ Fallback visualization completed: {result}")
     except Exception as e:
         print(f"❌ Fallback visualization failed: {e}")
@@ -438,7 +433,7 @@ def run_comprehensive_visualization_tests():
     if graphviz_available:
         test_different_layouts()
         test_different_formats()
-        test_parallel_pattern_highlighting()
+        test_parallel_pattern_summary()
         test_large_workflow_visualization()
 
     # Always test fallback
@@ -465,10 +460,9 @@ def run_comprehensive_visualization_tests():
             if any(
                 f.startswith(prefix)
                 for prefix in [
-                    "complex_workflow_",
-                    "simple_workflow_",
-                    "patterns_",
-                    "large_enterprise_",
+                    "Complex-Parallel-Analytics-Workflow_visualization_",
+                    "Simple-Sequential-Workflow_visualization_",
+                    "Large-Enterprise-Workflow_visualization_",
                 ]
             )
         ]

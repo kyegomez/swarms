@@ -457,8 +457,7 @@ def create_advanced_financial_analysis_workflow():
 if __name__ == "__main__":
     workflow = create_advanced_financial_analysis_workflow()
     workflow.visualize(
-        output_path="advanced_financial_analysis_workflow",
         format="png",
         view=True,
-        show_parallel_patterns=True,
+        show_summary=True,
     )
