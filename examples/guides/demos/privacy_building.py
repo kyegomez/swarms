@@ -239,7 +239,6 @@ agent_system = AgentRearrange(
     description="Privacy-focused dating platform agent system",
     agents=agents,
     flow=flow,
-    return_json=False,
     output_type="final",
     max_loops=1,
 )

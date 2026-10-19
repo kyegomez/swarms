@@ -266,7 +266,6 @@ agent_system = AgentRearrange(
     description="Role-playing medical consultation with focus on information privacy",
     agents=agents,
     flow=flow,
-    return_json=False,
     output_type="final",
     max_loops=1,
 )
