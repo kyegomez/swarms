@@ -186,7 +186,9 @@ class ContextCompressor:
             "stay within the context window.\n\n"
             f"{summary}"
         )
-        agent.short_memory.compact(summary=summary_content)
+        agent.short_memory.compact(
+            summary=summary_content, summary_role="user"
+        )
 
         new_tokens = agent.short_memory.count_history_tokens()
         logger.info(
