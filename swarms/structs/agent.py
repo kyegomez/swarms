@@ -1714,13 +1714,11 @@ Subtask Breakdown:
             List[str]: A list of response strings generated for each input set.
 
         Raises:
-            Exception: If an error occurs while running the bulk tasks.
+            Exception: Whatever ``run`` raises for the first input that
+                fails. Inputs after it are not run.
         """
-        try:
-            logger.info(f"Running bulk tasks: {inputs}")
-            return [self.run(**input_data) for input_data in inputs]
-        except Exception as error:
-            logger.info(f"Error running bulk run: {error}", "red")
+        logger.debug(f"Running {len(inputs)} bulk tasks")
+        return [self.run(**input_data) for input_data in inputs]
 
     def _default_context_length(self) -> int:
         """

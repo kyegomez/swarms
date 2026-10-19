@@ -125,7 +125,23 @@ class TestBasicAgent:
 
     def test_bulk_run(self, basic_flow):
         inputs = [{"task": "Test1"}, {"task": "Test2"}]
-        assert basic_flow.bulk_run(inputs) is not None
+        assert len(basic_flow.bulk_run(inputs)) == len(inputs)
+
+    def test_bulk_run_raises_the_failing_runs_error(self, basic_flow):
+        inputs = [
+            {"task": "Test1"},
+            {"task": "Test2"},
+            {"task": "Test3"},
+        ]
+        with patch.object(
+            basic_flow,
+            "run",
+            autospec=True,
+            side_effect=["first", ValueError("second failed")],
+        ) as run:
+            with pytest.raises(ValueError, match="second failed"):
+                basic_flow.bulk_run(inputs)
+        assert run.call_count == 2
 
     def test_save_and_load(self, basic_flow, mocked_llm, tmp_path):
         """State written by save() comes back through load().
