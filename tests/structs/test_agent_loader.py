@@ -1,5 +1,7 @@
 import os
 import tempfile
+import threading
+from types import SimpleNamespace
 
 try:
     import pytest
@@ -371,6 +373,33 @@ def test_load_agents_from_csv():
         logger.warning("CSV test skipped due to validation issues")
 
 
+def test_load_agents_from_csv_keeps_file_order():
+    """Agents come back in file order even when a later row builds first."""
+    from swarms.structs.agent_loader import CSVAgentLoader
+
+    second_built = threading.Event()
+
+    class FirstRowBuildsLast(CSVAgentLoader):
+        def _create_agent(self, validated_config):
+            name = validated_config["agent_name"]
+            if name == "Test-CSV-Agent-1":
+                assert second_built.wait(timeout=10)
+            else:
+                second_built.set()
+            return SimpleNamespace(agent_name=name)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        csv_file = create_test_csv_file(
+            os.path.join(tmpdir, "test_agents.csv")
+        )
+        agents = FirstRowBuildsLast(file_path=csv_file).load_agents()
+
+    assert [agent.agent_name for agent in agents] == [
+        "Test-CSV-Agent-1",
+        "Test-CSV-Agent-2",
+    ]
+
+
 def test_auto_detect_markdown():
     """Test auto-detection of markdown file type."""
     try:
@@ -684,6 +713,7 @@ if __name__ == "__main__":
         "test_load_agents_from_yaml": test_load_agents_from_yaml,
         "test_load_many_agents_from_yaml": test_load_many_agents_from_yaml,
         "test_load_agents_from_csv": test_load_agents_from_csv,
+        "test_load_agents_from_csv_keeps_file_order": test_load_agents_from_csv_keeps_file_order,
         "test_auto_detect_markdown": test_auto_detect_markdown,
         "test_auto_detect_yaml": test_auto_detect_yaml,
         "test_auto_detect_csv": test_auto_detect_csv,
