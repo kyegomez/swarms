@@ -10,6 +10,7 @@ budget for an unbounded run.
 from typing import Any, Optional
 
 from swarms.utils.llm_backend import completion
+from swarms.utils.litellm_wrapper import usage_from_response
 from loguru import logger
 
 
@@ -151,6 +152,10 @@ class ContextCompressor:
             # RouteHub reads this per call; litellm otherwise inherits it from the last agent built.
             drop_params=True,
         )
+        call_usage = usage_from_response(response)
+        add_usage = getattr(agent, "_add_usage", None)
+        if add_usage is not None and call_usage is not None:
+            add_usage(call_usage)
         return response.choices[0].message.content
 
     def compress(self, agent: Any) -> Optional[str]:
