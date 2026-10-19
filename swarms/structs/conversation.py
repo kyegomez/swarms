@@ -1493,10 +1493,7 @@ class Conversation:
 
     def return_dict_final(self):
         """Return the final message as a dictionary."""
-        return (
-            self.conversation_history[-1]["content"],
-            self.conversation_history[-1]["content"],
-        )
+        return self.conversation_history[-1]
 
     def return_list_final(self):
         """Return the final message as a list."""
