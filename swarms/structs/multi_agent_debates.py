@@ -3,6 +3,7 @@ from typing import Callable, Union, List
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
+from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -33,7 +34,9 @@ class OneOnOneDebate:
         self.agents = agents
         self.img = img
         self.output_type = output_type
+        capture_init(self)
 
+    @trace_run("OneOnOneDebate.run")
     def run(self, task: str):
         """
         Execute the one-on-one debate.
@@ -108,7 +111,9 @@ class ExpertPanelDiscussion:
         self.agents = agents
         self.moderator = moderator
         self.output_type = output_type
+        capture_init(self)
 
+    @trace_run("ExpertPanelDiscussion.run")
     def run(self, task: str):
         """
         Execute the expert panel discussion.
