@@ -1,4 +1,6 @@
 import json
+from enum import Enum
+from pathlib import Path
 from typing import Optional
 
 import pytest
@@ -129,6 +131,29 @@ def test_func_to_dict_resolves_nested_model_refs():
     assert items["items"] == {"$ref": "#/$defs/LineItem"}
     assert "$defs" not in items
     assert params["$defs"]["LineItem"]["required"] == ["sku", "qty"]
+
+
+class Units(Enum):
+    CELSIUS = "celsius"
+    FAHRENHEIT = "fahrenheit"
+
+
+def forecast(
+    city: str,
+    units: Units = Units.CELSIUS,
+    out_dir: Path = Path("forecasts"),
+) -> str:
+    """Forecast the weather for a city."""
+    return city
+
+
+def test_func_to_dict_sends_json_defaults():
+    schema = BaseTool().func_to_dict(forecast)
+    properties = schema["function"]["parameters"]["properties"]
+
+    assert properties["units"]["default"] == "celsius"
+    assert properties["out_dir"]["default"] == "forecasts"
+    assert json.loads(json.dumps(schema)) == schema
 
 
 def add_numbers(a: int, b: int) -> int:

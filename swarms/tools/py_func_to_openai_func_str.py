@@ -17,6 +17,7 @@ from typing import (
 )
 
 from pydantic import BaseModel, Field
+from pydantic_core import to_jsonable_python
 from pydantic.version import VERSION as PYDANTIC_VERSION
 from typing_extensions import Annotated, Literal, get_args, get_origin
 
@@ -288,8 +289,9 @@ def get_parameter_json_schema(
 
     schema = type2schema(v)
     if k in default_values:
-        dv = default_values[k]
-        schema["default"] = dv
+        schema["default"] = to_jsonable_python(
+            default_values[k], fallback=str
+        )
 
     schema["description"] = type2description(k, v)
 
