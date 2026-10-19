@@ -375,11 +375,11 @@ def test_load_agents_from_csv():
 
 def test_load_agents_from_csv_keeps_file_order():
     """Agents come back in file order even when a later row builds first."""
-    from swarms.structs.agent_loader import CSVAgentLoader
+    from swarms.structs.agent_loader import AgentLoader
 
     second_built = threading.Event()
 
-    class FirstRowBuildsLast(CSVAgentLoader):
+    class FirstRowBuildsLast(AgentLoader):
         def _create_agent(self, validated_config):
             name = validated_config["agent_name"]
             if name == "Test-CSV-Agent-1":
@@ -392,7 +392,7 @@ def test_load_agents_from_csv_keeps_file_order():
         csv_file = create_test_csv_file(
             os.path.join(tmpdir, "test_agents.csv")
         )
-        agents = FirstRowBuildsLast(file_path=csv_file).load_agents()
+        agents = FirstRowBuildsLast().load_agents_from_csv(csv_file)
 
     assert [agent.agent_name for agent in agents] == [
         "Test-CSV-Agent-1",
@@ -595,17 +595,17 @@ def test_parse_markdown_file():
                 agent_config is not None
             ), "Agent config should not be None"
             assert hasattr(
-                agent_config, "name"
-            ), "Config should have name attribute"
+                agent_config, "agent_name"
+            ), "Config should have agent_name attribute"
             assert hasattr(
                 agent_config, "model_name"
             ), "Config should have model_name attribute"
             assert (
-                agent_config.name == "ParseTestAgent"
+                agent_config.agent_name == "ParseTestAgent"
             ), "Agent name should match"
 
             logger.info(
-                f"✓ Parse markdown file test passed: {agent_config.name}"
+                f"✓ Parse markdown file test passed: {agent_config.agent_name}"
             )
 
     except Exception as e:

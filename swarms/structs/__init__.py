@@ -1,6 +1,10 @@
 from swarms.structs.advisor_swarm import AdvisorSwarm
 from swarms.structs.agent import Agent
-from swarms.structs.agent_loader import AgentLoader
+from swarms.structs.agent_loader import (
+    AgentLoader,
+    load_agent_from_markdown,
+    load_agents_from_markdown,
+)
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange
 from swarms.structs.async_subagent import (
     SubagentRegistry,
@@ -148,6 +152,8 @@ __all__ = [
     "HeavySwarm",
     "CronJob",
     "AgentLoader",
+    "load_agent_from_markdown",
+    "load_agents_from_markdown",
     "BatchedGridWorkflow",
     "SelfMoASeq",
     "DebateWithJudge",
