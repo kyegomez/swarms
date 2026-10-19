@@ -13,7 +13,7 @@ max_loops="auto".
 
 Run:
     export OPENAI_API_KEY=sk-...
-    python examples/streaming/agent_streaming.py
+    python examples/single_agent/capabilities/streaming/agent_streaming.py
 """
 
 import asyncio
