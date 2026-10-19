@@ -11,9 +11,13 @@ if __name__ == "__main__":
         model_name="claude-opus-4-20250514",
         max_loops=1,
         max_tokens=16000,
+        output_type="final",
     )
 
-    panel = CouncilAsAJudge(base_agent=base_agent)
-    results = panel.run(user_query)
+    model_output = base_agent.run(user_query)
+    panel = CouncilAsAJudge()
+    results = panel.run(
+        f"Task: {user_query}\n\nResponse: {model_output}"
+    )
 
     print(results)

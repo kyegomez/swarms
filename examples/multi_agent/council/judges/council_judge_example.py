@@ -18,7 +18,6 @@ def main():
         name="Quality Evaluation Council",
         description="Evaluates response quality across multiple dimensions",
         model_name="gpt-5.4",
-        max_workers=4,
     )
 
     # Example task with a response to evaluate

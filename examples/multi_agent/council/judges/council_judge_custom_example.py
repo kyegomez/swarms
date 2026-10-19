@@ -2,7 +2,7 @@
 Custom example demonstrating CouncilAsAJudge with specific configurations.
 
 This example shows how to use the CouncilAsAJudge with different output types,
-custom worker configurations, and focused evaluation scenarios.
+model selection, and focused evaluation scenarios.
 """
 
 from swarms.structs.council_as_judge import CouncilAsAJudge
@@ -16,7 +16,6 @@ def evaluate_with_final_output():
         name="Final Output Council",
         model_name="gpt-5.4",
         output_type="final",
-        max_workers=2,
     )
 
     task = """
@@ -35,8 +34,7 @@ def evaluate_with_conversation_output():
     council = CouncilAsAJudge(
         name="Conversation Council",
         model_name="gpt-5.4",
-        output_type="conversation",
-        max_workers=3,
+        output_type="list",
     )
 
     task = """
@@ -48,15 +46,14 @@ def evaluate_with_conversation_output():
     return council.run(task=task)
 
 
-def evaluate_with_minimal_workers():
+def evaluate_with_all_output():
     """
-    Evaluate a response using minimal worker threads for resource-constrained environments.
+    Evaluate a response and return the conversation as a string.
     """
     council = CouncilAsAJudge(
-        name="Minimal Workers Council",
+        name="All Output Council",
         model_name="gpt-5.4",
         output_type="all",
-        max_workers=1,
         random_model_name=False,
     )
 
@@ -76,7 +73,7 @@ def main():
     configurations = [
         ("Final Output Only", evaluate_with_final_output),
         ("Full Conversation", evaluate_with_conversation_output),
-        ("Minimal Workers", evaluate_with_minimal_workers),
+        ("All Output", evaluate_with_all_output),
     ]
 
     results = {}
