@@ -25,7 +25,6 @@ so serialization, ``save``/``load``, and every existing ``agent.llm`` reference
 keep working unchanged.
 """
 
-import itertools
 import random
 import time
 import traceback
@@ -104,6 +103,7 @@ class LLMManager:
 
     def __init__(self, agent: Any):
         self.agent = agent
+        self.stream_mid_line = False
 
     # Model selection and fallback rotation.
 
@@ -303,6 +303,10 @@ class LLMManager:
             # Additional arguments for LiteLLM initialization
             additional_args = {}
 
+            # The provider stops generating at the token; llm_args can still override stop.
+            if agent.stopping_token:
+                additional_args["stop"] = [agent.stopping_token]
+
             if agent.llm_args is not None:
                 additional_args.update(agent.llm_args)
 
@@ -460,6 +464,81 @@ class LLMManager:
         tool_calls_out.extend(
             accumulator[i] for i in sorted(accumulator)
         )
+
+    def stream_parts(
+        self, stream, tool_calls_out: list, content_out: list
+    ):
+        """Yield everything the model streams as it arrives: reasoning, content and tool calls.
+
+        Content passes through unchanged. Reasoning starts with a [thinking] header and
+        each tool call with a [tool call] header naming the tool, followed by its argument
+        fragments, so a reader of the text can tell the parts apart.
+
+        Args:
+            stream: The raw chunk stream from the model.
+            tool_calls_out: Filled with the assembled tool calls once the stream ends.
+            content_out: Receives each content fragment; joined, they are the reply text.
+
+        Yields:
+            tuple: (kind, text, chunk), where kind is "reasoning", "content" or "tool_call".
+        """
+        # The last call of this run ended mid-line, so this one starts on a new line.
+        section = "carry" if self.stream_mid_line else None
+        tool_names: dict = {}
+        tool_args_started: set = set()
+
+        for chunk in self.stream_with_tool_collection(
+            stream, tool_calls_out
+        ):
+            # RouteHub forwards chunks with no choices, which litellm drops.
+            if not getattr(chunk, "choices", None):
+                continue
+            delta = chunk.choices[0].delta
+
+            reasoning = getattr(delta, "reasoning_content", None)
+            if reasoning:
+                if section != "reasoning":
+                    gap = "" if section is None else "\n"
+                    yield "reasoning", f"{gap}[thinking] ", chunk
+                    section = "reasoning"
+                yield "reasoning", reasoning, chunk
+
+            content = getattr(delta, "content", None)
+            if content:
+                if section not in (None, "content"):
+                    yield "content", "\n", chunk
+                section = "content"
+                content_out.append(content)
+                yield "content", content, chunk
+
+            for tc in getattr(delta, "tool_calls", None) or []:
+                fn = getattr(tc, "function", None)
+                name = getattr(fn, "name", None) or ""
+                arguments = getattr(fn, "arguments", None) or ""
+                if section != ("tool_call", tc.index):
+                    gap = "" if section is None else "\n"
+                    resumed = tool_names.get(tc.index, "")
+                    if tc.index in tool_args_started:
+                        resumed += " "
+                    yield "tool_call", f"{gap}[tool call] {resumed}", chunk
+                    section = ("tool_call", tc.index)
+                if name:
+                    tool_names[tc.index] = (
+                        tool_names.get(tc.index, "") + name
+                    )
+                    yield "tool_call", name, chunk
+                if arguments:
+                    if tc.index not in tool_args_started:
+                        tool_args_started.add(tc.index)
+                        yield "tool_call", " ", chunk
+                    yield "tool_call", arguments, chunk
+
+        if section not in (None, "content", "carry"):
+            kind = (
+                "reasoning" if section == "reasoning" else "tool_call"
+            )
+            yield kind, "\n", None
+        self.stream_mid_line = section in ("content", "carry")
 
     def extract_thinking_from_stream(self, stream):
         """Yield only content chunks from a stream, displaying thinking chunks as a panel first.
@@ -711,51 +790,72 @@ class LLMManager:
             self.agent.llm.stream = original_stream
             return streaming_response
 
-        complete_response = ""
-        token_count = 0
-        final_chunk = None
-        first_chunk = None
-        tool_calls_out: list = []
-
-        for chunk in self.stream_with_tool_collection(
-            self.extract_thinking_from_stream(streaming_response),
-            tool_calls_out,
-        ):
-            if first_chunk is None:
-                first_chunk = chunk
-
-            # RouteHub forwards chunks with no choices, which litellm drops.
-            if (
-                getattr(chunk, "choices", None)
-                and chunk.choices[0].delta.content
-            ):
-                content = chunk.choices[0].delta.content
-                complete_response += content
-                token_count += 1
-
-                token_info = self._build_token_info(
-                    chunk, content, token_count
-                )
-
-                print(f"ResponseStream {token_info}")
-
-                if streaming_callback is not None:
-                    streaming_callback(token_info)
-
-            final_chunk = chunk
-
-        print(self._format_final_chunk(final_chunk))
-
+        result = self._consume_detailed(
+            streaming_response, streaming_callback
+        )
         self.agent.llm.stream = original_stream
+        return result
+
+    def _consume_detailed(
+        self,
+        streaming_response,
+        streaming_callback: Optional[Callable[[dict], None]],
+    ) -> Any:
+        """Print and forward a token_info dict for every streamed part.
+
+        Args:
+            streaming_response: The raw chunk stream from the model.
+            streaming_callback: Receives each token_info dict, if given.
+
+        Returns:
+            Any: The assembled tool calls if the model made any, else the reply text.
+        """
+        token_count = 0
+        last_chunk = [None]
+        tool_calls_out: list = []
+        content_out: list = []
+
+        def track_last(stream):
+            for chunk in stream:
+                last_chunk[0] = chunk
+                yield chunk
+
+        for kind, text, chunk in self.stream_parts(
+            track_last(streaming_response),
+            tool_calls_out,
+            content_out,
+        ):
+            token_count += 1
+            token_info = self._build_token_info(
+                chunk or last_chunk[0], text, token_count, kind
+            )
+
+            print(f"ResponseStream {token_info}")
+
+            if streaming_callback is not None:
+                streaming_callback(token_info)
+
+        complete_response = "".join(content_out)
+        print(self._format_final_chunk(last_chunk[0]))
 
         return tool_calls_out if tool_calls_out else complete_response
 
     def _build_token_info(
-        self, chunk: Any, content: str, token_count: int
+        self,
+        chunk: Any,
+        content: str,
+        token_count: int,
+        kind: str = "content",
     ) -> dict:
         """Schema emitted per token during detailed streaming."""
+        choice = (
+            chunk.choices[0]
+            if getattr(chunk, "choices", None)
+            else None
+        )
         return {
             "token_index": token_count,
+            "type": kind,
             "model": getattr(
                 chunk, "model", self.get_current_model()
             ),
@@ -768,7 +868,7 @@ class LLMManager:
             "system_fingerprint": getattr(
                 chunk, "system_fingerprint", ""
             ),
-            "finish_reason": chunk.choices[0].finish_reason,
+            "finish_reason": getattr(choice, "finish_reason", None),
             "citations": getattr(chunk, "citations", None),
             "provider_specific_fields": getattr(
                 chunk, "provider_specific_fields", None
@@ -776,7 +876,7 @@ class LLMManager:
             "service_tier": getattr(chunk, "service_tier", "default"),
             "obfuscation": getattr(chunk, "obfuscation", None),
             "usage": getattr(chunk, "usage", None),
-            "logprobs": chunk.choices[0].logprobs,
+            "logprobs": getattr(choice, "logprobs", None),
             "timestamp": time.time(),
         }
 
@@ -842,34 +942,43 @@ class LLMManager:
             self.agent.llm.stream = original_stream
             return streaming_response
 
+        result = self._consume_panel(
+            streaming_response, current_loop, streaming_callback
+        )
+        self.agent.llm.stream = original_stream
+        return result
+
+    def _consume_panel(
+        self,
+        streaming_response,
+        current_loop: int,
+        streaming_callback: Optional[Callable[[str], None]],
+    ) -> Any:
+        """Send every streamed part to the callback, the live panel, or nowhere when printing is off.
+
+        Args:
+            streaming_response: The raw chunk stream from the model.
+            current_loop: The loop number shown in the panel title.
+            streaming_callback: Receives the text of every part, if given.
+
+        Returns:
+            Any: The assembled tool calls if the model made any, else the reply text.
+        """
         tool_calls_out: list = []
 
-        # Check if streaming_callback is provided (for ConcurrentWorkflow dashboard integration)
+        # A callback (e.g. a ConcurrentWorkflow dashboard) takes precedence over the panel
         if streaming_callback is not None:
-            # No Live context is active here, so the thinking panel cannot interleave.
             complete_response = self._collect_stream(
-                self.stream_with_tool_collection(
-                    self.extract_thinking_from_stream(
-                        streaming_response
-                    ),
-                    tool_calls_out,
-                ),
-                streaming_callback,
+                streaming_response, streaming_callback, tool_calls_out
             )
         elif self.agent.print_on is False:
-            # Silent streaming - no printing, just collect chunks
             complete_response = self._collect_stream(
-                self.stream_with_tool_collection(
-                    streaming_response, tool_calls_out
-                )
+                streaming_response, tool_calls_out=tool_calls_out
             )
         else:
             complete_response = self._stream_to_panel(
                 streaming_response, tool_calls_out, current_loop
             )
-
-        # Restore original stream setting
-        self.agent.llm.stream = original_stream
 
         # Tool calls made mid-stream come back in the non-streaming shape
         return tool_calls_out if tool_calls_out else complete_response
@@ -878,23 +987,29 @@ class LLMManager:
         self,
         stream,
         streaming_callback: Optional[Callable[[str], None]] = None,
+        tool_calls_out: Optional[list] = None,
     ) -> str:
-        """Drain a stream into a string, optionally forwarding each token."""
-        chunks = []
+        """Drain a stream into its reply text, forwarding every streamed part to the callback.
 
-        for chunk in stream:
-            # RouteHub forwards chunks with no choices, which litellm drops.
-            if (
-                getattr(chunk, "choices", None)
-                and chunk.choices[0].delta.content
-            ):
-                content = chunk.choices[0].delta.content
-                chunks.append(content)
+        Args:
+            stream: The raw chunk stream from the model.
+            streaming_callback: Receives the text of every part: reasoning, content and tool calls.
+            tool_calls_out: Filled with the assembled tool calls, if given.
 
-                if streaming_callback is not None:
-                    streaming_callback(content)
+        Returns:
+            str: The reply's content text, without reasoning or tool calls.
+        """
+        content_out: list = []
 
-        return "".join(chunks)
+        for _, text, _ in self.stream_parts(
+            stream,
+            tool_calls_out if tool_calls_out is not None else [],
+            content_out,
+        ):
+            if streaming_callback is not None:
+                streaming_callback(text)
+
+        return "".join(content_out)
 
     def _stream_to_panel(
         self,
@@ -902,60 +1017,75 @@ class LLMManager:
         tool_calls_out: list,
         current_loop: int,
     ) -> str:
-        """Display a live streaming panel and return the collected response.
+        """Show every streamed part in one live panel and return the reply's content text.
 
-        The print-streaming path uses Rich's Live display. We MUST print the
-        thinking panel BEFORE the Live context opens, otherwise the
-        console.print() call inside extract_thinking_from_stream interleaves
-        with the Live display and corrupts the terminal.
+        Args:
+            streaming_response: The raw chunk stream from the model.
+            tool_calls_out: Filled with the assembled tool calls.
+            current_loop: The loop number shown in the panel title.
+
+        Returns:
+            str: The reply's content text, without reasoning or tool calls.
         """
-        thinking_parts: list = []
-        first_content_chunk = None
+        content_out: list = []
+        styles = {"reasoning": "italic grey50", "tool_call": "cyan"}
 
-        for chunk in streaming_response:
-            delta = (
-                chunk.choices[0].delta
-                if hasattr(chunk, "choices") and chunk.choices
-                else None
-            )
-            reasoning = (
-                getattr(delta, "reasoning_content", None)
-                if delta
-                else None
-            )
-            if reasoning:
-                thinking_parts.append(reasoning)
-            elif delta is not None and not (
-                getattr(delta, "content", None)
-                or getattr(delta, "tool_calls", None)
-            ):
-                # A role-only opening chunk, sent by RouteHub, carries nothing to show.
-                continue
-            else:
-                first_content_chunk = chunk
-                break
-
-        if thinking_parts:
-            formatter.print_thinking_panel(
-                "".join(thinking_parts), title=self._thinking_title()
-            )
-
-        # The first chunk was already consumed, chain it back in
-        chained = itertools.chain(
+        formatter.print_streaming_panel(
             (
-                [first_content_chunk]
-                if first_content_chunk is not None
-                else []
+                (text, styles.get(kind))
+                for kind, text, _ in self.stream_parts(
+                    streaming_response, tool_calls_out, content_out
+                )
             ),
-            streaming_response,
-        )
-
-        # Use the streaming panel to display and collect the response
-        return formatter.print_streaming_panel(
-            self.stream_with_tool_collection(chained, tool_calls_out),
             title=f"🤖 Agent: {self.agent.agent_name} Loops: {current_loop}",
             style=None,  # Use random color like non-streaming approach
             collect_chunks=True,
+        )
+        return "".join(content_out)
+
+    def run_side_call(
+        self,
+        llm: Any,
+        task: str,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], None]] = None,
+    ) -> Any:
+        """Run a call on a model other than the agent's own, streaming it the same way when streaming is on.
+
+        Args:
+            llm: The model to call, such as the tool summary model.
+            task: The prompt to send.
+            current_loop: The loop number shown in the panel title.
+            streaming_callback: Receives streamed tokens. Defaults to the callback of the run in progress.
+
+        Returns:
+            Any: The model's reply.
+        """
+        agent = self.agent
+        if streaming_callback is None:
+            streaming_callback = getattr(
+                agent, "_run_streaming_callback", None
+            ) or getattr(agent, "streaming_callback", None)
+
+        if not (
+            agent.stream
+            or agent.streaming_on
+            or streaming_callback is not None
+        ) or not hasattr(llm, "stream"):
+            return llm.run(task)
+
+        llm.stream = True
+        response = llm.run(task)
+        if not hasattr(response, "__iter__") or isinstance(
+            response, str
+        ):
+            return response
+        if agent.stream:
+            return self._consume_detailed(
+                response, streaming_callback
+            )
+        return self._consume_panel(
+            response, current_loop, streaming_callback
         )
 
     # Fallback execution.

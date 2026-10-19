@@ -1,4 +1,6 @@
 import hashlib
+import subprocess
+import sys
 
 import pytest
 
@@ -872,6 +874,20 @@ def test_graph_workflow_backend_fallback():
             workflow.graph_backend.__class__.__name__
             == "RustworkxBackend"
         )
+
+
+def test_import_swarms_does_not_load_graph_libraries():
+    loaded = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys, swarms; print(sorted({'networkx', 'rustworkx', 'graphviz'} & set(sys.modules)))",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert loaded.strip() == "[]"
 
 
 @pytest.mark.parametrize("backend", ["networkx", "rustworkx"])

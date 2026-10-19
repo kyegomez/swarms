@@ -1,15 +1,15 @@
 """
-Swarm Rearrangement Example
+Nested Swarms Example
 
-This example demonstrates SwarmRearrange for rearranging swarms
-of swarms with dynamic flow patterns.
+This example demonstrates AgentRearrange running a flow whose
+steps are whole swarms, referenced by their names.
 """
 
 from swarms import (
     Agent,
+    AgentRearrange,
     RoundRobinSwarm,
     SequentialWorkflow,
-    SwarmRearrange,
 )
 
 agent1 = Agent(
@@ -50,14 +50,14 @@ swarm2 = SequentialWorkflow(
 
 flow = "Swarm1 -> Swarm2"
 
-swarm_rearrange = SwarmRearrange(
-    swarms=[swarm1, swarm2],
+nested_swarms = AgentRearrange(
+    agents=[swarm1, swarm2],
     flow=flow,
     max_loops=1,
 )
 
 task = "Process this task through multiple swarms"
-result = swarm_rearrange.run(task)
+result = nested_swarms.run(task)
 
-print("Swarm Rearrangement Result:")
+print("Nested Swarms Result:")
 print(result)

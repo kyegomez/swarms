@@ -73,9 +73,12 @@ $ cd swarms
 $ pip install -r requirements.txt
 ```
 
-### Faster model calls with RouteHub
+### Faster model calls and graphs with `swarms[fast]`
 
-`swarms[fast]` uses [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub) for faster model calls through a drop-in LLM gateway. No code changes needed. To switch back to litellm, set `SWARMS_LLM_BACKEND=litellm`.
+`swarms[fast]` adds two optional speedups:
+
+- [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub) for faster model calls through a drop-in LLM gateway. No code changes needed. To switch back to litellm, set `SWARMS_LLM_BACKEND=litellm`.
+- [rustworkx](https://github.com/Qiskit/rustworkx), a graph library written in Rust, for faster `GraphWorkflow` graphs. Turn it on with `GraphWorkflow(backend="rustworkx")`.
 
 ```bash
 $ pip3 install -U "swarms[fast]"
@@ -288,7 +291,7 @@ print(final_post)
 | **[HeavySwarm](https://docs.swarms.world/api/heavy-swarm)** | Implements a five-phase workflow with specialized agents (Research, Analysis, Alternatives, Verification) for comprehensive task analysis. | Complex research and analysis tasks, financial analysis, strategic planning, and comprehensive reporting. |
 | **[SwarmRouter](https://docs.swarms.world/api/swarm-router)** | A universal orchestrator that provides a single interface to run any type of swarm with dynamic selection. | Simplifying complex workflows, switching between swarm strategies, and unified multi-agent management. |
 
-Learn more about all of the 60+ Multi-Agent Structures we have available [here](/docs/MULTI_AGENT_STRUCTURES.md)
+Learn more about all of the 60+ Multi-Agent Structures we have available [here](https://docs.swarms.world)
 
 -----
 

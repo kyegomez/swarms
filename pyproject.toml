@@ -57,7 +57,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
-asyncio = ">=3.4.3,<5.0"
 toml = "*"
 loguru = "*"
 pydantic = "*"
@@ -76,10 +75,12 @@ opentelemetry-sdk = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
 zstandard = "*"
 routehub = { version = ">=0.2.0", extras = ["fast"], optional = true }
+rustworkx = { version = "*", optional = true }
 
 [tool.poetry.extras]
 # RouteHub replaces litellm for model calls when installed.
-fast = ["routehub"]
+# rustworkx backs GraphWorkflow(backend="rustworkx") in place of networkx.
+fast = ["routehub", "rustworkx"]
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

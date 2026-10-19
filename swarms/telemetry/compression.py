@@ -43,41 +43,64 @@ class CompressingSession(requests.Session):
         self._lock = threading.Lock()
         self.encoding = "zstd" if self._zstd is not None else "gzip"
 
-    def post(self, url: str, data: Any = None, **kwargs: Any):
+    def request(
+        self, method: str, url: str, *args: Any, **kwargs: Any
+    ):
         """Send a compressed export body.
 
         Args:
+            method (str): The HTTP method. Only POST bodies are compressed.
             url (str): The export endpoint.
-            data (Any): The uncompressed request body.
-            **kwargs (Any): Passed through to the request.
+            *args (Any): Passed through to the request.
+            **kwargs (Any): Passed through to the request. A bytes data is the uncompressed body.
 
         Returns:
             requests.Response: The collector's response.
         """
+        data = kwargs.get("data")
+        if method.upper() != "POST" or not isinstance(data, bytes):
+            return super().request(method, url, *args, **kwargs)
         if self.encoding == "zstd":
             with self._lock:
                 body = self._zstd.compress(data)
-            response = self._send(url, body, "zstd", **kwargs)
+            response = self._send(
+                method, url, body, "zstd", *args, **kwargs
+            )
             # A collector that cannot read zstd fails to parse the body and answers 400 or 415.
             if response.status_code not in (400, 415):
                 return response
             fallback = self._send(
-                url, gzip.compress(data), "gzip", **kwargs
+                method,
+                url,
+                gzip.compress(data),
+                "gzip",
+                *args,
+                **kwargs,
             )
             if fallback.ok:
                 self.encoding = "gzip"
             return fallback
-        return self._send(url, gzip.compress(data), "gzip", **kwargs)
+        return self._send(
+            method, url, gzip.compress(data), "gzip", *args, **kwargs
+        )
 
     def _send(
-        self, url: str, body: bytes, encoding: str, **kwargs: Any
+        self,
+        method: str,
+        url: str,
+        body: bytes,
+        encoding: str,
+        *args: Any,
+        **kwargs: Any,
     ):
-        """Post an already compressed body with its content encoding.
+        """Send an already compressed body with its content encoding.
 
         Args:
+            method (str): The HTTP method.
             url (str): The export endpoint.
             body (bytes): The compressed body.
             encoding (str): The content encoding of the body.
+            *args (Any): Passed through to the request.
             **kwargs (Any): Passed through to the request.
 
         Returns:
@@ -85,4 +108,7 @@ class CompressingSession(requests.Session):
         """
         headers = dict(kwargs.pop("headers", None) or {})
         headers["Content-Encoding"] = encoding
-        return super().post(url, data=body, headers=headers, **kwargs)
+        kwargs["data"] = body
+        return super().request(
+            method, url, *args, headers=headers, **kwargs
+        )
