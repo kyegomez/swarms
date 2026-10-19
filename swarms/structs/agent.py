@@ -620,6 +620,12 @@ class Agent:
         if self.react_on is True:
             self.system_prompt += REACT_SYS_PROMPT
 
+        if self.stopping_token and self.max_loops != "auto":
+            self.system_prompt += (
+                "\n\nWhen the task is complete, end your reply with "
+                f"{self.stopping_token}."
+            )
+
         self.tool_manager.load_tools()
 
         if self.llm is None:
@@ -807,7 +813,7 @@ class Agent:
             self.max_loops = "auto"
 
         # If the preset stopping token is enabled then set the stopping token to the preset stopping token
-        if self.preset_stopping_token is not None:
+        if self.preset_stopping_token:
             self.stopping_token = "<DONE>"
 
     def check_model_supports_utilities(
@@ -1131,6 +1137,7 @@ class Agent:
                 # Parameters
                 attempt = 0
                 success = False
+                stopping_token_seen = False
                 last_error: Optional[Exception] = None
                 while attempt < self.retry_attempts and not success:
                     # Outside the try: except must answer tool calls.
@@ -1171,6 +1178,16 @@ class Agent:
                         response = self.tool_manager.parse_response(
                             response
                         )
+
+                        stopping_token_seen = (
+                            bool(self.stopping_token)
+                            and isinstance(response, str)
+                            and self.stopping_token in response
+                        )
+                        if stopping_token_seen:
+                            response = response.replace(
+                                self.stopping_token, ""
+                            ).rstrip()
 
                         self.short_memory.add(
                             role=self.agent_name,
@@ -1305,6 +1322,12 @@ class Agent:
                     logger.info(
                         f"Agent '{self.agent_name}' stopping function condition met. "
                         f"Loop: {loop_count}, Response length: {len(str(response)) if response else 0}"
+                    )
+                    break
+                elif stopping_token_seen:
+                    logger.info(
+                        f"Agent '{self.agent_name}' stopping token found. "
+                        f"Loop: {loop_count}"
                     )
                     break
 

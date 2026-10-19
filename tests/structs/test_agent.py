@@ -108,7 +108,7 @@ class TestBasicAgent:
         assert basic_flow.stopping_condition is None
         assert basic_flow.retry_attempts == 3
         assert basic_flow.task is None
-        assert basic_flow.stopping_token == "<DONE>"
+        assert basic_flow.stopping_token is None
         assert not basic_flow.interactive
 
     @patch("time.sleep", return_value=None)
@@ -122,6 +122,27 @@ class TestBasicAgent:
         self, mocked_sleep, flow_with_condition
     ):
         assert flow_with_condition.run("Stop") is not None
+
+    def test_stopping_token_ends_the_run_and_is_stripped(
+        self, tmp_path
+    ):
+        replies = ["working", "answer <DONE>", "never sent"]
+
+        class ScriptedLLM:
+            def run(self, task=None, *args, **kwargs):
+                return replies.pop(0)
+
+        agent = _flow(
+            "stopping-token",
+            ScriptedLLM(),
+            tmp_path,
+            stopping_token="<DONE>",
+            output_type="final",
+        )
+        agent.max_loops = 5
+
+        assert agent.run("go") == "answer"
+        assert replies == ["never sent"]
 
     def test_bulk_run(self, basic_flow):
         inputs = [{"task": "Test1"}, {"task": "Test2"}]
