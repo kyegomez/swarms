@@ -5,7 +5,7 @@ This example demonstrates the basic autosave functionality of the Agent class.
 When autosave=True, the agent automatically saves its configuration to a JSON file
 at each step of execution, and saves the full state on errors or interruptions.
 
-The files are saved in: workspace_dir/agent-{agent_name}-{uuid}/
+The files are saved in: workspace_dir/agents/{agent_name}-{uuid12}/
 """
 
 from swarms import Agent
