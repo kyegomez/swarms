@@ -78,6 +78,25 @@ def test_initialization_with_agent_rearrange_config():
     assert router.rearrange_flow == "ResearchAgent -> CodeAgent"
 
 
+def test_round_robin_returns_the_router_output_type():
+    """RoundRobin formats its result with the router's output_type."""
+    router = SwarmRouter(
+        agents=create_sample_agents(),
+        swarm_type="RoundRobin",
+        output_type="list",
+    )
+
+    with patch.object(Agent, "run", return_value="2"):
+        result = router.run("What is 1+1?")
+
+    assert router.swarm.output_type == "list"
+    assert [message["role"] for message in result] == [
+        "User",
+        "ResearchAgent",
+        "CodeAgent",
+    ]
+
+
 # ============================================================================
 # Configuration Tests
 # ============================================================================
