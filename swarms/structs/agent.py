@@ -1673,18 +1673,24 @@ Subtask Breakdown:
     def clone(self) -> "Agent":
         """Build a new agent from this agent's constructor arguments.
 
-        The clone keeps this agent's id, so its workspace is this agent's,
-        and its tools, handoffs and MCP configuration, but gets its own
-        LLM client and ``short_memory``, unlike ``copy.deepcopy``, which
-        fails on the agent's thread locks. A passed-in ``llm`` is shared,
+        The clone keeps this agent's id and saved state path, so its
+        workspace and autosave file are this agent's, and its tools,
+        handoffs and MCP configuration, but gets its own LLM client and
+        ``short_memory``, unlike ``copy.deepcopy``, which fails on the
+        agent's thread locks. A passed-in ``llm`` is shared,
         the clone never republishes to the marketplace, and its token
         usage counts toward this agent.
 
         Returns:
             Agent: A new agent of the same class.
         """
-        overrides = {"id": self.id, "publish_to_marketplace": False}
-        clone = type(self)(**{**self._init_config, **overrides})
+        config = dict(
+            self._init_config,
+            id=self.id,
+            saved_state_path=self.saved_state_path,
+            publish_to_marketplace=False,
+        )
+        clone = type(self)(**config)
         clone._usage = self._usage
         return clone
 

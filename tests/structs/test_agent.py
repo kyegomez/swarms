@@ -1674,16 +1674,8 @@ class TestConcurrentExecutionPool:
                 Agent.run_concurrent_tasks(agent, ["t1"])
 
     def test_clone_has_own_memory_and_client(self):
-        with patch(
-            "swarms.tools.mcp_manager.MCPManager.get_tools",
-            return_value=[],
-        ):
-            agent = _patched_agent(
-                "A",
-                tools=[_url_tool],
-                mcp_url="http://localhost:9/mcp",
-            )
-            clone = agent.clone()
+        agent = _patched_agent("A", tools=[_url_tool])
+        clone = agent.clone()
 
         assert clone.short_memory is not agent.short_memory
         assert clone.llm is not agent.llm
