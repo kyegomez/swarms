@@ -612,6 +612,32 @@ def test_workflow_drift_max_retries_zero_never_reruns():
     assert result == "only output"
 
 
+def test_drift_judge_scores_every_attempt_through_a_real_agent():
+    wf = _make_workflow(
+        drift_detection=True,
+        drift_threshold=0.75,
+        drift_max_retries=2,
+    )
+    score_call = {
+        "function": {
+            "name": "score_drift",
+            "arguments": '{"score": 0.1}',
+        },
+        "id": "call_1",
+        "type": "function",
+    }
+
+    with patch.object(
+        wf.agent_rearrange, "run", return_value="output"
+    ) as pipeline, patch.object(
+        wf.drift_agent.llm, "run", return_value=[score_call]
+    ) as judge:
+        wf.run("task")
+
+    assert judge.call_count == 3
+    assert pipeline.call_count == 3
+
+
 def test_negative_drift_max_retries_is_rejected():
     with pytest.raises(ValueError, match="drift_max_retries"):
         _make_workflow(drift_detection=True, drift_max_retries=-1)

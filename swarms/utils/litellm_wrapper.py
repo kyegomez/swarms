@@ -18,7 +18,6 @@ for various input modalities and output formats.
 """
 
 import copy
-import socket
 import traceback
 from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
@@ -1239,33 +1238,6 @@ class LiteLLM:
         name = (model_name or "").lower()
         return "claude" in name or "anthropic" in name
 
-    @staticmethod
-    def check_internet_connection(
-        host: str = "8.8.8.8", port: int = 53, timeout: int = 3
-    ) -> bool:
-        """
-        Check if there is an active internet connection.
-
-        This method attempts to establish a socket connection to a DNS server
-        (default is Google's DNS at 8.8.8.8) to verify internet connectivity.
-
-        Args:
-            host (str, optional): The host to connect to for checking connectivity.
-                Defaults to "8.8.8.8" (Google DNS).
-            port (int, optional): The port to use for the connection. Defaults to 53 (DNS).
-            timeout (int, optional): Connection timeout in seconds. Defaults to 3.
-
-        Returns:
-            bool: True if internet connection is available, False otherwise.
-        """
-        try:
-            with socket.create_connection(
-                (host, port), timeout=timeout
-            ):
-                return True
-        except OSError:
-            return False
-
     def _build_completion_params(
         self,
         task: str,
@@ -1489,21 +1461,15 @@ class LiteLLM:
     def _raise_network_error(self, network_error: Exception):
         """
         Convert a low-level network exception into a NetworkConnectionError
-        with a troubleshooting message tailored to the failure mode.
+        that keeps the original error and adds troubleshooting guidance.
         """
-        if not self.check_internet_connection():
-            error_msg = (
-                f"No internet connection detected while trying to use model '{self.model_name}'.\n\n"
-                "Check your connection, or use a local model instead (e.g., Ollama):\n"
-                "  model = LiteLLM(model_name='ollama/llama2')\n"
-            )
-        else:
-            error_msg = (
-                f"Network error occurred while connecting to '{self.model_name}': {network_error}\n\n"
-                "The endpoint may be temporarily unavailable, the connection timed out,\n"
-                "or a firewall/proxy is blocking it. Consider a local model as a fallback:\n"
-                "  model = LiteLLM(model_name='ollama/llama2')\n"
-            )
+        error_msg = (
+            f"Network error while connecting to '{self.model_name}': "
+            f"{type(network_error).__name__}: {network_error}\n\n"
+            "Check your connection, base_url, proxy and TLS settings, or\n"
+            "consider a local model as a fallback:\n"
+            "  model = LiteLLM(model_name='ollama/llama2')\n"
+        )
         logger.error(error_msg)
         raise NetworkConnectionError(error_msg) from network_error
 

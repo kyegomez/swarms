@@ -1634,6 +1634,10 @@ Please refine the content to address the feedback while maintaining its core str
         Returns:
             Final result
         """
+        self.conversation_history = []
+        self.intermediate_outputs = {}
+        self.evaluation_results = []
+
         # Enhanced workflow start display
         console.print(
             Panel(

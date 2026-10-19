@@ -678,6 +678,162 @@ class TestStreamWithToolCollection:
 
 
 ########################################################
+# stream_parts()
+########################################################
+
+
+def tool_chunk(*fragments):
+    return FakeChunk(
+        choices=[FakeChoice(FakeDelta(tool_calls=list(fragments)))]
+    )
+
+
+def streamed(agent, chunks):
+    tool_calls, content = [], []
+    parts = list(
+        agent.llm_manager.stream_parts(
+            iter(chunks), tool_calls, content
+        )
+    )
+    text = "".join(t for _, t, _ in parts)
+    return parts, text, tool_calls, "".join(content)
+
+
+class TestStreamParts:
+    def test_plain_text_passes_through_unchanged(self, agent):
+        parts, text, tool_calls, content = streamed(
+            agent, [content_chunk("hel"), content_chunk("lo")]
+        )
+        assert [t for _, t, _ in parts] == ["hel", "lo"]
+        assert text == content == "hello"
+        assert tool_calls == []
+
+    def test_text_then_tool_call_streams_both(self, agent):
+        _, text, tool_calls, content = streamed(
+            agent,
+            [
+                content_chunk("Checking."),
+                tool_chunk(
+                    FakeToolCallDelta(0, id="c0", name="get_")
+                ),
+                tool_chunk(
+                    FakeToolCallDelta(
+                        0, name="weather", arguments='{"city":'
+                    )
+                ),
+                tool_chunk(FakeToolCallDelta(0, arguments='"NYC"}')),
+            ],
+        )
+        assert text == (
+            'Checking.\n[tool call] get_weather {"city":"NYC"}\n'
+        )
+        assert content == "Checking."
+        assert tool_calls[0]["function"]["name"] == "get_weather"
+
+    def test_parallel_tool_calls_each_get_a_header(self, agent):
+        _, text, tool_calls, _ = streamed(
+            agent,
+            [
+                tool_chunk(FakeToolCallDelta(0, id="c0", name="add")),
+                tool_chunk(FakeToolCallDelta(0, arguments="{}")),
+                tool_chunk(FakeToolCallDelta(1, id="c1", name="sub")),
+                tool_chunk(FakeToolCallDelta(1, arguments="{}")),
+            ],
+        )
+        assert text == "[tool call] add {}\n[tool call] sub {}\n"
+        assert [c["id"] for c in tool_calls] == ["c0", "c1"]
+
+    def test_returning_to_a_tool_call_repeats_its_name(self, agent):
+        _, text, _, _ = streamed(
+            agent,
+            [
+                tool_chunk(
+                    FakeToolCallDelta(0, id="c0", name="add"),
+                    FakeToolCallDelta(1, id="c1", name="sub"),
+                ),
+                tool_chunk(
+                    FakeToolCallDelta(0, arguments="{}"),
+                    FakeToolCallDelta(1, arguments="{}"),
+                ),
+            ],
+        )
+        assert text == (
+            "[tool call] add\n[tool call] sub\n"
+            "[tool call] add {}\n[tool call] sub {}\n"
+        )
+
+    def test_skips_chunks_without_choices(self, agent):
+        _, text, _, content = streamed(
+            agent,
+            [
+                FakeNoChoices(),
+                FakeChunk(choices=[]),
+                content_chunk("hi"),
+            ],
+        )
+        assert text == content == "hi"
+
+    def test_next_call_starts_on_a_new_line_after_text(self, agent):
+        streamed(agent, [content_chunk("first")])
+        _, text, _, content = streamed(
+            agent,
+            [
+                tool_chunk(
+                    FakeToolCallDelta(
+                        0, id="c0", name="f", arguments="{}"
+                    )
+                )
+            ],
+        )
+        assert text == "\n[tool call] f {}\n"
+
+        _, text, _, content = streamed(
+            agent, [content_chunk("again")]
+        )
+        assert (text, content) == ("again", "again")
+
+
+class TestRunSideCall:
+    def test_runs_plainly_when_streaming_is_off(self, agent):
+        side = FakeLLM(non_stream_return="summary")
+
+        assert (
+            agent.llm_manager.run_side_call(side, "sum") == "summary"
+        )
+        assert side.stream is False
+
+    def test_streams_to_the_callback_of_the_run_in_progress(
+        self, agent
+    ):
+        side = FakeLLM(
+            stream_return=[content_chunk("su"), content_chunk("m")]
+        )
+        tokens = []
+        agent._run_streaming_callback = tokens.append
+
+        result = agent.llm_manager.run_side_call(side, "sum")
+
+        assert result == "sum"
+        assert tokens == ["su", "m"]
+
+    def test_streams_detailed_token_info_when_stream_is_on(
+        self, agent
+    ):
+        side = FakeLLM(stream_return=[content_chunk("ok")])
+        agent.stream = True
+        tokens = []
+
+        result = agent.llm_manager.run_side_call(
+            side, "sum", streaming_callback=tokens.append
+        )
+
+        assert result == "ok"
+        assert [(t["type"], t["token"]) for t in tokens] == [
+            ("content", "ok")
+        ]
+
+
+########################################################
 # extract_thinking_from_stream()
 ########################################################
 
@@ -839,8 +995,10 @@ class TestCallDetailedStreaming:
                 },
             }
         ]
-        # No content chunks -> the callback never fired.
-        assert tokens == []
+        assert "".join(t["token"] for t in tokens) == (
+            '[tool call] get_weather {"city":"NYC"}\n'
+        )
+        assert {t["type"] for t in tokens} == {"tool_call"}
 
     def test_non_iterable_string_response_falls_through(
         self, agent, fake_llm
@@ -867,7 +1025,7 @@ class TestCallPanelStreaming:
             content_chunk("B", finish_reason="stop"),
         ]
 
-    def test_callback_path_forwards_content_and_swallows_thinking(
+    def test_callback_path_forwards_thinking_then_content(
         self, agent, fake_llm
     ):
         fake_llm.stream_return = self._chunks()
@@ -882,7 +1040,7 @@ class TestCallPanelStreaming:
         )
 
         assert result == "AB"
-        assert tokens == ["A", "B"]
+        assert "".join(tokens) == "[thinking] hmm let me think\nAB"
 
     def test_callback_streams_without_streaming_on(
         self, agent, fake_llm
@@ -895,7 +1053,7 @@ class TestCallPanelStreaming:
         )
 
         assert result == "AB"
-        assert tokens == ["A", "B"]
+        assert "".join(tokens) == "[thinking] hmm let me think\nAB"
         assert "imgs" not in fake_llm.calls[-1]["kwargs"]
 
         agent.llm_manager.call(
@@ -1177,17 +1335,14 @@ class TestChunksWithNothingToShow:
         )
         assert agent.llm_manager._collect_stream(stream) == "hi"
 
-    def test_panel_shows_thinking_after_a_role_only_chunk(
+    def test_panel_streams_thinking_after_a_role_only_chunk(
         self, agent, monkeypatch
     ):
-        panels = Mock()
-        monkeypatch.setattr(
-            llm_manager.formatter, "print_thinking_panel", panels
-        )
+        shown = []
         monkeypatch.setattr(
             llm_manager.formatter,
             "print_streaming_panel",
-            lambda chunks, **kwargs: "".join(map(str, chunks)),
+            lambda parts, **kwargs: shown.extend(t for t, _ in parts),
         )
         stream = iter(
             [
@@ -1199,6 +1354,9 @@ class TestChunksWithNothingToShow:
             ]
         )
 
-        agent.llm_manager._stream_to_panel(stream, [], current_loop=1)
+        result = agent.llm_manager._stream_to_panel(
+            stream, [], current_loop=1
+        )
 
-        assert panels.call_args.args[0] == "hmm"
+        assert "".join(shown) == "[thinking] hmm\nanswer"
+        assert result == "answer"
