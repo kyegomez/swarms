@@ -1673,18 +1673,18 @@ Subtask Breakdown:
     def clone(self) -> "Agent":
         """Build a new agent from this agent's constructor arguments.
 
-        The clone keeps tools, handoffs and MCP configuration but gets its
-        own LLM client and ``short_memory``, unlike ``copy.deepcopy``,
-        which fails on the agent's thread locks. A passed-in ``llm`` is
-        shared, the clone never republishes to the marketplace, and its
-        token usage counts toward this agent.
+        The clone keeps this agent's id, so its workspace is this agent's,
+        and its tools, handoffs and MCP configuration, but gets its own
+        LLM client and ``short_memory``, unlike ``copy.deepcopy``, which
+        fails on the agent's thread locks. A passed-in ``llm`` is shared,
+        the clone never republishes to the marketplace, and its token
+        usage counts toward this agent.
 
         Returns:
             Agent: A new agent of the same class.
         """
-        clone = type(self)(
-            **{**self._init_config, "publish_to_marketplace": False}
-        )
+        overrides = {"id": self.id, "publish_to_marketplace": False}
+        clone = type(self)(**{**self._init_config, **overrides})
         clone._usage = self._usage
         return clone
 
@@ -1705,15 +1705,16 @@ Subtask Breakdown:
         """
         try:
             logger.info(f"Running concurrent tasks: {tasks}")
+            clones = [self.clone() for _ in tasks]
             # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
             with ContextThreadPoolExecutor(
                 max_workers=os.cpu_count()
             ) as executor:
                 futures = [
                     executor.submit(
-                        self.clone().run, *args, task=task, **kwargs
+                        clone.run, *args, task=task, **kwargs
                     )
-                    for task in tasks
+                    for clone, task in zip(clones, tasks)
                 ]
                 results = [future.result() for future in futures]
             logger.info(f"Completed tasks: {results}")
