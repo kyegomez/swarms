@@ -1164,6 +1164,9 @@ def _load_arch_classes():
     from swarms.structs.debate_with_judge import DebateWithJudge
     from swarms.structs.llm_council import LLMCouncil
     from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
+    from swarms.structs.hierarchical_structured_communication_framework import (
+        HierarchicalStructuredCommunicationFramework,
+    )
 
     return {
         "Agent": Agent,
@@ -1189,6 +1192,7 @@ def _load_arch_classes():
         "SpreadSheetSwarm": SpreadSheetSwarm,
         "AutoSwarmBuilder": AutoSwarmBuilder,
         "SocialAlgorithms": SocialAlgorithms,
+        "HierarchicalStructuredCommunicationFramework": HierarchicalStructuredCommunicationFramework,
     }
 
 
@@ -1257,6 +1261,22 @@ class TestConstructionEmitsInitSpan:
 
         MajorityVoting(agents=[_agent()])
         assert _by_name(spans, "MajorityVoting.init") is not None
+
+    def test_hierarchical_structured_communication_framework(
+        self, spans
+    ):
+        from swarms.structs.hierarchical_structured_communication_framework import (
+            HierarchicalStructuredCommunicationFramework,
+        )
+
+        HierarchicalStructuredCommunicationFramework()
+        assert (
+            _by_name(
+                spans,
+                "HierarchicalStructuredCommunicationFramework.init",
+            )
+            is not None
+        )
 
 
 # ===========================================================================
