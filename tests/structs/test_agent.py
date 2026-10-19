@@ -123,6 +123,21 @@ class TestBasicAgent:
     ):
         assert flow_with_condition.run("Stop") is not None
 
+    def test_run_after_reset_starts_a_fresh_conversation(
+        self, basic_flow
+    ):
+        basic_flow.run("first task")
+        basic_flow.autonomous_subtasks = [{"step_id": "old"}]
+        basic_flow.reset()
+        assert basic_flow.autonomous_subtasks == []
+        basic_flow.run("second task")
+
+        history = basic_flow.short_memory.conversation_history
+        contents = [str(row["content"]) for row in history]
+        assert history[0]["role"] == "System"
+        assert not any("first task" in c for c in contents)
+        assert any("second task" in c for c in contents)
+
     def test_bulk_run(self, basic_flow):
         inputs = [{"task": "Test1"}, {"task": "Test2"}]
         assert basic_flow.bulk_run(inputs) is not None

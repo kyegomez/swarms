@@ -2117,8 +2117,19 @@ Subtask Breakdown:
         self.loop_interval = loop_interval
 
     def reset(self):
-        """Reset the agent"""
-        self.short_memory = None
+        """Start the agent over on a fresh conversation.
+
+        Rebuilds ``short_memory`` the way ``__init__`` does, so the
+        system prompt, the seeded ``messages`` and the MEMORY.md
+        preload come back, and clears the autonomous loop's plan.
+        ``usage`` is kept: it totals every call this agent has made.
+        """
+        self.short_memory = self.short_memory_init()
+        self.autonomous_subtasks = []
+        self.current_subtask_index = 0
+        self.subtask_status = {}
+        self.plan_created = False
+        self.think_call_count = 0
 
     def send_agent_message(
         self, agent_name: str, message: str, *args, **kwargs
