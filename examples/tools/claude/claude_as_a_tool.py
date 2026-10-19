@@ -93,9 +93,7 @@ class ClaudeAppGenerator:
         )
         return await retrying(self._generate_app_with_claude, task)
 
-    async def _generate_app_with_claude(
-        self, task: str
-    ) -> list[str]:
+    async def _generate_app_with_claude(self, task: str) -> list[str]:
         """
         Generate app using Claude Code SDK with robust error handling and retry logic.
 
