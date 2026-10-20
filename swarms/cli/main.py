@@ -2310,7 +2310,7 @@ def main() -> None:
                 f"Available commands: {', '.join(COMMAND_CHOICES)}{hint}\n"
                 f"Run [bold white]swarms --help[/bold white] for full usage.",
             )
-            return
+            sys.exit(2)
 
         parser = setup_argument_parser()
         args = parser.parse_args()
