@@ -1336,6 +1336,30 @@ class TestInteractiveFollowUp:
         }
 
 
+class TestPrintOnDefault:
+    def test_console_output_is_opt_in(
+        self, mocked_llm, tmp_path, capsys
+    ):
+        agent = Agent(
+            agent_name="QuietAgent",
+            llm=mocked_llm,
+            max_loops=1,
+            persistent_memory=False,
+            autosave=False,
+            workspace_dir=str(tmp_path),
+        )
+        agent.run("hello")
+        assert capsys.readouterr().out == ""
+
+        def resolved(**kwargs):
+            return Agent(
+                llm=mocked_llm, persistent_memory=False, **kwargs
+            ).print_on
+
+        assert resolved(interactive=True) is True
+        assert resolved(interactive=True, print_on=False) is False
+
+
 class TestToolFailureIsNotAnLLMError:
     """#1924: a tool that exhausted its own retries raised into the generation
     handler, which logged it as Agent.llm_error and re-ran the model, so one
