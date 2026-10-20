@@ -777,7 +777,9 @@ class SwarmRouter(SerializableMixin):
         """Create a ``GroupChat`` from the configured agents."""
         return GroupChat(
             *args,
-            **self._base_kwargs(verbose=self.verbose),
+            **self._base_kwargs(
+                max_loops=self.max_loops + 1, verbose=self.verbose
+            ),
             **kwargs,
         )
 

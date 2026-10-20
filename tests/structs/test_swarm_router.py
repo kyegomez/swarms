@@ -1,3 +1,4 @@
+import json
 from collections import Counter
 from unittest.mock import patch
 
@@ -490,6 +491,35 @@ def test_run_with_group_chat():
 
     result = router.run("What is 1+1?")
     assert result is not None
+
+
+def test_group_chat_lets_an_agent_speak_at_the_default_max_loops():
+    """max_loops=1 gives the chat one agent turn, not zero."""
+    router = SwarmRouter(
+        agents=create_sample_agents(), swarm_type="GroupChat"
+    )
+
+    def fake_run(agent, task=None, *args, **kwargs):
+        score = 0.9 if agent.agent_name == "ResearchAgent" else 0.0
+        arguments = {"score": score, "message": "1+1 is 2."}
+        return [
+            {
+                "function": {
+                    "name": "respond",
+                    "arguments": json.dumps(arguments),
+                }
+            }
+        ]
+
+    with patch.object(
+        Agent, "run", autospec=True, side_effect=fake_run
+    ):
+        result = router.run("What is 1+1?")
+
+    assert [message["role"] for message in result] == [
+        "User",
+        "ResearchAgent",
+    ]
 
 
 def test_run_with_multi_agent_router():
