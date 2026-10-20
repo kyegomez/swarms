@@ -377,6 +377,29 @@ class TestHandleLoadMarkdown:
             "./agents/", concurrent=True
         )
 
+    def test_loads_a_directory_and_a_single_file(self, tmp_path):
+        from swarms.cli.main import load_markdown_agents
+
+        for name in ("Alpha", "Beta"):
+            (tmp_path / f"{name}.md").write_text(
+                f"---\nname: {name}\n---\nYou are {name}.\n"
+            )
+
+        with patch("swarms.cli.main.show_error") as mock_err:
+            from_dir = load_markdown_agents(
+                str(tmp_path), concurrent=False
+            )
+            from_file = load_markdown_agents(
+                str(tmp_path / "Alpha.md")
+            )
+
+        mock_err.assert_not_called()
+        assert sorted(a.agent_name for a in from_dir) == [
+            "Alpha",
+            "Beta",
+        ]
+        assert [a.agent_name for a in from_file] == ["Alpha"]
+
 
 # ===========================================================================
 # 5. handle_agent
