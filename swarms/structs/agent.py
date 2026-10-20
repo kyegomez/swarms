@@ -57,6 +57,7 @@ from swarms.structs.autonomous_loop_utils import (
     get_summary_prompt,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.execution_utils import MAX_CONCURRENT_AGENTS
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
@@ -1688,7 +1689,9 @@ Subtask Breakdown:
             logger.info(f"Running concurrent tasks: {tasks}")
             # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
             with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
+                max_workers=max(
+                    1, min(len(tasks), MAX_CONCURRENT_AGENTS)
+                )
             ) as executor:
                 futures = [
                     executor.submit(
@@ -2982,7 +2985,9 @@ Subtask Breakdown:
         """
         # Scoped to the call, see run_concurrent_tasks for why
         with ContextThreadPoolExecutor(
-            max_workers=os.cpu_count()
+            max_workers=max(
+                1, min(len(agents), MAX_CONCURRENT_AGENTS)
+            )
         ) as executor:
             # Create futures for each agent conversation
             futures = [

@@ -11,6 +11,8 @@ from typing import (
 
 from swarms.telemetry.otel import ContextThreadPoolExecutor
 
+MAX_CONCURRENT_AGENTS = 32
+
 
 def batched_run(
     func: Callable,

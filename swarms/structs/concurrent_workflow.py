@@ -5,6 +5,7 @@ from typing import Callable, List, Optional, Union
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
+from swarms.structs.execution_utils import MAX_CONCURRENT_AGENTS
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_error,
@@ -20,9 +21,6 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="concurrent_workflow")
-
-# Default cap on concurrent agent calls, guards provider rate limits not CPU
-MAX_CONCURRENT_AGENTS = 32
 
 
 class ConcurrentWorkflow:
