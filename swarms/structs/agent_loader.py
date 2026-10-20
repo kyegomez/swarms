@@ -8,7 +8,7 @@ from concurrent.futures import (
     as_completed,
 )
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import yaml
 from loguru import logger
@@ -17,6 +17,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    PositiveInt,
     ValidationError,
 )
 from tqdm import tqdm
@@ -53,7 +54,7 @@ class AgentConfig(BaseModel):
         validation_alias=AliasChoices("model_name", "model"),
     )
     temperature: Optional[float] = Field(default=None, ge=0.0, le=2.0)
-    max_loops: Optional[int] = Field(default=None, ge=1)
+    max_loops: Optional[Union[PositiveInt, Literal["auto"]]] = None
     mcp_url: Optional[str] = None
     autosave: Optional[bool] = None
     dashboard: Optional[bool] = None

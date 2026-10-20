@@ -1,12 +1,13 @@
 import os
 import traceback
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import yaml
 from pydantic import (
     BaseModel,
     Extra,
     Field,
+    PositiveInt,
     field_validator,
 )
 from tenacity import (
@@ -30,7 +31,7 @@ class AgentConfig(BaseModel):
     agent_name: str
     system_prompt: str
     model_name: Optional[str] = None
-    max_loops: int = Field(default=1, ge=1)
+    max_loops: Union[PositiveInt, Literal["auto"]] = 1
     autosave: bool = True
     dashboard: bool = False
     verbose: bool = False
