@@ -452,7 +452,9 @@ class Agent:
         self.load_state_path = load_state_path
         self.role = role
         self.print_on = (
-            bool(interactive) if print_on is None else print_on
+            bool(interactive or streaming_on)
+            if print_on is None
+            else print_on
         )
         # Own list per agent: a literal [] default made every agent share one object.
         self.tools_list_dictionary = (

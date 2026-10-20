@@ -1358,6 +1358,7 @@ class TestPrintOnDefault:
 
         assert resolved(interactive=True) is True
         assert resolved(interactive=True, print_on=False) is False
+        assert resolved(streaming_on=True) is True
 
 
 class TestToolFailureIsNotAnLLMError:

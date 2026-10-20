@@ -164,10 +164,11 @@ def run_autoswarm(
 
             console.print("[white]Running swarm...[/white]")
             yaml_string = yaml.dump(config, default_flow_style=False)
-            AgentLoader().load_agents_from_yaml(
+            result = AgentLoader().load_agents_from_yaml(
                 yaml_string=yaml_string,
                 return_type="run_swarm",
             )
+            console.print(result)
             console.print(
                 "[white]✓ Swarm executed successfully![/white]"
             )
