@@ -35,9 +35,6 @@ from swarms.agents.auto_chat_agent import auto_chat_agent
 from swarms.agents.auto_generate_swarm_config import (
     generate_swarm_config,
 )
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
-)
 from swarms.cli.utils import (
     COLORS,
     SwarmCLIError,
@@ -167,7 +164,7 @@ def run_autoswarm(
 
             console.print("[white]Running swarm...[/white]")
             yaml_string = yaml.dump(config, default_flow_style=False)
-            create_agents_from_yaml(
+            AgentLoader().load_agents_from_yaml(
                 yaml_string=yaml_string,
                 return_type="run_swarm",
             )
@@ -1298,7 +1295,7 @@ def handle_run_agents(args: argparse.Namespace) -> None:
                 init_task,
                 description="Creating agents...",
             )
-            result = create_agents_from_yaml(
+            result = AgentLoader().load_agents_from_yaml(
                 yaml_file=args.yaml_file,
                 return_type="run_swarm",
             )

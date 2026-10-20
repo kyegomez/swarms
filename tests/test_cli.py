@@ -302,7 +302,7 @@ class TestHandleRunAgents:
             mock_err.assert_called_once()
             assert "File Error" in mock_err.call_args[0][0]
 
-    @patch("swarms.cli.main.create_agents_from_yaml")
+    @patch("swarms.cli.main.AgentLoader.load_agents_from_yaml")
     def test_runs_agents_from_yaml(self, mock_create, tmp_path):
         yaml_file = tmp_path / "agents.yaml"
         yaml_file.write_text("agents: []")
@@ -315,7 +315,7 @@ class TestHandleRunAgents:
             yaml_file=str(yaml_file), return_type="run_swarm"
         )
 
-    @patch("swarms.cli.main.create_agents_from_yaml")
+    @patch("swarms.cli.main.AgentLoader.load_agents_from_yaml")
     def test_handles_api_key_error(self, mock_create, tmp_path):
         yaml_file = tmp_path / "agents.yaml"
         yaml_file.write_text("agents: []")
@@ -330,7 +330,7 @@ class TestHandleRunAgents:
             mock_err.assert_called_once()
             assert "API Key" in mock_err.call_args[0][0]
 
-    @patch("swarms.cli.main.create_agents_from_yaml")
+    @patch("swarms.cli.main.AgentLoader.load_agents_from_yaml")
     def test_handles_context_length_error(
         self, mock_create, tmp_path
     ):
