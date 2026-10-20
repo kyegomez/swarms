@@ -168,7 +168,7 @@ def run_autoswarm(
                 yaml_string=yaml_string,
                 return_type="run_swarm",
             )
-            console.print(result)
+            console.print(result, markup=False)
             console.print(
                 "[white]✓ Swarm executed successfully![/white]"
             )
