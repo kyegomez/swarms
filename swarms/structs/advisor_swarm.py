@@ -40,6 +40,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.utils.generate_id import generate_id
+from swarms.telemetry.otel import capture_init, trace_run
 
 logger = initialize_logger(log_folder="advisor_swarm")
 
@@ -123,6 +124,8 @@ class AdvisorSwarm:
         )
         self.advisor_agent = advisor_agent or self._create_advisor()
 
+        capture_init(self)
+
     def reliability_check(self):
         """Validate swarm configuration."""
         if self.max_advisor_uses < 0:
@@ -174,6 +177,7 @@ class AdvisorSwarm:
             verbose=self.verbose,
         )
 
+    @trace_run("AdvisorSwarm.run")
     def run(
         self,
         task: Optional[str] = None,
