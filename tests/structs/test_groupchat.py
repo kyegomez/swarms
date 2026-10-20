@@ -373,6 +373,26 @@ class TestScheduling:
 
         assert "still works" in contents(chat)
 
+    def test_max_bidders_asks_the_least_recent_speakers(self):
+        agents = [
+            ScriptedAgent(name, [(0.9, name)] * 3) for name in "ABC"
+        ]
+        chat = make_chat(
+            agents, max_loops=4, max_bidders=2, recency_penalty=0.0
+        )
+        chat.run("topic")
+
+        assert roles(chat) == ["User", "A", "B", "C"]
+        assert [agent.calls for agent in agents] == [2, 2, 2]
+
+    def test_max_bidders_asks_the_rest_before_a_lull(self):
+        quiet = ScriptedAgent("Quiet")
+        eager = ScriptedAgent("Eager", [(0.9, "eager speaks")])
+        chat = make_chat([quiet, eager], max_bidders=1)
+        chat.run("topic")
+
+        assert roles(chat) == ["User", "Eager"]
+
 
 # --------------------------------------------------------------------------
 # run() surface — return value, batching, streaming

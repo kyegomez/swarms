@@ -204,6 +204,7 @@ class GroupChat(SerializableMixin):
         output_type: str = "str-all-except-first",
         verbose: bool = False,
         auto_equip: bool = True,
+        max_bidders: Optional[int] = None,
     ):
         """Initialize the turn-based groupchat runtime.
 
@@ -246,6 +247,7 @@ class GroupChat(SerializableMixin):
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
+        self.max_bidders = max_bidders
 
         self.conversation = Conversation(time_enabled=False)
 
@@ -399,7 +401,7 @@ class GroupChat(SerializableMixin):
         streaming_callback(sender, "", True)
 
     async def _collect_bids(
-        self, sender: str, message: str
+        self, sender: str, message: str, agents: List[Agent]
     ) -> List[Tuple[Agent, float, str]]:
         """Ask every agent, concurrently, for a speaking bid this turn.
 
@@ -415,12 +417,12 @@ class GroupChat(SerializableMixin):
                 asyncio.to_thread(
                     self._decide_sync, agent, sender, message
                 )
-                for agent in self.agents
+                for agent in agents
             )
         )
         return [
             (agent, score, reply)
-            for agent, (score, reply) in zip(self.agents, results)
+            for agent, (score, reply) in zip(agents, results)
         ]
 
     def _select_speaker(
@@ -503,11 +505,25 @@ class GroupChat(SerializableMixin):
             maxlen=max(1, self.recency_window)
         )
         message_count = 1  # the user task counts as the first message
+        last_spoke: dict = {}
 
         while message_count < self.max_loops:
-            bids = await self._collect_bids(last_sender, last_message)
+            ranked = list(self.agents or ())
+            if self.max_bidders:
+                ranked.sort(
+                    key=lambda a: last_spoke.get(a.agent_name, 0)
+                )
+            k = self.max_bidders or len(ranked)
+            bids = await self._collect_bids(
+                last_sender, last_message, ranked[:k]
+            )
 
             selection = self._select_speaker(bids, set(recent))
+            if selection is None and ranked[k:]:
+                bids += await self._collect_bids(
+                    last_sender, last_message, ranked[k:]
+                )
+                selection = self._select_speaker(bids, set(recent))
             if selection is None:
                 # No reply at all on the first turn is almost never a lull; it is a bad model name or missing key.
                 if message_count == 1 and not any(
@@ -536,6 +552,7 @@ class GroupChat(SerializableMixin):
                 streaming_callback=streaming_callback,
             )
             recent.append(agent.agent_name)
+            last_spoke[agent.agent_name] = message_count
             last_sender, last_message = agent.agent_name, reply
             message_count += 1
 
