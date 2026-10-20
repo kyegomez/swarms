@@ -237,7 +237,7 @@ class CouncilAsAJudge:
         cache_size: int = 128,
         random_model_name: bool = False,
         max_loops: int = 1,
-        aggregation_model_name: str = "gpt-5.4",
+        aggregation_model_name: Optional[str] = None,
         judge_agent_model_name: Optional[str] = None,
     ):
         """
@@ -253,7 +253,8 @@ class CouncilAsAJudge:
             max_workers (int): Maximum number of worker threads for parallel execution
             random_model_name (bool): Whether to use random model names
             max_loops (int): Maximum number of loops for agents
-            aggregation_model_name (str): Model name for the aggregator agent
+            aggregation_model_name (str): Model name for the aggregator agent.
+                Defaults to model_name, like the judges.
         """
         self.id = id or generate_id("council-as-judge")
         self.name = name
@@ -364,7 +365,8 @@ class CouncilAsAJudge:
             return Agent(
                 agent_name="aggregator_agent",
                 system_prompt=aggregator_system_prompt(),
-                model_name=self.aggregation_model_name,
+                model_name=self.aggregation_model_name
+                or self.model_name,
                 max_loops=1,
                 dynamic_temperature_enabled=True,
                 output_type="final",
