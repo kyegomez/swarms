@@ -1324,6 +1324,7 @@ def handle_run_agents(args: argparse.Namespace) -> None:
                 for key, value in result.items():
                     console.print(f"[white]{key}:[/white] {value}")
             else:
+                console.print(result, markup=False)
                 console.print(
                     "[white]✓ Agents completed their tasks successfully![/white]"
                 )
