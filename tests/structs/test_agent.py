@@ -2469,3 +2469,43 @@ class TestIntegerLoopRequest:
         assert [m["content"] for m in sent[-1][1]].count(
             "context"
         ) == 1
+
+
+def test_closing_run_stream_stops_the_run_before_the_next_model_call():
+    agent = _patched_agent("Cancelled", max_loops=3)
+    closed = threading.Event()
+    finished = threading.Event()
+    calls = []
+
+    def fake_call_llm(
+        task=None,
+        img=None,
+        imgs=None,
+        current_loop=0,
+        streaming_callback=None,
+        *args,
+        **kwargs,
+    ):
+        calls.append(current_loop)
+        streaming_callback("token")
+        closed.wait(5)
+        return "reply"
+
+    run = agent.run
+
+    def run_then_signal(*args, **kwargs):
+        try:
+            return run(*args, **kwargs)
+        finally:
+            finished.set()
+
+    agent.call_llm = fake_call_llm
+    agent.run = run_then_signal
+
+    stream = agent.run_stream("task")
+    assert next(stream) == "token"
+    stream.close()
+    closed.set()
+
+    assert finished.wait(5)
+    assert calls == [1]

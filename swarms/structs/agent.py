@@ -487,6 +487,7 @@ class Agent:
         self._mcp_tools_deferred = False
         self._usage = empty_usage()
         self._mcp_schemas_cache: Optional[List[dict]] = None
+        self._cancel_event = threading.Event()
 
         self.think_tool = think_tool
         # A budget below 1 would silently make the phase it bounds do nothing.
@@ -1062,6 +1063,7 @@ class Agent:
             ... )
         """
         try:
+            cancel_event = self._cancel_event
             history_start = len(
                 self.short_memory.conversation_history
             )
@@ -1100,6 +1102,9 @@ class Agent:
                 self.max_loops == "auto"
                 or loop_count < self.max_loops
             ):
+                if cancel_event.is_set():
+                    break
+
                 loop_count += 1
 
                 if (
@@ -1198,6 +1203,10 @@ class Agent:
                                 self.pretty_print(
                                     response, loop_count
                                 )
+
+                        if cancel_event.is_set():
+                            success = True
+                            break
 
                         self.tool_manager.handle_tool_calls(
                             response,
@@ -2604,6 +2613,9 @@ Subtask Breakdown:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
 
+        if self._cancel_event.is_set():
+            self._cancel_event = threading.Event()
+
         # Side calls such as the tool summary stream to this run's callback too.
         self._run_streaming_callback = streaming_callback
         self.llm_manager.stream_mid_line = False
@@ -2692,6 +2704,9 @@ Subtask Breakdown:
         finally:
             self._run_streaming_callback = None
 
+    def cancel(self) -> None:
+        self._cancel_event.set()
+
     def run_stream(
         self,
         task: str,
@@ -2737,6 +2752,8 @@ Subtask Breakdown:
 
         original_streaming_on = self.streaming_on
         self.streaming_on = True
+        cancel_event = threading.Event()
+        self._cancel_event = cancel_event
 
         def _run_thread():
             try:
@@ -2755,11 +2772,14 @@ Subtask Breakdown:
         thread = threading.Thread(target=_run_thread, daemon=True)
         thread.start()
 
-        while True:
-            item = token_queue.get()
-            if item is _DONE:
-                break
-            yield item
+        try:
+            while True:
+                item = token_queue.get()
+                if item is _DONE:
+                    break
+                yield item
+        finally:
+            cancel_event.set()
 
         thread.join()
 
@@ -2812,6 +2832,8 @@ Subtask Breakdown:
 
         original_streaming_on = self.streaming_on
         self.streaming_on = True
+        cancel_event = threading.Event()
+        self._cancel_event = cancel_event
 
         def _run_sync():
             try:
@@ -2832,11 +2854,14 @@ Subtask Breakdown:
         thread = threading.Thread(target=_run_sync, daemon=True)
         thread.start()
 
-        while True:
-            item = await token_queue.get()
-            if item is _DONE:
-                break
-            yield item
+        try:
+            while True:
+                item = await token_queue.get()
+                if item is _DONE:
+                    break
+                yield item
+        finally:
+            cancel_event.set()
 
         if _exc[0] is not None:
             raise _exc[0]
