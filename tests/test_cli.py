@@ -694,8 +694,9 @@ class TestMain:
         from swarms.cli.main import main
 
         with patch("sys.argv", ["swarms", "bad-command"]):
-            with pytest.raises(SystemExit):
+            with pytest.raises(SystemExit) as exc_info:
                 main()
+            assert exc_info.value.code == 2
 
     @patch(
         "swarms.cli.main.route_command",
