@@ -123,6 +123,31 @@ class TestBasicAgent:
     ):
         assert flow_with_condition.run("Stop") is not None
 
+    def test_run_after_reset_starts_a_fresh_conversation(
+        self, mocked_llm, tmp_path
+    ):
+        class Weather(BaseModel):
+            city: str
+
+        agent = _flow(
+            "reset-flow",
+            mocked_llm,
+            tmp_path,
+            list_base_models=[Weather],
+        )
+        agent.run("first task")
+        agent.autonomous_subtasks = [{"step_id": "old"}]
+        agent.reset()
+        agent.run("second task")
+
+        history = agent.short_memory.conversation_history
+        contents = [str(row["content"]) for row in history]
+        assert agent.autonomous_subtasks == []
+        assert history[0]["role"] == "System"
+        assert any("Weather" in c for c in contents)
+        assert not any("first task" in c for c in contents)
+        assert any("second task" in c for c in contents)
+
     def test_bulk_run(self, basic_flow):
         inputs = [{"task": "Test1"}, {"task": "Test2"}]
         assert len(basic_flow.bulk_run(inputs)) == len(inputs)
