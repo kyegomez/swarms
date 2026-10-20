@@ -1098,13 +1098,10 @@ class Agent:
                 self.save()
                 self._autosave_config_step(loop_count=0)
 
-            while (
+            while not cancel_event.is_set() and (
                 self.max_loops == "auto"
                 or loop_count < self.max_loops
             ):
-                if cancel_event.is_set():
-                    break
-
                 loop_count += 1
 
                 if (
@@ -1138,7 +1135,11 @@ class Agent:
                 attempt = 0
                 success = False
                 last_error: Optional[Exception] = None
-                while attempt < self.retry_attempts and not success:
+                while (
+                    attempt < self.retry_attempts
+                    and not success
+                    and not cancel_event.is_set()
+                ):
                     # Outside the try: except must answer tool calls.
                     turn_calls = []
                     turn_results = {}
@@ -1205,9 +1206,7 @@ class Agent:
                                 )
 
                         if cancel_event.is_set():
-                            success = True
                             break
-
                         self.tool_manager.handle_tool_calls(
                             response,
                             loop_count,
@@ -1274,6 +1273,8 @@ class Agent:
                         )
                         attempt += 1
 
+                if cancel_event.is_set():
+                    break
                 if not success:
                     # Drop this run's turns so a fallback model starts from clean history.
                     while (
@@ -2615,7 +2616,6 @@ Subtask Breakdown:
 
         if self._cancel_event.is_set():
             self._cancel_event = threading.Event()
-
         # Side calls such as the tool summary stream to this run's callback too.
         self._run_streaming_callback = streaming_callback
         self.llm_manager.stream_mid_line = False
