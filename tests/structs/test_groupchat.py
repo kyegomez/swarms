@@ -373,17 +373,15 @@ class TestScheduling:
 
         assert "still works" in contents(chat)
 
-    def test_max_bidders_asks_the_least_recent_speakers(self):
-        agents = [
-            ScriptedAgent(name, [(0.9, name)] * 3) for name in "ABC"
-        ]
-        chat = make_chat(
-            agents, max_loops=4, max_bidders=2, recency_penalty=0.0
-        )
+    def test_max_bidders_skips_an_agent_that_passed(self):
+        quiet = ScriptedAgent("Quiet")
+        a = ScriptedAgent("A", [(0.9, "a")] * 3)
+        b = ScriptedAgent("B", [(0.9, "b")] * 3)
+        chat = make_chat([quiet, a, b], max_loops=4, max_bidders=1)
         chat.run("topic")
 
-        assert roles(chat) == ["User", "A", "B", "C"]
-        assert [agent.calls for agent in agents] == [2, 2, 2]
+        assert roles(chat) == ["User", "A", "B", "A"]
+        assert [quiet.calls, a.calls, b.calls] == [1, 2, 2]
 
     def test_max_bidders_asks_the_rest_before_a_lull(self):
         quiet = ScriptedAgent("Quiet")

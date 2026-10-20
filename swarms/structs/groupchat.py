@@ -505,13 +505,19 @@ class GroupChat(SerializableMixin):
             maxlen=max(1, self.recency_window)
         )
         message_count = 1  # the user task counts as the first message
-        last_spoke: dict = {}
+        last_score: dict = {}
 
         while message_count < self.max_loops:
             ranked = list(self.agents or ())
             if self.max_bidders:
                 ranked.sort(
-                    key=lambda a: last_spoke.get(a.agent_name, 0)
+                    key=lambda a: last_score.get(a.agent_name, 1.0)
+                    - (
+                        self.recency_penalty
+                        if a.agent_name in recent
+                        else 0.0
+                    ),
+                    reverse=True,
                 )
             k = self.max_bidders or len(ranked)
             bids = await self._collect_bids(
@@ -524,6 +530,8 @@ class GroupChat(SerializableMixin):
                     last_sender, last_message, ranked[k:]
                 )
                 selection = self._select_speaker(bids, set(recent))
+            for bidder, score, _ in bids:
+                last_score[bidder.agent_name] = score
             if selection is None:
                 # No reply at all on the first turn is almost never a lull; it is a bad model name or missing key.
                 if message_count == 1 and not any(
@@ -552,7 +560,6 @@ class GroupChat(SerializableMixin):
                 streaming_callback=streaming_callback,
             )
             recent.append(agent.agent_name)
-            last_spoke[agent.agent_name] = message_count
             last_sender, last_message = agent.agent_name, reply
             message_count += 1
 
