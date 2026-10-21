@@ -2722,9 +2722,10 @@ Subtask Breakdown:
             events: Yield StreamEvent objects carrying the part's kind
                 ("reasoning", "content" or "tool_call") instead of bare strings,
                 ending with one "final" event whose text is run()'s return value.
-                Event text is display text: it keeps the [thinking] and
-                [tool call] headers and side-call output. Read the reply from
-                the final event. Defaults to False, the plain string stream.
+                Event text is the raw fragment, without the [thinking]
+                and [tool call] headers the string stream adds. Read the
+                reply from the final event. Defaults to False, the plain
+                string stream.
             **kwargs: Any extra kwargs forwarded to run().
 
         Yields:
@@ -2749,7 +2750,7 @@ Subtask Breakdown:
             elif isinstance(token, dict):
                 t = token.get("token", "")
                 if t:
-                    kind = token.get("type") or "content"
+                    kind = token["type"]
                     token_queue.put(
                         StreamEvent(kind, t) if events else t
                     )
@@ -2811,9 +2812,10 @@ Subtask Breakdown:
             events: Yield StreamEvent objects carrying the part's kind
                 ("reasoning", "content" or "tool_call") instead of bare strings,
                 ending with one "final" event whose text is run()'s return value.
-                Event text is display text: it keeps the [thinking] and
-                [tool call] headers and side-call output. Read the reply from
-                the final event. Defaults to False, the plain string stream.
+                Event text is the raw fragment, without the [thinking]
+                and [tool call] headers the string stream adds. Read the
+                reply from the final event. Defaults to False, the plain
+                string stream.
             **kwargs: Extra kwargs forwarded to run().
 
         Yields:
@@ -2841,7 +2843,7 @@ Subtask Breakdown:
             elif isinstance(token, dict):
                 t = token.get("token", "")
                 if t:
-                    kind = token.get("type") or "content"
+                    kind = token["type"]
                     item = StreamEvent(kind, t) if events else t
                     loop.call_soon_threadsafe(
                         token_queue.put_nowait, item

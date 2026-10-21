@@ -466,7 +466,11 @@ class LLMManager:
         )
 
     def stream_parts(
-        self, stream, tool_calls_out: list, content_out: list
+        self,
+        stream,
+        tool_calls_out: list,
+        content_out: list,
+        display: bool = True,
     ):
         """Yield everything the model streams as it arrives: reasoning, content and tool calls.
 
@@ -478,6 +482,9 @@ class LLMManager:
             stream: The raw chunk stream from the model.
             tool_calls_out: Filled with the assembled tool calls once the stream ends.
             content_out: Receives each content fragment; joined, they are the reply text.
+            display: Yield the [thinking] and [tool call] headers and the blank-line
+                gaps between sections. A typed consumer that reads the kind of each
+                part passes False and gets the raw fragments only.
 
         Yields:
             tuple: (kind, text, chunk), where kind is "reasoning", "content" or "tool_call".
@@ -498,15 +505,17 @@ class LLMManager:
             reasoning = getattr(delta, "reasoning_content", None)
             if reasoning:
                 if section != "reasoning":
-                    gap = "" if section is None else "\n"
-                    yield "reasoning", f"{gap}[thinking] ", chunk
+                    if display:
+                        gap = "" if section is None else "\n"
+                        yield "reasoning", f"{gap}[thinking] ", chunk
                     section = "reasoning"
                 yield "reasoning", reasoning, chunk
 
             content = getattr(delta, "content", None)
             if content:
                 if section not in (None, "content"):
-                    yield "content", "\n", chunk
+                    if display:
+                        yield "content", "\n", chunk
                 section = "content"
                 content_out.append(content)
                 yield "content", content, chunk
@@ -516,11 +525,16 @@ class LLMManager:
                 name = getattr(fn, "name", None) or ""
                 arguments = getattr(fn, "arguments", None) or ""
                 if section != ("tool_call", tc.index):
-                    gap = "" if section is None else "\n"
-                    resumed = tool_names.get(tc.index, "")
-                    if tc.index in tool_args_started:
-                        resumed += " "
-                    yield "tool_call", f"{gap}[tool call] {resumed}", chunk
+                    if display:
+                        gap = "" if section is None else "\n"
+                        resumed = tool_names.get(tc.index, "")
+                        if tc.index in tool_args_started:
+                            resumed += " "
+                        yield (
+                            "tool_call",
+                            f"{gap}[tool call] {resumed}",
+                            chunk,
+                        )
                     section = ("tool_call", tc.index)
                 if name:
                     tool_names[tc.index] = (
@@ -530,10 +544,11 @@ class LLMManager:
                 if arguments:
                     if tc.index not in tool_args_started:
                         tool_args_started.add(tc.index)
-                        yield "tool_call", " ", chunk
+                        if display:
+                            yield "tool_call", " ", chunk
                     yield "tool_call", arguments, chunk
 
-        if section not in (None, "content", "carry"):
+        if display and section not in (None, "content", "carry"):
             kind = (
                 "reasoning" if section == "reasoning" else "tool_call"
             )
@@ -824,6 +839,9 @@ class LLMManager:
             track_last(streaming_response),
             tool_calls_out,
             content_out,
+            display=not getattr(
+                streaming_callback, "wants_kinds", False
+            ),
         ):
             token_count += 1
             token_info = self._build_token_info(
@@ -1008,6 +1026,7 @@ class LLMManager:
             stream,
             tool_calls_out if tool_calls_out is not None else [],
             content_out,
+            display=not wants_kinds,
         ):
             if streaming_callback is not None:
                 if wants_kinds:

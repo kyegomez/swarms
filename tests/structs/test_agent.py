@@ -2151,6 +2151,10 @@ class TestRunStreamEvents:
         assert all(isinstance(e, StreamEvent) for e in streamed)
         kinds = {e.kind for e in streamed}
         assert {"reasoning", "content", "tool_call"} <= kinds
+        assert (
+            "".join(e.text for e in streamed if e.kind == "content")
+            == "On it."
+        )
         finals = [e for e in streamed if e.kind == "final"]
         assert len(finals) == 1
         assert finals[0].text == expected
