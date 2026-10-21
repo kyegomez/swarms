@@ -1577,11 +1577,16 @@ class Conversation:
         in the agent's own output. Swarms like ``ConcurrentWorkflow`` begin
         ``[User, agent, agent, ...]`` with no system row, so a slice of 2
         drops the first agent's answer. Read the history instead of guessing.
+        Every leading System row is skipped, because ``persistent_memory``
+        adds the MEMORY.md preamble as a second one.
         """
         history = self.conversation_history
-        start = (
-            1 if history and history[0].get("role") == "System" else 0
-        )
+        start = 0
+        while (
+            start < len(history)
+            and history[start].get("role") == "System"
+        ):
+            start += 1
         return start + 1
 
     def return_all_except_first(self):

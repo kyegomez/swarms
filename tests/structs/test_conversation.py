@@ -704,6 +704,26 @@ def test_preload_does_not_write_to_disk(tmp_path):
     assert md_path.read_text() == content
 
 
+def test_all_except_first_skips_the_preamble_and_the_task(tmp_path):
+    """The preloaded preamble does not push the task into the output."""
+    md_path = tmp_path / "MEMORY.md"
+    md_path.write_text(
+        "# Agent Memory\n\n### user — 2025-01-01T00:00:00\n\n"
+        "My project is Helios.\n\n---\n\n"
+    )
+    conv = Conversation(
+        system_prompt="You are helpful.",
+        memory_md_path=str(md_path),
+        conversations_dir=str(tmp_path / "convs"),
+    )
+    conv.add("User", "What is my project called?")
+    conv.add("Analyst", "Helios.")
+    assert conv.return_all_except_first_string() == "Helios."
+    assert [m["content"] for m in conv.return_all_except_first()] == [
+        "Helios."
+    ]
+
+
 # ── Write-through ──
 
 
