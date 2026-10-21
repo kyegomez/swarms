@@ -1012,6 +1012,7 @@ class LLMManager:
         Args:
             stream: The raw chunk stream from the model.
             streaming_callback: Receives the text of every part: reasoning, content and tool calls.
+                A callback with ``wants_kinds`` set receives ``{"type", "token"}`` dicts instead.
             tool_calls_out: Filled with the assembled tool calls, if given.
 
         Returns:
