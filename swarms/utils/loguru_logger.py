@@ -106,6 +106,11 @@ def initialize_logger(log_folder: str = "swarms"):
     # Reset loguru handlers
     logger.remove()
 
+    verbose_global = (
+        os.getenv("SWARMS_VERBOSE_GLOBAL", "False").lower()
+        in ("true", "1", "yes", "on", "t")
+    )
+
     # Add console logging
     logger.add(
         sys.stdout,
@@ -113,7 +118,7 @@ def initialize_logger(log_folder: str = "swarms"):
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
         level="INFO",
         backtrace=True,
-        diagnose=True,
+        diagnose=verbose_global,
         enqueue=True,
     )
 
@@ -128,7 +133,7 @@ def initialize_logger(log_folder: str = "swarms"):
             retention="10 days",
             level="INFO",
             backtrace=True,
-            diagnose=True,
+            diagnose=False,
             enqueue=True,
             format=LOG_FORMAT,
         )
@@ -137,6 +142,8 @@ def initialize_logger(log_folder: str = "swarms"):
         logger.add(
             _module_log_router,
             level="INFO",
+            backtrace=True,
+            diagnose=False,
             format=LOG_FORMAT,
         )
     else:
