@@ -3,6 +3,7 @@ loguru
 pydantic==2.12.5
 tenacity
 rich
+tqdm
 psutil
 python-dotenv
 PyYAML
