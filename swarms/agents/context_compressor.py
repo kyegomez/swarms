@@ -94,36 +94,16 @@ class ContextCompressor:
             return False
 
         # A token is never shorter than one byte, so a history under the budget in bytes cannot exceed it in tokens.
-        history = getattr(
-            agent.short_memory, "conversation_history", None
+        history_bytes = getattr(
+            agent.short_memory, "history_bytes", None
         )
         if (
-            isinstance(history, list)
-            and self._history_bytes(history)
-            < self.threshold * context_length
+            isinstance(history_bytes, int)
+            and history_bytes < self.threshold * context_length
         ):
             return False
 
         return self.usage_ratio(agent) >= self.threshold
-
-    @staticmethod
-    def _history_bytes(history: list) -> int:
-        """
-        Upper bound on the UTF-8 size of the formatted history.
-
-        Args:
-            history: The conversation's message dicts.
-
-        Returns:
-            int: Bytes in the history as the agent formats it, or slightly more.
-        """
-        return sum(
-            len(
-                f"[{message.get('timestamp')}] {message.get('role')}: "
-                f"{message.get('content')}\n\n".encode()
-            )
-            for message in history
-        )
 
     def _summarize(self, agent: Any, history: str) -> str:
         model = self.summarizer_model or getattr(

@@ -126,6 +126,7 @@ class Conversation:
 
         self.conversation_history = []
         self._str_cache: Optional[str] = None
+        self._history_bytes: int = 0
         self._cache_hits: int = 0
         self._cache_misses: int = 0
         self._last_cached_tokens: int = 0
@@ -284,6 +285,9 @@ class Conversation:
                 ),
             }
         )
+        self._history_bytes += self._message_bytes(
+            self.conversation_history[-1]
+        )
         self._str_cache = None
 
     def compact(
@@ -331,6 +335,8 @@ class Conversation:
                 )
         finally:
             self._suppress_memory_md = False
+
+        self._recount_history_bytes()
 
         if self.memory_md_path:
             try:
@@ -455,6 +461,7 @@ class Conversation:
 
         # Add message to conversation history
         self.conversation_history.append(message)
+        self._history_bytes += self._message_bytes(message)
         self._str_cache = None
 
         # Persist to MEMORY.md if enabled
@@ -811,6 +818,9 @@ class Conversation:
 
     def delete(self, index: str):
         """Delete a message from the conversation history."""
+        self._history_bytes -= self._message_bytes(
+            self.conversation_history[int(index)]
+        )
         self.conversation_history.pop(int(index))
         self._str_cache = None
 
@@ -823,8 +833,11 @@ class Conversation:
             content: The new content of the message.
         """
         if 0 <= int(index) < len(self.conversation_history):
-            self.conversation_history[int(index)]["role"] = role
-            self.conversation_history[int(index)]["content"] = content
+            row = self.conversation_history[int(index)]
+            self._history_bytes -= self._message_bytes(row)
+            row["role"] = role
+            row["content"] = content
+            self._history_bytes += self._message_bytes(row)
             self._str_cache = None
         else:
             logger.warning(f"Invalid index: {index}")
@@ -968,6 +981,28 @@ class Conversation:
             self._format_message(message)
             for message in self.conversation_history
         ]
+
+    @staticmethod
+    def _message_bytes(message: Dict[str, Any]) -> int:
+        """UTF-8 size of one formatted history line, with its separator."""
+        return len(
+            (
+                f"[{message.get('timestamp')}] "
+                f"{message.get('role')}: {message.get('content')}\n\n"
+            ).encode()
+        )
+
+    def _recount_history_bytes(self) -> None:
+        """Rebuild the running history byte total from the current rows."""
+        self._history_bytes = sum(
+            self._message_bytes(message)
+            for message in self.conversation_history
+        )
+
+    @property
+    def history_bytes(self) -> int:
+        """UTF-8 size of the formatted history, maintained incrementally."""
+        return self._history_bytes
 
     def _line_token_count(self, line: str) -> int:
         """Count the tokens in one history line, reusing earlier counts.
@@ -1196,6 +1231,7 @@ class Conversation:
         if isinstance(data, list):
             self.conversation_history = data
             self._str_cache = None
+            self._recount_history_bytes()
             return
 
         if not isinstance(data, dict):
@@ -1214,6 +1250,7 @@ class Conversation:
             "conversation_history", []
         )
         self._str_cache = None
+        self._recount_history_bytes()
 
     def load_from_json(self, filename: str):
         """Load the conversation history and metadata from a JSON file.
@@ -1365,6 +1402,7 @@ class Conversation:
         # Update conversation history
         self.conversation_history = truncated_history
         self._str_cache = None
+        self._recount_history_bytes()
 
     def _binary_search_truncate(
         self, text, target_tokens, model_name
@@ -1426,6 +1464,7 @@ class Conversation:
     def clear(self):
         """Clear the conversation history."""
         self.conversation_history = []
+        self._history_bytes = 0
         self._str_cache = None
 
     def to_json(self):
@@ -1616,6 +1655,9 @@ class Conversation:
             messages (List[dict]): List of messages to add.
         """
         self.conversation_history.extend(messages)
+        self._history_bytes += sum(
+            self._message_bytes(message) for message in messages
+        )
         self._str_cache = None
 
     @classmethod

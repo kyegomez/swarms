@@ -1651,6 +1651,50 @@ def test_export_conversation_writes_the_named_json_file(tmp_path):
     assert fresh.conversation_history == conv.conversation_history
 
 
+def test_history_bytes_tracks_the_formatted_history(tmp_path):
+    conv = Conversation(conversations_dir=str(tmp_path))
+
+    def computed():
+        return sum(
+            len(
+                f"[{m.get('timestamp')}] {m.get('role')}: "
+                f"{m.get('content')}\n\n".encode()
+            )
+            for m in conv.conversation_history
+        )
+
+    conv.add("User", "first message")
+    conv.add("System", "second message")
+    conv.add_multiple(
+        ["User", "System"], ["third", json.dumps({"k": "v"})]
+    )
+    assert conv.history_bytes == computed()
+
+    conv.delete(1)
+    assert conv.history_bytes == computed()
+
+    conv.update(0, "User", "rewritten message")
+    assert conv.history_bytes == computed()
+
+    conv.batch_add(
+        [
+            {"role": "User", "content": "batch one"},
+            {"role": "System", "content": "batch two"},
+        ]
+    )
+    assert conv.history_bytes == computed()
+
+    conv.compact(summary="the summary", summary_role="System")
+    assert conv.history_bytes == computed()
+
+    conv.clear()
+    assert conv.history_bytes == 0
+    assert conv.history_bytes == computed()
+
+    conv.add("User", "after clear")
+    assert conv.history_bytes == computed()
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()

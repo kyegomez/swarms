@@ -447,6 +447,13 @@ class TestShouldCompressSkipsTokenizing:
         ]
         short_memory = MagicMock()
         short_memory.conversation_history = history
+        short_memory.history_bytes = sum(
+            len(
+                f"[{m['timestamp']}] {m['role']}: "
+                f"{m['content']}\n\n".encode()
+            )
+            for m in history
+        )
         short_memory.return_history_as_string.return_value = (
             "\n\n".join(
                 f"[{m['timestamp']}] {m['role']}: {m['content']}"
@@ -469,17 +476,16 @@ class TestShouldCompressSkipsTokenizing:
         assert ContextCompressor().should_compress(agent) is True
         agent.short_memory.count_history_tokens.assert_called_once()
 
-    def test_byte_size_bounds_the_real_token_count(self):
+    def test_byte_size_bounds_the_real_token_count(self, tmp_path):
+        from swarms.structs.conversation import Conversation
         from swarms.utils.litellm_tokenizer import count_tokens
 
-        agent = self._agent(
-            ["plain ascii text " * 50, "naïve café 東京 🚀 " * 50],
-            context_length=1,
+        conv = Conversation(conversations_dir=str(tmp_path))
+        conv.add("User", "plain ascii text " * 50)
+        conv.add("User", "naïve café 東京 🚀 " * 50)
+        assert conv.history_bytes >= count_tokens(
+            conv.return_history_as_string()
         )
-        text = agent.short_memory.return_history_as_string()
-        assert ContextCompressor._history_bytes(
-            agent.short_memory.conversation_history
-        ) >= count_tokens(text)
 
 
 class TestUsageRatioReusesMessageCounts:
