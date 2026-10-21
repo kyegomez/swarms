@@ -232,6 +232,8 @@ class MixtureOfAgents:
         """
 
         self._reset_conversation()
+        for agent in self.agents:
+            agent.reset()
 
         self.conversation.add(role="User", content=task)
 
