@@ -1000,14 +1000,20 @@ class LLMManager:
             str: The reply's content text, without reasoning or tool calls.
         """
         content_out: list = []
+        wants_kinds = getattr(
+            streaming_callback, "wants_kinds", False
+        )
 
-        for _, text, _ in self.stream_parts(
+        for kind, text, _ in self.stream_parts(
             stream,
             tool_calls_out if tool_calls_out is not None else [],
             content_out,
         ):
             if streaming_callback is not None:
-                streaming_callback(text)
+                if wants_kinds:
+                    streaming_callback({"type": kind, "token": text})
+                else:
+                    streaming_callback(text)
 
         return "".join(content_out)
 

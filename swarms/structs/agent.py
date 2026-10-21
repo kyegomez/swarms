@@ -5,6 +5,7 @@ import threading
 import time
 import traceback
 from contextlib import nullcontext
+from dataclasses import dataclass
 from typing import (
     Any,
     Callable,
@@ -104,6 +105,12 @@ def stop_when_repeats(response: str) -> bool:
 
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
+
+
+@dataclass
+class StreamEvent:
+    kind: str
+    text: Any
 
 
 # Identity marks "not passed": None means no system prompt, any other string is the caller's own.
@@ -2696,6 +2703,7 @@ Subtask Breakdown:
         self,
         task: str,
         img: Optional[str] = None,
+        events: bool = False,
         **kwargs,
     ):
         """Run the agent and yield response tokens one-by-one as they are generated.
@@ -2711,10 +2719,15 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
+            events: Yield StreamEvent objects carrying the part's kind
+                ("reasoning", "content" or "tool_call") instead of bare strings,
+                ending with one "final" event whose text is run()'s return value.
+                Defaults to False, which keeps today's plain string stream.
             **kwargs: Any extra kwargs forwarded to run().
 
         Yields:
-            str: Individual token strings in generation order.
+            str: Individual token strings in generation order, or StreamEvent
+                objects when events is True.
 
         Example::
 
@@ -2726,25 +2739,35 @@ Subtask Breakdown:
         token_queue: queue.Queue = queue.Queue()
         _DONE = object()
         _exc: list = [None]
+        _result: list = []
 
         def _on_token(token):
             if isinstance(token, str) and token:
-                token_queue.put(token)
+                token_queue.put(
+                    StreamEvent("content", token) if events else token
+                )
             elif isinstance(token, dict):
                 t = token.get("token", "")
                 if t:
-                    token_queue.put(t)
+                    kind = token.get("type") or "content"
+                    token_queue.put(
+                        StreamEvent(kind, t) if events else t
+                    )
+
+        _on_token.wants_kinds = events
 
         original_streaming_on = self.streaming_on
         self.streaming_on = True
 
         def _run_thread():
             try:
-                self.run(
-                    task=task,
-                    img=img,
-                    streaming_callback=_on_token,
-                    **kwargs,
+                _result.append(
+                    self.run(
+                        task=task,
+                        img=img,
+                        streaming_callback=_on_token,
+                        **kwargs,
+                    )
                 )
             except Exception as exc:
                 _exc[0] = exc
@@ -2766,10 +2789,14 @@ Subtask Breakdown:
         if _exc[0] is not None:
             raise _exc[0]
 
+        if events and _result:
+            yield StreamEvent("final", _result[0])
+
     async def arun_stream(
         self,
         task: str,
         img: Optional[str] = None,
+        events: bool = False,
         **kwargs,
     ):
         """Async generator version of run_stream — yields tokens as they arrive.
@@ -2781,10 +2808,15 @@ Subtask Breakdown:
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
+            events: Yield StreamEvent objects carrying the part's kind
+                ("reasoning", "content" or "tool_call") instead of bare strings,
+                ending with one "final" event whose text is run()'s return value.
+                Defaults to False, which keeps today's plain string stream.
             **kwargs: Extra kwargs forwarded to run().
 
         Yields:
-            str: Individual token strings in generation order.
+            str: Individual token strings in generation order, or StreamEvent
+                objects when events is True.
 
         Example::
 
@@ -2797,29 +2829,39 @@ Subtask Breakdown:
         token_queue: asyncio.Queue = asyncio.Queue()
         _DONE = object()
         _exc: list = [None]
+        _result: list = []
 
         def _on_token(token):
             if isinstance(token, str) and token:
+                item = (
+                    StreamEvent("content", token) if events else token
+                )
                 loop.call_soon_threadsafe(
-                    token_queue.put_nowait, token
+                    token_queue.put_nowait, item
                 )
             elif isinstance(token, dict):
                 t = token.get("token", "")
                 if t:
+                    kind = token.get("type") or "content"
+                    item = StreamEvent(kind, t) if events else t
                     loop.call_soon_threadsafe(
-                        token_queue.put_nowait, t
+                        token_queue.put_nowait, item
                     )
+
+        _on_token.wants_kinds = events
 
         original_streaming_on = self.streaming_on
         self.streaming_on = True
 
         def _run_sync():
             try:
-                self.run(
-                    task=task,
-                    img=img,
-                    streaming_callback=_on_token,
-                    **kwargs,
+                _result.append(
+                    self.run(
+                        task=task,
+                        img=img,
+                        streaming_callback=_on_token,
+                        **kwargs,
+                    )
                 )
             except Exception as exc:
                 _exc[0] = exc
@@ -2840,6 +2882,9 @@ Subtask Breakdown:
 
         if _exc[0] is not None:
             raise _exc[0]
+
+        if events and _result:
+            yield StreamEvent("final", _result[0])
 
     def _handle_fallback_execution(
         self,

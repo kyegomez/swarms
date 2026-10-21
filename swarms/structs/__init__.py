@@ -1,5 +1,5 @@
 from swarms.structs.advisor_swarm import AdvisorSwarm
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, StreamEvent
 from swarms.structs.agent_loader import (
     AgentLoader,
     load_agent_from_markdown,
@@ -99,6 +99,7 @@ from swarms.structs.check_models import (
 __all__ = [
     "AdvisorSwarm",
     "Agent",
+    "StreamEvent",
     "ConcurrentWorkflow",
     "SocialAlgorithms",
     "Conversation",
