@@ -34,7 +34,9 @@ def pytest_runtest_makereport(item, call):
     ):
         rep.outcome = "skipped"
         rep.longrepr = (
-            "SKIPPED: calls a live LLM and no API key is set — "
-            f"{call.excinfo.typename}: {call.excinfo.value}"
+            rep.location[0],
+            rep.location[1] + 1,
+            "Skipped: calls a live LLM and no API key is set: "
+            f"{call.excinfo.typename}: {call.excinfo.value}",
         )
     return rep
