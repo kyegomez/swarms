@@ -2722,7 +2722,9 @@ Subtask Breakdown:
             events: Yield StreamEvent objects carrying the part's kind
                 ("reasoning", "content" or "tool_call") instead of bare strings,
                 ending with one "final" event whose text is run()'s return value.
-                Defaults to False, which keeps today's plain string stream.
+                Event text is display text: it keeps the [thinking] and
+                [tool call] headers and side-call output. Read the reply from
+                the final event. Defaults to False, the plain string stream.
             **kwargs: Any extra kwargs forwarded to run().
 
         Yields:
@@ -2743,9 +2745,7 @@ Subtask Breakdown:
 
         def _on_token(token):
             if isinstance(token, str) and token:
-                token_queue.put(
-                    StreamEvent("content", token) if events else token
-                )
+                token_queue.put(token)
             elif isinstance(token, dict):
                 t = token.get("token", "")
                 if t:
@@ -2811,7 +2811,9 @@ Subtask Breakdown:
             events: Yield StreamEvent objects carrying the part's kind
                 ("reasoning", "content" or "tool_call") instead of bare strings,
                 ending with one "final" event whose text is run()'s return value.
-                Defaults to False, which keeps today's plain string stream.
+                Event text is display text: it keeps the [thinking] and
+                [tool call] headers and side-call output. Read the reply from
+                the final event. Defaults to False, the plain string stream.
             **kwargs: Extra kwargs forwarded to run().
 
         Yields:
@@ -2833,11 +2835,8 @@ Subtask Breakdown:
 
         def _on_token(token):
             if isinstance(token, str) and token:
-                item = (
-                    StreamEvent("content", token) if events else token
-                )
                 loop.call_soon_threadsafe(
-                    token_queue.put_nowait, item
+                    token_queue.put_nowait, token
                 )
             elif isinstance(token, dict):
                 t = token.get("token", "")
