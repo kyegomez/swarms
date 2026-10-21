@@ -290,6 +290,8 @@ class AutoSwarmBuilder:
         swarm_type: str = "return-agents",
         system_prompt: str = BOSS_SYSTEM_PROMPT,
         additional_llm_args: Optional[dict] = None,
+        max_agents: Optional[int] = None,
+        max_json_repair_attempts: int = 1,
         auto_execute: bool = False,
     ):
         self.name = name
@@ -301,8 +303,8 @@ class AutoSwarmBuilder:
         self.swarm_type = swarm_type
         self.system_prompt = system_prompt
         self.additional_llm_args = additional_llm_args or {}
-        self.max_agents = None
-        self.max_json_repair_attempts = 1
+        self.max_agents = max_agents
+        self.max_json_repair_attempts = max_json_repair_attempts
         self.auto_execute = auto_execute
         self.conversation = Conversation()
         self.agents_pool = []
