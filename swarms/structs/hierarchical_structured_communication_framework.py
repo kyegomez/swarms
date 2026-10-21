@@ -23,6 +23,7 @@ Key Features:
 import re
 import traceback
 from typing import Any, Callable, Dict, List, Optional, Union
+from dataclasses import dataclass
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -53,6 +54,9 @@ class CommunicationType(str, Enum):
     INTERMEDIATE_OUTPUT = (
         "intermediate_output"  # I_ij: Intermediate results
     )
+
+
+@dataclass
 class StructuredMessage:
     """Structured communication message following HierarchicalStructuredComm protocol"""
 
@@ -124,7 +128,6 @@ class EvaluationResult(BaseModel):
     confidence: float = Field(description="Confidence in evaluation")
 
 
-# Schemas.
 class HierarchicalStructuredCommunicationFramework:
     """
     Talk Structurally, Act Hierarchically: A Collaborative Framework for LLM Multi-Agent Systems
