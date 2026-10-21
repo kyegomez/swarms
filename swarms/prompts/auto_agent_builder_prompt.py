@@ -97,7 +97,7 @@ Match the model to the cognitive load of the work, not to the importance of the 
 - **Structured extraction, classification, reformatting, routine summarization** — a smaller, cheaper model: `gpt-5.4-mini`, `claude-haiku-4-5-20251001`.
 - **High-throughput or latency-sensitive work** — a fast hosted model: `groq/llama-3.3-70b-versatile`.
 
-Use valid LiteLLM model strings. Provider-prefixed names route correctly (`groq/`, `together_ai/`, `openrouter/`, `gemini/`); bare OpenAI names do not need a prefix.
+Use valid RouteHub model strings. Provider-prefixed names route correctly (`groq/`, `together_ai/`, `openrouter/`, `gemini/`); bare OpenAI names do not need a prefix.
 
 Deliberately mixing tiers is a sign of good design. A roster where every agent runs the most expensive model usually means the work was never analyzed. So does one where every agent runs the cheapest.
 
@@ -129,7 +129,7 @@ Verify every item:
 - The roster covers the task end to end with no gap.
 - Every name is unique and role-descriptive.
 - Every `system_prompt` is task-specific, several paragraphs, and would stand alone.
-- Every `model_name` is a valid LiteLLM string, chosen for that agent's actual workload.
+- Every `model_name` is a valid RouteHub string, chosen for that agent's actual workload.
 - The roster is within the requested maximum.
 
 Then call `build_agents` once with the full roster.

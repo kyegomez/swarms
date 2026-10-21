@@ -149,7 +149,7 @@ class ContextCompressor:
             ],
             temperature=self.summarizer_temperature,
             max_tokens=self.summarizer_max_tokens,
-            # RouteHub reads this per call; litellm otherwise inherits it from the last agent built.
+            # RouteHub reads this per call.
             drop_params=True,
         )
         call_usage = usage_from_response(response)

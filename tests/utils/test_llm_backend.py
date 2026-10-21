@@ -1,12 +1,9 @@
-"""Choosing between RouteHub and litellm, and what changes with each.
+"""RouteHub is the only model-call backend.
 
-Offline: model calls are stubbed, an installed or missing library is
-simulated through importlib.util.find_spec, and backend names are replaced
-in the module's namespace so nothing is fetched.
+Offline: model calls are stubbed and RouteHub's names are replaced in the
+module's namespace so nothing is fetched.
 """
 
-import importlib
-import importlib.util
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -26,27 +23,8 @@ BACKEND_OPTIONS = (
 )
 
 
-def _with_installed(monkeypatch, *names):
-    """Make find_spec report only the given backends as installed."""
-    real = importlib.util.find_spec
-
-    def find_spec(name, *args):
-        if name in llm_backend.BACKENDS:
-            return object() if name in names else None
-        return real(name, *args)
-
-    monkeypatch.setattr(importlib.util, "find_spec", find_spec)
-
-
-def _use_backend(monkeypatch, backend, **names):
-    """Select a backend and replace names it would otherwise provide."""
-    monkeypatch.setattr(llm_backend, "BACKEND", backend)
-    if backend == "litellm":
-        # LiteLLM() writes litellm's module settings, so they are restored afterwards.
-        litellm = importlib.import_module("litellm")
-        for name in BACKEND_OPTIONS:
-            monkeypatch.setattr(litellm, name, getattr(litellm, name))
-        names.setdefault("_module", litellm)
+def _use_backend(monkeypatch, **names):
+    """Replace names RouteHub would otherwise provide."""
     namespace = vars(llm_backend)
     for name, value in names.items():
         monkeypatch.setitem(namespace, name, value)
@@ -59,40 +37,12 @@ def _response():
     )
 
 
-class TestSelectBackend:
-    def test_routehub_is_chosen_when_installed(self, monkeypatch):
-        monkeypatch.delenv("SWARMS_LLM_BACKEND", raising=False)
-        _with_installed(monkeypatch, "routehub", "litellm")
-        assert llm_backend.select_backend() == "routehub"
-
-    def test_litellm_is_chosen_without_routehub(self, monkeypatch):
-        monkeypatch.delenv("SWARMS_LLM_BACKEND", raising=False)
-        _with_installed(monkeypatch, "litellm")
-        assert llm_backend.select_backend() == "litellm"
-
-    def test_env_var_forces_litellm(self, monkeypatch):
-        monkeypatch.setenv("SWARMS_LLM_BACKEND", " LiteLLM ")
-        _with_installed(monkeypatch, "routehub", "litellm")
-        assert llm_backend.select_backend() == "litellm"
-
-    def test_unknown_backend_is_rejected(self, monkeypatch):
-        monkeypatch.setenv("SWARMS_LLM_BACKEND", "openai")
-        with pytest.raises(ValueError, match="routehub, litellm"):
-            llm_backend.select_backend()
-
-    def test_missing_backend_names_the_install_command(
-        self, monkeypatch
-    ):
-        monkeypatch.setenv("SWARMS_LLM_BACKEND", "routehub")
-        _with_installed(monkeypatch, "litellm")
-        with pytest.raises(ImportError, match=r"swarms\[fast\]"):
-            llm_backend.select_backend()
-
-
-def test_import_swarms_loads_neither_library():
+def test_a_leftover_litellm_choice_warns_once():
     code = (
-        "import sys, swarms; from swarms import Agent; "
-        "print('litellm' in sys.modules, 'routehub' in sys.modules)"
+        "import os\n"
+        "os.environ['SWARMS_LLM_BACKEND'] = 'litellm'\n"
+        "import swarms.utils.llm_backend as b\n"
+        "b.backend_module()\n"
     )
     out = subprocess.run(
         [sys.executable, "-c", code],
@@ -100,7 +50,30 @@ def test_import_swarms_loads_neither_library():
         text=True,
         check=True,
     )
-    assert out.stdout.split()[-2:] == ["False", "False"]
+    assert "no longer supported" in out.stdout
+
+
+def test_every_other_backend_value_is_ignored(monkeypatch, caplog):
+    monkeypatch.setenv("SWARMS_LLM_BACKEND", "openai")
+    module = SimpleNamespace(completion=lambda: "value")
+    monkeypatch.setattr(llm_backend, "_module", module)
+    with caplog.at_level("WARNING"):
+        assert llm_backend.backend_module() is module
+    assert "SWARMS_LLM_BACKEND" not in caplog.text
+
+
+def test_import_swarms_loads_no_backend_library():
+    code = (
+        "import sys, swarms; from swarms import Agent; "
+        "print('routehub' in sys.modules)"
+    )
+    out = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert out.stdout.split()[-1] == "False"
 
 
 class TestOptionsPerCall:
@@ -118,7 +91,7 @@ class TestOptionsPerCall:
     def test_routehub_gets_the_options_with_each_call(
         self, monkeypatch
     ):
-        _use_backend(monkeypatch, "routehub")
+        _use_backend(monkeypatch)
         sent = self._sent()
         assert {name: sent[name] for name in BACKEND_OPTIONS} == {
             "set_verbose": False,
@@ -127,20 +100,11 @@ class TestOptionsPerCall:
             "drop_params": True,
         }
 
-    def test_litellm_keeps_them_as_module_settings(self, monkeypatch):
-        _use_backend(monkeypatch, "litellm")
-
-        sent = self._sent()
-
-        assert not set(BACKEND_OPTIONS) & set(sent)
-        assert llm_backend.backend_module().num_retries == 5
-
 
 class TestVisionCheck:
-    def _llm(self, monkeypatch, backend, known_models, model):
+    def _llm(self, monkeypatch, known_models, model):
         _use_backend(
             monkeypatch,
-            backend,
             supports_vision=lambda model: False,
             model_list=known_models,
         )
@@ -149,7 +113,7 @@ class TestVisionCheck:
     def test_routehub_sends_images_to_a_model_it_cannot_find(
         self, monkeypatch
     ):
-        llm = self._llm(monkeypatch, "routehub", [], "lab/unlisted")
+        llm = self._llm(monkeypatch, [], "lab/unlisted")
         llm.check_if_model_supports_vision(img="photo.png")
 
     def test_a_listed_text_only_model_is_still_refused(
@@ -157,17 +121,9 @@ class TestVisionCheck:
     ):
         llm = self._llm(
             monkeypatch,
-            "routehub",
             ["lab/text-only"],
             "lab/text-only",
         )
-        with pytest.raises(ValueError, match="does not support"):
-            llm.check_if_model_supports_vision(img="photo.png")
-
-    def test_litellm_refuses_an_unlisted_model_as_before(
-        self, monkeypatch
-    ):
-        llm = self._llm(monkeypatch, "litellm", [], "lab/unlisted-2")
         with pytest.raises(ValueError, match="does not support"):
             llm.check_if_model_supports_vision(img="photo.png")
 
@@ -175,8 +131,8 @@ class TestVisionCheck:
         answers = iter([False, True])
         _use_backend(
             monkeypatch,
-            "litellm",
             supports_vision=lambda model: next(answers),
+            model_list=["lab/catalog-was-down"],
         )
         llm = LiteLLM(model_name="lab/catalog-was-down")
 
@@ -189,7 +145,6 @@ class TestUnknownModelWarning:
     def _warnings(self, monkeypatch, known_models):
         _use_backend(
             monkeypatch,
-            "routehub",
             model_list=known_models,
             get_max_tokens=lambda model: 1000,
         )

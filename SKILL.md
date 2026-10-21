@@ -22,7 +22,7 @@ Swarms is a multi-agent orchestration framework. Everything is built from one pr
 pip install -U swarms
 ```
 
-Set the key for whichever provider you use — any [LiteLLM](https://docs.litellm.ai/docs/providers) model string works:
+Set the key for whichever provider you use — any [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub) model string works:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -56,7 +56,7 @@ result = agent.run("Summarize the state of the semiconductor market.")
 | `agent_name` | `str` | `"swarm-worker-01"` | Unique identity; keys memory + routing |
 | `agent_description` | `str` | generic | How orchestrators decide to route to it |
 | `system_prompt` | `str` | built-in | Persona and instructions |
-| `model_name` | `str` | `"gpt-5.4"` | Any LiteLLM model string |
+| `model_name` | `str` | `"gpt-5.4"` | Any RouteHub model string |
 | `max_loops` | `int \| "auto"` | `1` | Iterations, or autonomous mode |
 | `tools` | `list[Callable]` | `None` | Python functions the agent may call |
 | `temperature` | `float` | `0.5` | Sampling temperature |

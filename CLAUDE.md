@@ -16,7 +16,7 @@ Set your LLM API key as an environment variable before running:
 export OPENAI_API_KEY="sk-..."        # OpenAI / GPT models
 export ANTHROPIC_API_KEY="sk-ant-..." # Claude models
 export GROQ_API_KEY="..."             # Groq
-# Any provider supported by LiteLLM works
+# Any provider supported by RouteHub works
 ```
 
 All imports come from the top-level `swarms` package:
@@ -103,7 +103,7 @@ print(result)
 | `agent_name` | str | `"swarm-worker-01"` | Unique name — used for memory file paths |
 | `agent_description` | str | generic | Shown to orchestrators for routing |
 | `system_prompt` | str | built-in | The agent's persona / instructions |
-| `model_name` | str | `"gpt-5.4"` | Any LiteLLM model string |
+| `model_name` | str | `"gpt-5.4"` | Any RouteHub model string |
 | `max_loops` | int \| `"auto"` | `1` | Loops before returning; `"auto"` = autonomous until done |
 | `tools` | list[Callable] | `None` | Python functions the agent can call |
 | `streaming_on` | bool | `False` | Stream tokens to stdout |
@@ -140,7 +140,7 @@ result = agent.run("Research the top 5 vector databases and compare them.")
 
 ### Model names
 
-Use any LiteLLM-compatible string:
+Use any RouteHub-compatible string:
 
 ```python
 # OpenAI

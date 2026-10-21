@@ -2091,7 +2091,7 @@ def handle_tips(args: argparse.Namespace) -> None:
 
 def handle_models(args: argparse.Namespace) -> None:
     """
-    Discover and inspect LLM models available via LiteLLM.
+    Discover and inspect LLM models available via RouteHub.
 
     Flags:
         --search PATTERN   Fuzzy-match against the model list.

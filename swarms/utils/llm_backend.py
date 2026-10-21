@@ -1,75 +1,46 @@
 """The library swarms makes model calls through.
 
-RouteHub is used when it is installed, which pip install "swarms[fast]"
-does, and litellm otherwise. Set SWARMS_LLM_BACKEND to "litellm" or
-"routehub" to choose one explicitly.
-
-Neither library is imported until a name is first used, so importing swarms
+RouteHub is the only model-call backend and a required dependency. The
+library is not imported until a name is first used, so importing swarms
 stays fast. completion, acompletion and embedding are defined here; every
-other name, such as get_model_info or AuthenticationError, is read from the
-chosen library on first access.
+other name, such as get_model_info or AuthenticationError, is read from
+RouteHub on first access.
+
+SWARMS_LLM_BACKEND is no longer read. A leftover "litellm" value draws a
+warning so old setups learn the switch is gone; every other value is
+ignored.
 """
 
 import importlib
-import importlib.util
 import os
 from types import ModuleType
 from typing import Any
 
-BACKENDS = ("routehub", "litellm")
+from loguru import logger
 
-# The libraries refresh these themselves, so they are read on every access.
+# The library refreshes these itself, so they are read on every access.
 _UNCACHED = frozenset({"model_list", "model_cost"})
-
-_INSTALL_HINTS = {
-    "routehub": 'pip install "swarms[fast]"',
-    "litellm": "pip install litellm",
-}
-
-
-def select_backend() -> str:
-    """Name the library to make model calls through.
-
-    Returns:
-        str: "routehub" or "litellm".
-
-    Raises:
-        ValueError: If SWARMS_LLM_BACKEND names another library.
-        ImportError: If SWARMS_LLM_BACKEND names a library that is not
-            installed.
-    """
-    requested = os.getenv("SWARMS_LLM_BACKEND", "").strip().lower()
-    if not requested:
-        if importlib.util.find_spec("routehub") is not None:
-            return "routehub"
-        return "litellm"
-    if requested not in BACKENDS:
-        raise ValueError(
-            f"SWARMS_LLM_BACKEND must be one of {', '.join(BACKENDS)}, "
-            f"got {requested!r}."
-        )
-    if importlib.util.find_spec(requested) is None:
-        raise ImportError(
-            f"SWARMS_LLM_BACKEND is {requested!r}, but {requested} is not "
-            f"installed. Install it with: {_INSTALL_HINTS[requested]}"
-        )
-    return requested
-
-
-BACKEND = select_backend()
 
 _module = None
 
 
 def backend_module() -> ModuleType:
-    """Import the chosen library on first use.
+    """Import RouteHub on first use.
 
     Returns:
-        ModuleType: The routehub or litellm module.
+        ModuleType: The routehub module.
     """
     global _module
     if _module is None:
-        _module = importlib.import_module(BACKEND)
+        if (
+            os.getenv("SWARMS_LLM_BACKEND", "").strip().lower()
+            == "litellm"
+        ):
+            logger.warning(
+                "SWARMS_LLM_BACKEND=litellm is no longer supported; "
+                "swarms makes model calls through RouteHub."
+            )
+        _module = importlib.import_module("routehub")
     return _module
 
 
@@ -77,8 +48,8 @@ def completion(*args: Any, **kwargs: Any) -> Any:
     """Make a chat completion call.
 
     Args:
-        *args (Any): Positional arguments for the library's completion.
-        **kwargs (Any): Keyword arguments for the library's completion.
+        *args (Any): Positional arguments for RouteHub's completion.
+        **kwargs (Any): Keyword arguments for RouteHub's completion.
 
     Returns:
         Any: The response, or a stream of chunks when stream is on.
@@ -90,8 +61,8 @@ async def acompletion(*args: Any, **kwargs: Any) -> Any:
     """Make an async chat completion call.
 
     Args:
-        *args (Any): Positional arguments for the library's acompletion.
-        **kwargs (Any): Keyword arguments for the library's acompletion.
+        *args (Any): Positional arguments for RouteHub's acompletion.
+        **kwargs (Any): Keyword arguments for RouteHub's acompletion.
 
     Returns:
         Any: The response, or an async stream of chunks when stream is on.
@@ -103,8 +74,8 @@ def embedding(*args: Any, **kwargs: Any) -> Any:
     """Make an embedding call.
 
     Args:
-        *args (Any): Positional arguments for the library's embedding.
-        **kwargs (Any): Keyword arguments for the library's embedding.
+        *args (Any): Positional arguments for RouteHub's embedding.
+        **kwargs (Any): Keyword arguments for RouteHub's embedding.
 
     Returns:
         Any: The embedding response.
@@ -113,16 +84,16 @@ def embedding(*args: Any, **kwargs: Any) -> Any:
 
 
 def __getattr__(name: str) -> Any:
-    """Read a name from the chosen library on first access.
+    """Read a name from RouteHub on first access.
 
     Args:
-        name (str): A name the library exports, such as get_model_info.
+        name (str): A name RouteHub exports, such as get_model_info.
 
     Returns:
         Any: The library's function, class or value.
 
     Raises:
-        AttributeError: If the library has no such name.
+        AttributeError: If RouteHub has no such name.
     """
     # Dunder lookups come from tooling such as import machinery, not callers.
     if name.startswith("__"):

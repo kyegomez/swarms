@@ -545,7 +545,7 @@ class TreeOfThoughts:
             name: Name used in logs, in the conversation, and as the
                 prefix of every internal agent's name.
             description: Short description of the agent, for orchestrators.
-            model_name: Any LiteLLM model string. The model must support
+            model_name: Any RouteHub model string. The model must support
                 function calling.
             system_prompt: System prompt for every model call. Replace it to
                 give the search a domain persona; the step, evaluation and

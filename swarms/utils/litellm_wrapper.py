@@ -404,12 +404,7 @@ class LiteLLM:
             "num_retries": retries,
             "drop_params": drop_params,
         }
-        if llm_backend.BACKEND == "litellm":
-            litellm = llm_backend.backend_module()
-            for name, value in backend_options.items():
-                setattr(litellm, name, value)
-        else:
-            self._backend_options = backend_options
+        self._backend_options = backend_options
 
         # Add system prompt if present (Anthropic rejects empty system blocks)
         if isinstance(self.system_prompt, str):
@@ -1213,7 +1208,6 @@ class LiteLLM:
             # RouteHub's catalog comes from the network, so a model it can't find may still take images.
             if (
                 out is False
-                and llm_backend.BACKEND == "routehub"
                 and self.model_name not in llm_backend.model_list
             ):
                 logger.warning(

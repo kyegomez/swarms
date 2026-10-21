@@ -113,7 +113,7 @@ ENV_TIPS: List[str] = [
 ]
 
 MODEL_FLAG_TIPS: List[str] = [
-    "Any LiteLLM-supported model works in [bold]--model-name[/bold] — OpenAI, Anthropic, Groq, Gemini, Mistral, Cohere…",
+    "Any RouteHub-supported model works in [bold]--model-name[/bold] — OpenAI, Anthropic, Groq, Gemini, Mistral, Cohere…",
     "[bold]--model-name claude-opus-4-7[/bold] picks the latest frontier Anthropic model",
     "[bold]--model-name groq/llama-3.3-70b-versatile[/bold] is the fastest open-weight option",
     "[bold]--model-name gemini/gemini-2.5-pro[/bold] gives you million-token context natively",
