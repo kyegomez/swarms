@@ -1,5 +1,4 @@
 import os
-from concurrent.futures import as_completed
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
 
@@ -401,11 +400,6 @@ class CouncilAsAJudge:
                 messages=[],
             )
 
-            self.conversation.add(
-                role=agent.agent_name,
-                content=result,
-            )
-
             return dim, result.strip()
         except Exception as e:
             raise DimensionEvaluationError(
@@ -435,38 +429,35 @@ class CouncilAsAJudge:
                 content=task,
             )
 
-            # Create tasks for all dimensions
-            tasks = [
-                (dim, agent, task)
-                for dim, agent in self.judge_agents.items()
-            ]
-
             # Run evaluations in parallel using ThreadPoolExecutor
             with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
-                # Submit all tasks
-                future_to_dim = {
+                futures = [
                     executor.submit(
                         self._evaluate_dimension,
                         dim,
                         agent,
                         task,
-                    ): dim
-                    for dim, agent, _ in tasks
-                }
+                    )
+                    for dim, agent in self.judge_agents.items()
+                ]
 
-                for future in as_completed(future_to_dim):
+                for (dim, agent), future in zip(
+                    self.judge_agents.items(), futures
+                ):
                     try:
-                        future.result()
+                        _, result = future.result()
                     except Exception as e:
-                        dim = future_to_dim[future]
                         logger.error(
                             f"Task for dimension {dim} failed: {str(e)}"
                         )
                         raise DimensionEvaluationError(
                             f"Failed to evaluate dimension {dim}: {str(e)}"
                         )
+                    self.conversation.add(
+                        role=agent.agent_name, content=result
+                    )
 
             prior, aggregation_task = split_last_turn(
                 messages_for(
