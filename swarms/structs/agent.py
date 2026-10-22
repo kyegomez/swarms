@@ -147,7 +147,6 @@ class Agent:
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
         output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
-        output_cleaner (Callable): The output cleaner function
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
         planning_prompt (str): The planning prompt
@@ -319,7 +318,6 @@ class Agent:
         custom_exit_command: Optional[str] = "exit",
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
-        output_cleaner: Optional[Callable] = None,
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
@@ -429,7 +427,6 @@ class Agent:
         self.custom_exit_command = custom_exit_command
         self.tool_schema = tool_schema
         self.output_type = output_type
-        self.output_cleaner = output_cleaner
         self.list_base_models = list_base_models
         self.planning_prompt = planning_prompt
         self.rules = rules
@@ -3021,20 +3018,6 @@ Subtask Breakdown:
             formatter.print_panel(
                 response,
                 f"Agent Name {self.agent_name} [Loop: {loop_count}/{self.max_loops}]",
-            )
-
-    def output_cleaner_op(self, response: str):
-        # Apply the cleaner function to the response
-        if self.output_cleaner is not None:
-            logger.info("Applying output cleaner to response.")
-
-            response = self.output_cleaner(response)
-
-            logger.info(f"Response after output cleaner: {response}")
-
-            self.short_memory.add(
-                role="Output Cleaner",
-                content=response,
             )
 
     @property
