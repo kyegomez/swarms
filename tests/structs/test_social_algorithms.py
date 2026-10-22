@@ -1,3 +1,4 @@
+import asyncio
 import threading
 import time
 
@@ -459,7 +460,12 @@ class TestAlgorithmArgs:
 
 
 class TestTimeout:
-    """The timeout is SIGALRM-based, so it only works on the main thread."""
+    """The timeout joins a worker thread, so it works anywhere.
+
+    The previous SIGALRM implementation only worked on the main thread of
+    Unix platforms; the three formerly-xfailed tests below pin down the
+    portability and precision it lacked.
+    """
 
     def test_a_generous_timeout_does_not_interfere(self):
         swarm = _swarm(_pipeline, max_execution_time=30)
@@ -472,10 +478,6 @@ class TestTimeout:
 
         assert swarm.run("t").total_steps == 2
 
-    @pytest.mark.xfail(
-        reason="signal.alarm truncates to int, so alarm(0) cancels the timeout",
-        strict=False,
-    )
     def test_a_sub_second_budget_still_times_out(self):
         def slow(agents, task, **kwargs):
             time.sleep(2)
@@ -486,10 +488,19 @@ class TestTimeout:
         with pytest.raises(TimeoutError):
             swarm.run("t")
 
-    @pytest.mark.xfail(
-        reason="signal.signal cannot be called off the main thread",
-        strict=False,
-    )
+    def test_a_timeout_does_not_block_until_the_algorithm_ends(self):
+        def slow(agents, task, **kwargs):
+            time.sleep(5)
+            return "never"
+
+        swarm = _swarm(slow, max_execution_time=0.2)
+        started = time.monotonic()
+
+        with pytest.raises(TimeoutError):
+            swarm.run("t")
+
+        assert time.monotonic() - started < 4
+
     def test_run_works_on_a_worker_thread(self):
         swarm = _swarm(_pipeline)
         outcome = {}
@@ -506,12 +517,14 @@ class TestTimeout:
 
         assert outcome.get("steps") == 2
 
-    @pytest.mark.xfail(
-        reason="run_async runs on a worker thread, where SIGALRM is unavailable",
-        strict=False,
-    )
-    def test_run_async_works_on_the_default_configuration(self):
-        assert _swarm(_pipeline).run_async("t").total_steps == 2
+    def test_run_works_under_asyncio_to_thread(self):
+        """The default configuration must survive the common async pattern."""
+        swarm = _swarm(_pipeline)
+
+        async def main():
+            return await asyncio.to_thread(swarm.run, "t")
+
+        assert asyncio.run(main()).total_steps == 2
 
 
 class TestAlgorithmInfo:
