@@ -1,8 +1,8 @@
-import sys
-from loguru import logger
-from dotenv import load_dotenv
-
 import os
+import sys
+
+from dotenv import load_dotenv
+from loguru import logger
 
 load_dotenv()
 
@@ -106,10 +106,9 @@ def initialize_logger(log_folder: str = "swarms"):
     # Reset loguru handlers
     logger.remove()
 
-    verbose_global = (
-        os.getenv("SWARMS_VERBOSE_GLOBAL", "False").lower()
-        in ("true", "1", "yes", "on", "t")
-    )
+    verbose_global = os.getenv(
+        "SWARMS_VERBOSE_GLOBAL", "False"
+    ).lower() in ("true", "1", "yes", "on", "t")
 
     # Add console logging
     logger.add(

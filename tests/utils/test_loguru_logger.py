@@ -277,7 +277,8 @@ def test_exception_in_frame_does_not_leak_secret_to_log_files(
     monkeypatch, tmp_path
 ):
     """Logging an exception raised in a frame that holds api_key="sk-test"
-    does not write the secret to file sinks (#2717 acceptance criteria)."""
+    does not write the secret to file sinks (#2717 acceptance criteria).
+    """
     ws = tmp_path / "ws"
     monkeypatch.setenv("WORKSPACE_DIR", str(ws))
     monkeypatch.setenv("SWARMS_VERBOSE_GLOBAL", "false")
@@ -302,7 +303,7 @@ def test_exception_in_frame_does_not_leak_secret_to_log_files(
 
     try:
         worker.run_task(secret)
-    except Exception:
+    except ZeroDivisionError:
         logger.patch(
             lambda r: r.update(name="swarms.structs.agent")
         ).exception("Operation failed")
