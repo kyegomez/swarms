@@ -1249,7 +1249,7 @@ class AgentRearrange(SerializableMixin):
             if awareness_info and original_system_prompt is not None:
                 agent.system_prompt = original_system_prompt
 
-        output = "".join(chunks)
+        output = agent_answer(agent, fallback="".join(chunks))
         self.conversation.add(agent.agent_name, output)
         if with_events:
             yield {
@@ -1286,6 +1286,12 @@ class AgentRearrange(SerializableMixin):
             for name in agent_names:
                 yield {"type": "agent_start", "agent": name}
 
+        def answer(name: str) -> str:
+            return agent_answer(
+                find_agent_by_name(self.agents, name),
+                fallback="".join(results[name]),
+            )
+
         async def producer(name: str):
             try:
                 agent = find_agent_by_name(self.agents, name)
@@ -1321,7 +1327,7 @@ class AgentRearrange(SerializableMixin):
                         yield {
                             "type": "agent_end",
                             "agent": finished_name,
-                            "output": "".join(results[finished_name]),
+                            "output": answer(finished_name),
                         }
                     continue
                 if kind is ERROR:
@@ -1344,7 +1350,7 @@ class AgentRearrange(SerializableMixin):
             )
 
         for name in agent_names:
-            self.conversation.add(name, "".join(results[name]))
+            self.conversation.add(name, answer(name))
 
     async def arun_stream(
         self,

@@ -1712,3 +1712,67 @@ def test_nested_swarm_without_a_name_is_rejected():
     """A swarm needs a name for the flow to reference it."""
     with pytest.raises(ValueError, match="needs a name"):
         AgentRearrange(agents=[_RecordingSwarm("")], flow="x")
+
+
+def test_streamed_flow_records_answers_not_reasoning():
+    from types import SimpleNamespace as NS
+
+    from swarms.utils import litellm_wrapper
+
+    requests = {}
+
+    def chunk(content=None, reasoning=None):
+        delta = NS(
+            content=content,
+            reasoning_content=reasoning,
+            tool_calls=None,
+        )
+        return NS(
+            choices=[NS(delta=delta, finish_reason=None)],
+            usage=None,
+            model="m",
+        )
+
+    def fake_completion(**params):
+        name = params["messages"][0]["content"]
+        requests[name] = params["messages"]
+        return iter(
+            [
+                chunk(reasoning=f"{name} thinks"),
+                chunk(f"{name} answer"),
+            ]
+        )
+
+    agents = [
+        Agent(
+            agent_name=name,
+            system_prompt=name,
+            model_name="gpt-5.4",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+        for name in ["A", "B", "C"]
+    ]
+    rearrange = AgentRearrange(agents=agents, flow="A, B -> C")
+
+    with patch.object(
+        litellm_wrapper, "completion", side_effect=fake_completion
+    ):
+        events = list(
+            rearrange.run_stream("Write a haiku.", with_events=True)
+        )
+
+    ends = {
+        e["agent"]: e["output"]
+        for e in events
+        if e["type"] == "agent_end"
+    }
+    assert ends == {"A": "A answer", "B": "B answer", "C": "C answer"}
+    recorded = {
+        m["role"]: m["content"]
+        for m in rearrange.conversation.conversation_history
+        if m["role"] in ends
+    }
+    assert recorded == ends
+    assert {"role": "user", "content": "A: A answer"} in requests["C"]
