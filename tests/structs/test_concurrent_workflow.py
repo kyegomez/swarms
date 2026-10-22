@@ -503,6 +503,34 @@ class _EchoAgent:
         return f"{self.agent_name} answered: {task}"
 
 
+class _InterruptedAgent(_EchoAgent):
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        raise KeyboardInterrupt
+
+
+def test_concurrent_workflow_autosave_saves_conversation_when_interrupted(
+    monkeypatch, tmp_path
+):
+    get_workspace_dir.cache_clear()
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    workflow = ConcurrentWorkflow(
+        name="Interrupted-Workflow",
+        agents=[_InterruptedAgent("Alpha")],
+        autosave=True,
+    )
+
+    with pytest.raises(KeyboardInterrupt):
+        workflow.run("summarise the filing")
+
+    conversation_path = os.path.join(
+        workflow.swarm_workspace_dir, "conversation_history.json"
+    )
+    with open(conversation_path) as f:
+        assert "summarise the filing" in f.read()
+
+    get_workspace_dir.cache_clear()
+
+
 def test_concurrent_workflow_batch_run_scopes_each_task():
     """batch_run must not carry an earlier task's messages into a later result (#2041)."""
     workflow = ConcurrentWorkflow(
