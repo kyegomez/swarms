@@ -2260,6 +2260,37 @@ class TestLLMFailureRaises:
         ]
         assert len(task_turns) == 1
 
+    def test_fallback_request_keeps_the_callers_messages(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+        sent = {}
+        fake_completion = self._completion(calls, {"gpt-5.4"})
+
+        def recording_completion(**params):
+            sent[params["model"]] = [
+                m["content"] for m in params["messages"]
+            ]
+            return fake_completion(**params)
+
+        prior = [
+            {"role": "user", "content": "My project is Helios."},
+            {"role": "assistant", "content": "Noted: Helios."},
+        ]
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=recording_completion,
+        ):
+            agent.run(self.TASK, messages=prior)
+
+        assert sent["claude-sonnet-4-6"][-3:] == [
+            "My project is Helios.",
+            "Noted: Helios.",
+            self.TASK,
+        ]
+
     def test_raises_once_every_fallback_fails(self):
         agent = self._agent(
             fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
