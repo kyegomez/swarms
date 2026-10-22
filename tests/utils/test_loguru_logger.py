@@ -350,7 +350,7 @@ def test_exception_in_frame_does_not_leak_secret_to_log_files(
 
     try:
         worker.run_task(secret)
-    except Exception:
+    except ZeroDivisionError:
         logger.patch(
             lambda r: r.update(name="swarms.structs.agent")
         ).exception("Operation failed")
