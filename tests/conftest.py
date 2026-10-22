@@ -1,4 +1,14 @@
+import os
+
 import pytest
+
+_PROVIDER_KEYS = (
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "GROQ_API_KEY",
+    "OPENROUTER_API_KEY",
+)
 
 _MISSING_KEY_MARKERS = (
     "Missing credentials",
@@ -6,8 +16,6 @@ _MISSING_KEY_MARKERS = (
     "Incorrect API key provided",
     "invalid API key",
     "API key not valid",
-    "The following models are unavailable",
-    "Not authenticated",
 )
 
 
@@ -28,8 +36,9 @@ def _needs_a_key(exc: BaseException) -> bool:
 def pytest_runtest_makereport(item, call):
     rep = yield
     if (
-        rep.outcome in ("failed", "error")
+        rep.failed
         and call.excinfo is not None
+        and not any(os.environ.get(k) for k in _PROVIDER_KEYS)
         and _needs_a_key(call.excinfo.value)
     ):
         rep.outcome = "skipped"
