@@ -2661,6 +2661,8 @@ Subtask Breakdown:
                     correct_answer=correct_answer,
                     streaming_callback=streaming_callback,
                     original_error=e,
+                    n=n,
+                    messages=messages,
                     *args,
                     **kwargs,
                 )
