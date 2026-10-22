@@ -93,10 +93,11 @@ def grid_swarm(
     grid_size = int(
         len(agents) ** 0.5
     )  # Assuming agents can form a perfect square grid
+    task_queue = tasks.copy()
     for i in range(grid_size):
         for j in range(grid_size):
-            if tasks:
-                task = tasks.pop(0)
+            if task_queue:
+                task = task_queue.pop(0)
                 response = agents[i * grid_size + j].run(task)
                 conversation.add(
                     role=agents[i * grid_size + j].agent_name,
@@ -229,10 +230,11 @@ def pyramid_swarm(
         (-1 + (1 + 8 * len(agents)) ** 0.5) / 2
     )  # Number of levels in the pyramid
 
+    task_queue = tasks.copy()
     for i in range(levels):
         for j in range(i + 1):
-            if tasks:
-                task = tasks.pop(0)
+            if task_queue:
+                task = task_queue.pop(0)
                 agent_index = int(i * (i + 1) / 2 + j)
                 response = agents[agent_index].run(task)
                 conversation.add(
