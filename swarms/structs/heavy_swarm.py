@@ -1081,6 +1081,10 @@ class HeavySwarm(SerializableMixin):
                     ),
                 ]
 
+            success_count = 0
+            failed_count = 0
+            timeout_count = 0
+
             # Execute agents in parallel
             with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
@@ -1109,14 +1113,23 @@ class HeavySwarm(SerializableMixin):
                             .replace("⚡ ", "")
                             .replace("✅ ", "")
                         ] = result
+                        if (
+                            isinstance(result, str)
+                            and result.startswith("Error: ")
+                        ):
+                            failed_count += 1
+                        else:
+                            success_count += 1
                     except concurrent.futures.TimeoutError:
                         tracker.timeout(agent_key, agent_key)
                         results[agent_key] = (
                             f"Timeout after {self.timeout} seconds"
                         )
+                        timeout_count += 1
                     except Exception as e:
                         tracker.error(agent_key, agent_key)
                         results[agent_key] = f"Exception: {str(e)}"
+                        failed_count += 1
 
         # Show completion summary
         agent_count = (
@@ -1134,7 +1147,11 @@ class HeavySwarm(SerializableMixin):
             )
         )
         self.dashboard.show_execution_complete(
-            agent_count, synth_label
+            agent_count,
+            synth_label,
+            success_count=success_count,
+            failed_count=failed_count,
+            timeout_count=timeout_count,
         )
 
         return results
