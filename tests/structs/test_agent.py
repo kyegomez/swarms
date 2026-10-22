@@ -2469,3 +2469,32 @@ class TestIntegerLoopRequest:
         assert [m["content"] for m in sent[-1][1]].count(
             "context"
         ) == 1
+
+
+class TestAgentOutputCleanerRemoval:
+    """Tests confirming removal of unused output_cleaner parameter and op (#2719)."""
+
+    def test_agent_has_no_output_cleaner_attribute(self):
+        agent = _patched_agent("cleaner-test")
+        assert not hasattr(agent, "output_cleaner")
+        assert not hasattr(agent, "output_cleaner_op")
+
+    def test_legacy_output_cleaner_kwarg_absorbed(self):
+        agent = _patched_agent(
+            "legacy-cleaner", output_cleaner=lambda s: "CLEANED"
+        )
+        assert not hasattr(agent, "output_cleaner")
+
+    def test_direct_post_processing_on_run_return_value(
+        self, tmp_path, mocked_llm
+    ):
+        agent = _flow(
+            "post-process-test",
+            mocked_llm,
+            tmp_path,
+            output_type="str",
+        )
+        result = agent.run("raw output")
+        assert isinstance(result, str)
+        cleaned = result.upper()
+        assert "RAW OUTPUT" in cleaned
