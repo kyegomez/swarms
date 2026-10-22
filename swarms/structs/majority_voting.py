@@ -1,4 +1,5 @@
 import copy
+import threading
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -149,6 +150,7 @@ class MajorityVoting:
         self.max_loops = max_loops
         self.output_type = output_type
         self.consensus_agent_prompt = consensus_agent_prompt
+        self._agent_locks: Dict[int, threading.Lock] = {}
 
         self.conversation = Conversation(
             time_enabled=False, *args, **kwargs
@@ -189,6 +191,26 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
+    def _answer(self, agent: Agent, *args, **kwargs) -> Any:
+        """
+        Run one agent and read back its answer, one call per agent at a time.
+
+        ``run_concurrently`` gives each task its own clone, but the clones
+        share the agents, and an agent's answer is read from its
+        ``short_memory``. Without the lock, a second task's call on the same
+        agent can land between this call's ``run`` and the read, so this task
+        records the other task's answer.
+
+        Returns:
+            The agent's final answer, or ``run``'s return value when it has none.
+        """
+        lock = self._agent_locks.setdefault(
+            id(agent), threading.Lock()
+        )
+        with lock:
+            result = agent.run(*args, **kwargs)
+            return agent_answer(agent, fallback=result)
+
     def _run_voters(self) -> Dict[str, Any]:
         """
         Run every voter on the shared conversation, concurrently.
@@ -211,20 +233,19 @@ class MajorityVoting:
                     messages_for(agent.agent_name, self.conversation)
                 )
                 future = executor.submit(
-                    agent.run, task=vote_task, messages=prior
+                    self._answer,
+                    agent,
+                    task=vote_task,
+                    messages=prior,
                 )
                 future_to_agent[future] = agent
 
             for future in as_completed(future_to_agent):
                 agent = future_to_agent[future]
                 try:
-                    result = future.result()
+                    answers[agent.agent_name] = future.result()
                 except Exception as error:
                     answers[agent.agent_name] = error
-                    continue
-                answers[agent.agent_name] = agent_answer(
-                    agent, fallback=result
-                )
 
         return answers
 
@@ -301,13 +322,11 @@ class MajorityVoting:
                     self.consensus_agent.agent_name, self.conversation
                 )
             )
-            consensus_output = self.consensus_agent.run(
+            consensus_output = self._answer(
+                self.consensus_agent,
                 task=consensus_task,
                 messages=prior,
                 streaming_callback=consensus_streaming_callback,
-            )
-            consensus_output = agent_answer(
-                self.consensus_agent, fallback=consensus_output
             )
 
             self.conversation.add(
@@ -353,6 +372,9 @@ class MajorityVoting:
     ) -> Union[List[Any], Dict[Any, Any]]:
         """
         Runs the majority voting system concurrently, each task on its own clone.
+
+        The clones share the agents, and each agent serves one task at a
+        time, so tasks overlap only where they use different agents.
 
         Args:
             tasks (List[str]): List of tasks to be performed by the agents.
