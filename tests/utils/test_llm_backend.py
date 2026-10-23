@@ -21,7 +21,6 @@ from swarms.utils.litellm_wrapper import LiteLLM
 BACKEND_OPTIONS = (
     "set_verbose",
     "ssl_verify",
-    "num_retries",
     "drop_params",
 )
 
@@ -123,7 +122,6 @@ class TestOptionsPerCall:
         assert {name: sent[name] for name in BACKEND_OPTIONS} == {
             "set_verbose": False,
             "ssl_verify": False,
-            "num_retries": 5,
             "drop_params": True,
         }
 
@@ -133,7 +131,14 @@ class TestOptionsPerCall:
         sent = self._sent()
 
         assert not set(BACKEND_OPTIONS) & set(sent)
-        assert llm_backend.backend_module().num_retries == 5
+
+    @pytest.mark.parametrize("backend", ["litellm", "routehub"])
+    def test_retries_travel_with_every_request(
+        self, monkeypatch, backend
+    ):
+        """litellm clears its module-level count after the first retried call, so each request carries it."""
+        _use_backend(monkeypatch, backend)
+        assert self._sent()["num_retries"] == 5
 
 
 class TestVisionCheck:
