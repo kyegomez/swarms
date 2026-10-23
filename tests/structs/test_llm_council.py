@@ -314,5 +314,53 @@ def test_llm_council_output_types():
         raise
 
 
+def test_llm_council_members_answer_each_call_from_a_clean_memory():
+    requests = {}
+
+    def scripted(name):
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+            autosave=False,
+        )
+
+        def call_llm(
+            task=None,
+            img=None,
+            imgs=None,
+            current_loop=0,
+            streaming_callback=None,
+            *args,
+            **kwargs,
+        ):
+            requests.setdefault(name, []).append(kwargs["messages"])
+            return f"{name} answer {len(requests[name])}"
+
+        agent.call_llm = call_llm
+        return agent
+
+    council = LLMCouncil(
+        council_members=[scripted("Alpha"), scripted("Beta")],
+        verbose=False,
+    )
+    council.chairman = scripted("Chairman")
+
+    council.run("FIRST-TASK")
+    council.run("SECOND-TASK")
+
+    for name in ("Alpha", "Beta"):
+        _, ranking_1, answer_2, ranking_2 = requests[name]
+        assert [m["content"] for m in answer_2] == ["SECOND-TASK"]
+        for request in (ranking_1, ranking_2):
+            assert [m["role"] for m in request] == ["user"]
+            assert request[0]["content"].startswith(
+                "You are evaluating responses"
+            )
+        assert "FIRST-TASK" not in str(ranking_2)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
