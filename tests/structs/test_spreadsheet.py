@@ -416,6 +416,28 @@ def test_load_from_nonexistent_csv(temp_workspace):
     assert len(swarm.agents) == 1
 
 
+def test_load_path_alone_loads_and_runs_the_csv_agents(
+    sample_csv_file, temp_workspace
+):
+    swarm = SpreadSheetSwarm(load_path=sample_csv_file)
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["hello", "reviewed"],
+    ) as run_pairs:
+        summary = swarm.run()
+
+    pairs = run_pairs.call_args.args[0]
+    assert [(a.agent_name, t) for a, t in pairs] == [
+        ("agent_1", "Say hello"),
+        ("agent_2", "Review this: print('hello')"),
+    ]
+    assert pairs[0][0].agent_description == "First test agent"
+    assert [o["result"] for o in summary["outputs"]] == [
+        "hello",
+        "reviewed",
+    ]
+
+
 def test_save_to_csv_creates_file(temp_workspace):
     """Test that saving to CSV creates the output file."""
     agent = Agent(
