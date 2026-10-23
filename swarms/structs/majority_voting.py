@@ -7,6 +7,10 @@ from swarms.structs.execution_utils import (
     run_concurrently,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -130,6 +134,7 @@ class MajorityVoting:
         consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
         consensus_agent_model_name: str = "gpt-5.4",
         additional_consensus_agent_kwargs: dict = {},
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -150,8 +155,12 @@ class MajorityVoting:
         self.output_type = output_type
         self.consensus_agent_prompt = consensus_agent_prompt
 
+        self.channel = channel
         self.conversation = Conversation(
-            time_enabled=False, *args, **kwargs
+            time_enabled=False,
+            channel=channel,
+            *args,
+            **kwargs,
         )
 
         self.consensus_agent = default_consensus_agent(
@@ -163,6 +172,11 @@ class MajorityVoting:
         )
 
         self.reliability_check()
+        claim_agents(
+            [*(self.agents or []), self.consensus_agent],
+            channel,
+            self.name,
+        )
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -255,7 +269,9 @@ class MajorityVoting:
         """
 
         # A reused instance would otherwise carry the previous task's votes
-        self.conversation = Conversation(time_enabled=False)
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
 
         self.conversation.add(
             role="user",

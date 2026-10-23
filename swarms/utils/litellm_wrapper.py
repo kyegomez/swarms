@@ -398,10 +398,10 @@ class LiteLLM:
 
         # litellm reads these from module globals shared by every agent; RouteHub takes them per call.
         self._backend_options = {}
+        self.retries = retries
         backend_options = {
             "set_verbose": verbose,
             "ssl_verify": ssl_verify,
-            "num_retries": retries,
             "drop_params": drop_params,
         }
         if llm_backend.BACKEND == "litellm":
@@ -1269,6 +1269,8 @@ class LiteLLM:
             "stream": self.stream,
             self._output_token_key(): self.max_tokens,
             "caching": self.caching,
+            # Per request: litellm drops its module-level count after the first retried call.
+            "num_retries": self.retries,
         }
 
         # Only include temperature if explicitly set (None = provider

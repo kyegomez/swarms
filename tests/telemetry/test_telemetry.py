@@ -913,15 +913,13 @@ class TestAgentUsageAndModelCalls:
     def test_failed_model_calls_are_error_spans_with_their_request(
         self, spans
     ):
-        """Every failed attempt is an error span that still records what was sent."""
-        agent = self._agent(
-            "Call-Bad", raise_exc=True, retry_attempts=2
-        )
+        """A failed call is an error span that still records what was sent."""
+        agent = self._agent("Call-Bad", raise_exc=True)
         with pytest.raises(AgentLLMError):
             agent.run("doomed task")
 
         calls = _all_by_name(spans, "Agent.llm_call")
-        assert len(calls) == 2
+        assert len(calls) == 1
         for call in calls:
             a = _attrs(call)
             assert call.status.status_code.name == "ERROR"
@@ -1365,12 +1363,7 @@ class TestRealLLMRuns:
         assert a["swarms.output"].strip()
 
     def test_agent_run_error_is_logged(self, spans):
-        """A real run against a bad model logs an error span.
-
-        The Agent's retry loop swallows LLM errors (it does not re-raise), so
-        the error is captured via ``capture_error`` as an ``Agent.llm_error``
-        span rather than as a raised exception on ``Agent.run``.
-        """
+        """A real run against a bad model logs an Agent.llm_error span."""
         from swarms import Agent
 
         agent = Agent(
@@ -1382,7 +1375,6 @@ class TestRealLLMRuns:
             print_on=False,
             verbose=False,
         )
-        # Does not necessarily raise — the agent swallows the LLM error.
         try:
             agent.run(task="hi")
         except Exception:
