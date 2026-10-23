@@ -798,7 +798,7 @@ class PlannerWorkerSwarm:
                                 dep
                                 for dep in other.depends_on
                                 if dep != ptask.id
-                            ] + leaf_ids
+                            ] + (leaf_ids or ptask.depends_on)
                     added_tasks.extend(sub_tasks)
 
         return added_tasks
