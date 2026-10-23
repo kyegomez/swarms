@@ -52,9 +52,11 @@ def _arguments(tool_call: dict) -> dict:
 
 
 def _clip(value: Any, limit: int) -> str:
-    """Text of a value, cut to limit characters."""
+    """Text of a value, cut to limit characters, with the cut size marked."""
     text = str(value)
-    return text[:limit] + "..." if len(text) > limit else text
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}... (+{len(text) - limit} more chars)"
 
 
 class ToolManager:
