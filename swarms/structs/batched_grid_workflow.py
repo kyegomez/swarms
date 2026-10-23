@@ -95,6 +95,9 @@ class BatchedGridWorkflow:
         Returns:
             List: Results from all execution loops.
         """
+        for agent in self.agents:
+            agent.reset()
+
         results = []
         current_loop = 0
 
