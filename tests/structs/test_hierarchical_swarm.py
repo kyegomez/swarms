@@ -1245,6 +1245,62 @@ def test_planner_worker_swarm_run_starts_with_an_empty_task_queue():
     assert judged == [[goal] for goal in goals]
 
 
+def test_planner_worker_swarm_sub_plan_keeps_the_critical_task_dependencies():
+    planner = StubAgent(
+        "Planner",
+        [
+            {
+                "plan": "release",
+                "tasks": [
+                    {"title": "Fetch", "description": "fetch"},
+                    {
+                        "title": "Build",
+                        "description": "build",
+                        "priority": 3,
+                        "depends_on_titles": ["Fetch"],
+                    },
+                    {
+                        "title": "Ship",
+                        "description": "ship",
+                        "depends_on_titles": ["Build"],
+                    },
+                ],
+            },
+            {
+                "plan": "build",
+                "tasks": [
+                    {
+                        "title": "Compile",
+                        "description": "compile",
+                        "priority": 2,
+                    },
+                    {
+                        "title": "Link",
+                        "description": "link",
+                        "depends_on_titles": ["Compile"],
+                    },
+                ],
+            },
+        ],
+    )
+    worker = StubAgent("Worker", ["done"] * 4)
+    worker.short_memory_init = lambda: None
+    swarm = PlannerWorkerSwarm(agents=[worker], max_planner_depth=2)
+    swarm._create_planner_agent = lambda name="Planner": planner
+    swarm._run_judge = lambda img=None: CycleVerdict(
+        is_complete=True, overall_quality=9, summary="done"
+    )
+
+    swarm.run("Release v2")
+
+    executed = [
+        message["content"].split("]")[0].removeprefix("[Task: ")
+        for message in swarm.conversation.conversation_history
+        if message["role"] == "Worker"
+    ]
+    assert executed == ["Fetch", "Compile", "Link", "Ship"]
+
+
 def test_harness_result_reflects_conversation_state(tmp_path):
     """get_harness_result reports identity plus the live conversation history."""
     harness = PlannerGeneratorEvaluator(

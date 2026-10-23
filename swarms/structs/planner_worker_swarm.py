@@ -782,6 +782,23 @@ class PlannerWorkerSwarm:
                         parent_task_id=ptask.id,
                         img=img,
                     )
+                    for sub_task in sub_tasks:
+                        sub_task.depends_on = [
+                            *ptask.depends_on,
+                            *sub_task.depends_on,
+                        ]
+                    leaf_ids = [
+                        t.id
+                        for t in sub_tasks
+                        if t.status != PlannerTaskStatus.CANCELLED
+                    ]
+                    for other in added_tasks:
+                        if ptask.id in other.depends_on:
+                            other.depends_on = [
+                                dep
+                                for dep in other.depends_on
+                                if dep != ptask.id
+                            ] + (leaf_ids or ptask.depends_on)
                     added_tasks.extend(sub_tasks)
 
         return added_tasks
