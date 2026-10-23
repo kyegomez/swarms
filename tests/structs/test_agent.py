@@ -926,6 +926,31 @@ class TestToolsListIsolation:
         )
 
 
+class TestToolSchemasStayOutOfTheConversation:
+    """Schemas reach the model as the API's `tools` parameter, not as a turn."""
+
+    def test_no_conversation_turn_carries_the_tool_schemas(self):
+        agent = _patched_agent(
+            "SchemaAgent",
+            model_name="gpt-5.4",
+            dynamic_tools=False,
+            tools=[_math_tool],
+        )
+
+        assert any(
+            schema["function"]["name"] == "_math_tool"
+            for schema in agent.tools_list_dictionary
+        )
+        assert [
+            m
+            for m in agent.short_memory.conversation_history
+            if not isinstance(m["content"], str)
+        ] == []
+        assert [
+            m["role"] for m in agent.short_memory.conversation_history
+        ] == ["System"]
+
+
 def test_list_base_models_schema_reaches_short_memory():
     class Order(BaseModel):
         item: str
