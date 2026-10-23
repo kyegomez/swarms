@@ -2443,6 +2443,7 @@ Subtask Breakdown:
         n: int = 1,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
+        fresh: bool = False,
         **kwargs,
     ) -> Any:
         """
@@ -2501,6 +2502,23 @@ Subtask Breakdown:
             ...     messages=[{"role": "user", "content": "Name three primes."}],
             ... )
         """
+        if fresh:
+            stored_memory = self.short_memory
+            self.reset()
+            try:
+                return self.run(
+                    task,
+                    img,
+                    imgs,
+                    correct_answer,
+                    streaming_callback,
+                    n,
+                    messages,
+                    *args,
+                    **kwargs,
+                )
+            finally:
+                self.short_memory = stored_memory
 
         # Outside interactive mode, fail fast instead of blocking on stdin
         if task is None or (

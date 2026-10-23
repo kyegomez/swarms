@@ -2142,6 +2142,24 @@ class TestSeededMessages:
         assert "Noted: Helios." in recorded
 
 
+def test_fresh_run_sends_only_its_own_task_and_keeps_the_history():
+    agent = _patched_agent("FreshAgent")
+    sizes = []
+
+    def fake_call_llm(task=None, *args, **kwargs):
+        sizes.append(len(kwargs["messages"]))
+        return "ok"
+
+    agent.call_llm = fake_call_llm
+    agent.run("A")
+    agent.run("B", fresh=True)
+    list(agent.run_stream("C", fresh=True))
+    asyncio.run(agent.arun("D", fresh=True))
+    agent.run("E")
+
+    assert sizes == [1, 1, 1, 1, 3]
+
+
 class TestRunSamples:
     """Each of the ``n`` samples gets the same inputs as a single run."""
 
