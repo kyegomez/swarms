@@ -1679,10 +1679,8 @@ class TestConcurrentExecutionPool:
 
     @staticmethod
     def _agent(name="A"):
-        """A bare Agent — no __init__, so no client or provider calls."""
-        agent = Agent.__new__(Agent)
-        agent.agent_name = name
-        return agent
+        """An Agent with the client stubbed, so it can be cloned."""
+        return _patched_agent(name)
 
     def test_no_executor_attribute_is_required(self):
         """The concurrent paths must not depend on an attribute __init__
@@ -1715,6 +1713,33 @@ class TestConcurrentExecutionPool:
         ):
             with pytest.raises(RuntimeError, match="boom"):
                 Agent.run_concurrent_tasks(agent, ["t1"])
+
+    def test_clone_has_own_memory_and_client(self):
+        agent = _patched_agent("A", tools=[_url_tool])
+        clone = agent.clone()
+
+        assert clone.short_memory is not agent.short_memory
+        assert clone.llm is not agent.llm
+        assert clone.tools == agent.tools
+
+    def test_run_concurrent_tasks_isolates_each_task(self):
+        agent = self._agent()
+        seen = []
+
+        def call_llm(self_agent, task=None, *args, **kwargs):
+            seen.append(
+                [
+                    message["content"]
+                    for message in self_agent.short_memory.conversation_history
+                    if message["role"] == self_agent.user_name
+                ]
+            )
+            return "ok"
+
+        with patch.object(Agent, "call_llm", call_llm):
+            agent.run_concurrent_tasks(["A", "B", "C", "D"])
+
+        assert sorted(seen) == [["A"], ["B"], ["C"], ["D"]]
 
     def test_talk_to_multiple_agents_returns_one_entry_per_agent(
         self,

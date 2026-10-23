@@ -383,6 +383,11 @@ class Agent:
         **kwargs,
     ):
         # super().__init__(*args, **kwargs)
+        self._init_config = {
+            key: value
+            for key, value in locals().items()
+            if key not in ("self", "args", "kwargs")
+        }
         self.id = id or generate_id("agent")
         self.skills = SkillsManager(skills_dir=skills_dir)
         self._skills_prompt = ""
@@ -449,11 +454,7 @@ class Agent:
         self.role = role
         self.print_on = print_on
         # Own list per agent: a literal [] default made every agent share one object.
-        self.tools_list_dictionary = (
-            tools_list_dictionary
-            if tools_list_dictionary is not None
-            else []
-        )
+        self.tools_list_dictionary = list(tools_list_dictionary or [])
         self.mcp_url = mcp_url
         self.mcp_urls = mcp_urls
         self.react_on = react_on
@@ -1604,9 +1605,33 @@ Subtask Breakdown:
             )
             raise error
 
+    def clone(self) -> "Agent":
+        """Build a new agent from this agent's constructor arguments.
+
+        The clone keeps this agent's id and saved state path, so its
+        workspace and autosave file are this agent's, and its tools,
+        handoffs and MCP configuration, but gets its own LLM client and
+        ``short_memory``, unlike ``copy.deepcopy``, which fails on the
+        agent's thread locks. A passed-in ``llm`` is shared,
+        the clone never republishes to the marketplace, and its token
+        usage counts toward this agent.
+
+        Returns:
+            Agent: A new agent of the same class.
+        """
+        config = dict(
+            self._init_config,
+            id=self.id,
+            saved_state_path=self.saved_state_path,
+            publish_to_marketplace=False,
+        )
+        clone = type(self)(**config)
+        clone._usage = self._usage
+        return clone
+
     def run_concurrent_tasks(self, tasks: List[str], *args, **kwargs):
         """
-        Run multiple tasks concurrently.
+        Run multiple tasks concurrently, each on its own ``clone()``.
 
         Args:
             tasks (List[str]): A list of tasks to run.
@@ -1621,15 +1646,16 @@ Subtask Breakdown:
         """
         try:
             logger.info(f"Running concurrent tasks: {tasks}")
+            clones = [self.clone() for _ in tasks]
             # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
             with ContextThreadPoolExecutor(
                 max_workers=os.cpu_count()
             ) as executor:
                 futures = [
                     executor.submit(
-                        self.run, *args, task=task, **kwargs
+                        clone.run, *args, task=task, **kwargs
                     )
-                    for task in tasks
+                    for clone, task in zip(clones, tasks)
                 ]
                 results = [future.result() for future in futures]
             logger.info(f"Completed tasks: {results}")
