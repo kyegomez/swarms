@@ -443,13 +443,17 @@ class PhasedFanOutWorkflow:
         return []
 
     def plan(
-        self, task: str, img: Optional[str] = None
+        self,
+        task: str,
+        img: Optional[str] = None,
+        lead: Optional[Agent] = None,
     ) -> WorkflowPlan:
         """Ask the lead for a valid plan, sending errors back for repair.
 
         Args:
             task: The task to plan for.
             img: Optional image passed to the lead.
+            lead: The lead copy to plan with; a fresh copy when omitted.
 
         Returns:
             WorkflowPlan: A plan that passed validation.
@@ -457,7 +461,8 @@ class PhasedFanOutWorkflow:
         Raises:
             PhasedFanOutWorkflowError: If no valid plan is written within max_plan_attempts.
         """
-        lead = self._lead
+        if lead is None:
+            lead = self._fresh_lead()
         prompt = self._planning_prompt(task)
         errors: List[str] = []
         for attempt in range(1, self.max_plan_attempts + 1):
@@ -725,24 +730,22 @@ class PhasedFanOutWorkflow:
         Raises:
             PhasedFanOutWorkflowError: If planning fails, a limit is passed, or a single step fails.
         """
-        self._lead = self._fresh_lead()
+        lead = self._fresh_lead()
         state: Dict[str, Any] = {
             "outputs": {},
             "failures": [],
             "task": task,
             "agent_count": 0,
-            "agents": [self._lead],
+            "agents": [lead],
         }
         self.last_plan = None
         self.last_run = state
         conversation = Conversation(name=self.name)
         conversation.add("user", task)
 
-        plan = self.plan(task, img)
+        plan = self.plan(task, img, lead=lead)
         self.last_plan = plan
-        conversation.add(
-            self._lead.agent_name, plan.model_dump_json()
-        )
+        conversation.add(lead.agent_name, plan.model_dump_json())
 
         outputs = state["outputs"]
         for phase in plan.phases:
@@ -754,11 +757,9 @@ class PhasedFanOutWorkflow:
                     _as_text(outputs.get(step.id)),
                 )
 
-        answer = self._lead.run(
-            self._combine_prompt(task, plan, outputs)
-        )
+        answer = lead.run(self._combine_prompt(task, plan, outputs))
         state["answer"] = answer
-        conversation.add(self._lead.agent_name, answer)
+        conversation.add(lead.agent_name, answer)
         state["usage"] = self.usage
         return history_output_formatter(
             conversation, type=self.output_type
