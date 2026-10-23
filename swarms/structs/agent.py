@@ -2098,8 +2098,7 @@ Subtask Breakdown:
         Returns:
             The result of appending the tool to the tools list
         """
-        logger.info(f"Adding tool: {tool.__name__}")
-        return self.tools.append(tool)
+        return self.add_tools([tool])
 
     def add_tools(self, tools: List[Callable]):
         """Add multiple tools to the agent's tools list.
@@ -2111,7 +2110,13 @@ Subtask Breakdown:
             The result of extending the tools list
         """
         logger.info(f"Adding tools: {[t.__name__ for t in tools]}")
-        return self.tools.extend(tools)
+        previous = self.tools
+        self.tools = [*(previous or []), *tools]
+        try:
+            self.tool_manager.reload_tools()
+        except Exception:
+            self.tools = previous
+            raise
 
     def remove_tool(self, tool: Callable):
         """Remove a single tool from the agent's tools list.
@@ -2122,8 +2127,7 @@ Subtask Breakdown:
         Returns:
             The result of removing the tool from the tools list
         """
-        logger.info(f"Removing tool: {tool.__name__}")
-        return self.tools.remove(tool)
+        return self.remove_tools([tool])
 
     def remove_tools(self, tools: List[Callable]):
         """Remove multiple tools from the agent's tools list.
@@ -2134,6 +2138,9 @@ Subtask Breakdown:
         logger.info(f"Removing tools: {[t.__name__ for t in tools]}")
         for tool in tools:
             self.tools.remove(tool)
+        self.tool_manager.reload_tools(
+            removed={tool.__name__ for tool in tools}
+        )
 
     def stream_response(
         self, response: str, delay: float = 0.001
