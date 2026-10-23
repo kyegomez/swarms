@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.kyegomez/swarms",
+  "title": "Swarms",
+  "description": "Run agents, multi-agent swarms, and batch executions as callable tools.",
+  "version": "15.0.3",
+  "websiteUrl": "https://swarms.ai",
+  "repository": {
+    "url": "https://github.com/kyegomez/swarms",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.swarms.world/mcp",
+      "headers": [
+        {
+          "name": "x-api-key",
+          "description": "Swarms API key. Create one at https://swarms.world/platform/api-keys",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
