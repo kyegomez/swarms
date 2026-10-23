@@ -581,6 +581,22 @@ def test_missing_agent_raises():
         r.run("test")
 
 
+def test_two_agents_sharing_a_name_raise():
+    first, second = _make_agent("Writer"), _make_agent("Writer")
+
+    with pytest.raises(ValueError, match="'Writer'"):
+        AgentRearrange(
+            agents=[first, second], flow="Writer -> Writer"
+        )
+
+    repeated = AgentRearrange(
+        agents=[first, _make_agent("Reviewer"), first],
+        flow="Writer -> Reviewer -> Writer",
+        output_type="list",
+    )
+    assert len(repeated.run("task")) == 4
+
+
 def test_broken_conversation_raises(monkeypatch):
     """run() must raise when the conversation it uses is corrupted.
 
