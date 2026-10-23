@@ -254,9 +254,8 @@ NO_THINK_TOOL_OVERRIDE = """
 The `think` tool is NOT available in this run. Disregard every instruction
 above that tells you to call it, along with the limits described for it.
 
-Reason inline instead: state your brief analysis in your own message text, then
-call the tools that do the actual work in that same response. Do not spend a
-turn on analysis alone - it costs a full round-trip and produces no progress.
+Call the tools that do the actual work directly. Do not spend a turn without
+a tool call - it costs a full round-trip and produces no progress.
 """
 
 
@@ -269,7 +268,7 @@ def get_autonomous_agent_prompt(
     Args:
         include_think_tool: Whether the `think` tool is available to the agent.
             When False, an override is appended telling the model to ignore the
-            think-tool instructions and reason inline instead. This mirrors
+            think-tool instructions and call the work tools directly. This mirrors
             ``Agent(think_tool=...)``; the prompt must agree with the tool list
             or the model is told to call a tool it has not been given.
 
