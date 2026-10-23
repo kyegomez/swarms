@@ -1745,5 +1745,36 @@ def test_usage_returns_a_copy():
     assert wf.usage["input_tokens"] == 5
 
 
+def test_compile_rederives_auto_points_after_graph_grows():
+    from unittest.mock import MagicMock
+
+    def make_agent(name):
+        a = MagicMock()
+        a.agent_name = name
+        a.run = MagicMock(return_value=f"output-{name}")
+        return a
+
+    first, middle, last = (
+        make_agent("First"),
+        make_agent("Middle"),
+        make_agent("Last"),
+    )
+    wf = GraphWorkflow(max_loops=2)
+    wf.add_node(first)
+    wf.add_node(middle)
+    wf.add_edge("First", "Middle")
+    wf.run("task")
+
+    wf.add_node(last)
+    wf.add_edge("Middle", "Last")
+    wf.run("task")
+
+    assert wf.end_points == ["Last"]
+    assert first.run.call_args.kwargs["messages"][-1] == {
+        "role": "user",
+        "content": "Last (previous iteration): output-Last",
+    }
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
