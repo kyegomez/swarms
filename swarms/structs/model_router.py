@@ -267,7 +267,9 @@ class ModelRouter:
         selected_provider = model_router_output.provider
         routed_task = model_router_output.task
         rationale = model_router_output.rationale
-        max_tokens = model_router_output.max_tokens
+        max_tokens = model_router_output.max_tokens or self.max_tokens
+        if self.max_tokens:
+            max_tokens = min(max_tokens, self.max_tokens)
         temperature = model_router_output.temperature
         system_prompt = model_router_output.system_prompt
 
