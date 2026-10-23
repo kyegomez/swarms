@@ -156,4 +156,3 @@ class SqliteChannel(CommsChannel):
         """
         with self._lock:
             self.conn.close()
-       
