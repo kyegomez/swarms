@@ -1410,19 +1410,29 @@ class LiteLLM:
         self.last_finish_reason = None
         self.last_response_model = None
         for chunk in stream:
-            choices = _field(chunk, "choices") or []
-            if choices and _field(choices[0], "finish_reason"):
-                self.last_finish_reason = _field(
-                    choices[0], "finish_reason"
-                )
-            self.last_response_model = (
-                _field(chunk, "model") or self.last_response_model
+            if self._track_chunk(chunk):
+                yield chunk
+
+    async def _atrack_streaming_usage(self, stream: any):
+        self.last_finish_reason = None
+        self.last_response_model = None
+        async for chunk in stream:
+            if self._track_chunk(chunk):
+                yield chunk
+
+    def _track_chunk(self, chunk: any) -> bool:
+        choices = _field(chunk, "choices") or []
+        if choices and _field(choices[0], "finish_reason"):
+            self.last_finish_reason = _field(
+                choices[0], "finish_reason"
             )
-            if _field(chunk, "usage"):
-                self._accumulate_usage(usage_from_response(chunk))
-                if not choices:
-                    continue
-            yield chunk
+        self.last_response_model = (
+            _field(chunk, "model") or self.last_response_model
+        )
+        if _field(chunk, "usage"):
+            self._accumulate_usage(usage_from_response(chunk))
+            return bool(choices)
+        return True
 
     def _process_response(self, response: any):
         """
@@ -1609,8 +1619,9 @@ class LiteLLM:
                 )
                 self.last_request = retry_params
                 response = await acompletion(**retry_params)
-            if not self.stream:
-                self.last_response = response
+            if self.stream:
+                return self._atrack_streaming_usage(response)
+            self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
         except self._NETWORK_ERRORS as network_error:
