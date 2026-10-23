@@ -15,6 +15,7 @@ import json
 import pytest
 
 from swarms import Agent
+from swarms.schemas.agent_errors import AgentLLMInitializationError
 from swarms.tools.dynamic_tool_loader import (
     SEARCH_TOOL_NAME,
     DynamicToolLoader,
@@ -277,6 +278,11 @@ def build(**kwargs):
     return Agent(**kwargs)
 
 
+class CallerLLM:
+    def run(self, task=None, **kwargs):
+        return "ok"
+
+
 class TestAgentIntegration:
     """`Agent(dynamic_tools=True)` defers instead of registering eagerly."""
 
@@ -345,6 +351,19 @@ class TestAgentIntegration:
         result = agent.tool_manager.tool_search_tool(query="weather")
         assert "dynamic_tools=True" in result
 
+    def test_search_keeps_a_caller_llm(self):
+        caller_llm = CallerLLM()
+        agent = build(
+            max_loops=1,
+            tools=[get_weather],
+            dynamic_tools=True,
+            llm=caller_llm,
+        )
+        agent.tool_manager.tool_search_tool(query="weather")
+
+        assert agent.llm is caller_llm
+        assert "get_weather" in exposed(agent)
+
     def test_fixed_loop_dispatches_tool_search(self, monkeypatch):
         """
         tool_search is an agent method, not one of the user's callables, so
@@ -371,6 +390,19 @@ class TestAutonomousLoopIntegration:
 
     def _auto(self, **kwargs):
         return build(max_loops="auto", dynamic_tools=True, **kwargs)
+
+    def test_a_caller_llm_is_refused_not_replaced(self, monkeypatch):
+        caller_llm = CallerLLM()
+        agent = self._auto(llm=caller_llm)
+        seen = script(agent, monkeypatch, ["done"])
+
+        with pytest.raises(
+            AgentLLMInitializationError, match="llm=CallerLLM"
+        ):
+            agent.run("demo")
+
+        assert agent.llm is caller_llm
+        assert seen == []
 
     def test_control_tools_are_never_deferred(self, monkeypatch):
         """An agent that must search for its own subtask_done cannot finish."""
