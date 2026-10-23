@@ -114,7 +114,7 @@ print(result)
 | `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
 | `max_tokens` | int | model's max output | Max tokens per LLM call. Unset resolves to the model's own output limit |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
-| `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
+| `thinking_tokens` | int | `1024` | Extended thinking budget (Claude) |
 | `output_type` | str | `"str-all-except-first"` | How to format returned output |
 | `mcp_url` | str | `None` | MCP server URL to load tools from |
 | `handoffs` | list | `None` | Agents this agent can hand off to |
@@ -124,7 +124,7 @@ print(result)
 ### Autonomous loop (`max_loops="auto"`)
 
 When `max_loops="auto"` the agent runs a plan→execute→reflect loop until it decides it is done. It automatically gets access to:
-- A `think` tool (disabled when `thinking_tokens` is set)
+- A `think` tool, only when `think_tool=True` (off by default)
 - A `grep` tool for searching files (v12)
 - Bash / file tools if configured
 
@@ -421,20 +421,20 @@ result = pipeline.run("Build a Python function that validates email addresses.")
 Full directed-acyclic-graph (DAG) execution. Nodes are agents; edges are dependencies. Topological sort ensures correct order. Supports per-node callbacks and token streaming.
 
 ```python
-from swarms import Agent, GraphWorkflow, Node, Edge, NodeType
+from swarms import Agent, GraphWorkflow, Edge
 
 # Build agents
-analyst  = Agent(agent_name="Analyst",  model_name="gpt-5.4-mini", max_loops=1)
-writer   = Agent(agent_name="Writer",   model_name="gpt-5.4-mini", max_loops=1)
-reviewer = Agent(agent_name="Reviewer", model_name="gpt-5.4-mini", max_loops=1)
-publisher = Agent(agent_name="Publisher", model_name="gpt-5.4-mini", max_loops=1)
+analyst  = Agent(agent_name="analyst",  model_name="gpt-5.4-mini", max_loops=1, streaming_on=True)
+writer   = Agent(agent_name="writer",   model_name="gpt-5.4-mini", max_loops=1, streaming_on=True)
+reviewer = Agent(agent_name="reviewer", model_name="gpt-5.4-mini", max_loops=1, streaming_on=True)
+publisher = Agent(agent_name="publisher", model_name="gpt-5.4-mini", max_loops=1, streaming_on=True)
 
 # Build graph
 wf = GraphWorkflow()
-wf.add_node(Node(id="analyst",   type=NodeType.AGENT, agent=analyst))
-wf.add_node(Node(id="writer",    type=NodeType.AGENT, agent=writer))
-wf.add_node(Node(id="reviewer",  type=NodeType.AGENT, agent=reviewer))
-wf.add_node(Node(id="publisher", type=NodeType.AGENT, agent=publisher))
+wf.add_node(analyst)
+wf.add_node(writer)
+wf.add_node(reviewer)
+wf.add_node(publisher)
 
 wf.add_edge(Edge(source="analyst",  target="writer"))
 wf.add_edge(Edge(source="writer",   target="reviewer"))
@@ -450,7 +450,7 @@ def on_done(node_name: str, result: str) -> None:
 results = wf.run(
     task="Produce a market report on AI chips.",
     on_node_complete=on_done,          # fires after each node
-    streaming_callback=lambda tok: print(tok, end="", flush=True),
+    streaming_callback=lambda node_id, tok: print(tok, end="", flush=True),
 )
 ```
 
@@ -508,7 +508,6 @@ result = router.run("Write a blog post about transformer architectures.")
 | `"RoundRobin"` | Round-robin task distribution |
 | `"PlannerWorkerSwarm"` | Planner + worker delegation |
 | `"LLMCouncil"` | LLM-based council decisions |
-| `"AutoSwarmBuilder"` | Auto-configures everything |
 
 ---
 
@@ -552,13 +551,6 @@ A director agent breaks the task into subtasks and delegates them to worker agen
 ```python
 from swarms import Agent, HierarchicalSwarm
 
-director = Agent(
-    agent_name="Director",
-    agent_description="Breaks complex tasks into subtasks and delegates them.",
-    model_name="gpt-5.4",
-    max_loops=1,
-)
-
 workers = [
     Agent(agent_name="DataWorker",    model_name="gpt-5.4-mini", max_loops=1),
     Agent(agent_name="WritingWorker", model_name="gpt-5.4-mini", max_loops=1),
@@ -566,7 +558,7 @@ workers = [
 ]
 
 swarm = HierarchicalSwarm(
-    director=director,
+    director_model_name="gpt-5.4",
     agents=workers,
     max_loops=2,
 )
@@ -579,7 +571,7 @@ result = swarm.run("Produce a comprehensive competitive analysis of the AI chip 
 
 ### GroupChat
 
-An asynchronous, self-selecting groupchat. There are no rounds or speaker-selection functions — every agent listens in parallel and decides on its own whether to chime in. A forced `respond(score, message)` function call asks each agent how much it wants to speak (0..1); replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds.
+An asynchronous, self-selecting groupchat. There are no rounds or speaker-selection functions: every agent listens in parallel and decides on its own whether to chime in. A forced `respond(score, message)` function call asks each agent how much it wants to speak (0..1); replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no reply clears `threshold` for a turn.
 
 ```python
 from swarms import Agent
@@ -616,12 +608,11 @@ chat = GroupChat(
     agents=[optimist, pessimist, realist],
     max_loops=10,        # hard cap on total messages posted
     threshold=0.5,       # min decision score (0..1) to publish a reply
-    idle_timeout=8.0,    # seconds of silence before stopping
 )
 result = chat.run("Should we adopt AI for medical diagnosis?")
 ```
 
-**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Raise `idle_timeout` if agents need time to think before replying.
+**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats.
 
 ---
 
@@ -693,8 +684,7 @@ judge = Agent(
 )
 
 debate = DebateWithJudge(
-    agents=[pro, con],
-    judge=judge,
+    agents=[pro, con, judge],
     max_loops=3,   # 3 rounds of argument
 )
 result = debate.run("Motion: Open-source LLMs will surpass closed-source models by 2027.")
@@ -710,10 +700,9 @@ Intensive multi-loop analysis. Each agent runs for many loops on the problem, pr
 from swarms import HeavySwarm
 
 swarm = HeavySwarm(
-    num_agents=4,
-    model_name="gpt-5.4",
-    loops_per_agent=5,       # each agent reasons for 5 loops
-    show_output=True,
+    question_agent_model_name="gpt-5.4",
+    worker_model_name="gpt-5.4",
+    show_dashboard=True,
 )
 result = swarm.run("Derive a novel approach to solving the alignment problem in AI.")
 ```
@@ -756,14 +745,8 @@ for task in tasks:
 A planner agent generates a structured plan; worker agents execute each step.
 
 ```python
-from swarms import Agent, PlannerWorkerSwarm
-
-planner = Agent(
-    agent_name="Planner",
-    system_prompt="You create detailed, step-by-step execution plans.",
-    model_name="gpt-5.4",
-    max_loops=1,
-)
+from swarms import Agent
+from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 
 workers = [
     Agent(agent_name=f"Worker-{i}", model_name="gpt-5.4-mini", max_loops=2)
@@ -771,8 +754,8 @@ workers = [
 ]
 
 swarm = PlannerWorkerSwarm(
-    planner_agent=planner,
-    worker_agents=workers,
+    planner_model_name="gpt-5.4",
+    agents=workers,
     max_loops=1,
 )
 result = swarm.run("Build a complete go-to-market strategy for a B2B SaaS product.")
@@ -813,8 +796,7 @@ from swarms.structs.multi_agent_exec import (
 results = run_agents_concurrently(agents=agents, task="Summarise the news today.")
 
 # Different task per agent
-task_map = {agent: task for agent, task in zip(agents, tasks)}
-results = run_agents_with_different_tasks(task_map)
+results = run_agents_with_different_tasks(list(zip(agents, tasks)))
 
 # Async version
 import asyncio
@@ -1018,8 +1000,8 @@ agents = [
 workflow = ConcurrentWorkflow(agents=agents)
 results = workflow.run("What is the most important unsolved problem in mathematics?")
 
-for agent_name, answer in results.items():
-    print(f"\n=== {agent_name} ===\n{answer}")
+for message in results:
+    print(f"\n=== {message['role']} ===\n{message['content']}")
 ```
 
 ### Pattern: Human-in-the-loop with AgentRearrange
@@ -1043,7 +1025,7 @@ result = finisher.run(f"Revise this draft based on the feedback.\n\nDraft:\n{dra
 ### Pattern: GraphWorkflow with fan-out / fan-in
 
 ```python
-from swarms import Agent, GraphWorkflow, Node, Edge, NodeType
+from swarms import Agent, GraphWorkflow, Edge
 
 ingestion = Agent(agent_name="Ingestion", model_name="gpt-5.4-mini", max_loops=1)
 branch_a  = Agent(agent_name="BranchA",   model_name="gpt-5.4-mini", max_loops=1)
@@ -1052,7 +1034,7 @@ merger    = Agent(agent_name="Merger",    model_name="gpt-5.4",      max_loops=1
 
 wf = GraphWorkflow()
 for a in [ingestion, branch_a, branch_b, merger]:
-    wf.add_node(Node(id=a.agent_name, type=NodeType.AGENT, agent=a))
+    wf.add_node(a)
 
 wf.add_edge(Edge(source="Ingestion", target="BranchA"))
 wf.add_edge(Edge(source="Ingestion", target="BranchB"))
