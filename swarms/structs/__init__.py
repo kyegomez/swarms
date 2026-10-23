@@ -1,176 +1,178 @@
-from swarms.structs.advisor_swarm import AdvisorSwarm
-from swarms.structs.agent import Agent
-from swarms.structs.agent_loader import (
-    AgentLoader,
-    load_agent_from_markdown,
-    load_agents_from_markdown,
-)
-from swarms.structs.agent_rearrange import AgentRearrange, rearrange
-from swarms.structs.async_subagent import (
-    SubagentRegistry,
-    SubagentTask,
-    TaskStatus,
-)
-from swarms.structs.auto_agent_builder import (
-    AutoAgentBuilder,
-)
-from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
-from swarms.structs.batch_agent_execution import batch_agent_execution
-from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
-from swarms.structs.broadcast import Broadcast, broadcast
-from swarms.structs.concurrent_workflow import ConcurrentWorkflow
-from swarms.structs.conversation import Conversation
-from swarms.structs.council_as_judge import CouncilAsAJudge
-from swarms.structs.cron_job import CronJob
-from swarms.structs.debate_with_judge import DebateWithJudge
-from swarms.structs.decision_model import (
-    DecisionModel,
-    get_decision_model_prices,
-    get_decision_models,
-)
-from swarms.structs.graph_workflow import (
-    Edge,
-    GraphWorkflow,
-    Node,
-    NodeType,
-)
-from swarms.structs.groupchat import RESPOND_TOOL, GroupChat
-from swarms.structs.heavy_swarm import HeavySwarm
-from swarms.structs.hiearchical_swarm import HierarchicalSwarm
-from swarms.structs.hybrid_hiearchical_peer_swarm import (
-    HybridHierarchicalClusterSwarm,
-)
-from swarms.structs.llm_council import LLMCouncil
-from swarms.structs.ma_blocks import (
-    aggregate,
-    find_agent_by_name,
-    run_agent,
-)
-from swarms.structs.majority_voting import (
-    MajorityVoting,
-)
-from swarms.structs.mixture_of_agents import MixtureOfAgents
-from swarms.structs.model_router import ModelRouter
-from swarms.structs.multi_agent_exec import (
-    batched_grid_agent_execution,
-    get_agents_info,
-    get_swarms_info,
-    run_agent_async,
-    run_agents_concurrently,
-    run_agents_concurrently_async,
-    run_agents_concurrently_multiprocess,
-    run_agents_with_different_tasks,
-    run_single_agent,
-)
-from swarms.structs.mcp_deployer import MCPDeployer, deploy_as_mcp
-from swarms.structs.multi_agent_router import MultiAgentRouter
-from swarms.structs.one_to_one import OneToOne, one_to_one
-from swarms.structs.one_to_three import OneToThree, one_to_three
-from swarms.structs.planner_generator_evaluator import (
-    EvaluationReport,
-    HarnessResult,
-    PlannerGeneratorEvaluator,
-    StepContract,
-)
-from swarms.structs.round_robin import RoundRobinSwarm
-from swarms.structs.self_moa_seq import SelfMoASeq
-from swarms.structs.sequential_workflow import SequentialWorkflow
-from swarms.structs.social_algorithms import SocialAlgorithms
-from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
-from swarms.structs.swarm_router import (
-    SwarmRouter,
-    SwarmType,
-)
-from swarms.structs.swarming_architectures import (
-    circular_swarm,
-    grid_swarm,
-    mesh_swarm,
-    pyramid_swarm,
-    star_swarm,
-)
+import importlib
+from typing import Any
 
-from swarms.structs.check_models import (
-    model_count,
-    get_available_models,
-    is_model_available,
-)
-
+_MODULE_MAP = {
+    "AdvisorSwarm": "advisor_swarm",
+    "Agent": "agent",
+    "AgentLoader": "agent_loader",
+    "AgentRearrange": "agent_rearrange",
+    "AutoAgentBuilder": "auto_agent_builder",
+    "AutoSwarmBuilder": "auto_swarm_builder",
+    "BatchedGridWorkflow": "batched_grid_workflow",
+    "Broadcast": "broadcast",
+    "ConcurrentWorkflow": "concurrent_workflow",
+    "Conversation": "conversation",
+    "CouncilAsAJudge": "council_as_judge",
+    "CronJob": "cron_job",
+    "DebateWithJudge": "debate_with_judge",
+    "DecisionModel": "decision_model",
+    "Edge": "graph_workflow",
+    "EvaluationReport": "planner_generator_evaluator",
+    "GraphWorkflow": "graph_workflow",
+    "GroupChat": "groupchat",
+    "HarnessResult": "planner_generator_evaluator",
+    "HeavySwarm": "heavy_swarm",
+    "HierarchicalSwarm": "hiearchical_swarm",
+    "HybridHierarchicalClusterSwarm": "hybrid_hiearchical_peer_swarm",
+    "LLMCouncil": "llm_council",
+    "MCPDeployer": "mcp_deployer",
+    "MajorityVoting": "majority_voting",
+    "MixtureOfAgents": "mixture_of_agents",
+    "ModelRouter": "model_router",
+    "MultiAgentRouter": "multi_agent_router",
+    "Node": "graph_workflow",
+    "NodeType": "graph_workflow",
+    "OneToOne": "one_to_one",
+    "OneToThree": "one_to_three",
+    "PlannerGeneratorEvaluator": "planner_generator_evaluator",
+    "RESPOND_TOOL": "groupchat",
+    "RoundRobinSwarm": "round_robin",
+    "SelfMoASeq": "self_moa_seq",
+    "SequentialWorkflow": "sequential_workflow",
+    "SocialAlgorithms": "social_algorithms",
+    "SpreadSheetSwarm": "spreadsheet_swarm",
+    "StepContract": "planner_generator_evaluator",
+    "SubagentRegistry": "async_subagent",
+    "SubagentTask": "async_subagent",
+    "SwarmRouter": "swarm_router",
+    "SwarmType": "swarm_router",
+    "TaskStatus": "async_subagent",
+    "aggregate": "ma_blocks",
+    "batch_agent_execution": "batch_agent_execution",
+    "batched_grid_agent_execution": "multi_agent_exec",
+    "broadcast": "broadcast",
+    "circular_swarm": "swarming_architectures",
+    "deploy_as_mcp": "mcp_deployer",
+    "find_agent_by_name": "ma_blocks",
+    "get_agents_info": "multi_agent_exec",
+    "get_available_models": "check_models",
+    "get_decision_model_prices": "decision_model",
+    "get_decision_models": "decision_model",
+    "get_swarms_info": "multi_agent_exec",
+    "grid_swarm": "swarming_architectures",
+    "is_model_available": "check_models",
+    "load_agent_from_markdown": "agent_loader",
+    "load_agents_from_markdown": "agent_loader",
+    "mesh_swarm": "swarming_architectures",
+    "model_count": "check_models",
+    "one_to_one": "one_to_one",
+    "one_to_three": "one_to_three",
+    "pyramid_swarm": "swarming_architectures",
+    "rearrange": "agent_rearrange",
+    "run_agent": "ma_blocks",
+    "run_agent_async": "multi_agent_exec",
+    "run_agents_concurrently": "multi_agent_exec",
+    "run_agents_concurrently_async": "multi_agent_exec",
+    "run_agents_concurrently_multiprocess": "multi_agent_exec",
+    "run_agents_with_different_tasks": "multi_agent_exec",
+    "run_single_agent": "multi_agent_exec",
+    "star_swarm": "swarming_architectures",
+}
 
 __all__ = [
+    "RESPOND_TOOL",
     "AdvisorSwarm",
     "Agent",
-    "ConcurrentWorkflow",
-    "SocialAlgorithms",
-    "Conversation",
-    "GroupChat",
-    "MajorityVoting",
+    "AgentLoader",
     "AgentRearrange",
-    "rearrange",
-    "RoundRobinSwarm",
-    "SequentialWorkflow",
-    "MixtureOfAgents",
+    "AutoAgentBuilder",
+    "AutoSwarmBuilder",
+    "BatchedGridWorkflow",
+    "Broadcast",
+    "ConcurrentWorkflow",
+    "Conversation",
+    "CouncilAsAJudge",
+    "CronJob",
+    "DebateWithJudge",
+    "DecisionModel",
+    "Edge",
+    "EvaluationReport",
     "GraphWorkflow",
+    "GroupChat",
+    "HarnessResult",
+    "HeavySwarm",
+    "HierarchicalSwarm",
+    "HybridHierarchicalClusterSwarm",
+    "LLMCouncil",
+    "MCPDeployer",
+    "MajorityVoting",
+    "MixtureOfAgents",
+    "ModelRouter",
+    "MultiAgentRouter",
     "Node",
     "NodeType",
-    "Edge",
-    "broadcast",
-    "circular_swarm",
-    "grid_swarm",
-    "mesh_swarm",
-    "one_to_one",
-    "one_to_three",
     "OneToOne",
     "OneToThree",
-    "Broadcast",
-    "pyramid_swarm",
-    "star_swarm",
+    "PlannerGeneratorEvaluator",
+    "RoundRobinSwarm",
+    "SelfMoASeq",
+    "SequentialWorkflow",
+    "SocialAlgorithms",
     "SpreadSheetSwarm",
+    "StepContract",
+    "SubagentRegistry",
+    "SubagentTask",
     "SwarmRouter",
     "SwarmType",
+    "TaskStatus",
+    "aggregate",
+    "batch_agent_execution",
     "batched_grid_agent_execution",
+    "broadcast",
+    "circular_swarm",
+    "deploy_as_mcp",
+    "find_agent_by_name",
+    "get_agents_info",
+    "get_available_models",
+    "get_decision_model_prices",
+    "get_decision_models",
+    "get_swarms_info",
+    "grid_swarm",
+    "is_model_available",
+    "load_agent_from_markdown",
+    "load_agents_from_markdown",
+    "mesh_swarm",
+    "model_count",
+    "one_to_one",
+    "one_to_three",
+    "pyramid_swarm",
+    "rearrange",
+    "run_agent",
     "run_agent_async",
     "run_agents_concurrently",
     "run_agents_concurrently_async",
     "run_agents_concurrently_multiprocess",
     "run_agents_with_different_tasks",
     "run_single_agent",
-    "GroupChat",
-    "MultiAgentRouter",
-    "ModelRouter",
-    "HybridHierarchicalClusterSwarm",
-    "get_agents_info",
-    "get_swarms_info",
-    "AutoAgentBuilder",
-    "AutoSwarmBuilder",
-    "CouncilAsAJudge",
-    "LLMCouncil",
-    "batch_agent_execution",
-    "aggregate",
-    "find_agent_by_name",
-    "run_agent",
-    "HierarchicalSwarm",
-    "HeavySwarm",
-    "CronJob",
-    "AgentLoader",
-    "load_agent_from_markdown",
-    "load_agents_from_markdown",
-    "BatchedGridWorkflow",
-    "SelfMoASeq",
-    "DebateWithJudge",
-    "DecisionModel",
-    "get_decision_model_prices",
-    "get_decision_models",
-    "PlannerGeneratorEvaluator",
-    "StepContract",
-    "EvaluationReport",
-    "HarnessResult",
-    "SubagentRegistry",
-    "SubagentTask",
-    "TaskStatus",
-    "RESPOND_TOOL",
-    "model_count",
-    "MCPDeployer",
-    "deploy_as_mcp",
-    "get_available_models",
-    "is_model_available",
+    "star_swarm",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Resolve structure attributes lazily on first access (PEP 562)."""
+    if name in _MODULE_MAP:
+        module = importlib.import_module(
+            f".{_MODULE_MAP[name]}", __name__
+        )
+        attr = getattr(module, name)
+        globals()[name] = attr
+        return attr
+
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}"
+    )
+
+
+def __dir__() -> list:
+    """Advertise all public exports before anything has accessed them."""
+    return sorted(set(globals()) | set(__all__))
