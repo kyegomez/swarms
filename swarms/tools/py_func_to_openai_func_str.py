@@ -499,7 +499,7 @@ def convert_multiple_functions_to_openai_function_schema(
 #
 def get_load_param_if_needed_function(
     t: Any,
-) -> Optional[Callable[[Dict[str, Any], Type[BaseModel]], BaseModel]]:
+) -> Optional[Callable[[Any, Any], Any]]:
     """Get a function to load a parameter if it is a Pydantic model
 
     Args:
@@ -509,19 +509,16 @@ def get_load_param_if_needed_function(
         A function to load the parameter if it is a Pydantic model, otherwise None
 
     """
-    if get_origin(t) is Annotated:
-        return get_load_param_if_needed_function(get_args(t)[0])
 
-    def load_base_model(
-        v: Dict[str, Any], t: Type[BaseModel]
-    ) -> BaseModel:
-        return t(**v)
+    def has_base_model(t: Any) -> bool:
+        if get_origin(t) is None and isinstance(t, type):
+            return issubclass(t, BaseModel)
+        return any(has_base_model(arg) for arg in get_args(t))
 
-    return (
-        load_base_model
-        if isinstance(t, type) and issubclass(t, BaseModel)
-        else None
-    )
+    def load_base_model(v: Any, t: Any) -> Any:
+        return TypeAdapter(t).validate_python(v)
+
+    return load_base_model if has_base_model(t) else None
 
 
 def load_basemodels_if_needed(
@@ -558,7 +555,8 @@ def load_basemodels_if_needed(
     def _load_parameters_if_needed(*args: Any, **kwargs: Any) -> Any:
         # load the BaseModels if needed
         for k, f in kwargs_mapping.items():
-            kwargs[k] = f(kwargs[k], param_annotations[k])
+            if k in kwargs:
+                kwargs[k] = f(kwargs[k], param_annotations[k])
 
         # call the original function
         return func(*args, **kwargs)
@@ -569,7 +567,8 @@ def load_basemodels_if_needed(
     ) -> Any:
         # load the BaseModels if needed
         for k, f in kwargs_mapping.items():
-            kwargs[k] = f(kwargs[k], param_annotations[k])
+            if k in kwargs:
+                kwargs[k] = f(kwargs[k], param_annotations[k])
 
         # call the original function
         return await func(*args, **kwargs)
