@@ -731,6 +731,32 @@ class TestConcurrentRun:
             r.concurrent_run(["a"])
 
 
+def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
+    from swarms import Agent
+    from swarms.structs.file_channel import FileChannel
+
+    channel = FileChannel(tmp_path / "run.md")
+    agents = [
+        Agent(
+            agent_name="A",
+            model_name="gpt-4o",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+    ]
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        channel=channel,
+    )
+
+    swarm = router._create_swarm()
+
+    assert swarm.channel is channel
+    assert swarm.agent_rearrange.conversation.channel is channel
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 

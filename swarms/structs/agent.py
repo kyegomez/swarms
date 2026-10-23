@@ -55,6 +55,8 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
     get_summary_prompt,
 )
+from swarms.structs.comms_channel import CommsChannel
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.safe_loading import (
@@ -220,6 +222,9 @@ class Agent:
         mcp_transport (str): Force a transport for every MCP server: "streamable_http", "sse",
             "stdio", or "auto". Defaults to auto-detection from the URL.
         mcp_timeout (int): Request timeout in seconds for every MCP server. Defaults to 30.
+        channel (CommsChannel): A shared channel such as FileChannel. When no messages are
+            passed, the agent reads the channel as prior turns and posts the task once; after a
+            successful run it posts its final answer. Defaults to None.
 
     Methods:
         run: Run the agent
@@ -357,6 +362,7 @@ class Agent:
         llm_api_key: Optional[str] = None,
         tool_call_summary: bool = False,
         tool_retry_attempts: int = 3,
+        channel: Optional[CommsChannel] = None,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
@@ -472,6 +478,7 @@ class Agent:
         self.llm_api_key = llm_api_key
         self.tool_call_summary = tool_call_summary
         self.tool_retry_attempts = tool_retry_attempts
+        self.channel = channel
         self.reasoning_prompt_on = reasoning_prompt_on
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
@@ -2472,7 +2479,8 @@ Subtask Breakdown:
             messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
                 e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
                 They are added to the agent's conversation and sent as the context
-                this task continues from. Defaults to the agent's own ``messages``.
+                this task continues from. Defaults to the agent's own ``messages``,
+                or to the ``channel`` when one is set.
             *args: Additional positional arguments for extensibility.
             **kwargs: Additional keyword arguments passed to LLM/tool execution.
 
@@ -2549,6 +2557,19 @@ Subtask Breakdown:
         self._run_streaming_callback = streaming_callback
         self.llm_manager.stream_mid_line = False
 
+        # A caller passing messages manages the transcript, so only the answer is posted.
+        if self.channel is not None and messages is None:
+            posted = self.channel.messages()
+            task_row = {"agent_name": self.user_name, "content": task}
+            # Posted once, so agents sharing the channel see one copy.
+            if task_row not in posted:
+                self.channel.post(self.user_name, task)
+            messages = [
+                {"role": m["agent_name"], "content": m["content"]}
+                for m in posted
+                if m != task_row
+            ]
+
         models = self.fallback_models or [self.model_name]
         try:
             for i, model in enumerate(models):
@@ -2557,7 +2578,7 @@ Subtask Breakdown:
                     self.model_name = model
                     self.llm_handling()
                 try:
-                    return self._dispatch(
+                    output = self._dispatch(
                         task,
                         img,
                         imgs,
@@ -2567,6 +2588,12 @@ Subtask Breakdown:
                         *args,
                         **kwargs,
                     )
+                    if self.channel is not None:
+                        self.channel.post(
+                            self.agent_name,
+                            agent_answer(self, output),
+                        )
+                    return output
                 except AgentLLMError as error:
                     if i + 1 == len(models):
                         raise
