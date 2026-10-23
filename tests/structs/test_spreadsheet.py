@@ -296,6 +296,60 @@ def test_run_records_the_task_and_each_reply(temp_workspace):
     ]
 
 
+def test_each_run_starts_with_fresh_outputs(temp_workspace):
+    """A second run's outputs and counter start from zero."""
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=False
+    )
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        side_effect=[
+            ["first A", "first B"],
+            ["second A", "second B"],
+        ],
+    ):
+        first = swarm.run("First task")
+        second = swarm.run("Second task")
+
+    assert [o["result"] for o in first["outputs"]] == [
+        "first A",
+        "first B",
+    ]
+    assert [o["result"] for o in second["outputs"]] == [
+        "second A",
+        "second B",
+    ]
+    assert swarm.tasks_completed == 2
+    assert len(swarm.outputs) == 2
+
+
+def test_config_run_starts_with_fresh_outputs(temp_workspace):
+    """Re-running in config mode does not accumulate previous outputs."""
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=False
+    )
+    swarm.agent_tasks = {"Analyst-A": "task a", "Analyst-B": "task b"}
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        side_effect=[
+            ["first A", "first B"],
+            ["second A", "second B"],
+        ],
+    ):
+        first = swarm.run()
+        second = swarm.run()
+
+    assert [o["result"] for o in first["outputs"]] == [
+        "first A",
+        "first B",
+    ]
+    assert [o["result"] for o in second["outputs"]] == [
+        "second A",
+        "second B",
+    ]
+    assert second["tasks_completed"] == 2
+
+
 def test_each_run_starts_a_fresh_conversation(temp_workspace):
     """A second run's conversation does not carry the first run's turns."""
     swarm = SpreadSheetSwarm(

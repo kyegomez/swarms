@@ -127,6 +127,17 @@ class SpreadSheetSwarm:
                 f"SpreadSheetSwarm Name: {self.name} is ready to run."
             )
 
+    def _reset_run_state(self):
+        """
+        Clear per-run accumulators so every run starts from zero.
+
+        `outputs` and `tasks_completed` are the results of a single run:
+        carrying them over leaks previous results into the next run's
+        summary, CSV export and JSON export.
+        """
+        self.outputs = []
+        self.tasks_completed = 0
+
     def _load_from_csv(self):
         """
         Load agent configurations from a CSV file.
@@ -140,6 +151,8 @@ class SpreadSheetSwarm:
             logger.info(
                 f"Loading agent configurations from {csv_path}"
             )
+            # A fresh load must not keep tasks from a previous config.
+            self.agent_tasks = {}
 
             with open(csv_path, mode="r") as file:
                 csv_reader = csv.DictReader(file)
@@ -199,6 +212,7 @@ class SpreadSheetSwarm:
         Run all agents with their configured tasks concurrently
         """
         logger.info("Running agents from configuration")
+        self._reset_run_state()
 
         # Load agents from CSV if no agents are provided but load_path is
         if not self.agents and self.load_path:
@@ -313,6 +327,7 @@ class SpreadSheetSwarm:
 
         """
         try:
+            self._reset_run_state()
             return self._run(task, *args, **kwargs)
         except Exception as e:
             logger.error(f"Error running swarm: {e}")
@@ -327,6 +342,8 @@ class SpreadSheetSwarm:
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
         """
+        self._reset_run_state()
+
         # Load agents from CSV if no agents are provided but load_path is
         if not self.agents and self.load_path:
             self.load_from_csv()
