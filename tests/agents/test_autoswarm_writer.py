@@ -861,3 +861,31 @@ swarm_architecture:
         # Router
         assert ns["swarm"].name == "Data-Analysis-Pipeline"
         assert ns["swarm"].swarm_type == "SequentialWorkflow"
+
+    def test_valid_yaml_is_parsed_as_written(self):
+        import yaml
+
+        from swarms.agents.auto_generate_swarm_config import (
+            parse_yaml_from_swarm_markdown,
+        )
+
+        raw_yaml = """agents:
+    - agent_name: "Researcher"
+      system_prompt: |
+        Cite sources such as https://arxiv.org/abs/2203.11171.
+
+        Plan the 9:00 standup.
+      model_name: "ollama/llama3:8b"
+    - agent_name: Planner
+      system_prompt: Book the 10:30 review"""
+
+        parsed = yaml.safe_load(
+            parse_yaml_from_swarm_markdown(
+                f"```yaml\n{raw_yaml}\n```"
+            )
+        )
+
+        assert parsed == yaml.safe_load(raw_yaml)
+        assert (
+            parsed["agents"][0]["model_name"] == "ollama/llama3:8b"
+        )
