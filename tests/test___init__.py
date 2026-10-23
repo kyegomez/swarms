@@ -75,3 +75,63 @@ def test_falls_back_when_distribution_is_absent(monkeypatch):
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_importing_agent_does_not_load_unrelated_structs():
+    """``from swarms import Agent`` must not import every structure module (#2734)."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys\n"
+                "before = {m for m in sys.modules if m.startswith('swarms.structs.')}\n"
+                "from swarms import Agent\n"
+                "after = {m for m in sys.modules if m.startswith('swarms.structs.')}\n"
+                "loaded = sorted(after - before)\n"
+                "print('LOADED', ','.join(loaded))\n"
+                "banned = [m for m in loaded if m not in ("
+                "'swarms.structs',"
+                "'swarms.structs.agent',"
+                ") and not m.startswith('swarms.structs.agent.')]\n"
+                # agent.py may pull conversation and a few helpers; forbid heavy swarms
+                "heavy = [m for m in loaded if m.split('.')[-1] in ("
+                "'heavy_swarm','groupchat','spreadsheet_swarm',"
+                "'hierarchical_swarm','hiearchical_swarm',"
+                "'council_as_judge','mixture_of_agents',"
+                "'swarm_router','graph_workflow'"
+                ")]\n"
+                "print('HEAVY', ','.join(heavy))\n"
+                "assert not heavy, heavy\n"
+                "assert 'Agent' in Agent.__name__ or Agent.__name__ == 'Agent'\n"
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(__import__('pathlib').Path(__file__).resolve().parents[1]),
+        env={**__import__('os').environ, "PYTHONPATH": str(__import__('pathlib').Path(__file__).resolve().parents[1])},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_every_structs_export_resolves():
+    import swarms.structs as structs
+
+    for name in structs.__all__:
+        assert getattr(structs, name) is not None
+
+
+def test_from_swarms_import_agent_and_groupchat():
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from swarms import Agent, GroupChat; print(Agent.__name__, GroupChat.__name__)",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(__import__('pathlib').Path(__file__).resolve().parents[1]),
+        env={**__import__('os').environ, "PYTHONPATH": str(__import__('pathlib').Path(__file__).resolve().parents[1])},
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Agent" in result.stdout and "GroupChat" in result.stdout
