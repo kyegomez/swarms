@@ -133,6 +133,7 @@ class Conversation:
 
         self.conversation_history = []
         self._str_cache: Optional[str] = None
+        self._history_byte_total: Optional[int] = None
         self._cache_hits: int = 0
         self._cache_misses: int = 0
         self._last_cached_tokens: int = 0
@@ -320,6 +321,7 @@ class Conversation:
         try:
             self.conversation_history = []
             self._str_cache = None
+            self._history_byte_total = None
             if self.system_prompt is not None:
                 self.conversation_history.append(
                     {
@@ -468,6 +470,8 @@ class Conversation:
         # Add message to conversation history
         self.conversation_history.append(message)
         self._str_cache = None
+        if self._history_byte_total is not None:
+            self._history_byte_total += self._message_bytes(message)
 
         # Speakers only: system preambles and tool bookkeeping stay out of the transcript.
         if (
@@ -833,6 +837,7 @@ class Conversation:
         """Delete a message from the conversation history."""
         self.conversation_history.pop(int(index))
         self._str_cache = None
+        self._history_byte_total = None
 
     def update(self, index: str, role, content):
         """Update a message in the conversation history.
@@ -846,6 +851,7 @@ class Conversation:
             self.conversation_history[int(index)]["role"] = role
             self.conversation_history[int(index)]["content"] = content
             self._str_cache = None
+            self._history_byte_total = None
         else:
             logger.warning(f"Invalid index: {index}")
 
@@ -1023,6 +1029,20 @@ class Conversation:
             List[int]: One token count per line.
         """
         return [self._line_token_count(line) for line in lines]
+
+    @staticmethod
+    def _message_bytes(message: dict) -> int:
+        return len(
+            f"[{message.get('timestamp')}] {message.get('role')}: "
+            f"{message.get('content')}\n\n".encode()
+        )
+
+    def history_bytes(self) -> int:
+        if self._history_byte_total is None:
+            self._history_byte_total = sum(
+                map(self._message_bytes, self.conversation_history)
+            )
+        return self._history_byte_total
 
     def count_history_tokens(self) -> int:
         """Count the tokens in the history string from per-message counts.
@@ -1216,6 +1236,7 @@ class Conversation:
         if isinstance(data, list):
             self.conversation_history = data
             self._str_cache = None
+            self._history_byte_total = None
             return
 
         if not isinstance(data, dict):
@@ -1234,6 +1255,7 @@ class Conversation:
             "conversation_history", []
         )
         self._str_cache = None
+        self._history_byte_total = None
 
     def load_from_json(self, filename: str):
         """Load the conversation history and metadata from a JSON file.
@@ -1385,6 +1407,7 @@ class Conversation:
         # Update conversation history
         self.conversation_history = truncated_history
         self._str_cache = None
+        self._history_byte_total = None
 
     def _binary_search_truncate(
         self, text, target_tokens, model_name
@@ -1447,6 +1470,7 @@ class Conversation:
         """Clear the conversation history."""
         self.conversation_history = []
         self._str_cache = None
+        self._history_byte_total = None
 
     def to_json(self):
         """Convert the conversation history to a JSON string.
@@ -1637,6 +1661,7 @@ class Conversation:
         """
         self.conversation_history.extend(messages)
         self._str_cache = None
+        self._history_byte_total = None
 
     @classmethod
     def load_conversation(
