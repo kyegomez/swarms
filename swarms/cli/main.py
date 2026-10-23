@@ -252,14 +252,9 @@ def load_markdown_agents(
                 description="Loading agents from markdown...",
             )
 
-            if os.path.isdir(file_path):
-                agents = loader.load_multiple_agents(
-                    file_path, concurrent=concurrent, **kwargs
-                )
-            else:
-                agents = [
-                    loader.load_single_agent(file_path, **kwargs)
-                ]
+            agents = loader.load_agents_from_markdown(
+                file_path, concurrent=concurrent, **kwargs
+            )
 
             # Update progress on completion
             progress.update(

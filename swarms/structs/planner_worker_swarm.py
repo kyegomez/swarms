@@ -22,6 +22,10 @@ from swarms.schemas.planner_worker_schemas import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import messages_for
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.workspace_manager import WorkspaceManager
@@ -567,6 +571,7 @@ class PlannerWorkerSwarm:
         output_type: OutputType = "dict-all-except-first",
         autosave: bool = False,
         verbose: bool = False,
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -593,7 +598,11 @@ class PlannerWorkerSwarm:
 
         # Internal state
         self.task_queue = TaskQueue()
-        self.conversation = Conversation(time_enabled=False)
+        self.channel = channel
+        claim_agents(self.agents, channel, self.name)
+        self.conversation = Conversation(
+            time_enabled=False, channel=channel
+        )
         self._original_task: Optional[str] = None
 
         self._reliability_checks()
