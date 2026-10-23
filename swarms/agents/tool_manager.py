@@ -1,7 +1,7 @@
 import json
 import time
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from loguru import logger
 from pydantic import BaseModel
@@ -140,6 +140,23 @@ class ToolManager:
             self.setup_dynamic_tools()
         elif agent.tools:
             self.tool_handling()
+
+    def reload_tools(self, removed: Iterable[str] = ()) -> None:
+        agent = self.agent
+        agent.tools_list_dictionary = [
+            schema
+            for schema in agent.tools_list_dictionary or []
+            if _name(schema) not in removed
+        ]
+        if agent.tool_loader is not None:
+            self.setup_dynamic_tools()
+        elif agent.tools:
+            self.tool_handling()
+        agent.tool_struct = BaseTool(
+            tools=agent.tools, verbose=agent.verbose
+        )
+        if isinstance(agent.llm, LiteLLM):
+            agent.llm = agent.llm_handling()
 
     def tool_handling(self) -> None:
         """

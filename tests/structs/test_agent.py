@@ -454,8 +454,9 @@ class TestAgentToolUsage:
     """Tool registration, schema generation and execution."""
 
     def test_callable_tools_register_and_unregister(self):
-        """Functions, lambdas and bound methods all register, and add/remove
-        in both singular and plural forms keep the list consistent."""
+        """Tools added or removed after construction change what the model
+        is offered and what the executor runs, not just agent.tools.
+        """
 
         def tool1(x: int) -> int:
             """Tool 1"""
@@ -465,32 +466,33 @@ class TestAgentToolUsage:
             """Tool 2"""
             return x * 2
 
+        def tool3(x: int) -> int:
+            """Tool 3"""
+            return x - 1
+
         agent = Agent(
             agent_name="Callable-Tools-Test-Agent",
             model_name="gpt-5.4",
             max_loops=1,
-            tools=[tool1, tool2],
+            print_on=False,
         )
-        assert len(agent.tools) == 2
-        assert agent.run("Use tool1 to add 1 to 5") is not None
+        agent.add_tool(tool1)
+        agent.add_tools([tool2, tool3])
+        agent.remove_tool(tool2)
 
-        class MathOperations:
-            def multiply(self, x: int, y: int) -> int:
-                """Multiply two numbers"""
-                return x * y
-
-        agent.add_tool(lambda x: x**2)
-        agent.add_tool(MathOperations().multiply)
-        assert len(agent.tools) == 4
-
-        agent.add_tools([lambda x: x // 2, lambda x: x - 1])
-        assert len(agent.tools) == 6
-
-        agent.remove_tool(tool1)
-        assert len(agent.tools) == 5
-
-        agent.remove_tools([tool2])
-        assert len(agent.tools) == 4
+        assert [
+            schema["function"]["name"]
+            for schema in agent.llm.tools_list_dictionary
+        ] == ["tool1", "tool3"]
+        call = {
+            "id": "call-1",
+            "type": "function",
+            "function": {"name": "tool3", "arguments": '{"x": 5}'},
+        }
+        output = agent.tool_struct.execute_function_calls_from_api_response(
+            [call]
+        )
+        assert output == ["Function 'tool3' result:\n4"]
 
     @staticmethod
     def _mcp_schema(name, prop):
