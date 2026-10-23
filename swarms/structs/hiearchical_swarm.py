@@ -30,6 +30,10 @@ from swarms.structs.context_utils import (
     new_context_for,
     split_last_turn,
 )
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.hierarchical_order_parser import (
@@ -88,6 +92,7 @@ class HierarchicalSwarm:
         director_settings: Optional[Dict[str, Any]] = None,
         max_agent_retries: int = 1,
         max_reassignment_attempts: int = 1,
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -191,9 +196,17 @@ class HierarchicalSwarm:
         # How much of the shared conversation each agent has already seen.
         self._delivered: Dict[str, int] = {}
 
-        self.conversation = Conversation(time_enabled=False)
+        self.channel = channel
+        self.conversation = Conversation(
+            time_enabled=False, channel=channel
+        )
 
         self.initialize_swarm()
+        claim_agents(
+            [*(self.agents or []), getattr(self, "director", None)],
+            channel,
+            self.name,
+        )
 
         capture_init(self)
 
