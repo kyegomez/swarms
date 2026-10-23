@@ -865,8 +865,8 @@ class Agent:
                 logger.warning(
                     "No agent details found. Using task as fallback for prompt generation."
                 )
-                self.system_prompt = auto_generate_prompt(
-                    task=task, model=self.llm
+                self.update_system_prompt(
+                    auto_generate_prompt(task=task, model=self.llm)
                 )
             else:
                 # Combine all available components
@@ -874,8 +874,8 @@ class Agent:
                 logger.info(
                     f"Auto-generating prompt from: {', '.join(components)}"
                 )
-                self.system_prompt = auto_generate_prompt(
-                    combined_prompt, self.llm
+                self.update_system_prompt(
+                    auto_generate_prompt(combined_prompt, self.llm)
                 )
                 self.short_memory.add(
                     role="System", content=self.system_prompt
@@ -2040,6 +2040,8 @@ Subtask Breakdown:
     def update_system_prompt(self, system_prompt: str):
         """Upddate the system message"""
         self.system_prompt = system_prompt
+        if hasattr(self.llm, "system_prompt"):
+            self.llm.system_prompt = system_prompt
 
     def update_max_loops(self, max_loops: Union[int, str]):
         """Update the max loops"""
