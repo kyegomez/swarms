@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
     get_openai_function_schema_from_func,
+    load_basemodels_if_needed,
 )
 from swarms.tools.pydantic_to_json import (
     base_model_to_openai_function,
@@ -1458,7 +1459,7 @@ class BaseTool(BaseModel):
         # Execute the function
         try:
             if isinstance(arguments, dict):
-                result = func(**arguments)
+                result = load_basemodels_if_needed(func)(**arguments)
             else:
                 result = func(arguments)
             return result
