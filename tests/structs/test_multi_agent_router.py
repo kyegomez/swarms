@@ -529,8 +529,8 @@ def test_an_unknown_agent_raises_before_any_agent_runs():
     assert ran == [], f"an agent ran before validation failed: {ran}"
 
 
-def test_concurrent_batch_run_returns_results_in_input_order():
-    """Results used to come back in completion order, unlike batch_run."""
+def _flaky_router():
+    """A router whose middle task always fails."""
     router, _ = _local_router()
 
     def flaky(task):
@@ -539,11 +539,31 @@ def test_concurrent_batch_run_returns_results_in_input_order():
         return f"ok:{task}"
 
     router.route_task = flaky
+    return router
 
-    assert router.concurrent_batch_run(["a", "bad", "c"]) == [
-        "ok:a",
-        "ok:c",
-    ]
+
+def test_batch_run_keeps_a_slot_for_a_failed_task():
+    """A dropped failure shifted every later result onto the wrong task."""
+    router = _flaky_router()
+
+    results = router.batch_run(["a", "bad", "c"])
+
+    assert len(results) == 3
+    assert results[0] == "ok:a"
+    assert isinstance(results[1], RuntimeError)
+    assert results[2] == "ok:c"
+
+
+def test_concurrent_batch_run_keeps_a_slot_for_a_failed_task():
+    """Same shift, and results used to come back in completion order."""
+    router = _flaky_router()
+
+    results = router.concurrent_batch_run(["a", "bad", "c"])
+
+    assert len(results) == 3
+    assert results[0] == "ok:a"
+    assert isinstance(results[1], RuntimeError)
+    assert results[2] == "ok:c"
 
 
 if __name__ == "__main__":
