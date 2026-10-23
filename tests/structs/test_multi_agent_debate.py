@@ -2,6 +2,7 @@ import pytest
 from loguru import logger
 from swarms.structs.multi_agent_debates import (
     ExpertPanelDiscussion,
+    OneOnOneDebate,
 )
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
@@ -239,3 +240,19 @@ def test_each_speaker_passes_on_only_its_latest_reply():
     assert moderator.tasks[-1].endswith(
         "Economist: Economist reply 2\n\nHistorian: Historian reply 2"
     )
+
+
+def test_one_on_one_debate_passes_on_only_the_latest_reply():
+    pro, con = _HistoryAgent("Pro"), _HistoryAgent("Con")
+
+    turns = OneOnOneDebate(
+        agents=[pro, con], max_loops=3, output_type="list"
+    ).run(task="Is remote work better?")
+
+    assert con.tasks[-1] == "Pro reply 2"
+    assert pro.tasks[-1] == "Con reply 2"
+    assert [turn["content"] for turn in turns] == [
+        "Pro reply 2",
+        "Con reply 2",
+        "Pro reply 3",
+    ]
