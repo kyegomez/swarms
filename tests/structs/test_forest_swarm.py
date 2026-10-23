@@ -1,5 +1,7 @@
 import sys
 
+import pytest
+
 from swarms.structs import tree_swarm
 from swarms.structs.tree_swarm import (
     TreeAgent,
@@ -620,6 +622,25 @@ def test_common_words_do_not_route_every_task_to_the_first_agent(
         is tax
     )
     assert tree.find_relevant_agent("Can you write a poem?") is None
+
+
+def test_forest_swarm_run_raises_the_agent_error(monkeypatch):
+    def offline(**kwargs):
+        raise ConnectionError("offline")
+
+    def unavailable(task, img=None, *args, **kwargs):
+        raise RuntimeError("model unavailable")
+
+    monkeypatch.setattr(tree_swarm, "embedding", offline)
+    tax = TreeAgent(
+        agent_name="tax",
+        system_prompt="You are a tax expert who files corporate taxes.",
+    )
+    monkeypatch.setattr(tax, "run", unavailable)
+    forest = ForestSwarm(trees=[Tree("Experts", [tax])])
+
+    with pytest.raises(RuntimeError, match="model unavailable"):
+        forest.run("Can you sort my corporate filings?")
 
 
 def run_all_tests():
