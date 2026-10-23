@@ -10,25 +10,6 @@ from swarms.utils.loguru_logger import initialize_logger
 logger = initialize_logger(log_folder="file_processing")
 
 
-def check_if_folder_exists(folder_name: str) -> bool:
-    """
-    Check if a folder exists at the specified path.
-
-    Args:
-        folder_name (str): The path to the folder to check.
-
-    Returns:
-        bool: True if the folder exists, False otherwise.
-    """
-    try:
-        return os.path.exists(folder_name) and os.path.isdir(
-            folder_name
-        )
-    except Exception as e:
-        logger.error(f"Failed to check if folder exists: {e}")
-        return False
-
-
 def zip_workspace(workspace_path: str, output_filename: str):
     """
     Zips the specified workspace directory and returns the path to the zipped file.
@@ -79,26 +60,6 @@ def load_json(json_string: str):
         return json_data
     except json.JSONDecodeError as e:
         logger.error(f"Failed to decode JSON: {e}")
-        return None
-
-
-def create_file(
-    content: str,
-    file_path: str,
-):
-    """
-    Creates a file with the specified content at the specified file path.
-
-    Args:
-        content (str): The content to be written to the file.
-        file_path (str): The path to the file to be created.
-    """
-    try:
-        with open(file_path, "w") as file:
-            file.write(content)
-        return file_path
-    except Exception as e:
-        logger.error(f"Failed to create file: {e}")
         return None
 
 

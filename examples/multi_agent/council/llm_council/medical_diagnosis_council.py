@@ -5,13 +5,13 @@ This example demonstrates using the LLM Council to analyze symptoms
 and provide diagnostic insights.
 """
 
-from swarms.structs.llm_council import LLMCouncil
+from swarms import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
-# Medical diagnosis query
-query = """
+# Medical diagnosis task
+task = """
 A 35-year-old patient presents with:
 - Persistent fatigue for 3 months
 - Unexplained weight loss (15 lbs)
@@ -30,7 +30,7 @@ Provide:
 """
 
 # Run the council
-result = council.run(query)
+result = council.run(task=task)
 
 # Print final response
-print(result["final_response"])
+print(result)

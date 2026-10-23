@@ -30,11 +30,11 @@ import pytest
 from swarms.schemas.agent_mcp_errors import AgentMCPConnectionError
 from swarms.schemas.mcp_schemas import MCPConnection, MCPOAuthConfig
 from swarms.tools.mcp_manager import (
-    MCP_IS_V2,
     MCPFileTokenStorage,
     MCPInMemoryTokenStorage,
     MCPManager,
     _describe_exception,
+    _mcp_is_v2,
     _OAuthCallbackServer,
     _resolve_secret,
     run_async,
@@ -375,7 +375,7 @@ class TestTransportResolution:
             ),
             (
                 {"url": "python server.py", "transport": "auto"},
-                "stdio",
+                "streamable_http",
             ),
         ],
     )
@@ -384,6 +384,74 @@ class TestTransportResolution:
         assert (
             manager._resolve_transport(MCPConnection(**kwargs))
             == expected
+        )
+
+    def test_connection_defaults_to_auto(self):
+        assert MCPConnection(url="https://x/mcp").transport == "auto"
+
+    @pytest.mark.parametrize(
+        "url,expected",
+        [
+            ("http://localhost:8000/sse", "sse"),
+            ("https://x/mcp", "streamable_http"),
+            ("python server.py", "streamable_http"),
+        ],
+    )
+    def test_url_detected_without_explicit_transport(
+        self, url, expected
+    ):
+        manager = MCPManager(mcp_url=url)
+        assert (
+            manager._resolve_transport(manager.connections[0])
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"mcp_url": "touch pwned"},
+            {"mcp_url": "touch pwned", "transport": "stdio"},
+            {"mcp_url": "file:///etc/passwd"},
+        ],
+    )
+    def test_url_is_never_run_as_a_command(self, kwargs):
+        manager = MCPManager(**kwargs)
+        with pytest.raises(AgentMCPConnectionError):
+            manager._client_context(manager.connections[0], {}, None)
+
+    def test_stdio_server_does_not_inherit_parent_env(
+        self, monkeypatch
+    ):
+        import mcp.client.stdio as mcp_stdio
+
+        monkeypatch.setenv("SWARMS_TEST_SECRET", "sk-secret")
+        captured = {}
+        monkeypatch.setattr(
+            mcp_stdio,
+            "stdio_client",
+            lambda params: captured.setdefault("params", params),
+        )
+        manager = MCPManager(
+            mcp_config=MCPConnection(
+                command="python",
+                args=["s.py"],
+                env={"WANTED": "yes"},
+            )
+        )
+        manager._client_context(manager.connections[0], {}, None)
+        env = captured["params"].env
+        assert "SWARMS_TEST_SECRET" not in env
+        assert env["WANTED"] == "yes"
+        assert "PATH" in env
+
+    def test_explicit_transport_still_wins_over_url(self):
+        manager = MCPManager(
+            mcp_url="http://localhost:8000/sse",
+            transport="streamable_http",
+        )
+        assert (
+            manager._resolve_transport(manager.connections[0])
+            == "streamable_http"
         )
 
 
@@ -530,7 +598,7 @@ class TestToolDiscovery:
             manager.get_tools()
         message = str(excinfo.value)
         assert apikey_server.url in message
-        if MCP_IS_V2:
+        if _mcp_is_v2():
             # 2.x collapses every non-404 non-2xx response into
             # ErrorData(INTERNAL_ERROR, "Server returned an error
             # response") (mcp/client/streamable_http.py), so the status
@@ -695,6 +763,29 @@ class TestToolExecution:
         )
         assert results[0]["is_error"] is True
         assert "does_not_exist" in results[0]["error"]
+
+    def test_unknown_tool_on_single_server_is_not_sent(
+        self, open_manager
+    ):
+        results = open_manager.execute_tool_calls(
+            [
+                {
+                    "function": {
+                        "name": "get_weather",
+                        "arguments": "{}",
+                    }
+                },
+                {
+                    "function": {
+                        "name": "add",
+                        "arguments": '{"a": 2, "b": 3}',
+                    }
+                },
+            ]
+        )
+        assert results[0]["server"] is None
+        assert "get_weather" in results[0]["error"]
+        assert results[1]["result"] == "5"
 
     def test_no_tool_calls_returns_empty(self, open_manager):
         assert open_manager.execute_tool_calls("just text") == []
@@ -1046,7 +1137,7 @@ class TestAgentIntegration:
         assert agent.mcp_enabled is True
         assert isinstance(agent.mcp_manager, MCPManager)
 
-        tools = agent.add_mcp_tools_to_memory()
+        tools = agent.tool_manager.add_mcp_tools_to_memory()
         assert {t["function"]["name"] for t in tools} >= {
             "add",
             "greet",
@@ -1081,7 +1172,7 @@ class TestAgentIntegration:
             print_on=False,
             llm=object(),
         )
-        assert agent.add_mcp_tools_to_memory()
+        assert agent.tool_manager.add_mcp_tools_to_memory()
 
     def test_agent_mcp_tool_handling_executes(self, open_server):
         from swarms import Agent

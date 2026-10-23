@@ -49,6 +49,7 @@ class KnowledgeGenerator:
             system_prompt=knowledge_system_prompt,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
         logger.info(
@@ -204,6 +205,7 @@ class Reasoner:
             system_prompt=reasoning_system_prompt,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
         logger.info(
@@ -366,6 +368,7 @@ class GKPAgent:
             system_prompt=coordinator_system_prompt,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
         logger.info(

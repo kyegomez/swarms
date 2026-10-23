@@ -11,7 +11,7 @@ from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.telemetry.otel import capture_init, trace_run
 
 load_dotenv()
@@ -224,7 +224,7 @@ class SwarmRouterConfig(BaseModel):
     )
     rearrange_flow: Optional[str] = Field(
         None,
-        description="Flow configuration string. Only to be used if you you use the AgentRearrange multi-agent structure",
+        description="Flow configuration string. Only to be used if you use the AgentRearrange multi-agent structure",
     )
     rules: Optional[str] = Field(
         None,
@@ -306,6 +306,7 @@ class AutoSwarmBuilder:
         self.auto_execute = auto_execute
         self.conversation = Conversation()
         self.agents_pool = []
+        self._usage_sources = []
 
         self.reliability_check()
 
@@ -349,14 +350,37 @@ class AutoSwarmBuilder:
         Returns:
             LiteLLM: Configured LiteLLM instance.
         """
-        return LiteLLM(
+        llm = LiteLLM(
             model_name=self.model_name,
             system_prompt=self.system_prompt,
-            temperature=0.5,
             response_format=config,
             max_tokens=self.max_tokens,
             **self.additional_llm_args,
         )
+        self._usage_sources.append(llm)
+        return llm
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over everything this builder has run.
+
+        Adds every boss LLM call to :attr:`SwarmRouter.usage` for every
+        router the builder has executed. Keys: ``input_tokens``,
+        ``output_tokens``, ``cached_tokens``, ``reasoning_tokens``,
+        ``total_tokens``.
+        """
+        sources = {}
+        for source in self._usage_sources:
+            if isinstance(source, SwarmRouter):
+                for agent in source._usage_agents():
+                    sources.setdefault(id(agent), agent)
+            else:
+                sources.setdefault(id(source), source)
+        total = empty_usage()
+        for source in sources.values():
+            for key, value in source.usage.items():
+                total[key] += value
+        return total
 
     @staticmethod
     def _parse_llm_json(raw: Any) -> dict:
@@ -633,6 +657,7 @@ class AutoSwarmBuilder:
             agents=agents,
             output_type="dict",
         )
+        self._usage_sources.append(swarm_router)
 
         output = swarm_router.run(task)
 
@@ -708,6 +733,7 @@ class AutoSwarmBuilder:
                 agents=agents,
                 output_type="dict",
             )
+            self._usage_sources.append(swarm_router)
 
             logger.info("Starting swarm router execution")
             return swarm_router.run(task)
@@ -799,7 +825,9 @@ class AutoSwarmBuilder:
         """
         return swarm_types
 
-    @trace_run("AutoSwarmBuilder.run")
+    @trace_run(
+        "AutoSwarmBuilder.run", usage=lambda builder: builder.usage
+    )
     def run(
         self,
         task: str,

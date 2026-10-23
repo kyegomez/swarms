@@ -1,371 +1,240 @@
-import concurrent.futures
 import csv
 import json
 import os
-from dataclasses import dataclass
-from enum import Enum
-from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    TypedDict,
-    Union,
+import traceback
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    TimeoutError,
+    as_completed,
 )
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import yaml
-from litellm import model_list
-from pydantic import BaseModel
+from loguru import logger
+from pydantic import (
+    AliasChoices,
+    BaseModel,
+    ConfigDict,
+    Field,
+    PositiveInt,
+    ValidationError,
+)
 from tqdm import tqdm
 
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
-)
-from swarms.utils.types import ReturnTypes
 from swarms.structs.agent import Agent
-from swarms.utils.agent_loader_markdown import (
-    load_agent_from_markdown,
-    load_agents_from_markdown,
-    MarkdownAgentLoader,
-)
+from swarms.structs.swarm_router import SwarmRouter
+
+ReturnTypes = Literal["auto", "swarm", "agents", "both", "run_swarm"]
 
 
-class ModelName(str, Enum):
-    """Valid model names for swarms agents"""
+class AgentConfig(BaseModel):
+    """
+    Agent configuration read from a Markdown, CSV, JSON or YAML file.
 
-    GPT4O = "gpt-5.4"
-    GPT4O_MINI = "gpt-5.4"
-    GPT4 = "gpt-4"
-    GPT35_TURBO = "gpt-3.5-turbo"
-    CLAUDE = "claude-v1"
-    CLAUDE2 = "claude-2"
+    Field names are Agent parameters; fields left unset fall back to the Agent defaults.
+    """
 
-    @classmethod
-    def get_model_names(cls) -> List[str]:
-        """Get list of valid model names"""
-        return [model.value for model in cls]
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
-    @classmethod
-    def is_valid_model(cls, model_name: str) -> bool:
-        """Check if model name is valid"""
-        return model_name in cls.get_model_names()
+    agent_name: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("agent_name", "name"),
+    )
+    agent_description: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "agent_description", "description"
+        ),
+    )
+    system_prompt: Optional[str] = Field(default=None, min_length=1)
+    model_name: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("model_name", "model"),
+    )
+    temperature: Optional[float] = Field(default=None, ge=0.0, le=2.0)
+    max_loops: Optional[Union[PositiveInt, Literal["auto"]]] = None
+    mcp_url: Optional[str] = None
+    autosave: Optional[bool] = None
+    dashboard: Optional[bool] = None
+    verbose: Optional[bool] = None
+    dynamic_temperature_enabled: Optional[bool] = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "dynamic_temperature_enabled", "dynamic_temperature"
+        ),
+    )
+    saved_state_path: Optional[str] = None
+    user_name: Optional[str] = None
+    retry_attempts: Optional[int] = Field(default=None, ge=1)
+    context_length: Optional[int] = Field(default=None, ge=1)
+    return_step_meta: Optional[bool] = None
+    output_type: Optional[str] = None
+    auto_generate_prompt: Optional[bool] = None
+    streaming_on: Optional[bool] = Field(
+        default=None,
+        validation_alias=AliasChoices("streaming_on", "streaming"),
+    )
 
+    def agent_kwargs(self, extra: bool = False) -> Dict[str, Any]:
+        """
+        Return the configured fields as Agent keyword arguments.
 
-class FileType(str, Enum):
-    """Supported file types for agent configuration"""
+        Args:
+            extra: Also return keys the schema does not define, passed through as custom Agent parameters.
 
-    CSV = "csv"
-    JSON = "json"
-    YAML = "yaml"
-
-
-class AgentConfigDict(TypedDict):
-    """TypedDict for agent configuration"""
-
-    agent_name: str
-    system_prompt: str
-    model_name: str
-    max_loops: int
-    autosave: bool
-    dashboard: bool
-    verbose: bool
-    dynamic_temperature: bool
-    saved_state_path: str
-    user_name: str
-    retry_attempts: int
-    context_length: int
-    return_step_meta: bool
-    output_type: str
-    streaming: bool
-
-
-@dataclass
-class AgentValidationError(Exception):
-    """Custom exception for agent validation errors"""
-
-    message: str
-    field: str
-    value: Any
-
-    def __str__(self) -> str:
-        return f"Validation error in field '{self.field}': {self.message}. Got value: {self.value}"
-
-
-class AgentValidator:
-    """Validates agent configuration data"""
-
-    @staticmethod
-    def validate_config(
-        config: Union[BaseModel, Dict[str, Any]],
-    ) -> AgentConfigDict:
-        """Validate a config supplied as a pydantic model or a plain dict."""
-        try:
-            if isinstance(config, BaseModel):
-                config = config.model_dump()
-
-            # Validate model name using litellm model list
-            model_name = str(config["model_name"])
-            # model_list from litellm is a list of strings, not dicts
-            if isinstance(model_list, list) and len(model_list) > 0:
-                if isinstance(model_list[0], str):
-                    # model_list is list of strings
-                    if not any(
-                        model_name in model or model in model_name
-                        for model in model_list
-                    ):
-                        raise AgentValidationError(
-                            "Invalid model name. Must be one of the supported litellm models",
-                            "model_name",
-                            model_name,
-                        )
-                elif isinstance(model_list[0], dict):
-                    # model_list is list of dicts (fallback for different litellm versions)
-                    if not any(
-                        model_name in model.get("model_name", "")
-                        for model in model_list
-                    ):
-                        raise AgentValidationError(
-                            "Invalid model name. Must be one of the supported litellm models",
-                            "model_name",
-                            model_name,
-                        )
-
-            # Convert types with error handling
-            validated_config: AgentConfigDict = {
-                "agent_name": str(config.get("agent_name", "")),
-                "system_prompt": str(config.get("system_prompt", "")),
-                "model_name": model_name,
-                "max_loops": int(config.get("max_loops", 1)),
-                "autosave": bool(
-                    str(config.get("autosave", True)).lower()
-                    == "true"
-                ),
-                "dashboard": bool(
-                    str(config.get("dashboard", False)).lower()
-                    == "true"
-                ),
-                "verbose": bool(
-                    str(config.get("verbose", True)).lower() == "true"
-                ),
-                "dynamic_temperature": bool(
-                    str(
-                        config.get("dynamic_temperature", True)
-                    ).lower()
-                    == "true"
-                ),
-                "saved_state_path": str(
-                    config.get("saved_state_path", "")
-                ),
-                "user_name": str(
-                    config.get("user_name", "default_user")
-                ),
-                "retry_attempts": int(
-                    config.get("retry_attempts", 3)
-                ),
-                "context_length": int(
-                    config.get("context_length", 200000)
-                ),
-                "return_step_meta": bool(
-                    str(config.get("return_step_meta", False)).lower()
-                    == "true"
-                ),
-                "output_type": str(
-                    config.get("output_type", "string")
-                ),
-                "streaming": bool(
-                    str(config.get("streaming", False)).lower()
-                    == "true"
-                ),
-            }
-
-            return validated_config
-
-        except (ValueError, KeyError) as e:
-            raise AgentValidationError(
-                str(e), str(e.__class__.__name__), str(config)
-            )
-
-
-class CSVAgentLoader:
-    """Class to manage agents through various file formats with type safety and high performance"""
-
-    def __init__(
-        self, file_path: Union[str, Path], max_workers: int = 10
-    ):
-        """Initialize the CSVAgentLoader with file path and max workers for parallel processing"""
-        self.file_path = (
-            Path(file_path)
-            if isinstance(file_path, str)
-            else file_path
-        )
-        self.max_workers = max_workers
-
-    @property
-    def file_type(self) -> FileType:
-        """Determine the file type based on extension"""
-        ext = self.file_path.suffix.lower()
-        if ext == ".csv":
-            return FileType.CSV
-        elif ext == ".json":
-            return FileType.JSON
-        elif ext in [".yaml", ".yml"]:
-            return FileType.YAML
-        else:
-            raise ValueError(f"Unsupported file type: {ext}")
-
-    def create_agent_file(
-        self, agents: List[Union[BaseModel, Dict[str, Any]]]
-    ) -> None:
-        """Create a file with validated agent configurations"""
-        validated_agents = []
-        for agent in agents:
-            try:
-                validated_config = AgentValidator.validate_config(
-                    agent
-                )
-                validated_agents.append(validated_config)
-            except AgentValidationError as e:
-                print(
-                    f"Validation error for agent {agent.get('agent_name', 'unknown')}: {e}"
-                )
-                raise
-
-        if self.file_type == FileType.CSV:
-            self._write_csv(validated_agents)
-        elif self.file_type == FileType.JSON:
-            self._write_json(validated_agents)
-        elif self.file_type == FileType.YAML:
-            self._write_yaml(validated_agents)
-
-        print(
-            f"Created {self.file_type.value} file with {len(validated_agents)} agents at {self.file_path}"
-        )
-
-    def load_agents(self) -> List[Agent]:
-        """Load and create agents from file with validation and parallel processing"""
-        if not self.file_path.exists():
-            raise FileNotFoundError(
-                f"File not found at {self.file_path}"
-            )
-
-        if self.file_type == FileType.CSV:
-            agents_data = self._read_csv()
-        elif self.file_type == FileType.JSON:
-            agents_data = self._read_json()
-        elif self.file_type == FileType.YAML:
-            agents_data = self._read_yaml()
-
-        # Process agents in parallel with progress bar
-        agents: List[Agent] = []
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=self.max_workers
-        ) as executor:
-            futures = []
-            for agent_data in agents_data:
-                futures.append(
-                    executor.submit(self._process_agent, agent_data)
-                )
-
-            # Use tqdm to show progress
-            for future in tqdm(
-                concurrent.futures.as_completed(futures),
-                total=len(futures),
-                desc="Loading agents",
-            ):
-                try:
-                    agent = future.result()
-                    if agent:
-                        agents.append(agent)
-                except Exception as e:
-                    print(f"Error processing agent: {e}")
-
-        print(f"Loaded {len(agents)} agents from {self.file_path}")
-        return agents
-
-    def _process_agent(
-        self, agent_data: Union[BaseModel, Dict[str, Any]]
-    ) -> Union[Agent, None]:
-        """Process a single agent configuration"""
-        try:
-            validated_config = AgentValidator.validate_config(
-                agent_data
-            )
-            return self._create_agent(validated_config)
-        except AgentValidationError as e:
-            print(f"Skipping invalid agent configuration: {e}")
-            return None
-
-    def _create_agent(
-        self, validated_config: AgentConfigDict
-    ) -> Agent:
-        """Create an Agent instance from validated configuration"""
-        return Agent(
-            agent_name=validated_config["agent_name"],
-            system_prompt=validated_config["system_prompt"],
-            model_name=validated_config["model_name"],
-            max_loops=validated_config["max_loops"],
-            autosave=validated_config["autosave"],
-            dashboard=validated_config["dashboard"],
-            verbose=validated_config["verbose"],
-            dynamic_temperature_enabled=validated_config[
-                "dynamic_temperature"
-            ],
-            saved_state_path=validated_config["saved_state_path"],
-            user_name=validated_config["user_name"],
-            retry_attempts=validated_config["retry_attempts"],
-            context_length=validated_config["context_length"],
-            return_step_meta=validated_config["return_step_meta"],
-            output_type=validated_config["output_type"],
-            streaming_on=validated_config["streaming"],
-        )
-
-    def _write_csv(self, agents: List[Dict[str, Any]]) -> None:
-        """Write agents to CSV file"""
-        with open(self.file_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=agents[0].keys())
-            writer.writeheader()
-            writer.writerows(agents)
-
-    def _write_json(self, agents: List[Dict[str, Any]]) -> None:
-        """Write agents to JSON file"""
-        with open(self.file_path, "w") as f:
-            json.dump(agents, f, indent=2)
-
-    def _write_yaml(self, agents: List[Dict[str, Any]]) -> None:
-        """Write agents to YAML file"""
-        with open(self.file_path, "w") as f:
-            yaml.dump(agents, f, default_flow_style=False)
-
-    def _read_csv(self) -> List[Dict[str, Any]]:
-        """Read agents from CSV file"""
-        with open(self.file_path, "r") as f:
-            reader = csv.DictReader(f)
-            return list(reader)
-
-    def _read_json(self) -> List[Dict[str, Any]]:
-        """Read agents from JSON file"""
-        with open(self.file_path, "r") as f:
-            return json.load(f)
-
-    def _read_yaml(self) -> List[Dict[str, Any]]:
-        """Read agents from YAML file"""
-        with open(self.file_path, "r") as f:
-            return yaml.safe_load(f)
+        Returns:
+            Dict[str, Any]: The fields that were set and are not None.
+        """
+        exclude = None if extra else set(self.model_extra or ())
+        return self.model_dump(exclude_none=True, exclude=exclude)
 
 
 class AgentLoader:
     """
     Loader class for creating Agent objects from various file formats.
 
-    This class provides methods to load agents from Markdown, YAML, and CSV files.
+    This class provides methods to load agents from Markdown, YAML, CSV and JSON files.
     """
 
-    def __init__(self, concurrent: bool = True):
+    def __init__(
+        self,
+        concurrent: bool = True,
+        max_workers: Optional[int] = None,
+    ):
         """
         Initialize the AgentLoader instance.
+
+        Args:
+            concurrent (bool): Whether to load files concurrently.
+            max_workers (Optional[int]): Worker threads for concurrent loading. Defaults to twice the CPU count.
         """
         self.concurrent = concurrent
-        pass
+        self.max_workers = max_workers or (os.cpu_count() or 1) * 2
+
+    def parse_yaml_frontmatter(self, content: str) -> Dict[str, Any]:
+        """
+        Parse YAML frontmatter from markdown content.
+
+        Args:
+            content: Markdown content with potential YAML frontmatter
+
+        Returns:
+            Dictionary with parsed YAML data and remaining content
+        """
+        lines = content.split("\n")
+
+        if not lines[0].strip() == "---":
+            return {"frontmatter": {}, "content": content}
+
+        end_marker = -1
+        for i, line in enumerate(lines[1:], 1):
+            if line.strip() == "---":
+                end_marker = i
+                break
+
+        if end_marker == -1:
+            return {"frontmatter": {}, "content": content}
+
+        frontmatter_text = "\n".join(lines[1:end_marker])
+        remaining_content = "\n".join(lines[end_marker + 1 :]).strip()
+
+        try:
+            frontmatter_data = yaml.safe_load(frontmatter_text) or {}
+        except yaml.YAMLError as e:
+            logger.warning(f"Failed to parse YAML frontmatter: {e}")
+            return {"frontmatter": {}, "content": content}
+
+        return {
+            "frontmatter": frontmatter_data,
+            "content": remaining_content,
+        }
+
+    def parse_markdown_file(self, file_path: str) -> AgentConfig:
+        """
+        Parse a Claude Code sub-agent markdown file into an agent configuration.
+
+        Args:
+            file_path: Path to a markdown file with YAML frontmatter; the body is the system prompt.
+
+        Returns:
+            AgentConfig: The parsed configuration.
+
+        Raises:
+            FileNotFoundError: If the file doesn't exist.
+            ValueError: If the file has no frontmatter or fails validation.
+        """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(
+                f"Markdown file {file_path} not found."
+            )
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as file:
+                content = file.read()
+
+            yaml_result = self.parse_yaml_frontmatter(content)
+            frontmatter = yaml_result["frontmatter"]
+
+            if not frontmatter:
+                raise ValueError(
+                    f"No YAML frontmatter found in {file_path}. File must use Claude Code sub-agent format with YAML frontmatter."
+                )
+
+            config = AgentConfig.model_validate(
+                {
+                    "name": Path(file_path).stem,
+                    "description": "Agent loaded from markdown",
+                    **frontmatter,
+                    "system_prompt": yaml_result["content"].strip(),
+                }
+            )
+
+            logger.info(
+                f"Successfully parsed markdown file: {file_path}"
+            )
+            return config
+
+        except Exception as e:
+            logger.error(
+                f"Error parsing markdown file {file_path}: {str(e)}"
+            )
+            raise ValueError(
+                f"Error parsing markdown file {file_path}: {str(e)}"
+            )
+
+    def load_agent_from_markdown(
+        self, file_path: str, **kwargs
+    ) -> Agent:
+        """
+        Load a single agent from a Markdown file.
+
+        Args:
+            file_path (str): Path to the Markdown file containing the agent definition.
+            **kwargs: Agent arguments that override the parsed configuration.
+
+        Returns:
+            Agent: The loaded Agent object.
+        """
+        config = self.parse_markdown_file(file_path)
+
+        try:
+            logger.info(
+                f"Creating agent '{config.agent_name}' from {file_path}"
+            )
+            agent = Agent(**{**config.agent_kwargs(), **kwargs})
+            logger.info(
+                f"Successfully created agent '{config.agent_name}' from {file_path}"
+            )
+            return agent
+        except Exception as e:
+            logger.error(
+                f"Error creating agent from {file_path}: {str(e)}"
+            )
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise ValueError(
+                f"Error creating agent from {file_path}: {str(e)}"
+            )
 
     def load_agents_from_markdown(
         self,
@@ -378,56 +247,178 @@ class AgentLoader:
         Load multiple agents from one or more Markdown files.
 
         Args:
-            file_paths (Union[str, List[str]]): Path or list of paths to Markdown file(s) containing agent definitions.
+            file_paths (Union[str, List[str]]): A Markdown file, a directory of them, or a list of paths.
             concurrent (bool, optional): Whether to load files concurrently. Defaults to True.
             max_file_size_mb (float, optional): Maximum file size in MB to process. Defaults to 10.0.
-            **kwargs: Additional keyword arguments passed to the underlying loader.
+            **kwargs: Agent arguments applied to every loaded agent.
 
         Returns:
             List[Agent]: A list of loaded Agent objects.
         """
-        return load_agents_from_markdown(
-            file_paths=file_paths,
-            concurrent=concurrent,
-            max_file_size_mb=max_file_size_mb,
-            **kwargs,
+        agents = []
+        paths_to_process = []
+
+        if isinstance(file_paths, str):
+            if os.path.isdir(file_paths):
+                md_files = list(Path(file_paths).glob("*.md"))
+                paths_to_process = [str(f) for f in md_files]
+            elif os.path.isfile(file_paths):
+                paths_to_process = [file_paths]
+            else:
+                raise FileNotFoundError(
+                    f"Path {file_paths} not found."
+                )
+        elif isinstance(file_paths, list):
+            paths_to_process = file_paths
+        else:
+            raise ValueError(
+                "file_paths must be a string or list of strings"
+            )
+
+        for file_path in paths_to_process:
+            try:
+                file_size_mb = os.path.getsize(file_path) / (
+                    1024 * 1024
+                )
+                if file_size_mb > max_file_size_mb:
+                    logger.warning(
+                        f"Skipping {file_path}: size {file_size_mb:.2f}MB exceeds limit {max_file_size_mb}MB"
+                    )
+                    paths_to_process.remove(file_path)
+            except OSError:
+                logger.warning(
+                    f"Could not check size of {file_path}, skipping validation"
+                )
+
+        if concurrent and len(paths_to_process) > 1:
+            logger.info(
+                f"Loading {len(paths_to_process)} agents concurrently with {self.max_workers} workers..."
+            )
+
+            with ThreadPoolExecutor(
+                max_workers=self.max_workers
+            ) as executor:
+                future_to_path = {
+                    executor.submit(
+                        self.load_agent_from_markdown,
+                        file_path,
+                        **kwargs,
+                    ): file_path
+                    for file_path in paths_to_process
+                }
+
+                for future in as_completed(
+                    future_to_path, timeout=300
+                ):
+                    file_path = future_to_path[future]
+                    try:
+                        agent = future.result(timeout=60)
+                        agents.append(agent)
+                        logger.info(
+                            f"Successfully loaded agent from {file_path}"
+                        )
+                    except TimeoutError:
+                        logger.error(f"Timeout loading {file_path}")
+                        continue
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to load {file_path}: {str(e)}"
+                        )
+                        continue
+        else:
+            logger.info(
+                f"Loading {len(paths_to_process)} agents sequentially..."
+            )
+            for file_path in paths_to_process:
+                try:
+                    agent = self.load_agent_from_markdown(
+                        file_path, **kwargs
+                    )
+                    agents.append(agent)
+                except Exception as e:
+                    logger.warning(
+                        f"Skipping {file_path} due to error: {str(e)}"
+                    )
+                    continue
+
+        logger.info(
+            f"Successfully loaded {len(agents)} agents from markdown files"
         )
-
-    def load_agent_from_markdown(
-        self, file_path: str, **kwargs
-    ) -> Agent:
-        """
-        Load a single agent from a Markdown file.
-
-        Args:
-            file_path (str): Path to the Markdown file containing the agent definition.
-            **kwargs: Additional keyword arguments passed to the underlying loader.
-
-        Returns:
-            Agent: The loaded Agent object.
-        """
-        return load_agent_from_markdown(file_path=file_path, **kwargs)
+        return agents
 
     def load_agents_from_yaml(
         self,
-        yaml_file: str,
+        yaml_file: Optional[str] = None,
         return_type: ReturnTypes = "auto",
+        yaml_string: Optional[str] = None,
         **kwargs,
-    ) -> List[Agent]:
+    ) -> Any:
         """
-        Load agents from a YAML file.
+        Load agents, and a SwarmRouter if one is configured, from a YAML config with agents and swarm_architecture sections, or from a list of agents as create_agent_file writes it.
 
         Args:
-            yaml_file (str): Path to the YAML file containing agent definitions.
-            return_type (ReturnTypes, optional): The return type for the loader. Defaults to "auto".
-            **kwargs: Additional keyword arguments passed to the underlying loader.
+            yaml_file (Optional[str]): Path to the YAML file.
+            return_type (ReturnTypes, optional): "auto" returns the router, or the agents when there is none; "agents" the agents; "both" a (router or agents, agents) tuple; "swarm" and "run_swarm" run the router on its task. Defaults to "auto".
+            yaml_string (Optional[str]): YAML content to use instead of yaml_file.
+            **kwargs: Agent arguments applied to every loaded agent.
 
         Returns:
-            List[Agent]: A list of loaded Agent objects.
+            Any: A single agent or a list of them, the router, a tuple, or the swarm's output.
+
+        Raises:
+            FileNotFoundError: If yaml_file doesn't exist.
+            ValueError: If no agents are defined, return_type is unknown, or a run has no router or task.
         """
-        return create_agents_from_yaml(
-            yaml_file=yaml_file, return_type=return_type, **kwargs
+        if return_type not in ReturnTypes.__args__:
+            raise ValueError(
+                f"Invalid return_type. Must be one of: {ReturnTypes.__args__}"
+            )
+        if yaml_string is None:
+            if not yaml_file or not os.path.exists(yaml_file):
+                raise FileNotFoundError(
+                    f"YAML file {yaml_file} not found."
+                )
+            with open(yaml_file, "r", encoding="utf-8") as f:
+                yaml_string = f.read()
+        config = yaml.safe_load(yaml_string) or {}
+        if isinstance(config, list):
+            config = {"agents": config}
+        if not config.get("agents"):
+            raise ValueError(
+                "No agents defined in the YAML configuration."
+            )
+
+        agents = []
+        for idx, row in enumerate(config["agents"], 1):
+            # A nested model block holds model_name, temperature and max_tokens.
+            if isinstance(row.get("model"), dict):
+                row = dict(row)
+                row.update(row.pop("model"))
+            agent_kwargs = AgentConfig.model_validate(
+                row
+            ).agent_kwargs(extra=True)
+            agent_kwargs.setdefault("agent_name", f"Agent_{idx}")
+            agents.append(Agent(**{**agent_kwargs, **kwargs}))
+
+        swarm_config = config.get("swarm_architecture")
+        router = (
+            SwarmRouter(agents=agents, **swarm_config)
+            if swarm_config
+            else None
         )
+        single = agents[0] if len(agents) == 1 else agents
+
+        if return_type in ("swarm", "run_swarm"):
+            if router is None or not swarm_config.get("task"):
+                raise ValueError(
+                    "Running the swarm needs a swarm_architecture section with a task."
+                )
+            return router.run(swarm_config["task"])
+        if return_type == "agents":
+            return single
+        if return_type == "both":
+            return (router or single, agents)
+        return router or single
 
     def load_many_agents_from_yaml(
         self,
@@ -456,27 +447,115 @@ class AgentLoader:
         ]
 
     def load_agents_from_csv(
-        self, csv_file: str, **kwargs
+        self, csv_file: Union[str, Path], **kwargs
     ) -> List[Agent]:
         """
-        Load agents from a CSV file.
+        Load agents from a CSV, JSON or YAML file of agent rows, in file order.
 
         Args:
-            csv_file (str): Path to the CSV file containing agent definitions.
-            **kwargs: Additional keyword arguments passed to the underlying loader.
+            csv_file (Union[str, Path]): Path to the file containing agent definitions.
+            **kwargs: Agent arguments applied to every loaded agent.
 
         Returns:
-            List[Agent]: A list of loaded Agent objects.
+            List[Agent]: A list of loaded Agent objects. Invalid rows are skipped.
         """
-        loader = CSVAgentLoader(file_path=csv_file)
-        return loader.load_agents()
+        file_path = Path(csv_file)
+        if not file_path.exists():
+            raise FileNotFoundError(f"File not found at {file_path}")
+
+        suffix = self._suffix(file_path)
+        with open(file_path, "r", newline="") as f:
+            if suffix == ".csv":
+                # A blank cell means unset, not an empty value.
+                rows = [
+                    {
+                        k: v
+                        for k, v in row.items()
+                        if v not in ("", None)
+                    }
+                    for row in csv.DictReader(f)
+                ]
+            elif suffix == ".json":
+                rows = json.load(f)
+            else:
+                rows = yaml.safe_load(f)
+
+        agents: List[Agent] = []
+        with ThreadPoolExecutor(
+            max_workers=self.max_workers
+        ) as executor:
+            futures = [
+                executor.submit(self._process_agent, row, kwargs)
+                for row in rows
+            ]
+
+            for future in tqdm(
+                futures,
+                total=len(futures),
+                desc="Loading agents",
+            ):
+                try:
+                    agent = future.result()
+                    if agent:
+                        agents.append(agent)
+                except Exception as e:
+                    print(f"Error processing agent: {e}")
+
+        print(f"Loaded {len(agents)} agents from {file_path}")
+        return agents
+
+    def create_agent_file(
+        self,
+        file_path: Union[str, Path],
+        agents: List[Union[BaseModel, Dict[str, Any]]],
+    ) -> None:
+        """
+        Validate agent configurations and write them to a CSV, JSON or YAML file.
+
+        Args:
+            file_path (Union[str, Path]): Destination file; its extension picks the format.
+            agents (List[Union[BaseModel, Dict[str, Any]]]): Agent configurations to write.
+
+        Raises:
+            ValidationError: If a configuration is invalid.
+        """
+        file_path = Path(file_path)
+        suffix = self._suffix(file_path)
+
+        rows = []
+        for agent in agents:
+            data = (
+                agent.model_dump()
+                if isinstance(agent, BaseModel)
+                else agent
+            )
+            rows.append(
+                AgentConfig.model_validate(data).agent_kwargs()
+            )
+
+        with open(file_path, "w", newline="") as f:
+            if suffix == ".csv":
+                fieldnames = list(
+                    dict.fromkeys(k for r in rows for k in r)
+                )
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(rows)
+            elif suffix == ".json":
+                json.dump(rows, f, indent=2)
+            else:
+                yaml.dump(rows, f, default_flow_style=False)
+
+        print(
+            f"Created {suffix[1:]} file with {len(rows)} agents at {file_path}"
+        )
 
     def auto(self, file_path: str, *args, **kwargs):
         """
         Automatically load agents from a file based on its extension.
 
         Args:
-            file_path (str): Path to the agent file (Markdown, YAML, or CSV).
+            file_path (str): Path to the agent file (Markdown, YAML, CSV or JSON).
             *args: Additional positional arguments passed to the underlying loader.
             **kwargs: Additional keyword arguments passed to the underlying loader.
 
@@ -486,15 +565,16 @@ class AgentLoader:
         Raises:
             ValueError: If the file type is not supported.
         """
-        if file_path.endswith(".md"):
+        suffix = Path(file_path).suffix.lower()
+        if suffix == ".md":
             return self.load_agents_from_markdown(
                 file_path, *args, **kwargs
             )
-        elif file_path.endswith(".yaml"):
+        elif suffix in (".yaml", ".yml"):
             return self.load_agents_from_yaml(
                 file_path, *args, **kwargs
             )
-        elif file_path.endswith(".csv"):
+        elif suffix in (".csv", ".json"):
             return self.load_agents_from_csv(
                 file_path, *args, **kwargs
             )
@@ -521,7 +601,7 @@ class AgentLoader:
         Load multiple agents from a list of files of various supported types.
 
         Args:
-            file_paths (List[str]): List of file paths to agent files (Markdown, YAML, or CSV).
+            file_paths (List[str]): List of file paths to agent files (Markdown, YAML, CSV or JSON).
             *args: Additional positional arguments passed to the underlying loader.
             **kwargs: Additional keyword arguments passed to the underlying loader.
 
@@ -533,16 +613,107 @@ class AgentLoader:
             for file_path in file_paths
         ]
 
-    def parse_markdown_file(self, file_path: str):
+    @staticmethod
+    def _suffix(file_path: Path) -> str:
         """
-        Parse a Markdown file and return the agents defined within.
+        Return the file's format as a normalised extension.
 
         Args:
-            file_path (str): Path to the Markdown file.
+            file_path: The agent file.
 
         Returns:
-            List[Agent]: A list of Agent objects parsed from the file.
+            str: ".csv", ".json" or ".yaml".
+
+        Raises:
+            ValueError: If the extension is not supported.
         """
-        return MarkdownAgentLoader(
-            max_workers=os.cpu_count()
-        ).parse_markdown_file(file_path=file_path)
+        ext = file_path.suffix.lower()
+        if ext == ".yml":
+            return ".yaml"
+        if ext not in (".csv", ".json", ".yaml"):
+            raise ValueError(f"Unsupported file type: {ext}")
+        return ext
+
+    def _process_agent(
+        self,
+        agent_data: Union[BaseModel, Dict[str, Any]],
+        overrides: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Agent]:
+        """
+        Validate one agent row and build its Agent.
+
+        Args:
+            agent_data: The row, as a dict or pydantic model.
+            overrides: Agent arguments that take precedence over the row.
+
+        Returns:
+            Optional[Agent]: The agent, or None when the row is invalid.
+        """
+        if isinstance(agent_data, BaseModel):
+            agent_data = agent_data.model_dump()
+        try:
+            config = AgentConfig.model_validate(agent_data)
+        except ValidationError as e:
+            print(f"Skipping invalid agent configuration: {e}")
+            return None
+        return self._create_agent(
+            {**config.agent_kwargs(), **(overrides or {})}
+        )
+
+    def _create_agent(self, agent_kwargs: Dict[str, Any]) -> Agent:
+        """
+        Create an Agent from validated keyword arguments.
+
+        Args:
+            agent_kwargs: Agent constructor arguments.
+
+        Returns:
+            Agent: The new agent.
+        """
+        return Agent(**agent_kwargs)
+
+
+def load_agent_from_markdown(file_path: str, **kwargs) -> Agent:
+    """
+    Load a single agent from a markdown file using the Claude Code YAML frontmatter format.
+
+    Args:
+        file_path (str): Path to the markdown file containing YAML frontmatter.
+        **kwargs: Agent arguments that override the parsed configuration.
+
+    Returns:
+        Agent: Configured Agent instance loaded from the markdown file.
+
+    Example:
+        >>> agent = load_agent_from_markdown("finance_advisor.md", max_loops=3)
+    """
+    return AgentLoader().load_agent_from_markdown(file_path, **kwargs)
+
+
+def load_agents_from_markdown(
+    file_paths: Union[str, List[str]],
+    concurrent: bool = True,
+    max_file_size_mb: float = 10.0,
+    **kwargs,
+) -> List[Agent]:
+    """
+    Load agents from markdown files using the Claude Code YAML frontmatter format.
+
+    Args:
+        file_paths (Union[str, List[str]]): A directory of markdown files or a list of paths.
+        concurrent (bool, optional): Load files concurrently. Defaults to True.
+        max_file_size_mb (float, optional): Files larger than this are skipped. Defaults to 10.0.
+        **kwargs: Agent arguments applied to every loaded agent.
+
+    Returns:
+        List[Agent]: Configured Agent instances loaded from the markdown files.
+
+    Example:
+        >>> agents = load_agents_from_markdown(["agent1.md", "agent2.md"], max_loops=2)
+    """
+    return AgentLoader().load_agents_from_markdown(
+        file_paths,
+        concurrent=concurrent,
+        max_file_size_mb=max_file_size_mb,
+        **kwargs,
+    )

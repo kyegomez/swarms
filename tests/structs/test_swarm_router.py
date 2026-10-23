@@ -1,3 +1,5 @@
+import json
+from collections import Counter
 from unittest.mock import patch
 
 import pytest
@@ -76,6 +78,25 @@ def test_initialization_with_agent_rearrange_config():
 
     assert router.swarm_type == "AgentRearrange"
     assert router.rearrange_flow == "ResearchAgent -> CodeAgent"
+
+
+def test_round_robin_returns_the_router_output_type():
+    """RoundRobin formats its result with the router's output_type."""
+    router = SwarmRouter(
+        agents=create_sample_agents(),
+        swarm_type="RoundRobin",
+        output_type="list",
+    )
+
+    with patch.object(Agent, "run", return_value="2"):
+        result = router.run("What is 1+1?")
+
+    assert router.swarm.output_type == "list"
+    assert [message["role"] for message in result] == [
+        "User",
+        "ResearchAgent",
+        "CodeAgent",
+    ]
 
 
 # ============================================================================
@@ -402,6 +423,31 @@ def test_run_with_mixture_of_agents():
     assert result is not None
 
 
+def test_mixture_of_agents_keeps_the_aggregator_out_of_the_workers():
+    """The last agent only aggregates; it does not also answer as a worker."""
+    router = SwarmRouter(
+        agents=create_sample_agents(),
+        swarm_type="MixtureOfAgents",
+        max_loops=1,
+    )
+    calls = Counter()
+
+    def fake_run(agent, task=None, *args, **kwargs):
+        calls[agent.agent_name] += 1
+        return f"{agent.agent_name} answer"
+
+    with patch.object(
+        Agent, "run", autospec=True, side_effect=fake_run
+    ):
+        router.run("What is 1+1?")
+
+    assert calls == {"ResearchAgent": 1, "CodeAgent": 1}
+    assert [a.agent_name for a in router.swarm.agents] == [
+        "ResearchAgent"
+    ]
+    assert router.swarm.aggregator_agent.agent_name == "CodeAgent"
+
+
 def test_run_with_sequential_workflow_type():
     """SwarmRouter dispatches to SequentialWorkflow."""
     sample_agents = create_sample_agents()
@@ -445,6 +491,35 @@ def test_run_with_group_chat():
 
     result = router.run("What is 1+1?")
     assert result is not None
+
+
+def test_group_chat_lets_an_agent_speak_at_the_default_max_loops():
+    """max_loops=1 gives the chat one agent turn, not zero."""
+    router = SwarmRouter(
+        agents=create_sample_agents(), swarm_type="GroupChat"
+    )
+
+    def fake_run(agent, task=None, *args, **kwargs):
+        score = 0.9 if agent.agent_name == "ResearchAgent" else 0.0
+        arguments = {"score": score, "message": "1+1 is 2."}
+        return [
+            {
+                "function": {
+                    "name": "respond",
+                    "arguments": json.dumps(arguments),
+                }
+            }
+        ]
+
+    with patch.object(
+        Agent, "run", autospec=True, side_effect=fake_run
+    ):
+        result = router.run("What is 1+1?")
+
+    assert [message["role"] for message in result] == [
+        "User",
+        "ResearchAgent",
+    ]
 
 
 def test_run_with_multi_agent_router():
@@ -578,7 +653,7 @@ class TestConcurrentRun:
 
         from swarms import Agent, SwarmRouter
 
-        with patch("swarms.structs.agent.LiteLLM"):
+        with patch("swarms.agents.tool_manager.LiteLLM"):
             agent = Agent(
                 agent_name="A",
                 model_name="gpt-5.4",
@@ -654,6 +729,32 @@ class TestConcurrentRun:
         r = self._router(boom)
         with pytest.raises(ValueError, match="nope"):
             r.concurrent_run(["a"])
+
+
+def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
+    from swarms import Agent
+    from swarms.structs.file_channel import FileChannel
+
+    channel = FileChannel(tmp_path / "run.md")
+    agents = [
+        Agent(
+            agent_name="A",
+            model_name="gpt-4o",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+    ]
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        channel=channel,
+    )
+
+    swarm = router._create_swarm()
+
+    assert swarm.channel is channel
+    assert swarm.agent_rearrange.conversation.channel is channel
 
 
 if __name__ == "__main__":
@@ -862,7 +963,7 @@ def _fallback_router(primary_error=None, fallbacks=None, **outcomes):
     ``outcomes`` maps swarm type -> exception to raise from ``run()`` (or
     ``None`` to succeed). Types not named succeed.
     """
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         agent = Agent(
             agent_name="A",
             model_name="gpt-5.4",
@@ -1074,7 +1175,7 @@ def test_config_model_accepts_fallback_swarms():
 
 def _agent_with_usage(name, input_tokens, output_tokens):
     """An offline agent whose lifetime usage is set directly."""
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         agent = Agent(
             agent_name=name,
             model_name="gpt-5.4",
@@ -1093,7 +1194,7 @@ def _agent_with_usage(name, input_tokens, output_tokens):
 
 
 def _usage_router(agents):
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         return SwarmRouter(
             name="usage-router",
             agents=agents,
@@ -1199,3 +1300,51 @@ def test_council_as_judge_aggregator_receives_typed_turns():
             in text
             for text in contents
         ), f"no turn attributed to {agent.agent_name}: {contents}"
+
+
+def test_council_as_judge_judges_use_council_judge_model_name():
+    router = SwarmRouter(
+        swarm_type="CouncilAsAJudge",
+        agents=create_sample_agents(),
+        council_judge_model_name="gpt-4o-mini",
+    )
+    council = router._create_council_as_judge()
+
+    assert {
+        agent.model_name for agent in council.judge_agents.values()
+    } == {"gpt-4o-mini"}
+
+
+def test_call_and_batch_run_do_not_send_an_absent_imgs():
+    router, built = _fallback_router()
+
+    router("go")
+    router.batch_run(["go"])
+
+    assert built["SequentialWorkflow"].calls == [
+        {"task": "go"},
+        {"task": "go"},
+    ]
+
+
+def test_run_kwargs_reach_swarm_run_not_its_constructor(monkeypatch):
+    from swarms.structs.concurrent_workflow import ConcurrentWorkflow
+
+    seen = {}
+
+    def fake_run(self, task=None, **kwargs):
+        seen.update(kwargs)
+        return "done"
+
+    def callback(*args):
+        return None
+
+    monkeypatch.setattr(ConcurrentWorkflow, "run", fake_run)
+    router = SwarmRouter(
+        agents=create_sample_agents(),
+        swarm_type="ConcurrentWorkflow",
+        verbose=False,
+    )
+
+    assert router.run("hi", streaming_callback=callback) == "done"
+    assert seen["streaming_callback"] is callback

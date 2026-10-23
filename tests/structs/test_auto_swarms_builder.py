@@ -833,5 +833,56 @@ def test_additional_llm_args_default_is_not_shared():
     assert builder_b.additional_llm_args == {}
 
 
+def test_usage_sums_builder_calls_and_executed_agents(monkeypatch):
+    """builder.usage adds the boss LLM's calls to the calls made by the agents it runs."""
+    from types import SimpleNamespace
+
+    from swarms.utils import litellm_wrapper
+
+    calls = []
+
+    def fake_completion(**kwargs):
+        calls.append(kwargs)
+        content = json.dumps(minimal_router_config())
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content=content, tool_calls=None
+                    )
+                )
+            ],
+            usage=SimpleNamespace(
+                prompt_tokens=100,
+                completion_tokens=10,
+                total_tokens=110,
+                prompt_tokens_details=SimpleNamespace(
+                    cached_tokens=4
+                ),
+                completion_tokens_details=SimpleNamespace(
+                    reasoning_tokens=3
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(
+        litellm_wrapper, "completion", fake_completion
+    )
+
+    builder = AutoSwarmBuilder()
+    builder.run("some task", execute=True)
+
+    builder_calls = [c for c in calls if "response_format" in c]
+    assert len(builder_calls) == 1
+    assert len(calls) == 2
+    assert builder.usage == {
+        "input_tokens": 200,
+        "output_tokens": 20,
+        "cached_tokens": 8,
+        "reasoning_tokens": 6,
+        "total_tokens": 220,
+    }
+
+
 if __name__ == "__main__":
     run_all_tests()

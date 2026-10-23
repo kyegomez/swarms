@@ -9,7 +9,7 @@ load_dotenv()
 # Ensure handlers are only configured once to prevent conflicts between modules.
 _CONFIGURED = False
 
-# Directory that current log handlers point to; may change during early boot.
+# Log directory and SWARMS_LOG_FILES value the current handlers were built for.
 _CONFIGURED_DIR = None
 
 # Ceiling for a single per-module log file before it is rolled to ".1".
@@ -35,6 +35,17 @@ def get_log_dir() -> str:
     """
     workspace = os.getenv("WORKSPACE_DIR") or "agent_workspace"
     return os.path.join(workspace, "logs")
+
+
+def log_files_enabled() -> bool:
+    """
+    Whether log files should be written, read from SWARMS_LOG_FILES.
+
+    Returns:
+        bool: True when SWARMS_LOG_FILES is True; False by default.
+    """
+    value = os.getenv("SWARMS_LOG_FILES", "False")
+    return value.strip().lower() in ("true", "1", "yes", "on")
 
 
 def _module_log_router(message) -> None:
@@ -93,15 +104,18 @@ def initialize_logger(log_folder: str = "swarms"):
     global _CONFIGURED, _CONFIGURED_DIR
 
     log_dir = get_log_dir()
-    if _CONFIGURED and log_dir == _CONFIGURED_DIR:
+    write_files = log_files_enabled()
+    if _CONFIGURED and (log_dir, write_files) == _CONFIGURED_DIR:
         return logger
-    try:
-        os.makedirs(log_dir, exist_ok=True)
-        file_logging = True
-    except OSError as e:
-        # WORKSPACE_DIR may be unwritable, and failing to write logs must never stop `import swarms`.
-        file_logging = False
-        log_dir_error = e
+    file_logging = False
+    log_dir_error = None
+    if write_files:
+        try:
+            os.makedirs(log_dir, exist_ok=True)
+            file_logging = True
+        except OSError as e:
+            # WORKSPACE_DIR may be unwritable, and failing to write logs must never stop `import swarms`.
+            log_dir_error = e
 
     # Reset loguru handlers
     logger.remove()
@@ -139,12 +153,12 @@ def initialize_logger(log_folder: str = "swarms"):
             level="INFO",
             format=LOG_FORMAT,
         )
-    else:
+    elif log_dir_error is not None:
         logger.warning(
             f"Log directory {log_dir!r} is unavailable "
             f"({log_dir_error}); logging to the console only."
         )
 
     _CONFIGURED = True
-    _CONFIGURED_DIR = log_dir
+    _CONFIGURED_DIR = (log_dir, write_files)
     return logger

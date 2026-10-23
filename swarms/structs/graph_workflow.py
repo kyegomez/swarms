@@ -1,6 +1,8 @@
 import asyncio
 import concurrent.futures
 import hashlib
+import importlib
+import importlib.util
 import json
 import os
 import time
@@ -21,25 +23,11 @@ from typing import (
     Union,
 )
 
-import networkx as nx
-
-try:
-    import graphviz
-
-    GRAPHVIZ_AVAILABLE = True
-except ImportError:
-    GRAPHVIZ_AVAILABLE = False
-    graphviz = None
-
-try:
-    import rustworkx as rx
-
-    RUSTWORKX_AVAILABLE = True
-except ImportError:
-    RUSTWORKX_AVAILABLE = False
-    rx = None
-
 from swarms.structs.agent import Agent  # noqa: F401
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
@@ -49,8 +37,39 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.utils.litellm_wrapper import empty_usage
 
 logger = initialize_logger(log_folder="graph_workflow")
+
+
+class _LazyModule:
+    """
+    A module that is imported the first time one of its attributes is read.
+
+    Args:
+        name (str): The module to import.
+    """
+
+    def __init__(self, name: str):
+        self._name = name
+        self._module = None
+
+    def __getattr__(self, attr: str) -> Any:
+        if self._module is None:
+            self._module = importlib.import_module(self._name)
+        return getattr(self._module, attr)
+
+
+# Loaded on first use, so import swarms does not pay for the graph libraries.
+nx = _LazyModule("networkx")
+
+GRAPHVIZ_AVAILABLE = importlib.util.find_spec("graphviz") is not None
+graphviz = _LazyModule("graphviz") if GRAPHVIZ_AVAILABLE else None
+
+RUSTWORKX_AVAILABLE = (
+    importlib.util.find_spec("rustworkx") is not None
+)
+rx = _LazyModule("rustworkx") if RUSTWORKX_AVAILABLE else None
 
 
 class GraphBackend:
@@ -757,6 +776,8 @@ class GraphWorkflow:
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
         _max_workers (int): Maximum nodes executed concurrently. Set from max_parallel_nodes if provided, otherwise int(get_cpu_cores() * 0.95) with a minimum of 1.
         verbose (bool): Whether to enable verbose logging.
+        usage (dict): Provider token usage summed over every distinct agent in
+            the graph, subgraphs included. See :attr:`usage`.
     """
 
     def __init__(
@@ -778,6 +799,7 @@ class GraphWorkflow:
         checkpoint_dir: Optional[str] = None,
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
+        channel: Optional[CommsChannel] = None,
         interrupt_before: Optional[List[str]] = None,
         interrupt_after: Optional[List[str]] = None,
     ):
@@ -844,7 +866,8 @@ class GraphWorkflow:
                 f"GraphWorkflow max_workers set to: {self._max_workers}"
             )
 
-        self.conversation = Conversation()
+        self.channel = channel
+        self.conversation = Conversation(channel=channel)
 
         # Rebuild the graph from nodes and edges if provided
         if self.nodes:
@@ -1224,6 +1247,7 @@ class GraphWorkflow:
                 raise ValueError(error_msg)
 
             self.nodes[node.id] = node
+            claim_agents([node.agent], self.channel, self.name)
             self.graph_backend.add_node(
                 node.id,
                 type=node.type,
@@ -1865,6 +1889,64 @@ class GraphWorkflow:
         except Exception as e:
             logger.exception(f"Error in GraphWorkflow.arun: {e}")
             raise e
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every agent in the graph.
+
+        Adds up :attr:`Agent.usage` for every ``AGENT`` node, including the
+        agents inside nested ``SUBGRAPH`` workflows at any depth. An agent that
+        backs several nodes, or appears in both this graph and a subgraph, is
+        counted once. Keys: ``input_tokens``, ``output_tokens``,
+        ``cached_tokens``, ``reasoning_tokens``, ``total_tokens``.
+
+        Agent totals are lifetime totals, so the value grows across repeated
+        ``run()`` / ``arun()`` calls, and an agent shared with another
+        workflow contributes what it spent there too. Streamed calls count
+        once their stream has been consumed, the same rule as
+        :attr:`Agent.usage`.
+
+        Returns:
+            dict: A new usage dict; mutating it does not affect the workflow.
+        """
+        total = empty_usage()
+        for agent in self._usage_agents():
+            for key, value in agent.usage.items():
+                if key in total:
+                    total[key] += value
+        return total
+
+    def _usage_agents(
+        self, _seen_graphs: Optional[Set[int]] = None
+    ) -> List[Any]:
+        """Every distinct agent in this graph and its subgraphs.
+
+        Args:
+            _seen_graphs: ``id()`` of workflows already walked, so a subgraph
+                embedded twice, or embedded in itself, is walked once.
+
+        Returns:
+            List[Any]: Agents exposing a ``usage`` dict, deduplicated by ``id()``.
+        """
+        seen_graphs = (
+            _seen_graphs if _seen_graphs is not None else set()
+        )
+        seen_graphs.add(id(self))
+        agents: Dict[int, Any] = {}
+        for node in self.nodes.values():
+            member = node.agent
+            if member is None:
+                continue
+            if node.type == NodeType.SUBGRAPH:
+                if id(member) in seen_graphs or not hasattr(
+                    member, "_usage_agents"
+                ):
+                    continue
+                for agent in member._usage_agents(seen_graphs):
+                    agents.setdefault(id(agent), agent)
+            elif isinstance(getattr(member, "usage", None), dict):
+                agents.setdefault(id(member), member)
+        return list(agents.values())
 
     @staticmethod
     def _task_key(task: str) -> str:
