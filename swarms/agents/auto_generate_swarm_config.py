@@ -12,7 +12,7 @@ from swarms.utils.litellm_wrapper import LiteLLM
 
 def prepare_yaml_for_parsing(raw_yaml: str) -> str:
     """
-    Prepares raw YAML content by fixing spacing and formatting issues.
+    Prepares raw YAML content by fixing spacing and formatting issues, only when it does not already parse.
 
     Args:
         raw_yaml (str): The raw YAML content extracted from Markdown.
@@ -20,6 +20,12 @@ def prepare_yaml_for_parsing(raw_yaml: str) -> str:
     Returns:
         str: The cleaned YAML content ready for parsing.
     """
+    try:
+        yaml.safe_load(raw_yaml)
+        return raw_yaml.strip()
+    except yaml.YAMLError:
+        pass
+
     # Fix sequence items that are improperly placed on the same line as their key
     fixed_yaml = re.sub(
         r"(\b\w+\b):\s*-\s*", r"\1:\n  - ", raw_yaml
