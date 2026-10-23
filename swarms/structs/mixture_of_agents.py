@@ -8,6 +8,10 @@ from swarms.structs.context_utils import (
     messages_for,
     split_last_turn,
 )
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import (
     batched_run,
@@ -83,6 +87,7 @@ class MixtureOfAgents:
         aggregator_model_name: str = "claude-sonnet-4-20250514",
         max_workers: Optional[int] = None,
         aggegrator_args: Dict[str, Any] = None,
+        channel: Optional[CommsChannel] = None,
     ) -> None:
         """Initialize the mixture with worker and aggregator configuration.
 
@@ -122,10 +127,16 @@ class MixtureOfAgents:
 
         self.reliability_check()
 
+        self.channel = channel
         self._reset_conversation()
 
         if self.aggregator_agent is None:
             self.aggregator_agent = self.aggregator_agent_setup()
+        claim_agents(
+            [*(self.agents or []), self.aggregator_agent],
+            channel,
+            self.name,
+        )
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -136,7 +147,7 @@ class MixtureOfAgents:
         A reused instance would otherwise carry the previous task's layers
         into the next one's aggregation.
         """
-        self.conversation = Conversation()
+        self.conversation = Conversation(channel=self.channel)
 
         list_all_agents(
             agents=self.agents,

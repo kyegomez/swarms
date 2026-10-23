@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
+from swarms.structs.file_channel import FileChannel
 from swarms import Agent
 from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
@@ -2364,6 +2365,105 @@ class TestLLMFailureRaises:
             model_name="gpt-5.4", fallback_model_name="gpt-5.4"
         )
         assert same.fallback_models == ["gpt-5.4"]
+
+
+class TestCommsChannel:
+    """An agent given a channel reads it before a run and posts to it after."""
+
+    def _agent(self, name, channel, reply="done"):
+        agent = _patched_agent(name, channel=channel)
+        agent.requests = []
+
+        def call_llm(task=None, *args, **kwargs):
+            agent.requests.append(kwargs.get("messages"))
+            return reply
+
+        agent.call_llm = call_llm
+        return agent
+
+    def test_reads_prior_turns_and_posts_the_task_and_answer(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        channel.post("Researcher", "Growth was 31%.")
+        agent = self._agent(
+            "Writer", channel, reply="Report: 31% growth."
+        )
+
+        agent.run("Write the report.")
+
+        sent = [m["content"] for m in agent.requests[0]]
+        assert sent[-2:] == ["Growth was 31%.", "Write the report."]
+        assert channel.messages() == [
+            {
+                "agent_name": "Researcher",
+                "content": "Growth was 31%.",
+            },
+            {
+                "agent_name": agent.user_name,
+                "content": "Write the report.",
+            },
+            {
+                "agent_name": "Writer",
+                "content": "Report: 31% growth.",
+            },
+        ]
+
+    def test_agents_sharing_a_channel_post_the_task_once(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        first = self._agent("First", channel, reply="one")
+        second = self._agent("Second", channel, reply="two")
+
+        first.run("Discuss.")
+        second.run("Discuss.")
+
+        roles = [m["agent_name"] for m in channel.messages()]
+        assert roles == [first.user_name, "First", "Second"]
+        # The second agent saw the first's answer, and the task only as its own turn.
+        sent = [m["content"] for m in second.requests[0]]
+        assert sent.count("Discuss.") == 1
+        assert "one" in sent
+
+    def test_given_messages_skip_the_channel_and_only_the_answer_is_posted(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        channel.post("Researcher", "Growth was 31%.")
+        agent = self._agent("Writer", channel, reply="ok")
+
+        agent.run(
+            "Write.",
+            messages=[{"role": "user", "content": "Only this."}],
+        )
+
+        sent = [m["content"] for m in agent.requests[0]]
+        assert "Growth was 31%." not in sent
+        assert "Only this." in sent
+        assert channel.messages() == [
+            {
+                "agent_name": "Researcher",
+                "content": "Growth was 31%.",
+            },
+            {"agent_name": "Writer", "content": "ok"},
+        ]
+
+    def test_a_failed_run_posts_no_answer(self, tmp_path):
+        channel = FileChannel(tmp_path / "run.md")
+        agent = _patched_agent("Writer", channel=channel)
+
+        def down(*args, **kwargs):
+            raise RuntimeError("provider down")
+
+        agent.llm_manager.call = down
+
+        with pytest.raises(AgentLLMError):
+            agent.run("Write.")
+
+        assert [m["agent_name"] for m in channel.messages()] == [
+            agent.user_name
+        ]
 
 
 class TestIntegerLoopRequest:

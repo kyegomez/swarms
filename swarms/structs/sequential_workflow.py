@@ -9,6 +9,7 @@ from swarms.prompts.agent_acknowledgement_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.structs.comms_channel import CommsChannel
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
@@ -95,6 +96,7 @@ class SequentialWorkflow:
         drift_threshold: float = 0.75,
         drift_model: str = "claude-sonnet-4-5",
         drift_max_retries: int = 3,
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -169,6 +171,7 @@ class SequentialWorkflow:
         self.reliability_check()
         self.flow = self.sequential_flow()
 
+        self.channel = channel
         self.agent_rearrange = AgentRearrange(
             name=self.name,
             description=self.description,
@@ -182,6 +185,7 @@ class SequentialWorkflow:
                 if self.multi_agent_collab_prompt
                 else None
             ),
+            channel=channel,
         )
 
         # Capture the full __init__ configuration if telemetry is enabled.
