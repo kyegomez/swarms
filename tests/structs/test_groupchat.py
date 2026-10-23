@@ -256,6 +256,52 @@ class TestBidOutputType:
         assert speaker.output_type == "str-all-except-first"
 
 
+class TestPostHooks:
+    def test_before_post_edits_the_posted_reply(self):
+        eager = ScriptedAgent("Eager", [(0.9, "raw reply")])
+        shy = ScriptedAgent("Shy", [(0.6, "shy")])
+
+        chat = make_chat(
+            [eager, shy],
+            before_post=lambda sender, reply: reply.upper(),
+        )
+        chat.run("topic")
+
+        assert "RAW REPLY" in contents(chat)
+
+    def test_a_dropped_reply_passes_the_floor_to_the_next_best_bid(
+        self,
+    ):
+        eager = ScriptedAgent("Eager", [(0.9, "eager speaks")])
+        shy = ScriptedAgent("Shy", [(0.6, "shy speaks")])
+
+        chat = make_chat(
+            [eager, shy],
+            before_post=lambda sender, reply: (
+                None if sender == "Eager" else reply
+            ),
+        )
+        chat.run("topic")
+
+        assert "eager speaks" not in contents(chat)
+        assert "shy speaks" in contents(chat)
+
+    def test_after_post_sees_each_posted_reply(self):
+        seen = []
+        chat = make_chat(
+            [
+                ScriptedAgent("Eager", [(0.9, "eager speaks")]),
+                ScriptedAgent("Shy", [(0.6, "shy")]),
+            ],
+            after_post=lambda sender, reply: seen.append(
+                (sender, reply)
+            ),
+        )
+        chat.run("topic")
+
+        assert seen == [("Eager", "eager speaks")]
+
+
 class TestScheduling:
     def test_the_highest_bidder_takes_the_floor(self):
         eager = ScriptedAgent("Eager", [(0.9, "eager speaks")])
