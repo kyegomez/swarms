@@ -2260,6 +2260,37 @@ class TestLLMFailureRaises:
         ]
         assert len(task_turns) == 1
 
+    def test_fallback_request_keeps_the_callers_messages(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+        sent = {}
+        fake_completion = self._completion(calls, {"gpt-5.4"})
+
+        def recording_completion(**params):
+            sent[params["model"]] = [
+                m["content"] for m in params["messages"]
+            ]
+            return fake_completion(**params)
+
+        prior = [
+            {"role": "user", "content": "My project is Helios."},
+            {"role": "assistant", "content": "Noted: Helios."},
+        ]
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=recording_completion,
+        ):
+            agent.run(self.TASK, messages=prior)
+
+        assert sent["claude-sonnet-4-6"][-3:] == [
+            "My project is Helios.",
+            "Noted: Helios.",
+            self.TASK,
+        ]
+
     def test_raises_once_every_fallback_fails(self):
         agent = self._agent(
             fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
@@ -2469,3 +2500,32 @@ class TestIntegerLoopRequest:
         assert [m["content"] for m in sent[-1][1]].count(
             "context"
         ) == 1
+
+
+class TestAgentOutputCleanerRemoval:
+    """Tests confirming removal of unused output_cleaner parameter and op (#2719)."""
+
+    def test_agent_has_no_output_cleaner_attribute(self):
+        agent = _patched_agent("cleaner-test")
+        assert not hasattr(agent, "output_cleaner")
+        assert not hasattr(agent, "output_cleaner_op")
+
+    def test_legacy_output_cleaner_kwarg_absorbed(self):
+        agent = _patched_agent(
+            "legacy-cleaner", output_cleaner=lambda s: "CLEANED"
+        )
+        assert not hasattr(agent, "output_cleaner")
+
+    def test_direct_post_processing_on_run_return_value(
+        self, tmp_path, mocked_llm
+    ):
+        agent = _flow(
+            "post-process-test",
+            mocked_llm,
+            tmp_path,
+            output_type="str",
+        )
+        result = agent.run("raw output")
+        assert isinstance(result, str)
+        cleaned = result.upper()
+        assert "RAW OUTPUT" in cleaned
