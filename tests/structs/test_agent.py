@@ -2052,6 +2052,114 @@ class TestAgentUsage:
         }
 
 
+class TestRunStreamEvents:
+    def test_events_yields_every_kind_and_one_final_matching_run(
+        self,
+    ):
+        import json
+        from types import SimpleNamespace
+        from unittest.mock import patch
+
+        from swarms import StreamEvent
+
+        def tool_stream():
+            def chunk(delta):
+                return SimpleNamespace(
+                    choices=[SimpleNamespace(delta=delta)],
+                    usage=None,
+                )
+
+            call = SimpleNamespace(
+                index=0,
+                id="call_1",
+                function=SimpleNamespace(
+                    name="double",
+                    arguments=json.dumps({"x": 2}),
+                ),
+            )
+            return iter(
+                [
+                    chunk(
+                        SimpleNamespace(
+                            content=None,
+                            reasoning_content="Doubling it.",
+                        )
+                    ),
+                    chunk(
+                        SimpleNamespace(
+                            content="On it.", tool_calls=None
+                        )
+                    ),
+                    chunk(SimpleNamespace(tool_calls=[call])),
+                    SimpleNamespace(
+                        choices=[],
+                        usage=SimpleNamespace(
+                            prompt_tokens=3,
+                            completion_tokens=4,
+                            total_tokens=7,
+                            prompt_tokens_details=None,
+                        ),
+                    ),
+                ]
+            )
+
+        def fake_completion(**kwargs):
+            if kwargs.get("stream"):
+                return tool_stream()
+            message = SimpleNamespace(
+                content=None,
+                tool_calls=[
+                    {
+                        "id": "call_1",
+                        "type": "function",
+                        "function": {
+                            "name": "double",
+                            "arguments": json.dumps({"x": 2}),
+                        },
+                    }
+                ],
+            )
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=message)]
+            )
+
+        def double(x: int) -> int:
+            """Double a number.
+
+            Args:
+                x: The number.
+            """
+            return x * 2
+
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            side_effect=fake_completion,
+        ):
+            agent = _patched_agent(
+                "StreamKinds", tools=[double], dynamic_tools=False
+            )
+            streamed = list(
+                agent.run_stream("Double 2.", events=True)
+            )
+            twin = _patched_agent(
+                "StreamKindsTwin",
+                tools=[double],
+                dynamic_tools=False,
+            )
+            expected = twin.run("Double 2.")
+
+        assert all(isinstance(e, StreamEvent) for e in streamed)
+        kinds = {e.kind for e in streamed}
+        assert {"reasoning", "content", "tool_call"} <= kinds
+        assert (
+            "".join(e.text for e in streamed if e.kind == "content")
+            == "On it."
+        )
+        finals = [e for e in streamed if e.kind == "final"]
+        assert len(finals) == 1
+        assert finals[0].text == expected
+
+
 class TestAgentInputTokens:
     """``agent.input_tokens`` is the size of the next request, not a bill."""
 
