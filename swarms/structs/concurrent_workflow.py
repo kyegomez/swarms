@@ -4,6 +4,10 @@ from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import agent_answer
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -102,6 +106,7 @@ class ConcurrentWorkflow:
         verbose: bool = False,
         on_error: str = "store",
         max_workers: Optional[int] = None,
+        channel: Optional[CommsChannel] = None,
     ):
         """
         Initialize a ConcurrentWorkflow.
@@ -166,6 +171,8 @@ class ConcurrentWorkflow:
             self.agent_statuses = {}
 
         self.reliability_check()
+        self.channel = channel
+        claim_agents(self.agents, channel, self.name)
         self.conversation = self._new_conversation()
 
         if self.show_dashboard is True:
@@ -192,7 +199,8 @@ class ConcurrentWorkflow:
                 scopes :meth:`batch_run` runs each task in.
         """
         return Conversation(
-            name=f"concurrent_workflow_name_{self.name}_id_{self.id}_conversation"
+            name=f"concurrent_workflow_name_{self.name}_id_{self.id}_conversation",
+            channel=self.channel,
         )
 
     def fix_agents(self):
