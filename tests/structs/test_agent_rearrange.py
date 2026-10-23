@@ -1577,23 +1577,29 @@ def test_agent_sees_its_own_output_as_assistant():
 
 def test_team_awareness_is_a_system_turn_not_user_prose():
     """Flow structure must not be rendered as 'system: ...' inside a user turn."""
-    agents, calls = _recording_agents(["A", "B"])
+    agents, calls = _recording_agents(["A", "B", "C"])
     AgentRearrange(
-        agents=agents, flow="A -> B", max_loops=1, team_awareness=True
+        agents=agents,
+        flow="A -> B, C",
+        max_loops=1,
+        team_awareness=True,
     ).run("go")
 
-    first = calls[0]
-    user_text = " ".join(
-        m["content"] for m in first["messages"] if m["role"] == "user"
-    ) + str(first["task"])
-    assert "system:" not in user_text.lower()
+    assert sorted(call["agent"] for call in calls) == ["A", "B", "C"]
+    for call in calls:
+        user_text = " ".join(
+            m["content"]
+            for m in call["messages"]
+            if m["role"] == "user"
+        ) + str(call["task"])
+        assert "system:" not in user_text.lower()
 
-    system_text = " ".join(
-        m["content"]
-        for m in first["messages"]
-        if m["role"] == "system"
-    )
-    assert "Sequential" in system_text
+        system_text = " ".join(
+            m["content"]
+            for m in call["messages"]
+            if m["role"] == "system"
+        )
+        assert "Sequential Flow Structure" in system_text
 
 
 def test_conversation_does_not_leak_between_runs():
