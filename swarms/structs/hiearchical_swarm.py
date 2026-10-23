@@ -190,6 +190,8 @@ class HierarchicalSwarm:
 
         # How much of the shared conversation each agent has already seen.
         self._delivered: Dict[str, int] = {}
+        self._order_results: Dict[str, Any] = {}
+        self._approved_outputs: Dict[str, Any] = {}
 
         self.conversation = Conversation(time_enabled=False)
 
@@ -540,13 +542,32 @@ class HierarchicalSwarm:
                 plan=plan,
             )
 
+        orders = [
+            order
+            for order in orders
+            if order.task not in self._approved_outputs
+        ]
         if not orders:
             return []
 
+        self._order_results = {}
         outputs = self.execute_orders(orders)
 
         if self.agent_as_judge:
-            return self.run_judge_agent(outputs)
+            feedback = self.run_judge_agent(outputs)
+            report = self._parse_judge_report(feedback)
+            if report is not None and report.verdict == "REVISE":
+                failed = set(report.failed_subtasks)
+                for task in failed:
+                    self._approved_outputs.pop(task, None)
+                for task, result in self._order_results.items():
+                    output = result["output"]
+                    if task not in failed and not (
+                        isinstance(output, dict)
+                        and output.get("status") == "failed"
+                    ):
+                        self._approved_outputs[task] = result
+            return feedback
 
         if (
             self.director_feedback_on
@@ -589,6 +610,8 @@ class HierarchicalSwarm:
 
             self.conversation.clear()
             self._delivered = {}
+            self._order_results = {}
+            self._approved_outputs = {}
             self.add_context_to_director()
 
             if task is not None:
@@ -603,9 +626,27 @@ class HierarchicalSwarm:
                 if current_loop == 0:
                     loop_task = task
                 else:
-                    loop_task = LOOP_CONTINUATION_PROMPT.format(
-                        last_output=last_output, task=task
-                    )
+                    report = self._parse_judge_report(last_output)
+                    if (
+                        self.agent_as_judge
+                        and report is not None
+                        and report.verdict == "REVISE"
+                    ):
+                        loop_task = (
+                            "REPLAN REQUIRED: revise the previous plan.\n"
+                            f"Original task: {task}\n"
+                            f"Judge feedback: {report.summary}\n"
+                            f"Failed subtasks: {report.failed_subtasks}\n"
+                            "Preserved outputs: "
+                            f"{json.dumps(self._approved_outputs, default=str)}\n"
+                            "Return a new order batch for failed or missing "
+                            "work. You may add, reassign, reorder, or drop "
+                            "orders. Do not redo preserved subtasks."
+                        )
+                    else:
+                        loop_task = LOOP_CONTINUATION_PROMPT.format(
+                            last_output=last_output, task=task
+                        )
 
                 # Execute one step of the swarm
                 try:
@@ -695,6 +736,34 @@ class HierarchicalSwarm:
                 f"Hiearchical Swarm: Feedback director failed: {e}"
             )
 
+    @staticmethod
+    def _parse_judge_report(output: Any) -> Optional[JudgeReport]:
+        """Read a judge model, JSON response, or LLM tool-call result."""
+        if isinstance(output, JudgeReport):
+            return output
+        if isinstance(output, (str, bytes)):
+            try:
+                output = json.loads(output)
+            except ValueError:
+                return None
+        if isinstance(output, list):
+            for item in output:
+                report = HierarchicalSwarm._parse_judge_report(item)
+                if report is not None:
+                    return report
+            return None
+        if not isinstance(output, dict):
+            return None
+        function = output.get("function")
+        if isinstance(function, dict):
+            return HierarchicalSwarm._parse_judge_report(
+                function.get("arguments")
+            )
+        try:
+            return JudgeReport.model_validate(output)
+        except ValueError:
+            return None
+
     def run_judge_agent(self, outputs: list) -> str:
         """Score worker outputs with the cached judge.
 
@@ -711,6 +780,17 @@ class HierarchicalSwarm:
             judge = self._get_judge_agent()
 
             prior, judge_task = self._messages_for(judge.agent_name)
+            judge_task += (
+                "\nExecuted subtasks and outputs (use exact task "
+                "descriptions in failed_subtasks):\n"
+                + json.dumps(self._order_results, default=str)
+                + "\nPreviously approved outputs:\n"
+                + json.dumps(self._approved_outputs, default=str)
+                + "\nReturn an explicit ACCEPT or REVISE verdict. "
+                "On REVISE, list every subtask whose result cannot be "
+                "reused in failed_subtasks and explain the needed "
+                "plan changes in summary."
+            )
             result = judge.run(task=judge_task, messages=prior)
             self.conversation.add(role="JudgeAgent", content=result)
             logger.info(f"Judge agent completed scoring: {result}")
@@ -913,6 +993,12 @@ class HierarchicalSwarm:
                 if failure is not None:
                     failures.append(failure)
 
+        if self.agent_as_judge:
+            for order, output in zip(orders, results):
+                self._order_results[order.task] = {
+                    "agent_name": order.agent_name,
+                    "output": output,
+                }
         return results, failures
 
     def _request_reassignment(
