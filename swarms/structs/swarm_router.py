@@ -321,8 +321,8 @@ class SwarmRouter(SerializableMixin):
             multi-loop refinement. Defaults to ``1``.
         heavy_swarm_timeout (int, optional): Per-worker wall-clock cap (seconds)
             for ``HeavySwarm``. Defaults to ``900``.
-        council_judge_model_name (str, optional): Judge model for
-            ``CouncilAsAJudge``.
+        council_judge_model_name (str, optional): Model for every
+            ``CouncilAsAJudge`` agent, the judges and the aggregator.
         verbose (bool, optional): Emit info/debug logs (reliability check,
             cache hits, swarm creation). Defaults to ``False``.
         worker_tools (List[Callable], optional): Tools passed to ``HeavySwarm``
