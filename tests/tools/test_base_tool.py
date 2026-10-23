@@ -322,6 +322,36 @@ def test_a_list_of_anthropic_tool_calls_runs_each_tool_once():
     assert ran == ["1", "2"]
 
 
+def test_a_message_dict_runs_each_openai_tool_call_once():
+    ran = []
+
+    def record(name: str) -> str:
+        """Record a call."""
+        ran.append(name)
+        return name
+
+    message = {
+        "role": "assistant",
+        "tool_calls": [
+            {
+                "id": f"call_{n}",
+                "type": "function",
+                "function": {
+                    "name": "record",
+                    "arguments": json.dumps({"name": n}),
+                },
+            }
+            for n in ("1", "2")
+        ],
+    }
+
+    BaseTool(tools=[record]).execute_function_calls_from_api_response(
+        message, sequential=True
+    )
+
+    assert ran == ["1", "2"]
+
+
 class SdkFunction:
     def __init__(self, name, arguments):
         self.name = name
