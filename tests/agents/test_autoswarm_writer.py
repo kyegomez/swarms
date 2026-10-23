@@ -886,6 +886,4 @@ swarm_architecture:
         )
 
         assert parsed == yaml.safe_load(raw_yaml)
-        assert (
-            parsed["agents"][0]["model_name"] == "ollama/llama3:8b"
-        )
+        assert parsed["agents"][0]["model_name"] == "ollama/llama3:8b"
