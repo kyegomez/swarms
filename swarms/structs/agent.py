@@ -2110,8 +2110,13 @@ Subtask Breakdown:
             The result of extending the tools list
         """
         logger.info(f"Adding tools: {[t.__name__ for t in tools]}")
-        self.tools = [*(self.tools or []), *tools]
-        self.tool_manager.reload_tools()
+        previous = self.tools
+        self.tools = [*(previous or []), *tools]
+        try:
+            self.tool_manager.reload_tools()
+        except Exception:
+            self.tools = previous
+            raise
 
     def remove_tool(self, tool: Callable):
         """Remove a single tool from the agent's tools list.
