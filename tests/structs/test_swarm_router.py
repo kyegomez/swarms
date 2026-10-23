@@ -1,3 +1,4 @@
+import json
 from collections import Counter
 from unittest.mock import patch
 
@@ -492,6 +493,35 @@ def test_run_with_group_chat():
     assert result is not None
 
 
+def test_group_chat_lets_an_agent_speak_at_the_default_max_loops():
+    """max_loops=1 gives the chat one agent turn, not zero."""
+    router = SwarmRouter(
+        agents=create_sample_agents(), swarm_type="GroupChat"
+    )
+
+    def fake_run(agent, task=None, *args, **kwargs):
+        score = 0.9 if agent.agent_name == "ResearchAgent" else 0.0
+        arguments = {"score": score, "message": "1+1 is 2."}
+        return [
+            {
+                "function": {
+                    "name": "respond",
+                    "arguments": json.dumps(arguments),
+                }
+            }
+        ]
+
+    with patch.object(
+        Agent, "run", autospec=True, side_effect=fake_run
+    ):
+        result = router.run("What is 1+1?")
+
+    assert [message["role"] for message in result] == [
+        "User",
+        "ResearchAgent",
+    ]
+
+
 def test_run_with_multi_agent_router():
     """SwarmRouter dispatches to MultiAgentRouter."""
     sample_agents = create_sample_agents()
@@ -699,6 +729,32 @@ class TestConcurrentRun:
         r = self._router(boom)
         with pytest.raises(ValueError, match="nope"):
             r.concurrent_run(["a"])
+
+
+def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
+    from swarms import Agent
+    from swarms.structs.file_channel import FileChannel
+
+    channel = FileChannel(tmp_path / "run.md")
+    agents = [
+        Agent(
+            agent_name="A",
+            model_name="gpt-4o",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+    ]
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        channel=channel,
+    )
+
+    swarm = router._create_swarm()
+
+    assert swarm.channel is channel
+    assert swarm.agent_rearrange.conversation.channel is channel
 
 
 if __name__ == "__main__":

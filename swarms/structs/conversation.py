@@ -18,6 +18,7 @@ from typing import (
 
 import yaml
 
+from swarms.structs.comms_channel import CommsChannel
 from swarms.utils.litellm_tokenizer import count_tokens
 
 if TYPE_CHECKING:
@@ -62,6 +63,8 @@ class Conversation:
         save_as_yaml_on (bool): Flag to save conversation history as YAML.
         save_as_json_bool (bool): Flag to save conversation history as JSON.
         token_count (bool): Flag to enable token counting for messages.
+        channel (CommsChannel): Seeds the history from the channel at construction, then
+            posts every later message to it, except System rows.
         conversation_history (list): List to store the history of messages.
     """
 
@@ -90,7 +93,11 @@ class Conversation:
         output_metadata: bool = False,
         memory_md_path: Optional[str] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
+        channel: Optional[CommsChannel] = None,
     ):
+
+        # Attached last, so nothing added during construction is posted.
+        self.channel = None
 
         # Initialize all attributes first
         self.id = id or generate_id()
@@ -143,6 +150,11 @@ class Conversation:
 
         if messages:
             self.add_messages(messages)
+
+        if channel is not None:
+            for row in channel.messages():
+                self.add_in_memory(row["agent_name"], row["content"])
+            self.channel = channel
 
     def setup_file_path(self):
         """Set up the file path for saving the conversation and load existing data if available."""
@@ -456,6 +468,14 @@ class Conversation:
         # Add message to conversation history
         self.conversation_history.append(message)
         self._str_cache = None
+
+        # Speakers only: system preambles and tool bookkeeping stay out of the transcript.
+        if (
+            self.channel is not None
+            and content is not None
+            and role not in ("System", "system")
+        ):
+            self.channel.post(role, str(content))
 
         # Persist to MEMORY.md if enabled
         if self.memory_md_path:
@@ -863,9 +883,14 @@ class Conversation:
         Args:
             filename (str): Filename to export to.
         """
-        # If the filename ends with .json, use save_as_json
         if filename.endswith(".json"):
-            self.save_as_json(force=True)
+            with open(filename, "w", encoding="utf-8") as f:
+                json.dump(
+                    self.conversation_history,
+                    f,
+                    indent=4,
+                    default=str,
+                )
         else:
             # Simple text export for non-JSON files
             with open(filename, "w", encoding="utf-8") as f:

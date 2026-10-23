@@ -221,6 +221,7 @@ class ReflexionAgent:
             system_prompt=system_prompt,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
         # Evaluator agent - evaluates responses
@@ -230,6 +231,7 @@ class ReflexionAgent:
             system_prompt=REFLEXION_EVALUATOR_PROMPT,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
         # Reflector agent - generates self-reflections
@@ -239,6 +241,7 @@ class ReflexionAgent:
             system_prompt=REFLEXION_REFLECTOR_PROMPT,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
         logger.info(

@@ -400,6 +400,37 @@ def test_load_agents_from_csv_keeps_file_order():
     ]
 
 
+def test_agent_files_accept_max_loops_auto():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        md_file = os.path.join(tmpdir, "researcher.md")
+        with open(md_file, "w", encoding="utf-8") as f:
+            f.write(
+                "---\nname: Researcher\nmax_loops: auto\n---\nResearch.\n"
+            )
+        csv_file = os.path.join(tmpdir, "agents.csv")
+        with open(csv_file, "w", encoding="utf-8", newline="") as f:
+            f.write(
+                "agent_name,max_loops\nResearcher,auto\nWriter,2\n"
+            )
+        yaml_file = os.path.join(tmpdir, "agents.yaml")
+        with open(yaml_file, "w", encoding="utf-8") as f:
+            f.write(
+                "agents:\n  - agent_name: Researcher\n"
+                "    system_prompt: Research.\n    max_loops: auto\n"
+            )
+
+        loader = AgentLoader()
+        markdown = loader.load_agents_from_markdown([md_file])
+        csv_rows = loader.load_agents_from_csv(csv_file)
+        yaml_agent = loader.load_agents_from_yaml(
+            yaml_file, return_type="agents"
+        )
+
+    assert [a.max_loops for a in markdown] == ["auto"]
+    assert [a.max_loops for a in csv_rows] == ["auto", 2]
+    assert yaml_agent.max_loops == "auto"
+
+
 def test_auto_detect_markdown():
     """Test auto-detection of markdown file type."""
     try:
@@ -523,6 +554,23 @@ def test_auto_unsupported_file_type():
             f"Error in test_auto_unsupported_file_type: {str(e)}"
         )
         raise
+
+
+def test_auto_loads_every_format_create_agent_file_writes():
+    rows = [
+        {"agent_name": "Alpha", "system_prompt": "You are Alpha."},
+        {"agent_name": "Beta", "system_prompt": "You are Beta."},
+    ]
+    loader = AgentLoader()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for ext in ("csv", "json", "yaml", "yml"):
+            path = os.path.join(tmpdir, f"agents.{ext}")
+            loader.create_agent_file(path, rows)
+            agents = loader.auto(path)
+            assert [a.agent_name for a in agents] == [
+                "Alpha",
+                "Beta",
+            ], ext
 
 
 def test_load_single_agent():
@@ -714,10 +762,12 @@ if __name__ == "__main__":
         "test_load_many_agents_from_yaml": test_load_many_agents_from_yaml,
         "test_load_agents_from_csv": test_load_agents_from_csv,
         "test_load_agents_from_csv_keeps_file_order": test_load_agents_from_csv_keeps_file_order,
+        "test_agent_files_accept_max_loops_auto": test_agent_files_accept_max_loops_auto,
         "test_auto_detect_markdown": test_auto_detect_markdown,
         "test_auto_detect_yaml": test_auto_detect_yaml,
         "test_auto_detect_csv": test_auto_detect_csv,
         "test_auto_unsupported_file_type": test_auto_unsupported_file_type,
+        "test_auto_loads_every_format_create_agent_file_writes": test_auto_loads_every_format_create_agent_file_writes,
         "test_load_single_agent": test_load_single_agent,
         "test_load_multiple_agents": test_load_multiple_agents,
         "test_parse_markdown_file": test_parse_markdown_file,

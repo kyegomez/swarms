@@ -1639,6 +1639,60 @@ def test_record_assistant_sends_a_non_text_reply_as_text():
     assert conv.conversation_history[-1]["content"] == {"answer": 2}
 
 
+def test_export_conversation_writes_the_named_json_file(tmp_path):
+    conv = Conversation(conversations_dir=str(tmp_path))
+    conv.add("User", "keep this")
+    target = tmp_path / "backup.json"
+
+    conv.export_conversation(str(target))
+
+    fresh = Conversation(conversations_dir=str(tmp_path))
+    fresh.import_conversation(str(target))
+    assert fresh.conversation_history == conv.conversation_history
+
+
+class TestCommsChannelMirror:
+    def test_adds_are_posted_and_system_rows_are_not(self, tmp_path):
+        from swarms.structs.file_channel import FileChannel
+
+        channel = FileChannel(tmp_path / "run.md")
+        conv = Conversation(
+            system_prompt="Be brief.", channel=channel
+        )
+        conv.add("User", "Report on EVs.")
+        conv.add("System", "team roster")
+        conv.add("Researcher", "Growth was 31%.")
+
+        assert channel.messages() == [
+            {"agent_name": "User", "content": "Report on EVs."},
+            {
+                "agent_name": "Researcher",
+                "content": "Growth was 31%.",
+            },
+        ]
+
+    def test_a_non_empty_channel_seeds_the_history_without_reposting(
+        self, tmp_path
+    ):
+        from swarms.structs.file_channel import FileChannel
+
+        channel = FileChannel(tmp_path / "run.md")
+        channel.post("User", "Earlier task.")
+        channel.post("Writer", "Earlier answer.")
+
+        conv = Conversation(channel=channel)
+
+        rows = [
+            (m["role"], m["content"])
+            for m in conv.conversation_history
+        ]
+        assert rows[-2:] == [
+            ("User", "Earlier task."),
+            ("Writer", "Earlier answer."),
+        ]
+        assert len(channel.messages()) == 2
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()
