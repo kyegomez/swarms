@@ -2180,7 +2180,8 @@ class TestRunSamples:
 class TestLLMFailureRaises:
     """#2408: once its retries ran out, _run broke out of the loop and
     returned the formatted history, so run() returned '' with no error and
-    fallback_models was never tried.
+    fallback_models was never tried. Retries now belong to litellm, so a
+    failed call reaches run() at once and run() moves to the next model.
     """
 
     TASK = "What is 2+2?"
@@ -2212,14 +2213,13 @@ class TestLLMFailureRaises:
         return Agent(
             agent_name="FallbackAgent",
             max_loops=1,
-            retry_attempts=2,
             print_on=False,
             verbose=False,
             persistent_memory=False,
             **kwargs,
         )
 
-    def test_raises_when_retries_run_out(self):
+    def test_raises_when_the_model_fails(self):
         agent = self._agent(model_name="gpt-5.4")
         history_before = len(agent.short_memory.conversation_history)
         calls = []
@@ -2232,7 +2232,7 @@ class TestLLMFailureRaises:
             with pytest.raises(AgentLLMError):
                 agent.run(self.TASK)
 
-        assert calls == ["gpt-5.4", "gpt-5.4"]
+        assert calls == ["gpt-5.4"]
         assert (
             len(agent.short_memory.conversation_history)
             == history_before
@@ -2251,7 +2251,7 @@ class TestLLMFailureRaises:
         ):
             output = agent.run(self.TASK)
 
-        assert calls == ["gpt-5.4", "gpt-5.4", "claude-sonnet-4-6"]
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6"]
         assert "answer from claude-sonnet-4-6" in str(output)
         task_turns = [
             m
@@ -2307,12 +2307,63 @@ class TestLLMFailureRaises:
             with pytest.raises(AgentLLMError):
                 agent.run(self.TASK)
 
-        assert calls == [
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6"]
+
+    def test_the_next_run_starts_from_the_primary_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+        down = {"gpt-5.4"}
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, down),
+        ):
+            agent.run(self.TASK)
+            down.clear()
+            output = agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6", "gpt-5.4"]
+        assert "answer from gpt-5.4" in str(output)
+        assert agent.model_name == "gpt-5.4"
+
+    def test_an_error_outside_the_model_call_keeps_the_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        def broken(response):
+            raise ValueError("not a provider error")
+
+        agent.tool_manager.parse_response = broken
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, set()),
+        ):
+            with pytest.raises(ValueError):
+                agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4"]
+
+    def test_fallback_model_name_joins_the_model_list(self):
+        agent = self._agent(
+            model_name="gpt-5.4",
+            fallback_model_name="claude-sonnet-4-6",
+        )
+        assert agent.fallback_models == [
             "gpt-5.4",
-            "gpt-5.4",
-            "claude-sonnet-4-6",
             "claude-sonnet-4-6",
         ]
+
+        same = self._agent(
+            model_name="gpt-5.4", fallback_model_name="gpt-5.4"
+        )
+        assert same.fallback_models == ["gpt-5.4"]
 
 
 class TestIntegerLoopRequest:
