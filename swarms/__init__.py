@@ -5,7 +5,7 @@ from swarms.env import load_swarms_env
 
 load_swarms_env()
 
-from swarms.telemetry.bootup import bootup
+from swarms.telemetry.bootup import bootup  # noqa: E402
 
 bootup()
 
