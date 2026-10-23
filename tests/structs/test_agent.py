@@ -1561,6 +1561,31 @@ def test_handoff_returns_each_delegates_answer_not_its_transcript(
     assert "answer 2" not in parallel
 
 
+def test_parallel_handoffs_to_one_agent_run_one_at_a_time(tmp_path):
+    from swarms.tools.handoffs_tool import handoff_task
+
+    class EchoLLM:
+        def run(self, task=None, *args, messages=None, **kwargs):
+            time.sleep(0.1)
+            return f"answer to {messages[-1]['content']}"
+
+    writer = _flow("Writer", EchoLLM(), tmp_path)
+    result = handoff_task(
+        [
+            {"agent_name": "Writer", "task": task, "reasoning": "r"}
+            for task in ("task A", "task B")
+        ],
+        agent_registry={"Writer": writer},
+    )
+
+    roles = [
+        m["role"] for m in writer.short_memory.conversation_history
+    ]
+    assert roles[1:] == ["Human", "Writer", "Human", "Writer"]
+    assert "answer to task A" in result
+    assert "answer to task B" in result
+
+
 class TestListTools:
     """#2426: Agent.list_tools names every tool the agent can call."""
 
