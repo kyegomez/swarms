@@ -496,3 +496,37 @@ def test_batched_grid_workflow_output_consistency():
         assert loop_result is not None
         assert isinstance(loop_result, list)
         assert len(loop_result) == 3  # Three agents
+
+
+def test_batched_grid_workflow_second_run_does_not_send_the_first():
+    sent = {}
+
+    def stub(name):
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+            autosave=False,
+        )
+
+        def call_llm(task=None, *args, **kwargs):
+            sent.setdefault(name, []).append(
+                [m["content"] for m in kwargs["messages"]]
+            )
+            return f"{name} answer"
+
+        agent.call_llm = call_llm
+        return agent
+
+    workflow = BatchedGridWorkflow(
+        agents=[stub("Revenue"), stub("Feedback")]
+    )
+    workflow.run(["Analyze Q1 revenue", "Review Q1 feedback"])
+    workflow.run(["Analyze Q2 revenue", "Review Q2 feedback"])
+
+    for name in ("Revenue", "Feedback"):
+        second = sent[name][1]
+        assert any("Q2" in m for m in second)
+        assert not any("Q1" in m for m in second), second
