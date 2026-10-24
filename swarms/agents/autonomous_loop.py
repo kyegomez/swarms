@@ -613,9 +613,9 @@ class AutonomousAgentLoop:
                         plan_created = True
                         break
 
-                except ModelRefusalError:
-                    raise
                 except Exception as e:
+                    if isinstance(e.__cause__, ModelRefusalError):
+                        raise
                     if self.agent.verbose:
                         logger.error(
                             f"Error in planning phase (attempt {planning_attempts}): {e}"
@@ -1234,9 +1234,9 @@ class AutonomousAgentLoop:
                             # Give the nudge a chance before refiring.
                             self.agent.think_call_count = 0
 
-                    except ModelRefusalError:
-                        raise
                     except Exception as e:
+                        if isinstance(e.__cause__, ModelRefusalError):
+                            raise
                         if self.agent.verbose:
                             logger.error(
                                 f"Error in subtask execution loop: {e}"
