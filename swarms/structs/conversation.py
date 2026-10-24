@@ -143,7 +143,6 @@ class Conversation:
             self._initialize_new_conversation()
 
         # Prior MEMORY.md content becomes one System preamble message
-        self._suppress_memory_md = False
         if self.memory_md_path:
             self._init_memory_md()
             self._preload_memory_md()
@@ -155,6 +154,8 @@ class Conversation:
             for row in channel.messages():
                 self.add_in_memory(row["agent_name"], row["content"])
             self.channel = channel
+
+        self._suppress_memory_md = False
 
     def setup_file_path(self):
         """Set up the file path for saving the conversation and load existing data if available."""
