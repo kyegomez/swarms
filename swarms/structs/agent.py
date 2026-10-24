@@ -1348,8 +1348,12 @@ class Agent:
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
-        logger.error(
-            f"{self.agent_name} error: {error}", exc_info=True
+        # Log with positional arguments: an f-string bakes the error text into
+        # the template, and loguru then treats braces in a provider's message
+        # (e.g. a JSON body like [{'error': ...}]) as placeholders and raises
+        # KeyError, masking the original exception.
+        logger.opt(exception=True).error(
+            "{} error: {}", self.agent_name, error
         )
         raise error
 
