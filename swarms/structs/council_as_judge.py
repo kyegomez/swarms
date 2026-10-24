@@ -397,7 +397,8 @@ class CouncilAsAJudge:
         try:
             prompt = build_judge_prompt(dim, task, task)
             result = agent.run(
-                f"{prompt} \n\n Evaluate the following response for the {dim} dimension: {task}."
+                f"{prompt} \n\n Evaluate the following response for the {dim} dimension: {task}.",
+                messages=[],
             )
 
             self.conversation.add(

@@ -16,7 +16,6 @@ Tests for individual agent functionality and behavior:
 
 **`/agents/`** - Core agent functionality
 - `test_agent_logging.py` - Agent logging and monitoring capabilities
-- `test_create_agents_from_yaml.py` - YAML-based agent creation
 - `test_litellm_args_kwargs.py` - LiteLLM argument handling
 - `test_llm_args.py` - LLM argument processing
 - `test_llm_handling_args.py` - LLM argument management

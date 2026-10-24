@@ -540,7 +540,7 @@ class TestStructuredTranscript:
         agent = self._run_simple(monkeypatch, tmp_path)
         roles = [
             m["role"]
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._transcript.to_messages()
         ]
 
         assert "assistant" in roles, "no assistant turn was recorded"
@@ -555,7 +555,7 @@ class TestStructuredTranscript:
         agent = self._run_simple(monkeypatch, tmp_path)
         assistant = [
             m
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._transcript.to_messages()
             if m["role"] == "assistant"
         ]
         assert assistant, "no assistant turns"
@@ -576,7 +576,7 @@ class TestStructuredTranscript:
         next request fail outright, so this is the invariant that matters most.
         """
         agent = self._run_simple(monkeypatch, tmp_path)
-        transcript = agent.autonomous_loop._transcript.messages
+        transcript = agent.autonomous_loop._transcript.to_messages()
 
         for index, message in enumerate(transcript):
             if message["role"] != "assistant" or not message.get(
@@ -861,7 +861,7 @@ class TestThinkLoopContainment:
 
         nudges = [
             m
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._transcript.to_messages()
             if "times in a row" in str(m.get("content"))
         ]
         assert (
@@ -873,7 +873,7 @@ class TestThinkLoopContainment:
         agent, _ = self._thrashing_agent(monkeypatch)
         agent.run("demo")
 
-        transcript = agent.autonomous_loop._transcript.messages
+        transcript = agent.autonomous_loop._transcript.to_messages()
         assert any(
             "Take concrete action now" in str(m.get("content"))
             for m in transcript
@@ -1129,7 +1129,7 @@ class TestContextCompression:
     """#1962 — ``maybe_compress`` was never called on the auto path.
 
     The compressor measures and compacts ``short_memory``, but the body
-    sent to the model is the loop's ``Transcript`` — so the fix both
+    sent to the model is the loop's transcript — so the fix both
     triggers the compressor between subtask iterations and rebuilds the
     transcript from the summary it returns. Compressing only the mirror
     would leave the request payload growing unbounded.
@@ -1152,7 +1152,7 @@ class TestContextCompression:
         loop._say_user("seed")
 
         assert loop._maybe_compress_context() is False
-        assert len(loop._transcript) == 1
+        assert len(loop._transcript.to_messages()) == 1
 
     def test_below_threshold_leaves_the_transcript_alone(self):
         agent = build_agent(
@@ -1162,7 +1162,7 @@ class TestContextCompression:
         loop._say_user("seed")
 
         assert loop._maybe_compress_context() is False
-        assert len(loop._transcript) == 1
+        assert len(loop._transcript.to_messages()) == 1
 
     def test_compression_rebuilds_the_transcript(self):
         agent = build_agent()
@@ -1178,8 +1178,8 @@ class TestContextCompression:
 
         # The request body is now a single user turn holding the
         # summary, not the six accumulated turns.
-        assert len(loop._transcript) == 1
-        seeded = loop._transcript[0]
+        assert len(loop._transcript.to_messages()) == 1
+        seeded = loop._transcript.to_messages()[0]
         assert seeded["role"] == "user"
         assert "[Compressed Memory Summary]" in seeded["content"]
         assert "CANNED SUMMARY" in seeded["content"]
@@ -1270,7 +1270,7 @@ class TestContextCompression:
         )
 
         assert loop._maybe_compress_context() is False
-        assert len(loop._transcript) == 1
+        assert len(loop._transcript.to_messages()) == 1
 
 
 class TestRunBashSteersFileWritesToTheFileTools:
@@ -1529,6 +1529,31 @@ class TestIterationLimitsAreConfigurable:
             agent.run("demo")
 
         assert len(calls) == 2
+
+    def test_the_total_budget_counts_llm_calls_not_subtasks(
+        self, monkeypatch
+    ):
+        """
+        max_subtask_iterations is documented as the run's worst-case number
+        of LLM calls. It used to be incremented once per subtask selection,
+        so the real ceiling was that many times max_subtask_loops. One
+        planning call and one summary call bracket the execution budget.
+        """
+        agent = build_agent(
+            max_subtask_iterations=3, max_subtask_loops=20
+        )
+        turn = {"n": 0}
+
+        def never_finishes(task=None, *args, **kwargs):
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return plan(("s1", []), ("s2", []), ("s3", []))
+            return "no action taken"
+
+        monkeypatch.setattr(agent, "call_llm", never_finishes)
+        agent.run("demo")
+
+        assert turn["n"] == agent.max_subtask_iterations + 2
 
     @pytest.mark.parametrize(
         "finish_reason", ["refusal", "content_filter"]

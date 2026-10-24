@@ -15,6 +15,7 @@ def reset_logger_state(monkeypatch):
     """Give each test a logger that has not been configured yet."""
     monkeypatch.setattr(mod, "_CONFIGURED", False, raising=False)
     monkeypatch.setattr(mod, "_CONFIGURED_DIR", None, raising=False)
+    monkeypatch.setenv("SWARMS_LOG_FILES", "True")
     yield
     # Close any file handlers pointed at a tmp_path that is about to vanish,
     # then leave a plain console handler so later test modules still log.
@@ -211,6 +212,53 @@ def test_router_survives_an_unwritable_directory(
     mod._module_log_router(
         FakeMessage("line\n", "swarms.structs.agent")
     )  # no exception
+
+
+# ---------------------------------------------------------------------------
+# SWARMS_LOG_FILES
+# ---------------------------------------------------------------------------
+
+
+def test_no_log_files_by_default(monkeypatch, tmp_path):
+    monkeypatch.delenv("SWARMS_LOG_FILES", raising=False)
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "ws"))
+
+    initialize_logger("mod")
+    logger.info("console only")
+    logger.remove()
+
+    assert not (tmp_path / "ws" / "logs").exists()
+
+
+def test_false_writes_no_log_files(monkeypatch, tmp_path):
+    monkeypatch.setenv("SWARMS_LOG_FILES", "False")
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "ws"))
+
+    initialize_logger("mod")
+    logger.info("console only")
+    logger.remove()
+
+    assert not (tmp_path / "ws" / "logs").exists()
+
+
+def test_turning_log_files_on_rebuilds_handlers(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "ws"))
+    monkeypatch.setenv("SWARMS_LOG_FILES", "False")
+    initialize_logger("mod")
+    logger.info("while off")
+
+    monkeypatch.setenv("SWARMS_LOG_FILES", "True")
+    initialize_logger("mod")
+    logger.info("after turning on")
+    logger.remove()
+
+    written = next(
+        (tmp_path / "ws" / "logs").glob("swarms_*.log")
+    ).read_text()
+    assert "after turning on" in written
+    assert "while off" not in written
 
 
 if __name__ == "__main__":

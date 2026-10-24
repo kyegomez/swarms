@@ -18,6 +18,7 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.structs.comms_channel import CommsChannel
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
@@ -384,6 +385,7 @@ class SwarmRouter(SerializableMixin):
         multi_agent_collab_prompt: bool = False,
         list_all_agents: bool = False,
         conversation: Any = None,
+        channel: Optional[CommsChannel] = None,
         agents_config: Optional[Dict[Any, Any]] = None,
         heavy_swarm_question_agent_model_name: str = "gpt-5.4",
         heavy_swarm_worker_model_name: str = "gpt-5.4",
@@ -431,6 +433,7 @@ class SwarmRouter(SerializableMixin):
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.list_all_agents = list_all_agents
         self.conversation = conversation
+        self.channel = channel
         self.agents_config = agents_config
         self.heavy_swarm_question_agent_model_name = (
             heavy_swarm_question_agent_model_name
@@ -732,6 +735,7 @@ class SwarmRouter(SerializableMixin):
             **self._base_kwargs(
                 flow=self.rearrange_flow,
                 collab_prompt=self._collab_preamble(),
+                channel=self.channel,
             ),
             **kwargs,
         )
@@ -752,6 +756,7 @@ class SwarmRouter(SerializableMixin):
             **self._base_kwargs(
                 director_model_name=self.director_model_name,
                 director_settings=self.director_settings,
+                channel=self.channel,
             ),
             **kwargs,
         )
@@ -761,23 +766,32 @@ class SwarmRouter(SerializableMixin):
         return MixtureOfAgents(
             name=self.name,
             description=self.description,
-            agents=self.agents,
+            agents=self.agents[:-1] or self.agents,
             aggregator_agent=self.agents[-1],
             layers=self.max_loops,
             output_type=self.output_type,
+            channel=self.channel,
             *args,
             **kwargs,
         )
 
     def _create_majority_voting(self, *args, **kwargs):
         """Create a ``MajorityVoting`` swarm from the configured agents."""
-        return MajorityVoting(*args, **self._base_kwargs(), **kwargs)
+        return MajorityVoting(
+            *args,
+            **self._base_kwargs(channel=self.channel),
+            **kwargs,
+        )
 
     def _create_group_chat(self, *args, **kwargs):
         """Create a ``GroupChat`` from the configured agents."""
         return GroupChat(
             *args,
-            **self._base_kwargs(verbose=self.verbose),
+            **self._base_kwargs(
+                max_loops=self.max_loops + 1,
+                verbose=self.verbose,
+                channel=self.channel,
+            ),
             **kwargs,
         )
 
@@ -827,6 +841,7 @@ class SwarmRouter(SerializableMixin):
                     self._collab_preamble() is not None
                 ),
                 collab_prompt=self._collab_preamble(),
+                channel=self.channel,
             ),
             **kwargs,
         )
@@ -834,18 +849,16 @@ class SwarmRouter(SerializableMixin):
     def _create_concurrent_workflow(self, *args, **kwargs):
         """Create a ``ConcurrentWorkflow`` from the configured agents."""
         return ConcurrentWorkflow(
-            *args, **self._base_kwargs(), **kwargs
+            *args,
+            **self._base_kwargs(channel=self.channel),
+            **kwargs,
         )
 
     def _create_round_robin_swarm(self, *args, **kwargs):
         """Create a ``RoundRobinSwarm`` from the configured agents."""
         return RoundRobinSwarm(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
-            verbose=self.verbose,
             *args,
+            **self._base_kwargs(verbose=self.verbose),
             **kwargs,
         )
 
@@ -853,7 +866,9 @@ class SwarmRouter(SerializableMixin):
         """Create a ``PlannerWorkerSwarm`` from the configured agents."""
         return PlannerWorkerSwarm(
             *args,
-            **self._base_kwargs(verbose=self.verbose),
+            **self._base_kwargs(
+                verbose=self.verbose, channel=self.channel
+            ),
             **kwargs,
         )
 
@@ -1023,7 +1038,7 @@ class SwarmRouter(SerializableMixin):
         for position, swarm_type in enumerate(chain):
             try:
                 self.swarm = self._create_swarm(
-                    task, swarm_type, *args, **kwargs
+                    task, swarm_type, *args
                 )
                 self.active_swarm_type = swarm_type
                 result = self.swarm.run(**run_kwargs, **kwargs)
@@ -1072,6 +1087,7 @@ class SwarmRouter(SerializableMixin):
     @trace_run(
         "SwarmRouter.run",
         input_params=("task", "tasks", "img"),
+        usage=lambda router: router.usage,
     )
     def run(
         self,

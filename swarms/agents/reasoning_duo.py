@@ -23,9 +23,9 @@ class ReasoningDuo:
     ReasoningDuo is a class that encapsulates the functionality of two agents: a reasoning agent and a main agent.
 
     Attributes:
-        model_name (str): The name of the model used for the reasoning agent.
+        model_name (str): The model for the main agent, and for the reasoning agent when reasoning_model_name is None.
         description (str): A description of the reasoning agent.
-        model_names (list[str]): A list of model names for the agents.
+        model_names (list[str]): [reasoning, main] models; when given, they take the place of model_name.
         system_prompt (str): The system prompt for the main agent.
         reasoning_agent (Agent): An instance of the Agent class for reasoning tasks.
         main_agent (Agent): An instance of the Agent class for main tasks.
@@ -38,7 +38,7 @@ class ReasoningDuo:
         agent_description: str = "A highly intelligent and thoughtful AI designed to provide accurate and well-reasoned answers to the user's questions.",
         model_name: str = "gpt-5.4",
         description: str = "A highly intelligent and thoughtful AI designed to provide accurate and well-reasoned answers to the user's questions.",
-        model_names: list[str] = ["gpt-5.4", "gpt-5.4"],
+        model_names: Optional[List[str]] = None,
         system_prompt: str = "You are a helpful assistant that can answer questions and help with tasks.",
         output_type: OutputType = "dict-all-except-first",
         reasoning_model_name: Optional[str] = "gpt-4o",
@@ -55,6 +55,7 @@ class ReasoningDuo:
         self.reasoning_model_name = reasoning_model_name
         self.max_loops = max_loops
 
+        model_names = model_names or [model_name, model_name]
         if self.reasoning_model_name is None:
             self.reasoning_model_name = model_names[0]
 

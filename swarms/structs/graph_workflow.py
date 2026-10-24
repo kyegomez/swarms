@@ -1,6 +1,8 @@
 import asyncio
 import concurrent.futures
 import hashlib
+import importlib
+import importlib.util
 import json
 import os
 import time
@@ -21,25 +23,11 @@ from typing import (
     Union,
 )
 
-import networkx as nx
-
-try:
-    import graphviz
-
-    GRAPHVIZ_AVAILABLE = True
-except ImportError:
-    GRAPHVIZ_AVAILABLE = False
-    graphviz = None
-
-try:
-    import rustworkx as rx
-
-    RUSTWORKX_AVAILABLE = True
-except ImportError:
-    RUSTWORKX_AVAILABLE = False
-    rx = None
-
 from swarms.structs.agent import Agent  # noqa: F401
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
@@ -52,6 +40,36 @@ from swarms.utils.generate_id import generate_id
 from swarms.utils.litellm_wrapper import empty_usage
 
 logger = initialize_logger(log_folder="graph_workflow")
+
+
+class _LazyModule:
+    """
+    A module that is imported the first time one of its attributes is read.
+
+    Args:
+        name (str): The module to import.
+    """
+
+    def __init__(self, name: str):
+        self._name = name
+        self._module = None
+
+    def __getattr__(self, attr: str) -> Any:
+        if self._module is None:
+            self._module = importlib.import_module(self._name)
+        return getattr(self._module, attr)
+
+
+# Loaded on first use, so import swarms does not pay for the graph libraries.
+nx = _LazyModule("networkx")
+
+GRAPHVIZ_AVAILABLE = importlib.util.find_spec("graphviz") is not None
+graphviz = _LazyModule("graphviz") if GRAPHVIZ_AVAILABLE else None
+
+RUSTWORKX_AVAILABLE = (
+    importlib.util.find_spec("rustworkx") is not None
+)
+rx = _LazyModule("rustworkx") if RUSTWORKX_AVAILABLE else None
 
 
 class GraphBackend:
@@ -781,6 +799,7 @@ class GraphWorkflow:
         checkpoint_dir: Optional[str] = None,
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
+        channel: Optional[CommsChannel] = None,
     ):
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
@@ -841,7 +860,8 @@ class GraphWorkflow:
                 f"GraphWorkflow max_workers set to: {self._max_workers}"
             )
 
-        self.conversation = Conversation()
+        self.channel = channel
+        self.conversation = Conversation(channel=channel)
 
         # Rebuild the graph from nodes and edges if provided
         if self.nodes:
@@ -1221,6 +1241,7 @@ class GraphWorkflow:
                 raise ValueError(error_msg)
 
             self.nodes[node.id] = node
+            claim_agents([node.agent], self.channel, self.name)
             self.graph_backend.add_node(
                 node.id,
                 type=node.type,
