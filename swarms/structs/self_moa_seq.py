@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from swarms.structs.serialization import SerializableMixin
@@ -146,6 +147,25 @@ class SelfMoASeq(SerializableMixin):
         if self.retry_max_delay < self.retry_delay:
             raise ValueError("retry_max_delay must be >= retry_delay")
 
+    def _run_with_retry(self, agent: Agent, task: str) -> Any:
+        for attempt in range(self.max_retries + 1):
+            agent.short_memory = agent.short_memory_init()
+            try:
+                return agent.run(task)
+            except Exception as e:
+                if attempt == self.max_retries:
+                    raise
+                growth = self.retry_backoff_multiplier**attempt
+                delay = min(
+                    self.retry_delay * growth, self.retry_max_delay
+                )
+                self._log(
+                    "warning",
+                    f"{agent.agent_name} failed ({e}), retry "
+                    f"{attempt + 1}/{self.max_retries} in {delay:.1f}s",
+                )
+                time.sleep(delay)
+
     def _generate_samples(
         self, task: str, num_samples: int
     ) -> List[str]:
@@ -169,10 +189,7 @@ class SelfMoASeq(SerializableMixin):
                 self._log(
                     "debug", f"Generating sample {i+1}/{num_samples}"
                 )
-                self.proposer.short_memory = (
-                    self.proposer.short_memory_init()
-                )
-                sample = self.proposer.run(task)
+                sample = self._run_with_retry(self.proposer, task)
                 samples.append(sample)
                 self.metrics["total_samples_generated"] += 1
 
@@ -250,10 +267,7 @@ class SelfMoASeq(SerializableMixin):
                 best_so_far,
             )
 
-            self.aggregator.short_memory = (
-                self.aggregator.short_memory_init()
-            )
-            aggregated = self.aggregator.run(prompt)
+            aggregated = self._run_with_retry(self.aggregator, prompt)
             self.metrics["total_aggregations"] += 1
 
             self._log("debug", "Window aggregation complete")
