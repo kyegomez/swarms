@@ -834,6 +834,12 @@ class Conversation:
         self.conversation_history.pop(int(index))
         self._str_cache = None
 
+    def truncate(self, index: int) -> List[dict]:
+        removed = self.conversation_history[index:]
+        del self.conversation_history[index:]
+        self._str_cache = None
+        return removed
+
     def update(self, index: str, role, content):
         """Update a message in the conversation history.
 
