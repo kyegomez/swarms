@@ -558,7 +558,15 @@ class SwarmTelemetry:
             from opentelemetry.sdk.trace import TracerProvider
             from opentelemetry.sdk.trace.export import (
                 BatchSpanProcessor,
+                SpanExportResult,
             )
+
+            class QuietExporter(OTLPSpanExporter):
+                def export(self, spans):
+                    try:
+                        return super().export(spans)
+                    except Exception:
+                        return SpanExportResult.FAILURE
 
             provider = TracerProvider(
                 resource=Resource.create(
@@ -573,7 +581,7 @@ class SwarmTelemetry:
             provider.add_span_processor(
                 BatchSpanProcessor(
                     # http/protobuf exporter, full signal URL, NO auth header.
-                    OTLPSpanExporter(
+                    QuietExporter(
                         endpoint=f"{TELEMETRY_BASE_URL}/v1/traces",
                         # Bound worst-case so a dead network can't stall exit.
                         timeout=int(
