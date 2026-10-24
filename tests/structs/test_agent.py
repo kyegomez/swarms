@@ -1244,6 +1244,33 @@ class TestArunForwarding:
         with pytest.raises(ValueError, match="Error code: 404"):
             agent._handle_run_error(err)
 
+    @pytest.mark.parametrize(
+        "invoke",
+        [
+            lambda agent: agent("test task"),
+            lambda agent: asyncio.run(agent.arun("test task")),
+        ],
+        ids=["call", "arun"],
+    )
+    def test_failure_calls_handle_run_error_once(self, invoke):
+        """#2836: __call__ and arun() delegate to run() with no try/except, so a failed
+        run handles the error once in run(), not once in run() and once in caller.
+        """
+        agent = Agent(agent_name="err-test", autosave=False)
+        with patch.object(
+            agent, "_handle_run_error", wraps=agent._handle_run_error
+        ) as mock_handle:
+            with patch.object(
+                agent,
+                "call_llm",
+                side_effect=RuntimeError("model failed"),
+            ):
+                with pytest.raises(
+                    RuntimeError, match="model failed"
+                ):
+                    invoke(agent)
+        assert mock_handle.call_count == 1
+
 
 class TestEmptyTaskGuard:
     """run() must not read stdin for an empty task when interactive=False."""
