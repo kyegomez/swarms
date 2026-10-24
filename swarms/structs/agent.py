@@ -4,6 +4,7 @@ import os
 import threading
 import time
 from contextlib import nullcontext
+from functools import lru_cache
 from typing import (
     Any,
     Callable,
@@ -96,6 +97,14 @@ from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
+
+
+@lru_cache(maxsize=None)
+def _model_info(model_name: str) -> Dict[str, Any]:
+    try:
+        return llm_backend.get_model_info(model_name)
+    except Exception:
+        return {}
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -1678,15 +1687,10 @@ Subtask Breakdown:
               which may not correspond to available context for input (e.g., 32768 for gpt-4.1 output, but
               over a million for certain input windows).
         """
-        try:
-            return (
-                llm_backend.get_model_info(self.model_name).get(
-                    "max_input_tokens"
-                )
-                or 16000
-            )
-        except Exception:
-            return 16000
+        return (
+            _model_info(self.model_name).get("max_input_tokens")
+            or 16000
+        )
 
     def _default_max_tokens(self) -> int:
         """
@@ -1699,16 +1703,10 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
-        # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
-        try:
-            return (
-                llm_backend.get_model_info(self.model_name).get(
-                    "max_output_tokens"
-                )
-                or 16000
-            )
-        except Exception:
-            return 16000
+        return (
+            _model_info(self.model_name).get("max_output_tokens")
+            or 16000
+        )
 
     def reliability_check(self):
 
