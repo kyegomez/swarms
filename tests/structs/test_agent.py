@@ -2628,6 +2628,27 @@ class TestIntegerLoopRequest:
             expected,
         ]
 
+    def test_each_sample_starts_at_the_history_before_the_run(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(
+            monkeypatch, agent, ["earlier answer", "one", "two"]
+        )
+
+        agent.run("earlier task")
+        agent.run("task", n=2)
+
+        expected = [
+            {"role": "user", "content": "earlier task"},
+            {"role": "assistant", "content": "earlier answer"},
+            {"role": "user", "content": "task"},
+        ]
+        assert [messages for _, messages in sent[1:]] == [
+            expected,
+            expected,
+        ]
+
     def test_samples_store_the_callers_messages_once(
         self, monkeypatch
     ):

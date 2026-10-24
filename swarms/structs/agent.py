@@ -954,7 +954,7 @@ class Agent:
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
-        stored_messages: Optional[List[Dict[str, Any]]] = None,
+        stored_messages: Optional[List[List[Dict[str, Any]]]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -1021,10 +1021,10 @@ class Agent:
             streaming_callback (Optional[Callable[[str], None]]): Optional callback function
                 to receive streaming tokens in real-time. Useful for dashboard integration
                 or real-time UI updates. Defaults to None.
-            stored_messages (Optional[List[Dict[str, Any]]]): Shared by the n samples
-                of one run. The first sample stores messages and fills it with the
-                stored rows, and later samples send those rows instead of storing
-                messages again.
+            stored_messages (Optional[List[List[Dict[str, Any]]]]): Shared by the n
+                samples of one run. The first sample appends the rows its request
+                sends ahead of the task, and later samples send those rows instead
+                of the history, so no sample sees another sample's turns.
             *args: Additional positional arguments passed to LLM calls. Used for extensibility.
             **kwargs: Additional keyword arguments passed to LLM calls. Used for extensibility.
 
@@ -1071,17 +1071,15 @@ class Agent:
         """
         history_start = len(self.short_memory.conversation_history)
         try:
-            # A later sample sends the copy the first one stored instead of storing another.
-            prefix = stored_messages or ()
-            if messages and not prefix:
-                added = self.short_memory.add_messages(messages)
-                if stored_messages is not None:
-                    stored_messages.extend(added)
+            later_sample = bool(stored_messages)
+            if messages and not later_sample:
+                self.short_memory.add_messages(messages)
 
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.check_model_supports_utilities(img=img)
 
+            task_index = len(self.short_memory.conversation_history)
             self.short_memory.add(role=self.user_name, content=task)
 
             if self.plan_enabled is True:
@@ -1091,7 +1089,19 @@ class Agent:
             loop_count = 0
 
             # A caller's messages stand in for the earlier history.
-            request_start = 0 if messages is None else history_start
+            request_start = (
+                history_start
+                if messages is not None or later_sample
+                else 0
+            )
+
+            if stored_messages is not None and not later_sample:
+                stored_messages.append(
+                    self.short_memory.conversation_history[
+                        request_start:task_index
+                    ]
+                )
+            prefix = stored_messages[0] if later_sample else ()
 
             # Clear the short memory
             response = None
@@ -1115,6 +1125,15 @@ class Agent:
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
                     prefix = ()
+                    if (
+                        stored_messages is not None
+                        and not later_sample
+                    ):
+                        stored_messages[:] = [
+                            list(
+                                self.short_memory.conversation_history
+                            )
+                        ]
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
