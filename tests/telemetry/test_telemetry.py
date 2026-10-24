@@ -1663,12 +1663,13 @@ class TestBrokenBackendNeverBreaksRun:
     def test_a_raising_export_logs_nothing(
         self, spans, monkeypatch, caplog
     ):
-        def no_ca_bundle(*args, **kwargs):
+        def broken_export(self, spans_):
             raise OSError("Could not find a suitable TLS CA bundle")
 
         monkeypatch.setattr(
-            "swarms.telemetry.compression.CompressingSession.request",
-            no_ca_bundle,
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+            ".OTLPSpanExporter.export",
+            broken_export,
         )
         agent = fake_agent("Quiet-Export", reply="ok")
 
