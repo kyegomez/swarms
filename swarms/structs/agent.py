@@ -1503,18 +1503,14 @@ Subtask Breakdown:
         Raises:
             Exception: If an error occurs during the asynchronous operation.
         """
-        try:
-            # Positional, in run()'s order: keywords plus *args made every extra positional collide with task.
-            return await asyncio.to_thread(
-                self.run,
-                task,
-                img,
-                *args,
-                **kwargs,
-            )
-        except Exception as error:
-            # Not awaited: _handle_run_error is sync and always raises, as the other seven call sites assume.
-            self._handle_run_error(error)
+        # Positional, in run()'s order: keywords plus *args made every extra positional collide with task.
+        return await asyncio.to_thread(
+            self.run,
+            task,
+            img,
+            *args,
+            **kwargs,
+        )
 
     def __call__(
         self,
@@ -1529,15 +1525,12 @@ Subtask Breakdown:
             task (Optional[str]): The task to be performed. Defaults to None.
             img (Optional[str]): The image to be processed. Defaults to None.
         """
-        try:
-            return self.run(
-                task=task,
-                img=img,
-                *args,
-                **kwargs,
-            )
-        except Exception as error:
-            self._handle_run_error(error)
+        return self.run(
+            task=task,
+            img=img,
+            *args,
+            **kwargs,
+        )
 
     def receive_message(
         self, agent_name: str, task: str, *args, **kwargs

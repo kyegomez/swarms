@@ -1153,6 +1153,65 @@ class TestArunForwarding:
         with pytest.raises(ValueError, match="boom"):
             asyncio.run(Agent.arun(agent, "T"))
 
+    def test_call_forwards_all_args_and_kwargs(self):
+        """__call__ forwards task, img, *args, and **kwargs directly to run()."""
+        agent = self._bare_agent()
+        seen = {}
+
+        def fake_run(*args, **kwargs):
+            seen["args"] = args
+            seen["kwargs"] = kwargs
+            return "ok"
+
+        agent.run = fake_run
+
+        result = agent("task1", "img1", "extra_pos", extra_kw="val")
+        assert result == "ok"
+        assert seen["args"] == ("extra_pos",)
+        assert seen["kwargs"] == {
+            "task": "task1",
+            "img": "img1",
+            "extra_kw": "val",
+        }
+
+    def test_call_failure_calls_handle_run_error_once(self):
+        """#2836: __call__ delegates to run() with no try/except, so a failed
+        run handles the error once in run(), not once in run() and once in __call__.
+        """
+        agent = Agent(agent_name="call-err-test", autosave=False)
+        with patch.object(
+            agent, "_handle_run_error", wraps=agent._handle_run_error
+        ) as mock_handle:
+            with patch.object(
+                agent,
+                "call_llm",
+                side_effect=RuntimeError("model failed"),
+            ):
+                with pytest.raises(
+                    RuntimeError, match="model failed"
+                ):
+                    agent("test task")
+        assert mock_handle.call_count == 1
+
+    def test_arun_failure_calls_handle_run_error_once(self):
+        """#2836: arun() delegates to run() with no try/except, so a failed
+        run handles the error once in run(), not once in run() and once in arun().
+        """
+        agent = Agent(agent_name="arun-err-test", autosave=False)
+        with patch.object(
+            agent, "_handle_run_error", wraps=agent._handle_run_error
+        ) as mock_handle:
+            with patch.object(
+                agent,
+                "call_llm",
+                side_effect=RuntimeError("model failed"),
+            ):
+                with pytest.raises(
+                    RuntimeError, match="model failed"
+                ):
+                    asyncio.run(agent.arun("test task"))
+        assert mock_handle.call_count == 1
+
 
 class TestEmptyTaskGuard:
     """run() must not read stdin for an empty task when interactive=False."""
