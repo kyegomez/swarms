@@ -16,7 +16,7 @@ Tests for individual agent functionality and behavior:
 
 **`/agents/`** - Core agent functionality
 - `test_agent_logging.py` - Agent logging and monitoring capabilities
-- `test_litellm_args_kwargs.py` - LiteLLM argument handling
+- `test_litellm_args_kwargs.py` - LLM client argument handling
 - `test_llm_args.py` - LLM argument processing
 - `test_llm_handling_args.py` - LLM argument management
 - `test_tool_agent.py` - Tool-enabled agent functionality
@@ -73,7 +73,7 @@ Tests for utility functions and helpers:
 - `test_display_markdown_message.py` - Markdown message display
 - `test_docstring_parser.py` - Docstring parsing utilities
 - `test_formatter.py` - Text formatting utilities
-- `test_litellm_wrapper.py` - LiteLLM wrapper functionality
+- `test_litellm_wrapper.py` - LLM client functionality
 - `test_math_eval.py` - Mathematical expression evaluation
 - `test_md_output.py` - Markdown output handling
 - `test_metrics_decorator.py` - Metrics collection decorators

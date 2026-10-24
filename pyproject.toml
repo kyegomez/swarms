@@ -66,7 +66,6 @@ python-dotenv = "*"
 PyYAML = "*"
 networkx = "*"
 rich = "*"
-litellm = "1.76.1"
 httpx = "*"
 requests = "*"
 mcp = "*"
@@ -74,13 +73,12 @@ schedule = "*"
 opentelemetry-sdk = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
 zstandard = "*"
-routehub = { version = ">=0.2.0", extras = ["fast"], optional = true }
+routehub = { version = ">=0.4.0", extras = ["fast"] }
 rustworkx = { version = "*", optional = true }
 
 [tool.poetry.extras]
-# RouteHub replaces litellm for model calls when installed.
 # rustworkx backs GraphWorkflow(backend="rustworkx") in place of networkx.
-fast = ["routehub", "rustworkx"]
+fast = ["rustworkx"]
 
 [tool.poetry.scripts]
 swarms = "swarms.cli.main:main"

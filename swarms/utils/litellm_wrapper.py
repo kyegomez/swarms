@@ -1,8 +1,9 @@
 """
-LiteLLM Wrapper Module
+LLM client module
 
-This module provides a comprehensive wrapper around the LiteLLM library for interacting
-with various Large Language Models (LLMs) through a unified interface. It supports:
+This module provides a comprehensive client around RouteHub, the Swarms LLM
+gateway, for interacting with various Large Language Models (LLMs) through a
+unified interface. It supports:
 
 - Multiple model providers (OpenAI, Anthropic, Google, etc.)
 - Vision capabilities (image processing)
@@ -140,7 +141,7 @@ def _field(obj: any, name: str, default: any = None) -> any:
 def usage_from_response(response: any) -> Optional[dict]:
     """Normalise a completion response's ``usage`` block, or None if absent.
 
-    LiteLLM reports every provider in the OpenAI shape: ``prompt_tokens``,
+    RouteHub reports every provider in the OpenAI shape: ``prompt_tokens``,
     ``completion_tokens``, ``total_tokens``, with cache reads under
     ``prompt_tokens_details.cached_tokens`` and hidden reasoning under
     ``completion_tokens_details.reasoning_tokens``. Both are breakdowns of
@@ -176,11 +177,11 @@ def usage_from_response(response: any) -> Optional[dict]:
 
 class LiteLLM:
     """
-    A comprehensive wrapper for LiteLLM that provides a unified interface for interacting
-    with various Large Language Models (LLMs).
+    A comprehensive LLM client that provides a unified interface for interacting
+    with various Large Language Models (LLMs) through RouteHub.
 
     This class supports multiple model providers including OpenAI, Anthropic, Google,
-    and many others through the LiteLLM library. It provides features such as:
+    and many others through RouteHub. It provides features such as:
 
     - Text generation with customizable parameters
     - Vision capabilities (image understanding)
@@ -265,7 +266,7 @@ class LiteLLM:
 
         Args:
             model_name (str, optional): The name of the model to use. Supports any model
-                available through LiteLLM (e.g., "gpt-4", "claude-3-opus", "gemini-pro").
+                available through RouteHub (e.g., "gpt-4", "claude-3-opus", "gemini-pro").
                 Defaults to "gpt-5.4".
             system_prompt (str, optional): The system prompt to use for the conversation.
                 This sets the behavior and context for the model. Defaults to None.
@@ -293,8 +294,8 @@ class LiteLLM:
                 Defaults to 3.
             verbose (bool, optional): Whether to enable verbose logging for debugging.
                 Defaults to False.
-            caching (bool, optional): Whether to enable LiteLLM response caching for
-                identical requests (a full-response cache). Defaults to False.
+            caching (bool, optional): No longer used; kept so existing callers
+                do not break. Defaults to False.
             prompt_caching (bool, optional): Whether to enable provider-side prompt
                 caching. When True, ephemeral ``cache_control`` breakpoints are added to
                 the system prompt and the final message so the large, stable prefix of
@@ -326,7 +327,7 @@ class LiteLLM:
             base_url (str, optional): Custom base URL for the API endpoint. Useful for
                 local models or custom deployments. Defaults to None.
             api_key (str, optional): API key for authentication. If not provided, uses
-                environment variables or LiteLLM configuration. Defaults to None.
+                the provider's environment variable. Defaults to None.
             api_version (str, optional): API version to use. Some providers support
                 multiple API versions. Defaults to None.
             reasoning_effort (str, optional): Reasoning effort level for reasoning-enabled
@@ -396,20 +397,13 @@ class LiteLLM:
         self.modalities = []
         self.messages = []  # Initialize messages list
 
-        # litellm reads these from module globals shared by every agent; RouteHub takes them per call.
-        self._backend_options = {}
+        # RouteHub takes these per call, so one agent's settings never leak into another's.
         self.retries = retries
-        backend_options = {
+        self._backend_options = {
             "set_verbose": verbose,
             "ssl_verify": ssl_verify,
             "drop_params": drop_params,
         }
-        if llm_backend.BACKEND == "litellm":
-            litellm = llm_backend.backend_module()
-            for name, value in backend_options.items():
-                setattr(litellm, name, value)
-        else:
-            self._backend_options = backend_options
 
         # Add system prompt if present (Anthropic rejects empty system blocks)
         if isinstance(self.system_prompt, str):
@@ -784,10 +778,9 @@ class LiteLLM:
 
         Override: ``cache_config={"override": True/False}`` forces injection on
         or off regardless of the model — useful for proxies, custom aliases, or
-        to opt Gemini/Vertex into the ``cache_control`` path (which LiteLLM's
-        docs say it supports, though behavior varies by version).
+        to opt Gemini/Vertex into the ``cache_control`` path.
 
-        Note: ``litellm.utils.supports_prompt_caching`` is deliberately NOT used
+        Note: RouteHub's ``supports_prompt_caching`` is deliberately NOT used
         here — it returns True for providers (e.g. Gemini) whose caching is not
         driven by ``cache_control``, which would break those requests.
         """
@@ -795,51 +788,6 @@ class LiteLLM:
         if override is not None:
             return bool(override)
         return self._is_anthropic_model()
-
-    # OpenAI families that reject max_tokens and require max_completion_tokens
-    _COMPLETION_TOKEN_FAMILIES = ("o1", "o3", "o4", "gpt-5", "gpt-6")
-
-    def _output_token_key(self) -> str:
-        """The request key the provider accepts for the output-token cap.
-
-        OpenAI's reasoning-era models reject ``max_tokens`` outright and
-        require ``max_completion_tokens``; every other provider LiteLLM
-        routes to takes ``max_tokens``. LiteLLM does not translate between
-        them, so the choice has to be made here.
-        """
-        name = (self.model_name or "").lower().split("/")[-1]
-        if name.startswith(self._COMPLETION_TOKEN_FAMILIES):
-            return "max_completion_tokens"
-        return "max_tokens"
-
-    @staticmethod
-    def _swap_token_key_for(
-        error: Exception, params: dict
-    ) -> Optional[dict]:
-        """Params with the output-token key renamed, if that is what ``error`` asks for.
-
-        The family list above cannot know every model in advance, so a
-        rejection that names the other key is retried once with it. Returns
-        None when the error is about something else.
-        """
-        text = str(error)
-        if "max_tokens" in params and "max_completion_tokens" in text:
-            swapped = dict(params)
-            swapped["max_completion_tokens"] = swapped.pop(
-                "max_tokens"
-            )
-            return swapped
-        if (
-            "max_completion_tokens" in params
-            and "max_completion_tokens" in text
-            and "max_tokens" in text
-        ):
-            swapped = dict(params)
-            swapped["max_tokens"] = swapped.pop(
-                "max_completion_tokens"
-            )
-            return swapped
-        return None
 
     def _is_anthropic_model(self) -> bool:
         """
@@ -867,7 +815,7 @@ class LiteLLM:
         """
         Attach a ``cache_control`` breakpoint to a single message in-place,
         converting plain string content into the block form that
-        LiteLLM/Anthropic require for cache markers.
+        Anthropic requires for cache markers.
         """
         content = message.get("content")
         if content is None:
@@ -965,7 +913,7 @@ class LiteLLM:
 
         * OpenAI (automatic caching): pass through ``prompt_cache_key`` and
           ``prompt_cache_retention`` from ``cache_config`` when set.
-        * Anthropic 1-hour TTL: attach the beta header LiteLLM needs for the
+        * Anthropic 1-hour TTL: attach the beta header Anthropic needs for the
           extended cache when ``cache_config={"ttl": "1h"}``.
         """
         if not self.prompt_caching:
@@ -1066,7 +1014,7 @@ class LiteLLM:
             - The image is an HTTP/HTTPS URL (not a file path or base64)
             - The model is not a local model (Ollama, LlamaCPP, etc.)
             - The model supports vision capabilities
-            - The model supports direct URL passing (checked via LiteLLM)
+            - The model supports direct URL passing (checked via RouteHub)
         """
         # Don't use direct URL for base64 strings (data URI or raw base64)
         if is_base64_encoded(image):
@@ -1100,7 +1048,7 @@ class LiteLLM:
         if is_local:
             return False
 
-        # Use LiteLLM's supports_vision to check if model supports vision and direct URLs
+        # Use RouteHub's supports_vision to check if model supports vision and direct URLs
         try:
             return _model_supports_vision(self.model_name)
         except Exception as e:
@@ -1188,7 +1136,7 @@ class LiteLLM:
         """
         Check if the model supports vision capabilities.
 
-        This method uses LiteLLM's built-in `supports_vision` function to verify
+        This method uses RouteHub's `supports_vision` function to verify
         that the model can handle image inputs before processing. It's called
         automatically when an image is provided to prevent errors from unsupported
         models.
@@ -1203,7 +1151,7 @@ class LiteLLM:
 
         Note:
             This method only performs the check if `img` is not None. It uses
-            LiteLLM's model capability detection to determine vision support.
+            RouteHub's model capability detection to determine vision support.
             Models that support vision include GPT-4 Vision, Claude 3, Gemini Pro Vision,
             and other vision-capable models.
         """
@@ -1213,7 +1161,6 @@ class LiteLLM:
             # RouteHub's catalog comes from the network, so a model it can't find may still take images.
             if (
                 out is False
-                and llm_backend.BACKEND == "routehub"
                 and self.model_name not in llm_backend.model_list
             ):
                 logger.warning(
@@ -1248,7 +1195,7 @@ class LiteLLM:
         messages: Optional[List[dict]] = None,
     ) -> dict:
         """
-        Assemble the full parameter dict for a litellm completion call.
+        Assemble the full parameter dict for a RouteHub completion call.
 
         Handles message preparation (including vision), parameter merging,
         tool/function config, reasoning/thinking constraints, and caching.
@@ -1267,9 +1214,8 @@ class LiteLLM:
                 task=task, img=img, imgs=imgs, messages=messages
             ),
             "stream": self.stream,
-            self._output_token_key(): self.max_tokens,
-            "caching": self.caching,
-            # Per request: litellm drops its module-level count after the first retried call.
+            # RouteHub sends this as max_completion_tokens where the provider requires it.
+            "max_tokens": self.max_tokens,
             "num_retries": self.retries,
         }
 
@@ -1315,7 +1261,7 @@ class LiteLLM:
         if self.base_url is not None:
             completion_params["base_url"] = self.base_url
 
-        # An explicit None would override litellm's env-var fallback
+        # An explicit None would override RouteHub's env-var fallback
         if self.api_key is not None:
             completion_params["api_key"] = self.api_key
 
@@ -1327,12 +1273,12 @@ class LiteLLM:
         if self.modalities and len(self.modalities) >= 2:
             completion_params["modalities"] = self.modalities
 
-        # Forwarded even for models LiteLLM's registry lacks, drop_params covers the rest
+        # Forwarded even for models RouteHub's registry lacks, drop_params covers the rest
         if self.reasoning_effort is not None:
             completion_params["reasoning_effort"] = (
                 self.reasoning_effort
             )
-            # litellm maps reasoning_effort to a thinking budget that max_tokens must exceed.
+            # RouteHub maps reasoning_effort to a thinking budget that max_tokens must exceed.
             self._apply_anthropic_thinking_constraints(
                 completion_params, threshold=16000, target=16000
             )
@@ -1538,19 +1484,7 @@ class LiteLLM:
                 messages=messages,
             )
             self.last_request = completion_params
-            try:
-                response = completion(**completion_params)
-            except Exception as error:
-                retry_params = self._swap_token_key_for(
-                    error, completion_params
-                )
-                if retry_params is None:
-                    raise
-                logger.warning(
-                    f"{self.model_name} rejected the output-token key, retrying: {error}"
-                )
-                self.last_request = retry_params
-                response = completion(**retry_params)
+            response = completion(**completion_params)
             if not self.stream:
                 self.last_response = response
             self._record_usage(response)
@@ -1579,7 +1513,7 @@ class LiteLLM:
         **kwargs,
     ):
         """
-        Async version of `run`, using litellm's acompletion.
+        Async version of `run`, using RouteHub's acompletion.
 
         Accepts the same arguments and returns the same output types as
         `run` (see its docstring).
@@ -1596,19 +1530,7 @@ class LiteLLM:
                 messages=messages,
             )
             self.last_request = completion_params
-            try:
-                response = await acompletion(**completion_params)
-            except Exception as error:
-                retry_params = self._swap_token_key_for(
-                    error, completion_params
-                )
-                if retry_params is None:
-                    raise
-                logger.warning(
-                    f"{self.model_name} rejected the output-token key, retrying: {error}"
-                )
-                self.last_request = retry_params
-                response = await acompletion(**retry_params)
+            response = await acompletion(**completion_params)
             if not self.stream:
                 self.last_response = response
             self._record_usage(response)

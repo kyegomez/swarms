@@ -141,7 +141,7 @@ class TreeAgent(Agent):
         **kwargs,
     ):
         """
-        Initialize a TreeAgent with litellm embedding capabilities.
+        Initialize a TreeAgent with embedding capabilities.
 
         Args:
             name (str): Name of the agent
@@ -167,7 +167,7 @@ class TreeAgent(Agent):
         self.embedding_model_name = embedding_model_name
         self.verbose = verbose
 
-        # Generate system prompt embedding using litellm
+        # Embed the system prompt for similarity matching
         if system_prompt:
             self.system_prompt_embedding = self._get_embedding(
                 system_prompt
@@ -185,7 +185,7 @@ class TreeAgent(Agent):
 
     def _get_embedding(self, text: str) -> List[float]:
         """
-        Get embedding for a given text using litellm.
+        Get embedding for a given text through RouteHub.
 
         Args:
             text (str): Text to embed
@@ -199,7 +199,7 @@ class TreeAgent(Agent):
             )
             if self.verbose:
                 logger.info(f"Embedding type: {type(response)}")
-            # litellm returns more than one response shape
+            # Providers return more than one response shape
             if hasattr(response, "data") and response.data:
                 if hasattr(response.data[0], "embedding"):
                     return response.data[0].embedding

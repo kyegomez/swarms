@@ -13,7 +13,7 @@ Everything here runs against a real filesystem — no mocks:
 * The Agent-integration section constructs a real ``swarms.Agent`` to
   verify that ``skills_dir`` / ``skills_metadata`` / ``handle_skills`` wire
   through to the underlying ``SkillsManager`` correctly. The only stub is
-  ``litellm.completion`` in the request tests, which capture what would be
+  ``routehub.completion`` in the request tests, which capture what would be
   sent to the provider, so no network/API key is required.
 
 Run:

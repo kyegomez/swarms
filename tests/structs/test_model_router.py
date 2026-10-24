@@ -73,7 +73,7 @@ def test_async_run_returns_the_output_without_blocking_the_loop(
     assert asyncio.run(run_both()) == ["answer to a", "answer to b"]
 
 
-def test_every_recommended_provider_is_a_litellm_prefix():
+def test_every_recommended_provider_is_a_routehub_prefix():
     for model, entry in model_recommendations.items():
         provider = entry["provider"]
         resolved = llm_backend.get_llm_provider(f"{provider}/{model}")

@@ -12,7 +12,7 @@ from swarms.utils.litellm_wrapper import (
 
 
 def _response(prompt=10, completion=5, cached=0, total=None):
-    """The shape litellm returns: choices[0].message.content plus a usage block."""
+    """The shape RouteHub returns: choices[0].message.content plus a usage block."""
     details = (
         SimpleNamespace(cached_tokens=cached) if cached else None
     )

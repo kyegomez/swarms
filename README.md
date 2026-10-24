@@ -73,12 +73,9 @@ $ cd swarms
 $ pip install -r requirements.txt
 ```
 
-### Faster model calls and graphs with `swarms[fast]`
+### Faster graphs with `swarms[fast]`
 
-`swarms[fast]` adds two optional speedups:
-
-- [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub) for faster model calls through a drop-in LLM gateway. No code changes needed. To switch back to litellm, set `SWARMS_LLM_BACKEND=litellm`.
-- [rustworkx](https://github.com/Qiskit/rustworkx), a graph library written in Rust, for faster `GraphWorkflow` graphs. Turn it on with `GraphWorkflow(backend="rustworkx")`.
+Model calls go through [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub), the Swarms LLM gateway, which is installed with swarms. `swarms[fast]` adds [rustworkx](https://github.com/Qiskit/rustworkx), a graph library written in Rust, for faster `GraphWorkflow` graphs. Turn it on with `GraphWorkflow(backend="rustworkx")`.
 
 ```bash
 $ pip3 install -U "swarms[fast]"

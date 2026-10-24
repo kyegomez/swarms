@@ -1,11 +1,7 @@
 import os
 import re
 
-import litellm
-
 from swarms import Agent
-
-litellm.drop_params = True
 
 
 def extract_code_blocks(text: str) -> str:

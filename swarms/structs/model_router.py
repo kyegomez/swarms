@@ -285,14 +285,14 @@ class ModelRouter:
             title="Model Router Output",
         )
 
-        litellm_wrapper = LiteLLM(
+        llm = LiteLLM(
             model_name=f"{selected_provider}/{selected_model}",
             max_tokens=max_tokens,
             temperature=temperature,
             system_prompt=system_prompt,
         )
 
-        final_output = litellm_wrapper.run(task=routed_task)
+        final_output = llm.run(task=routed_task)
 
         formatter.print_panel(
             f"Output: {final_output} from {selected_provider}/{selected_model}",

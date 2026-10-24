@@ -67,7 +67,7 @@ class AgentRouter:
 
             response = embedding(**params)
 
-            # Handle different response structures from litellm
+            # Handle different response structures from providers
             if hasattr(response, "data") and response.data:
                 if hasattr(response.data[0], "embedding"):
                     embedding_vector = response.data[0].embedding

@@ -9,8 +9,8 @@ Backs the ``swarms models`` command:
 - ``swarms models --info <name>``    show context window, capabilities, pricing
 
 All metadata comes from the LLM backend's ``model_list`` and
-``get_model_info``: litellm's bundled table, or OpenRouter's live list when
-RouteHub is installed. Either way it stays in sync as providers ship models.
+``get_model_info``: RouteHub's live OpenRouter catalogue, so it stays in
+sync as providers ship models.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from rich.table import Table
 
 
 def _provider_of(name: str) -> str:
-    """Extract a provider key from a LiteLLM model string."""
+    """Extract a provider key from a model string."""
     if "/" in name:
         return name.split("/", 1)[0]
     # Heuristics for the common no-prefix providers
@@ -219,7 +219,14 @@ def show_model_info(console: Console, name: str) -> None:
     table.add_column()
 
     rows = [
-        ("Provider", str(info.get("litellm_provider") or "—")),
+        (
+            "Provider",
+            str(
+                info.get("provider")
+                or info.get("litellm_provider")
+                or "—"
+            ),
+        ),
         ("Mode", str(info.get("mode") or "—")),
         (
             "Max input tokens",

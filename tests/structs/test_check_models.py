@@ -57,7 +57,7 @@ class _AsyncClient(_Client):
         return _Response(_Client.data)
 
 
-# The backend's own list, fixed so the tests behave the same on litellm and RouteHub.
+# RouteHub's own list, fixed so the tests do not depend on the network.
 BASE_MODELS = (
     "gpt-4o",
     "claude-sonnet-4-6",
@@ -113,7 +113,7 @@ def test_fetch_failure_returns_empty_and_does_not_raise(monkeypatch):
     assert fetch_openrouter_models() == []
 
 
-def test_available_models_include_litellm_and_openrouter():
+def test_available_models_include_routehub_and_openrouter():
     report = get_available_models()
 
     assert report["status"] == "success"
@@ -131,7 +131,7 @@ def test_available_models_without_openrouter_skips_the_fetch():
     assert report["count"] == len(BASE_MODELS)
 
 
-def test_openrouter_duplicates_of_litellm_models_are_dropped(
+def test_openrouter_duplicates_of_routehub_models_are_dropped(
     monkeypatch,
 ):
     monkeypatch.setattr(

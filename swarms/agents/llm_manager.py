@@ -274,7 +274,7 @@ class LLMManager:
                 out = _model_supports_parallel_function_calling(
                     agent.model_name
                 )
-                # litellm's capability data lags new models, so this is only a hint.
+                # RouteHub's capability data lags new models, so this is only a hint.
                 if out is False:
                     _log_once(
                         "WARNING",
@@ -374,7 +374,7 @@ class LLMManager:
         for chunk in self.stream_with_tool_collection(
             stream, tool_calls_out
         ):
-            # RouteHub forwards chunks with no choices, which litellm drops.
+            # RouteHub forwards chunks with no choices, such as the trailing usage chunk.
             if not getattr(chunk, "choices", None):
                 continue
             delta = chunk.choices[0].delta

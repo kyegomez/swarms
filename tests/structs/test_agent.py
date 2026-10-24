@@ -644,7 +644,7 @@ class TestAgentToolUsage:
 
 
 class TestLLMArgsAndHandling:
-    """llm_args, credentials and the kwargs path into litellm."""
+    """llm_args, credentials and the kwargs path into RouteHub."""
 
     TOOLS_LIST = [
         {
@@ -782,7 +782,7 @@ class TestLLMArgsAndHandling:
     ):
         """An unset key must be absent, not passed as None.
 
-        litellm falls back to the provider env var only when the kwarg is
+        RouteHub falls back to the provider env var only when the kwarg is
         absent; an explicit None would override that and break every caller
         not using a custom endpoint.
         """
@@ -835,7 +835,7 @@ class TestConstructorWindows:
 
     def test_context_length_defaults_to_the_model_input_window(self):
         """Omitting it should size to the model, not a flat 16000."""
-        # The relation, not the literal, so a litellm model-table refresh
+        # The relation, not the literal, so a model-catalogue refresh
         # does not break this.
         assert self._agent(model_name="gpt-4o").context_length > 16000
 
@@ -2181,7 +2181,7 @@ class TestRunSamples:
 class TestLLMFailureRaises:
     """#2408: once its retries ran out, _run broke out of the loop and
     returned the formatted history, so run() returned '' with no error and
-    fallback_models was never tried. Retries now belong to litellm, so a
+    fallback_models was never tried. Retries now belong to RouteHub, so a
     failed call reaches run() at once and run() moves to the next model.
     """
 
@@ -2365,6 +2365,22 @@ class TestLLMFailureRaises:
             model_name="gpt-5.4", fallback_model_name="gpt-5.4"
         )
         assert same.fallback_models == ["gpt-5.4"]
+
+    def test_a_provider_error_with_braces_still_raises_agent_llm_error(
+        self,
+    ):
+        """RouteHub error text carries JSON braces, which broke the error log."""
+        agent = self._agent(model_name="gpt-5.4")
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=RuntimeError(
+                "Error code: 404 - [{'error': {'code': 404}}]"
+            ),
+        ):
+            with pytest.raises(AgentLLMError, match="404"):
+                agent.run(self.TASK)
 
 
 class TestCommsChannel:

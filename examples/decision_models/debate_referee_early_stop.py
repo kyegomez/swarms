@@ -1,6 +1,6 @@
 import time
 
-import litellm
+import routehub
 
 from swarms import Agent, DecisionModel
 
@@ -103,13 +103,13 @@ calls_fixed = 2 * MAX_ROUNDS
 tokens_per_call = (
     pro.usage["total_tokens"] + con.usage["total_tokens"]
 ) / calls_made
-prompt_cost, completion_cost = litellm.cost_per_token(
-    model=DEBATER_MODEL,
-    prompt_tokens=pro.usage["input_tokens"]
-    + con.usage["input_tokens"],
-    completion_tokens=pro.usage["output_tokens"]
-    + con.usage["output_tokens"],
-)
+prices = routehub.get_model_info(DEBATER_MODEL)
+prompt_cost = (
+    pro.usage["input_tokens"] + con.usage["input_tokens"]
+) * (prices["input_cost_per_token"] or 0)
+completion_cost = (
+    pro.usage["output_tokens"] + con.usage["output_tokens"]
+) * (prices["output_cost_per_token"] or 0)
 cost_per_call = (prompt_cost + completion_cost) / calls_made
 saved_calls = calls_fixed - calls_made
 

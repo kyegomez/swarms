@@ -3,7 +3,7 @@ Tests for all streaming and autonomous-loop changes.
 
 Real Agent / LiteLLM instances are used throughout — no MagicMock on the LLM
 or Agent.  Tests that inspect outgoing API parameters still patch
-litellm.completion at the HTTP boundary, but the code under test runs on a
+routehub.completion at the HTTP boundary, but the code under test runs on a
 real LiteLLM object.
 
 Models:
@@ -71,7 +71,7 @@ def empty_chunk():
 
 # ---------------------------------------------------------------------------
 # Helpers — real LLM response objects
-# (Used when we patch litellm.completion but still run real LiteLLM code.)
+# (Used when we patch routehub.completion but still run real LiteLLM code.)
 # ---------------------------------------------------------------------------
 
 
@@ -149,7 +149,7 @@ class TestPrintThinkingPanel:
 
 
 class TestOutputForReasoningRealLiteLLM:
-    """Real LiteLLM instance; litellm.completion is patched to avoid network."""
+    """Real LiteLLM instance; routehub.completion is patched to avoid network."""
 
     def _llm(self, **kw):
         from swarms.utils.litellm_wrapper import LiteLLM
@@ -345,9 +345,9 @@ class TestAnthropicConstraintsRealLiteLLM:
             max_tokens=16000,
         )
         with patch(
-            "swarms.utils.litellm_wrapper.litellm"
-        ) as mock_litellm:
-            mock_litellm.supports_reasoning.return_value = True
+            "swarms.utils.litellm_wrapper._model_supports_reasoning",
+            return_value=True,
+        ):
             params = self._captured_params(llm)
         assert "top_p" not in params
 

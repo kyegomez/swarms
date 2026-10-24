@@ -789,7 +789,7 @@ class BaseTool(BaseModel):
         Convert a function to dictionary representation.
 
         This method converts a callable function to its dictionary representation
-        using the litellm function_to_dict utility. Results are cached for performance.
+        using get_openai_function_schema_from_func. Results are cached for performance.
 
         Args:
             func (callable): The function to convert
