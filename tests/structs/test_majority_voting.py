@@ -417,3 +417,33 @@ def test_consensus_agent_sees_its_own_prior_consensus_as_assistant():
             assert not any(
                 call["answer"] in content for content in assistant
             ), f"{name}'s vote arrived as the consensus agent's own turn"
+
+
+def test_additional_consensus_agent_kwargs_default_is_none():
+    """#2837: additional_consensus_agent_kwargs must default to None rather than a mutable dict."""
+    import inspect
+
+    sig = inspect.signature(MajorityVoting.__init__)
+    param = sig.parameters["additional_consensus_agent_kwargs"]
+    assert param.default is None
+
+
+def test_additional_consensus_agent_kwargs_none_accepted():
+    """#2837: Passing None explicitly initializes consensus_agent without error."""
+    voter = Agent.__new__(Agent)
+    voter.agent_name = "Voter-1"
+    mv = MajorityVoting(
+        agents=[voter], additional_consensus_agent_kwargs=None
+    )
+    assert mv.consensus_agent is not None
+
+
+def test_additional_consensus_agent_kwargs_passed_to_consensus_agent():
+    """#2837: Additional kwargs are forwarded to the default consensus agent."""
+    voter = Agent.__new__(Agent)
+    voter.agent_name = "Voter-1"
+    mv = MajorityVoting(
+        agents=[voter],
+        additional_consensus_agent_kwargs={"context_length": 8192},
+    )
+    assert mv.consensus_agent.context_length == 8192
