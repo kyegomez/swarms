@@ -2445,7 +2445,6 @@ Subtask Breakdown:
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
-        correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
         n: int = 1,
         messages: Optional[List[Dict[str, Any]]] = None,
@@ -2462,7 +2461,6 @@ Subtask Breakdown:
             - Supports passing a single image or batch of images.
             - Supports streaming outputs via a callback for real-time token generation.
             - Runs multiple outputs (n > 1), single or batched.
-            - Accepts an optional ground truth (correct_answer) for evals.
             - Merges configuration and per-call streaming callback.
             - Handles errors and device selection internally (but device_id is not used directly by this method).
 
@@ -2473,7 +2471,6 @@ Subtask Breakdown:
                 data URIs (e.g., "data:image/jpeg;base64,..."), or raw base64 strings. Defaults to None.
             imgs (Optional[List[str]]): List of multiple images if processing a batch. Each image can be a path,
                 URL, data URI, or raw base64 string. Defaults to None.
-            correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
             n (int): How many outputs to generate (number of runs). Defaults to 1.
             messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
