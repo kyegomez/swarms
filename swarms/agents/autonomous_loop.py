@@ -1091,6 +1091,7 @@ class AutonomousAgentLoop:
                                 return self.agent._generate_final_summary(
                                     streaming_callback=streaming_callback,
                                     messages=self._transcript.to_messages(),
+                                    task=task,
                                 )
                         else:
                             # Handle regular tool execution
@@ -1279,7 +1280,8 @@ class AutonomousAgentLoop:
                 )
 
             return self.agent._generate_final_summary(
-                streaming_callback=streaming_callback
+                streaming_callback=streaming_callback,
+                task=task,
             )
 
         except Exception as error:

@@ -1451,6 +1451,39 @@ class TestFinalSummaryShape:
 
         assert isinstance(result, list)
 
+    def test_execution_summary_names_the_task_not_the_system_prompt(
+        self, monkeypatch
+    ):
+        agent = build_agent(output_type="final")
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                "Paris.",
+            ],
+        )
+
+        result = agent.run("What is the capital of France?")
+
+        assert (
+            "Original Task: What is the capital of France?" in result
+        )
+        assert (
+            agent.short_memory.conversation_history[0][
+                "content"
+            ].strip()
+            not in result
+        )
+
 
 class TestIterationLimitsAreConfigurable:
     """The three budgets bound a run's cost, so they must be settable per agent."""
