@@ -33,6 +33,7 @@ Run:
 
 import gzip
 import json
+import logging
 import os
 import threading
 import time
@@ -1658,6 +1659,30 @@ class TestBrokenBackendNeverBreaksRun:
         with capture_run("BadExport.run", None) as h:
             h.record_output("still fine")
         assert _by_name_all(spans, "BadExport.run")
+
+    def test_a_raising_export_logs_nothing(
+        self, spans, monkeypatch, caplog
+    ):
+        def broken_export(self, spans_):
+            raise OSError("Could not find a suitable TLS CA bundle")
+
+        monkeypatch.setattr(
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+            ".OTLPSpanExporter.export",
+            broken_export,
+        )
+        agent = fake_agent("Quiet-Export", reply="ok")
+
+        with caplog.at_level(logging.WARNING):
+            assert agent.run(task="hi") == "ok"
+            assert otel.swarm_telemetry()._provider.force_flush()
+
+        otel_records = [
+            record.getMessage()
+            for record in caplog.records
+            if record.name.startswith("opentelemetry")
+        ]
+        assert otel_records == []
 
     def test_tracer_start_span_raises_does_not_break_run(
         self, spans, monkeypatch
