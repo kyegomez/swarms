@@ -155,6 +155,7 @@ class MixtureOfAgents:
             description=self.description,
             name=self.name,
             add_to_conversation=True,
+            add_collaboration_prompt=False,
         )
 
     def reliability_check(self) -> None:
