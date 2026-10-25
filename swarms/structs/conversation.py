@@ -1064,15 +1064,15 @@ class Conversation:
 
     def to_dict(self) -> Dict[Any, Any]:
         """
-        Converts all attributes of the class into a dictionary, including all __init__ parameters
-        and conversation history. Automatically extracts parameters from __init__ signature.
+        Return a copy of the conversation history, one dict per message.
 
         Returns:
-            Dict[str, Any]: A dictionary containing:
-                - metadata: All initialization parameters and their current values
-                - conversation_history: The list of conversation messages
+            List[Dict[str, Any]]: Copies of the messages, so later turns
+                and edits to the result do not reach each other.
         """
-        return self.conversation_history
+        return [
+            dict(message) for message in self.conversation_history
+        ]
 
     def save_as_json(self, force: bool = True):
         """Save the conversation history and metadata to a JSON file.
