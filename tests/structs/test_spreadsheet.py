@@ -1056,3 +1056,28 @@ def test_a_second_run_from_config_reports_only_its_own_outputs(
 
     assert second["tasks_completed"] == 1
     assert len(second["outputs"]) == 1
+
+
+def test_each_run_gets_its_own_run_id(temp_workspace):
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=True
+    )
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["reply A", "reply B"],
+    ):
+        first = swarm.run("first task")["run_id"]
+        second = swarm.run("second task")["run_id"]
+
+    assert first != second
+    with open(swarm.save_file_path, newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert [row["Run ID"] for row in rows] == [first] * 2 + [
+        second
+    ] * 2
+    for run_id in (first, second):
+        path = os.path.join(
+            swarm.workspace.dir, f"{run_id}-metadata.json"
+        )
+        with open(path) as f:
+            assert json.load(f)["run_id"] == run_id
