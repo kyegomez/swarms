@@ -549,3 +549,21 @@ def test_run_raises_when_the_aggregator_fails():
 
     with pytest.raises(RuntimeError, match="returned 503"):
         moa.run("Question?")
+
+
+def test_mixture_of_agents_creates_aggregator_with_default_model():
+    """Creating MixtureOfAgents without aggregator uses DEFAULT_MODEL_NAME."""
+    from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
+
+    worker = Agent(
+        agent_name="Worker-1",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    moa = MixtureOfAgents(
+        agents=[worker],
+        layers=1,
+    )
+    assert moa.aggregator_model_name == DEFAULT_MODEL_NAME
+    assert moa.aggregator_agent is not None
+    assert moa.aggregator_agent.model_name == DEFAULT_MODEL_NAME
