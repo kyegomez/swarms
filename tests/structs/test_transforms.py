@@ -34,3 +34,31 @@ def test_history_inside_the_model_context_window_is_kept(monkeypatch):
 
     assert result.was_compressed is False
     assert result.messages == messages
+
+
+def test_token_limit_keeps_the_preserved_recent_messages(monkeypatch):
+    monkeypatch.setattr(
+        transforms,
+        "count_tokens",
+        lambda text, model=None, default_encoder=None: len(
+            text.split()
+        ),
+    )
+    system = {"role": "System", "content": "Be brief."}
+    turns = [
+        {"role": role, "content": f"{name} " * 100}
+        for role, name in [
+            ("user", "u1"),
+            ("assistant", "a1"),
+            ("user", "u2"),
+            ("assistant", "a2"),
+        ]
+    ]
+
+    result = MessageTransforms(
+        TransformConfig(
+            enabled=True, max_tokens=150, preserve_recent_messages=2
+        )
+    ).transform_messages([system, *turns])
+
+    assert result.messages == [system, turns[2], turns[3]]

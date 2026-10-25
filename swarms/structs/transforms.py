@@ -284,47 +284,22 @@ class MessageTransforms:
         Returns:
             Compressed messages
         """
-        # Start by keeping all messages and remove from middle until under token limit
         current_messages = messages.copy()
+        recent = self.config.preserve_recent_messages
 
-        while (
-            self._count_total_tokens(current_messages) > max_tokens
-            and len(current_messages) > 2
-        ):
-            # Remove from the middle
-            if len(current_messages) <= 2:
+        while self._count_total_tokens(current_messages) > max_tokens:
+            removable = [
+                index
+                for index, message in enumerate(
+                    current_messages[
+                        : max(len(current_messages) - recent, 0)
+                    ]
+                )
+                if str(message.get("role", "")).lower() != "system"
+            ]
+            if not removable:
                 break
-
-            # Find the middle message (avoiding system messages if possible)
-            middle_index = len(current_messages) // 2
-
-            # Try to avoid removing system messages
-            if current_messages[middle_index].get("role") == "system":
-                # Look for a non-system message near the middle
-                for offset in range(
-                    1, len(current_messages) // 4 + 1
-                ):
-                    if (
-                        middle_index - offset >= 0
-                        and current_messages[
-                            middle_index - offset
-                        ].get("role")
-                        != "system"
-                    ):
-                        middle_index = middle_index - offset
-                        break
-                    if (
-                        middle_index + offset < len(current_messages)
-                        and current_messages[
-                            middle_index + offset
-                        ].get("role")
-                        != "system"
-                    ):
-                        middle_index = middle_index + offset
-                        break
-
-            # Remove the middle message
-            current_messages.pop(middle_index)
+            current_messages.pop(removable[len(removable) // 2])
 
         return current_messages
 
