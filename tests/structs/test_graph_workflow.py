@@ -1745,5 +1745,56 @@ def test_usage_returns_a_copy():
     assert wf.usage["input_tokens"] == 5
 
 
+def test_node_output_is_the_answer_not_the_transcript():
+    from types import SimpleNamespace
+    from unittest.mock import patch
+
+    from swarms.utils import litellm_wrapper
+
+    requests = []
+
+    def fake_completion(**params):
+        name = params["messages"][0]["content"]
+        requests.append(params["messages"])
+        message = SimpleNamespace(
+            content=f"{name} answer",
+            tool_calls=None,
+            reasoning_content=None,
+        )
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(message=message, finish_reason="stop")
+            ],
+            usage=None,
+        )
+
+    wf = GraphWorkflow(auto_compile=False)
+    for name in ["A", "B", "C"]:
+        wf.add_node(
+            Agent(
+                agent_name=name,
+                system_prompt=name,
+                model_name="gpt-5.4",
+                max_loops=1,
+                print_on=False,
+                persistent_memory=False,
+            )
+        )
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+
+    with patch.object(
+        litellm_wrapper, "completion", side_effect=fake_completion
+    ):
+        results = wf.run("Write a haiku.")
+
+    assert results == {
+        "A": "A answer",
+        "B": "B answer",
+        "C": "C answer",
+    }
+    assert {"role": "user", "content": "B: B answer"} in requests[-1]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
