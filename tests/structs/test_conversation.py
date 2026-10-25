@@ -1693,6 +1693,17 @@ class TestCommsChannelMirror:
         assert len(channel.messages()) == 2
 
 
+def test_conversation_output_metadata_parameter_removed():
+    """Verify that unread output_metadata parameter is removed from Conversation."""
+    import inspect
+
+    sig = inspect.signature(Conversation.__init__)
+    assert "output_metadata" not in sig.parameters
+
+    conv = Conversation()
+    assert not hasattr(conv, "output_metadata")
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()
