@@ -601,6 +601,7 @@ class HierarchicalSwarm:
                 task = self._get_interactive_task()
 
             self.conversation.clear()
+            self.conversation.reseed_from_channel()
             self._delivered = {}
             self.add_context_to_director()
 
@@ -665,7 +666,6 @@ class HierarchicalSwarm:
             return result
 
         except Exception as e:
-
             self.workspace.save_conversation()
             logger.error(f"Hiearchical Swarm: Swarm run failed: {e}")
             raise
@@ -777,7 +777,6 @@ class HierarchicalSwarm:
             return output
 
         except Exception as e:
-
             logger.error(
                 f"Hiearchical Swarm: Failed to call agent {agent_name}: {e}"
             )

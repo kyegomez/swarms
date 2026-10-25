@@ -904,6 +904,7 @@ class PlannerWorkerSwarm:
         self._original_task = task
         self.task_queue.clear()
         self.conversation.clear()
+        self.conversation.reseed_from_channel()
         self.conversation.add(role="User", content=task)
 
         verdict = None

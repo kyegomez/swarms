@@ -1446,6 +1446,24 @@ class Conversation:
         self.conversation_history = []
         self._str_cache = None
 
+    def reseed_from_channel(self):
+        """Restore the in-memory history from the persistent channel, if any.
+
+        Mirrors the constructor seeding: every row currently in the channel is
+        re-added in memory only (never re-posted to the channel) — the channel
+        is detached for the duration of the loop, exactly as __init__ does.
+        Runs call this after ``clear()`` so a seeded channel keeps its prior
+        turns across runs instead of being thrown away (issue #2826 contract).
+        """
+        if self.channel is None:
+            return
+        channel, self.channel = self.channel, None
+        try:
+            for row in channel.messages():
+                self.add_in_memory(row["agent_name"], row["content"])
+        finally:
+            self.channel = channel
+
     def to_json(self):
         """Convert the conversation history to a JSON string.
 
