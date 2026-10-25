@@ -9,7 +9,7 @@ cosine similarity to determine which skills should be loaded into the agent.
 import math
 import os
 import re
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Union
 
 import yaml
 from loguru import logger
@@ -270,72 +270,3 @@ class DynamicSkillsLoader:
         )
 
         return relevant_skills
-
-    def get_skill_names(self, task: str) -> List[str]:
-        """
-        Get names of relevant skills for a task.
-
-        Args:
-            task: User task description
-
-        Returns:
-            List of skill names
-        """
-        relevant_skills = self.load_relevant_skills(task)
-        return [skill["name"] for skill in relevant_skills]
-
-    def load_full_skill_content(
-        self, skill_name: str
-    ) -> Optional[str]:
-        """
-        Load the full content of a specific skill.
-
-        Args:
-            skill_name: Name of the skill to load
-
-        Returns:
-            Full skill content or None if not found
-        """
-        for skill in self.skills_metadata:
-            if skill["name"] == skill_name:
-                return skill["content"]
-        return None
-
-    def get_similarity_scores(
-        self, task: str
-    ) -> List[Tuple[str, float]]:
-        """
-        Get similarity scores for all skills relative to a task.
-
-        Args:
-            task: User task description
-
-        Returns:
-            List of tuples (skill_name, similarity_score)
-        """
-        scores = []
-        for skill in self.skills_metadata:
-            similarity_score = self._calculate_task_similarity(
-                task, skill["description"]
-            )
-            scores.append((skill["name"], similarity_score))
-
-        # Sort by similarity score (highest first)
-        scores.sort(key=lambda x: x[1], reverse=True)
-        return scores
-
-
-def create_dynamic_skills_loader(
-    skills_dir: str, similarity_threshold: float = 0.3
-) -> DynamicSkillsLoader:
-    """
-    Factory function to create a dynamic skills loader.
-
-    Args:
-        skills_dir: Path to skills directory
-        similarity_threshold: Minimum similarity threshold
-
-    Returns:
-        Configured DynamicSkillsLoader instance
-    """
-    return DynamicSkillsLoader(skills_dir, similarity_threshold)
