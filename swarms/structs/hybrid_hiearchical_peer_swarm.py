@@ -5,6 +5,7 @@ from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import get_swarms_info
+from swarms.structs.phased_fan_out_workflow import fresh_agent
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -150,7 +151,11 @@ class HybridHierarchicalClusterSwarm:
         self.conversation = Conversation()
         self.conversation.add(role="User", content=task)
 
+        self.router_agent.reset()
         response = self.router_agent.run(task=task)
+
+        if isinstance(response, list) and response:
+            response = response[0]["function"]["arguments"]
 
         if isinstance(response, str):
             response = str_to_dict(response)
@@ -225,8 +230,13 @@ class HybridHierarchicalClusterSwarm:
         if not tasks:
             raise ValueError("Task list cannot be empty.")
 
+        def run_with_own_router(task):
+            swarm = copy.copy(self)
+            swarm.router_agent = fresh_agent(self.router_agent)
+            return swarm.run(task)
+
         results = run_concurrently(
-            lambda task: copy.copy(self).run(task),
+            run_with_own_router,
             tasks,
             max_workers=os.cpu_count() * 2,
             return_exceptions=True,
