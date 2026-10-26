@@ -487,15 +487,15 @@ class WorkerPool:
                         agent.run, task=context, img=self.img
                     )
                     task_executor.shutdown(wait=False)
-                    try:
-                        result = future.result(
-                            timeout=self.task_timeout
-                        )
-                    except concurrent.futures.TimeoutError:
-                        timed_out = True
+                    concurrent.futures.wait(
+                        [future], timeout=self.task_timeout
+                    )
+                    timed_out = not future.done()
+                    if timed_out:
                         raise TimeoutError(
                             f"Task execution exceeded {self.task_timeout}s timeout"
                         )
+                    result = future.result()
                 else:
                     result = agent.run(task=context, img=self.img)
 
