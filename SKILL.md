@@ -7,6 +7,14 @@ description: Build agents and multi-agent systems with the Swarms framework — 
 
 Swarms is a multi-agent orchestration framework. Everything is built from one primitive — `Agent` — which multi-agent structures compose. This document is verified against **swarms v14.0.0**.
 
+## Live documentation
+
+This skill can lag the library. When a signature here disagrees with the installed version, check the current docs:
+
+- Docs MCP server, no key: `https://docs.swarms.world/mcp` (`claude mcp add --transport http swarms-docs https://docs.swarms.world/mcp`)
+- Marketplace MCP server, Swarms API key for calls: `https://swarms.world/mcp`
+- Plain-text docs: [llms.txt](https://docs.swarms.world/llms.txt) (index), [llms-full.txt](https://docs.swarms.world/llms-full.txt) (every page)
+
 ## Golden rules
 
 1. **Import from the top level**: `from swarms import Agent`, never `from swarms.structs.agent import Agent`. The one common exception is `PlannerWorkerSwarm` (see below).

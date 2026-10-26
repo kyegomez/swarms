@@ -744,7 +744,8 @@ The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)
 |---|---|---|
 | **Main documentation** | [docs.swarms.world](https://docs.swarms.world) | Guides, API reference, tutorials |
 | **`llms.txt` (LLM-ingestible docs)** | [docs.swarms.world/llms.txt](https://docs.swarms.world/llms.txt) | A single, machine-readable index of the entire documentation, formatted for LLMs and AI IDEs (Cursor, Claude Code, etc.) to consume in one fetch |
-| **MCP integration guide** | [docs.swarms.world/mcp](https://docs.swarms.world/mcp) | How to connect a Swarms `Agent` to any [Model Context Protocol](https://modelcontextprotocol.io) server, auto-discover its tools, and call them from a swarm |
+| **Docs MCP server** | `https://docs.swarms.world/mcp` | A [Model Context Protocol](https://modelcontextprotocol.io) server that lets an assistant search and read the current docs. See [Using Swarms with AI Coding Assistants](#using-swarms-with-ai-coding-assistants) |
+| **MCP integration guide** | [docs.swarms.world/integrations/mcp](https://docs.swarms.world/integrations/mcp) | How to connect a Swarms `Agent` to any MCP server, auto-discover its tools, and call them from a swarm |
 | **API reference** | [docs.swarms.world/api](https://docs.swarms.world/api) | Per-class reference for `Agent`, `SequentialWorkflow`, `ConcurrentWorkflow`, `AgentRearrange`, `GraphWorkflow`, `SwarmRouter`, and every multi-agent architecture |
 | **Environment setup** | [docs.swarms.world/environment-setup](https://docs.swarms.world/environment-setup) | API keys, model providers, and configuration options |
 
@@ -754,9 +755,40 @@ The full documentation lives at **[docs.swarms.world](https://docs.swarms.world)
 
 ## Using Swarms with AI Coding Assistants
 
-The repo ships with a [`CLAUDE.md`](./CLAUDE.md) at the root, a focused guide that teaches Claude Code, Cursor, and other AI coding assistants how to build with Swarms. It covers the `Agent` primitive, every multi-agent architecture (`SequentialWorkflow`, `ConcurrentWorkflow`, `AgentRearrange`, `GraphWorkflow`, `MixtureOfAgents`, `HierarchicalSwarm`, `SwarmRouter`, and more), tools, streaming, memory, MCP integration, and the patterns to reach for in each situation.
+The repo ships with an [`AGENTS.md`](./AGENTS.md) for Codex, Cursor, Copilot, Jules and any other assistant that reads it, and a [`CLAUDE.md`](./CLAUDE.md) at the root, a focused guide that teaches Claude Code, Cursor, and other AI coding assistants how to build with Swarms. It covers the `Agent` primitive, every multi-agent architecture (`SequentialWorkflow`, `ConcurrentWorkflow`, `AgentRearrange`, `GraphWorkflow`, `MixtureOfAgents`, `HierarchicalSwarm`, `SwarmRouter`, and more), tools, streaming, memory, MCP integration, and the patterns to reach for in each situation.
 
 Drop `CLAUDE.md` (or symlink it as `AGENTS.md` / `.cursorrules`) into any project that depends on `swarms` and your assistant will write idiomatic Swarms code on the first try, with no extra prompting required.
+
+Two hosted MCP servers give an assistant live Swarms context instead of training data that may predate a rename:
+
+| Server | URL | Key | What it does |
+|---|---|---|---|
+| Docs | `https://docs.swarms.world/mcp` | none | Searches and reads the current documentation |
+| Marketplace | `https://swarms.world/mcp` | Swarms API key for calls | Searches, reads and publishes agents, prompts and tools on [swarms.world](https://swarms.world) |
+
+The whole documentation is also available as plain text at [docs.swarms.world/llms.txt](https://docs.swarms.world/llms.txt) (an index) and [docs.swarms.world/llms-full.txt](https://docs.swarms.world/llms-full.txt) (every page).
+
+Claude Code:
+
+```bash
+claude mcp add --transport http swarms-docs https://docs.swarms.world/mcp
+claude mcp add --transport http swarms-marketplace https://swarms.world/mcp \
+  --header "Authorization: Bearer $SWARMS_API_KEY"
+```
+
+Cursor, in `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "swarms-docs": { "url": "https://docs.swarms.world/mcp" },
+    "swarms-marketplace": {
+      "url": "https://swarms.world/mcp",
+      "headers": { "Authorization": "Bearer ${env:SWARMS_API_KEY}" }
+    }
+  }
+}
+```
 
 ---
 
