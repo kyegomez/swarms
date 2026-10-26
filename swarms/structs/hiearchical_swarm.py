@@ -600,7 +600,9 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
-            self.conversation.clear()
+            self.conversation = Conversation(
+                time_enabled=False, channel=self.channel
+            )
             self._delivered = {}
             self.add_context_to_director()
 

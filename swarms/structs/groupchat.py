@@ -498,7 +498,9 @@ class GroupChat(SerializableMixin):
         )
         self._log("info", f"[{self.name}] initial task: {task}")
 
-        self.conversation.clear()
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
 
         self._post(
             sender="User",
