@@ -619,7 +619,9 @@ class SwarmRouter(SerializableMixin):
         candidates = list(self.agents or [])
         for swarm in self._swarm_cache.values():
             for value in vars(swarm).values():
-                if isinstance(value, (list, tuple)):
+                if isinstance(value, dict):
+                    candidates.extend(value.values())
+                elif isinstance(value, (list, tuple)):
                     candidates.extend(value)
                 else:
                     candidates.append(value)
