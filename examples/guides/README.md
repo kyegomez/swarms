@@ -2,6 +2,9 @@
 
 This directory contains comprehensive guides and tutorials for using Swarms effectively.
 
+## Offline RouteHub testing
+- [README.md](routehub_offline_testing/README.md) - Run response-handling tests without provider calls
+
 ## AgentSH Implementation
 - [agentsh.py](agentsh_implementation/agentsh.py) - Self-organized multi-agent harness with no orchestrator (Agensh, arXiv:2609.26781)
 - [README.md](agentsh_implementation/README.md) - How the implementation works
