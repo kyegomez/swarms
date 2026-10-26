@@ -3,7 +3,7 @@ import math
 import random
 import time
 
-import litellm
+import routehub
 
 from swarms import (
     Agent,
@@ -225,10 +225,12 @@ def llm_cost(model_name: str, usage: dict) -> float:
     Returns:
         Cost in US dollars.
     """
-    prompt_cost, completion_cost = litellm.cost_per_token(
-        model=model_name,
-        prompt_tokens=usage["input_tokens"],
-        completion_tokens=usage["output_tokens"],
+    prices = routehub.get_model_info(model_name)
+    prompt_cost = usage["input_tokens"] * (
+        prices["input_cost_per_token"] or 0
+    )
+    completion_cost = usage["output_tokens"] * (
+        prices["output_cost_per_token"] or 0
     )
     return prompt_cost + completion_cost
 

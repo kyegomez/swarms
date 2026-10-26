@@ -1,6 +1,5 @@
 import json
 import re
-import traceback
 from typing import Any, List, Optional, Type, get_args
 
 from dotenv import load_dotenv
@@ -553,9 +552,8 @@ class AutoSwarmBuilder:
             return agents_config.model_dump()
 
         except Exception as e:
-            logger.error(
-                f"Error creating agents: {str(e)} Traceback: {traceback.format_exc()}",
-                exc_info=True,
+            logger.opt(exception=True).error(
+                "Error creating agents: {}", e
             )
             raise
 
@@ -612,9 +610,8 @@ class AutoSwarmBuilder:
             return config.model_dump()
 
         except Exception as e:
-            logger.error(
-                f"Error creating swarm router config: {str(e)} Traceback: {traceback.format_exc()}",
-                exc_info=True,
+            logger.opt(exception=True).error(
+                "Error creating swarm router config: {}", e
             )
             raise
 
@@ -738,9 +735,9 @@ class AutoSwarmBuilder:
             logger.info("Starting swarm router execution")
             return swarm_router.run(task)
         except Exception as e:
-            logger.error(
-                f"Error in swarm router initialization/execution: {str(e)}",
-                exc_info=True,
+            logger.opt(exception=True).error(
+                "Error in swarm router initialization/execution: {}",
+                e,
             )
             raise
 
@@ -880,8 +877,7 @@ class AutoSwarmBuilder:
                 )
 
         except Exception as e:
-            logger.error(
-                f"AutoSwarmBuilder: Error in swarm execution: {str(e)} Traceback: {traceback.format_exc()}",
-                exc_info=True,
+            logger.opt(exception=True).error(
+                "AutoSwarmBuilder: Error in swarm execution: {}", e
             )
             raise e

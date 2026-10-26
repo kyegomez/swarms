@@ -307,7 +307,7 @@ def check_dependencies() -> Tuple[bool, str, str]:
     Returns:
         Tuple containing (success, status_icon, message)
     """
-    required_deps = ["torch", "transformers", "litellm", "rich"]
+    required_deps = ["routehub", "rich"]
     missing_deps = []
 
     for dep in required_deps:

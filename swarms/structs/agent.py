@@ -130,7 +130,7 @@ class Agent:
         max_loops (int): The maximum number of loops to run
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
-        retry_attempts (int): Retries litellm makes after a failed model call, with backoff on rate limits
+        retry_attempts (int): Retries RouteHub makes after a failed model call, with backoff on rate limits
         stopping_token (str): A stop sequence sent to the provider, which ends generation when the model produces it.
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
@@ -1348,8 +1348,9 @@ class Agent:
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
-        logger.error(
-            f"{self.agent_name} error: {error}", exc_info=True
+        # Positional args: a brace in the provider's message would otherwise break loguru's formatting.
+        logger.opt(exception=True).error(
+            "{} error: {}", self.agent_name, error
         )
         raise error
 

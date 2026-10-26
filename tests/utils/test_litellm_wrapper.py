@@ -1,7 +1,7 @@
 """
 Tests for :mod:`swarms.utils.litellm_wrapper`.
 
-The single home for LiteLLM coverage. Merged from the former
+The single home for LLM client coverage. Merged from the former
 ``tests/test_multi_provider.py``; the print-based ``run_test_suite()`` script
 that used to live here was dropped because it asserted nothing — every check
 sat inside a ``try/except`` that printed a mark and moved on, so it could not
@@ -9,7 +9,7 @@ fail. What it walked through, and what is therefore still unasserted, is listed
 at the bottom of this docstring.
 
 Verifies that non-OpenAI providers (Anthropic, Groq, Grok/xAI, Gemini) produce
-real output through all major code paths: the LiteLLM wrapper, Agent, and swarm
+real output through all major code paths: the LiteLLM client, Agent, and swarm
 structures.
 
 No mocks — these make real API calls and need provider keys. For providers

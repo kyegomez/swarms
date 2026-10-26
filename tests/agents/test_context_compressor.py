@@ -1,7 +1,7 @@
 """
 Unit tests for swarms/agents/context_compressor.py.
 
-All network calls (litellm.completion) are mocked.  Only the integration
+All network calls (routehub.completion) are mocked.  Only the integration
 test at the bottom touches the filesystem, using pytest's tmp_path fixture.
 """
 
@@ -43,7 +43,7 @@ def _make_agent(
 
 
 def _make_completion_response(content: str = "Compressed summary."):
-    """Build a minimal litellm-style response object."""
+    """Build a minimal OpenAI-style response object."""
     msg = SimpleNamespace(content=content)
     choice = SimpleNamespace(message=msg)
     return SimpleNamespace(choices=[choice])
@@ -504,7 +504,7 @@ class TestUsageRatioReusesMessageCounts:
         self, tmp_path
     ):
         """A check after one new message tokenizes just that message."""
-        from swarms.utils import llm_backend
+        import routehub
 
         agent = self._agent(tmp_path)
         cc = ContextCompressor()
@@ -513,7 +513,7 @@ class TestUsageRatioReusesMessageCounts:
 
         with patch(
             "swarms.utils.llm_backend.encode",
-            wraps=llm_backend.backend_module().encode,
+            wraps=routehub.encode,
         ) as encode:
             cc.usage_ratio(agent)
 

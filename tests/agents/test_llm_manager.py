@@ -10,7 +10,7 @@ Approach — no mocking framework for the LLM itself, real fakes instead:
   a ``.run(task=None, img=None, **kwargs)`` method and ``.stream`` /
   ``.temperature`` attributes.
 * Streaming tests feed ``FakeLLM.run`` an iterator of ``FakeChunk`` objects
-  that mimic litellm's ``ModelResponseStream`` shape closely enough for
+  that mimic the OpenAI SDK's ``ChatCompletionChunk`` shape closely enough for
   ``LLMManager`` (``chunk.choices[0].delta.content``,
   ``.delta.reasoning_content``, ``.delta.tool_calls[i].function.name`` /
   ``.arguments``, ``.finish_reason``, ``.logprobs``).
@@ -40,12 +40,12 @@ from swarms import Agent
 from swarms.utils.litellm_wrapper import LiteLLM
 
 ########################################################
-# Fakes: litellm-shaped stream chunks and a fake LLM
+# Fakes: OpenAI-shaped stream chunks and a fake LLM
 ########################################################
 
 
 class FakeFunction:
-    """Mimics litellm's ``delta.tool_calls[i].function``."""
+    """Mimics the SDK's ``delta.tool_calls[i].function``."""
 
     def __init__(self, name: str = "", arguments: str = ""):
         self.name = name
@@ -87,7 +87,7 @@ class FakeChoice:
 
 
 class FakeChunk:
-    """Mimics litellm's ``ModelResponseStream``."""
+    """Mimics the SDK's ``ChatCompletionChunk``."""
 
     def __init__(
         self,
@@ -136,7 +136,7 @@ class FakeLLM:
             {"task": task, "img": img, "kwargs": kwargs}
         )
         if self.stream:
-            # Real litellm streams are single-pass generators, not
+            # Real streams are single-pass generators, not
             # re-iterable lists — wrap so tests exercise the same
             # single-pass semantics the manager is written against.
             if isinstance(self.stream_return, (list, tuple)):
@@ -1104,7 +1104,7 @@ class TestGetParameters:
 
 
 class TestChunksWithNothingToShow:
-    """RouteHub forwards chunks that litellm drops: no choices, or a role and no text."""
+    """RouteHub forwards every chunk: no choices, or a role and no text."""
 
     def test_collect_stream_skips_a_chunk_without_choices(
         self, agent

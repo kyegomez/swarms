@@ -3,7 +3,7 @@ import statistics
 import time
 from collections import Counter
 
-import litellm
+import routehub
 
 from swarms import Agent, DecisionModel, run_agents_concurrently
 
@@ -128,10 +128,12 @@ def llm_judge(answers: dict) -> tuple:
             f"The LLM judge did not return ratings: {reply[:300]}"
         ) from error
 
-    prompt_cost, completion_cost = litellm.cost_per_token(
-        model=LLM_JUDGE_MODEL,
-        prompt_tokens=judge.usage["input_tokens"],
-        completion_tokens=judge.usage["output_tokens"],
+    prices = routehub.get_model_info(LLM_JUDGE_MODEL)
+    prompt_cost = judge.usage["input_tokens"] * (
+        prices["input_cost_per_token"] or 0
+    )
+    completion_cost = judge.usage["output_tokens"] * (
+        prices["output_cost_per_token"] or 0
     )
     return scores, prompt_cost + completion_cost
 

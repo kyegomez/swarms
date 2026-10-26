@@ -93,7 +93,7 @@ def _extract_agents(tool_output: Any) -> List[Dict[str, str]]:
 
     Providers return tool calls in two shapes: a plain dict
     ``{"function": {"name", "arguments"}}`` (the MCP-normalized form), or a raw
-    provider object such as litellm's ``ChatCompletionMessageToolCall`` where
+    provider object such as the OpenAI SDK's ``ChatCompletionMessageToolCall`` where
     ``function`` and ``arguments`` are *attributes* rather than keys. Both are
     normalized here so either parses identically.
 

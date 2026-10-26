@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from typing import Tuple
-from litellm import completion
+from routehub import completion
 from loguru import logger
 from swarms import Agent
 

@@ -30,7 +30,7 @@ This skill can lag the library. When a signature here disagrees with the install
 pip install -U swarms
 ```
 
-Set the key for whichever provider you use — any [LiteLLM](https://docs.litellm.ai/docs/providers) model string works:
+Set the key for whichever provider you use — any [RouteHub](https://github.com/The-Swarm-Corporation/RouteHub#supported-providers) model string works:
 
 ```bash
 export OPENAI_API_KEY="sk-..."

@@ -567,7 +567,6 @@ class Formatter:
     ) -> str:
         """
         Display real-time streaming response using Rich Live and Panel.
-        Similar to the approach used in litellm_stream.py.
 
         Args:
             streaming_response: The streaming response generator from LiteLLM, or an
