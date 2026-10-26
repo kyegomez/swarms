@@ -1,13 +1,15 @@
 import os
+import threading
 from typing import Any
 
 import pytest
 
-from swarms import Agent, PlannerGeneratorEvaluator
+from swarms import Agent, Conversation, PlannerGeneratorEvaluator
 from swarms.schemas.hs_schemas import OrderBatch
 from swarms.schemas.planner_worker_schemas import (
     CycleVerdict,
     PlannerTask,
+    PlannerTaskStatus,
 )
 from swarms.structs.hiearchical_swarm import (
     HierarchicalOrder,
@@ -16,6 +18,7 @@ from swarms.structs.hiearchical_swarm import (
 from swarms.structs.planner_worker_swarm import (
     PlannerWorkerSwarm,
     TaskQueue,
+    WorkerPool,
 )
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -1209,6 +1212,46 @@ def test_task_queue_is_done_when_pending_tasks_can_never_run():
     cycle.add_tasks([first, second])
 
     assert cycle.is_all_done()
+
+
+def test_worker_pool_task_timeout_hands_a_stuck_task_to_another_worker():
+    release = threading.Event()
+    returned = threading.Event()
+    calls = []
+
+    class Worker:
+        def __init__(self, agent_name):
+            self.agent_name = agent_name
+
+        def short_memory_init(self):
+            return None
+
+        def run(self, task=None, img=None):
+            calls.append(self.agent_name)
+            if len(calls) == 1:
+                release.wait(timeout=5)
+                returned.set()
+            return f"{self.agent_name} answer"
+
+    queue = TaskQueue()
+    queue.add_task(PlannerTask(title="Report", description="Write"))
+    pool = WorkerPool(
+        agents=[Worker("A"), Worker("B")],
+        task_queue=queue,
+        conversation=Conversation(),
+        task_timeout=0.2,
+    )
+    try:
+        pool.run()
+        stuck_call_returned = returned.is_set()
+    finally:
+        release.set()
+
+    task = queue.get_all_tasks()[0]
+    assert not stuck_call_returned
+    assert calls[0] != calls[1]
+    assert task.status == PlannerTaskStatus.COMPLETED
+    assert task.result == f"{calls[1]} answer"
 
 
 def test_planner_worker_swarm_run_starts_with_an_empty_task_queue():

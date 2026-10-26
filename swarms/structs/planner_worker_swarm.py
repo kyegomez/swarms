@@ -454,6 +454,7 @@ class WorkerPool:
                 f"[WorkerPool] Worker {worker_name} executing: {task.title}"
             )
 
+            timed_out = False
             try:
                 # Reset agent memory so prior tasks don't leak into this one
                 agent.short_memory = agent.short_memory_init()
@@ -475,20 +476,22 @@ class WorkerPool:
 
                 # Run with per-task timeout to detect stuck workers
                 if self.task_timeout:
-                    with ContextThreadPoolExecutor(
+                    task_executor = ContextThreadPoolExecutor(
                         max_workers=1
-                    ) as task_executor:
-                        future = task_executor.submit(
-                            agent.run, task=context, img=self.img
+                    )
+                    future = task_executor.submit(
+                        agent.run, task=context, img=self.img
+                    )
+                    task_executor.shutdown(wait=False)
+                    try:
+                        result = future.result(
+                            timeout=self.task_timeout
                         )
-                        try:
-                            result = future.result(
-                                timeout=self.task_timeout
-                            )
-                        except concurrent.futures.TimeoutError:
-                            raise TimeoutError(
-                                f"Task execution exceeded {self.task_timeout}s timeout"
-                            )
+                    except concurrent.futures.TimeoutError:
+                        timed_out = True
+                        raise TimeoutError(
+                            f"Task execution exceeded {self.task_timeout}s timeout"
+                        )
                 else:
                     result = agent.run(task=context, img=self.img)
 
@@ -517,6 +520,12 @@ class WorkerPool:
                     self.task_queue.fail(
                         task.id, str(e), current.version
                     )
+                if timed_out:
+                    logger.warning(
+                        f"[WorkerPool] Worker {worker_name} stopped: "
+                        f"its agent is still running {task.id}"
+                    )
+                    break
 
 
 class PlannerWorkerSwarm:
