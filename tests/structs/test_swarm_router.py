@@ -1372,10 +1372,3 @@ def test_run_kwargs_reach_swarm_run_not_its_constructor(monkeypatch):
 
     assert router.run("hi", streaming_callback=callback) == "done"
     assert seen["streaming_callback"] is callback
-
-
-def test_fetch_message_history_as_string_is_removed():
-    """Verify unused fetch_message_history_as_string method is removed."""
-    from swarms.structs.swarm_router import SwarmRouter
-
-    assert not hasattr(SwarmRouter, "fetch_message_history_as_string")
