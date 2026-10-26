@@ -750,6 +750,51 @@ def test_build_and_run_swarm_uses_single_consistent_spec(
     assert "multi_agent_collab_prompt" not in captured
 
 
+def test_initialize_swarm_router_gives_the_boss_the_roster(
+    monkeypatch,
+):
+    prompts = []
+    reply = json.dumps(
+        minimal_router_config(
+            agents=[{"agent_name": "Alice"}, {"agent_name": "Bob"}],
+            swarm_type="AgentRearrange",
+            rearrange_flow="Alice -> Bob",
+        )
+    )
+
+    class RecordingLLM(ScriptedLiteLLM):
+        def run(self, prompt):
+            prompts.append(prompt)
+            return super().run(prompt)
+
+    monkeypatch.setattr(
+        "swarms.structs.auto_swarm_builder.LiteLLM",
+        lambda *args, **kwargs: RecordingLLM(responses=[reply]),
+    )
+    monkeypatch.setattr(
+        "swarms.structs.auto_swarm_builder.SwarmRouter",
+        lambda **kwargs: type(
+            "R", (), {"run": lambda self, task: "ok"}
+        )(),
+    )
+    agents = [
+        Agent(
+            agent_name=name,
+            agent_description=f"{name} drafts the report",
+            print_on=False,
+        )
+        for name in ("Alice", "Bob")
+    ]
+
+    result = AutoSwarmBuilder().initialize_swarm_router(
+        agents, "Write a report"
+    )
+
+    assert result == "ok"
+    assert "Alice drafts the report" in prompts[0]
+    assert "Bob drafts the report" in prompts[0]
+
+
 def test_run_execute_true_routes_to_build_and_run_swarm(
     monkeypatch,
 ):
