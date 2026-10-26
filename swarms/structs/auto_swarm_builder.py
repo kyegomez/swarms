@@ -194,14 +194,6 @@ class Agents(BaseModel):
     )
 
 
-class AgentsConfig(BaseModel):
-    """Configuration for a list of agents in a swarm"""
-
-    agents: List[AgentSpec] = Field(
-        description="A list of agent configurations",
-    )
-
-
 class SwarmRouterConfig(BaseModel):
     """Configuration model for SwarmRouter.
 
