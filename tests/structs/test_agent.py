@@ -1440,6 +1440,36 @@ def test_failed_worker_keeps_its_error_instead_of_its_prompt():
     )
 
 
+def test_agent_running_twice_in_a_row_reads_its_answer_as_assistant():
+    from swarms import AgentRearrange
+    from swarms.structs.context_utils import NO_NEW_MESSAGES
+
+    writer = _patched_agent("Writer")
+    requests = []
+    replies = iter(["DRAFT-1", "DRAFT-2"])
+
+    def fake_call_llm(task=None, *args, **kwargs):
+        requests.append(
+            [
+                (m["role"], m["content"])
+                for m in kwargs["messages"]
+                if m["role"] != "system"
+            ]
+        )
+        return next(replies)
+
+    writer.call_llm = fake_call_llm
+    AgentRearrange(
+        agents=[writer], flow="Writer -> Writer", autosave=False
+    ).run("Write a haiku.")
+
+    assert requests[1] == [
+        ("user", "Write a haiku."),
+        ("assistant", "DRAFT-1"),
+        ("user", NO_NEW_MESSAGES),
+    ]
+
+
 class TestTextReplyFromAToolAgent:
     """A tool-carrying agent that answers in plain text made no tool call,
     yet execute_tools recorded "[] (empty list)" after the answer and, with
