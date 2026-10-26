@@ -100,10 +100,6 @@ def _msg_config_error(err: Exception, tb: str) -> str:
     return f"SwarmRouterConfigError: {err} Full Traceback: {tb}"
 
 
-def _msg_fetch_history_error(err: Exception) -> str:
-    return f"Error fetching message history as string: {err}"
-
-
 def _msg_invalid_factory_type(swarm_type: str, valid_types) -> str:
     return (
         f"Invalid swarm type: {swarm_type}. "
@@ -631,25 +627,6 @@ class SwarmRouter(SerializableMixin):
             if isinstance(candidate, Agent):
                 seen.setdefault(id(candidate), candidate)
         return list(seen.values())
-
-    def fetch_message_history_as_string(self):
-        """Return the underlying swarm's conversation history as a string.
-
-        Reads from ``self.swarm.conversation`` and excludes the first message
-        (typically the system prompt). Requires ``run()`` to have been called
-        at least once so that ``self.swarm`` exists.
-
-        Returns:
-            str | None: The serialized history, or ``None`` if no history is
-            available or the read fails.
-        """
-        try:
-            return (
-                self.swarm.conversation.return_all_except_first_string()
-            )
-        except Exception as e:
-            self._log("error", _msg_fetch_history_error(e))
-            return None
 
     def _initialize_swarm_factory(self) -> Dict[str, Callable]:
         """Build the dispatch table used to instantiate swarm types.
