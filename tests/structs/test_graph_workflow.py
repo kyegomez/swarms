@@ -1745,5 +1745,32 @@ def test_usage_returns_a_copy():
     assert wf.usage["input_tokens"] == 5
 
 
+def test_nodes_pass_on_answers_not_transcripts():
+    from unittest.mock import patch
+
+    run_id = ["1"]
+    sent = {}
+
+    def fake_call_llm(self, task, *args, **kwargs):
+        sent[self.agent_name] = [
+            m["content"] for m in kwargs["messages"]
+        ]
+        return f"{self.agent_name}-{run_id[0]}"
+
+    wf = GraphWorkflow(auto_compile=False)
+    wf.add_node(create_test_agent("A"))
+    wf.add_node(create_test_agent("B"))
+    wf.add_edge("A", "B")
+
+    with patch.object(Agent, "call_llm", fake_call_llm):
+        wf.run("task")
+        run_id[0] = "2"
+        results = wf.run("task")
+
+    assert results == {"A": "A-2", "B": "B-2"}
+    assert "A: A-2" in sent["B"]
+    assert not any("A-1" in m for m in sent["B"])
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
