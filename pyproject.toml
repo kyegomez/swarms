@@ -6,7 +6,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "swarms"
 version = "16.0.3"
-description = "Swarms - TGSC"
+description = "Multi-agent orchestration framework: build agents, workflows and swarms over any LLM"
 license = "Apache-2.0"
 authors = ["Kye Gomez <kye@swarms.world>"]
 homepage = "https://github.com/kyegomez/swarms"
@@ -14,37 +14,20 @@ documentation = "https://docs.swarms.world"
 readme = "README.md"
 repository = "https://github.com/kyegomez/swarms"
 keywords = [
-    "artificial intelligence",
-    "deep learning",
-    "optimizers",
-    "Prompt Engineering",
-    "swarms",
     "agents",
-    "llms",
-    "transformers",
     "multi-agent",
-    "swarms of agents",
-    "Enterprise-Grade Agents",
-    "Production-Grade Agents",
-    "Agents",
-    "Multi-Grade-Agents",
-    "Swarms",
-    "Transformers",
-    "LLMs",
-    "Prompt Engineering",
-    "Agents",
-    "Generative Agents",
-    "Generative AI",
-    "Agent Marketplace",
-    "Agent Store",
-    "quant",
-    "finance",
-    "algorithmic trading",
-    "portfolio optimization",
-    "risk management",
-    "financial modeling",
-    "machine learning for finance",
-    "natural language processing for finance",
+    "multi-agent systems",
+    "agent framework",
+    "agent orchestration",
+    "swarms",
+    "llm",
+    "llm agents",
+    "autonomous agents",
+    "workflows",
+    "tool calling",
+    "mcp",
+    "generative ai",
+    "artificial intelligence",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -52,6 +35,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.10",
+    "Typing :: Typed",
 ]
 
 

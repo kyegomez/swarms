@@ -2,6 +2,41 @@
 
 This file teaches you how to build agents and multi-agent systems with the **Swarms** framework. Read it before writing any code in this repo.
 
+## Live documentation
+
+This file can lag the code. For current signatures and pages, query the docs MCP server or the plain-text docs:
+
+Two hosted MCP servers give an assistant live Swarms context instead of training data that may predate a rename:
+
+| Server | URL | Key | What it does |
+|---|---|---|---|
+| Docs | `https://docs.swarms.world/mcp` | none | Searches and reads the current documentation |
+| Marketplace | `https://swarms.world/mcp` | Swarms API key for calls | Searches, reads and publishes agents, prompts and tools on [swarms.world](https://swarms.world) |
+
+The whole documentation is also available as plain text at [docs.swarms.world/llms.txt](https://docs.swarms.world/llms.txt) (an index) and [docs.swarms.world/llms-full.txt](https://docs.swarms.world/llms-full.txt) (every page).
+
+Claude Code:
+
+```bash
+claude mcp add --transport http swarms-docs https://docs.swarms.world/mcp
+claude mcp add --transport http swarms-marketplace https://swarms.world/mcp \
+  --header "Authorization: Bearer $SWARMS_API_KEY"
+```
+
+Cursor, in `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "swarms-docs": { "url": "https://docs.swarms.world/mcp" },
+    "swarms-marketplace": {
+      "url": "https://swarms.world/mcp",
+      "headers": { "Authorization": "Bearer ${env:SWARMS_API_KEY}" }
+    }
+  }
+}
+```
+
 ---
 
 ## Installation & Setup
