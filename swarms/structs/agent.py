@@ -2169,20 +2169,6 @@ Subtask Breakdown:
         except Exception:
             pass
 
-    def check_available_tokens(self):
-        tokens_used = count_tokens(
-            self.short_memory.return_history_as_string(),
-            model=self.model_name,
-        )
-
-        limit = self.context_length - tokens_used
-
-        if self.verbose:
-            logger.info(
-                f"Tokens available: {limit} You have {tokens_used} tokens used"
-            )
-        return limit
-
     def _serialize_callable(
         self, attr_value: Callable
     ) -> Dict[str, Any]:
