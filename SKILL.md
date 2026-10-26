@@ -101,7 +101,7 @@ agent.run(task="...", n=3)                     # 3 independent samples
 await agent.arun("...")                        # async
 ```
 
-`Agent.run` signature: `run(task=None, img=None, imgs=None, correct_answer=None, streaming_callback=None, n=1)`.
+`Agent.run` signature: `run(task=None, img=None, imgs=None, streaming_callback=None, n=1)`.
 
 ### Streaming
 
