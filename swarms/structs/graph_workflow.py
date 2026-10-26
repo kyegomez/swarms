@@ -29,6 +29,7 @@ from swarms.structs.comms_channel import (
     claim_agents,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.context_utils import agent_answer
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import (
@@ -2246,12 +2247,15 @@ class GraphWorkflow:
                                 _prompt=prompt,
                                 _messages=messages,
                             ):
-                                return _agent.run(
-                                    task=_prompt,
-                                    img=img,
-                                    messages=_messages,
-                                    *args,
-                                    **kwargs,
+                                return agent_answer(
+                                    _agent,
+                                    fallback=_agent.run(
+                                        task=_prompt,
+                                        img=img,
+                                        messages=_messages,
+                                        *args,
+                                        **kwargs,
+                                    ),
                                 )
 
                             return _run_agent
@@ -2268,12 +2272,15 @@ class GraphWorkflow:
                                     _nid, token
                                 )
                             )
-                            return _agent.run(
-                                task=_prompt,
-                                img=img,
-                                messages=_messages,
-                                *args,
-                                **call_kwargs,
+                            return agent_answer(
+                                _agent,
+                                fallback=_agent.run(
+                                    task=_prompt,
+                                    img=img,
+                                    messages=_messages,
+                                    *args,
+                                    **call_kwargs,
+                                ),
                             )
 
                         return _run_agent_streaming
