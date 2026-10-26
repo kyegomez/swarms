@@ -26,6 +26,7 @@ from swarms.prompts.llm_council_prompts import (
 )
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
@@ -273,11 +274,14 @@ class LLMCouncil:
                 f"[{self.name}] Chairman synthesizing the final answer"
             )
 
-        synthesis_prompt = get_synthesis_prompt(
-            task, original_responses, evaluations, id_to_member
-        )
+        synthesis_prompt = get_synthesis_prompt(task, id_to_member)
 
-        final_response = self.chairman.run(task=synthesis_prompt)
+        final_response = self.chairman.run(
+            task=synthesis_prompt,
+            messages=messages_for(
+                self.chairman.agent_name, self.conversation
+            ),
+        )
 
         # Add chairman's final response to conversation
         self.conversation.add(role="Chairman", content=final_response)
