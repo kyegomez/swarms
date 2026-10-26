@@ -959,6 +959,40 @@ def test_list_base_models_schema_reaches_short_memory():
     assert "Order" in schema and "item" in schema and "qty" in schema
 
 
+def test_safety_prompt_on_reaches_the_model():
+    from swarms.prompts.safety_prompt import SAFETY_PROMPT
+
+    agent = Agent(
+        agent_name="Safety-Agent",
+        model_name="gpt-5.4-mini",
+        system_prompt="Be terse.",
+        safety_prompt_on=True,
+        max_loops=1,
+        print_on=False,
+        persistent_memory=False,
+    )
+    response = SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(content="ok", tool_calls=None)
+            )
+        ],
+        usage=None,
+    )
+    with patch(
+        "swarms.utils.litellm_wrapper.completion",
+        return_value=response,
+    ) as completion:
+        agent.run("hi")
+
+    system = [
+        m["content"]
+        for m in completion.call_args.kwargs["messages"]
+        if m["role"] == "system"
+    ]
+    assert system == [f"Be terse.\n\n{SAFETY_PROMPT}".strip()]
+
+
 class TestAutonomousAgentLoop:
     """The ``max_loops="auto"`` loop lives in ``AutonomousAgentLoop``, not on
     ``Agent``. These pin the seam: the loop is wired up, it reads and writes

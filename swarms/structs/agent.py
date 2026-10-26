@@ -629,6 +629,9 @@ class Agent:
 
         self.setup_config()
 
+        if self.safety_prompt_on is True:
+            self.system_prompt += f"\n\n{SAFETY_PROMPT}"
+
         # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
         self.short_memory = self.short_memory_init()
 
@@ -742,13 +745,6 @@ class Agent:
         return self.workspace.dir
 
     def short_memory_init(self):
-        # Compactly assemble initial prompt as a string with available fields
-        prompt = self.system_prompt
-
-        if self.safety_prompt_on is True:
-            prompt += "\n\n"
-            prompt += SAFETY_PROMPT
-
         # Keyed on agent_name, not self.id, which is a fresh uuid per run and would orphan MEMORY.md.
         memory_md_path = None
         if self.persistent_memory:
@@ -765,7 +761,7 @@ class Agent:
         # Initialize the short term memory
         memory = Conversation(
             name=f"{self.agent_name}_id_{self.id}_conversation",
-            system_prompt=prompt,
+            system_prompt=self.system_prompt,
             user=self.user_name,
             rules=self.rules,
             token_count=False,
