@@ -1254,6 +1254,30 @@ def test_usage_counts_a_shared_agent_once():
     assert router.usage["input_tokens"] == 100
 
 
+@pytest.mark.parametrize(
+    "swarm_type, attribute",
+    [("HeavySwarm", "agents"), ("CouncilAsAJudge", "judge_agents")],
+)
+def test_usage_includes_agents_a_swarm_holds_in_a_dict(
+    swarm_type, attribute
+):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        router = SwarmRouter(
+            name="usage-router",
+            agents=[_agent_with_usage("A", 0, 0)],
+            swarm_type=swarm_type,
+            autosave=False,
+        )
+        held = list(
+            getattr(router._create_swarm(), attribute).values()
+        )
+    assert held
+    for agent in held:
+        agent._add_usage({"input_tokens": 10, "total_tokens": 10})
+
+    assert router.usage["input_tokens"] == 10 * len(held)
+
+
 def _stub_council_run(agent, reply, calls):
     def _run(task=None, messages=None, **kwargs):
         calls.append(
