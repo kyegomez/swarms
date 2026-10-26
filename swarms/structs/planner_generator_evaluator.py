@@ -422,7 +422,7 @@ class PlannerGeneratorEvaluator:
         if heading:
             steps = plan[heading.end() :]
             end = re.search(
-                rf"^#{{1,{len(heading.group(1))}}}\s+(?!Step\b)",
+                rf"^#{{1,{len(heading.group(1))}}}\s+(?![*_\s]*Step\b)",
                 steps,
                 re.IGNORECASE | re.MULTILINE,
             )
