@@ -529,8 +529,7 @@ class WorkerPool:
                     )
                 if timed_out:
                     logger.warning(
-                        f"[WorkerPool] Worker {worker_name} stopped: "
-                        f"its agent is still running {task.id}"
+                        f"[WorkerPool] Worker {worker_name} stopped: its agent is still running {task.id}"
                     )
                     break
 
