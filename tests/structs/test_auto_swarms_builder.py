@@ -884,5 +884,13 @@ def test_usage_sums_builder_calls_and_executed_agents(monkeypatch):
     }
 
 
+def test_agents_config_is_removed():
+    """Verify that unused duplicate AgentsConfig model is removed."""
+    from swarms.structs import auto_swarm_builder
+
+    assert not hasattr(auto_swarm_builder, "AgentsConfig")
+    assert hasattr(auto_swarm_builder, "Agents")
+
+
 if __name__ == "__main__":
     run_all_tests()
