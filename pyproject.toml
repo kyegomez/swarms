@@ -97,6 +97,7 @@ mypy-protobuf = ">=3,<6"
 
 [tool.poetry.group.test.dependencies]
 pytest = ">=8.1.1,<10.0.0"
+pytest-asyncio = ">=0.26.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"

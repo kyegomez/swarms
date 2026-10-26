@@ -10,6 +10,10 @@ from swarms.structs.context_utils import (
     messages_for,
     split_last_turn,
 )
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.ma_blocks import find_agent_by_name
@@ -219,6 +223,7 @@ class AgentRearrange(SerializableMixin):
         time_enabled: bool = False,
         message_id_on: bool = False,
         collab_prompt: Optional[str] = None,
+        channel: Optional[CommsChannel] = None,
     ):
         """
         Initialize the AgentRearrange system.
@@ -281,6 +286,8 @@ class AgentRearrange(SerializableMixin):
         self.collab_prompt = collab_prompt
 
         # Seeds team awareness itself, seeding here too doubled the system message
+        self.channel = channel
+        claim_agents(self.agents, channel, self.name)
         self._reset_conversation()
 
         self.reliability_check()
@@ -619,6 +626,7 @@ class AgentRearrange(SerializableMixin):
             time_enabled=self.time_enabled,
             token_count=False,
             message_id_on=self.message_id_on,
+            channel=self.channel,
         )
 
         if self.team_awareness is True:
@@ -1018,6 +1026,7 @@ class AgentRearrange(SerializableMixin):
             time_enabled=self.time_enabled,
             token_count=False,
             message_id_on=self.message_id_on,
+            channel=self.channel,
         )
 
         cloned_agents: List[Any] = []

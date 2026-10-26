@@ -35,9 +35,6 @@ from swarms.agents.auto_chat_agent import auto_chat_agent
 from swarms.agents.auto_generate_swarm_config import (
     generate_swarm_config,
 )
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
-)
 from swarms.cli.utils import (
     COLORS,
     SwarmCLIError,
@@ -167,7 +164,7 @@ def run_autoswarm(
 
             console.print("[white]Running swarm...[/white]")
             yaml_string = yaml.dump(config, default_flow_style=False)
-            create_agents_from_yaml(
+            AgentLoader().load_agents_from_yaml(
                 yaml_string=yaml_string,
                 return_type="run_swarm",
             )
@@ -255,14 +252,9 @@ def load_markdown_agents(
                 description="Loading agents from markdown...",
             )
 
-            if os.path.isdir(file_path):
-                agents = loader.load_multiple_agents(
-                    file_path, concurrent=concurrent, **kwargs
-                )
-            else:
-                agents = [
-                    loader.load_single_agent(file_path, **kwargs)
-                ]
+            agents = loader.load_agents_from_markdown(
+                file_path, concurrent=concurrent, **kwargs
+            )
 
             # Update progress on completion
             progress.update(
@@ -1298,7 +1290,7 @@ def handle_run_agents(args: argparse.Namespace) -> None:
                 init_task,
                 description="Creating agents...",
             )
-            result = create_agents_from_yaml(
+            result = AgentLoader().load_agents_from_yaml(
                 yaml_file=args.yaml_file,
                 return_type="run_swarm",
             )
@@ -2313,7 +2305,7 @@ def main() -> None:
                 f"Available commands: {', '.join(COMMAND_CHOICES)}{hint}\n"
                 f"Run [bold white]swarms --help[/bold white] for full usage.",
             )
-            return
+            sys.exit(2)
 
         parser = setup_argument_parser()
         args = parser.parse_args()

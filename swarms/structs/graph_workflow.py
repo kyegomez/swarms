@@ -24,6 +24,10 @@ from typing import (
 )
 
 from swarms.structs.agent import Agent  # noqa: F401
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
@@ -795,6 +799,7 @@ class GraphWorkflow:
         checkpoint_dir: Optional[str] = None,
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
+        channel: Optional[CommsChannel] = None,
     ):
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
@@ -855,7 +860,8 @@ class GraphWorkflow:
                 f"GraphWorkflow max_workers set to: {self._max_workers}"
             )
 
-        self.conversation = Conversation()
+        self.channel = channel
+        self.conversation = Conversation(channel=channel)
 
         # Rebuild the graph from nodes and edges if provided
         if self.nodes:
@@ -1235,6 +1241,7 @@ class GraphWorkflow:
                 raise ValueError(error_msg)
 
             self.nodes[node.id] = node
+            claim_agents([node.agent], self.channel, self.name)
             self.graph_backend.add_node(
                 node.id,
                 type=node.type,
