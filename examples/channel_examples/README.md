@@ -21,6 +21,7 @@ edit it between runs to steer the next one.
 | `sqlite_channel.py` | A fan-out posting into one SQLite table from several threads, then a SQL query over it |
 | `sqlite_channel_example.py` | Three agents in one named SQLite conversation, read back with `fetch_messages` and `list_conversations` |
 | `queue_channel_example.py` | Three agents through a `QueueChannel` while the main thread prints each message as it lands |
+| `http_channel_example.py` | Two agents sharing a conversation kept on another server through an `HttpChannel`; start `http_channel_server.py` first |
 
 Run any of them from the repository root, for example:
 
