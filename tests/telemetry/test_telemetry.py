@@ -599,6 +599,90 @@ class TestExportSchedule:
         telem._provider.shutdown()
 
 
+class TestDeadCollectorSkipsExitFlush:
+    """A collector known to be unreachable costs nothing at exit."""
+
+    class _Provider:
+        def __init__(self):
+            self.flushed = 0
+
+        def force_flush(self, timeout_millis=30000):
+            self.flushed += 1
+            return True
+
+    def _finished_thread(self):
+        thread = threading.Thread(target=lambda: None)
+        thread.start()
+        thread.join()
+        return thread
+
+    def test_a_healthy_exporter_is_flushed(self):
+        provider = self._Provider()
+        exporter = SimpleNamespace(healthy=True)
+        otel._flush_on_exit(
+            provider, exporter, self._finished_thread()
+        )
+        assert provider.flushed == 1
+
+    def test_a_failed_export_skips_the_flush(self):
+        provider = self._Provider()
+        exporter = SimpleNamespace(healthy=False)
+        otel._flush_on_exit(
+            provider, exporter, self._finished_thread()
+        )
+        assert provider.flushed == 0
+
+    def test_a_connection_still_opening_skips_the_flush(self):
+        provider = self._Provider()
+        gate = threading.Event()
+        thread = threading.Thread(target=gate.wait, daemon=True)
+        thread.start()
+        try:
+            otel._flush_on_exit(
+                provider, SimpleNamespace(healthy=True), thread
+            )
+        finally:
+            gate.set()
+        assert provider.flushed == 0
+
+    def test_a_failed_warm_up_marks_the_exporter_unhealthy(
+        self, monkeypatch
+    ):
+        from swarms.telemetry import compression
+
+        def refuse(self, url, **kwargs):
+            raise ConnectionError("collector down")
+
+        monkeypatch.setattr(
+            compression.CompressingSession, "head", refuse
+        )
+        monkeypatch.setenv("SWARMS_TELEMETRY_ON", "true")
+        telem = otel.SwarmTelemetry()
+        telem._warm_thread.join(5)
+        assert telem._exporter.healthy is False
+        telem._provider.shutdown()
+
+    def test_a_raising_export_marks_the_exporter_unhealthy(
+        self, monkeypatch
+    ):
+        def no_route(self, spans):
+            raise OSError("no route")
+
+        monkeypatch.setattr(
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+            ".OTLPSpanExporter.export",
+            no_route,
+        )
+        monkeypatch.setenv("SWARMS_TELEMETRY_ON", "true")
+        telem = otel.SwarmTelemetry()
+        telem._warm_thread.join(5)
+        # The session fixture points the collector at a dead address, so start healthy by hand.
+        telem._exporter.healthy = True
+        telem._exporter.export([])
+        assert telem._exporter.healthy is False
+        telem._provider.shutdown()
+
+
 class TestCaptureRun:
     def test_captures_inputs(self, spans):
         with capture_run(
