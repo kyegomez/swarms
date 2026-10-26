@@ -145,9 +145,13 @@ class TaskQueue:
             return True
 
     def fail(
-        self, task_id: str, error: str, expected_version: int
+        self,
+        task_id: str,
+        error: str,
+        expected_version: int,
+        retry: bool = True,
     ) -> bool:
-        """Mark a running task as FAILED. Resets to PENDING if retries remain."""
+        """Mark a running task as FAILED. Resets to PENDING if retry is set and retries remain."""
         with self._lock:
             task = self._tasks.get(task_id)
             if task is None:
@@ -160,7 +164,7 @@ class TaskQueue:
             task.retries += 1
             task.error = error
 
-            if task.retries <= task.max_retries:
+            if retry and task.retries <= task.max_retries:
                 # Reset for retry
                 task.status = PlannerTaskStatus.PENDING
                 task.assigned_worker = None
@@ -518,7 +522,10 @@ class WorkerPool:
                 current = self.task_queue.get_task(task.id)
                 if current:
                     self.task_queue.fail(
-                        task.id, str(e), current.version
+                        task.id,
+                        str(e),
+                        current.version,
+                        retry=not timed_out,
                     )
                 if timed_out:
                     logger.warning(

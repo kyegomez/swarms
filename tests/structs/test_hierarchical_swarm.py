@@ -1214,29 +1214,27 @@ def test_task_queue_is_done_when_pending_tasks_can_never_run():
     assert cycle.is_all_done()
 
 
-def test_worker_pool_task_timeout_hands_a_stuck_task_to_another_worker():
+def test_worker_pool_task_timeout_fails_a_stuck_task_without_waiting():
     release = threading.Event()
     returned = threading.Event()
     calls = []
 
     class Worker:
-        def __init__(self, agent_name):
-            self.agent_name = agent_name
+        agent_name = "A"
 
         def short_memory_init(self):
             return None
 
         def run(self, task=None, img=None):
-            calls.append(self.agent_name)
-            if len(calls) == 1:
-                release.wait(timeout=5)
-                returned.set()
-            return f"{self.agent_name} answer"
+            calls.append(task)
+            release.wait(timeout=5)
+            returned.set()
+            return "answer"
 
     queue = TaskQueue()
     queue.add_task(PlannerTask(title="Report", description="Write"))
     pool = WorkerPool(
-        agents=[Worker("A"), Worker("B")],
+        agents=[Worker()],
         task_queue=queue,
         conversation=Conversation(),
         task_timeout=0.2,
@@ -1249,9 +1247,9 @@ def test_worker_pool_task_timeout_hands_a_stuck_task_to_another_worker():
 
     task = queue.get_all_tasks()[0]
     assert not stuck_call_returned
-    assert calls[0] != calls[1]
-    assert task.status == PlannerTaskStatus.COMPLETED
-    assert task.result == f"{calls[1]} answer"
+    assert len(calls) == 1
+    assert task.status == PlannerTaskStatus.FAILED
+    assert task.error == "Task execution exceeded 0.2s timeout"
 
 
 def test_planner_worker_swarm_run_starts_with_an_empty_task_queue():
