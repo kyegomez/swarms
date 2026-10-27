@@ -42,6 +42,9 @@ MAX_CONFIG_CHARS = int(
 
 EXIT_FLUSH_TIMEOUT = float(os.getenv("SWARMS_OTEL_EXIT_TIMEOUT", "1"))
 
+# Spans leave while the model call is in flight, so the exit flush usually finds an empty queue.
+EXPORT_DELAY_MS = int(os.getenv("SWARMS_OTEL_EXPORT_DELAY_MS", "500"))
+
 
 TELEMETRY_OFF_VALUES = frozenset(
     {"false", "0", "no", "off", "disable", "disabled"}
@@ -499,6 +502,36 @@ class ContextThreadPoolExecutor(ThreadPoolExecutor):
         return super().submit(bind_context(fn), *args, **kwargs)
 
 
+def _warm_connection(
+    session: Any, timeout: float
+) -> threading.Thread:
+    """Open the collector connection in the background.
+
+    The first export then reuses the pooled connection instead of paying
+    the TLS handshake, which would otherwise land in the exit flush of a
+    short script.
+
+    Args:
+        session (Any): The exporter's requests session.
+        timeout (float): Seconds to wait for the connection.
+
+    Returns:
+        threading.Thread: The started daemon thread.
+    """
+
+    def connect() -> None:
+        try:
+            session.head(TELEMETRY_BASE_URL, timeout=timeout)
+        except Exception:
+            pass
+
+    thread = threading.Thread(
+        target=connect, daemon=True, name="swarms-telemetry-warm"
+    )
+    thread.start()
+    return thread
+
+
 def _flush_on_exit(provider: Any) -> None:
     """Flush queued spans at exit, waiting at most EXIT_FLUSH_TIMEOUT seconds.
 
@@ -539,6 +572,7 @@ class SwarmTelemetry:
         self.ready: bool = False
         self._tracer: Optional[Any] = None
         self._provider: Optional[Any] = None
+        self._warm_thread: Optional[threading.Thread] = None
 
         if not telemetry_on():
             return
@@ -558,7 +592,15 @@ class SwarmTelemetry:
             from opentelemetry.sdk.trace import TracerProvider
             from opentelemetry.sdk.trace.export import (
                 BatchSpanProcessor,
+                SpanExportResult,
             )
+
+            class QuietExporter(OTLPSpanExporter):
+                def export(self, spans):
+                    try:
+                        return super().export(spans)
+                    except Exception:
+                        return SpanExportResult.FAILURE
 
             provider = TracerProvider(
                 resource=Resource.create(
@@ -570,20 +612,26 @@ class SwarmTelemetry:
                 ),
                 shutdown_on_exit=False,
             )
+            # Bound worst-case so a dead network can't stall exit.
+            export_timeout = int(
+                os.getenv("SWARMS_OTEL_TIMEOUT", "8")
+            )
+            session = CompressingSession()
             provider.add_span_processor(
                 BatchSpanProcessor(
                     # http/protobuf exporter, full signal URL, NO auth header.
-                    OTLPSpanExporter(
+                    QuietExporter(
                         endpoint=f"{TELEMETRY_BASE_URL}/v1/traces",
-                        # Bound worst-case so a dead network can't stall exit.
-                        timeout=int(
-                            os.getenv("SWARMS_OTEL_TIMEOUT", "8")
-                        ),
+                        timeout=export_timeout,
                         # The session compresses with zstd, so the exporter must send bodies as they are.
                         compression=Compression.NoCompression,
-                        session=CompressingSession(),
-                    )
+                        session=session,
+                    ),
+                    schedule_delay_millis=EXPORT_DELAY_MS,
                 )
+            )
+            self._warm_thread = _warm_connection(
+                session, export_timeout
             )
             # OpenTelemetry's own stdlib loggers, which loguru cannot mute, so this one call stays on stdlib.
             for _name in (

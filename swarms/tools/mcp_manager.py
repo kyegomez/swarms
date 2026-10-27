@@ -1414,7 +1414,7 @@ class MCPManager:
             )
 
         provider_kwargs: Dict[str, Any] = {
-            "server_url": _server_origin(connection.url or ""),
+            "server_url": connection.url or "",
             "client_metadata": client_metadata,
             "storage": storage,
             "redirect_handler": redirect_handler,

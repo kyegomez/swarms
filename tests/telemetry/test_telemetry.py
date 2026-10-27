@@ -33,6 +33,7 @@ Run:
 
 import gzip
 import json
+import logging
 import os
 import threading
 import time
@@ -553,6 +554,51 @@ class TestSpanHandle:
 # ===========================================================================
 # capture_run — input / output / auto error capture
 # ===========================================================================
+class TestExportSchedule:
+    """Spans leave during the run, on a connection opened at setup."""
+
+    def _telemetry(self, monkeypatch):
+        monkeypatch.setenv("SWARMS_TELEMETRY_ON", "true")
+        return otel.SwarmTelemetry()
+
+    def test_the_batch_processor_exports_every_half_second(
+        self, monkeypatch
+    ):
+        from opentelemetry.sdk.trace import export as export_module
+
+        seen = {}
+
+        class Recording(export_module.BatchSpanProcessor):
+            def __init__(self, exporter, **kwargs):
+                seen.update(kwargs)
+                super().__init__(exporter, **kwargs)
+
+        monkeypatch.setattr(
+            export_module, "BatchSpanProcessor", Recording
+        )
+        telem = self._telemetry(monkeypatch)
+        assert telem.ready
+        assert seen["schedule_delay_millis"] == otel.EXPORT_DELAY_MS
+        assert otel.EXPORT_DELAY_MS == 500
+        telem._provider.shutdown()
+
+    def test_the_collector_connection_is_opened_at_setup(
+        self, monkeypatch
+    ):
+        from swarms.telemetry import compression
+
+        calls = []
+        monkeypatch.setattr(
+            compression.CompressingSession,
+            "head",
+            lambda self, url, **kwargs: calls.append((url, kwargs)),
+        )
+        telem = self._telemetry(monkeypatch)
+        telem._warm_thread.join(5)
+        assert calls == [(otel.TELEMETRY_BASE_URL, {"timeout": 8})]
+        telem._provider.shutdown()
+
+
 class TestCaptureRun:
     def test_captures_inputs(self, spans):
         with capture_run(
@@ -1658,6 +1704,30 @@ class TestBrokenBackendNeverBreaksRun:
         with capture_run("BadExport.run", None) as h:
             h.record_output("still fine")
         assert _by_name_all(spans, "BadExport.run")
+
+    def test_a_raising_export_logs_nothing(
+        self, spans, monkeypatch, caplog
+    ):
+        def broken_export(self, spans_):
+            raise OSError("Could not find a suitable TLS CA bundle")
+
+        monkeypatch.setattr(
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+            ".OTLPSpanExporter.export",
+            broken_export,
+        )
+        agent = fake_agent("Quiet-Export", reply="ok")
+
+        with caplog.at_level(logging.WARNING):
+            assert agent.run(task="hi") == "ok"
+            assert otel.swarm_telemetry()._provider.force_flush()
+
+        otel_records = [
+            record.getMessage()
+            for record in caplog.records
+            if record.name.startswith("opentelemetry")
+        ]
+        assert otel_records == []
 
     def test_tracer_start_span_raises_does_not_break_run(
         self, spans, monkeypatch
