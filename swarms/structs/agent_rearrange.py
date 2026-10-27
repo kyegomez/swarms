@@ -1,7 +1,6 @@
 import asyncio
 import copy
 import os
-import warnings
 from concurrent.futures import as_completed
 from typing import Any, Dict, List, Optional, get_args
 
@@ -216,7 +215,6 @@ class AgentRearrange(SerializableMixin):
         flow: str = None,
         max_loops: int = 1,
         verbose: bool = False,
-        memory_system: Any = None,
         output_type: OutputType = "all",
         autosave: bool = True,
         team_awareness: bool = False,
@@ -268,17 +266,6 @@ class AgentRearrange(SerializableMixin):
             Name-based lookups use ``find_agent_by_name``, which maintains a
             cached name → agent index over ``self.agents``.
         """
-        if memory_system is not None:
-            # FutureWarning, not DeprecationWarning: swarms' bootup filters
-            # DeprecationWarning, so callers would never see it.
-            warnings.warn(
-                "AgentRearrange(memory_system=...) is ignored and will be "
-                "removed in a future release. Use autosave and the workspace "
-                "for persistence, and channel for shared history.",
-                FutureWarning,
-                stacklevel=2,
-            )
-
         self.name = name
         self.description = description
         self.id = id or generate_id("agent-rearrange")
