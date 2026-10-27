@@ -1,5 +1,8 @@
 import concurrent.futures
+import threading
 import time
+import weakref
+from contextlib import nullcontext
 from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
@@ -161,6 +164,8 @@ class ConcurrentWorkflow:
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
         )
         self.max_workers = max_workers
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._executor_lock = threading.Lock()
 
         # Initialize agent statuses if agents are provided
         if agents is not None:
@@ -235,6 +240,39 @@ class ConcurrentWorkflow:
         if self.max_workers is not None:
             return max(1, self.max_workers)
         return max(1, min(len(self.agents), MAX_CONCURRENT_AGENTS))
+
+    def _get_executor(self) -> ContextThreadPoolExecutor:
+        """Return the shared pool, rebuilding it if its size changed."""
+        workers = self._resolve_max_workers()
+        with self._executor_lock:
+            executor = self._executor
+            if executor is None or executor._max_workers != workers:
+                if executor is not None:
+                    self._finalizer.detach()
+                    executor.shutdown(wait=False)
+                executor = ContextThreadPoolExecutor(
+                    max_workers=workers
+                )
+                self._finalizer = weakref.finalize(
+                    self, executor.shutdown, wait=False
+                )
+                self._executor = executor
+            return executor
+
+    def close(self) -> None:
+        """Shut down the thread pool shared by this workflow's runs."""
+        with self._executor_lock:
+            executor, self._executor = self._executor, None
+            if executor is not None:
+                self._finalizer.detach()
+        if executor is not None:
+            executor.shutdown()
+
+    def __enter__(self) -> "ConcurrentWorkflow":
+        return self
+
+    def __exit__(self, *exc_info) -> None:
+        self.close()
 
     def reliability_check(self):
         """
@@ -414,9 +452,7 @@ class ConcurrentWorkflow:
 
                     raise
 
-            with ContextThreadPoolExecutor(
-                max_workers=self._resolve_max_workers()
-            ) as executor:
+            with nullcontext(self._get_executor()) as executor:
                 futures = [
                     executor.submit(
                         run_agent_with_status, agent, task, img, imgs
@@ -491,9 +527,7 @@ class ConcurrentWorkflow:
         """
         self.conversation.add(role="User", content=task)
 
-        with ContextThreadPoolExecutor(
-            max_workers=self._resolve_max_workers()
-        ) as executor:
+        with nullcontext(self._get_executor()) as executor:
             futures = [
                 executor.submit(
                     self._run_agent_with_streaming,
@@ -505,6 +539,7 @@ class ConcurrentWorkflow:
                 )
                 for agent in self.agents
             ]
+            concurrent.futures.wait(futures)
 
             for future, agent in zip(futures, self.agents):
                 try:
@@ -624,7 +659,7 @@ class ConcurrentWorkflow:
 
         Main entry point for running the concurrent workflow. Executes all agents
         simultaneously on the given task, with optional dashboard monitoring and
-        streaming callbacks. Automatically cleans up resources after execution.
+        streaming callbacks. The thread pool is kept for later runs until close().
 
         Args:
             task (str): The task to be executed by all agents.
