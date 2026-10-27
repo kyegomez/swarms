@@ -13,7 +13,6 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlparse
 
-import requests
 from loguru import logger
 
 
@@ -110,6 +109,9 @@ def _fetch_image_url(url: str) -> bytes:
         raise ValueError(
             f"Blocked URL '{url}': only external HTTP/HTTPS URLs are permitted."
         )
+    # Imported here so ``import swarms`` does not load requests.
+    import requests
+
     response = requests.get(url, timeout=30)
     response.raise_for_status()
     return response.content

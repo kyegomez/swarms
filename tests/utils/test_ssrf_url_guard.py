@@ -22,7 +22,6 @@ import pytest
 from swarms.utils import image_file_b64
 from swarms.utils.image_file_b64 import _ip_is_blocked, _is_safe_url
 
-
 ########################################################
 # Must be blocked
 ########################################################
@@ -154,7 +153,10 @@ def _stub_fetch(monkeypatch, gets, safe=True):
     monkeypatch.setattr(
         image_file_b64, "_is_safe_url", lambda url: safe
     )
-    monkeypatch.setattr(image_file_b64.requests, "get", _get)
+    # image_file_b64 imports requests when it fetches, so patch the module.
+    import requests
+
+    monkeypatch.setattr(requests, "get", _get)
 
 
 def test_repeated_url_fetches_hit_the_network_once(monkeypatch):
