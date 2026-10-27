@@ -614,7 +614,7 @@ result = swarm.run("Produce a comprehensive competitive analysis of the AI chip 
 
 ### GroupChat
 
-An asynchronous, self-selecting groupchat. There are no rounds or speaker-selection functions — every agent listens in parallel and decides on its own whether to chime in. A forced `respond(score, message)` function call asks each agent how much it wants to speak (0..1); replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds.
+A turn-based groupchat with one speaker per turn. Each turn, all agents privately bid via a forced `respond(score, message)` tool call with a self-rated desire to speak (0..1) and the reply they would give. The single highest bidder whose score clears `threshold` (after subtracting `recency_penalty` for agents that spoke within `recency_window` turns) takes the floor and has its message posted. The chat ends when no agent bids above `threshold` for a turn (a conversational lull), or when `max_loops` total messages have been posted.
 
 ```python
 from swarms import Agent
@@ -649,14 +649,15 @@ realist = Agent(
 
 chat = GroupChat(
     agents=[optimist, pessimist, realist],
-    max_loops=10,        # hard cap on total messages posted
-    threshold=0.5,       # min decision score (0..1) to publish a reply
-    idle_timeout=8.0,    # seconds of silence before stopping
+    max_loops=10,         # hard cap on total messages posted
+    threshold=0.5,        # min decision score (0..1) to publish a reply
+    recency_penalty=0.3,  # penalty applied to recent speakers
+    recency_window=1,     # number of recent speakers penalized
 )
 result = chat.run("Should we adopt AI for medical diagnosis?")
 ```
 
-**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Raise `idle_timeout` if agents need time to think before replying.
+**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Adjust `recency_penalty` and `recency_window` to prevent a single agent from dominating consecutive turns and pass the floor around.
 
 ---
 
