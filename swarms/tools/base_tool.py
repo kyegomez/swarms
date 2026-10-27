@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from pydantic import BaseModel, Field
+from pydantic_core import to_jsonable_python
 
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
@@ -1619,10 +1620,8 @@ class BaseTool(BaseModel):
             try:
                 if isinstance(result, str):
                     formatted_result = f"Function '{function_name}' result:\n{result}"
-                elif isinstance(result, dict):
-                    formatted_result = f"Function '{function_name}' result:\n{json.dumps(result, indent=2, ensure_ascii=False)}"
-                elif isinstance(result, (list, tuple)):
-                    formatted_result = f"Function '{function_name}' result:\n{json.dumps(list(result), indent=2, ensure_ascii=False)}"
+                elif isinstance(result, (dict, list, tuple)):
+                    formatted_result = f"Function '{function_name}' result:\n{json.dumps(to_jsonable_python(result, fallback=str), indent=2, ensure_ascii=False)}"
                 else:
                     formatted_result = f"Function '{function_name}' result:\n{str(result)}"
 
