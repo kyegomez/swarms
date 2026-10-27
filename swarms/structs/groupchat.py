@@ -55,7 +55,6 @@ from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, List, Optional, Tuple
 
-from swarms.structs.concurrent_workflow import MAX_CONCURRENT_AGENTS
 from swarms.structs.execution_utils import batched_run
 from swarms.prompts.groupchat_prompt import GROUPCHAT_DECIDE_PROMPT
 from swarms.structs.context_utils import messages_for
@@ -478,9 +477,7 @@ class GroupChat(SerializableMixin):
         """
         asyncio.get_running_loop().set_default_executor(
             ThreadPoolExecutor(
-                max_workers=min(
-                    len(self.agents or ()), MAX_CONCURRENT_AGENTS
-                )
+                max_workers=max(1, len(self.agents or ()))
             )
         )
         self._log("info", f"[{self.name}] initial task: {task}")
