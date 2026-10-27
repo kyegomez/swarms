@@ -996,10 +996,12 @@ def trace_run(
 
     Wraps the method: opens a span named ``name`` tagged with the instance's
     identity, captures the listed ``input_params`` by name, invokes the method,
-    then records its return value (or exception). Fully fail-safe, and a
-    near-zero no-op when telemetry is off (a single readiness check, then a
-    straight passthrough). Use it in place of an inline ``capture_run`` block on
-    methods with many return paths::
+    then records its return value (or exception). Fully fail-safe. When
+    telemetry is off at decoration time, which for the framework's own classes
+    is ``import swarms``, the method is returned undecorated and a call costs
+    nothing extra, so ``SWARMS_TELEMETRY_ON`` has to be set before that import
+    (a ``.env`` file is loaded first). Use it in place of an inline
+    ``capture_run`` block on methods with many return paths::
 
         @trace_run("Agent.run", input_params=("task", "img"))
         def run(self, task=None, img=None, ...):
@@ -1019,12 +1021,16 @@ def trace_run(
             recorded as swarms.usage attributes. Defaults to None.
 
     Returns:
-        Callable[[Callable], Callable]: A decorator that wraps the target method.
+        Callable[[Callable], Callable]: A decorator that wraps the target method,
+            or returns it unchanged when telemetry is off.
     """
     import functools
     import inspect
 
     def decorator(func: Callable) -> Callable:
+        if not telemetry_on():
+            return func
+
         try:
             sig: Optional[inspect.Signature] = inspect.signature(func)
         except (ValueError, TypeError):
