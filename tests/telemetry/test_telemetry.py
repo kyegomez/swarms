@@ -35,6 +35,8 @@ import gzip
 import json
 import logging
 import os
+import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -1175,6 +1177,21 @@ class TestDisabledPath:
             h.record_error(ValueError("z"))  # no raise
         telem.capture_init(object())
         telem.capture_error(ValueError("z"), None)  # all no-ops
+
+    def test_trace_run_leaves_methods_undecorated(self):
+        probe = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "from swarms.structs.agent import Agent;"
+                "print(hasattr(Agent.run, '__wrapped__'))",
+            ],
+            env={**os.environ, "SWARMS_TELEMETRY_ON": "False"},
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert probe.stdout.strip().splitlines()[-1] == "False"
 
 
 # ===========================================================================
