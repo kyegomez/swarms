@@ -993,7 +993,11 @@ def test_safety_prompt_on_reaches_the_model():
     assert system == [f"Be terse.\n\n{SAFETY_PROMPT}".strip()]
 
 
-def test_no_system_prompt_is_sent_unless_the_caller_sets_one():
+def test_only_the_loop_prompt_is_sent_without_a_system_prompt():
+    from swarms.prompts.max_loop_prompt import (
+        generate_reasoning_prompt,
+    )
+
     response = SimpleNamespace(
         choices=[
             SimpleNamespace(
@@ -1002,9 +1006,12 @@ def test_no_system_prompt_is_sent_unless_the_caller_sets_one():
         ],
         usage=None,
     )
-    for options in (
-        {"max_loops": 1},
-        {"system_prompt": None, "max_loops": 3},
+    for options, expected in (
+        ({"max_loops": 1}, []),
+        (
+            {"system_prompt": None, "max_loops": 3},
+            [generate_reasoning_prompt(3).strip()],
+        ),
     ):
         agent = Agent(
             agent_name="Bare-Agent",
@@ -1021,8 +1028,12 @@ def test_no_system_prompt_is_sent_unless_the_caller_sets_one():
 
         assert completion.call_count == options["max_loops"]
         for call in completion.call_args_list:
-            roles = [m["role"] for m in call.kwargs["messages"]]
-            assert "system" not in roles
+            system = [
+                m["content"]
+                for m in call.kwargs["messages"]
+                if m["role"] == "system"
+            ]
+            assert system == expected
 
 
 class TestAutonomousAgentLoop:
