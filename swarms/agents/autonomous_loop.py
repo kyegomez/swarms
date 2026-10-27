@@ -491,6 +491,8 @@ class AutonomousAgentLoop:
                 and planning_attempts < max_planning_attempts
             ):
                 planning_attempts += 1
+                planning_calls = []
+                planning_results: Dict[str, Any] = {}
                 try:
                     response = self.agent.call_llm(
                         task=None,
@@ -511,7 +513,6 @@ class AutonomousAgentLoop:
                         role=self.agent.agent_name, content=response
                     )
                     planning_calls = self._record_assistant(response)
-                    planning_results: Dict[str, Any] = {}
 
                     # Check if response contains create_plan or handoff_task tool call
                     if isinstance(response, list):
@@ -617,6 +618,14 @@ class AutonomousAgentLoop:
                         logger.error(
                             f"Error in planning phase (attempt {planning_attempts}): {e}"
                         )
+                    for call in planning_calls:
+                        planning_results.setdefault(
+                            call["id"],
+                            _format_tool_error(call["name"], e),
+                        )
+                    self._flush_tool_results(
+                        planning_calls, planning_results
+                    )
                     if planning_attempts >= max_planning_attempts:
                         raise
 
@@ -758,6 +767,8 @@ class AutonomousAgentLoop:
                         # The rebuilt transcript holds only the summary, restore the subtask
                         self._say_user(execution_prompt)
 
+                    turn_calls = []
+                    turn_results: Dict[str, Any] = {}
                     try:
                         response = self.agent.call_llm(
                             task=None,
@@ -781,7 +792,6 @@ class AutonomousAgentLoop:
 
                         # Answer every call before the next request.
                         turn_calls = self._record_assistant(response)
-                        turn_results: Dict[str, Any] = {}
 
                         # Handle tool calls
                         if isinstance(response, list):
@@ -811,13 +821,19 @@ class AutonomousAgentLoop:
                                         TypeError,
                                     ) as parse_error:
                                         # Report back, do not abort.
-                                        self.agent.short_memory.add(
-                                            role="Tool Executor",
-                                            content=_format_tool_error(
+                                        parse_message = (
+                                            _format_tool_error(
                                                 function_name,
                                                 parse_error,
-                                            ),
+                                            )
                                         )
+                                        self.agent.short_memory.add(
+                                            role="Tool Executor",
+                                            content=parse_message,
+                                        )
+                                        turn_results[
+                                            tool_call.get("id", "")
+                                        ] = parse_message
                                         if self.agent.verbose:
                                             logger.warning(
                                                 f"Could not parse arguments for {function_name}: {parse_error}"
@@ -1237,13 +1253,21 @@ class AutonomousAgentLoop:
                                 f"Error in subtask execution loop: {e}"
                             )
                         # Without this the next prompt is identical.
+                        step_error = (
+                            f"ERROR: the previous step failed with "
+                            f"{type(e).__name__}: {e}. Adjust your "
+                            "approach before retrying."
+                        )
                         self.agent.short_memory.add(
                             role="Tool Executor",
-                            content=(
-                                f"ERROR: the previous step failed with "
-                                f"{type(e).__name__}: {e}. Adjust your "
-                                "approach before retrying."
-                            ),
+                            content=step_error,
+                        )
+                        for call in turn_calls:
+                            turn_results.setdefault(
+                                call["id"], step_error
+                            )
+                        self._flush_tool_results(
+                            turn_calls, turn_results
                         )
 
                 if not subtask_done:
