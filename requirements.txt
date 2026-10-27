@@ -1,4 +1,3 @@
-toml
 loguru
 pydantic==2.12.5
 tenacity
