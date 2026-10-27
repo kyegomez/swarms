@@ -1,6 +1,5 @@
 """A CommsChannel stored as rows in a SQLite database."""
 
-import sqlite3
 import threading
 from typing import Any, Dict, List, Optional
 
@@ -22,6 +21,8 @@ class SqliteChannel(CommsChannel):
     """
 
     def __init__(self, path: str, name: str = "default"):
+        import sqlite3
+
         self.path = str(path)
         self.name = name
         self._lock = threading.Lock()
@@ -124,6 +125,8 @@ class SqliteChannel(CommsChannel):
         Returns:
             List[str]: Names of all conversations (channels) in the order their first message arrived.
         """
+        import sqlite3
+
         conn = sqlite3.connect(str(path))
         try:
             exists = conn.execute(
