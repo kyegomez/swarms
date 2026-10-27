@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from swarms import Agent, AgentRearrange, SequentialWorkflow
+from swarms import Agent
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.utils.workspace_utils import get_workspace_dir
 
