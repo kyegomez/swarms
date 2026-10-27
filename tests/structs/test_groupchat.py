@@ -26,7 +26,6 @@ from swarms.structs.groupchat import (
     _extract_args,
 )
 
-
 # --------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------
@@ -194,13 +193,6 @@ class TestConstructorValidation:
         ValueError, not a TypeError from len(None)."""
         with pytest.raises(ValueError, match="at least 2"):
             GroupChat(agents=None)
-
-    def test_deprecated_idle_timeout_is_still_accepted(self):
-        chat = make_chat(
-            [ScriptedAgent("A"), ScriptedAgent("B")],
-            idle_timeout=4.0,
-        )
-        assert chat.idle_timeout == 4.0
 
     def test_auto_equip_injects_the_respond_tool(self):
         bare_a, bare_b = BareAgent("A"), BareAgent("B")

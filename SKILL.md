@@ -430,7 +430,7 @@ Also: `agent_as_judge=True`, `max_agent_retries`, `max_reassignment_attempts`, `
 
 ## GroupChat
 
-Asynchronous and self-selecting — no rounds, no speaker-selection function. Every agent scores how much it wants to speak (0–1); replies above `threshold` are broadcast. Ends at `max_loops` messages or after `idle_timeout` seconds of silence.
+Asynchronous and self-selecting — no rounds, no speaker-selection function. Every agent scores how much it wants to speak (0–1); replies above `threshold` are broadcast. Ends at `max_loops` messages or when no reply clears `threshold`.
 
 ```python
 from swarms import Agent, GroupChat
@@ -440,7 +440,6 @@ chat = GroupChat(
     max_loops=10,
     threshold=0.5,           # raise for a more selective room
     recency_penalty=0.3,     # discourages one agent dominating
-    idle_timeout=8.0,
 )
 chat.run("Should we adopt AI for medical diagnosis?")
 ```

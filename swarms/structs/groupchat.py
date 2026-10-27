@@ -204,7 +204,6 @@ class GroupChat(SerializableMixin):
         threshold: float = 0.5,
         recency_penalty: float = 0.3,
         recency_window: int = 1,
-        idle_timeout: float = 8.0,
         output_type: str = "str-all-except-first",
         verbose: bool = False,
         auto_equip: bool = True,
@@ -226,8 +225,6 @@ class GroupChat(SerializableMixin):
                 single agent from monologuing. Set to ``0.0`` to disable.
             recency_window: How many of the most recent speakers are subject to
                 ``recency_penalty``.
-            idle_timeout: Deprecated/unused — the chat now ends on a bidding
-                lull rather than a wall-clock timeout. Kept for compatibility.
             output_type: Format passed to ``history_output_formatter``.
             verbose: Whether to emit internal log messages and print each
                 posted message as a panel to stdout.
@@ -247,7 +244,6 @@ class GroupChat(SerializableMixin):
         self.threshold = threshold
         self.recency_penalty = recency_penalty
         self.recency_window = recency_window
-        self.idle_timeout = idle_timeout
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
