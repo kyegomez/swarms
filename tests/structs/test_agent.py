@@ -493,6 +493,15 @@ class TestAgentToolUsage:
             [call]
         )
         assert output == ["Function 'tool3' result:\n4"]
+        schema_rows = [
+            message["content"]
+            for message in agent.short_memory.conversation_history
+            if isinstance(message["content"], list)
+        ]
+        assert [
+            [schema["function"]["name"] for schema in row]
+            for row in schema_rows
+        ] == [["tool1", "tool3"]]
 
     @staticmethod
     def _mcp_schema(name, prop):

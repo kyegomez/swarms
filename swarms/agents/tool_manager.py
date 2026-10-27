@@ -67,6 +67,7 @@ class ToolManager:
 
     def __init__(self, agent: Any):
         self.agent = agent
+        self._tool_schema_message = None
 
     def setup_tools(self) -> BaseTool:
         """
@@ -181,9 +182,24 @@ class ToolManager:
                 seen.add(name)
                 agent.tools_list_dictionary.append(schema)
 
-        agent.short_memory.add(
-            role=agent.agent_name, content=agent.tools_list_dictionary
+        history = agent.short_memory.conversation_history
+        row = next(
+            (
+                index
+                for index, message in enumerate(history)
+                if message is self._tool_schema_message
+            ),
+            None,
         )
+        if row is None:
+            self._tool_schema_message = agent.short_memory.add(
+                role=agent.agent_name,
+                content=agent.tools_list_dictionary,
+            )
+        else:
+            agent.short_memory.update(
+                row, agent.agent_name, agent.tools_list_dictionary
+            )
 
     def get_agent_registry(self) -> Dict[str, Any]:
         """
