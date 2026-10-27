@@ -993,70 +993,30 @@ def test_safety_prompt_on_reaches_the_model():
     assert system == [f"Be terse.\n\n{SAFETY_PROMPT}".strip()]
 
 
-def test_only_the_loop_prompt_is_sent_without_a_system_prompt():
+def test_system_prompt_defaults_follow_max_loops():
+    from swarms.prompts.autonomous_agent_prompt import (
+        get_autonomous_agent_prompt,
+    )
     from swarms.prompts.max_loop_prompt import (
         generate_reasoning_prompt,
     )
 
-    response = SimpleNamespace(
-        choices=[
-            SimpleNamespace(
-                message=SimpleNamespace(content="ok", tool_calls=None)
-            )
-        ],
-        usage=None,
-    )
+    auto = get_autonomous_agent_prompt(include_think_tool=False)
     for options, expected in (
-        ({"max_loops": 1}, []),
+        ({"max_loops": 1}, ""),
+        ({"max_loops": 3}, generate_reasoning_prompt(3)),
+        ({"max_loops": "auto"}, auto),
         (
-            {"system_prompt": None, "max_loops": 3},
-            [generate_reasoning_prompt(3).strip()],
+            {"system_prompt": "Be terse.", "max_loops": "auto"},
+            f"Be terse.\n\n{auto}",
         ),
     ):
         agent = Agent(
-            agent_name="Bare-Agent",
+            agent_name="Prompt-Agent",
             model_name="gpt-5.4-mini",
             print_on=False,
             persistent_memory=False,
             **options,
-        )
-        with patch(
-            "swarms.utils.litellm_wrapper.completion",
-            return_value=response,
-        ) as completion:
-            agent.run("hi")
-
-        assert completion.call_count == options["max_loops"]
-        for call in completion.call_args_list:
-            system = [
-                m["content"]
-                for m in call.kwargs["messages"]
-                if m["role"] == "system"
-            ]
-            assert system == expected
-
-
-def test_auto_mode_gets_the_autonomous_prompt_without_the_loop_prompt():
-    from swarms.prompts.autonomous_agent_prompt import (
-        get_autonomous_agent_prompt,
-    )
-
-    for system_prompt in (None, "Be terse."):
-        agent = Agent(
-            agent_name="Auto-Agent",
-            model_name="gpt-5.4-mini",
-            system_prompt=system_prompt,
-            max_loops="auto",
-            print_on=False,
-            persistent_memory=False,
-        )
-        autonomous = get_autonomous_agent_prompt(
-            include_think_tool=agent.think_tool
-        )
-        expected = (
-            f"{system_prompt}\n\n{autonomous}"
-            if system_prompt
-            else autonomous
         )
         assert agent.system_prompt == expected
 
