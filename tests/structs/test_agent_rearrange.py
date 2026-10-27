@@ -313,6 +313,32 @@ def test_invalid_output_type_raises_at_init():
         )
 
 
+def test_memory_system_warns_and_is_not_stored():
+    """memory_system is never read, so passing it warns and stores nothing."""
+    agents = [_make_agent("A"), _make_agent("B")]
+
+    with pytest.warns(FutureWarning, match="memory_system"):
+        rearrange = AgentRearrange(
+            agents=agents,
+            flow="A -> B",
+            memory_system=object(),
+            autosave=False,
+        )
+
+    assert not hasattr(rearrange, "memory_system")
+
+
+def test_no_memory_system_does_not_warn():
+    """Leaving memory_system unset must not emit the deprecation warning."""
+    import warnings
+
+    agents = [_make_agent("A"), _make_agent("B")]
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        AgentRearrange(agents=agents, flow="A -> B", autosave=False)
+
+
 def test_set_custom_flow_validates_immediately():
     """set_custom_flow should reject an invalid flow at the call site,
     and leave the previous flow intact on failure."""
