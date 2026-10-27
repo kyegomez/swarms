@@ -191,7 +191,6 @@ medical_documents = LlamaIndexDB(
     data_dir="docs",  # Directory containing medical documents
     filename_as_id=True,  # Use filenames as document identifiers
     recursive=True,  # Search subdirectories
-    # required_exts=[".txt", ".pdf", ".docx"],  # Supported file types
     similarity_top_k=10,  # Return top 10 most relevant documents
 )
 
@@ -215,6 +214,5 @@ router = AgentRearrange(
 if __name__ == "__main__":
     # Run a comprehensive medical analysis task for patient Lucas Brown
     task = "Analyze this Lucas Brown's medical data to provide a diagnosis and treatment plan"
-    # Retrieve the relevant records up front and hand them to the swarm
     records = medical_documents.query(task)
     router.run(f"{task}\n\nRelevant medical records:\n{records}")
