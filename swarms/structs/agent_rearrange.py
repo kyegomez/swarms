@@ -176,7 +176,6 @@ class AgentRearrange(SerializableMixin):
         flow (str): Flow pattern defining agent execution order
         max_loops (int): Maximum number of execution loops
         verbose (bool): Whether to enable verbose logging
-        memory_system (Any): Optional memory system for persistence
         output_type (OutputType): Format for output results
         autosave (bool): Whether to automatically save execution data
         team_awareness (bool): Whether agents are aware of team structure
@@ -216,7 +215,6 @@ class AgentRearrange(SerializableMixin):
         flow: str = None,
         max_loops: int = 1,
         verbose: bool = False,
-        memory_system: Any = None,
         output_type: OutputType = "all",
         autosave: bool = True,
         team_awareness: bool = False,
@@ -246,8 +244,6 @@ class AgentRearrange(SerializableMixin):
                 Defaults to 1.
             verbose (bool): Whether to enable verbose logging.
                 Defaults to True.
-            memory_system (Any, optional): Optional memory system for persistence.
-                Defaults to None.
             output_type (OutputType): Format for output results. Can be "all", "final",
                 "list", or "dict". Defaults to "all".
             autosave (bool): Whether to automatically save execution data.
@@ -277,7 +273,6 @@ class AgentRearrange(SerializableMixin):
         self.flow = flow if flow is not None else ""
         self.verbose = verbose
         self.max_loops = max_loops if max_loops > 0 else 1
-        self.memory_system = memory_system
         self.output_type = output_type
         self.autosave = autosave
         self.time_enabled = time_enabled
