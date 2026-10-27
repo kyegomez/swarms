@@ -815,6 +815,8 @@ class GraphWorkflow:
         self.edges = edges or []
         self.entry_points = entry_points or []
         self.end_points = end_points or []
+        self._auto_entry_points = None
+        self._auto_end_points = None
 
         # Initialize graph backend
         if backend.lower() == "rustworkx":
@@ -979,12 +981,18 @@ class GraphWorkflow:
         compile_start_time = time.time()
 
         try:
-            if not self.entry_points:
+            if (
+                not self.entry_points
+                or self.entry_points is self._auto_entry_points
+            ):
                 if self.verbose:
                     logger.debug("Auto-setting entry points")
                 self.auto_set_entry_points()
 
-            if not self.end_points:
+            if (
+                not self.end_points
+                or self.end_points is self._auto_end_points
+            ):
                 if self.verbose:
                     logger.debug("Auto-setting end points")
                 self.auto_set_end_points()
@@ -1695,6 +1703,7 @@ class GraphWorkflow:
                 for n in self.nodes
                 if self.graph_backend.in_degree(n) == 0
             ]
+            self._auto_entry_points = self.entry_points
 
             if self.verbose:
                 logger.info(
@@ -1725,6 +1734,7 @@ class GraphWorkflow:
                 for n in self.nodes
                 if self.graph_backend.out_degree(n) == 0
             ]
+            self._auto_end_points = self.end_points
 
             if self.verbose:
                 logger.info(f"Auto-set end points: {self.end_points}")
