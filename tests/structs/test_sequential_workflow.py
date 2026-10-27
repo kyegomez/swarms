@@ -44,6 +44,34 @@ def test_sequential_workflow_initialization_with_agents():
     assert workflow.max_loops == 1
 
 
+def _two_agents():
+    return [
+        Agent(agent_name="Agent-1", model_name="gpt-4o", max_loops=1),
+        Agent(agent_name="Agent-2", model_name="gpt-4o", max_loops=1),
+    ]
+
+
+def test_shared_memory_system_warns_and_is_not_stored():
+    """shared_memory_system is never read: passing it warns, nothing stored."""
+    with pytest.warns(FutureWarning, match="shared_memory_system"):
+        workflow = SequentialWorkflow(
+            agents=_two_agents(),
+            shared_memory_system=lambda *a, **kw: None,
+        )
+
+    assert not hasattr(workflow, "shared_memory_system")
+
+
+def test_no_shared_memory_system_does_not_warn():
+    """Leaving shared_memory_system unset must not emit the warning."""
+    import warnings
+
+    agents = _two_agents()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        SequentialWorkflow(agents=agents)
+
+
 def test_sequential_workflow_multi_agent_execution():
     """Test SequentialWorkflow execution with multiple agents"""
     agent1 = Agent(

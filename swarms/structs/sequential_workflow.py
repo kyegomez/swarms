@@ -1,6 +1,7 @@
 import ast
 import json
 import os
+import warnings
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -69,7 +70,6 @@ class SequentialWorkflow:
         agents (List[Union[Agent, Callable]]): List of agents or callables to execute in sequence.
         max_loops (int): Maximum number of times to execute the workflow.
         output_type (OutputType): Format of the output from the workflow.
-        shared_memory_system (callable): Optional callable for managing shared memory between agents.
         multi_agent_collab_prompt (bool): Whether to append a collaborative prompt to each agent.
         flow (str): String representation of the agent execution order.
         agent_rearrange (AgentRearrange): Internal helper for managing agent execution.
@@ -110,7 +110,6 @@ class SequentialWorkflow:
             agents (List[Union[Agent, Callable]], optional): List of agents or callables to execute in sequence.
             max_loops (int, optional): Maximum number of times to execute the workflow. Defaults to 1.
             output_type (OutputType, optional): Output format for the workflow. Defaults to "dict".
-            shared_memory_system (callable, optional): Callable for shared memory management. Defaults to None.
             multi_agent_collab_prompt (bool, optional): If True, each agent receives a collaboration
                 preamble as a system turn for the duration of the run.
             collab_prompt (str, optional): Overrides the default preamble text. Ignored unless
@@ -133,13 +132,23 @@ class SequentialWorkflow:
         Raises:
             ValueError: If the agents list is None or empty, or if max_loops is set to 0.
         """
+        if shared_memory_system is not None:
+            # FutureWarning, not DeprecationWarning: swarms' bootup filters
+            # DeprecationWarning, so callers would never see it.
+            warnings.warn(
+                "SequentialWorkflow(shared_memory_system=...) is ignored and "
+                "will be removed in a future release. Use the channel "
+                "parameter for history shared between agents.",
+                FutureWarning,
+                stacklevel=2,
+            )
+
         self.id = id
         self.name = name
         self.description = description
         self.agents = agents
         self.max_loops = max_loops
         self.output_type = output_type
-        self.shared_memory_system = shared_memory_system
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.collab_prompt = collab_prompt
         self.team_awareness = team_awareness
