@@ -16,7 +16,6 @@ from typing import (
     Union,
 )
 
-import toml
 import yaml
 from loguru import logger
 from pydantic import BaseModel
@@ -2237,9 +2236,6 @@ Subtask Breakdown:
         return yaml.dump(
             self.to_dict(), indent=indent, *args, **kwargs
         )
-
-    def to_toml(self, *args, **kwargs):
-        return toml.dumps(self.to_dict(), *args, **kwargs)
 
     def model_dump_json(self):
         """

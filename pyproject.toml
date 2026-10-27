@@ -41,7 +41,6 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
-toml = "*"
 loguru = "*"
 pydantic = "*"
 tenacity = "*"
@@ -73,7 +72,6 @@ swarms = "swarms.cli.main:main"
 [tool.poetry.group.lint.dependencies]
 black = ">=23.1,<27.0"
 ruff = ">=0.5.1,<0.16.2"
-types-toml = "^0.10.8.1"
 types-pytz = ">=2023.3,<2027.0"
 types-chardet = "^5.0.4.6"
 mypy-protobuf = ">=3,<6"
