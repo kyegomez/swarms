@@ -51,8 +51,8 @@ Example:
 import ast
 import asyncio
 import json
+import weakref
 from collections import deque
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, List, Optional, Tuple
 
 from swarms.structs.concurrent_workflow import MAX_CONCURRENT_AGENTS
@@ -71,7 +71,11 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.telemetry.otel import capture_init, trace_run
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 
 logger = initialize_logger(log_folder="groupchat")
 
@@ -184,7 +188,12 @@ class GroupChat(SerializableMixin):
     - no agent bids above ``threshold`` for a turn (a conversational lull).
     """
 
-    _to_dict_exclude = ("agents", "conversation")
+    _to_dict_exclude = (
+        "agents",
+        "conversation",
+        "_executor",
+        "_finalizer",
+    )
 
     def __init__(
         self,
@@ -238,6 +247,7 @@ class GroupChat(SerializableMixin):
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
+        self._executor = None
 
         self.channel = channel
         claim_agents(self.agents, channel, self.name)
@@ -279,6 +289,30 @@ class GroupChat(SerializableMixin):
                 f"Injected respond tool into {agent.agent_name}",
             )
 
+    def _get_executor(self) -> ContextThreadPoolExecutor:
+        if self._executor is None:
+            self._executor = ContextThreadPoolExecutor(
+                max_workers=min(
+                    len(self.agents), MAX_CONCURRENT_AGENTS
+                )
+            )
+            self._finalizer = weakref.finalize(
+                self, self._executor.shutdown, wait=False
+            )
+        return self._executor
+
+    def close(self) -> None:
+        if self._executor is not None:
+            self._finalizer.detach()
+            self._executor.shutdown()
+            self._executor = None
+
+    def __enter__(self) -> "GroupChat":
+        return self
+
+    def __exit__(self, *exc_info) -> None:
+        self.close()
+
     def _other_agents(self, exclude: str) -> str:
         """Return a comma-separated list of peers visible to one agent."""
         return ", ".join(
@@ -296,7 +330,7 @@ class GroupChat(SerializableMixin):
         ``tools_list_dictionary``) and extracts the structured ``(score,
         message)`` from the resulting tool call. Synchronous because
         ``Agent.run`` is blocking; the async agent loop invokes this method
-        via ``asyncio.to_thread`` so one slow model call cannot block the
+        on the chat's thread pool so one slow model call cannot block the
         whole groupchat.
         """
         prompt = GROUPCHAT_DECIDE_PROMPT.format(
@@ -403,13 +437,19 @@ class GroupChat(SerializableMixin):
         floor and the reply it would give. Bidding is the cheap "do I have
         something to add right now?" instinct — it runs in parallel for speed,
         but at most one bid is ever posted (see ``_select_speaker``). Agent
-        calls are blocking, so each runs in its own thread via
-        ``asyncio.to_thread`` and one slow model cannot stall the turn.
+        calls are blocking, so each runs on the chat's thread pool and
+        one slow model cannot stall the turn.
         """
+        loop = asyncio.get_running_loop()
+        executor = self._get_executor()
         results = await asyncio.gather(
             *(
-                asyncio.to_thread(
-                    self._decide_sync, agent, sender, message
+                loop.run_in_executor(
+                    executor,
+                    self._decide_sync,
+                    agent,
+                    sender,
+                    message,
                 )
                 for agent in self.agents
             )
@@ -476,13 +516,6 @@ class GroupChat(SerializableMixin):
         Returns:
             Conversation history formatted according to ``self.output_type``.
         """
-        asyncio.get_running_loop().set_default_executor(
-            ThreadPoolExecutor(
-                max_workers=min(
-                    len(self.agents or ()), MAX_CONCURRENT_AGENTS
-                )
-            )
-        )
         self._log("info", f"[{self.name}] initial task: {task}")
 
         self.conversation = Conversation(
