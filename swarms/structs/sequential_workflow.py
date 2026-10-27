@@ -1,7 +1,6 @@
 import ast
 import json
 import os
-import warnings
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -86,7 +85,6 @@ class SequentialWorkflow:
         agents: List[Union[Agent, Callable]] = None,
         max_loops: int = 1,
         output_type: OutputType = "dict",
-        shared_memory_system: callable = None,
         multi_agent_collab_prompt: bool = False,
         collab_prompt: Optional[str] = None,
         team_awareness: bool = False,
@@ -132,17 +130,6 @@ class SequentialWorkflow:
         Raises:
             ValueError: If the agents list is None or empty, or if max_loops is set to 0.
         """
-        if shared_memory_system is not None:
-            # FutureWarning, not DeprecationWarning: swarms' bootup filters
-            # DeprecationWarning, so callers would never see it.
-            warnings.warn(
-                "SequentialWorkflow(shared_memory_system=...) is ignored and "
-                "will be removed in a future release. Use the channel "
-                "parameter for history shared between agents.",
-                FutureWarning,
-                stacklevel=2,
-            )
-
         self.id = id
         self.name = name
         self.description = description
