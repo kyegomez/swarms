@@ -16,8 +16,6 @@ from typing import (
     Union,
 )
 
-import toml
-import yaml
 from loguru import logger
 from pydantic import BaseModel
 
@@ -2014,6 +2012,8 @@ Subtask Breakdown:
         Args:
             file_path (str): The path to the YAML file
         """
+        import yaml
+
         try:
             logger.info(f"Saving agent to YAML file: {file_path}")
             with open(file_path, "w") as f:
@@ -2221,11 +2221,15 @@ Subtask Breakdown:
         )
 
     def to_yaml(self, indent: int = 4, *args, **kwargs):
+        import yaml
+
         return yaml.dump(
             self.to_dict(), indent=indent, *args, **kwargs
         )
 
     def to_toml(self, *args, **kwargs):
+        import toml
+
         return toml.dumps(self.to_dict(), *args, **kwargs)
 
     def model_dump_json(self):
