@@ -599,9 +599,7 @@ def test_groupchat():
         ),
     ]
 
-    group_chat = GroupChat(
-        agents=agents, max_loops=2, idle_timeout=4.0
-    )
+    group_chat = GroupChat(agents=agents, max_loops=2)
 
     response = group_chat.run(
         "Let's discuss the future of artificial intelligence."

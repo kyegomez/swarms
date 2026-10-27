@@ -555,7 +555,7 @@ print(recommendation)
 
 ### GroupChat
 
-`GroupChat` is an asynchronous, self-selecting groupchat. All agents listen in parallel; for each broadcast message, every other agent runs a forced `respond(score, message)` function call to decide whether to chime in, and replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds. There is no turn order: multiple agents can react to the same message at the same time, and silent agents stay silent.
+`GroupChat` is an asynchronous, self-selecting groupchat. All agents listen in parallel; for each broadcast message, every other agent runs a forced `respond(score, message)` function call to decide whether to chime in, and replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or when no reply clears `threshold`. There is no turn order: multiple agents can react to the same message at the same time, and silent agents stay silent.
 
 ```python
 from swarms import Agent, GroupChat, RESPOND_TOOL
@@ -582,7 +582,6 @@ chat = GroupChat(
     agents=[tech_optimist, tech_critic],
     max_loops=10,       # hard cap on total messages posted
     threshold=0.5,      # min decision score (0..1) to publish a reply
-    idle_timeout=8.0,   # seconds of silence before stopping
 )
 
 result = chat.run("Let's discuss the societal impact of artificial intelligence.")
