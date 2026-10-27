@@ -993,6 +993,34 @@ def test_safety_prompt_on_reaches_the_model():
     assert system == [f"Be terse.\n\n{SAFETY_PROMPT}".strip()]
 
 
+def test_system_prompt_defaults_follow_max_loops():
+    from swarms.prompts.autonomous_agent_prompt import (
+        get_autonomous_agent_prompt,
+    )
+    from swarms.prompts.max_loop_prompt import (
+        generate_reasoning_prompt,
+    )
+
+    auto = get_autonomous_agent_prompt(include_think_tool=False)
+    for options, expected in (
+        ({"max_loops": 1}, ""),
+        ({"max_loops": 3}, generate_reasoning_prompt(3)),
+        ({"max_loops": "auto"}, auto),
+        (
+            {"system_prompt": "Be terse.", "max_loops": "auto"},
+            f"Be terse.\n\n{auto}",
+        ),
+    ):
+        agent = Agent(
+            agent_name="Prompt-Agent",
+            model_name="gpt-5.4-mini",
+            print_on=False,
+            persistent_memory=False,
+            **options,
+        )
+        assert agent.system_prompt == expected
+
+
 class TestAutonomousAgentLoop:
     """The ``max_loops="auto"`` loop lives in ``AutonomousAgentLoop``, not on
     ``Agent``. These pin the seam: the loop is wired up, it reads and writes
