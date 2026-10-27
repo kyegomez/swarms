@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from swarms import Agent
+from swarms import Agent, AgentRearrange, SequentialWorkflow
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -490,6 +490,50 @@ def test_concurrent_workflow_autosave_saves_conversation_after_run(
         conversation_path
     ), f"Expected conversation_history.json at {conversation_path}"
 
+    get_workspace_dir.cache_clear()
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda agents: SequentialWorkflow(agents=agents),
+        lambda agents: ConcurrentWorkflow(agents=agents),
+        lambda agents: AgentRearrange(
+            agents=agents, flow="Alpha -> Beta"
+        ),
+    ],
+    ids=["sequential", "concurrent", "rearrange"],
+)
+def test_workflows_write_nothing_to_disk_by_default(
+    build, monkeypatch, tmp_path
+):
+    get_workspace_dir.cache_clear()
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+
+    build([_EchoAgent("Alpha"), _EchoAgent("Beta")]).run(
+        "summarise the filing"
+    )
+
+    assert list(tmp_path.rglob("*")) == []
+    get_workspace_dir.cache_clear()
+
+
+def test_agent_rearrange_autosave_saves_conversation(
+    monkeypatch, tmp_path
+):
+    get_workspace_dir.cache_clear()
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    rearrange = AgentRearrange(
+        agents=[_EchoAgent("Alpha"), _EchoAgent("Beta")],
+        flow="Alpha -> Beta",
+        autosave=True,
+    )
+
+    rearrange.run("summarise the filing")
+
+    saved = list(tmp_path.rglob("conversation_history.json"))
+    assert len(saved) == 1
+    assert "Beta answered" in saved[0].read_text()
     get_workspace_dir.cache_clear()
 
 

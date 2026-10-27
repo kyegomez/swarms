@@ -88,7 +88,7 @@ class SequentialWorkflow:
         multi_agent_collab_prompt: bool = False,
         collab_prompt: Optional[str] = None,
         team_awareness: bool = False,
-        autosave: bool = True,
+        autosave: bool = False,
         verbose: bool = False,
         drift_detection: bool = False,
         drift_threshold: float = 0.75,

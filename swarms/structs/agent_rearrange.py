@@ -30,6 +30,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -177,7 +178,8 @@ class AgentRearrange(SerializableMixin):
         max_loops (int): Maximum number of execution loops
         verbose (bool): Whether to enable verbose logging
         output_type (OutputType): Format for output results
-        autosave (bool): Whether to automatically save execution data
+        autosave (bool): Whether to save the conversation to the workspace
+            directory after each run
         team_awareness (bool): Whether agents are aware of team structure
         time_enabled (bool): Whether to track timestamps
         message_id_on (bool): Whether to include message IDs
@@ -216,7 +218,7 @@ class AgentRearrange(SerializableMixin):
         max_loops: int = 1,
         verbose: bool = False,
         output_type: OutputType = "all",
-        autosave: bool = True,
+        autosave: bool = False,
         team_awareness: bool = False,
         time_enabled: bool = False,
         message_id_on: bool = False,
@@ -246,8 +248,8 @@ class AgentRearrange(SerializableMixin):
                 Defaults to True.
             output_type (OutputType): Format for output results. Can be "all", "final",
                 "list", or "dict". Defaults to "all".
-            autosave (bool): Whether to automatically save execution data.
-                Defaults to True.
+            autosave (bool): Whether to save the conversation to the
+                workspace directory after each run. Defaults to False.
             team_awareness (bool): Whether agents should be aware of team structure
                 and sequential flow. Defaults to False.
             time_enabled (bool): Whether to track timestamps in conversations.
@@ -286,6 +288,13 @@ class AgentRearrange(SerializableMixin):
         self._reset_conversation()
 
         self.reliability_check()
+
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "agent-rearrange",
+            verbose=self.verbose,
+            enabled=self.autosave,
+        )
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -988,6 +997,8 @@ class AgentRearrange(SerializableMixin):
 
         except Exception as e:
             self._catch_error(e)
+        finally:
+            self.workspace.save_conversation(self.conversation)
 
     def __call__(self, task: str, *args, **kwargs):
         """
@@ -1015,6 +1026,7 @@ class AgentRearrange(SerializableMixin):
         """
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
+        clone.workspace = WorkspaceManager(clone, enabled=False)
 
         clone.conversation = Conversation(
             name=f"{self.name}-Conversation",

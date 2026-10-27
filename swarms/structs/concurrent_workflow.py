@@ -51,7 +51,7 @@ class ConcurrentWorkflow:
         agent_statuses (dict): Dictionary tracking status and output of each agent
         metadata_output_path (str): Path for saving workflow metadata
         autosave (bool): Whether to persist conversation history to the workflow
-            workspace directory after each run
+            workspace directory after each run. Defaults to False
         verbose (bool): Whether to emit debug-level logging for workspace and
             autosave operations
         on_error (str): Failure policy for an agent that raises. ``"store"``
@@ -102,7 +102,7 @@ class ConcurrentWorkflow:
         max_loops: int = 1,
         auto_generate_prompts: bool = False,
         show_dashboard: bool = False,
-        autosave: bool = True,
+        autosave: bool = False,
         verbose: bool = False,
         on_error: str = "store",
         max_workers: Optional[int] = None,
@@ -129,7 +129,8 @@ class ConcurrentWorkflow:
                 execution. Enabling this disables per-agent stdout printing to
                 avoid conflicting with the dashboard.
             autosave (bool): Whether to persist conversation history to the
-                workflow workspace directory after each run.
+                workflow workspace directory after each run. Defaults to
+                False.
             verbose (bool): Whether to emit debug-level logging for workspace and
                 autosave operations.
             on_error (str): Failure policy for an agent that raises. ``"store"``
