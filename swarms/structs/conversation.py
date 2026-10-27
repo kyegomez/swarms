@@ -1660,27 +1660,32 @@ class Conversation:
 
         conv_dir = conversations_dir or get_conversation_dir()
 
-        # Try loading by name with different extensions
-        for ext in [".json", ".yaml", ".yml"]:
-            filepath = os.path.join(conv_dir, f"{name}{ext}")
-            if os.path.exists(filepath):
-                conversation = cls(
-                    name=name, conversations_dir=conv_dir
-                )
-                conversation.load(filepath)
-                return conversation
-
-        # If not found by name with extensions, try loading by ID
-        filepath = os.path.join(conv_dir, name)
-        if os.path.exists(filepath):
-            conversation = cls(name=name, conversations_dir=conv_dir)
-            conversation.load(filepath)
-            return conversation
-
-        logger.warning(
-            f"No conversation found with name or ID: {name}"
+        candidates = [
+            os.path.join(conv_dir, f"{stem}{ext}")
+            for stem in (f"conversation_{name}", name)
+            for ext in (".json", ".yaml", ".yml")
+        ] + [os.path.join(conv_dir, name)]
+        filepath = next(
+            (p for p in candidates if os.path.exists(p)), None
         )
-        return cls(name=name, conversations_dir=conv_dir)
+
+        if not filepath:
+            logger.warning(
+                f"No conversation found with name or ID: {name}"
+            )
+            return cls(name=name, conversations_dir=conv_dir)
+
+        ext = os.path.splitext(filepath)[1].lower()
+        conversation = cls(
+            name=name,
+            conversations_dir=conv_dir,
+            save_filepath=filepath,
+            export_method=(
+                "yaml" if ext in (".yaml", ".yml") else "json"
+            ),
+        )
+        conversation.load(filepath)
+        return conversation
 
     def return_dict_final(self):
         """Return the final message as a dictionary."""
