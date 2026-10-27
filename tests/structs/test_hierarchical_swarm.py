@@ -747,6 +747,37 @@ def test_one_failed_worker_does_not_stop_other_orders():
     assert healthy_worker.calls == 1
 
 
+def test_feedback_reviews_only_the_current_step_outputs():
+    class FeedbackDirector:
+        def __init__(self):
+            self.tasks = []
+
+        def run(self, task):
+            self.tasks.append(task)
+            return "feedback"
+
+    writer = StubAgent("Writer", ["draft one", "draft two"])
+    editor = StubAgent("Editor", ["edit one", RuntimeError("down")])
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [writer, editor],
+        max_agent_retries=0,
+        max_reassignment_attempts=0,
+    )
+    swarm._feedback_director = FeedbackDirector()
+    orders = [
+        HierarchicalOrder(agent_name="Writer", task="write"),
+        HierarchicalOrder(agent_name="Editor", task="edit"),
+    ]
+
+    swarm.execute_orders(orders)
+    swarm.feedback_director(swarm.execute_orders(orders))
+
+    review = swarm._feedback_director.tasks[-1]
+    assert "Writer: draft two" in review
+    assert "edit one" not in review
+
+
 ##############################################################################
 # max_workers and nested-swarm worker tests
 ##############################################################################

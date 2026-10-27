@@ -195,6 +195,7 @@ class HierarchicalSwarm:
 
         # How much of the shared conversation each agent has already seen.
         self._delivered: Dict[str, int] = {}
+        self._step_start = 0
 
         self.channel = channel
         self.conversation = Conversation(
@@ -421,12 +422,10 @@ class HierarchicalSwarm:
             f"{message.get('role')}: {message.get('content')}"
             for message in (
                 self.conversation.conversation_history or []
-            )
+            )[self._step_start :]
             if message.get("role") in names
         ]
         if named:
-            if outputs:
-                named = named[-len(outputs) :]
             return "\n\n".join(named)
         if not outputs:
             return "(no worker outputs)"
@@ -1037,6 +1036,9 @@ class HierarchicalSwarm:
             Exception: If order execution fails.
         """
         try:
+            self._step_start = len(
+                self.conversation.conversation_history
+            )
             outputs, failures = self._execute_orders_once(
                 orders=orders
             )
