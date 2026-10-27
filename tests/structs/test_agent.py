@@ -1036,6 +1036,31 @@ def test_only_the_loop_prompt_is_sent_without_a_system_prompt():
             assert system == expected
 
 
+def test_auto_mode_gets_the_autonomous_prompt_without_the_loop_prompt():
+    from swarms.prompts.autonomous_agent_prompt import (
+        get_autonomous_agent_prompt,
+    )
+
+    for system_prompt in (None, "Be terse."):
+        agent = Agent(
+            agent_name="Auto-Agent",
+            model_name="gpt-5.4-mini",
+            system_prompt=system_prompt,
+            max_loops="auto",
+            print_on=False,
+            persistent_memory=False,
+        )
+        autonomous = get_autonomous_agent_prompt(
+            include_think_tool=agent.think_tool
+        )
+        expected = (
+            f"{system_prompt}\n\n{autonomous}"
+            if system_prompt
+            else autonomous
+        )
+        assert agent.system_prompt == expected
+
+
 class TestAutonomousAgentLoop:
     """The ``max_loops="auto"`` loop lives in ``AutonomousAgentLoop``, not on
     ``Agent``. These pin the seam: the loop is wired up, it reads and writes
