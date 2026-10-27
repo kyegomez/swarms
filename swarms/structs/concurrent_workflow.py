@@ -25,9 +25,6 @@ from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
-# Default cap on concurrent agent calls, guards provider rate limits not CPU
-MAX_CONCURRENT_AGENTS = 32
-
 
 class ConcurrentWorkflow:
     """
@@ -59,8 +56,7 @@ class ConcurrentWorkflow:
             agents finish; ``"raise"`` propagates the exception and aborts the run
         max_workers (Optional[int]): Thread pool size for concurrent agent
             execution. Agent calls are network-bound, so this defaults to
-            ``len(agents)`` capped at ``MAX_CONCURRENT_AGENTS`` rather than
-            deriving from CPU count.
+            ``len(agents)`` rather than deriving from CPU count.
         swarm_workspace_dir (Optional[str]): Resolved workspace directory used for
             autosave, or None when autosave is disabled or setup failed
         conversation (Conversation): Conversation object for storing agent interactions
@@ -139,8 +135,8 @@ class ConcurrentWorkflow:
                 aborts the run.
             max_workers (Optional[int]): Thread pool size for concurrent agent
                 execution. Agent calls are network-bound rather than CPU-bound,
-                so when omitted the pool is sized at ``len(agents)``, capped at
-                ``MAX_CONCURRENT_AGENTS``. See :meth:`_resolve_max_workers`.
+                so when omitted the pool is sized at ``len(agents)``. Set it to
+                throttle large rosters. See :meth:`_resolve_max_workers`.
 
         Raises:
             ValueError: If no agents are provided or the agents list is empty.
@@ -225,16 +221,15 @@ class ConcurrentWorkflow:
 
         Each submitted task is one agent's LLM call, which is network-bound, so
         CPU count is not the limiting factor. The pool never receives more than
-        ``len(self.agents)`` tasks, making that the natural size. The ceiling
-        guards large rosters against provider rate limits and HTTP connection
-        pool exhaustion.
+        ``len(self.agents)`` tasks, making that the natural size. Pass
+        max_workers to throttle against provider rate limits.
 
         Returns:
             int: Number of worker threads to use, at least 1.
         """
         if self.max_workers is not None:
             return max(1, self.max_workers)
-        return max(1, min(len(self.agents), MAX_CONCURRENT_AGENTS))
+        return max(1, len(self.agents))
 
     def reliability_check(self):
         """
