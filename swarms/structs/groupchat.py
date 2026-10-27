@@ -2,15 +2,6 @@
 GroupChat
 ================
 
-An asynchronous groupchat where each agent independently decides whether to
-respond to messages, on its own schedule. There are no rounds — any agent (or
-several agents at once) can chime in whenever they have something to say.
-
-This module is useful when a discussion should feel more like an open room than
-a turn-based panel. Each participant receives every message, evaluates whether
-it has something useful to add, and only broadcasts a reply when its self-rated
-desire to speak clears the configured threshold.
-
 Flow (turn-based, one speaker per turn):
 
     task -> posted to the shared conversation; every agent sees it
