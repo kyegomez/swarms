@@ -30,9 +30,6 @@ from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.llm_manager import LLMManager
 from swarms.agents.skills_manager import SkillsManager
 from swarms.agents.tool_manager import ToolManager
-from swarms.prompts.agent_system_prompts import (
-    build_agent_system_prompt,
-)
 from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
@@ -116,10 +113,6 @@ def stop_when_repeats(response: str) -> bool:
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 
-# Identity marks "not passed": None means no system prompt, any other string is the caller's own.
-DEFAULT_SYSTEM_PROMPT = build_agent_system_prompt()
-
-
 class Agent:
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
@@ -137,7 +130,7 @@ class Agent:
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
-        system_prompt (Optional[str]): The system prompt. Defaults to the built-in agent prompt; None sends no system prompt. With max_loops="auto" the default is replaced by the autonomous loop prompt, and a custom prompt has it appended.
+        system_prompt (Optional[str]): The system prompt. Defaults to None, which sends no system prompt. With max_loops="auto" the autonomous loop prompt is used, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
         saved_state_path (str): The path to the saved state
@@ -302,7 +295,7 @@ class Agent:
         agent_description: Optional[
             str
         ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
-        system_prompt: Optional[str] = DEFAULT_SYSTEM_PROMPT,
+        system_prompt: Optional[str] = None,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -416,13 +409,6 @@ class Agent:
         self.user_name = user_name
         self.context_length = context_length
         self.tools = tools
-        if system_prompt is DEFAULT_SYSTEM_PROMPT:
-            # The constant is rendered once at import; re-render so its Time line is current.
-            system_prompt = (
-                None
-                if max_loops == "auto"
-                else build_agent_system_prompt()
-            )
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -488,7 +474,9 @@ class Agent:
         self.tool_call_summary = tool_call_summary
         self.tool_retry_attempts = tool_retry_attempts
         self.channel = channel
-        self.reasoning_prompt_on = reasoning_prompt_on
+        self.reasoning_prompt_on = bool(
+            reasoning_prompt_on and system_prompt
+        )
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
         self.reasoning_effort = reasoning_effort

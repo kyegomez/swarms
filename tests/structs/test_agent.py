@@ -993,6 +993,38 @@ def test_safety_prompt_on_reaches_the_model():
     assert system == [f"Be terse.\n\n{SAFETY_PROMPT}".strip()]
 
 
+def test_no_system_prompt_is_sent_unless_the_caller_sets_one():
+    response = SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(content="ok", tool_calls=None)
+            )
+        ],
+        usage=None,
+    )
+    for options in (
+        {"max_loops": 1},
+        {"system_prompt": None, "max_loops": 3},
+    ):
+        agent = Agent(
+            agent_name="Bare-Agent",
+            model_name="gpt-5.4-mini",
+            print_on=False,
+            persistent_memory=False,
+            **options,
+        )
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=response,
+        ) as completion:
+            agent.run("hi")
+
+        assert completion.call_count == options["max_loops"]
+        for call in completion.call_args_list:
+            roles = [m["role"] for m in call.kwargs["messages"]]
+            assert "system" not in roles
+
+
 class TestAutonomousAgentLoop:
     """The ``max_loops="auto"`` loop lives in ``AutonomousAgentLoop``, not on
     ``Agent``. These pin the seam: the loop is wired up, it reads and writes
