@@ -109,7 +109,6 @@ def _fetch_image_url(url: str) -> bytes:
         raise ValueError(
             f"Blocked URL '{url}': only external HTTP/HTTPS URLs are permitted."
         )
-        
     import requests
 
     response = requests.get(url, timeout=30)
