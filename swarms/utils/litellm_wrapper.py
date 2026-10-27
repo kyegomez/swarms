@@ -1473,11 +1473,7 @@ class LiteLLM:
         )
         logger.error(error_msg)
         raise NetworkConnectionError(error_msg) from network_error
-
-    # The backend's own connection and timeout errors are matched next to
-    # this tuple, through llm_backend, so the backend stays unimported here.
-    # Model calls do not go through requests, so its exceptions are not
-    # listed and requests is not imported at ``import swarms``.
+        
     _NETWORK_ERRORS = (
         ConnectionError,
         TimeoutError,
