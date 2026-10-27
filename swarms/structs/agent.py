@@ -475,7 +475,8 @@ class Agent:
         self.tool_retry_attempts = tool_retry_attempts
         self.channel = channel
         self.reasoning_prompt_on = bool(
-            reasoning_prompt_on and system_prompt
+            reasoning_prompt_on
+            and (system_prompt or marketplace_prompt_id)
         )
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
