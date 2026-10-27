@@ -1252,6 +1252,51 @@ def test_worker_pool_task_timeout_fails_a_stuck_task_without_waiting():
     assert task.error == "Task execution exceeded 0.2s timeout"
 
 
+def test_planner_worker_swarm_keeps_a_timed_out_agent_out_of_the_next_cycle():
+    release = threading.Event()
+    calls = []
+    memory_resets = []
+
+    class Worker:
+        agent_name = "A"
+
+        def short_memory_init(self):
+            memory_resets.append(len(calls))
+
+        def run(self, task=None, img=None):
+            calls.append(task)
+            if len(calls) == 1:
+                release.wait(timeout=5)
+            return "answer"
+
+    planner = StubAgent(
+        "Planner",
+        [
+            {
+                "plan": title,
+                "tasks": [{"title": title, "description": title}],
+            }
+            for title in ["First", "Second"]
+        ],
+    )
+    swarm = PlannerWorkerSwarm(
+        agents=[Worker()], max_loops=2, task_timeout=0.2
+    )
+    swarm._create_planner_agent = lambda name="Planner": planner
+    swarm._run_judge = lambda img=None: CycleVerdict(
+        is_complete=False, overall_quality=1, summary="again"
+    )
+    try:
+        swarm.run("goal")
+        calls_while_stuck = len(calls)
+        resets_while_stuck = len(memory_resets)
+    finally:
+        release.set()
+
+    assert calls_while_stuck == 1
+    assert resets_while_stuck == 1
+
+
 def test_planner_worker_swarm_run_starts_with_an_empty_task_queue():
     goals = ["Write a haiku", "Fix the login bug"]
     planner = StubAgent(
