@@ -149,7 +149,7 @@ print(result)
 | `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
 | `max_tokens` | int | model's max output | Max tokens per LLM call. Unset resolves to the model's own output limit |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
-| `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
+| `thinking_tokens` | int | `1024` | Extended thinking budget (Claude) |
 | `output_type` | str | `"str-all-except-first"` | How to format returned output |
 | `mcp_url` | str | `None` | MCP server URL to load tools from |
 | `handoffs` | list | `None` | Agents this agent can hand off to |
@@ -159,7 +159,7 @@ print(result)
 ### Autonomous loop (`max_loops="auto"`)
 
 When `max_loops="auto"` the agent runs a plan→execute→reflect loop until it decides it is done. It automatically gets access to:
-- A `think` tool (disabled when `thinking_tokens` is set)
+- A `think` tool, when `think_tool=True` (off by default)
 - A `grep` tool for searching files (v12)
 - Bash / file tools if configured
 
@@ -263,7 +263,7 @@ Manually collapse history to a single summary; creates a timestamped archive bef
 ```python
 from swarms.structs.conversation import Conversation
 
-conv = Conversation(agent_name="MyAgent", system_prompt="You are helpful.")
+conv = Conversation(name="MyAgent", system_prompt="You are helpful.")
 conv.add("user", "Tell me about X")
 conv.add("assistant", "X is ...")
 
@@ -543,7 +543,6 @@ result = router.run("Write a blog post about transformer architectures.")
 | `"RoundRobin"` | Round-robin task distribution |
 | `"PlannerWorkerSwarm"` | Planner + worker delegation |
 | `"LLMCouncil"` | LLM-based council decisions |
-| `"AutoSwarmBuilder"` | Auto-configures everything |
 
 ---
 
@@ -683,30 +682,20 @@ result = mv.run("Is Python or Rust better for building a high-performance web se
 
 ### CouncilAsAJudge
 
-A council of agents each deliberate, then a judge agent makes the final ruling based on the council's reasoning.
+A council of judge agents, one per evaluation dimension, each assess a response, then an aggregator agent synthesises their verdicts. The judges and aggregator are built internally from model names; you do not pass your own agents.
 
 ```python
-from swarms import Agent, CouncilAsAJudge
-
-council = [
-    Agent(agent_name="Expert-Security", model_name="gpt-5.4", max_loops=1),
-    Agent(agent_name="Expert-Privacy",  model_name="gpt-5.4", max_loops=1),
-    Agent(agent_name="Expert-Legal",    model_name="gpt-5.4", max_loops=1),
-]
-
-judge = Agent(
-    agent_name="Judge",
-    system_prompt="Given the council's analysis, deliver a final verdict.",
-    model_name="gpt-5.4",
-    max_loops=1,
-)
+from swarms import CouncilAsAJudge
 
 council_swarm = CouncilAsAJudge(
-    agents=council,
-    judge=judge,
+    model_name="gpt-5.4",               # model for each judge
+    aggregation_model_name="gpt-5.4",   # model for the final synthesis
     max_loops=1,
 )
-result = council_swarm.run("Should we store user biometric data on-device only?")
+result = council_swarm.run(
+    "Task: Should we store user biometric data on-device only?\n"
+    "Response: Yes, because ..."
+)
 ```
 
 ---
@@ -729,8 +718,9 @@ judge = Agent(
 )
 
 debate = DebateWithJudge(
-    agents=[pro, con],
-    judge=judge,
+    pro_agent=pro,
+    con_agent=con,
+    judge_agent=judge,
     max_loops=3,   # 3 rounds of argument
 )
 result = debate.run("Motion: Open-source LLMs will surpass closed-source models by 2027.")
@@ -740,16 +730,16 @@ result = debate.run("Motion: Open-source LLMs will surpass closed-source models 
 
 ### HeavySwarm
 
-Intensive multi-loop analysis. Each agent runs for many loops on the problem, producing deep reasoning. Best for research-grade analysis.
+Intensive multi-loop analysis. A question agent breaks the task into specialised questions, worker agents built internally answer them, and the cycle repeats `max_loops` times. Best for research-grade analysis.
 
 ```python
 from swarms import HeavySwarm
 
 swarm = HeavySwarm(
-    num_agents=4,
-    model_name="gpt-5.4",
-    loops_per_agent=5,       # each agent reasons for 5 loops
-    show_output=True,
+    question_agent_model_name="gpt-5.4",
+    worker_model_name="gpt-5.4",
+    max_loops=5,             # analysis cycles
+    show_dashboard=True,
 )
 result = swarm.run("Derive a novel approach to solving the alignment problem in AI.")
 ```
@@ -789,17 +779,11 @@ for task in tasks:
 
 ### PlannerWorkerSwarm
 
-A planner agent generates a structured plan; worker agents execute each step.
+A planner agent, built internally from `planner_model_name`, generates a structured plan; the worker agents you pass execute each step. The class is not exported from the top-level `swarms` package.
 
 ```python
-from swarms import Agent, PlannerWorkerSwarm
-
-planner = Agent(
-    agent_name="Planner",
-    system_prompt="You create detailed, step-by-step execution plans.",
-    model_name="gpt-5.4",
-    max_loops=1,
-)
+from swarms import Agent
+from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 
 workers = [
     Agent(agent_name=f"Worker-{i}", model_name="gpt-5.4-mini", max_loops=2)
@@ -807,8 +791,8 @@ workers = [
 ]
 
 swarm = PlannerWorkerSwarm(
-    planner_agent=planner,
-    worker_agents=workers,
+    agents=workers,
+    planner_model_name="gpt-5.4",
     max_loops=1,
 )
 result = swarm.run("Build a complete go-to-market strategy for a B2B SaaS product.")
@@ -848,9 +832,8 @@ from swarms.structs.multi_agent_exec import (
 # Same task, all agents in parallel
 results = run_agents_concurrently(agents=agents, task="Summarise the news today.")
 
-# Different task per agent
-task_map = {agent: task for agent, task in zip(agents, tasks)}
-results = run_agents_with_different_tasks(task_map)
+# Different task per agent: a list of (agent, task) pairs
+results = run_agents_with_different_tasks(list(zip(agents, tasks)))
 
 # Async version
 import asyncio
@@ -932,7 +915,7 @@ from swarms.structs.conversation import Conversation
 
 conv = Conversation(
     system_prompt="You are a helpful assistant.",
-    agent_name="MyAgent",      # keys MEMORY.md to this name
+    name="MyAgent",            # keys MEMORY.md to this name
     time_enabled=True,         # include ISO timestamps in history
 )
 
@@ -1054,8 +1037,9 @@ agents = [
 workflow = ConcurrentWorkflow(agents=agents)
 results = workflow.run("What is the most important unsolved problem in mathematics?")
 
-for agent_name, answer in results.items():
-    print(f"\n=== {agent_name} ===\n{answer}")
+# The default output_type returns a list of {"role": agent_name, "content": answer} dicts
+for message in results:
+    print(f"\n=== {message['role']} ===\n{message['content']}")
 ```
 
 ### Pattern: Human-in-the-loop with AgentRearrange
