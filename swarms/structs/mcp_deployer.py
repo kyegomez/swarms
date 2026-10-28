@@ -752,7 +752,7 @@ class MCPDeployer:
         import uvicorn
 
         uvicorn.run(
-            self.app,
+            self.build_app(),
             host=self.host,
             port=self.port,
             log_level=log_level,
@@ -775,7 +775,7 @@ class MCPDeployer:
         import uvicorn
 
         config = uvicorn.Config(
-            self.app,
+            self.build_app(),
             host=self.host,
             port=self.port,
             log_level="warning",
