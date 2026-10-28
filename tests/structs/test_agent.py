@@ -872,6 +872,23 @@ class TestConstructorWindows:
         assert agent.context_length == 16000
         assert agent.max_tokens == 16000
 
+    def test_model_info_is_looked_up_once_per_model(self):
+        info = {"max_input_tokens": 90000, "max_output_tokens": 9000}
+        with patch(
+            "swarms.utils.llm_backend.get_model_info",
+            return_value=info,
+        ) as lookup:
+            agents = [
+                self._agent(model_name="model-info-cache-probe")
+                for _ in range(2)
+            ]
+
+        assert lookup.call_count == 1
+        assert [(a.context_length, a.max_tokens) for a in agents] == [
+            (90000, 9000),
+            (90000, 9000),
+        ]
+
 
 class TestFunctionCallingWarning:
     """The function-calling warning is for agents that actually have tools."""
@@ -940,6 +957,68 @@ def test_list_base_models_schema_reaches_short_memory():
 
     schema = agent.short_memory.conversation_history[-1]["content"]
     assert "Order" in schema and "item" in schema and "qty" in schema
+
+
+def test_safety_prompt_on_reaches_the_model():
+    from swarms.prompts.safety_prompt import SAFETY_PROMPT
+
+    agent = Agent(
+        agent_name="Safety-Agent",
+        model_name="gpt-5.4-mini",
+        system_prompt="Be terse.",
+        safety_prompt_on=True,
+        max_loops=1,
+        print_on=False,
+        persistent_memory=False,
+    )
+    response = SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(content="ok", tool_calls=None)
+            )
+        ],
+        usage=None,
+    )
+    with patch(
+        "swarms.utils.litellm_wrapper.completion",
+        return_value=response,
+    ) as completion:
+        agent.run("hi")
+
+    system = [
+        m["content"]
+        for m in completion.call_args.kwargs["messages"]
+        if m["role"] == "system"
+    ]
+    assert system == [f"Be terse.\n\n{SAFETY_PROMPT}".strip()]
+
+
+def test_system_prompt_defaults_follow_max_loops():
+    from swarms.prompts.autonomous_agent_prompt import (
+        get_autonomous_agent_prompt,
+    )
+    from swarms.prompts.max_loop_prompt import (
+        generate_reasoning_prompt,
+    )
+
+    auto = get_autonomous_agent_prompt(include_think_tool=False)
+    for options, expected in (
+        ({"max_loops": 1}, ""),
+        ({"max_loops": 3}, generate_reasoning_prompt(3)),
+        ({"max_loops": "auto"}, auto),
+        (
+            {"system_prompt": "Be terse.", "max_loops": "auto"},
+            f"Be terse.\n\n{auto}",
+        ),
+    ):
+        agent = Agent(
+            agent_name="Prompt-Agent",
+            model_name="gpt-5.4-mini",
+            print_on=False,
+            persistent_memory=False,
+            **options,
+        )
+        assert agent.system_prompt == expected
 
 
 class TestAutonomousAgentLoop:

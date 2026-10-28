@@ -90,7 +90,6 @@ class Conversation:
         export_method: str = "json",
         dynamic_context_window: bool = True,
         cache_enabled: bool = False,
-        output_metadata: bool = False,
         memory_md_path: Optional[str] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         channel: Optional[CommsChannel] = None,
@@ -124,7 +123,6 @@ class Conversation:
         self.export_method = export_method
         self.dynamic_context_window = dynamic_context_window
         self.caching = cache_enabled
-        self.output_metadata = output_metadata
         self.memory_md_path = memory_md_path
         self._memory_md_lock = threading.Lock()
 

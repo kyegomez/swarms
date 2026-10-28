@@ -76,13 +76,22 @@ def create_file_in_folder(
 
     Returns:
         str: The path of the created file.
+
+    Raises:
+        ValueError: If file_name points outside folder_path.
     """
+    file_path = os.path.join(folder_path, file_name)
+    folder = os.path.realpath(folder_path)
+    if (
+        os.path.commonpath([folder, os.path.realpath(file_path)])
+        != folder
+    ):
+        raise ValueError(f"{file_name} is outside {folder_path}")
+
     try:
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
-        # Create the file in the folder
-        file_path = os.path.join(folder_path, file_name)
         with open(file_path, "w") as file:
             file.write(content)
 

@@ -25,7 +25,6 @@ chat = GroupChat(
     ],
     max_loops=6,
     threshold=0.5,
-    idle_timeout=8.0,
     channel=channel,
 )
 chat.run("Should hospitals adopt AI for triage?")

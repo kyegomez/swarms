@@ -8,7 +8,7 @@ and validates it at construction.
   "raise" -> propagate and abort the run
 
 max_workers is sized for network-bound work, not CPU count. When omitted it
-defaults to len(agents) capped at 32.
+defaults to len(agents).
 """
 
 from swarms import Agent, ConcurrentWorkflow

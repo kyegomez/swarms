@@ -20,6 +20,7 @@ from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.broadcast import Broadcast, broadcast
 from swarms.structs.comms_channel import CommsChannel
 from swarms.structs.file_channel import FileChannel
+from swarms.structs.http_channel import HttpChannel
 from swarms.structs.queue_channel import QueueChannel
 from swarms.structs.sqlite_channel import SqliteChannel
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
@@ -107,6 +108,7 @@ __all__ = [
     "SocialAlgorithms",
     "CommsChannel",
     "FileChannel",
+    "HttpChannel",
     "QueueChannel",
     "SqliteChannel",
     "Conversation",
