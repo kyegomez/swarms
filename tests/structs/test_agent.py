@@ -1232,7 +1232,9 @@ class TestArunForwarding:
         with pytest.raises(ValueError, match="boom"):
             asyncio.run(Agent.arun(agent, "T"))
 
-    def test_handle_run_error_tolerates_braces_in_provider_message(self):
+    def test_handle_run_error_tolerates_braces_in_provider_message(
+        self,
+    ):
         """Provider JSON bodies contain braces; logging must not KeyError (#2861)."""
         agent = self._bare_agent()
         agent.autosave = False
