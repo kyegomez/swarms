@@ -789,17 +789,12 @@ for task in tasks:
 
 ### PlannerWorkerSwarm
 
-A planner agent generates a structured plan; worker agents execute each step.
+A planner–worker–judge loop: the swarm builds its own planner and judge from
+`planner_model_name` / `judge_model_name`, while `agents` are the workers that
+claim and execute plan steps.
 
 ```python
 from swarms import Agent, PlannerWorkerSwarm
-
-planner = Agent(
-    agent_name="Planner",
-    system_prompt="You create detailed, step-by-step execution plans.",
-    model_name="gpt-5.4",
-    max_loops=1,
-)
 
 workers = [
     Agent(agent_name=f"Worker-{i}", model_name="gpt-5.4-mini", max_loops=2)
@@ -807,8 +802,9 @@ workers = [
 ]
 
 swarm = PlannerWorkerSwarm(
-    planner_agent=planner,
-    worker_agents=workers,
+    agents=workers,
+    planner_model_name="gpt-5.4",
+    judge_model_name="gpt-5.4",
     max_loops=1,
 )
 result = swarm.run("Build a complete go-to-market strategy for a B2B SaaS product.")
