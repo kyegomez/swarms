@@ -1,5 +1,6 @@
 import os
-from concurrent.futures import as_completed
+from concurrent.futures import as_completed, wait
+from contextlib import nullcontext
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
 
@@ -11,13 +12,13 @@ from swarms.structs.context_utils import (
     split_last_turn,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.executor_utils import ReusableExecutorMixin
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 
 from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
@@ -207,7 +208,7 @@ Your report should be structured as follows:
 Focus on synthesizing the input feedback without adding new analysis."""
 
 
-class CouncilAsAJudge:
+class CouncilAsAJudge(ReusableExecutorMixin):
     """
     A council of AI agents that evaluates task responses across multiple dimensions.
 
@@ -442,8 +443,8 @@ class CouncilAsAJudge:
             ]
 
             # Run evaluations in parallel using ThreadPoolExecutor
-            with ContextThreadPoolExecutor(
-                max_workers=self.max_workers
+            with nullcontext(
+                self._get_executor(self.max_workers)
             ) as executor:
                 # Submit all tasks
                 future_to_dim = {
@@ -456,17 +457,20 @@ class CouncilAsAJudge:
                     for dim, agent, _ in tasks
                 }
 
-                for future in as_completed(future_to_dim):
-                    try:
-                        future.result()
-                    except Exception as e:
-                        dim = future_to_dim[future]
-                        logger.error(
-                            f"Task for dimension {dim} failed: {str(e)}"
-                        )
-                        raise DimensionEvaluationError(
-                            f"Failed to evaluate dimension {dim}: {str(e)}"
-                        )
+                try:
+                    for future in as_completed(future_to_dim):
+                        try:
+                            future.result()
+                        except Exception as e:
+                            dim = future_to_dim[future]
+                            logger.error(
+                                f"Task for dimension {dim} failed: {str(e)}"
+                            )
+                            raise DimensionEvaluationError(
+                                f"Failed to evaluate dimension {dim}: {str(e)}"
+                            )
+                finally:
+                    wait(future_to_dim)
 
             prior, aggregation_task = split_last_turn(
                 messages_for(
