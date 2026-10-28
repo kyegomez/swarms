@@ -833,6 +833,14 @@ class Conversation:
         self._str_cache = None
 
     def truncate(self, index: int) -> List[dict]:
+        """Remove every message from an index to the end of the history.
+
+        Args:
+            index (int): The position of the first message to remove.
+
+        Returns:
+            List[dict]: The removed messages, empty when index is at or past the end.
+        """
         removed = self.conversation_history[index:]
         del self.conversation_history[index:]
         self._str_cache = None
