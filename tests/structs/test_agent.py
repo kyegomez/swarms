@@ -1232,6 +1232,16 @@ class TestArunForwarding:
         with pytest.raises(ValueError, match="boom"):
             asyncio.run(Agent.arun(agent, "T"))
 
+    def test_handle_run_error_tolerates_braces_in_provider_message(self):
+        """Provider JSON bodies contain braces; logging must not KeyError (#2861)."""
+        agent = self._bare_agent()
+        agent.autosave = False
+        err = ValueError(
+            "Error code: 404 - [{'error': {'code': 404, 'message': 'missing'}}]"
+        )
+        with pytest.raises(ValueError, match="Error code: 404"):
+            agent._handle_run_error(err)
+
 
 class TestEmptyTaskGuard:
     """run() must not read stdin for an empty task when interactive=False."""
