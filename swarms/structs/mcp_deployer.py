@@ -35,6 +35,7 @@ import time
 from dataclasses import dataclass, field
 from functools import partial
 from typing import (
+    TYPE_CHECKING,
     Any,
     Awaitable,
     Callable,
@@ -45,19 +46,14 @@ from typing import (
     Union,
 )
 
-import anyio
 from loguru import logger
-from rich.console import Console, Group
-from rich.panel import Panel
-from rich.rule import Rule
-from rich.table import Table
-from rich.text import Text
-from starlette.datastructures import Headers
-from starlette.requests import Request
-from starlette.responses import JSONResponse
+
+if TYPE_CHECKING:
+    from rich.console import Console
+    from starlette.datastructures import Headers
 
 AuthCallable = Callable[
-    [Optional[str], Headers],
+    [Optional[str], "Headers"],
     Union[bool, Dict[str, Any], None, Awaitable[Any]],
 ]
 
@@ -133,7 +129,7 @@ def _to_text(result: Any) -> str:
 
 
 def credential_from_headers(
-    headers: Headers, api_key_header: str = "x-api-key"
+    headers: "Headers", api_key_header: str = "x-api-key"
 ) -> Optional[str]:
     """
     Pull the credential a client sent, from either supported header.
@@ -171,6 +167,9 @@ class _AuthMiddleware:
         self.deployer = deployer
 
     async def __call__(self, scope, receive, send):
+        from starlette.datastructures import Headers
+        from starlette.responses import JSONResponse
+
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -457,7 +456,7 @@ class MCPDeployer:
         )
 
     async def authenticate(
-        self, headers: Headers
+        self, headers: "Headers"
     ) -> Optional[AuthResult]:
         """
         Decide whether a request may proceed.
@@ -540,6 +539,8 @@ class MCPDeployer:
     async def _call(
         self, name: str, task: str, img: Optional[str] = None
     ) -> str:
+        import anyio
+
         if self.verbose:
             logger.info(
                 f"MCPDeployer[{self.name}] {name}: {task[:80]!r}"
@@ -554,6 +555,8 @@ class MCPDeployer:
 
     def _build_server(self):
         from mcp.server.mcpserver import MCPServer
+        from starlette.requests import Request
+        from starlette.responses import JSONResponse
 
         instructions = "\n".join(
             f"{t.name}: {t.description}" for t in self.tools.values()
@@ -650,8 +653,16 @@ class MCPDeployer:
         n = len(self.api_keys)
         return f"{n} api key{'s' if n != 1 else ''} · {self.api_key_header} or Bearer"
 
-    def print_banner(self, console: Optional[Console] = None) -> None:
+    def print_banner(
+        self, console: Optional["Console"] = None
+    ) -> None:
         """Print the startup banner: the swarms alien in purple."""
+        from rich.console import Console, Group
+        from rich.panel import Panel
+        from rich.rule import Rule
+        from rich.table import Table
+        from rich.text import Text
+
         console = console or Console()
 
         icon = Text()

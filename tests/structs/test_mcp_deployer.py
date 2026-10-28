@@ -1,5 +1,7 @@
 import asyncio
 import socket
+import subprocess
+import sys
 import threading
 import time
 
@@ -414,6 +416,21 @@ def test_banner_renders_for_every_auth_mode():
         )
     )
     assert "anonymous (open)" in open_ and "stdin/stdout" in open_
+
+
+def test_importing_swarms_does_not_load_the_server_stack():
+    probe = (
+        "import sys\n"
+        "from swarms import Agent, MCPDeployer\n"
+        "print(sorted({'anyio', 'starlette'} & set(sys.modules)))"
+    )
+    out = subprocess.run(
+        [sys.executable, "-c", probe],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert out.stdout.strip().splitlines()[-1] == "[]"
 
 
 if __name__ == "__main__":
