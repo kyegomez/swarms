@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.structs.executor_utils import ReusableExecutorMixin
 from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
@@ -182,7 +182,7 @@ Provide clear rationale for your model selection based on the specific task requ
 """
 
 
-class ModelRouter:
+class ModelRouter(ReusableExecutorMixin):
     """
     A router class that intelligently selects and executes AI models based on task requirements.
 
@@ -381,11 +381,8 @@ class ModelRouter:
             RuntimeError: If concurrent execution fails
         """
         try:
-            with ContextThreadPoolExecutor(
-                max_workers=self.max_workers
-            ) as executor:
-                outputs = list(executor.map(self.run, tasks))
-            return outputs
+            executor = self._get_executor(self.max_workers)
+            return list(executor.map(self.run, tasks))
         except Exception as e:
             raise RuntimeError(
                 f"Concurrent execution failed: {str(e)}"
