@@ -1159,6 +1159,20 @@ The docs are a Mintlify site: pages are `.mdx` files and the navigation is in `d
 
 ---
 
+## Tests: only where they earn their place
+
+Not every change needs a unit test. Add one when it pins behaviour a user relies on that a later change could break: a bug fix, a new feature or a changed default. Renames, formatting, comments and docs need none, and neither does removing unused code (see below).
+
+When you do add a test, keep it small, compact and fast:
+
+- One test per behaviour. Put several cases in one table-driven test, not in near-copies.
+- Stub the model and the network. No live API calls, sleeps or real servers unless the behaviour is about them.
+- Reuse the stubs and helpers already in the test file instead of writing new ones.
+- Assert what a caller sees, not private state the change did not touch.
+- It must fail on the unpatched code and run in well under a second.
+
+---
+
 ## Comments: one line, only when needed
 
 A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.
