@@ -3,6 +3,12 @@ import os
 import warnings
 
 
+class _WorkspaceFileHandler(logging.FileHandler):
+    def _open(self):
+        os.makedirs(os.path.dirname(self.baseFilename), exist_ok=True)
+        return super()._open()
+
+
 def set_logger_level(logger_name: str) -> None:
     """
     Sets the logging level for a specific logger to CRITICAL.
@@ -56,13 +62,9 @@ def disable_logging():
     # Get the workspace directory from the environment variables
     workspace_dir = os.getenv("WORKSPACE_DIR") or "agent_workspace"
 
-    # Check if the workspace directory exists, if not, create it
-    if not os.path.exists(workspace_dir):
-        os.makedirs(workspace_dir)
-
     # Create a file handler to log errors to the file
-    file_handler = logging.FileHandler(
-        os.path.join(workspace_dir, "error.txt")
+    file_handler = _WorkspaceFileHandler(
+        os.path.join(workspace_dir, "error.txt"), delay=True
     )
     file_handler.setLevel(logging.ERROR)
     logging.getLogger().addHandler(file_handler)
