@@ -220,7 +220,12 @@ def sleeps(monkeypatch):
         decision_model, "time", SimpleNamespace(sleep=delays.append)
     )
     monkeypatch.setattr(
-        decision_model, "asyncio", SimpleNamespace(sleep=async_sleep)
+        decision_model,
+        "asyncio",
+        SimpleNamespace(
+            sleep=async_sleep,
+            get_running_loop=asyncio.get_running_loop,
+        ),
     )
     monkeypatch.setattr(
         decision_model,
@@ -1100,6 +1105,40 @@ async def test_arun_validates_before_sending(api, typesafe_key):
         await DecisionModel().arun("text", {})
 
     assert api.requests == []
+
+
+def test_arun_reuses_one_async_client_per_event_loop(
+    api, typesafe_key, monkeypatch
+):
+    created = []
+    make_client = decision_model.httpx.AsyncClient
+
+    def counting_client(**kwargs):
+        client = make_client(**kwargs)
+        created.append(client)
+        return client
+
+    monkeypatch.setattr(
+        decision_model.httpx, "AsyncClient", counting_client
+    )
+    model = DecisionModel()
+
+    async def burst():
+        await asyncio.gather(
+            *[model.arun(f"ticket {i}", QUESTIONS) for i in range(5)]
+        )
+        await model.arun("one more", QUESTIONS)
+
+    async def burst_then_close():
+        await burst()
+        await model.aclose()
+
+    asyncio.run(burst())
+    asyncio.run(burst_then_close())
+
+    assert len(created) == 2
+    assert len(api.requests) == 12
+    assert created[1].is_closed
 
 
 async def test_arun_supports_concurrent_calls(api, typesafe_key):
