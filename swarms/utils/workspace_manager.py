@@ -298,7 +298,10 @@ class WorkspaceManager:
                 queued = path in _pending
                 _pending[path] = text
             if not queued:
-                _writer.submit(_write_pending, path)
+                try:
+                    _writer.submit(_write_pending, path)
+                except RuntimeError:
+                    _write_pending(path)
 
             if self.verbose:
                 logger.debug(f"Saved {filename} to {path}")
