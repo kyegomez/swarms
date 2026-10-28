@@ -7,9 +7,12 @@ workspace. No network and no LLM: the manager only ever touches the disk.
 
 import json
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
+from swarms.utils import workspace_manager
 from swarms.utils.workspace_manager import (
     CONVERSATION_FILENAME,
     agent_dir_name,
@@ -25,6 +28,9 @@ from swarms.utils.workspace_utils import get_workspace_dir
 def workspace(tmp_path, monkeypatch):
     """Point WORKSPACE_DIR at a tmp dir and clear the lru_cache."""
     monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    monkeypatch.setattr(
+        workspace_manager._writer, "submit", lambda fn, *a: fn(*a)
+    )
     get_workspace_dir.cache_clear()
     yield tmp_path
     get_workspace_dir.cache_clear()
@@ -216,14 +222,14 @@ class TestNeverRaises:
         assert wm.dir is None
         assert wm.save_conversation() is None
 
-    def test_write_failure_returns_none(self, monkeypatch):
+    def test_write_failure_does_not_raise(self, monkeypatch):
         wm = WorkspaceManager(FakeSwarm())
 
         def boom(*a, **kw):
             raise OSError("disk full")
 
         monkeypatch.setattr("builtins.open", boom)
-        assert wm.save_conversation() is None
+        assert not os.path.exists(wm.save_conversation())
 
     def test_owner_without_optional_attributes(self):
         """A bare owner must still produce config/state/metadata."""
@@ -337,7 +343,28 @@ class TestAtomicWrite:
             raise OSError("interrupted")
 
         monkeypatch.setattr(os, "replace", boom)
-        assert wm.save_conversation() is None
+        wm.save_conversation()
         monkeypatch.setattr(os, "replace", real_replace)
 
         assert open(path).read() == original
+
+    def test_save_returns_before_the_write_lands(self, monkeypatch):
+        writer = ThreadPoolExecutor(max_workers=1)
+        monkeypatch.setattr(workspace_manager, "_writer", writer)
+        release = threading.Event()
+        real_replace = os.replace
+
+        def held_replace(src, dst):
+            release.wait(5)
+            real_replace(src, dst)
+
+        monkeypatch.setattr(os, "replace", held_replace)
+        wm = WorkspaceManager(FakeSwarm())
+        path = wm.save_json("data.json", {"v": 1})
+        wm.save_json("data.json", {"v": 2, "s": "é"})
+        assert not os.path.exists(path)
+
+        release.set()
+        writer.shutdown(wait=True)
+        with open(path, encoding="utf-8") as f:
+            assert json.load(f) == {"v": 2, "s": "é"}
