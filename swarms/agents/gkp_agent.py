@@ -24,7 +24,7 @@ class KnowledgeGenerator:
         self,
         agent_name: str = "knowledge-generator",
         description: str = "Generates factual, relevant knowledge to assist with answering queries",
-        model_name: str = "openai/o1",
+        model_name: str = "gpt-5.6-sol",
         num_knowledge_items: int = 2,
     ) -> None:
         """
@@ -184,7 +184,7 @@ class Reasoner:
     def __init__(
         self,
         agent_name: str = "knowledge-reasoner",
-        model_name: str = "openai/o1",
+        model_name: str = "gpt-5.6-sol",
     ) -> None:
         """
         Initialize the reasoner component.
@@ -332,7 +332,7 @@ class GKPAgent:
     def __init__(
         self,
         agent_name: str = "gkp-agent",
-        model_name: str = "openai/o1",
+        model_name: str = "gpt-5.6-sol",
         num_knowledge_items: int = 6,
     ) -> None:
         """

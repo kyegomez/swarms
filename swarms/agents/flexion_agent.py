@@ -193,7 +193,7 @@ class ReflexionAgent:
         self,
         agent_name: str = "reflexion-agent",
         system_prompt: str = REFLEXION_PROMPT,
-        model_name: str = "openai/o1",
+        model_name: str = "gpt-5.6-sol",
         max_loops: int = 3,
         memory_capacity: int = 100,
     ) -> None:
