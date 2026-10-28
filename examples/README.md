@@ -28,7 +28,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [groupchat/](multi_agent/groupchat/) | Asynchronous self-selecting group chat examples where agents independently decide whether to respond |
 | [heavy_swarm_examples/](multi_agent/heavy_swarm_examples/) | Heavy swarm implementations for complex tasks |
 | [hiearchical_swarm/](multi_agent/hiearchical_swarm/) | Hierarchical swarm structures and patterns |
-| [hscf/](multi_agent/hscf/) | Hierarchical Swarm Control Framework examples |
 | [council/llm_council/](multi_agent/council/llm_council/) | LLM Council collaboration patterns |
 | [majority_voting/](multi_agent/majority_voting/) | Majority voting and consensus examples |
 | [mar/](multi_agent/mar/) | Multi-agent rearrangement examples |
@@ -40,7 +39,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [social_algorithms_examples/](multi_agent/social_algorithms_examples/) | Social algorithm patterns and implementations |
 | [spreadsheet_examples/](multi_agent/spreadsheet_examples/) | Spreadsheet-based agent examples |
 | [swarm_router/](multi_agent/swarm_router/) | Swarm routing and routing patterns |
-| [swarmarrange/](multi_agent/swarmarrange/) | Swarm arrangement examples |
 | [swarms_api_examples/](multi_agent/swarms_api_examples/) | Swarms API integration examples |
 | [utils/](multi_agent/utils/) | Multi-agent utility functions |
 
@@ -77,21 +75,14 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [browser_use_as_tool.py](tools/browser_use_as_tool.py) | Browser automation tool |
 | [browser_use_demo.py](tools/browser_use_demo.py) | Browser automation demonstration |
 | [claude_as_a_tool.py](tools/claude_as_a_tool.py) | Claude model integration as a tool |
-| [exa_search_agent.py](tools/exa_search_agent.py) | Exa search integration |
-| [exa_search_agent_quant.py](tools/exa_search_agent_quant.py) | Exa search with quantitative analysis |
-| [exa_search_test.py](tools/exa_search_test.py) | Exa search testing examples |
+| [exa_search_agent.py](tools/exa_search/exa_search_agent.py) | Exa search integration |
+| [exa_search_agent_quant.py](tools/exa_search/exa_search_agent_quant.py) | Exa search with quantitative analysis |
+| [exa_search_test.py](tools/exa_search/exa_search_test.py) | Exa search testing examples |
 | [firecrawl_agents_example.py](tools/firecrawl_agents_example.py) | Firecrawl integration |
 | [base_tool_examples/](tools/base_tool_examples/) | Base tool implementation examples |
 | [base_tool_examples.py](tools/base_tool_examples/base_tool_examples.py) | Base tool examples |
 | [conver_funcs_to_schema.py](tools/base_tool_examples/conver_funcs_to_schema.py) | Convert functions to schema |
-| [exa_search_test.py](tools/base_tool_examples/exa_search_test.py) | Exa search test |
 | [example_usage.py](tools/base_tool_examples/example_usage.py) | Base tool usage example |
-| [schema_validation_example.py](tools/base_tool_examples/schema_validation_example.py) | Schema validation example |
-| [test_anthropic_specific.py](tools/base_tool_examples/test_anthropic_specific.py) | Anthropic-specific test |
-| [test_base_tool_comprehensive_fixed.py](tools/base_tool_examples/test_base_tool_comprehensive_fixed.py) | Comprehensive base tool test (fixed) |
-| [test_base_tool_comprehensive.py](tools/base_tool_examples/test_base_tool_comprehensive.py) | Comprehensive base tool test |
-| [test_function_calls_anthropic.py](tools/base_tool_examples/test_function_calls_anthropic.py) | Function calls test (Anthropic) |
-| [test_function_calls.py](tools/base_tool_examples/test_function_calls.py) | Function calls test |
 | [multii_tool_use/](tools/multii_tool_use/) | Multi-tool usage examples |
 | [stagehand/](tools/stagehand/) | Stagehand UI automation |
 | [1_stagehand_wrapper_agent.py](tools/stagehand/1_stagehand_wrapper_agent.py) | Stagehand wrapper agent |
@@ -358,8 +349,8 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Browser Automation](tools/browser_use_as_tool.py) | Browser control |
 | [Browser Demo](tools/browser_use_demo.py) | Browser automation demonstration |
 | [Claude as Tool](tools/claude_as_a_tool.py) | Claude model as a tool |
-| [Exa Search](tools/exa_search_agent.py) | Search integration |
-| [Exa Search Quant](tools/exa_search_agent_quant.py) | Exa search with quantitative analysis |
+| [Exa Search](tools/exa_search/exa_search_agent.py) | Search integration |
+| [Exa Search Quant](tools/exa_search/exa_search_agent_quant.py) | Exa search with quantitative analysis |
 | [Firecrawl](tools/firecrawl_agents_example.py) | Firecrawl web scraping integration |
 | [Stagehand](tools/stagehand/) | UI automation |
 | [Base Tools](tools/base_tool_examples/) | Base tool implementation examples |

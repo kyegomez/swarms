@@ -55,7 +55,6 @@ if __name__ == "__main__":
         agents=agents,
         max_loops=12,
         threshold=0.5,
-        idle_timeout=10.0,
         output_type="all",
     )
 

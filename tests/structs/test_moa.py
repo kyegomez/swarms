@@ -340,6 +340,30 @@ class TestWorkerContributions:
             for c in worker_messages
         ), "a worker echoed the task back into the shared conversation"
 
+    def test_a_reused_mixture_starts_workers_from_a_clean_memory(
+        self,
+    ):
+        from swarms import MixtureOfAgents
+
+        workers = [_scripted_agent("W1"), _scripted_agent("W2")]
+        moa = MixtureOfAgents(
+            agents=workers,
+            aggregator_agent=_scripted_agent("Agg"),
+            layers=2,
+        )
+        moa.run("FIRST-TASK-alpha")
+        moa.run("SECOND-TASK-beta")
+
+        for worker in workers:
+            request = "\n\n".join(
+                str(m["content"])
+                for m in worker.short_memory.conversation_history
+            )
+            assert (
+                "FIRST-TASK-alpha" not in request
+            ), f"{worker.agent_name} still holds the first task"
+            assert "Previous layer synthesis" in request
+
     def test_the_conversation_starts_clean(self):
         """
         Conversation used to auto-load a default-named file from disk, so

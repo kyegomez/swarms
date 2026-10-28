@@ -2,6 +2,41 @@
 
 This file teaches you how to build agents and multi-agent systems with the **Swarms** framework. Read it before writing any code in this repo.
 
+## Live documentation
+
+This file can lag the code. For current signatures and pages, query the docs MCP server or the plain-text docs:
+
+Two hosted MCP servers give an assistant live Swarms context instead of training data that may predate a rename:
+
+| Server | URL | Key | What it does |
+|---|---|---|---|
+| Docs | `https://docs.swarms.world/mcp` | none | Searches and reads the current documentation |
+| Marketplace | `https://swarms.world/mcp` | Swarms API key for calls | Searches, reads and publishes agents, prompts and tools on [swarms.world](https://swarms.world) |
+
+The whole documentation is also available as plain text at [docs.swarms.world/llms.txt](https://docs.swarms.world/llms.txt) (an index) and [docs.swarms.world/llms-full.txt](https://docs.swarms.world/llms-full.txt) (every page).
+
+Claude Code:
+
+```bash
+claude mcp add --transport http swarms-docs https://docs.swarms.world/mcp
+claude mcp add --transport http swarms-marketplace https://swarms.world/mcp \
+  --header "Authorization: Bearer $SWARMS_API_KEY"
+```
+
+Cursor, in `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "swarms-docs": { "url": "https://docs.swarms.world/mcp" },
+    "swarms-marketplace": {
+      "url": "https://swarms.world/mcp",
+      "headers": { "Authorization": "Bearer ${env:SWARMS_API_KEY}" }
+    }
+  }
+}
+```
+
 ---
 
 ## Installation & Setup
@@ -579,7 +614,7 @@ result = swarm.run("Produce a comprehensive competitive analysis of the AI chip 
 
 ### GroupChat
 
-An asynchronous, self-selecting groupchat. There are no rounds or speaker-selection functions — every agent listens in parallel and decides on its own whether to chime in. A forced `respond(score, message)` function call asks each agent how much it wants to speak (0..1); replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds.
+A turn-based groupchat with one speaker per turn. Each turn, all agents privately bid via a forced `respond(score, message)` tool call with a self-rated desire to speak (0..1) and the reply they would give. The single highest bidder whose score clears `threshold` (after subtracting `recency_penalty` for agents that spoke within `recency_window` turns) takes the floor and has its message posted. The chat ends when no agent bids above `threshold` for a turn (a conversational lull), or when `max_loops` total messages have been posted.
 
 ```python
 from swarms import Agent
@@ -614,14 +649,15 @@ realist = Agent(
 
 chat = GroupChat(
     agents=[optimist, pessimist, realist],
-    max_loops=10,        # hard cap on total messages posted
-    threshold=0.5,       # min decision score (0..1) to publish a reply
-    idle_timeout=8.0,    # seconds of silence before stopping
+    max_loops=10,         # hard cap on total messages posted
+    threshold=0.5,        # min decision score (0..1) to publish a reply
+    recency_penalty=0.3,  # penalty applied to recent speakers
+    recency_window=1,     # number of recent speakers penalized
 )
 result = chat.run("Should we adopt AI for medical diagnosis?")
 ```
 
-**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Raise `idle_timeout` if agents need time to think before replying.
+**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Adjust `recency_penalty` and `recency_window` to prevent a single agent from dominating consecutive turns and pass the floor around.
 
 ---
 
@@ -1086,6 +1122,40 @@ Every commit message, PR title and issue title you write for this repository mus
 ```
 
 Full specification: the [WARP Git Message Skill](https://swarms.world/prompt/32d1e7b4-34da-4035-bc05-d18f8e71a2f1) on the Swarms marketplace. Load it before writing a commit message, PR or issue for this repo.
+
+---
+
+## Contributing: Disclose AI authorship (required)
+
+Every commit, PR and issue that an AI agent wrote, in whole or in part, must say so. The disclosure must be accurate: name the agent and the model that actually did the work. Never leave it out, and never name a different agent or model.
+
+- **Commits:** end the message with a co-author trailer naming the model.
+  ```
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  ```
+  Other agents use the trailer they add by default, for example `Co-authored-by: Cursor <cursoragent@cursor.com>`.
+- **PRs and issues:** end the body with a line naming the agent and the model.
+  ```
+  🤖 Generated with [Claude Code](https://claude.com/claude-code) (Claude Opus 5.5)
+  ```
+- **No private links:** never add `Claude-Session:` trailers or `claude.ai/code/session_...` URLs.
+
+These markers are also what labels a PR or issue `ai-generated`, so never strip them.
+
+---
+
+## Contributing: Update the framework docs (required)
+
+The docs site lives in a separate repo, [The-Swarm-Corporation/swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs). Every change to the framework that users can see must come with a matching docs update there:
+
+- **New features:** a new class, structure, function or module gets its own page, or a section on the page it belongs to.
+- **Input parameters:** an added, removed or renamed parameter, or a changed default.
+- **Output:** a changed return value, return type or output format.
+- **Removals and renames:** delete or rename the page, and add a redirect in `docs.json` so old links still work.
+
+Open the docs PR alongside the framework PR and link each from the other. If the docs can't change until the framework PR merges, open a docs issue that links the framework PR instead, and link that issue from the framework PR. Changes users can't see, such as tests or a refactor that keeps the same API, need no docs update.
+
+The docs are a Mintlify site: pages are `.mdx` files and the navigation is in `docs.json`. Run `mint broken-links` and `mint validate` in the docs repo before opening the PR.
 
 ---
 

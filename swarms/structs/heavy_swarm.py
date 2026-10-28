@@ -1,6 +1,5 @@
 import concurrent.futures
 import json
-import os
 import traceback
 from typing import Dict, List, Optional
 
@@ -18,6 +17,7 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.heavy_swarm_dashboard import HeavySwarmDashboard
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -165,7 +165,7 @@ class HeavySwarm(SerializableMixin):
         self.question_agent_model_name = question_agent_model_name
         self.worker_model_name = worker_model_name
         self.verbose = verbose
-        self.max_workers = int(os.cpu_count() * 0.9)
+        self.max_workers = max_workers_95_percent()
         self.show_dashboard = show_dashboard
         self.agent_prints_on = agent_prints_on
         self.output_type = output_type
@@ -322,6 +322,8 @@ class HeavySwarm(SerializableMixin):
             self.dashboard.show_task_init(task)
 
         self.conversation.clear()
+        for agent in self.agents.values():
+            agent.short_memory = agent.short_memory_init()
 
         # Add initial task to conversation
         self.conversation.add(
@@ -389,7 +391,7 @@ class HeavySwarm(SerializableMixin):
                         if "error" in questions:
                             error_msg = f"Error in question generation: {questions['error']}"
                             self._log("ERROR", error_msg)
-                            return error_msg
+                            raise RuntimeError(error_msg)
 
                     except Exception as e:
                         error_msg = f"Failed to generate questions in loop {current_loop + 1}: {str(e)}"
@@ -398,7 +400,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Agent execution phase
                     try:
@@ -439,7 +441,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Synthesis phase
                     try:
@@ -488,7 +490,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Store the result for next loop context
                     last_output = final_result
@@ -506,7 +508,7 @@ class HeavySwarm(SerializableMixin):
                         "ERROR",
                         f"Traceback: {traceback.format_exc()}",
                     )
-                    return error_msg
+                    raise
 
         except Exception as e:
             error_msg = (
@@ -514,7 +516,7 @@ class HeavySwarm(SerializableMixin):
             )
             self._log("ERROR", error_msg)
             self._log("ERROR", f"Traceback: {traceback.format_exc()}")
-            return error_msg
+            raise
 
         # Final completion message
         if self.show_dashboard:

@@ -1024,3 +1024,60 @@ def test_multiple_outputs_have_independent_timestamps(temp_workspace):
     ]
     assert recorded_stamps == stamps
     assert len(set(recorded_stamps)) == 3
+
+
+def test_a_second_run_reports_only_its_own_outputs(temp_workspace):
+    """Both summaries listed both tasks: one list, appended to forever."""
+    swarm, _, _ = _recording_swarm(["a", "b"], 1, temp_workspace)
+
+    first = swarm.run("summarise Q3")
+    second = swarm.run("draft the email")
+
+    assert second["tasks_completed"] == 2
+    assert [output["task"] for output in second["outputs"]] == [
+        "draft the email",
+        "draft the email",
+    ]
+    assert [output["task"] for output in first["outputs"]] == [
+        "summarise Q3",
+        "summarise Q3",
+    ]
+
+
+def test_a_second_run_from_config_reports_only_its_own_outputs(
+    temp_workspace,
+):
+    swarm, _, _ = _recording_config_swarm(
+        {"a": "task a"}, 1, temp_workspace
+    )
+
+    swarm.run_from_config()
+    second = swarm.run_from_config()
+
+    assert second["tasks_completed"] == 1
+    assert len(second["outputs"]) == 1
+
+
+def test_each_run_gets_its_own_run_id(temp_workspace):
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=True
+    )
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["reply A", "reply B"],
+    ):
+        first = swarm.run("first task")["run_id"]
+        second = swarm.run("second task")["run_id"]
+
+    assert first != second
+    with open(swarm.save_file_path, newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert [row["Run ID"] for row in rows] == [first] * 2 + [
+        second
+    ] * 2
+    for run_id in (first, second):
+        path = os.path.join(
+            swarm.workspace.dir, f"{run_id}-metadata.json"
+        )
+        with open(path) as f:
+            assert json.load(f)["run_id"] == run_id

@@ -33,7 +33,10 @@ Run:
 
 import gzip
 import json
+import logging
 import os
+import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -553,6 +556,51 @@ class TestSpanHandle:
 # ===========================================================================
 # capture_run — input / output / auto error capture
 # ===========================================================================
+class TestExportSchedule:
+    """Spans leave during the run, on a connection opened at setup."""
+
+    def _telemetry(self, monkeypatch):
+        monkeypatch.setenv("SWARMS_TELEMETRY_ON", "true")
+        return otel.SwarmTelemetry()
+
+    def test_the_batch_processor_exports_every_half_second(
+        self, monkeypatch
+    ):
+        from opentelemetry.sdk.trace import export as export_module
+
+        seen = {}
+
+        class Recording(export_module.BatchSpanProcessor):
+            def __init__(self, exporter, **kwargs):
+                seen.update(kwargs)
+                super().__init__(exporter, **kwargs)
+
+        monkeypatch.setattr(
+            export_module, "BatchSpanProcessor", Recording
+        )
+        telem = self._telemetry(monkeypatch)
+        assert telem.ready
+        assert seen["schedule_delay_millis"] == otel.EXPORT_DELAY_MS
+        assert otel.EXPORT_DELAY_MS == 500
+        telem._provider.shutdown()
+
+    def test_the_collector_connection_is_opened_at_setup(
+        self, monkeypatch
+    ):
+        from swarms.telemetry import compression
+
+        calls = []
+        monkeypatch.setattr(
+            compression.CompressingSession,
+            "head",
+            lambda self, url, **kwargs: calls.append((url, kwargs)),
+        )
+        telem = self._telemetry(monkeypatch)
+        telem._warm_thread.join(5)
+        assert calls == [(otel.TELEMETRY_BASE_URL, {"timeout": 8})]
+        telem._provider.shutdown()
+
+
 class TestCaptureRun:
     def test_captures_inputs(self, spans):
         with capture_run(
@@ -913,15 +961,13 @@ class TestAgentUsageAndModelCalls:
     def test_failed_model_calls_are_error_spans_with_their_request(
         self, spans
     ):
-        """Every failed attempt is an error span that still records what was sent."""
-        agent = self._agent(
-            "Call-Bad", raise_exc=True, retry_attempts=2
-        )
+        """A failed call is an error span that still records what was sent."""
+        agent = self._agent("Call-Bad", raise_exc=True)
         with pytest.raises(AgentLLMError):
             agent.run("doomed task")
 
         calls = _all_by_name(spans, "Agent.llm_call")
-        assert len(calls) == 2
+        assert len(calls) == 1
         for call in calls:
             a = _attrs(call)
             assert call.status.status_code.name == "ERROR"
@@ -1132,6 +1178,21 @@ class TestDisabledPath:
         telem.capture_init(object())
         telem.capture_error(ValueError("z"), None)  # all no-ops
 
+    def test_trace_run_leaves_methods_undecorated(self):
+        probe = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "from swarms.structs.agent import Agent;"
+                "print(hasattr(Agent.run, '__wrapped__'))",
+            ],
+            env={**os.environ, "SWARMS_TELEMETRY_ON": "False"},
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert probe.stdout.strip().splitlines()[-1] == "False"
+
 
 # ===========================================================================
 # Integration — instrumentation on real structures
@@ -1164,6 +1225,7 @@ def _load_arch_classes():
     from swarms.structs.debate_with_judge import DebateWithJudge
     from swarms.structs.llm_council import LLMCouncil
     from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
+    from swarms.structs.auto_agent_builder import AutoAgentBuilder
 
     return {
         "Agent": Agent,
@@ -1188,6 +1250,7 @@ def _load_arch_classes():
         "SelfMoASeq": SelfMoASeq,
         "SpreadSheetSwarm": SpreadSheetSwarm,
         "AutoSwarmBuilder": AutoSwarmBuilder,
+        "AutoAgentBuilder": AutoAgentBuilder,
         "SocialAlgorithms": SocialAlgorithms,
     }
 
@@ -1257,6 +1320,12 @@ class TestConstructionEmitsInitSpan:
 
         MajorityVoting(agents=[_agent()])
         assert _by_name(spans, "MajorityVoting.init") is not None
+
+    def test_auto_agent_builder(self, spans):
+        from swarms.structs.auto_agent_builder import AutoAgentBuilder
+
+        AutoAgentBuilder()
+        assert _by_name(spans, "AutoAgentBuilder.init") is not None
 
 
 # ===========================================================================
@@ -1357,12 +1426,7 @@ class TestRealLLMRuns:
         assert a["swarms.output"].strip()
 
     def test_agent_run_error_is_logged(self, spans):
-        """A real run against a bad model logs an error span.
-
-        The Agent's retry loop swallows LLM errors (it does not re-raise), so
-        the error is captured via ``capture_error`` as an ``Agent.llm_error``
-        span rather than as a raised exception on ``Agent.run``.
-        """
+        """A real run against a bad model logs an Agent.llm_error span."""
         from swarms import Agent
 
         agent = Agent(
@@ -1374,7 +1438,6 @@ class TestRealLLMRuns:
             print_on=False,
             verbose=False,
         )
-        # Does not necessarily raise — the agent swallows the LLM error.
         try:
             agent.run(task="hi")
         except Exception:
@@ -1658,6 +1721,30 @@ class TestBrokenBackendNeverBreaksRun:
         with capture_run("BadExport.run", None) as h:
             h.record_output("still fine")
         assert _by_name_all(spans, "BadExport.run")
+
+    def test_a_raising_export_logs_nothing(
+        self, spans, monkeypatch, caplog
+    ):
+        def broken_export(self, spans_):
+            raise OSError("Could not find a suitable TLS CA bundle")
+
+        monkeypatch.setattr(
+            "opentelemetry.exporter.otlp.proto.http.trace_exporter"
+            ".OTLPSpanExporter.export",
+            broken_export,
+        )
+        agent = fake_agent("Quiet-Export", reply="ok")
+
+        with caplog.at_level(logging.WARNING):
+            assert agent.run(task="hi") == "ok"
+            assert otel.swarm_telemetry()._provider.force_flush()
+
+        otel_records = [
+            record.getMessage()
+            for record in caplog.records
+            if record.name.startswith("opentelemetry")
+        ]
+        assert otel_records == []
 
     def test_tracer_start_span_raises_does_not_break_run(
         self, spans, monkeypatch
