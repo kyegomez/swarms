@@ -2649,6 +2649,33 @@ class TestIntegerLoopRequest:
             expected,
         ]
 
+    def test_compression_in_one_sample_keeps_the_shared_prefix(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(
+            monkeypatch, agent, ["earlier answer", "one", "two"]
+        )
+
+        class Compressor:
+            def maybe_compress(self, agent):
+                if len(sent) != 1:
+                    return None
+                agent.short_memory.compact(
+                    summary="SUMMARY", summary_role="user"
+                )
+                return "SUMMARY"
+
+        agent.run("earlier task")
+        agent._context_compressor = Compressor()
+        agent.run("task", n=2)
+
+        assert sent[2][1] == [
+            {"role": "user", "content": "earlier task"},
+            {"role": "assistant", "content": "earlier answer"},
+            {"role": "user", "content": "task"},
+        ]
+
     def test_samples_store_the_callers_messages_once(
         self, monkeypatch
     ):

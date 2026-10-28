@@ -954,7 +954,7 @@ class Agent:
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
-        stored_messages: Optional[List[List[Dict[str, Any]]]] = None,
+        prefix: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -1021,10 +1021,9 @@ class Agent:
             streaming_callback (Optional[Callable[[str], None]]): Optional callback function
                 to receive streaming tokens in real-time. Useful for dashboard integration
                 or real-time UI updates. Defaults to None.
-            stored_messages (Optional[List[List[Dict[str, Any]]]]): Shared by the n
-                samples of one run. The first sample appends the rows its request
-                sends ahead of the task, and later samples send those rows instead
-                of the history, so no sample sees another sample's turns.
+            prefix (Optional[List[Dict[str, Any]]]): Rows every sample of one
+                run sends ahead of its own turns, captured by ``run`` before the
+                first sample starts so no sample sees another sample's turns.
             *args: Additional positional arguments passed to LLM calls. Used for extensibility.
             **kwargs: Additional keyword arguments passed to LLM calls. Used for extensibility.
 
@@ -1071,15 +1070,13 @@ class Agent:
         """
         history_start = len(self.short_memory.conversation_history)
         try:
-            later_sample = bool(stored_messages)
-            if messages and not later_sample:
+            if messages and prefix is None:
                 self.short_memory.add_messages(messages)
 
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.check_model_supports_utilities(img=img)
 
-            task_index = len(self.short_memory.conversation_history)
             self.short_memory.add(role=self.user_name, content=task)
 
             if self.plan_enabled is True:
@@ -1091,17 +1088,10 @@ class Agent:
             # A caller's messages stand in for the earlier history.
             request_start = (
                 history_start
-                if messages is not None or later_sample
+                if messages is not None or prefix is not None
                 else 0
             )
-
-            if stored_messages is not None and not later_sample:
-                stored_messages.append(
-                    self.short_memory.conversation_history[
-                        request_start:task_index
-                    ]
-                )
-            prefix = stored_messages[0] if later_sample else ()
+            prefix = prefix or ()
 
             # Clear the short memory
             response = None
@@ -1125,15 +1115,6 @@ class Agent:
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
                     prefix = ()
-                    if (
-                        stored_messages is not None
-                        and not later_sample
-                    ):
-                        stored_messages[:] = [
-                            list(
-                                self.short_memory.conversation_history
-                            )
-                        ]
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
@@ -2676,7 +2657,16 @@ Subtask Breakdown:
                 **kwargs,
             )
         if n > 1:
-            stored_messages = []
+            history_start = len(
+                self.short_memory.conversation_history
+            )
+            if messages:
+                self.short_memory.add_messages(messages)
+            prefix = list(
+                self.short_memory.conversation_history[
+                    0 if messages is None else history_start :
+                ]
+            )
             return [
                 self._run(
                     task=task,
@@ -2685,7 +2675,7 @@ Subtask Breakdown:
                     streaming_callback=streaming_callback,
                     messages=messages,
                     *args,
-                    stored_messages=stored_messages,
+                    prefix=prefix,
                     **kwargs,
                 )
                 for _ in range(n)
