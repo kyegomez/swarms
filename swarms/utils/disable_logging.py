@@ -3,12 +3,6 @@ import os
 import warnings
 
 
-class _WorkspaceFileHandler(logging.FileHandler):
-    def _open(self):
-        os.makedirs(os.path.dirname(self.baseFilename), exist_ok=True)
-        return super()._open()
-
-
 def set_logger_level(logger_name: str) -> None:
     """
     Sets the logging level for a specific logger to CRITICAL.
@@ -22,7 +16,7 @@ def set_logger_level(logger_name: str) -> None:
 
 def disable_logging():
     """
-    Disables logging for specific modules and sets up file and stream handlers.
+    Disables logging for specific modules and sets up a stream handler.
     Runs in a separate thread to avoid blocking the main thread.
     """
     warnings.filterwarnings("ignore", category=UserWarning)
@@ -58,16 +52,6 @@ def disable_logging():
 
     # Remove all existing handlers
     logging.getLogger().handlers = []
-
-    # Get the workspace directory from the environment variables
-    workspace_dir = os.getenv("WORKSPACE_DIR") or "agent_workspace"
-
-    # Create a file handler to log errors to the file
-    file_handler = _WorkspaceFileHandler(
-        os.path.join(workspace_dir, "error.txt"), delay=True
-    )
-    file_handler.setLevel(logging.ERROR)
-    logging.getLogger().addHandler(file_handler)
 
     # Create a stream handler to log errors to the terminal
     stream_handler = logging.StreamHandler()

@@ -230,6 +230,16 @@ class WorkspaceManager:
                 )
                 return None
 
+            try:
+                os.makedirs(workspace_dir, exist_ok=True)
+            except OSError as e:
+                del os.environ["WORKSPACE_DIR"]
+                if ensure_workspace_env() == workspace_dir:
+                    raise
+                logger.warning(
+                    f"Unusable WORKSPACE_DIR, using the default: {e}"
+                )
+                return self._setup()
             stamp = (
                 datetime.now().strftime("%Y%m%d_%H%M%S")
                 if self.use_timestamp
@@ -244,17 +254,7 @@ class WorkspaceManager:
                     sanitize_name(self.class_name),
                     f"{sanitize_name(self.name)}-{stamp}",
                 )
-            try:
-                os.makedirs(path, exist_ok=True)
-            except OSError as e:
-                del os.environ["WORKSPACE_DIR"]
-                if ensure_workspace_env() == workspace_dir:
-                    raise
-                logger.warning(
-                    f"WORKSPACE_DIR={workspace_dir!r} could not be "
-                    f"created ({e}); falling back to the default"
-                )
-                return self._setup()
+            os.makedirs(path, exist_ok=True)
 
             if self.verbose:
                 logger.info(f"Autosave enabled, writing to: {path}")
