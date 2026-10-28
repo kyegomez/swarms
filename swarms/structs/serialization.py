@@ -132,6 +132,12 @@ class SerializableMixin:
         the exclusion list. Each attribute is processed to maximize
         JSON compatibility and introspectability.
 
+        Args:
+            strict (bool): Raise TypeError instead of returning a
+                placeholder. Applies to this object's own attributes
+                and nested SerializableMixin values only, not to what
+                another object's own to_dict() returns.
+
         Returns:
             Dict[str, Any]: The serialized dictionary representation.
         """
