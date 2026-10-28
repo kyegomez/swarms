@@ -34,6 +34,10 @@ class TransformResult:
     was_compressed: bool
 
 
+def _is_system(message: Dict[str, Any]) -> bool:
+    return str(message.get("role", "")).lower() == "system"
+
+
 class MessageTransforms:
     """
     Handles message transformations for context size management.
@@ -158,7 +162,7 @@ class MessageTransforms:
         other_messages = []
 
         for msg in messages:
-            if msg.get("role") == "system":
+            if _is_system(msg):
                 system_messages.append(msg)
             else:
                 other_messages.append(msg)
@@ -299,26 +303,20 @@ class MessageTransforms:
             middle_index = len(current_messages) // 2
 
             # Try to avoid removing system messages
-            if current_messages[middle_index].get("role") == "system":
+            if _is_system(current_messages[middle_index]):
                 # Look for a non-system message near the middle
                 for offset in range(
                     1, len(current_messages) // 4 + 1
                 ):
-                    if (
-                        middle_index - offset >= 0
-                        and current_messages[
-                            middle_index - offset
-                        ].get("role")
-                        != "system"
+                    if middle_index - offset >= 0 and not _is_system(
+                        current_messages[middle_index - offset]
                     ):
                         middle_index = middle_index - offset
                         break
-                    if (
-                        middle_index + offset < len(current_messages)
-                        and current_messages[
-                            middle_index + offset
-                        ].get("role")
-                        != "system"
+                    if middle_index + offset < len(
+                        current_messages
+                    ) and not _is_system(
+                        current_messages[middle_index + offset]
                     ):
                         middle_index = middle_index + offset
                         break
