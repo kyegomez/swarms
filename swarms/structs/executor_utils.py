@@ -7,14 +7,12 @@ class ReusableExecutorMixin:
     _executor: Optional[ContextThreadPoolExecutor] = None
     _executor_workers: int = 0
 
-    def _get_executor(
-        self, max_workers: int
-    ) -> ContextThreadPoolExecutor:
+    def _get_executor(self, size: int) -> ContextThreadPoolExecutor:
         executor = self._executor
-        if executor is None or max_workers > self._executor_workers:
-            executor = ContextThreadPoolExecutor(max_workers)
+        if executor is None or size > self._executor_workers:
+            executor = ContextThreadPoolExecutor(size)
             self._executor = executor
-            self._executor_workers = max_workers
+            self._executor_workers = size
         return executor
 
     def close(self) -> None:

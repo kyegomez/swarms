@@ -2328,7 +2328,6 @@ class GraphWorkflow(ReusableExecutorMixin):
                             node_id, agent_name, node_type, output
                         )
                     else:
-                        # Parallel layer: dispatch onto the run-wide pool.
                         pool = self._get_executor(pool_size)
                         future_to_data = {}
 
