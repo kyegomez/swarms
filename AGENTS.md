@@ -37,6 +37,7 @@ print(agent.run("Summarise the current state of LLM research."))
 - Commit, PR and issue titles use WARP: `[TYPE][Function/FileName][Short description]`.
 - Disclose AI authorship: a co-author trailer on commits and a "Generated with" line naming the agent and model on PRs and issues.
 - Format with `black --line-length 70` and lint with `ruff check .`.
+- Removing unused code (a method, parameter, attribute or line) needs no new unit test. Delete the tests that only exercised it and run the module's existing tests.
 - User-visible changes need a matching PR in [swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs).
 
 `CLAUDE.md` has the full contribution rules.
