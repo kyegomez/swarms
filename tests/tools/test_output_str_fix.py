@@ -108,9 +108,9 @@ def test_agent_integration():
         )
 
         # This should not raise an error anymore
-        agent.handle_tool_schema_ops()
+        agent.tool_manager.handle_tool_schema_ops()
         print(
-            "✓ Agent.handle_tool_schema_ops() completed successfully"
+            "✓ ToolManager.handle_tool_schema_ops() completed successfully"
         )
 
     except Exception as e:
@@ -157,6 +157,30 @@ def test_function_name_is_the_model_name():
     props = result["functions"][0]["parameters"]["properties"]
     assert props["city"]["description"] == "The city to look up."
     assert props["units"]["description"] == "Temperature units."
+
+
+def test_a_field_named_title_survives_next_to_a_field_named_type():
+    from typing import List
+
+    class Ticket(BaseModel):
+        title: str
+        type: str
+        body: str
+
+    class Board(BaseModel):
+        tickets: List[Ticket]
+
+    ticket = base_model_to_openai_function(Ticket)["functions"][0][
+        "parameters"
+    ]
+    board = base_model_to_openai_function(Board)["functions"][0][
+        "parameters"
+    ]
+
+    for schema in (ticket, board["$defs"]["Ticket"]):
+        assert list(schema["properties"]) == ["title", "type", "body"]
+        assert "title" not in schema["properties"]["title"]
+    assert "title" not in ticket
 
 
 if __name__ == "__main__":

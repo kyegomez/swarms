@@ -7,6 +7,14 @@ description: Build agents and multi-agent systems with the Swarms framework — 
 
 Swarms is a multi-agent orchestration framework. Everything is built from one primitive — `Agent` — which multi-agent structures compose. This document is verified against **swarms v14.0.0**.
 
+## Live documentation
+
+This skill can lag the library. When a signature here disagrees with the installed version, check the current docs:
+
+- Docs MCP server, no key: `https://docs.swarms.world/mcp` (`claude mcp add --transport http swarms-docs https://docs.swarms.world/mcp`)
+- Marketplace MCP server, Swarms API key for calls: `https://swarms.world/mcp`
+- Plain-text docs: [llms.txt](https://docs.swarms.world/llms.txt) (index), [llms-full.txt](https://docs.swarms.world/llms-full.txt) (every page)
+
 ## Golden rules
 
 1. **Import from the top level**: `from swarms import Agent`, never `from swarms.structs.agent import Agent`. The one common exception is `PlannerWorkerSwarm` (see below).
@@ -81,7 +89,7 @@ result = agent.run("Summarize the state of the semiconductor market.")
 | `mode` | `str` | `"standard"` | `"standard"`, `"fast"`, `"interactive"` |
 | `fallback_models` | `list[str]` | `None` | Models to try if the primary fails |
 
-**`output_type` options**: `"str"`, `"list"`, `"dict"`, `"json"`, `"yaml"`, `"xml"`, `"final"`, `"last"`, `"all"`, `"basemodel"`, `"str-all-except-first"`, `"dict-all-except-first"`, `"dict-final"`, `"list-final"`.
+**`output_type` options**: `"str"`, `"list"`, `"dict"`, `"json"`, `"yaml"`, `"final"`, `"last"`, `"all"`, `"str-all-except-first"`, `"dict-all-except-first"`, `"dict-final"`, `"list-final"`.
 
 ### Running
 
@@ -93,7 +101,7 @@ agent.run(task="...", n=3)                     # 3 independent samples
 await agent.arun("...")                        # async
 ```
 
-`Agent.run` signature: `run(task=None, img=None, imgs=None, correct_answer=None, streaming_callback=None, n=1)`.
+`Agent.run` signature: `run(task=None, img=None, imgs=None, streaming_callback=None, n=1, messages=None)`.
 
 ### Streaming
 
@@ -422,7 +430,7 @@ Also: `agent_as_judge=True`, `max_agent_retries`, `max_reassignment_attempts`, `
 
 ## GroupChat
 
-Asynchronous and self-selecting — no rounds, no speaker-selection function. Every agent scores how much it wants to speak (0–1); replies above `threshold` are broadcast. Ends at `max_loops` messages or after `idle_timeout` seconds of silence.
+Asynchronous and self-selecting — no rounds, no speaker-selection function. Every agent scores how much it wants to speak (0–1); replies above `threshold` are broadcast. Ends at `max_loops` messages or when no reply clears `threshold`.
 
 ```python
 from swarms import Agent, GroupChat
@@ -432,7 +440,6 @@ chat = GroupChat(
     max_loops=10,
     threshold=0.5,           # raise for a more selective room
     recency_penalty=0.3,     # discourages one agent dominating
-    idle_timeout=8.0,
 )
 chat.run("Should we adopt AI for medical diagnosis?")
 ```

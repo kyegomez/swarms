@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from litellm import traceback
+import traceback
 from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -34,9 +34,6 @@ from rich.table import Table
 from swarms.agents.auto_chat_agent import auto_chat_agent
 from swarms.agents.auto_generate_swarm_config import (
     generate_swarm_config,
-)
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
 )
 from swarms.cli.utils import (
     COLORS,
@@ -56,6 +53,9 @@ from swarms.structs.llm_council import LLMCouncil
 from swarms.utils.formatter import formatter
 
 load_swarms_env()
+
+
+DEFAULT_HEAVY_SWARM_MODEL: str = "gpt-5.4"
 
 
 # Single source of truth: argparse validates against it and main() suggests the closest match.
@@ -164,7 +164,7 @@ def run_autoswarm(
 
             console.print("[white]Running swarm...[/white]")
             yaml_string = yaml.dump(config, default_flow_style=False)
-            create_agents_from_yaml(
+            AgentLoader().load_agents_from_yaml(
                 yaml_string=yaml_string,
                 return_type="run_swarm",
             )
@@ -252,14 +252,9 @@ def load_markdown_agents(
                 description="Loading agents from markdown...",
             )
 
-            if os.path.isdir(file_path):
-                agents = loader.load_multiple_agents(
-                    file_path, concurrent=concurrent, **kwargs
-                )
-            else:
-                agents = [
-                    loader.load_single_agent(file_path, **kwargs)
-                ]
+            agents = loader.load_agents_from_markdown(
+                file_path, concurrent=concurrent, **kwargs
+            )
 
             # Update progress on completion
             progress.update(
@@ -340,8 +335,8 @@ def load_markdown_agents(
 def run_heavy_swarm(
     task: str,
     loops_per_agent: int = 1,
-    question_agent_model_name: str = "gpt-5.4",
-    worker_model_name: str = "gpt-5.4",
+    question_agent_model_name: str = DEFAULT_HEAVY_SWARM_MODEL,
+    worker_model_name: str = DEFAULT_HEAVY_SWARM_MODEL,
     random_loops_per_agent: bool = False,
     verbose: bool = False,
 ) -> Optional[Any]:
@@ -500,7 +495,7 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
             )
 
             # Run the council
-            result = council.run(query=task)
+            result = council.run(task=task)
 
             # Update progress on completion
             progress.update(
@@ -854,11 +849,11 @@ class CustomHelpAction(argparse.Action):
             ),
             (
                 "--question-agent-model-name MODEL",
-                "Model for question generation agent (default: gpt-4o-mini)",
+                f"Model for question generation agent (default: {DEFAULT_HEAVY_SWARM_MODEL})",
             ),
             (
                 "--worker-model-name MODEL",
-                "Model for worker agents (default: gpt-4o-mini)",
+                f"Model for worker agents (default: {DEFAULT_HEAVY_SWARM_MODEL})",
             ),
             ("--context-length N", "Context length for the agent"),
             ("--retry-attempts N", "Number of retry attempts"),
@@ -1128,14 +1123,14 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--question-agent-model-name",
         type=str,
-        default="gpt-5.4",
-        help="Model name for question generation agent (default: gpt-4o-mini)",
+        default=DEFAULT_HEAVY_SWARM_MODEL,
+        help=f"Model name for question generation agent (default: {DEFAULT_HEAVY_SWARM_MODEL})",
     )
     parser.add_argument(
         "--worker-model-name",
         type=str,
-        default="gpt-5.4",
-        help="Model name for specialized worker agents (default: gpt-4o-mini)",
+        default=DEFAULT_HEAVY_SWARM_MODEL,
+        help=f"Model name for specialized worker agents (default: {DEFAULT_HEAVY_SWARM_MODEL})",
     )
     parser.add_argument(
         "--random-loops-per-agent",
@@ -1295,7 +1290,7 @@ def handle_run_agents(args: argparse.Namespace) -> None:
                 init_task,
                 description="Creating agents...",
             )
-            result = create_agents_from_yaml(
+            result = AgentLoader().load_agents_from_yaml(
                 yaml_file=args.yaml_file,
                 return_type="run_swarm",
             )
@@ -2310,7 +2305,7 @@ def main() -> None:
                 f"Available commands: {', '.join(COMMAND_CHOICES)}{hint}\n"
                 f"Run [bold white]swarms --help[/bold white] for full usage.",
             )
-            return
+            sys.exit(2)
 
         parser = setup_argument_parser()
         args = parser.parse_args()

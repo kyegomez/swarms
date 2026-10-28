@@ -1,11 +1,16 @@
+import copy
 from concurrent.futures import as_completed
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from swarms.structs.execution_utils import (
     batched_run,
     run_concurrently,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -129,6 +134,7 @@ class MajorityVoting:
         consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
         consensus_agent_model_name: str = "gpt-5.4",
         additional_consensus_agent_kwargs: dict = {},
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -149,8 +155,12 @@ class MajorityVoting:
         self.output_type = output_type
         self.consensus_agent_prompt = consensus_agent_prompt
 
+        self.channel = channel
         self.conversation = Conversation(
-            time_enabled=False, *args, **kwargs
+            time_enabled=False,
+            channel=channel,
+            *args,
+            **kwargs,
         )
 
         self.consensus_agent = default_consensus_agent(
@@ -162,6 +172,11 @@ class MajorityVoting:
         )
 
         self.reliability_check()
+        claim_agents(
+            [*(self.agents or []), self.consensus_agent],
+            channel,
+            self.name,
+        )
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -254,7 +269,9 @@ class MajorityVoting:
         """
 
         # A reused instance would otherwise carry the previous task's votes
-        self.conversation = Conversation(time_enabled=False)
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
 
         self.conversation.add(
             role="user",
@@ -314,7 +331,7 @@ class MajorityVoting:
                 content=consensus_output,
             )
 
-        self.workspace.save_conversation()
+        self.workspace.save_conversation(self.conversation)
 
         return history_output_formatter(
             conversation=self.conversation,
@@ -337,11 +354,21 @@ class MajorityVoting:
         """
         return batched_run(self.run, tasks, *args, **kwargs)
 
+    def _clone_for_task(self) -> "MajorityVoting":
+        """Build a copy of this system for one concurrent task.
+
+        ``run`` replaces ``self.conversation`` and every voter writes into
+        it, so one instance cannot serve several threads. The copy shares
+        the agents, as the instance already did; ``run`` gives it its own
+        Conversation.
+        """
+        return copy.copy(self)
+
     def run_concurrently(
         self, tasks: List[str], *args, **kwargs
-    ) -> List[Any]:
+    ) -> Union[List[Any], Dict[Any, Any]]:
         """
-        Runs the majority voting system concurrently.
+        Runs the majority voting system concurrently, each task on its own clone.
 
         Args:
             tasks (List[str]): List of tasks to be performed by the agents.
@@ -351,4 +378,11 @@ class MajorityVoting:
         Returns:
             List[Any]: List of majority votes for each task.
         """
-        return run_concurrently(self.run, tasks, *args, **kwargs)
+        return run_concurrently(
+            lambda task, *a, **kw: self._clone_for_task().run(
+                task, *a, **kw
+            ),
+            tasks,
+            *args,
+            **kwargs,
+        )

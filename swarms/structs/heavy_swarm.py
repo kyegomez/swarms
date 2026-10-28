@@ -1,6 +1,5 @@
 import concurrent.futures
 import json
-import os
 import traceback
 from typing import Dict, List, Optional
 
@@ -10,6 +9,7 @@ from swarms.agents.heavy_swarm_agents import (
 )
 from swarms.prompts.heavy_swarm_prompts import (
     grok_heavy_schema,
+    grok_schema,
     schema,
 )
 from swarms.structs.context_utils import messages_for
@@ -17,11 +17,12 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.heavy_swarm_dashboard import HeavySwarmDashboard
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
@@ -73,6 +74,9 @@ class HeavySwarm(SerializableMixin):
             max_loops (int): Maximum number of execution loops for iterative refinement
             conversation (Conversation): Conversation history tracker
             console (Console): Rich console for dashboard output
+            usage (dict): Provider token usage summed over question
+                generation and every worker and synthesis agent. See
+                :attr:`usage`.
 
         Example:
             >>> swarm = HeavySwarm(
@@ -161,7 +165,7 @@ class HeavySwarm(SerializableMixin):
         self.question_agent_model_name = question_agent_model_name
         self.worker_model_name = worker_model_name
         self.verbose = verbose
-        self.max_workers = int(os.cpu_count() * 0.9)
+        self.max_workers = max_workers_95_percent()
         self.show_dashboard = show_dashboard
         self.agent_prints_on = agent_prints_on
         self.output_type = output_type
@@ -173,6 +177,7 @@ class HeavySwarm(SerializableMixin):
             time_enabled=True, message_id_on=True
         )
         self.dashboard = HeavySwarmDashboard()
+        self._question_usage = empty_usage()
 
         self.agents = self.create_agents()
 
@@ -317,6 +322,8 @@ class HeavySwarm(SerializableMixin):
             self.dashboard.show_task_init(task)
 
         self.conversation.clear()
+        for agent in self.agents.values():
+            agent.short_memory = agent.short_memory_init()
 
         # Add initial task to conversation
         self.conversation.add(
@@ -364,14 +371,14 @@ class HeavySwarm(SerializableMixin):
                                 start()
                                 questions = (
                                     self.execute_question_generation(
-                                        loop_task
+                                        loop_task, img=img
                                     )
                                 )
                                 finish()
                         else:
                             questions = (
                                 self.execute_question_generation(
-                                    loop_task
+                                    loop_task, img=img
                                 )
                             )
 
@@ -384,7 +391,7 @@ class HeavySwarm(SerializableMixin):
                         if "error" in questions:
                             error_msg = f"Error in question generation: {questions['error']}"
                             self._log("ERROR", error_msg)
-                            return error_msg
+                            raise RuntimeError(error_msg)
 
                     except Exception as e:
                         error_msg = f"Failed to generate questions in loop {current_loop + 1}: {str(e)}"
@@ -393,7 +400,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Agent execution phase
                     try:
@@ -434,7 +441,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Synthesis phase
                     try:
@@ -483,7 +490,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Store the result for next loop context
                     last_output = final_result
@@ -501,7 +508,7 @@ class HeavySwarm(SerializableMixin):
                         "ERROR",
                         f"Traceback: {traceback.format_exc()}",
                     )
-                    return error_msg
+                    raise
 
         except Exception as e:
             error_msg = (
@@ -509,7 +516,7 @@ class HeavySwarm(SerializableMixin):
             )
             self._log("ERROR", error_msg)
             self._log("ERROR", f"Traceback: {traceback.format_exc()}")
-            return error_msg
+            raise
 
         # Final completion message
         if self.show_dashboard:
@@ -521,6 +528,45 @@ class HeavySwarm(SerializableMixin):
             conversation=self.conversation,
             type=self.output_type,
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over everything this swarm has run.
+
+        Adds the question-generation calls, which go through a bare
+        ``LiteLLM`` rather than an ``Agent``, to :attr:`Agent.usage` for every
+        distinct agent in ``self.agents``: the workers plus the synthesis agent
+        or captain, whichever the variant builds. Keys: ``input_tokens``,
+        ``output_tokens``, ``cached_tokens``, ``reasoning_tokens``,
+        ``total_tokens``.
+
+        The value grows across ``run()`` calls and across ``max_loops``.
+        Streamed calls count once their stream has been consumed, the same
+        rule as :attr:`Agent.usage`.
+
+        Returns:
+            dict: A new usage dict; mutating it does not affect the swarm.
+        """
+        total = dict(self._question_usage)
+        agents = {}
+        for agent in (self.agents or {}).values():
+            if isinstance(getattr(agent, "usage", None), dict):
+                agents.setdefault(id(agent), agent)
+        for agent in agents.values():
+            for key, value in agent.usage.items():
+                if key in total:
+                    total[key] += value
+        return total
+
+    def _add_question_usage(self, call_usage: dict) -> None:
+        """Fold one question-generation call's usage into the swarm total.
+
+        Args:
+            call_usage (dict): The per-call usage ``LiteLLM`` passes to its
+                ``usage_hook``.
+        """
+        for key in self._question_usage:
+            self._question_usage[key] += call_usage.get(key, 0)
 
     def create_agents(self):
         """Build the swarm's agents.
@@ -1295,13 +1341,16 @@ class HeavySwarm(SerializableMixin):
             }
 
     def execute_question_generation(
-        self, task: str
+        self, task: str, img: Optional[str] = None
     ) -> Dict[str, str]:
         """
         Execute the question generation using the schema with a language model.
 
         Args:
             task (str): The main task to analyze
+            img (Optional[str]): Image accompanying the task. The decomposer
+                writes the questions every worker then answers, so without it
+                a visual task is decomposed from the sentence alone.
 
         Returns:
             Dict[str, str]: Generated questions for each agent role with parsed data
@@ -1342,6 +1391,26 @@ class HeavySwarm(SerializableMixin):
             active_schema = grok_heavy_schema
         elif self.variant == "medium":
             prompt = f"""
+        System: Grok task decomposer. Generate 3 non-overlapping domain-specific questions via function tool.
+
+        Specialists:
+        - Harper (Creative Writing & Storytelling): narrative framing, metaphors, human storytelling angles
+        - Benjamin (Data, Finance & Economics): quantitative data, financial modeling, economic implications
+        - Lucas (Coding, Programming & Technical): technical implementation, algorithms, systems architecture
+
+        Requirements:
+        - Each question ≤40 words, domain-specific, action-oriented
+        - No duplication across specialists
+        - Ambiguity notes only in "thinking" field (≤60 words)
+        - Each question must leverage the specialist's unique domain expertise
+
+        Task: {task}
+
+        Use generate_grok_questions function only.
+        """
+            active_schema = grok_schema
+        else:
+            prompt = f"""
         System: Technical task analyzer. Generate 4 non-overlapping analytical questions via function tool.
 
         Roles:
@@ -1362,6 +1431,14 @@ class HeavySwarm(SerializableMixin):
         """
             active_schema = schema
 
+        # Named so the decomposer treats the image as part of the task
+        # rather than guessing at what the sentence refers to.
+        if img:
+            prompt += (
+                "\n        An image accompanies this task. Read it and write "
+                "the questions from what it actually shows.\n"
+            )
+
         max_tokens = 5000 if self.variant == "heavy" else 3000
 
         question_agent = LiteLLM(
@@ -1369,15 +1446,13 @@ class HeavySwarm(SerializableMixin):
             model=self.question_agent_model_name,
             tools_list_dictionary=active_schema,
             max_tokens=max_tokens,
-            temperature=0.7,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
+            top_p=None,  # Anthropic rejects temperature and top_p together
             tool_choice="auto",
+            usage_hook=self._add_question_usage,
         )
 
         # Get raw tool calls from LiteLLM
-        raw_output = question_agent.run(task)
+        raw_output = question_agent.run(task, img=img)
 
         # Parse the tool calls and return clean data
         out = self._parse_tool_calls(raw_output)
@@ -1389,7 +1464,9 @@ class HeavySwarm(SerializableMixin):
 
         return out
 
-    def get_questions_only(self, task: str) -> Dict[str, str]:
+    def get_questions_only(
+        self, task: str, img: Optional[str] = None
+    ) -> Dict[str, str]:
         """
         Generate and extract only the specialized questions without metadata or execution.
 
@@ -1421,7 +1498,7 @@ class HeavySwarm(SerializableMixin):
             >>> questions = swarm.get_questions_only("Analyze market trends for EVs")
             >>> print(questions['research_question'])
         """
-        result = self.execute_question_generation(task)
+        result = self.execute_question_generation(task, img=img)
 
         if "error" in result:
             return {"error": result["error"]}
@@ -1469,7 +1546,9 @@ class HeavySwarm(SerializableMixin):
             ),
         }
 
-    def get_questions_as_list(self, task: str) -> List[str]:
+    def get_questions_as_list(
+        self, task: str, img: Optional[str] = None
+    ) -> List[str]:
         """
         Generate specialized questions and return them as an ordered list.
 
@@ -1507,7 +1586,7 @@ class HeavySwarm(SerializableMixin):
             This method internally calls get_questions_only() and converts the dictionary
             to a list format, maintaining the standard agent order.
         """
-        questions = self.get_questions_only(task)
+        questions = self.get_questions_only(task, img=img)
 
         if "error" in questions:
             return [f"Error: {questions['error']}"]

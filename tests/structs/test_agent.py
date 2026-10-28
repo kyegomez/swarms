@@ -10,11 +10,18 @@ from unittest.mock import patch
 import pytest
 import yaml
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
+from swarms.structs.file_channel import FileChannel
 from swarms import Agent
+from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
-from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.schemas.agent_errors import (
+    AgentLLMError,
+    AgentToolExecutionError,
+)
+from swarms.tools.base_tool import BaseTool
 
 load_dotenv()
 
@@ -42,7 +49,7 @@ def _patched_agent(name, **kwargs):
     """An Agent with the model client stubbed, so __init__ makes no calls."""
     # setdefault, not a keyword: callers override max_loops (notably "auto").
     kwargs.setdefault("max_loops", 1)
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         return Agent(
             agent_name=name,
             print_on=False,
@@ -102,7 +109,7 @@ class TestBasicAgent:
         assert basic_flow.stopping_condition is None
         assert basic_flow.retry_attempts == 3
         assert basic_flow.task is None
-        assert basic_flow.stopping_token == "<DONE>"
+        assert basic_flow.stopping_token is None
         assert not basic_flow.interactive
 
     @patch("time.sleep", return_value=None)
@@ -117,9 +124,50 @@ class TestBasicAgent:
     ):
         assert flow_with_condition.run("Stop") is not None
 
+    def test_run_after_reset_starts_a_fresh_conversation(
+        self, mocked_llm, tmp_path
+    ):
+        class Weather(BaseModel):
+            city: str
+
+        agent = _flow(
+            "reset-flow",
+            mocked_llm,
+            tmp_path,
+            list_base_models=[Weather],
+        )
+        agent.run("first task")
+        agent.autonomous_subtasks = [{"step_id": "old"}]
+        agent.reset()
+        agent.run("second task")
+
+        history = agent.short_memory.conversation_history
+        contents = [str(row["content"]) for row in history]
+        assert agent.autonomous_subtasks == []
+        assert history[0]["role"] == "System"
+        assert any("Weather" in c for c in contents)
+        assert not any("first task" in c for c in contents)
+        assert any("second task" in c for c in contents)
+
     def test_bulk_run(self, basic_flow):
         inputs = [{"task": "Test1"}, {"task": "Test2"}]
-        assert basic_flow.bulk_run(inputs) is not None
+        assert len(basic_flow.bulk_run(inputs)) == len(inputs)
+
+    def test_bulk_run_raises_the_failing_runs_error(self, basic_flow):
+        inputs = [
+            {"task": "Test1"},
+            {"task": "Test2"},
+            {"task": "Test3"},
+        ]
+        with patch.object(
+            basic_flow,
+            "run",
+            autospec=True,
+            side_effect=["first", ValueError("second failed")],
+        ) as run:
+            with pytest.raises(ValueError, match="second failed"):
+                basic_flow.bulk_run(inputs)
+        assert run.call_count == 2
 
     def test_save_and_load(self, basic_flow, mocked_llm, tmp_path):
         """State written by save() comes back through load().
@@ -490,7 +538,7 @@ class TestAgentToolUsage:
                 max_loops=1,
                 **kwargs,
             )
-            tools = agent.add_mcp_tools_to_memory()
+            tools = agent.tool_manager.add_mcp_tools_to_memory()
 
         assert len(tools) == len(names)
         assert get_tools.called
@@ -750,6 +798,23 @@ class TestLLMArgsAndHandling:
         assert "api_key" not in params
         assert "base_url" not in params
 
+    def test_random_models_on_builds_the_client_for_that_model(
+        self, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "swarms.structs.agent.set_random_models_for_agents",
+            lambda: "gpt-4.1-nano",
+        )
+        agent = Agent(
+            agent_name="random-models-agent",
+            model_name="gpt-4o-mini",
+            random_models_on=True,
+        )
+
+        assert agent.model_name == "gpt-4.1-nano"
+        assert agent.llm.model_name == "gpt-4.1-nano"
+        assert agent.max_tokens == agent._default_max_tokens()
+
 
 class TestConstructorWindows:
     """context_length and max_tokens must survive __init__ rather than being
@@ -807,6 +872,23 @@ class TestConstructorWindows:
         assert agent.context_length == 16000
         assert agent.max_tokens == 16000
 
+    def test_model_info_is_looked_up_once_per_model(self):
+        info = {"max_input_tokens": 90000, "max_output_tokens": 9000}
+        with patch(
+            "swarms.utils.llm_backend.get_model_info",
+            return_value=info,
+        ) as lookup:
+            agents = [
+                self._agent(model_name="model-info-cache-probe")
+                for _ in range(2)
+            ]
+
+        assert lookup.call_count == 1
+        assert [(a.context_length, a.max_tokens) for a in agents] == [
+            (90000, 9000),
+            (90000, 9000),
+        ]
+
 
 class TestFunctionCallingWarning:
     """The function-calling warning is for agents that actually have tools."""
@@ -814,7 +896,7 @@ class TestFunctionCallingWarning:
     @staticmethod
     def _warnings_for(**kwargs):
         with patch(
-            "swarms.structs.agent.supports_function_calling",
+            "swarms.utils.llm_backend.supports_function_calling",
             return_value=False,
         ), patch("swarms.structs.agent.logger") as log:
             _patched_agent(
@@ -860,6 +942,83 @@ class TestToolsListIsolation:
             ).tools_list_dictionary
             == given
         )
+
+
+def test_list_base_models_schema_reaches_short_memory():
+    class Order(BaseModel):
+        item: str
+        qty: int
+
+    agent = _patched_agent(
+        "Order-Agent",
+        model_name="gpt-5.4-mini",
+        list_base_models=[Order],
+    )
+
+    schema = agent.short_memory.conversation_history[-1]["content"]
+    assert "Order" in schema and "item" in schema and "qty" in schema
+
+
+def test_safety_prompt_on_reaches_the_model():
+    from swarms.prompts.safety_prompt import SAFETY_PROMPT
+
+    agent = Agent(
+        agent_name="Safety-Agent",
+        model_name="gpt-5.4-mini",
+        system_prompt="Be terse.",
+        safety_prompt_on=True,
+        max_loops=1,
+        print_on=False,
+        persistent_memory=False,
+    )
+    response = SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(content="ok", tool_calls=None)
+            )
+        ],
+        usage=None,
+    )
+    with patch(
+        "swarms.utils.litellm_wrapper.completion",
+        return_value=response,
+    ) as completion:
+        agent.run("hi")
+
+    system = [
+        m["content"]
+        for m in completion.call_args.kwargs["messages"]
+        if m["role"] == "system"
+    ]
+    assert system == [f"Be terse.\n\n{SAFETY_PROMPT}".strip()]
+
+
+def test_system_prompt_defaults_follow_max_loops():
+    from swarms.prompts.autonomous_agent_prompt import (
+        get_autonomous_agent_prompt,
+    )
+    from swarms.prompts.max_loop_prompt import (
+        generate_reasoning_prompt,
+    )
+
+    auto = get_autonomous_agent_prompt(include_think_tool=False)
+    for options, expected in (
+        ({"max_loops": 1}, ""),
+        ({"max_loops": 3}, generate_reasoning_prompt(3)),
+        ({"max_loops": "auto"}, auto),
+        (
+            {"system_prompt": "Be terse.", "max_loops": "auto"},
+            f"Be terse.\n\n{auto}",
+        ),
+    ):
+        agent = Agent(
+            agent_name="Prompt-Agent",
+            model_name="gpt-5.4-mini",
+            print_on=False,
+            persistent_memory=False,
+            **options,
+        )
+        assert agent.system_prompt == expected
 
 
 class TestAutonomousAgentLoop:
@@ -1103,6 +1262,7 @@ class TestToolExecutionRetry:
         agent = Agent.__new__(Agent)
         agent.agent_name = name
         agent.tool_retry_attempts = attempts
+        agent.tool_manager = ToolManager(agent)
         return agent
 
     @pytest.mark.parametrize("attempts", [3, 5])
@@ -1114,9 +1274,11 @@ class TestToolExecutionRetry:
             calls.append(loop_count)
             raise RuntimeError("simulated tool failure")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
 
         # The regression: this was 1 regardless of tool_retry_attempts.
         assert len(calls) == attempts
@@ -1129,9 +1291,11 @@ class TestToolExecutionRetry:
         def failing(response, loop_count):
             raise RuntimeError("simulated tool failure")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError) as excinfo:
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
 
         # The underlying error is chained, not discarded.
         assert isinstance(excinfo.value.__cause__, RuntimeError)
@@ -1150,9 +1314,11 @@ class TestToolExecutionRetry:
             calls.append(1)
             raise ValueError("a tool's own error type")
 
-        agent.execute_tools = failing
+        agent.tool_manager.execute_tools = failing
         with pytest.raises(AgentToolExecutionError):
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
         assert len(calls) == 2
 
     def test_stops_retrying_once_a_attempt_succeeds(self):
@@ -1164,18 +1330,43 @@ class TestToolExecutionRetry:
             if len(calls) < 3:
                 raise RuntimeError("transient")
 
-        agent.execute_tools = flaky
-        Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+        agent.tool_manager.execute_tools = flaky
+        agent.tool_manager.tool_execution_retry([{"function": {}}], 1)
 
         # Third attempt succeeded, so the fourth must not run.
         assert len(calls) == 3
 
+    def test_a_failing_tool_runs_once_per_attempt(self):
+        runs = []
+
+        def charge_card(amount: int) -> str:
+            runs.append(amount)
+            raise RuntimeError("gateway timeout")
+
+        agent = self._agent(attempts=3)
+        agent.print_on = False
+        agent.tool_struct = BaseTool(tools=[charge_card])
+        call = {
+            "id": "c1",
+            "type": "function",
+            "function": {
+                "name": "charge_card",
+                "arguments": json.dumps({"amount": 500}),
+            },
+        }
+
+        with pytest.raises(AgentToolExecutionError):
+            agent.tool_manager.tool_execution_retry([call], 1)
+        assert len(runs) == 3
+
     def test_none_response_does_not_execute_or_raise(self):
         agent = self._agent()
         called = []
-        agent.execute_tools = lambda **kw: called.append(1)
+        agent.tool_manager.execute_tools = lambda **kw: called.append(
+            1
+        )
 
-        Agent.tool_execution_retry(agent, None, 1)
+        agent.tool_manager.tool_execution_retry(None, 1)
         assert called == []
 
     def test_a_zero_or_none_attempt_count_still_runs_once(self):
@@ -1185,13 +1376,44 @@ class TestToolExecutionRetry:
         for attempts in (0, None):
             agent = self._agent(attempts=attempts)
             calls = []
-            agent.execute_tools = (
+            agent.tool_manager.execute_tools = (
                 lambda response, loop_count: calls.append(1)
             )
-            Agent.tool_execution_retry(agent, [{"function": {}}], 1)
+            agent.tool_manager.tool_execution_retry(
+                [{"function": {}}], 1
+            )
             assert (
                 len(calls) == 1
             ), f"attempts={attempts!r} should still run once"
+
+
+class TestInteractiveFollowUp:
+    def test_follow_up_input_reaches_the_next_request(self):
+        agent = _patched_agent(
+            "InteractiveAgent",
+            model_name="gpt-5.4",
+            max_loops=2,
+            interactive=True,
+        )
+        requests = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            requests.append(list(kwargs["messages"]))
+            return "ok"
+
+        agent.call_llm = fake_call_llm
+        replies = iter(["What is the capital of Peru?", "exit"])
+        with patch(
+            "swarms.structs.agent.formatter.console.input",
+            lambda *a, **k: next(replies),
+        ):
+            agent.run("Name a prime number.")
+
+        assert len(requests) == 2
+        assert requests[1][-1] == {
+            "role": "user",
+            "content": "What is the capital of Peru?",
+        }
 
 
 class TestToolFailureIsNotAnLLMError:
@@ -1239,6 +1461,293 @@ class TestToolFailureIsNotAnLLMError:
         assert (
             len(llm_calls) == 1
         ), f"a tool failure re-ran the model {len(llm_calls)} times"
+
+
+def test_failed_worker_keeps_its_error_instead_of_its_prompt():
+    from swarms.structs.context_utils import (
+        agent_answer,
+        get_final_agent_answer,
+    )
+    from swarms.structs.multi_agent_exec import (
+        run_agents_concurrently,
+    )
+
+    def _down(*args, **kwargs):
+        raise RuntimeError("provider down")
+
+    ok = _patched_agent("Ok", retry_attempts=1, retry_interval=0)
+    ok.call_llm = lambda task=None, *a, **k: "4"
+    failed = _patched_agent(
+        "Failed", retry_attempts=1, retry_interval=0
+    )
+    failed.call_llm = _down
+
+    outputs = run_agents_concurrently(
+        agents=[ok, failed],
+        task="What is 2+2?",
+        return_agent_output_dict=True,
+    )
+    answers = get_final_agent_answer([ok, failed], outputs)
+
+    assert isinstance(outputs["Failed"], Exception)
+    assert answers == {
+        "Ok": "4",
+        "Failed": f"Error: {outputs['Failed']}",
+    }
+
+    failed.short_memory.add(role="Failed", content="partial answer")
+    assert (
+        agent_answer(failed, outputs["Failed"])
+        == f"Error: {outputs['Failed']}"
+    )
+
+
+class TestTextReplyFromAToolAgent:
+    """A tool-carrying agent that answers in plain text made no tool call,
+    yet execute_tools recorded "[] (empty list)" after the answer and, with
+    tool_call_summary on, summarised it under the agent's own name. The
+    answer was no longer the final message, so structures recording
+    agent_answer() and output_type="final" both lost it.
+    """
+
+    @staticmethod
+    def _price(ticker: str) -> str:
+        """Look up a price.
+
+        Args:
+            ticker: The ticker symbol.
+        """
+        return "100"
+
+    def _agent(self, reply, summary_calls, **kwargs):
+        agent = _patched_agent(
+            "ToolAgent",
+            model_name="gpt-5.4",
+            dynamic_tools=False,
+            tools=[self._price],
+            **kwargs,
+        )
+        agent.call_llm = lambda task=None, *a, **k: reply
+        agent.tool_manager.temp_llm_instance_for_tool_summary = (
+            lambda: SimpleNamespace(
+                run=lambda prompt: summary_calls.append(prompt)
+                or "SUMMARY"
+            )
+        )
+        return agent
+
+    @pytest.mark.parametrize("tool_call_summary", [True, False])
+    def test_a_text_reply_stays_the_final_message(
+        self, tool_call_summary
+    ):
+        from swarms.structs.context_utils import agent_answer
+
+        summary_calls = []
+        agent = self._agent(
+            "The answer is 42.",
+            summary_calls,
+            tool_call_summary=tool_call_summary,
+            output_type="final",
+        )
+
+        result = agent.run("What is 6*7?")
+
+        roles = [
+            m["role"] for m in agent.short_memory.conversation_history
+        ]
+        assert "Tool Executor" not in roles
+        assert summary_calls == []
+        assert agent_answer(agent) == "The answer is 42."
+        assert result == "The answer is 42."
+
+    def test_a_real_tool_call_is_still_recorded_and_summarised(self):
+        summary_calls = []
+        tool_call = {
+            "type": "function",
+            "id": "call-1",
+            "function": {
+                "name": "_price",
+                "arguments": '{"ticker": "X"}',
+            },
+        }
+        agent = self._agent(
+            [tool_call], summary_calls, tool_call_summary=True
+        )
+
+        agent.run("price of X")
+
+        history = agent.short_memory.conversation_history
+        executor = [
+            m for m in history if m["role"] == "Tool Executor"
+        ]
+        assert len(executor) == 1 and "100" in executor[0]["content"]
+        assert len(summary_calls) == 1
+        assert history[-1]["content"] == "SUMMARY"
+
+    def test_a_tool_turn_makes_no_summary_call_by_default(self):
+        summary_calls = []
+        tool_call = {
+            "type": "function",
+            "id": "call-1",
+            "function": {
+                "name": "_price",
+                "arguments": '{"ticker": "X"}',
+            },
+        }
+        agent = self._agent([tool_call], summary_calls)
+
+        agent.run("price of X")
+
+        history = agent.short_memory.conversation_history
+        assert agent.tool_call_summary is False
+        assert summary_calls == []
+        assert history[-1]["role"] == "Tool Executor"
+        assert "100" in history[-1]["content"]
+
+
+def test_handoff_returns_each_delegates_answer_not_its_transcript(
+    tmp_path,
+):
+    from swarms.tools.handoffs_tool import handoff_task
+
+    class NumberedLLM:
+        calls = 0
+
+        def run(self, task=None, *args, **kwargs):
+            NumberedLLM.calls += 1
+            return f"answer {NumberedLLM.calls}"
+
+    registry = {
+        name: _flow(name, NumberedLLM(), tmp_path)
+        for name in ("Researcher", "Writer")
+    }
+
+    def delegate(*names):
+        return handoff_task(
+            [
+                {"agent_name": name, "task": "t", "reasoning": "r"}
+                for name in names
+            ],
+            agent_registry=registry,
+        )
+
+    delegate("Researcher")
+    single = delegate("Researcher")
+    parallel = delegate("Researcher", "Writer")
+
+    assert "answer 2" in single
+    assert "answer 1" not in single
+    assert "answer 2" not in parallel
+
+
+class TestListTools:
+    """#2426: Agent.list_tools names every tool the agent can call."""
+
+    @staticmethod
+    def _weather(city: str) -> str:
+        """Get the weather.
+
+        Args:
+            city: The city.
+        """
+        return "sunny"
+
+    @staticmethod
+    def _agent(**kwargs):
+        kwargs.setdefault("max_loops", 1)
+        return Agent(
+            agent_name="ListToolsAgent",
+            model_name="gpt-5.4",
+            print_on=False,
+            **kwargs,
+        )
+
+    @staticmethod
+    def _mcp_agent(get_tools, **kwargs):
+        agent = TestListTools._agent(
+            mcp_url="http://localhost:9/mcp", llm=object(), **kwargs
+        )
+        agent.mcp_manager.get_tools = get_tools
+        return agent
+
+    @staticmethod
+    def _stock_schemas(*args, **kwargs):
+        return [
+            {"type": "function", "function": {"name": "lookup_stock"}}
+        ]
+
+    def test_local_tools_only(self):
+        agent = self._agent(
+            tools=[self._weather], dynamic_tools=False
+        )
+        assert agent.list_tools() == ["_weather"]
+
+    def test_mcp_tools_only(self):
+        agent = self._mcp_agent(
+            self._stock_schemas, dynamic_tools=False
+        )
+        assert agent.list_tools() == ["lookup_stock"]
+
+    def test_local_tools_come_before_mcp_tools(self):
+        agent = self._mcp_agent(
+            self._stock_schemas,
+            tools=[self._weather],
+            dynamic_tools=False,
+        )
+        assert agent.list_tools() == ["_weather", "lookup_stock"]
+
+    def test_handoffs_add_handoff_task_last(self):
+        agent = self._agent(
+            tools=[self._weather],
+            dynamic_tools=False,
+            handoffs=[self._agent()],
+        )
+        assert agent.list_tools() == ["_weather", "handoff_task"]
+
+    def test_dynamic_tools_include_deferred_tools_and_tool_search(
+        self,
+    ):
+        agent = self._agent(tools=[self._weather], dynamic_tools=True)
+        assert agent.tool_loader.deferred_names == ["_weather"]
+        assert agent.list_tools() == ["_weather", "tool_search"]
+
+    def test_autonomous_loop_tools_follow_local_tools(self):
+        from swarms.structs.autonomous_loop_utils import (
+            get_autonomous_loop_tool_names,
+        )
+
+        agent = self._agent(
+            tools=[self._weather],
+            dynamic_tools=False,
+            max_loops="auto",
+        )
+        loop_tools = [
+            name
+            for name in get_autonomous_loop_tool_names()
+            if name != "think"
+        ]
+        assert agent.list_tools() == ["_weather", *loop_tools]
+
+    def test_an_unreachable_mcp_server_leaves_the_other_names(self):
+        def unreachable(*args, **kwargs):
+            raise ConnectionError("server down")
+
+        agent = self._mcp_agent(
+            unreachable, tools=[self._weather], dynamic_tools=False
+        )
+        assert agent.list_tools() == ["_weather"]
+
+    def test_mcp_tools_are_fetched_once(self):
+        calls = []
+
+        def get_tools(*args, **kwargs):
+            calls.append(1)
+            return self._stock_schemas()
+
+        agent = self._mcp_agent(get_tools, dynamic_tools=False)
+        agent.list_tools()
+        agent.list_tools()
+        assert len(calls) == 1
 
 
 class TestConcurrentExecutionPool:
@@ -1552,7 +2061,9 @@ class TestAgentUsage:
                 return response
             return self._response(100 * n, n)
 
-        agent = self._agent(tools=[add], dynamic_tools=False)
+        agent = self._agent(
+            tools=[add], dynamic_tools=False, tool_call_summary=True
+        )
         agent.max_loops = 3
         with patch(
             "swarms.utils.litellm_wrapper.completion",
@@ -1651,3 +2162,600 @@ class TestAgentInputTokens:
         agent = _patched_agent("CtxAgent", system_prompt="Short.")
         assert agent.usage["input_tokens"] == 0
         assert agent.input_tokens > 0
+
+
+class TestSeededMessages:
+    """``messages`` seeds the conversation and is sent as context."""
+
+    PRIOR = [
+        {"role": "user", "content": "My project is called Helios."},
+        {"role": "assistant", "content": "Noted: Helios."},
+    ]
+
+    def test_constructor_messages_land_in_short_memory(self):
+        agent = _patched_agent("SeedAgent", messages=self.PRIOR)
+
+        contents = [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+        ]
+        assert "My project is called Helios." in contents
+        assert "Noted: Helios." in contents
+
+    def test_constructor_messages_are_sent_as_context(self):
+        agent = _patched_agent("SeedAgent", messages=self.PRIOR)
+        sent = {}
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            sent["messages"] = kwargs.get("messages")
+            return "Helios"
+
+        agent.call_llm = fake_call_llm
+        agent.run("What is my project called?")
+
+        contents = [m["content"] for m in sent["messages"]]
+        assert "My project is called Helios." in contents
+        assert "What is my project called?" in contents
+
+    def test_run_messages_are_recorded_and_sent(self):
+        agent = _patched_agent("SeedAgent")
+        sent = {}
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            sent["messages"] = kwargs.get("messages")
+            return "Helios"
+
+        agent.call_llm = fake_call_llm
+        agent.run("What is my project called?", messages=self.PRIOR)
+
+        assert [m["role"] for m in sent["messages"]] == [
+            "user",
+            "assistant",
+            "user",
+        ]
+
+        recorded = [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+        ]
+        assert "My project is called Helios." in recorded
+        assert "Noted: Helios." in recorded
+
+
+class TestRunSamples:
+    """Each of the ``n`` samples gets the same inputs as a single run."""
+
+    def test_every_sample_receives_the_image_and_callback(self):
+        agent = _patched_agent("Vision")
+        calls = []
+
+        def fake_call_llm(
+            task=None,
+            img=None,
+            imgs=None,
+            current_loop=0,
+            streaming_callback=None,
+            *args,
+            **kwargs,
+        ):
+            calls.append((img, streaming_callback))
+            return "A bar chart."
+
+        def on_token(token):
+            return None
+
+        agent.call_llm = fake_call_llm
+        agent.run(
+            "Describe the chart.",
+            img="https://example.com/chart.png",
+            streaming_callback=on_token,
+            n=2,
+        )
+
+        assert (
+            calls == [("https://example.com/chart.png", on_token)] * 2
+        )
+
+
+class TestLLMFailureRaises:
+    """#2408: once its retries ran out, _run broke out of the loop and
+    returned the formatted history, so run() returned '' with no error and
+    fallback_models was never tried. Retries now belong to litellm, so a
+    failed call reaches run() at once and run() moves to the next model.
+    """
+
+    TASK = "What is 2+2?"
+
+    @staticmethod
+    def _completion(calls, down):
+        def fake_completion(**params):
+            calls.append(params["model"])
+            if params["model"] in down:
+                raise RuntimeError(f"{params['model']} is down")
+            message = SimpleNamespace(
+                content=f"answer from {params['model']}",
+                tool_calls=None,
+                reasoning_content=None,
+            )
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=message, finish_reason="stop"
+                    )
+                ],
+                usage=None,
+            )
+
+        return fake_completion
+
+    @staticmethod
+    def _agent(**kwargs):
+        return Agent(
+            agent_name="FallbackAgent",
+            max_loops=1,
+            print_on=False,
+            verbose=False,
+            persistent_memory=False,
+            **kwargs,
+        )
+
+    def test_raises_when_the_model_fails(self):
+        agent = self._agent(model_name="gpt-5.4")
+        history_before = len(agent.short_memory.conversation_history)
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, {"gpt-5.4"}),
+        ):
+            with pytest.raises(AgentLLMError):
+                agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4"]
+        assert (
+            len(agent.short_memory.conversation_history)
+            == history_before
+        )
+
+    def test_falls_back_to_the_next_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, {"gpt-5.4"}),
+        ):
+            output = agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6"]
+        assert "answer from claude-sonnet-4-6" in str(output)
+        task_turns = [
+            m
+            for m in agent.short_memory.conversation_history
+            if m["content"] == self.TASK
+        ]
+        assert len(task_turns) == 1
+
+    def test_fallback_request_keeps_the_callers_messages(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+        sent = {}
+        fake_completion = self._completion(calls, {"gpt-5.4"})
+
+        def recording_completion(**params):
+            sent[params["model"]] = [
+                m["content"] for m in params["messages"]
+            ]
+            return fake_completion(**params)
+
+        prior = [
+            {"role": "user", "content": "My project is Helios."},
+            {"role": "assistant", "content": "Noted: Helios."},
+        ]
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=recording_completion,
+        ):
+            agent.run(self.TASK, messages=prior)
+
+        assert sent["claude-sonnet-4-6"][-3:] == [
+            "My project is Helios.",
+            "Noted: Helios.",
+            self.TASK,
+        ]
+
+    def test_raises_once_every_fallback_fails(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(
+                calls, {"gpt-5.4", "claude-sonnet-4-6"}
+            ),
+        ):
+            with pytest.raises(AgentLLMError):
+                agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6"]
+
+    def test_the_next_run_starts_from_the_primary_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+        down = {"gpt-5.4"}
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, down),
+        ):
+            agent.run(self.TASK)
+            down.clear()
+            output = agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6", "gpt-5.4"]
+        assert "answer from gpt-5.4" in str(output)
+        assert agent.model_name == "gpt-5.4"
+
+    def test_an_error_outside_the_model_call_keeps_the_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        def broken(response):
+            raise ValueError("not a provider error")
+
+        agent.tool_manager.parse_response = broken
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, set()),
+        ):
+            with pytest.raises(ValueError):
+                agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4"]
+
+    def test_fallback_model_name_joins_the_model_list(self):
+        agent = self._agent(
+            model_name="gpt-5.4",
+            fallback_model_name="claude-sonnet-4-6",
+        )
+        assert agent.fallback_models == [
+            "gpt-5.4",
+            "claude-sonnet-4-6",
+        ]
+
+        same = self._agent(
+            model_name="gpt-5.4", fallback_model_name="gpt-5.4"
+        )
+        assert same.fallback_models == ["gpt-5.4"]
+
+
+class TestCommsChannel:
+    """An agent given a channel reads it before a run and posts to it after."""
+
+    def _agent(self, name, channel, reply="done"):
+        agent = _patched_agent(name, channel=channel)
+        agent.requests = []
+
+        def call_llm(task=None, *args, **kwargs):
+            agent.requests.append(kwargs.get("messages"))
+            return reply
+
+        agent.call_llm = call_llm
+        return agent
+
+    def test_reads_prior_turns_and_posts_the_task_and_answer(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        channel.post("Researcher", "Growth was 31%.")
+        agent = self._agent(
+            "Writer", channel, reply="Report: 31% growth."
+        )
+
+        agent.run("Write the report.")
+
+        sent = [m["content"] for m in agent.requests[0]]
+        assert sent[-2:] == ["Growth was 31%.", "Write the report."]
+        assert channel.messages() == [
+            {
+                "agent_name": "Researcher",
+                "content": "Growth was 31%.",
+            },
+            {
+                "agent_name": agent.user_name,
+                "content": "Write the report.",
+            },
+            {
+                "agent_name": "Writer",
+                "content": "Report: 31% growth.",
+            },
+        ]
+
+    def test_agents_sharing_a_channel_post_the_task_once(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        first = self._agent("First", channel, reply="one")
+        second = self._agent("Second", channel, reply="two")
+
+        first.run("Discuss.")
+        second.run("Discuss.")
+
+        roles = [m["agent_name"] for m in channel.messages()]
+        assert roles == [first.user_name, "First", "Second"]
+        # The second agent saw the first's answer, and the task only as its own turn.
+        sent = [m["content"] for m in second.requests[0]]
+        assert sent.count("Discuss.") == 1
+        assert "one" in sent
+
+    def test_given_messages_skip_the_channel_and_only_the_answer_is_posted(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        channel.post("Researcher", "Growth was 31%.")
+        agent = self._agent("Writer", channel, reply="ok")
+
+        agent.run(
+            "Write.",
+            messages=[{"role": "user", "content": "Only this."}],
+        )
+
+        sent = [m["content"] for m in agent.requests[0]]
+        assert "Growth was 31%." not in sent
+        assert "Only this." in sent
+        assert channel.messages() == [
+            {
+                "agent_name": "Researcher",
+                "content": "Growth was 31%.",
+            },
+            {"agent_name": "Writer", "content": "ok"},
+        ]
+
+    def test_a_failed_run_posts_no_answer(self, tmp_path):
+        channel = FileChannel(tmp_path / "run.md")
+        agent = _patched_agent("Writer", channel=channel)
+
+        def down(*args, **kwargs):
+            raise RuntimeError("provider down")
+
+        agent.llm_manager.call = down
+
+        with pytest.raises(AgentLLMError):
+            agent.run("Write.")
+
+        assert [m["agent_name"] for m in channel.messages()] == [
+            agent.user_name
+        ]
+
+
+class TestIntegerLoopRequest:
+    """The integer max_loops path sends typed messages, not a flattened string."""
+
+    def _agent(self, **kwargs):
+        return Agent(
+            agent_name="IntPathTest",
+            model_name="gpt-4o-mini",
+            persistent_memory=False,
+            print_on=False,
+            verbose=False,
+            autosave=False,
+            tool_call_summary=False,
+            **kwargs,
+        )
+
+    def _capture(self, monkeypatch, agent, replies):
+        sent = []
+
+        def call_llm(task=None, *args, **kwargs):
+            sent.append((task, kwargs.get("messages")))
+            return replies[len(sent) - 1]
+
+        monkeypatch.setattr(agent, "call_llm", call_llm)
+        return sent
+
+    def test_the_task_is_sent_as_a_user_message(self, monkeypatch):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(monkeypatch, agent, ["done"])
+
+        agent.run("find the bug")
+
+        task, messages = sent[0]
+        assert task is None
+        assert any(
+            m["role"] == "user" and "find the bug" in m["content"]
+            for m in messages
+        )
+
+    def test_tool_results_are_paired_across_loops(self, monkeypatch):
+        def get_weather(city: str) -> str:
+            """Return the weather for a city.
+
+            Args:
+                city: The city name.
+            """
+            return f"{city}: sunny"
+
+        agent = self._agent(max_loops=2, tools=[get_weather])
+        call = {
+            "id": "w1",
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "arguments": json.dumps({"city": "Paris"}),
+            },
+        }
+        sent = self._capture(
+            monkeypatch, agent, [[call], "It is sunny in Paris."]
+        )
+
+        agent.run("weather in Paris?")
+
+        messages = sent[1][1]
+        turn = next(
+            i for i, m in enumerate(messages) if m.get("tool_calls")
+        )
+        assert messages[turn + 1]["role"] == "tool"
+        assert messages[turn + 1]["tool_call_id"] == "w1"
+        assert "sunny" in messages[turn + 1]["content"]
+
+    def test_transforms_keep_the_flattened_prompt(self, monkeypatch):
+        agent = self._agent(max_loops=1)
+        agent.transforms = object()
+        sent = self._capture(monkeypatch, agent, ["done"])
+        monkeypatch.setattr(
+            "swarms.structs.agent.handle_transforms",
+            lambda **kw: "FLATTENED",
+        )
+
+        agent.run("hello")
+
+        assert sent[0] == ("FLATTENED", None)
+
+    def test_caller_messages_pass_through_as_given(self, monkeypatch):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(monkeypatch, agent, ["done"])
+        image = [
+            {"type": "text", "text": "look"},
+            {
+                "type": "image_url",
+                "image_url": {"url": "https://x/a.png"},
+            },
+        ]
+
+        agent.run(
+            "Describe it",
+            messages=[
+                {"role": "system", "content": "Answer in French."},
+                {"role": "user", "content": image},
+            ],
+        )
+
+        assert sent[0][1] == [
+            {"role": "system", "content": "Answer in French."},
+            {"role": "user", "content": image},
+            {"role": "user", "content": "Describe it"},
+        ]
+
+    def test_no_loop_markers_are_sent(self, monkeypatch):
+        agent = self._agent(max_loops=3)
+        sent = self._capture(monkeypatch, agent, ["a", "b", "c"])
+
+        agent.run("Plan a trip")
+
+        assert not any(
+            "Reasoning Loop" in str(m["content"])
+            for _, messages in sent
+            for m in messages
+        )
+
+    def test_a_compressed_history_is_sent_as_its_summary(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=2)
+        sent = self._capture(monkeypatch, agent, ["first", "second"])
+
+        class Compressor:
+            def maybe_compress(self, agent):
+                if len(sent) != 1:
+                    return None
+                agent.short_memory.compact(
+                    summary="SUMMARY", summary_role="user"
+                )
+                return "SUMMARY"
+
+        agent._context_compressor = Compressor()
+
+        agent.run("task", messages=[{"role": "user", "content": "x"}])
+
+        assert sent[1][1] == [{"role": "user", "content": "SUMMARY"}]
+
+    def test_each_sample_starts_at_the_callers_messages(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(monkeypatch, agent, ["one", "two"])
+
+        agent.run(
+            "task",
+            messages=[{"role": "user", "content": "context"}],
+            n=2,
+        )
+
+        expected = [
+            {"role": "user", "content": "context"},
+            {"role": "user", "content": "task"},
+        ]
+        assert [messages for _, messages in sent] == [
+            expected,
+            expected,
+        ]
+
+    def test_samples_store_the_callers_messages_once(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(
+            monkeypatch, agent, ["one", "two", "three", "four"]
+        )
+
+        agent.run(
+            "task",
+            messages=[{"role": "user", "content": "context"}],
+            n=3,
+        )
+        agent.run("next")
+
+        stored = [
+            row["content"]
+            for row in agent.short_memory.conversation_history
+        ]
+        assert stored.count("context") == 1
+        assert [m["content"] for m in sent[-1][1]].count(
+            "context"
+        ) == 1
+
+
+class TestAgentOutputCleanerRemoval:
+    """Tests confirming removal of unused output_cleaner parameter and op (#2719)."""
+
+    def test_agent_has_no_output_cleaner_attribute(self):
+        agent = _patched_agent("cleaner-test")
+        assert not hasattr(agent, "output_cleaner")
+        assert not hasattr(agent, "output_cleaner_op")
+
+    def test_legacy_output_cleaner_kwarg_absorbed(self):
+        agent = _patched_agent(
+            "legacy-cleaner", output_cleaner=lambda s: "CLEANED"
+        )
+        assert not hasattr(agent, "output_cleaner")
+
+    def test_direct_post_processing_on_run_return_value(
+        self, tmp_path, mocked_llm
+    ):
+        agent = _flow(
+            "post-process-test",
+            mocked_llm,
+            tmp_path,
+            output_type="str",
+        )
+        result = agent.run("raw output")
+        assert isinstance(result, str)
+        cleaned = result.upper()
+        assert "RAW OUTPUT" in cleaned

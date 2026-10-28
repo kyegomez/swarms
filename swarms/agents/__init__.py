@@ -4,9 +4,6 @@ from swarms.agents.agent_marketplace_handler import (
 )
 from swarms.agents.consistency_agent import SelfConsistencyAgent
 from swarms.agents.context_compressor import ContextCompressor
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
-)
 from swarms.agents.flexion_agent import ReflexionAgent
 from swarms.agents.gkp_agent import GKPAgent
 from swarms.agents.i_agent import IterativeReflectiveExpansion
@@ -17,9 +14,13 @@ from swarms.agents.reasoning_agent_router import (
 from swarms.agents.llm_manager import LLMManager
 from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.agents.skills_manager import SkillsManager
+from swarms.agents.tree_of_thoughts import (
+    TreeOfThoughts,
+    TreeOfThoughtsResult,
+    ThoughtNode,
+)
 
 __all__ = [
-    "create_agents_from_yaml",
     "IterativeReflectiveExpansion",
     "SelfConsistencyAgent",
     "ReasoningDuo",
@@ -32,4 +33,7 @@ __all__ = [
     "SkillsManager",
     "LLMManager",
     "AgentMarketplaceHandler",
+    "TreeOfThoughts",
+    "TreeOfThoughtsResult",
+    "ThoughtNode",
 ]

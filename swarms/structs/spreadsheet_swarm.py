@@ -5,24 +5,25 @@ import uuid
 from typing import List
 
 from swarms.structs.agent import Agent
+from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
 )
 from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_utils import get_workspace_dir
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
-uuid_hex = uuid.uuid4().hex
-
-# Colons are not allowed in filenames on every OS
-formatted_time = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-
 
 def _now() -> str:
     return datetime.datetime.now().isoformat()
+
+
+def _new_run_id() -> str:
+    return f"spreadsheet_swarm_run_{uuid.uuid4().hex}"
 
 
 class SpreadSheetSwarm:
@@ -33,7 +34,7 @@ class SpreadSheetSwarm:
         name (str, optional): The name of the swarm. Defaults to "Spreadsheet-Swarm".
         description (str, optional): The description of the swarm. Defaults to "A swarm that processes tasks concurrently using multiple agents.".
         agents (Union[Agent, List[Agent], None], optional): The agents participating in the swarm. If None, agents will be loaded from load_path. Defaults to None.
-        autosave (bool, optional): Whether to enable autosave of swarm metadata. Defaults to True.
+        autosave (bool, optional): Whether to enable autosave of swarm metadata. Defaults to False.
         save_file_path (str, optional): The file path to save the swarm metadata as a CSV file. Defaults to "spreedsheet_swarm.csv".
         max_loops (int, optional): The number of times to repeat the swarm tasks. Defaults to 1.
         load_path (str, optional): Path to CSV file containing agent configurations. Required if agents is None.
@@ -52,7 +53,7 @@ class SpreadSheetSwarm:
         name: str = "Spreadsheet-Swarm",
         description: str = "A swarm that processes tasks concurrently using multiple agents and saves the metadata to a CSV file.",
         agents: List[AgentType] = None,
-        autosave: bool = True,
+        autosave: bool = False,
         save_file_path: str = None,
         max_loops: int = 1,
         load_path: str = None,
@@ -87,14 +88,19 @@ class SpreadSheetSwarm:
             )
             os.makedirs(base, exist_ok=True)
             self.save_file_path = os.path.join(
-                base, f"spreadsheet_swarm_run_id_{uuid_hex}.csv"
+                base,
+                f"spreadsheet_swarm_run_id_{uuid.uuid4().hex}.csv",
             )
 
+        self.run_id = _new_run_id()
         self.outputs = []
         self.tasks_completed = 0
         self.agent_tasks = {}  # Simple dict to store agent tasks
+        self.conversation = Conversation()
 
         self.reliability_check()
+
+        capture_init(self)
 
     def reliability_check(self):
         """
@@ -188,6 +194,7 @@ class SpreadSheetSwarm:
     def load_from_csv(self):
         self._load_from_csv()
 
+    @trace_run("SpreadSheetSwarm.run_from_config", input_params=())
     def run_from_config(self):
         """
         Run all agents with their configured tasks concurrently
@@ -198,6 +205,10 @@ class SpreadSheetSwarm:
         if not self.agents and self.load_path:
             self.load_from_csv()
 
+        self.run_id = _new_run_id()
+        self.outputs = []
+        self.tasks_completed = 0
+
         start_time = _now()
 
         agent_task_pairs = [
@@ -205,6 +216,14 @@ class SpreadSheetSwarm:
             for agent in self.agents
             if self.agent_tasks.get(agent.agent_name)
         ]
+
+        self.conversation = Conversation()
+        for agent, task in agent_task_pairs:
+            self.conversation.add(
+                role="User",
+                content=task,
+                metadata={"agent_name": agent.agent_name},
+            )
 
         for _ in range(self.max_loops):
             for agent, _task in agent_task_pairs:
@@ -230,7 +249,7 @@ class SpreadSheetSwarm:
 
         # Return simple summary
         return {
-            "run_id": f"spreadsheet_swarm_run_{uuid_hex}",
+            "run_id": self.run_id,
             "name": self.name,
             "description": self.description,
             "start_time": start_time,
@@ -259,6 +278,9 @@ class SpreadSheetSwarm:
         if task is None and self.agent_tasks:
             return self.run_from_config()
         else:
+            self.run_id = _new_run_id()
+            self.outputs = []
+            self.tasks_completed = 0
             start_time = _now()
             self._run_tasks(task, *args, **kwargs)
             end_time = _now()
@@ -269,7 +291,7 @@ class SpreadSheetSwarm:
 
             # Return simple summary
             return {
-                "run_id": f"spreadsheet_swarm_run_{uuid_hex}",
+                "run_id": self.run_id,
                 "name": self.name,
                 "description": self.description,
                 "start_time": start_time,
@@ -279,6 +301,7 @@ class SpreadSheetSwarm:
                 "outputs": self.outputs,
             }
 
+    @trace_run("SpreadSheetSwarm.run")
     def run(self, task: str = None, *args, **kwargs):
         """
         Run the swarm with the specified task.
@@ -311,6 +334,9 @@ class SpreadSheetSwarm:
         if not self.agents and self.load_path:
             self.load_from_csv()
 
+        self.conversation = Conversation()
+        self.conversation.add(role="User", content=task)
+
         for _ in range(self.max_loops):
             for agent in self.agents:
                 agent.short_memory = agent.short_memory_init()
@@ -332,6 +358,7 @@ class SpreadSheetSwarm:
             result (str): The result of the completed task.
         """
         self.tasks_completed += 1
+        self.conversation.add(role=agent_name, content=result)
         self.outputs.append(
             {
                 "agent_name": agent_name,
@@ -352,7 +379,7 @@ class SpreadSheetSwarm:
 
         return json.dumps(
             {
-                "run_id": f"spreadsheet_swarm_run_{uuid_hex}",
+                "run_id": self.run_id,
                 "name": self.name,
                 "description": self.description,
                 "tasks_completed": self.tasks_completed,
@@ -367,7 +394,7 @@ class SpreadSheetSwarm:
         Save the swarm metadata to a JSON file.
         """
         self.workspace.save_text(
-            f"spreadsheet-swarm-{uuid_hex}-metadata.json",
+            f"{self.run_id}-metadata.json",
             self.export_to_json(),
         )
 
@@ -385,8 +412,6 @@ class SpreadSheetSwarm:
         logger.info(
             f"Saving swarm metadata to: {self.save_file_path}"
         )
-        run_id = uuid.uuid4()
-
         # Check if file exists before opening it
         file_exists = os.path.exists(self.save_file_path)
 
@@ -408,7 +433,7 @@ class SpreadSheetSwarm:
             for output in self.outputs:
                 writer.writerow(
                     [
-                        str(run_id),
+                        self.run_id,
                         output["agent_name"],
                         output["task"],
                         output["result"],

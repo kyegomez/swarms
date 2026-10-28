@@ -30,6 +30,10 @@ from swarms.structs.context_utils import (
     new_context_for,
     split_last_turn,
 )
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.hierarchical_order_parser import (
@@ -88,6 +92,7 @@ class HierarchicalSwarm:
         director_settings: Optional[Dict[str, Any]] = None,
         max_agent_retries: int = 1,
         max_reassignment_attempts: int = 1,
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -191,9 +196,17 @@ class HierarchicalSwarm:
         # How much of the shared conversation each agent has already seen.
         self._delivered: Dict[str, int] = {}
 
-        self.conversation = Conversation(time_enabled=False)
+        self.channel = channel
+        self.conversation = Conversation(
+            time_enabled=False, channel=channel
+        )
 
         self.initialize_swarm()
+        claim_agents(
+            [*(self.agents or []), getattr(self, "director", None)],
+            channel,
+            self.name,
+        )
 
         capture_init(self)
 
@@ -587,7 +600,9 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
-            self.conversation.clear()
+            self.conversation = Conversation(
+                time_enabled=False, channel=self.channel
+            )
             self._delivered = {}
             self.add_context_to_director()
 
@@ -596,6 +611,8 @@ class HierarchicalSwarm:
 
             current_loop = 0
             last_output = None
+            last_error = None
+            any_loop_succeeded = False
 
             while current_loop < self.max_loops:
                 if current_loop == 0:
@@ -616,8 +633,11 @@ class HierarchicalSwarm:
                         ),
                         **kwargs,
                     )
+                    any_loop_succeeded = True
 
                 except Exception as e:
+                    last_error = e
+                    last_output = None
                     logger.error(
                         f"[ERROR] Loop execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
                     )
@@ -627,8 +647,16 @@ class HierarchicalSwarm:
                 # Add loop completion marker to conversation
                 self.conversation.add(
                     role="System",
-                    content=f"--- Loop {current_loop}/{self.max_loops} completed ---",
+                    content=(
+                        f"--- Loop {current_loop}/{self.max_loops} failed: {last_error} ---"
+                        if last_output is None
+                        and last_error is not None
+                        else f"--- Loop {current_loop}/{self.max_loops} completed ---"
+                    ),
                 )
+
+            if not any_loop_succeeded and last_error is not None:
+                raise last_error
 
             result = history_output_formatter(
                 conversation=self.conversation, type=self.output_type

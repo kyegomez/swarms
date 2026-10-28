@@ -2,8 +2,8 @@ import asyncio
 from typing import List
 
 from swarms.structs.agent import Agent
+from swarms.structs.broadcast import broadcast
 from swarms.structs.swarming_architectures import (
-    broadcast,
     circular_swarm,
     grid_swarm,
     mesh_swarm,

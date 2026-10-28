@@ -197,11 +197,18 @@ def agent_answer(agent: Any, fallback: Any = None) -> Optional[str]:
         agent: Anything agent-like. Structures also nest other structures and
             test doubles here, so a missing or non-string result falls back
             rather than raising.
-        fallback: Returned when no final message is available.
+        fallback: Returned when no final message is available. An
+            exception means the run failed, and it is returned as
+            ``"Error: <message>"`` even when earlier loops left partial
+            output in memory, because an error is more honest than a
+            truncated answer.
 
     Returns:
         The agent's last message, or ``fallback``.
     """
+    if isinstance(fallback, BaseException):
+        return f"Error: {fallback}"
+
     try:
         answer = agent.short_memory.get_final_message_content()
     except Exception:
@@ -238,3 +245,30 @@ def get_final_agent_answer(
                 agent, fallback=answers[name]
             )
     return answers
+
+
+def run_on_conversation(agent: Any, conversation: Any) -> str:
+    """Run ``agent`` on the shared conversation and record its answer.
+
+    The conversation is delivered as typed chat turns - the agent's own
+    messages as ``assistant``, everyone else's as labelled ``user`` turns -
+    so the model can tell its own prior output from a peer's and the request
+    keeps a stable prefix for caching.
+
+    Args:
+        agent: The agent to run.
+        conversation: The shared ``Conversation``, appended to in place with
+            the agent's answer.
+
+    Returns:
+        str: The agent's answer.
+    """
+    prior, task = split_last_turn(
+        messages_for(agent.agent_name, conversation)
+    )
+    response = agent.run(task=task, messages=prior)
+
+    # run() honours output_type, which by default is the whole conversation, not the answer.
+    answer = agent_answer(agent, fallback=response)
+    conversation.add(agent.agent_name, answer)
+    return answer
