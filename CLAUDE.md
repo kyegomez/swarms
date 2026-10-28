@@ -2,6 +2,41 @@
 
 This file teaches you how to build agents and multi-agent systems with the **Swarms** framework. Read it before writing any code in this repo.
 
+## Live documentation
+
+This file can lag the code. For current signatures and pages, query the docs MCP server or the plain-text docs:
+
+Two hosted MCP servers give an assistant live Swarms context instead of training data that may predate a rename:
+
+| Server | URL | Key | What it does |
+|---|---|---|---|
+| Docs | `https://docs.swarms.world/mcp` | none | Searches and reads the current documentation |
+| Marketplace | `https://swarms.world/mcp` | Swarms API key for calls | Searches, reads and publishes agents, prompts and tools on [swarms.world](https://swarms.world) |
+
+The whole documentation is also available as plain text at [docs.swarms.world/llms.txt](https://docs.swarms.world/llms.txt) (an index) and [docs.swarms.world/llms-full.txt](https://docs.swarms.world/llms-full.txt) (every page).
+
+Claude Code:
+
+```bash
+claude mcp add --transport http swarms-docs https://docs.swarms.world/mcp
+claude mcp add --transport http swarms-marketplace https://swarms.world/mcp \
+  --header "Authorization: Bearer $SWARMS_API_KEY"
+```
+
+Cursor, in `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "swarms-docs": { "url": "https://docs.swarms.world/mcp" },
+    "swarms-marketplace": {
+      "url": "https://swarms.world/mcp",
+      "headers": { "Authorization": "Bearer ${env:SWARMS_API_KEY}" }
+    }
+  }
+}
+```
+
 ---
 
 ## Installation & Setup
@@ -579,7 +614,7 @@ result = swarm.run("Produce a comprehensive competitive analysis of the AI chip 
 
 ### GroupChat
 
-An asynchronous, self-selecting groupchat. There are no rounds or speaker-selection functions — every agent listens in parallel and decides on its own whether to chime in. A forced `respond(score, message)` function call asks each agent how much it wants to speak (0..1); replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds.
+A turn-based groupchat with one speaker per turn. Each turn, all agents privately bid via a forced `respond(score, message)` tool call with a self-rated desire to speak (0..1) and the reply they would give. The single highest bidder whose score clears `threshold` (after subtracting `recency_penalty` for agents that spoke within `recency_window` turns) takes the floor and has its message posted. The chat ends when no agent bids above `threshold` for a turn (a conversational lull), or when `max_loops` total messages have been posted.
 
 ```python
 from swarms import Agent
@@ -614,14 +649,15 @@ realist = Agent(
 
 chat = GroupChat(
     agents=[optimist, pessimist, realist],
-    max_loops=10,        # hard cap on total messages posted
-    threshold=0.5,       # min decision score (0..1) to publish a reply
-    idle_timeout=8.0,    # seconds of silence before stopping
+    max_loops=10,         # hard cap on total messages posted
+    threshold=0.5,        # min decision score (0..1) to publish a reply
+    recency_penalty=0.3,  # penalty applied to recent speakers
+    recency_window=1,     # number of recent speakers penalized
 )
 result = chat.run("Should we adopt AI for medical diagnosis?")
 ```
 
-**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Raise `idle_timeout` if agents need time to think before replying.
+**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Adjust `recency_penalty` and `recency_window` to prevent a single agent from dominating consecutive turns and pass the floor around.
 
 ---
 
@@ -1123,6 +1159,20 @@ The docs are a Mintlify site: pages are `.mdx` files and the navigation is in `d
 
 ---
 
+## Tests: only where they earn their place
+
+Not every change needs a unit test. Add one when it pins behaviour a user relies on that a later change could break: a bug fix, a new feature or a changed default. Renames, formatting, comments and docs need none, and neither does removing unused code (see below).
+
+When you do add a test, keep it small, compact and fast:
+
+- One test per behaviour. Put several cases in one table-driven test, not in near-copies.
+- Stub the model and the network. No live API calls, sleeps or real servers unless the behaviour is about them.
+- Reuse the stubs and helpers already in the test file instead of writing new ones.
+- Assert what a caller sees, not private state the change did not touch.
+- It must fail on the unpatched code and run in well under a second.
+
+---
+
 ## Comments: one line, only when needed
 
 A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.
@@ -1143,6 +1193,16 @@ return [agent.run(task) for agent in agents]
 ```
 
 Multi-line comment blocks keep arriving in PRs and keep getting removed. Write them short the first time.
+
+---
+
+## Tests: none for removing unused code
+
+When a change only deletes code nothing uses (a method, a parameter, an attribute, a branch or a line), do not add a unit test for it. A test that the old name is gone, that a signature lacks the parameter, or that passing it raises `TypeError` checks that the deletion happened, which the diff already shows, and it guards nothing a user relies on.
+
+- Delete tests that only exercised the removed code.
+- Run the existing tests for the module to show nothing else broke.
+- If the removal changes behaviour a caller can see, it was not unused: test that behaviour as for any other change.
 
 ---
 

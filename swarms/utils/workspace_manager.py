@@ -228,6 +228,16 @@ class WorkspaceManager:
                 )
                 return None
 
+            try:
+                os.makedirs(workspace_dir, exist_ok=True)
+            except OSError as e:
+                os.environ.pop("WORKSPACE_DIR", None)
+                if ensure_workspace_env() == workspace_dir:
+                    raise
+                logger.warning(
+                    f"Unusable WORKSPACE_DIR, using the default: {e}"
+                )
+                return self._setup()
             stamp = (
                 datetime.now().strftime("%Y%m%d_%H%M%S")
                 if self.use_timestamp

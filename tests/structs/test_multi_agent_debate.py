@@ -4,6 +4,7 @@ from swarms.structs.multi_agent_debates import (
     ExpertPanelDiscussion,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.conversation import Conversation
 
 
 def create_function_agent(name: str, system_prompt: str = None):
@@ -206,3 +207,35 @@ def test_moderator_synthesis_names_each_expert_and_is_not_a_list_repr():
     assert 'Historian: Precedent says "no".' in synthesis
     assert "['" not in synthesis
     assert "\\n" not in synthesis
+
+
+class _HistoryAgent(Agent):
+    def __init__(self, name):
+        self.agent_name = name
+        self.short_memory = Conversation()
+        self.tasks = []
+
+    def run(self, task=None, *args, **kwargs):
+        self.tasks.append(task)
+        self.short_memory.add(role="User", content=task)
+        self.short_memory.add(
+            role=self.agent_name,
+            content=f"{self.agent_name} reply {len(self.tasks)}",
+        )
+        return self.short_memory.return_all_except_first_string()
+
+
+def test_each_speaker_passes_on_only_its_latest_reply():
+    moderator = _HistoryAgent("Moderator")
+    experts = [_HistoryAgent("Economist"), _HistoryAgent("Historian")]
+
+    ExpertPanelDiscussion(
+        agents=experts, moderator=moderator, max_rounds=1
+    ).run(task="Where do rates go?")
+
+    assert experts[0].tasks[-1] == (
+        "Expert Economist, please respond to: Moderator reply 2"
+    )
+    assert moderator.tasks[-1].endswith(
+        "Economist: Economist reply 2\n\nHistorian: Historian reply 2"
+    )
