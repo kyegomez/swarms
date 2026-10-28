@@ -30,11 +30,11 @@ import pytest
 from swarms.schemas.agent_mcp_errors import AgentMCPConnectionError
 from swarms.schemas.mcp_schemas import MCPConnection, MCPOAuthConfig
 from swarms.tools.mcp_manager import (
-    MCP_IS_V2,
     MCPFileTokenStorage,
     MCPInMemoryTokenStorage,
     MCPManager,
     _describe_exception,
+    _mcp_is_v2,
     _OAuthCallbackServer,
     _resolve_secret,
     run_async,
@@ -375,7 +375,7 @@ class TestTransportResolution:
             ),
             (
                 {"url": "python server.py", "transport": "auto"},
-                "stdio",
+                "streamable_http",
             ),
         ],
     )
@@ -394,7 +394,7 @@ class TestTransportResolution:
         [
             ("http://localhost:8000/sse", "sse"),
             ("https://x/mcp", "streamable_http"),
-            ("python server.py", "stdio"),
+            ("python server.py", "streamable_http"),
         ],
     )
     def test_url_detected_without_explicit_transport(
@@ -405,6 +405,44 @@ class TestTransportResolution:
             manager._resolve_transport(manager.connections[0])
             == expected
         )
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"mcp_url": "touch pwned"},
+            {"mcp_url": "touch pwned", "transport": "stdio"},
+            {"mcp_url": "file:///etc/passwd"},
+        ],
+    )
+    def test_url_is_never_run_as_a_command(self, kwargs):
+        manager = MCPManager(**kwargs)
+        with pytest.raises(AgentMCPConnectionError):
+            manager._client_context(manager.connections[0], {}, None)
+
+    def test_stdio_server_does_not_inherit_parent_env(
+        self, monkeypatch
+    ):
+        import mcp.client.stdio as mcp_stdio
+
+        monkeypatch.setenv("SWARMS_TEST_SECRET", "sk-secret")
+        captured = {}
+        monkeypatch.setattr(
+            mcp_stdio,
+            "stdio_client",
+            lambda params: captured.setdefault("params", params),
+        )
+        manager = MCPManager(
+            mcp_config=MCPConnection(
+                command="python",
+                args=["s.py"],
+                env={"WANTED": "yes"},
+            )
+        )
+        manager._client_context(manager.connections[0], {}, None)
+        env = captured["params"].env
+        assert "SWARMS_TEST_SECRET" not in env
+        assert env["WANTED"] == "yes"
+        assert "PATH" in env
 
     def test_explicit_transport_still_wins_over_url(self):
         manager = MCPManager(
@@ -560,7 +598,7 @@ class TestToolDiscovery:
             manager.get_tools()
         message = str(excinfo.value)
         assert apikey_server.url in message
-        if MCP_IS_V2:
+        if _mcp_is_v2():
             # 2.x collapses every non-404 non-2xx response into
             # ErrorData(INTERNAL_ERROR, "Server returned an error
             # response") (mcp/client/streamable_http.py), so the status
@@ -725,6 +763,29 @@ class TestToolExecution:
         )
         assert results[0]["is_error"] is True
         assert "does_not_exist" in results[0]["error"]
+
+    def test_unknown_tool_on_single_server_is_not_sent(
+        self, open_manager
+    ):
+        results = open_manager.execute_tool_calls(
+            [
+                {
+                    "function": {
+                        "name": "get_weather",
+                        "arguments": "{}",
+                    }
+                },
+                {
+                    "function": {
+                        "name": "add",
+                        "arguments": '{"a": 2, "b": 3}',
+                    }
+                },
+            ]
+        )
+        assert results[0]["server"] is None
+        assert "get_weather" in results[0]["error"]
+        assert results[1]["result"] == "5"
 
     def test_no_tool_calls_returns_empty(self, open_manager):
         assert open_manager.execute_tool_calls("just text") == []
@@ -1018,6 +1079,65 @@ class TestOAuthPlumbing:
         server.start()
         with pytest.raises(AgentMCPConnectionError):
             server.wait(timeout=0.5)
+
+    def test_oauth_accepts_a_resource_served_at_a_path(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        port = _free_port()
+        base = f"http://127.0.0.1:{port}"
+        metadata_path = "/.well-known/oauth-protected-resource/mcp"
+        requested = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                requested.append(self.path)
+                if self.path != metadata_path:
+                    self.send_error(404)
+                    return
+                body = json.dumps(
+                    {
+                        "resource": f"{base}/mcp",
+                        "authorization_servers": [base],
+                    }
+                ).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers["Content-Length"]))
+                self.send_response(401)
+                self.send_header(
+                    "WWW-Authenticate",
+                    f'Bearer resource_metadata="{base}{metadata_path}"',
+                )
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        server = HTTPServer(("127.0.0.1", port), Handler)
+        threading.Thread(
+            target=server.serve_forever, daemon=True
+        ).start()
+        manager = MCPManager(
+            mcp_url=MCPConnection(
+                url=f"{base}/mcp",
+                oauth=MCPOAuthConfig(use_token_cache=False),
+            ),
+            retry_attempts=1,
+        )
+        try:
+            with pytest.raises(AgentMCPConnectionError):
+                manager.get_tools()
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert "/.well-known/oauth-authorization-server" in requested
 
 
 ########################################################

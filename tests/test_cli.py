@@ -302,7 +302,7 @@ class TestHandleRunAgents:
             mock_err.assert_called_once()
             assert "File Error" in mock_err.call_args[0][0]
 
-    @patch("swarms.cli.main.create_agents_from_yaml")
+    @patch("swarms.cli.main.AgentLoader.load_agents_from_yaml")
     def test_runs_agents_from_yaml(self, mock_create, tmp_path):
         yaml_file = tmp_path / "agents.yaml"
         yaml_file.write_text("agents: []")
@@ -315,7 +315,7 @@ class TestHandleRunAgents:
             yaml_file=str(yaml_file), return_type="run_swarm"
         )
 
-    @patch("swarms.cli.main.create_agents_from_yaml")
+    @patch("swarms.cli.main.AgentLoader.load_agents_from_yaml")
     def test_handles_api_key_error(self, mock_create, tmp_path):
         yaml_file = tmp_path / "agents.yaml"
         yaml_file.write_text("agents: []")
@@ -330,7 +330,7 @@ class TestHandleRunAgents:
             mock_err.assert_called_once()
             assert "API Key" in mock_err.call_args[0][0]
 
-    @patch("swarms.cli.main.create_agents_from_yaml")
+    @patch("swarms.cli.main.AgentLoader.load_agents_from_yaml")
     def test_handles_context_length_error(
         self, mock_create, tmp_path
     ):
@@ -376,6 +376,29 @@ class TestHandleLoadMarkdown:
         mock_load.assert_called_once_with(
             "./agents/", concurrent=True
         )
+
+    def test_loads_a_directory_and_a_single_file(self, tmp_path):
+        from swarms.cli.main import load_markdown_agents
+
+        for name in ("Alpha", "Beta"):
+            (tmp_path / f"{name}.md").write_text(
+                f"---\nname: {name}\n---\nYou are {name}.\n"
+            )
+
+        with patch("swarms.cli.main.show_error") as mock_err:
+            from_dir = load_markdown_agents(
+                str(tmp_path), concurrent=False
+            )
+            from_file = load_markdown_agents(
+                str(tmp_path / "Alpha.md")
+            )
+
+        mock_err.assert_not_called()
+        assert sorted(a.agent_name for a in from_dir) == [
+            "Alpha",
+            "Beta",
+        ]
+        assert [a.agent_name for a in from_file] == ["Alpha"]
 
 
 # ===========================================================================
@@ -646,6 +669,33 @@ class TestShowAsciiArt:
         # Should just print, never crash
         show_ascii_art()
 
+    def test_no_key_hint_renders_markup(self, monkeypatch):
+        """The no-key hint shows bold text, not raw markup tags."""
+        import io
+
+        from rich.console import Console
+
+        from swarms.cli import utils
+
+        for key in (
+            "OPENAI_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "GROQ_API_KEY",
+            "GOOGLE_API_KEY",
+            "COHERE_API_KEY",
+            "MISTRAL_API_KEY",
+            "TOGETHER_API_KEY",
+        ):
+            monkeypatch.delenv(key, raising=False)
+        recorder = Console(record=True, width=120, file=io.StringIO())
+        monkeypatch.setattr(utils, "console", recorder)
+
+        utils.show_ascii_art()
+        output = recorder.export_text()
+
+        assert "No API key found — run swarms setup-check" in output
+        assert "[bold]" not in output
+
 
 # ===========================================================================
 # 13. main() entry point integration
@@ -667,8 +717,9 @@ class TestMain:
         from swarms.cli.main import main
 
         with patch("sys.argv", ["swarms", "bad-command"]):
-            with pytest.raises(SystemExit):
+            with pytest.raises(SystemExit) as exc_info:
                 main()
+            assert exc_info.value.code == 2
 
     @patch(
         "swarms.cli.main.route_command",

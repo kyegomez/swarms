@@ -60,7 +60,7 @@ This directory contains comprehensive guides and tutorials for using Swarms effe
 - [02_round_robin_swarm_routing.py](880_update_changelog_examples/02_round_robin_swarm_routing.py) - Round robin swarm routing
 - [03_graph_workflow_rustworkx.py](880_update_changelog_examples/03_graph_workflow_rustworkx.py) - Graph workflow with RustWorkX
 - [04_agent_rearrange.py](880_update_changelog_examples/04_agent_rearrange.py) - Agent rearrange example
-- [05_swarm_rearrange.py](880_update_changelog_examples/05_swarm_rearrange.py) - Swarm rearrange example
+- [05_nested_swarms.py](880_update_changelog_examples/05_nested_swarms.py) - Nested swarms in an AgentRearrange flow
 - [06_spreadsheet_swarm.py](880_update_changelog_examples/06_spreadsheet_swarm.py) - Spreadsheet swarm example
 - [07_model_router.py](880_update_changelog_examples/07_model_router.py) - Model router example
 - [08_self_moa_seq.py](880_update_changelog_examples/08_self_moa_seq.py) - Self MOA sequential example

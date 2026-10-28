@@ -42,6 +42,7 @@ from swarms.prompts.heavy_swarm_prompts import (
 )
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.swarm_router import SwarmRouter
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 load_dotenv()
 
@@ -783,6 +784,79 @@ class TestUsage:
         swarm.usage["input_tokens"] = 999
 
         assert swarm.usage["input_tokens"] == 30
+
+    @pytest.mark.parametrize("show_dashboard", [False, True])
+    def test_every_agent_runs_on_a_one_cpu_host(
+        self, monkeypatch, show_dashboard
+    ):
+        monkeypatch.setattr("os.cpu_count", lambda: 1)
+        max_workers_95_percent.cache_clear()
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+        max_workers_95_percent.cache_clear()
+        assert swarm.max_workers == 1
+        swarm.show_dashboard = show_dashboard
+        self._stub_agents(swarm)
+
+        swarm.run("task")
+
+        assert swarm.usage["input_tokens"] == 30 + 100 * 5
+
+
+def test_second_run_carries_nothing_from_the_first(monkeypatch):
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+    )
+    roles = ["research", "analysis", "alternatives", "verification"]
+    monkeypatch.setattr(
+        swarm,
+        "execute_question_generation",
+        lambda task, img=None: {
+            f"{role}_question": f"{role} on {task}" for role in roles
+        },
+    )
+    for agent in swarm.agents.values():
+
+        def _run(task=None, img=None, *args, _agent=agent, **kwargs):
+            _agent.short_memory.add(role="User", content=task)
+            return _agent.short_memory.get_str()
+
+        agent.run = _run
+
+    swarm.run("volcanoes")
+    second = str(swarm.run("glaciers"))
+
+    assert "research on glaciers" in second
+    assert "volcanoes" not in second
+
+
+@pytest.mark.parametrize(
+    "questions",
+    [
+        RuntimeError("question model is down"),
+        {"error": "question model is down"},
+    ],
+)
+def test_run_raises_when_question_generation_fails(
+    monkeypatch, questions
+):
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+    )
+
+    def generate(task, img=None):
+        if isinstance(questions, Exception):
+            raise questions
+        return questions
+
+    monkeypatch.setattr(
+        swarm, "execute_question_generation", generate
+    )
+
+    with pytest.raises(RuntimeError, match="question model is down"):
+        swarm.run("task")
 
 
 class TestSwarmRouterGrokIntegration:

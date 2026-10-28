@@ -621,7 +621,7 @@ def test_agent_registry_find_agent_by_id():
 
         registry.add(agent)
 
-        found_agent = registry.find_agent_by_id(agent.agent_name)
+        found_agent = registry.find_agent_by_id(agent.id)
 
         assert (
             found_agent is not None

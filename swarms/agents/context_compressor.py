@@ -9,10 +9,9 @@ budget for an unbounded run.
 
 from typing import Any, Optional
 
-from litellm import completion
+from swarms.utils.llm_backend import completion
+from swarms.utils.litellm_wrapper import usage_from_response
 from loguru import logger
-
-from swarms.utils.litellm_tokenizer import count_tokens
 
 
 COMPRESSION_SYSTEM_PROMPT = """
@@ -52,7 +51,7 @@ class ContextCompressor:
         self,
         threshold: float = 0.9,
         summarizer_model: Optional[str] = None,
-        summarizer_temperature: float = 0.2,
+        summarizer_temperature: Optional[float] = None,
         summarizer_max_tokens: int = 4000,
     ):
         """
@@ -78,8 +77,9 @@ class ContextCompressor:
         context_length = getattr(agent, "context_length", None)
         if not context_length:
             return 0.0
-        history = agent.short_memory.return_history_as_string()
-        return count_tokens(history) / float(context_length)
+        # Counts are cached per message, so only messages added since the last check are tokenized.
+        tokens = agent.short_memory.count_history_tokens()
+        return tokens / float(context_length)
 
     def should_compress(self, agent: Any) -> bool:
         """True once usage has crossed the threshold.
@@ -149,7 +149,13 @@ class ContextCompressor:
             ],
             temperature=self.summarizer_temperature,
             max_tokens=self.summarizer_max_tokens,
+            # RouteHub reads this per call; litellm otherwise inherits it from the last agent built.
+            drop_params=True,
         )
+        call_usage = usage_from_response(response)
+        add_usage = getattr(agent, "_add_usage", None)
+        if add_usage is not None and call_usage is not None:
+            add_usage(call_usage)
         return response.choices[0].message.content
 
     def compress(self, agent: Any) -> Optional[str]:
@@ -162,7 +168,7 @@ class ContextCompressor:
         if not history.strip():
             return None
 
-        prior_tokens = count_tokens(history)
+        prior_tokens = agent.short_memory.count_history_tokens()
         agent_name = getattr(agent, "agent_name", "agent")
         logger.info(
             f"[ContextCompressor] Triggering compression for "
@@ -180,11 +186,11 @@ class ContextCompressor:
             "stay within the context window.\n\n"
             f"{summary}"
         )
-        agent.short_memory.compact(summary=summary_content)
-
-        new_tokens = count_tokens(
-            agent.short_memory.return_history_as_string()
+        agent.short_memory.compact(
+            summary=summary_content, summary_role="user"
         )
+
+        new_tokens = agent.short_memory.count_history_tokens()
         logger.info(
             f"[ContextCompressor] Compressed {prior_tokens} -> "
             f"{new_tokens} tokens for '{agent_name}'"

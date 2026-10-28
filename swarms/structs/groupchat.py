@@ -2,15 +2,6 @@
 GroupChat
 ================
 
-An asynchronous groupchat where each agent independently decides whether to
-respond to messages, on its own schedule. There are no rounds — any agent (or
-several agents at once) can chime in whenever they have something to say.
-
-This module is useful when a discussion should feel more like an open room than
-a turn-based panel. Each participant receives every message, evaluates whether
-it has something useful to add, and only broadcasts a reply when its self-rated
-desire to speak clears the configured threshold.
-
 Flow (turn-based, one speaker per turn):
 
     task -> posted to the shared conversation; every agent sees it
@@ -61,12 +52,17 @@ import ast
 import asyncio
 import json
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, List, Optional, Tuple
 
 from swarms.structs.execution_utils import batched_run
 from swarms.prompts.groupchat_prompt import GROUPCHAT_DECIDE_PROMPT
 from swarms.structs.context_utils import messages_for
 from swarms.structs.agent import Agent
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
 from swarms.utils.formatter import formatter
@@ -198,10 +194,10 @@ class GroupChat(SerializableMixin):
         threshold: float = 0.5,
         recency_penalty: float = 0.3,
         recency_window: int = 1,
-        idle_timeout: float = 8.0,
         output_type: str = "str-all-except-first",
         verbose: bool = False,
         auto_equip: bool = True,
+        channel: Optional[CommsChannel] = None,
     ):
         """Initialize the turn-based groupchat runtime.
 
@@ -219,8 +215,6 @@ class GroupChat(SerializableMixin):
                 single agent from monologuing. Set to ``0.0`` to disable.
             recency_window: How many of the most recent speakers are subject to
                 ``recency_penalty``.
-            idle_timeout: Deprecated/unused — the chat now ends on a bidding
-                lull rather than a wall-clock timeout. Kept for compatibility.
             output_type: Format passed to ``history_output_formatter``.
             verbose: Whether to emit internal log messages and print each
                 posted message as a panel to stdout.
@@ -240,12 +234,15 @@ class GroupChat(SerializableMixin):
         self.threshold = threshold
         self.recency_penalty = recency_penalty
         self.recency_window = recency_window
-        self.idle_timeout = idle_timeout
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
 
-        self.conversation = Conversation(time_enabled=False)
+        self.channel = channel
+        claim_agents(self.agents, channel, self.name)
+        self.conversation = Conversation(
+            time_enabled=False, channel=channel
+        )
 
         # agents may be None, the documented error is ValueError not TypeError
         if self.agents is None or len(self.agents) < 2:
@@ -478,9 +475,16 @@ class GroupChat(SerializableMixin):
         Returns:
             Conversation history formatted according to ``self.output_type``.
         """
+        asyncio.get_running_loop().set_default_executor(
+            ThreadPoolExecutor(
+                max_workers=max(1, len(self.agents or ()))
+            )
+        )
         self._log("info", f"[{self.name}] initial task: {task}")
 
-        self.conversation.clear()
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
 
         self._post(
             sender="User",

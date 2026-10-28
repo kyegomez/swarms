@@ -17,17 +17,16 @@ The main class `LiteLLM` provides a simple interface for running LLM tasks with 
 for various input modalities and output formats.
 """
 
-import socket
+import copy
 import traceback
 from functools import lru_cache
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
-import litellm
 import requests
-from litellm import acompletion, completion, supports_vision
 from loguru import logger
 from pydantic import BaseModel
 
+from swarms.utils import llm_backend
 from swarms.utils.formatter import formatter
 from swarms.utils.image_file_b64 import (
     get_image_base64,
@@ -35,18 +34,34 @@ from swarms.utils.image_file_b64 import (
     is_base64_encoded,
     save_base64_as_image,
 )
+from swarms.utils.llm_backend import acompletion, completion
 
 
-@lru_cache(maxsize=None)
+# Only a yes is remembered: RouteHub answers no while OpenRouter's model list is unreachable.
+_VISION_MODELS = set()
+
+
 def _model_supports_vision(model: str) -> bool:
-    """Cached litellm.supports_vision lookup (pure function of model name)."""
-    return supports_vision(model=model)
+    """Whether the model accepts images.
+
+    Args:
+        model (str): The model name.
+
+    Returns:
+        bool: The LLM backend's answer.
+    """
+    if model in _VISION_MODELS:
+        return True
+    if llm_backend.supports_vision(model=model):
+        _VISION_MODELS.add(model)
+        return True
+    return False
 
 
 @lru_cache(maxsize=None)
 def _model_supports_reasoning(model: str) -> bool:
-    """Cached litellm.supports_reasoning lookup (pure function of model name)."""
-    return litellm.supports_reasoning(model=model)
+    """Cached supports_reasoning lookup (pure function of model name)."""
+    return llm_backend.supports_reasoning(model=model)
 
 
 class LiteLLMException(Exception):
@@ -229,7 +244,7 @@ class LiteLLM:
         prompt_caching: bool = False,
         cache_config: dict = None,
         mcp_call: bool = False,
-        top_p: float = 1.0,
+        top_p: Optional[float] = None,
         functions: List[dict] = None,
         return_all: bool = False,
         base_url: str = None,
@@ -303,7 +318,7 @@ class LiteLLM:
             mcp_call (bool, optional): Whether this is an MCP (Model Context Protocol) call.
                 Affects how tool calls are formatted in the response. Defaults to False.
             top_p (float, optional): Top-p (nucleus) sampling parameter. Controls diversity
-                via nucleus sampling. Defaults to 1.0.
+                via nucleus sampling. Defaults to None, so the provider's default applies.
             functions (List[dict], optional): Legacy function definitions (deprecated in
                 favor of tools_list_dictionary). Defaults to None.
             return_all (bool, optional): Whether to return the complete response object
@@ -374,19 +389,27 @@ class LiteLLM:
         self.agent_name = agent_name
         self.usage_hook = usage_hook
         self.usage = empty_usage()
+        self.last_finish_reason: Optional[str] = None
+        self.last_response_model: Optional[str] = None
+        self.last_request: Optional[dict] = None
+        self.last_response: Any = None
         self.modalities = []
         self.messages = []  # Initialize messages list
 
-        # Configure litellm settings
-        litellm.set_verbose = (
-            verbose  # Disable verbose mode for better performance
-        )
-        litellm.ssl_verify = ssl_verify
-        litellm.num_retries = (
-            retries  # Add retries for better reliability
-        )
-
-        litellm.drop_params = drop_params
+        # litellm reads these from module globals shared by every agent; RouteHub takes them per call.
+        self._backend_options = {}
+        self.retries = retries
+        backend_options = {
+            "set_verbose": verbose,
+            "ssl_verify": ssl_verify,
+            "drop_params": drop_params,
+        }
+        if llm_backend.BACKEND == "litellm":
+            litellm = llm_backend.backend_module()
+            for name, value in backend_options.items():
+                setattr(litellm, name, value)
+        else:
+            self._backend_options = backend_options
 
         # Add system prompt if present (Anthropic rejects empty system blocks)
         if isinstance(self.system_prompt, str):
@@ -896,13 +919,15 @@ class LiteLLM:
 
         # Cache the system prompt — the largest stable prefix of the request.
         if self._cache_opt("cache_system_prompt", True):
-            for m in messages:
+            for i, m in enumerate(messages):
                 if isinstance(m, dict) and m.get("role") == "system":
-                    self._add_cache_control(m)
+                    messages[i] = copy.deepcopy(m)
+                    self._add_cache_control(messages[i])
                     break
 
         # Cache through the final message for incremental multi-turn caching.
         if self._cache_opt("cache_messages", True):
+            messages[-1] = copy.deepcopy(messages[-1])
             self._add_cache_control(messages[-1])
 
     def _maybe_cache_tools(self, tools: list) -> list:
@@ -1185,7 +1210,16 @@ class LiteLLM:
         if img is not None:
             out = _model_supports_vision(self.model_name)
 
-            if out is False:
+            # RouteHub's catalog comes from the network, so a model it can't find may still take images.
+            if (
+                out is False
+                and llm_backend.BACKEND == "routehub"
+                and self.model_name not in llm_backend.model_list
+            ):
+                logger.warning(
+                    f"Can't confirm that {self.model_name} accepts images, sending the image anyway."
+                )
+            elif out is False:
                 raise ValueError(
                     f"Model {self.model_name} does not support vision"
                 )
@@ -1203,33 +1237,6 @@ class LiteLLM:
         """
         name = (model_name or "").lower()
         return "claude" in name or "anthropic" in name
-
-    @staticmethod
-    def check_internet_connection(
-        host: str = "8.8.8.8", port: int = 53, timeout: int = 3
-    ) -> bool:
-        """
-        Check if there is an active internet connection.
-
-        This method attempts to establish a socket connection to a DNS server
-        (default is Google's DNS at 8.8.8.8) to verify internet connectivity.
-
-        Args:
-            host (str, optional): The host to connect to for checking connectivity.
-                Defaults to "8.8.8.8" (Google DNS).
-            port (int, optional): The port to use for the connection. Defaults to 53 (DNS).
-            timeout (int, optional): Connection timeout in seconds. Defaults to 3.
-
-        Returns:
-            bool: True if internet connection is available, False otherwise.
-        """
-        try:
-            with socket.create_connection(
-                (host, port), timeout=timeout
-            ):
-                return True
-        except OSError:
-            return False
 
     def _build_completion_params(
         self,
@@ -1254,6 +1261,7 @@ class LiteLLM:
             5. Defaults from __init__
         """
         completion_params = {
+            **self._backend_options,
             "model": self.model_name,
             "messages": self._prepare_messages(
                 task=task, img=img, imgs=imgs, messages=messages
@@ -1261,6 +1269,8 @@ class LiteLLM:
             "stream": self.stream,
             self._output_token_key(): self.max_tokens,
             "caching": self.caching,
+            # Per request: litellm drops its module-level count after the first retried call.
+            "num_retries": self.retries,
         }
 
         # Only include temperature if explicitly set (None = provider
@@ -1383,6 +1393,11 @@ class LiteLLM:
         if self.stream or response is None:
             return
         self._accumulate_usage(usage_from_response(response))
+        choices = _field(response, "choices") or []
+        self.last_finish_reason = (
+            _field(choices[0], "finish_reason") if choices else None
+        )
+        self.last_response_model = _field(response, "model")
 
     def _track_streaming_usage(self, stream: any):
         """Yield the stream's chunks, recording the trailing usage chunk.
@@ -1392,10 +1407,20 @@ class LiteLLM:
         It is consumed for accounting and not forwarded, so consumers never
         see an empty token.
         """
+        self.last_finish_reason = None
+        self.last_response_model = None
         for chunk in stream:
+            choices = _field(chunk, "choices") or []
+            if choices and _field(choices[0], "finish_reason"):
+                self.last_finish_reason = _field(
+                    choices[0], "finish_reason"
+                )
+            self.last_response_model = (
+                _field(chunk, "model") or self.last_response_model
+            )
             if _field(chunk, "usage"):
                 self._accumulate_usage(usage_from_response(chunk))
-                if not _field(chunk, "choices"):
+                if not choices:
                     continue
             yield chunk
 
@@ -1438,21 +1463,15 @@ class LiteLLM:
     def _raise_network_error(self, network_error: Exception):
         """
         Convert a low-level network exception into a NetworkConnectionError
-        with a troubleshooting message tailored to the failure mode.
+        that keeps the original error and adds troubleshooting guidance.
         """
-        if not self.check_internet_connection():
-            error_msg = (
-                f"No internet connection detected while trying to use model '{self.model_name}'.\n\n"
-                "Check your connection, or use a local model instead (e.g., Ollama):\n"
-                "  model = LiteLLM(model_name='ollama/llama2')\n"
-            )
-        else:
-            error_msg = (
-                f"Network error occurred while connecting to '{self.model_name}': {network_error}\n\n"
-                "The endpoint may be temporarily unavailable, the connection timed out,\n"
-                "or a firewall/proxy is blocking it. Consider a local model as a fallback:\n"
-                "  model = LiteLLM(model_name='ollama/llama2')\n"
-            )
+        error_msg = (
+            f"Network error while connecting to '{self.model_name}': "
+            f"{type(network_error).__name__}: {network_error}\n\n"
+            "Check your connection, base_url, proxy and TLS settings, or\n"
+            "consider a local model as a fallback:\n"
+            "  model = LiteLLM(model_name='ollama/llama2')\n"
+        )
         logger.error(error_msg)
         raise NetworkConnectionError(error_msg) from network_error
 
@@ -1507,6 +1526,8 @@ class LiteLLM:
             llm.run("Write a story", temperature=0.9, max_tokens=2000)
             ```
         """
+        self.last_request = None
+        self.last_response = None
         try:
             completion_params = self._build_completion_params(
                 task,
@@ -1516,6 +1537,7 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
+            self.last_request = completion_params
             try:
                 response = completion(**completion_params)
             except Exception as error:
@@ -1527,10 +1549,17 @@ class LiteLLM:
                 logger.warning(
                     f"{self.model_name} rejected the output-token key, retrying: {error}"
                 )
+                self.last_request = retry_params
                 response = completion(**retry_params)
+            if not self.stream:
+                self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
-        except self._NETWORK_ERRORS as network_error:
+        except (
+            *self._NETWORK_ERRORS,
+            llm_backend.APIConnectionError,
+            llm_backend.Timeout,
+        ) as network_error:
             self._raise_network_error(network_error)
         except LiteLLMException as error:
             logger.error(
@@ -1559,6 +1588,8 @@ class LiteLLM:
         Accepts the same arguments and returns the same output types as
         `run` (see its docstring).
         """
+        self.last_request = None
+        self.last_response = None
         try:
             completion_params = self._build_completion_params(
                 task,
@@ -1568,6 +1599,7 @@ class LiteLLM:
                 runtime_kwargs=kwargs,
                 messages=messages,
             )
+            self.last_request = completion_params
             try:
                 response = await acompletion(**completion_params)
             except Exception as error:
@@ -1579,10 +1611,17 @@ class LiteLLM:
                 logger.warning(
                     f"{self.model_name} rejected the output-token key, retrying: {error}"
                 )
+                self.last_request = retry_params
                 response = await acompletion(**retry_params)
+            if not self.stream:
+                self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
-        except self._NETWORK_ERRORS as network_error:
+        except (
+            *self._NETWORK_ERRORS,
+            llm_backend.APIConnectionError,
+            llm_backend.Timeout,
+        ) as network_error:
             self._raise_network_error(network_error)
         except LiteLLMException as error:
             logger.error(
