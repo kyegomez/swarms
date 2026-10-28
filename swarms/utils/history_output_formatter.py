@@ -1,4 +1,3 @@
-import yaml
 from typing import Any
 from swarms.utils.output_types import HistoryOutputType
 
@@ -45,6 +44,8 @@ def history_output_formatter(
     elif type == "all":
         return conversation.get_str()
     elif type == "yaml":
+        import yaml
+
         return yaml.safe_dump(conversation.to_dict(), sort_keys=False)
     elif type == "dict-all-except-first":
         return conversation.return_all_except_first()

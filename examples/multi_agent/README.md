@@ -106,7 +106,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [sector_analysis_hiearchical_swarm.py](hiearchical_swarm/sector_analysis_hiearchical_swarm.py) - Sector analysis
 - [hiearchical_examples/](hiearchical_swarm/hiearchical_examples/) - Additional hierarchical examples
 - [hiearchical_swarm_ui/](hiearchical_swarm/hiearchical_swarm_ui/) - UI components
-- [hscf/](hiearchical_swarm/hscf/) - Hierarchical framework examples
 
 ## Majority Voting
 - [majority_voting_example_new.py](majority_voting/majority_voting_example_new.py) - Updated voting example

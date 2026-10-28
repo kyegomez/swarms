@@ -1559,7 +1559,11 @@ class LiteLLM:
                 self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
-        except self._NETWORK_ERRORS as network_error:
+        except (
+            *self._NETWORK_ERRORS,
+            llm_backend.APIConnectionError,
+            llm_backend.Timeout,
+        ) as network_error:
             self._raise_network_error(network_error)
         except LiteLLMException as error:
             logger.error(
@@ -1617,7 +1621,11 @@ class LiteLLM:
                 self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
-        except self._NETWORK_ERRORS as network_error:
+        except (
+            *self._NETWORK_ERRORS,
+            llm_backend.APIConnectionError,
+            llm_backend.Timeout,
+        ) as network_error:
             self._raise_network_error(network_error)
         except LiteLLMException as error:
             logger.error(

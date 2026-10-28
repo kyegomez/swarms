@@ -25,7 +25,6 @@ chat = GroupChat(
     agents=[afu, nunu],
     max_loops=8,
     threshold=0.5,
-    idle_timeout=8.0,
 )
 
 response = chat.run(
