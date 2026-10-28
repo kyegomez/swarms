@@ -70,8 +70,7 @@ def bootup():
         try:
             disable_logging()
         except Exception as e:
-            logger.error(f"Telemetry error: {e}")
+            logger.debug(f"Telemetry error: {e}")
 
     except Exception as e:
-        logger.error(f"Bootup error: {str(e)}")
-        raise
+        logger.debug(f"Bootup error: {str(e)}")

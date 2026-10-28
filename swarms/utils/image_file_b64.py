@@ -7,7 +7,6 @@ converting them to base64-encoded data URIs suitable for use with LLM APIs.
 
 import base64
 import ipaddress
-import re
 import socket
 import uuid
 from functools import lru_cache
@@ -156,16 +155,11 @@ def is_base64_encoded(image_source: str) -> bool:
     if image_source.startswith("data:image"):
         return True
 
-    # Length plus character set, since a raw base64 string has no data URI prefix to match on.
-    if len(image_source) > 100:  # Base64 images are typically long
+    if len(image_source) > 100:
         try:
-            # Try to decode a sample to verify it's valid base64
-            base64.b64decode(image_source[:100] + "==", validate=True)
-            # Check if it contains only base64 characters (A-Z, a-z, 0-9, +, /, =)
-            base64_pattern = re.compile(r"^[A-Za-z0-9+/=]+$")
-            if base64_pattern.match(image_source):
-                return True
-        except Exception as e:
+            base64.b64decode(image_source, validate=True)
+            return True
+        except ValueError as e:
             logger.debug(f"Base64 check failed: {e}")
 
     return False
