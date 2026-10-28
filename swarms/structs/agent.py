@@ -1348,10 +1348,7 @@ class Agent:
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
-        # Log with positional arguments: an f-string bakes the error text into
-        # the template, and loguru then treats braces in a provider's message
-        # (e.g. a JSON body like [{'error': ...}]) as placeholders and raises
-        # KeyError, masking the original exception.
+        # Positional args: loguru would read braces in provider error text as placeholders.
         logger.opt(exception=True).error(
             "{} error: {}", self.agent_name, error
         )
