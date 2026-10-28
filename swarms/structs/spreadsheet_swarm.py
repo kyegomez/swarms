@@ -63,7 +63,7 @@ class SpreadSheetSwarm:
     ):
         self.name = name
         self.description = description
-        self.agents = agents
+        self.agents = agents or []
         self.save_file_path = save_file_path
         self.autosave = autosave
         self.max_loops = max_loops
@@ -114,8 +114,10 @@ class SpreadSheetSwarm:
                 f"SpreadSheetSwarm Name: {self.name} reliability checks in progress..."
             )
 
-        if not self.agents:
-            raise ValueError("No agents are provided.")
+        if not self.agents and not self.load_path:
+            raise ValueError(
+                "No agents are provided and no load_path to load them from."
+            )
 
         if not self.max_loops:
             raise ValueError("No max loops are provided.")
@@ -156,7 +158,7 @@ class SpreadSheetSwarm:
                     new_agent = Agent(
                         agent_name=agent_name,
                         system_prompt=row["system_prompt"],
-                        description=row["description"],
+                        agent_description=row["description"],
                         model_name=(
                             row["model_name"]
                             if "model_name" in row
@@ -165,9 +167,9 @@ class SpreadSheetSwarm:
                         docs=[row["docs"]] if "docs" in row else "",
                         dynamic_temperature_enabled=True,
                         max_loops=(
-                            row["max_loops"]
-                            if "max_loops" in row
-                            else 1
+                            int(row["max_loops"])
+                            if (row.get("max_loops") or "").isdigit()
+                            else row.get("max_loops") or 1
                         ),
                         user_name=(
                             row["user_name"]
@@ -193,6 +195,10 @@ class SpreadSheetSwarm:
 
     def load_from_csv(self):
         self._load_from_csv()
+        if not self.agents:
+            raise ValueError(
+                f"No agents could be loaded from {self.load_path}"
+            )
 
     @trace_run("SpreadSheetSwarm.run_from_config", input_params=())
     def run_from_config(self):
