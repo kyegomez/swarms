@@ -1182,6 +1182,16 @@ Multi-line comment blocks keep arriving in PRs and keep getting removed. Write t
 
 ---
 
+## Tests: none for removing unused code
+
+When a change only deletes code nothing uses (a method, a parameter, an attribute, a branch or a line), do not add a unit test for it. A test that the old name is gone, that a signature lacks the parameter, or that passing it raises `TypeError` checks that the deletion happened, which the diff already shows, and it guards nothing a user relies on.
+
+- Delete tests that only exercised the removed code.
+- Run the existing tests for the module to show nothing else broke.
+- If the removal changes behaviour a caller can see, it was not unused: test that behaviour as for any other change.
+
+---
+
 ## What to Avoid
 
 **Don't import from submodules directly** — always import from `swarms`:
