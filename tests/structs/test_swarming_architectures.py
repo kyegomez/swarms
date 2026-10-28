@@ -8,6 +8,8 @@ from swarms.structs.agent import Agent
 from swarms.structs.broadcast import broadcast
 from swarms.structs.swarming_architectures import (
     circular_swarm,
+    grid_swarm,
+    pyramid_swarm,
     star_swarm,
 )
 
@@ -134,6 +136,37 @@ def test_nothing_is_handed_a_flattened_role_colon_blob():
         assert "User: " not in str(
             call["task"]
         ), f"{call['agent']} received flattened prose: {call['task']}"
+
+
+def test_grid_and_pyramid_leave_the_callers_task_list_intact():
+    """Both helpers used to pop from the caller's list until it was empty."""
+    calls = []
+    grid_tasks = ["t1", "t2", "t3", "t4"]
+    history = grid_swarm(
+        agents=_agents(["A", "B", "C", "D"], calls),
+        tasks=grid_tasks,
+        output_type="dict",
+    )
+    pyramid_tasks = ["p1", "p2", "p3"]
+    pyramid_swarm(
+        agents=_agents(["E", "F", "G"], calls), tasks=pyramid_tasks
+    )
+
+    assert grid_tasks == ["t1", "t2", "t3", "t4"]
+    assert pyramid_tasks == ["p1", "p2", "p3"]
+    assert history[0] == {
+        "role": "User",
+        "content": ["t1", "t2", "t3", "t4"],
+    }
+    assert [c["task"] for c in calls] == [
+        "t1",
+        "t2",
+        "t3",
+        "t4",
+        "p1",
+        "p2",
+        "p3",
+    ]
 
 
 if __name__ == "__main__":
