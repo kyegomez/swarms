@@ -16,8 +16,6 @@ from typing import (
     Union,
 )
 
-import yaml
-
 from swarms.structs.comms_channel import CommsChannel
 from swarms.utils.litellm_tokenizer import count_tokens
 
@@ -1124,6 +1122,8 @@ class Conversation:
         Args:
             force (bool, optional): If True, saves regardless of autosave setting. Defaults to True.
         """
+        import yaml
+
         try:
             # Check if saving is allowed
             if not self.autosave and not force:
@@ -1261,6 +1261,8 @@ class Conversation:
         Args:
             filename (str): Filename to load from.
         """
+        import yaml
+
         if filename is not None and os.path.exists(filename):
             try:
                 with open(filename, "r", encoding="utf-8") as f:
@@ -1460,6 +1462,8 @@ class Conversation:
         Returns:
             str: The conversation history as a YAML string.
         """
+        import yaml
+
         return yaml.dump(self.conversation_history)
 
     def to_list(self):
