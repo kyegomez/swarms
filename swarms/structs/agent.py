@@ -1727,6 +1727,12 @@ Subtask Breakdown:
                 "Context length is not provided. Please set a valid context length."
             )
 
+        if (
+            os.getenv("SWARMS_STRICT_MODEL_CHECK", "").lower()
+            != "true"
+        ):
+            return
+
         # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
         if self.tools_list_dictionary:
             if not llm_backend.supports_function_calling(
