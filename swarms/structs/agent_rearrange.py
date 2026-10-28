@@ -30,7 +30,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
-from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.utils.workspace_manager import WorkspaceManager, flush
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -999,6 +999,8 @@ class AgentRearrange(SerializableMixin):
             self._catch_error(e)
         finally:
             self.workspace.save_conversation(self.conversation)
+            if self.autosave:
+                flush()
 
     def __call__(self, task: str, *args, **kwargs):
         """

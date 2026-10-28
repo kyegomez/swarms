@@ -54,6 +54,13 @@ def _write_pending(path: str) -> None:
             logger.warning(f"Failed to save {path}: {e}")
 
 
+def flush() -> None:
+    try:
+        _writer.submit(lambda: None).result()
+    except RuntimeError:
+        pass
+
+
 def sanitize_name(name: str) -> str:
     """
     Make a name safe to use as a single path segment.

@@ -17,7 +17,7 @@ from swarms.telemetry.otel import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
-from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.utils.workspace_manager import WorkspaceManager, flush
 
 logger = initialize_logger(log_folder="sequential_workflow")
 
@@ -305,6 +305,8 @@ class SequentialWorkflow:
         self.workspace.save_conversation(
             getattr(self.agent_rearrange, "conversation", None)
         )
+        if self.autosave:
+            flush()
 
     @trace_run(
         "SequentialWorkflow.run",

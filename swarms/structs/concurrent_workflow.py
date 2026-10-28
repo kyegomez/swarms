@@ -21,7 +21,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.utils.workspace_manager import WorkspaceManager, flush
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -646,12 +646,11 @@ class ConcurrentWorkflow:
                     task, img, imgs, streaming_callback
                 )
 
-            self.workspace.save_conversation()
-
             return result
-        except Exception:
+        finally:
             self.workspace.save_conversation()
-            raise
+            if self.autosave:
+                flush()
 
     def batch_run(
         self,
