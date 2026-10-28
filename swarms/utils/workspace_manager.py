@@ -233,7 +233,7 @@ class WorkspaceManager:
             try:
                 os.makedirs(workspace_dir, exist_ok=True)
             except OSError as e:
-                del os.environ["WORKSPACE_DIR"]
+                os.environ.pop("WORKSPACE_DIR", None)
                 if ensure_workspace_env() == workspace_dir:
                     raise
                 logger.warning(
