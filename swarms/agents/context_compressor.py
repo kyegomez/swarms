@@ -9,6 +9,7 @@ budget for an unbounded run.
 
 from typing import Any, Optional
 
+from swarms.structs.conversation import Conversation
 from swarms.utils.llm_backend import completion
 from swarms.utils.litellm_wrapper import usage_from_response
 from loguru import logger
@@ -94,36 +95,14 @@ class ContextCompressor:
             return False
 
         # A token is never shorter than one byte, so a history under the budget in bytes cannot exceed it in tokens.
-        history = getattr(
-            agent.short_memory, "conversation_history", None
-        )
         if (
-            isinstance(history, list)
-            and self._history_bytes(history)
+            isinstance(agent.short_memory, Conversation)
+            and agent.short_memory.history_bytes()
             < self.threshold * context_length
         ):
             return False
 
         return self.usage_ratio(agent) >= self.threshold
-
-    @staticmethod
-    def _history_bytes(history: list) -> int:
-        """
-        Upper bound on the UTF-8 size of the formatted history.
-
-        Args:
-            history: The conversation's message dicts.
-
-        Returns:
-            int: Bytes in the history as the agent formats it, or slightly more.
-        """
-        return sum(
-            len(
-                f"[{message.get('timestamp')}] {message.get('role')}: "
-                f"{message.get('content')}\n\n".encode()
-            )
-            for message in history
-        )
 
     def _summarize(self, agent: Any, history: str) -> str:
         model = self.summarizer_model or getattr(

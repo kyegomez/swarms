@@ -1510,6 +1510,32 @@ def test_token_count_cache_prune_does_not_iterate_the_shared_cache():
     }
 
 
+def test_history_bytes_is_a_running_total(monkeypatch):
+    real = Conversation._message_bytes
+    conv = Conversation()
+    conv.add("User", "naïve café 東京")
+    conv.history_bytes()
+    measured = []
+    monkeypatch.setattr(
+        Conversation,
+        "_message_bytes",
+        staticmethod(lambda m: measured.append(m) or real(m)),
+    )
+    conv.add("Assistant", "one more")
+    conv.history_bytes()
+    assert len(measured) == 1
+    for change in (
+        lambda: conv.delete(0),
+        lambda: conv.update(0, "User", "rewritten " * 20),
+        lambda: conv.compact("summary"),
+        lambda: conv.add("User", "after compact"),
+    ):
+        change()
+        assert conv.history_bytes() == sum(
+            map(real, conv.conversation_history)
+        )
+
+
 def _tool_call(name, call_id="call_1", **arguments):
     return {
         "id": call_id,
