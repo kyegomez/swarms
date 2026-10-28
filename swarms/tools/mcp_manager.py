@@ -663,7 +663,7 @@ class MCPManager:
         self, item: Union[str, MCPConnection, Dict]
     ) -> MCPConnection:
         if isinstance(item, MCPConnection):
-            connection = item
+            connection = item.model_copy()
         elif isinstance(item, dict):
             connection = MCPConnection(**item)
         elif isinstance(item, str):
