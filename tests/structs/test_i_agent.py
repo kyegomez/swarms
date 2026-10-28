@@ -114,9 +114,6 @@ def test_ire_agent_steps_read_only_the_latest_reply():
 
 
 def test_low_scoring_paths_do_not_multiply_without_bound():
-    """Every low score used to add a full set of revisions, each revisable
-    again, so one run of the reported repro made tens of thousands of model
-    calls and never finished iteration 1 (#1261)."""
     from unittest.mock import MagicMock, patch
 
     calls = {"simulate": 0}
@@ -151,7 +148,6 @@ def test_low_scoring_paths_do_not_multiply_without_bound():
 
 
 def test_a_run_where_every_path_scores_well_stops_early():
-    """Nothing to revise means another iteration re-simulates the same paths."""
     from unittest.mock import MagicMock, patch
 
     calls = {"simulate": 0}

@@ -62,12 +62,6 @@ class IterativeReflectiveExpansion:
 
         :param agent: The Swarms agent instance used to perform reasoning tasks.
         :param max_loops: Maximum number of loops for the reasoning process.
-        :param max_paths: Maximum reasoning paths carried at once. Without a
-            bound the model returns several paths per revision and each of
-            those can be revised again, so the work per iteration grows with
-            every low-scoring path instead of converging (#1261).
-        :param score_threshold: Score at or above which a path is kept as is
-            rather than revised.
         """
         self.agent_name = agent_name
         self.description = description
