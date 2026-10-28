@@ -1193,6 +1193,26 @@ class TestDisabledPath:
         )
         assert probe.stdout.strip().splitlines()[-1] == "False"
 
+    def test_off_path_imports_no_opentelemetry(self):
+        probe = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys;"
+                "from swarms import Agent;"
+                "from swarms.telemetry.otel import "
+                "ContextThreadPoolExecutor;"
+                "ContextThreadPoolExecutor().submit(int).result();"
+                "print(sorted(m for m in sys.modules"
+                " if m.startswith('opentelemetry')))",
+            ],
+            env={**os.environ, "SWARMS_TELEMETRY_ON": "False"},
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert probe.stdout.strip().splitlines()[-1] == "[]"
+
 
 # ===========================================================================
 # Integration — instrumentation on real structures
