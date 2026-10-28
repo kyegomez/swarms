@@ -277,10 +277,11 @@ class SwarmRouter(SerializableMixin):
             ``DebateWithJudge``, ``RoundRobin``, and ``PlannerWorkerSwarm``.
         autosave (bool, optional): When ``True``, save ``config.json`` on init
             and ``state.json`` + ``metadata.json`` after each run to
-            ``workspace_dir/swarms/SwarmRouter/{name}-{timestamp}/``. Defaults
+            ``workspace_dir/swarms/SwarmRouter/{name}-{stamp}/``. Defaults
             to ``False``.
-        autosave_use_timestamp (bool, optional): If ``True`` use a timestamp in
-            the autosave directory name; otherwise use a UUID. Defaults to
+        autosave_use_timestamp (bool, optional): Passed to
+            :class:`~swarms.utils.workspace_manager.WorkspaceManager` as
+            ``use_timestamp``, which owns the ``{stamp}`` format. Defaults to
             ``True``.
         rearrange_flow (str, optional): Required when
             ``swarm_type="AgentRearrange"``. Flow-DSL string like

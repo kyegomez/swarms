@@ -137,8 +137,8 @@ class WorkspaceManager:
             attribute pick the directory, and it is the default source
             for conversation and config data.
         name (Optional[str]): Overrides ``owner.name`` in the path.
-        use_timestamp (bool): Timestamp in the directory name when
-            ``True``, otherwise a short UUID.
+        use_timestamp (bool): Timestamp before a short UUID in the
+            directory name when ``True``, otherwise the UUID alone.
         verbose (bool): Log the directory and each successful write.
         enabled (bool): When ``False`` nothing is created or written and
             ``dir`` stays ``None``.
@@ -230,11 +230,9 @@ class WorkspaceManager:
                 )
                 return None
 
-            stamp = (
-                datetime.now().strftime("%Y%m%d_%H%M%S")
-                if self.use_timestamp
-                else uuid.uuid4().hex[:12]
-            )
+            stamp = uuid.uuid4().hex[:12]
+            if self.use_timestamp:
+                stamp = f"{datetime.now():%Y%m%d_%H%M%S}_{stamp[:6]}"
             if self.subpath:
                 path = os.path.join(workspace_dir, *self.subpath)
             else:

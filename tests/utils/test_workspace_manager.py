@@ -7,9 +7,11 @@ workspace. No network and no LLM: the manager only ever touches the disk.
 
 import json
 import os
+from datetime import datetime
 
 import pytest
 
+from swarms.utils import workspace_manager
 from swarms.utils.workspace_manager import (
     CONVERSATION_FILENAME,
     agent_dir_name,
@@ -137,10 +139,30 @@ class TestSetup:
         stamp = os.path.basename(wm.dir).rsplit("-", 1)[1]
         assert len(stamp) == 12
 
-    def test_two_managers_do_not_collide(self):
-        a = WorkspaceManager(FakeSwarm(), use_timestamp=False)
-        b = WorkspaceManager(FakeSwarm(), use_timestamp=False)
+    @pytest.mark.parametrize("use_timestamp", [True, False])
+    def test_two_managers_do_not_collide(
+        self, monkeypatch, use_timestamp
+    ):
+        class FrozenClock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return cls(2026, 1, 1, 12, 0, 0)
+
+        monkeypatch.setattr(
+            workspace_manager, "datetime", FrozenClock
+        )
+        a = WorkspaceManager(FakeSwarm(), use_timestamp=use_timestamp)
+        b = WorkspaceManager(FakeSwarm(), use_timestamp=use_timestamp)
+        a.save_conversation(
+            FakeConversation([{"role": "user", "content": "a"}])
+        )
+        b.save_conversation(
+            FakeConversation([{"role": "user", "content": "b"}])
+        )
+
         assert a.dir != b.dir
+        with open(os.path.join(a.dir, CONVERSATION_FILENAME)) as f:
+            assert json.load(f)[0]["content"] == "a"
 
 
 class TestSaves:
