@@ -38,18 +38,20 @@ _writer = ThreadPoolExecutor(
 )
 _pending: Dict[str, str] = {}
 _pending_lock = threading.Lock()
+_write_lock = threading.Lock()
 
 
 def _write_pending(path: str) -> None:
-    with _pending_lock:
-        text = _pending.pop(path)
-    try:
-        temp_path = f"{path}.tmp"
-        with open(temp_path, "w", encoding="utf-8") as f:
-            f.write(text)
-        os.replace(temp_path, path)
-    except Exception as e:
-        logger.warning(f"Failed to save {path}: {e}")
+    with _write_lock:
+        with _pending_lock:
+            text = _pending.pop(path)
+        try:
+            temp_path = f"{path}.tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
+                f.write(text)
+            os.replace(temp_path, path)
+        except Exception as e:
+            logger.warning(f"Failed to save {path}: {e}")
 
 
 def sanitize_name(name: str) -> str:
