@@ -179,16 +179,18 @@ class Conversation:
         else:
             # Validate that provided filepath extension matches export method
             file_ext = os.path.splitext(self.save_filepath)[1].lower()
-            expected_ext = (
-                ".json" if self.export_method == "json" else ".yaml"
+            expected_exts = (
+                (".json",)
+                if self.export_method == "json"
+                else (".yaml", ".yml")
             )
-            if file_ext != expected_ext:
+            if file_ext not in expected_exts:
                 logger.warning(
                     f"Save filepath extension ({file_ext}) does not match export_method ({self.export_method}). "
                     f"Updating filepath extension to match export method."
                 )
                 base_name = os.path.splitext(self.save_filepath)[0]
-                self.save_filepath = f"{base_name}{expected_ext}"
+                self.save_filepath = f"{base_name}{expected_exts[0]}"
 
         self.created_at = datetime.datetime.now().strftime(
             "%Y-%m-%d_%H-%M-%S"
@@ -1177,12 +1179,14 @@ class Conversation:
 
             # Ensure filepath extension matches export method
             file_ext = os.path.splitext(self.save_filepath)[1].lower()
-            expected_ext = (
-                ".json" if self.export_method == "json" else ".yaml"
+            expected_exts = (
+                (".json",)
+                if self.export_method == "json"
+                else (".yaml", ".yml")
             )
-            if file_ext != expected_ext:
+            if file_ext not in expected_exts:
                 base_name = os.path.splitext(self.save_filepath)[0]
-                self.save_filepath = f"{base_name}{expected_ext}"
+                self.save_filepath = f"{base_name}{expected_exts[0]}"
                 logger.warning(
                     f"Updated save filepath to match export method: {self.save_filepath}"
                 )
