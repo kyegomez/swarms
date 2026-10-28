@@ -799,17 +799,18 @@ class ToolManager:
         turn_results: Optional[dict] = None,
     ) -> Any:
         """
-        Execute tools, retrying up to agent.tool_retry_attempts times.
+        Execute each call on its own, retrying up to agent.tool_retry_attempts times.
 
         Args:
             response: The model response holding the tool calls.
             loop_count: The current loop number.
+            turn_results: Results keyed by tool call id, updated in place.
 
         Returns:
-            Any: The tool output, or None when the response is None.
+            Any: The combined tool output, or None when the response is None.
 
         Raises:
-            AgentToolExecutionError: If every attempt fails.
+            AgentToolExecutionError: If any call fails every attempt.
         """
         agent = self.agent
         if response is None:
