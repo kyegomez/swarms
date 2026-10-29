@@ -212,7 +212,10 @@ class MultiAgentRouter:
         return agent_boss_router_prompt(agent_descriptions)
 
     def handle_single_handoff(
-        self, boss_response_str: dict, task: str
+        self,
+        boss_response_str: dict,
+        task: str,
+        conversation: Optional[Conversation] = None,
     ) -> None:
         """
         Execute the single agent selected by the boss and record its response.
@@ -220,7 +223,7 @@ class MultiAgentRouter:
         Looks up the agent named in the first (and only) handoff, runs it on
         the modified task (falling back to the original task if the boss did
         not rewrite it), and appends the agent's response to
-        ``self.conversation``. When ``skip_null_tasks`` is True and the
+        ``conversation``. When ``skip_null_tasks`` is True and the
         resolved task is empty or ``None``, execution is skipped.
 
         Args:
@@ -229,6 +232,8 @@ class MultiAgentRouter:
                 ``{"agent_name": str, "task": Optional[str], ...}``.
             task (str): The original user task, used as a fallback when the
                 boss did not supply a rewritten task.
+            conversation (Conversation, optional): Where to record the
+                response. Defaults to ``self.conversation``.
 
         Returns:
             None: The conversation is mutated in place.
@@ -264,12 +269,17 @@ class MultiAgentRouter:
         # Use the agent's run method directly
         agent_response = selected_agent.run(final_task)
 
-        self.conversation.add(
+        if conversation is None:
+            conversation = self.conversation
+        conversation.add(
             role=selected_agent.agent_name, content=agent_response
         )
 
     def handle_multiple_handoffs(
-        self, boss_response_str: dict, task: str
+        self,
+        boss_response_str: dict,
+        task: str,
+        conversation: Optional[Conversation] = None,
     ) -> None:
         """
         Execute every agent selected by the boss and record the first response.
@@ -279,7 +289,7 @@ class MultiAgentRouter:
         task (or the original ``task`` when the boss did not rewrite it). When
         ``skip_null_tasks`` is True, agents whose resolved task is empty or
         ``None`` are skipped. After execution, the first selected agent's
-        response is appended to ``self.conversation``.
+        response is appended to ``conversation``.
 
         Args:
             boss_response_str (dict): Parsed boss decision containing a
@@ -287,6 +297,8 @@ class MultiAgentRouter:
                 ``{"agent_name": str, "task": Optional[str], ...}``.
             task (str): The original user task, used as a fallback when the
                 boss did not supply a rewritten task.
+            conversation (Conversation, optional): Where to record the
+                response. Defaults to ``self.conversation``.
 
         Returns:
             None: The conversation is mutated in place.
@@ -344,7 +356,9 @@ class MultiAgentRouter:
                     )
                 )
 
-            self.conversation.add(
+            if conversation is None:
+                conversation = self.conversation
+            conversation.add(
                 role=selected_agents[0].agent_name,
                 content=agent_responses[0],
             )
@@ -362,7 +376,10 @@ class MultiAgentRouter:
             dict: A dictionary containing the routing result, including the selected agent, reasoning, and response.
         """
         try:
-            self.conversation.add(role="user", content=task)
+            # Per call, so concurrent and repeated runs never share history.
+            conversation = Conversation()
+            self.conversation = conversation
+            conversation.add(role="user", content=task)
 
             # Get boss decision using function calling
             boss_response_str = self.function_caller.run(task)
@@ -376,12 +393,16 @@ class MultiAgentRouter:
                 )
 
             if len(boss_response_str["handoffs"]) > 1:
-                self.handle_multiple_handoffs(boss_response_str, task)
+                self.handle_multiple_handoffs(
+                    boss_response_str, task, conversation=conversation
+                )
             else:
-                self.handle_single_handoff(boss_response_str, task)
+                self.handle_single_handoff(
+                    boss_response_str, task, conversation=conversation
+                )
 
             return history_output_formatter(
-                conversation=self.conversation, type=self.output_type
+                conversation=conversation, type=self.output_type
             )
 
         except Exception as e:
@@ -450,12 +471,8 @@ class MultiAgentRouter:
         Route a batch of tasks in parallel using a thread pool.
 
         Tasks are dispatched to a ``ThreadPoolExecutor``. Failures are logged
-        with the task that caused them and omitted from the result list.
-
-        Note:
-            All tasks share this router's ``Conversation``, so their histories
-            interleave. Prefer :meth:`batch_run` when the per-task history
-            matters.
+        with the task that caused them and omitted from the result list. Each
+        task gets its own ``Conversation``, so results never interleave.
 
         Args:
             tasks (List[str]): Tasks to route concurrently.
