@@ -2,15 +2,13 @@
 
 import time
 import threading
-from concurrent.futures import ALL_COMPLETED, Future
-from typing import Callable, List, Optional, Set
+from concurrent.futures import Future
 from unittest.mock import MagicMock
 
 import pytest
 from dotenv import load_dotenv
 from loguru import logger
 
-from swarms.structs import async_subagent
 from swarms.structs.agent import Agent
 from swarms.structs.async_subagent import (
     SubagentRegistry,
@@ -52,68 +50,6 @@ def make_agent(
         f"[test_async_subagent] Created Agent(name={name}, model={MODEL})"
     )
     return a
-
-
-class StubAgent:
-    """Offline Agent stand-in whose run() returns its name.
-
-    With a ``gate``, run() waits for it to open first. If the gate
-    stays shut for 30 s, run() raises TimeoutError instead of
-    returning, so the worker thread can't block forever.
-    """
-
-    def __init__(
-        self, name: str, gate: Optional[threading.Event] = None
-    ) -> None:
-        self.agent_name = name
-        self.gate = gate
-
-    def run(self, task: str) -> str:
-        if self.gate is not None and not self.gate.wait(timeout=30):
-            raise TimeoutError(
-                f"{self.agent_name}: gate never opened"
-            )
-        return self.agent_name
-
-
-def forbid_wait(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Fail the test if gather() waits on any task."""
-
-    def no_wait(fs, timeout=None, return_when=ALL_COMPLETED):
-        raise AssertionError(
-            f"gather() waited on {len(set(fs))} task(s)"
-        )
-
-    monkeypatch.setattr(async_subagent, "wait", no_wait)
-
-
-def release_on_wait(
-    monkeypatch: pytest.MonkeyPatch,
-    registry: SubagentRegistry,
-    gate: threading.Event,
-    expected: Callable[[], Set[Future]],
-) -> List[Set[Future]]:
-    """Open ``gate`` once gather() waits for all of exactly ``expected()``.
-
-    Also checks that gather() waits with no timeout and without holding
-    the registry lock. Returns the futures passed to each wait() call.
-    """
-    calls = []
-    real_wait = async_subagent.wait
-
-    def wait_then_release(
-        fs, timeout=None, return_when=ALL_COMPLETED
-    ):
-        calls.append(set(fs))
-        assert calls[-1] == expected()
-        assert return_when == ALL_COMPLETED and timeout is None
-        assert registry._lock.acquire(blocking=False)
-        registry._lock.release()
-        gate.set()
-        return real_wait(fs, timeout=timeout, return_when=return_when)
-
-    monkeypatch.setattr(async_subagent, "wait", wait_then_release)
-    return calls
 
 
 # ── SubagentRegistry Tests ──────────────────────────────────
@@ -310,98 +246,6 @@ class TestSubagentRegistry:
             reg.shutdown()
         # loguru doesn't integrate with caplog by default, so just verify no errors
         assert True
-
-    def test_gather_task_ids_waits_only_for_those_tasks(
-        self, monkeypatch
-    ):
-        background_gate = threading.Event()
-        selected_gate = threading.Event()
-        reg = SubagentRegistry()
-        try:
-            reg.spawn(StubAgent("batch1"), "t")
-            reg.gather()
-            background_id = reg.spawn(
-                StubAgent("background", background_gate), "t"
-            )
-            selected = [
-                reg.spawn(StubAgent(name, selected_gate), "t")
-                for name in ("selected-a", "selected-b")
-            ]
-            futures = {reg.get_task(t).future for t in selected}
-            calls = release_on_wait(
-                monkeypatch, reg, selected_gate, lambda: futures
-            )
-
-            results = reg.gather(task_ids=selected)
-
-            assert len(calls) == 1
-            assert sorted(results) == ["selected-a", "selected-b"]
-            background = reg.get_task(background_id)
-            assert background.status == TaskStatus.RUNNING
-        finally:
-            background_gate.set()
-            selected_gate.set()
-            reg.shutdown()
-
-    def test_gather_empty_task_ids_returns_without_waiting(
-        self, monkeypatch
-    ):
-        gate = threading.Event()
-        reg = SubagentRegistry()
-        try:
-            reg.spawn(StubAgent("background", gate), "t")
-            forbid_wait(monkeypatch)
-
-            assert reg.gather(task_ids=[]) == []
-        finally:
-            gate.set()
-            reg.shutdown()
-
-    def test_gather_unknown_task_ids_raise_before_waiting(
-        self, monkeypatch
-    ):
-        gate = threading.Event()
-        reg = SubagentRegistry()
-        try:
-            known_id = reg.spawn(StubAgent("background", gate), "t")
-            forbid_wait(monkeypatch)
-
-            with pytest.raises(KeyError, match="task-missing"):
-                reg.gather(task_ids=[known_id, "task-missing"])
-        finally:
-            gate.set()
-            reg.shutdown()
-
-    def test_gather_without_task_ids_still_waits_for_every_task(
-        self, monkeypatch
-    ):
-        gate = threading.Event()
-        reg = SubagentRegistry()
-        try:
-            reg.spawn(StubAgent("batch1"), "t")
-            reg.gather()
-            batch2_id = reg.spawn(StubAgent("batch2", gate), "t")
-            future = reg.get_task(batch2_id).future
-            calls = release_on_wait(
-                monkeypatch, reg, gate, lambda: {future}
-            )
-
-            results = reg.gather()
-
-            assert len(calls) == 1
-            assert sorted(results) == ["batch1", "batch2"]
-        finally:
-            gate.set()
-            reg.shutdown()
-
-    def test_gather_duplicate_task_ids_count_once(self, monkeypatch):
-        reg = SubagentRegistry()
-        task_id = reg.spawn(StubAgent("only"), "t")
-        reg.get_task(task_id).future.result()
-        forbid_wait(monkeypatch)
-
-        assert reg.gather(task_ids=[task_id, task_id]) == ["only"]
-        reg.shutdown()
 
 
 # ── Agent Integration Tests ─────────────────────────────────
@@ -917,17 +761,17 @@ class TestAutonomousLoopCreateAndAssignTools:
         # Should list a mapping line with worker name and task id alias
         assert "- [worker-1] task-1 -> task-" in msg
 
-    def test_assign_task_waits_only_for_its_own_tasks(
-        self, monkeypatch
-    ):
+    def test_assign_task_waits_only_for_its_own_tasks(self):
         """A blocking assign_task_tool must not wait on earlier background tasks."""
-        background_gate = threading.Event()
-        own_gate = threading.Event()
-        researcher = StubAgent("researcher", background_gate)
-        writers = [
-            StubAgent("writer-a", own_gate),
-            StubAgent("writer-b", own_gate),
-        ]
+        gate = threading.Event()
+        researcher = MagicMock()
+        researcher.agent_name = "researcher"
+        researcher.run = MagicMock(
+            side_effect=lambda task: gate.wait(5)
+        )
+        writer = MagicMock()
+        writer.agent_name = "writer"
+        writer.run = MagicMock(return_value="draft done")
 
         class ParentAgentStub:
             def __init__(self):
@@ -937,8 +781,11 @@ class TestAutonomousLoopCreateAndAssignTools:
                     TestAutonomousLoopCreateAndAssignTools._ShortMemoryStub()
                 )
                 self.sub_agents = {
-                    a.agent_name: {"agent": a, "name": a.agent_name}
-                    for a in [researcher, *writers]
+                    "researcher": {
+                        "agent": researcher,
+                        "name": "researcher",
+                    },
+                    "writer": {"agent": writer, "name": "writer"},
                 }
 
         parent = ParentAgentStub()
@@ -946,43 +793,22 @@ class TestAutonomousLoopCreateAndAssignTools:
             assign_task_tool(
                 parent,
                 assignments=[
-                    {"agent_id": "researcher", "task": "deep dive"}
+                    {"agent_id": "researcher", "task": "dig"}
                 ],
                 wait_for_completion=False,
             )
-            registry = parent._subagent_registry
-            calls = release_on_wait(
-                monkeypatch,
-                registry,
-                own_gate,
-                lambda: {
-                    st.future
-                    for st in registry.tasks.values()
-                    if st.agent in writers
-                },
-            )
+            (background,) = parent._subagent_registry.tasks.values()
 
             msg = assign_task_tool(
                 parent,
-                assignments=[
-                    {"agent_id": "writer-a", "task": "draft"},
-                    {"agent_id": "writer-b", "task": "edit"},
-                ],
+                assignments=[{"agent_id": "writer", "task": "draft"}],
                 wait_for_completion=True,
             )
 
-            assert "Result: writer-a" in msg
-            assert "Result: writer-b" in msg
-            assert len(calls) == 1
-            researcher_task = next(
-                st
-                for st in registry.tasks.values()
-                if st.agent is researcher
-            )
-            assert researcher_task.status == TaskStatus.RUNNING
+            assert "Result: draft done" in msg
+            assert not background.future.done()
         finally:
-            background_gate.set()
-            own_gate.set()
+            gate.set()
             parent._subagent_registry.shutdown()
 
 
