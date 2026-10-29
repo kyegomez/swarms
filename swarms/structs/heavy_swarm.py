@@ -123,8 +123,6 @@ class HeavySwarm(SerializableMixin):
             name (str, optional): Identifier name for the swarm instance. Defaults to "HeavySwarm".
             description (str, optional): Description of the swarm's purpose and capabilities.
                 Defaults to standard description.
-            agents (List[Agent], optional): Pre-configured agent list (currently unused as agents
-                are created internally). Defaults to None.
             timeout (int, optional): Maximum execution time per agent in seconds. Defaults to 300.
             question_agent_model_name (str, optional): Language model for
                 question generation. Defaults to "gpt-5.4".
