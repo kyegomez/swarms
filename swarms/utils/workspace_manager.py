@@ -17,9 +17,7 @@ one to fail, so every method logs and returns ``None`` on error.
 
 import json
 import os
-import threading
 import uuid
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Dict, Optional, Sequence
 
@@ -32,33 +30,6 @@ CONVERSATION_FILENAME = "conversation_history.json"
 
 _INVALID_PATH_CHARS = '<>:"/\\|?*'
 _MAX_NAME_LEN = 100
-
-_writer = ThreadPoolExecutor(
-    max_workers=1, thread_name_prefix="swarms-autosave"
-)
-_pending: Dict[str, str] = {}
-_pending_lock = threading.Lock()
-_write_lock = threading.Lock()
-
-
-def _write_pending(path: str) -> None:
-    with _write_lock:
-        with _pending_lock:
-            text = _pending.pop(path)
-        try:
-            temp_path = f"{path}.tmp"
-            with open(temp_path, "w", encoding="utf-8") as f:
-                f.write(text)
-            os.replace(temp_path, path)
-        except Exception as e:
-            logger.warning(f"Failed to save {path}: {e}")
-
-
-def flush() -> None:
-    try:
-        _writer.submit(lambda: None).result()
-    except RuntimeError:
-        pass
 
 
 def sanitize_name(name: str) -> str:
@@ -294,23 +265,20 @@ class WorkspaceManager:
                 ``default=str``.
 
         Returns:
-            Optional[str]: The path the write is queued for, or
-            ``None`` if skipped.
+            Optional[str]: The written path, or ``None`` if skipped.
         """
         if not self.dir:
             return None
 
         try:
             path = os.path.join(self.dir, filename)
-            text = json.dumps(data, default=str, ensure_ascii=False)
-            with _pending_lock:
-                queued = path in _pending
-                _pending[path] = text
-            if not queued:
-                try:
-                    _writer.submit(_write_pending, path)
-                except RuntimeError:
-                    _write_pending(path)
+            # temp+replace, a crash mid-write would otherwise truncate it
+            temp_path = f"{path}.tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
+                f.write(
+                    json.dumps(data, default=str, ensure_ascii=False)
+                )
+            os.replace(temp_path, path)
 
             if self.verbose:
                 logger.debug(f"Saved {filename} to {path}")
