@@ -119,7 +119,7 @@ class HierarchicalSwarm:
             autosave: Save conversation history.
             verbose: Enable verbose output.
             print_on: Print the director's plan and orders each step.
-            parallel_execution: Execute orders concurrently.
+            parallel_execution: Run different workers concurrently.
             max_workers: Worker thread limit.
             agent_as_judge: Evaluate worker outputs.
             judge_agent_model_name: Judge model.
