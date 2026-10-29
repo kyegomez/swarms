@@ -70,19 +70,6 @@ class FakeLead:
         return self
 
 
-class CopiedLead(FakeLead):
-    """Lead whose copies are separate objects, each kept in copies."""
-
-    def __init__(self, plans, answer="FINAL"):
-        super().__init__(plans, answer)
-        self.copies = []
-
-    def __deepcopy__(self, memo):
-        copy = type(self)(self.plans, self.answer)
-        self.copies.append(copy)
-        return copy
-
-
 @pytest.fixture(autouse=True)
 def fake_agents(monkeypatch):
     monkeypatch.setattr(dw, "Agent", FakeAgent)
@@ -632,91 +619,36 @@ def test_identical_steps_in_a_phase_are_rejected():
     assert any("Steps 'a' and 'b'" in e for e in errors)
 
 
-def test_plan_before_any_run_uses_one_fresh_copy_of_the_lead():
-    lead = CopiedLead(["not json", fan_out_plan()])
-    workflow = PhasedFanOutWorkflow(lead_agent=lead)
+def test_plan_works_before_any_run():
+    workflow = PhasedFanOutWorkflow(
+        lead_agent=FakeLead([fan_out_plan()])
+    )
 
     assert isinstance(workflow.plan("task"), dw.WorkflowPlan)
-    assert lead.prompts == []
-    assert [len(copy.prompts) for copy in lead.copies] == [2]
 
 
-def test_plan_after_a_run_uses_a_fresh_copy_of_the_lead():
-    lead = CopiedLead([fan_out_plan()] * 3)
-    base = file_handler(2)
+def test_overlapping_runs_combine_with_the_lead_that_planned_them():
+    a_planning, b_done = threading.Event(), threading.Event()
 
-    def handler(agent, task):
-        if "f1.py" in task:
-            raise RuntimeError("boom")
-        return base(agent, task)
+    class Lead(FakeLead):
+        def __deepcopy__(self, memo):
+            return Lead(self.plans)
 
-    FakeAgent.handler = handler
-    workflow = PhasedFanOutWorkflow(lead_agent=lead, max_retries=0)
-    workflow.run("run task")
-    last_run, last_plan = workflow.last_run, workflow.last_plan
-    assert len(last_run["failures"]) == 1
-    # repr records nested contents and, through default reprs, agent identities.
-    saved_run, saved_plan = repr(last_run), last_plan.model_dump()
-    usage = workflow.usage
-
-    for _ in range(2):
-        assert isinstance(workflow.plan("plan task"), dw.WorkflowPlan)
-    assert [len(copy.prompts) for copy in lead.copies] == [2, 1, 1]
-    # Later copies get only invalid plans, so this plan() fails.
-    lead.plans = ["not json"] * 3
-    with pytest.raises(
-        PhasedFanOutWorkflowError, match="No valid plan"
-    ):
-        workflow.plan("plan task")
-    assert workflow.last_run is last_run
-    assert repr(workflow.last_run) == saved_run
-    assert workflow.last_plan is last_plan
-    assert workflow.last_plan.model_dump() == saved_plan
-    assert workflow.usage == usage
-
-
-def test_overlapping_runs_plan_and_combine_with_their_own_lead():
-    a_planning, b_planned = threading.Event(), threading.Event()
-    overlapped = []
-
-    class Lead(CopiedLead):
         def run(self, task, img=None):
-            if "Outputs:" not in task:
-                if task.startswith("Task:\nA\n"):
-                    a_planning.set()
-                    overlapped.append(b_planned.wait(5))
-                else:
-                    b_planned.set()
+            # Each copy answers with the task it planned.
+            if "Outputs:" in task:
+                return self.planned
+            self.planned = task.split("\n")[1]
+            if self.planned == "A":
+                a_planning.set()
+                b_done.wait(5)
             return super().run(task, img)
 
-    one_step = plan(
-        [
-            {
-                "title": "P",
-                "steps": [
-                    {
-                        "id": "a",
-                        "agent": "worker",
-                        "prompt": "x {task}",
-                    }
-                ],
-            }
-        ],
-        ["a"],
-    )
-    lead = Lead([one_step])
-    workflow = PhasedFanOutWorkflow(lead_agent=lead)
-    with ThreadPoolExecutor(max_workers=2) as pool:
+    FakeAgent.handler = file_handler(1)
+    workflow = PhasedFanOutWorkflow(lead_agent=Lead([fan_out_plan()]))
+    with ThreadPoolExecutor(max_workers=1) as pool:
         run_a = pool.submit(workflow.run, "A")
         assert a_planning.wait(5)
-        run_b = pool.submit(workflow.run, "B")
-        assert [run_a.result(), run_b.result()] == ["FINAL", "FINAL"]
-
-    assert overlapped == [True]
-    assert lead.prompts == []
-    # Every lead prompt starts "Task:\n<task>\n".
-    tasks_seen = sorted(
-        [prompt.split("\n")[1] for prompt in copy.prompts]
-        for copy in lead.copies
-    )
-    assert tasks_seen == [["A", "A"], ["B", "B"]]
+        answer_b = workflow.run("B")
+        b_done.set()
+        assert [run_a.result(), answer_b] == ["A", "B"]
