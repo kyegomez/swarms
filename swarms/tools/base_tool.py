@@ -1275,7 +1275,11 @@ class BaseTool(BaseModel):
                                         }
                                     )
                             # Also check if it has function.name pattern but with input
-                            elif "function" in tool_call:
+                            elif (
+                                "function" in tool_call
+                                and tool_call.get("type")
+                                != "function"
+                            ):
                                 function_info = tool_call.get(
                                     "function", {}
                                 )
