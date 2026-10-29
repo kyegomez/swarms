@@ -891,24 +891,36 @@ class HierarchicalSwarm:
         failures = []
 
         if self.parallel_execution:
-            futures_map = {}
+            indices_by_worker = {}
+            for index, order in enumerate(orders):
+                indices_by_worker.setdefault(
+                    order.agent_name, []
+                ).append(index)
+
+            def run_in_order(indices):
+                return [
+                    (
+                        index,
+                        self._execute_order_with_retries(
+                            orders[index], False
+                        ),
+                    )
+                    for index in indices
+                ]
+
             with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
-                for index, order in enumerate(orders):
-                    future = executor.submit(
-                        self._execute_order_with_retries,
-                        order,
-                        False,
-                    )
-                    futures_map[future] = (index, order)
+                futures = [
+                    executor.submit(run_in_order, indices)
+                    for indices in indices_by_worker.values()
+                ]
 
-                for future in as_completed(futures_map):
-                    index, order = futures_map[future]
-                    output, failure = future.result()
-                    results[index] = output
-                    if failure is not None:
-                        failures.append(failure)
+                for future in as_completed(futures):
+                    for index, (output, failure) in future.result():
+                        results[index] = output
+                        if failure is not None:
+                            failures.append(failure)
 
             for index, order in enumerate(orders):
                 if results[index] is not None and not (
