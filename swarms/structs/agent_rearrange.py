@@ -2,7 +2,6 @@ import asyncio
 import copy
 import os
 from concurrent.futures import as_completed, wait
-from contextlib import nullcontext
 from typing import Any, Dict, List, Optional, get_args
 
 from swarms.structs.agent import Agent
@@ -720,28 +719,26 @@ class AgentRearrange(ReusableExecutorMixin, SerializableMixin):
 
         # Built per agent, not shared: each sees its own turns as `assistant`.
         results = [None] * len(agents_to_run)
-        with nullcontext(
-            self._get_executor(len(agents_to_run))
-        ) as executor:
-            future_to_index = {}
-            for index, (agent, name) in enumerate(
-                zip(agents_to_run, agent_names)
-            ):
-                prior, step_task = self._messages_for(name)
-                future = executor.submit(
-                    agent.run,
-                    task=step_task,
-                    messages=prior,
-                    img=img,
-                    **kwargs,
-                )
-                future_to_index[future] = index
+        executor = self._get_executor(len(agents_to_run))
+        future_to_index = {}
+        for index, (agent, name) in enumerate(
+            zip(agents_to_run, agent_names)
+        ):
+            prior, step_task = self._messages_for(name)
+            future = executor.submit(
+                agent.run,
+                task=step_task,
+                messages=prior,
+                img=img,
+                **kwargs,
+            )
+            future_to_index[future] = index
 
-            try:
-                for future in as_completed(future_to_index):
-                    results[future_to_index[future]] = future.result()
-            finally:
-                wait(future_to_index)
+        try:
+            for future in as_completed(future_to_index):
+                results[future_to_index[future]] = future.result()
+        finally:
+            wait(future_to_index)
 
         response_dict = {}
         for i, agent_name in enumerate(agent_names):

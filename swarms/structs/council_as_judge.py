@@ -1,6 +1,5 @@
 import os
 from concurrent.futures import as_completed, wait
-from contextlib import nullcontext
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
 
@@ -443,34 +442,31 @@ class CouncilAsAJudge(ReusableExecutorMixin):
             ]
 
             # Run evaluations in parallel using ThreadPoolExecutor
-            with nullcontext(
-                self._get_executor(self.max_workers)
-            ) as executor:
-                # Submit all tasks
-                future_to_dim = {
-                    executor.submit(
-                        self._evaluate_dimension,
-                        dim,
-                        agent,
-                        task,
-                    ): dim
-                    for dim, agent, _ in tasks
-                }
+            executor = self._get_executor(self.max_workers)
+            future_to_dim = {
+                executor.submit(
+                    self._evaluate_dimension,
+                    dim,
+                    agent,
+                    task,
+                ): dim
+                for dim, agent, _ in tasks
+            }
 
-                try:
-                    for future in as_completed(future_to_dim):
-                        try:
-                            future.result()
-                        except Exception as e:
-                            dim = future_to_dim[future]
-                            logger.error(
-                                f"Task for dimension {dim} failed: {str(e)}"
-                            )
-                            raise DimensionEvaluationError(
-                                f"Failed to evaluate dimension {dim}: {str(e)}"
-                            )
-                finally:
-                    wait(future_to_dim)
+            try:
+                for future in as_completed(future_to_dim):
+                    try:
+                        future.result()
+                    except Exception as e:
+                        dim = future_to_dim[future]
+                        logger.error(
+                            f"Task for dimension {dim} failed: {str(e)}"
+                        )
+                        raise DimensionEvaluationError(
+                            f"Failed to evaluate dimension {dim}: {str(e)}"
+                        )
+            finally:
+                wait(future_to_dim)
 
             prior, aggregation_task = split_last_turn(
                 messages_for(
