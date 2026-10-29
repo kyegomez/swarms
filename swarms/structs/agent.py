@@ -1329,8 +1329,9 @@ class Agent:
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
-        logger.error(
-            f"{self.agent_name} error: {error}", exc_info=True
+        # Lazy args: an f-string with exc_info makes loguru str.format provider JSON and raise KeyError.
+        logger.opt(exception=True).error(
+            "{} error: {}", self.agent_name, error
         )
         raise error
 
