@@ -838,6 +838,29 @@ class TestCallDetailedStreaming:
 
         assert fake_llm.stream is False
 
+    @pytest.mark.parametrize("detailed", [True, False])
+    @pytest.mark.parametrize("fails_mid_stream", [True, False])
+    def test_failed_stream_restores_llm_stream_flag(
+        self, agent, detailed, fails_mid_stream
+    ):
+        def dropped_stream():
+            yield content_chunk("partial ")
+            raise ConnectionError("dropped")
+
+        agent.llm = (
+            FakeLLM(stream_return=dropped_stream())
+            if fails_mid_stream
+            else RaisingRunLLM(ConnectionError("dropped"))
+        )
+        agent.stream = detailed
+
+        with pytest.raises(ConnectionError):
+            agent.llm_manager.call(
+                "hi", streaming_callback=lambda token: None
+            )
+
+        assert agent.llm.stream is False
+
     def test_tool_calls_returned_instead_of_text(
         self, agent, fake_llm
     ):
