@@ -488,33 +488,21 @@ class ForestSwarm:
         Returns:
             Any: The result of the task after it has been processed by the agents
         """
-        try:
-            if self.verbose:
-                logger.info(
-                    f"Running task across MultiAgentTreeStructure: {task}"
-                )
-            relevant_tree = self.find_relevant_tree(task)
-            if relevant_tree:
-                agent = relevant_tree.find_relevant_agent(task)
-                if agent:
-                    result = agent.run_task(
-                        task, img=img, *args, **kwargs
-                    )
-                    relevant_tree.log_tree_execution(
-                        task, agent, result
-                    )
-                    return result
-            else:
-                if self.verbose:
-                    logger.error(
-                        "Task could not be completed: No relevant agent or tree found."
-                    )
-                return "No relevant agent found to handle this task."
-        except Exception as error:
+        if self.verbose:
+            logger.info(
+                f"Running task across MultiAgentTreeStructure: {task}"
+            )
+        relevant_tree = self.find_relevant_tree(task)
+        if relevant_tree is None:
             if self.verbose:
                 logger.error(
-                    f"Error detected in the ForestSwarm, check your inputs and try again ;) {error}"
+                    "Task could not be completed: No relevant agent or tree found."
                 )
+            return "No relevant agent found to handle this task."
+        agent = relevant_tree.find_relevant_agent(task)
+        result = agent.run_task(task, img=img, *args, **kwargs)
+        relevant_tree.log_tree_execution(task, agent, result)
+        return result
 
     def batched_run(
         self,
