@@ -47,7 +47,9 @@ class MixtureOfAgents:
     The aggregator always receives the full conversation transcript.
 
     Args:
-        id: Optional identifier accepted for API compatibility.
+        id: Instance identifier recorded as ``swarms.id`` in telemetry spans
+            when telemetry is enabled. A missing or empty value generates
+            a ``mixture-of-agents-<32 hex chars>`` identifier.
         name: Human-readable name for this mixture.
         description: Description added to the conversation metadata when
             listing the worker agents.
@@ -92,7 +94,9 @@ class MixtureOfAgents:
         """Initialize the mixture with worker and aggregator configuration.
 
         Args:
-            id: Optional identifier accepted for API compatibility.
+            id: Instance identifier recorded as ``swarms.id`` in telemetry spans
+                when telemetry is enabled. A missing or empty value generates
+                a ``mixture-of-agents-<32 hex chars>`` identifier.
             name: Human-readable name for this mixture.
             description: Description of this mixture's purpose.
             agents: Worker agents to run concurrently on each layer.
