@@ -768,6 +768,7 @@ def test_orders_for_one_worker_run_in_director_order():
         StubAgent("Director", []),
         [worker, StubAgent("Other", ["other answer"])],
         parallel_execution=True,
+        max_workers=3,
     )
 
     outputs = swarm.execute_orders(
