@@ -47,7 +47,9 @@ class MixtureOfAgents:
     The aggregator always receives the full conversation transcript.
 
     Args:
-        id: Optional identifier accepted for API compatibility.
+        id: Unique identifier for this mixture instance. Used for
+            OpenTelemetry spans (``swarms.id``). Auto-generated when
+            omitted.
         name: Human-readable name for this mixture.
         description: Description added to the conversation metadata when
             listing the worker agents.
@@ -92,7 +94,9 @@ class MixtureOfAgents:
         """Initialize the mixture with worker and aggregator configuration.
 
         Args:
-            id: Optional identifier accepted for API compatibility.
+            id: Unique identifier for this mixture instance. Used for
+            OpenTelemetry spans (``swarms.id``). Auto-generated when
+            omitted.
             name: Human-readable name for this mixture.
             description: Description of this mixture's purpose.
             agents: Worker agents to run concurrently on each layer.
