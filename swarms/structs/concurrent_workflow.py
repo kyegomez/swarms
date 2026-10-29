@@ -40,7 +40,6 @@ class ConcurrentWorkflow:
         name (str): Human-readable name for the workflow
         description (str): Description of the workflow's purpose
         agents (List[Union[Agent, Callable]]): List of agents to execute concurrently
-        auto_save (bool): Whether to automatically save workflow metadata
         output_type (str): Format for output formatting (e.g., "dict-all-except-first")
         max_loops (int): Maximum number of execution loops (currently unused)
         auto_generate_prompts (bool): Whether to enable automatic prompt engineering
@@ -93,7 +92,6 @@ class ConcurrentWorkflow:
         name: str = "ConcurrentWorkflow",
         description: str = "Execution of multiple agents concurrently",
         agents: List[Union[Agent, Callable]] = None,
-        auto_save: bool = True,
         output_type: str = "dict-all-except-first",
         max_loops: int = 1,
         auto_generate_prompts: bool = False,
@@ -115,7 +113,6 @@ class ConcurrentWorkflow:
             agents (List[Union[Agent, Callable]], optional): Agents to execute
                 concurrently on each task. Must be non-empty; validated by
                 :meth:`reliability_check`.
-            auto_save (bool): Whether to automatically save workflow metadata.
             output_type (str): Output formatting mode passed to
                 ``history_output_formatter`` (e.g. ``"dict-all-except-first"``).
             max_loops (int): Maximum number of execution loops. Currently unused.
@@ -145,7 +142,6 @@ class ConcurrentWorkflow:
         self.name = name
         self.description = description
         self.agents = agents
-        self.auto_save = auto_save
         self.max_loops = max_loops
         self.auto_generate_prompts = auto_generate_prompts
         self.output_type = output_type

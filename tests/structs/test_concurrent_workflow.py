@@ -678,5 +678,41 @@ def test_comms_channel_records_answers_in_agent_order(tmp_path):
     ]
 
 
+def test_concurrent_workflow_autosave_is_sole_save_flag():
+    """Verify autosave is the only save parameter and auto_save is removed."""
+    import inspect
+
+    sig = inspect.signature(ConcurrentWorkflow.__init__)
+    params = sig.parameters
+    assert "autosave" in params
+    assert "auto_save" not in params
+    assert params["autosave"].default is True
+
+
+def test_concurrent_workflow_autosave_attributes():
+    """Verify autosave attribute is stored and auto_save is not present on the instance."""
+    agent = Agent(
+        agent_name="Worker",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    workflow_default = ConcurrentWorkflow(
+        agents=[agent],
+        show_dashboard=False,
+    )
+    assert workflow_default.autosave is True
+    assert not hasattr(workflow_default, "auto_save")
+    assert workflow_default.workspace.enabled is True
+
+    workflow_disabled = ConcurrentWorkflow(
+        agents=[agent],
+        autosave=False,
+        show_dashboard=False,
+    )
+    assert workflow_disabled.autosave is False
+    assert not hasattr(workflow_disabled, "auto_save")
+    assert workflow_disabled.workspace.enabled is False
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
