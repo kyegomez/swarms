@@ -223,3 +223,32 @@ def test_cache_hit_skips_the_guard_but_new_urls_are_still_checked(
             "https://example.com/other.jpg"
         )
     assert len(gets) == 1
+
+
+@pytest.mark.parametrize(
+    "requests_exc, expected",
+    [
+        ("ConnectionError", ConnectionError),
+        ("Timeout", TimeoutError),
+    ],
+)
+def test_fetch_image_url_converts_requests_errors(
+    monkeypatch, requests_exc, expected
+):
+    """Map requests failures to builtins so LiteLLM._NETWORK_ERRORS still catches them."""
+    import requests
+
+    image_file_b64._fetch_image_url.cache_clear()
+    monkeypatch.setattr(
+        image_file_b64, "_is_safe_url", lambda url: True
+    )
+
+    exc_cls = getattr(requests.exceptions, requests_exc)
+
+    def _boom(url, timeout=None):
+        raise exc_cls(f"stub {requests_exc}")
+
+    monkeypatch.setattr(requests, "get", _boom)
+
+    with pytest.raises(expected):
+        image_file_b64._fetch_image_url("https://example.com/x.jpg")
