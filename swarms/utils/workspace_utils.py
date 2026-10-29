@@ -17,20 +17,36 @@ def check_if_workspace_dir_exists():
     return os.path.exists(workspace_dir)
 
 
-@lru_cache(maxsize=1)
-def get_workspace_dir():
+@lru_cache(maxsize=8)
+def _resolve_workspace_dir(workspace_dir):
     """
-    Retrieve the workspace directory path from the WORKSPACE_DIR environment variable.
+    Report an unset workspace directory once per value.
+
+    Args:
+        workspace_dir (str): The value of the WORKSPACE_DIR environment variable.
 
     Returns:
-        str: The absolute path of the workspace directory.
-
-    Raises:
-        ValueError: If the WORKSPACE_DIR environment variable is not set.
+        str: The value it was given.
     """
-    workspace_dir = os.getenv("WORKSPACE_DIR")
     if not workspace_dir:
         logger.error(
             "WORKSPACE_DIR environment variable is not set. Please set WORKSPACE_DIR in your environment or in a .env file. Example: WORKSPACE_DIR='agent_workspace'"
         )
     return workspace_dir
+
+
+def get_workspace_dir():
+    """
+    Retrieve the workspace directory path from the WORKSPACE_DIR environment variable.
+
+    The variable is read on every call, so a WORKSPACE_DIR set after swarms
+    was imported is honoured. The cache only keeps the warning about an
+    unset variable from repeating.
+
+    Returns:
+        str: The absolute path of the workspace directory.
+    """
+    return _resolve_workspace_dir(os.getenv("WORKSPACE_DIR"))
+
+
+get_workspace_dir.cache_clear = _resolve_workspace_dir.cache_clear

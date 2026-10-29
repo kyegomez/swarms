@@ -91,6 +91,17 @@ class TestEnsureWorkspaceEnv:
         assert resolved.endswith("agent_workspace")
         assert os.environ["WORKSPACE_DIR"] == resolved
 
+    def test_a_later_change_to_the_variable_takes_effect(
+        self, monkeypatch, tmp_path
+    ):
+        monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "first"))
+        assert get_workspace_dir() == str(tmp_path / "first")
+
+        monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "second"))
+
+        assert get_workspace_dir() == str(tmp_path / "second")
+        assert ensure_workspace_env() == str(tmp_path / "second")
+
 
 class TestConversationToData:
     def test_none_is_empty(self):
