@@ -1095,7 +1095,6 @@ class Agent:
                 ):
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
-                    prefix = ()
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
@@ -1139,7 +1138,6 @@ class Agent:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
-                                    prefix,
                                 )
                             )
 
