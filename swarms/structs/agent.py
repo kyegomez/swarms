@@ -944,7 +944,6 @@ class Agent:
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
-        stored_messages: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -1011,10 +1010,6 @@ class Agent:
             streaming_callback (Optional[Callable[[str], None]]): Optional callback function
                 to receive streaming tokens in real-time. Useful for dashboard integration
                 or real-time UI updates. Defaults to None.
-            stored_messages (Optional[List[Dict[str, Any]]]): Shared by the n samples
-                of one run. The first sample stores messages and fills it with the
-                stored rows, and later samples send those rows instead of storing
-                messages again.
             *args: Additional positional arguments passed to LLM calls. Used for extensibility.
             **kwargs: Additional keyword arguments passed to LLM calls. Used for extensibility.
 
@@ -1061,12 +1056,8 @@ class Agent:
         """
         history_start = len(self.short_memory.conversation_history)
         try:
-            # A later sample sends the copy the first one stored instead of storing another.
-            prefix = stored_messages or ()
-            if messages and not prefix:
-                added = self.short_memory.add_messages(messages)
-                if stored_messages is not None:
-                    stored_messages.extend(added)
+            if messages:
+                self.short_memory.add_messages(messages)
 
             self.check_if_no_prompt_then_autogenerate(task)
 
@@ -2424,7 +2415,6 @@ Subtask Breakdown:
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
-        n: int = 1,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
@@ -2438,7 +2428,6 @@ Subtask Breakdown:
             - Handles both interactive (asks user) and autonomous (auto-plan/execute) operation modes.
             - Supports passing a single image or batch of images.
             - Supports streaming outputs via a callback for real-time token generation.
-            - Runs multiple outputs (n > 1), single or batched.
             - Merges configuration and per-call streaming callback.
             - Handles errors and device selection internally (but device_id is not used directly by this method).
 
@@ -2450,7 +2439,6 @@ Subtask Breakdown:
             imgs (Optional[List[str]]): List of multiple images if processing a batch. Each image can be a path,
                 URL, data URI, or raw base64 string. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
-            n (int): How many outputs to generate (number of runs). Defaults to 1.
             messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
                 e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
                 They are added to the agent's conversation and sent as the context
@@ -2462,7 +2450,7 @@ Subtask Breakdown:
         Returns:
             Any: The agent's output. This can be:
                 - A string or structured dict (for single response).
-                - A list (if running multiple outputs/images).
+                - A list (if running with multiple images).
                 - The final agent answer, streaming response, or summary (for autonomous "auto" mode).
 
         Raises:
@@ -2557,7 +2545,6 @@ Subtask Breakdown:
                         task,
                         img,
                         imgs,
-                        n,
                         streaming_callback,
                         messages,
                         *args,
@@ -2600,24 +2587,22 @@ Subtask Breakdown:
         task,
         img,
         imgs,
-        n,
         streaming_callback,
         messages,
         *args,
         **kwargs,
     ):
-        """Run the task on the current model: the autonomous loop, n samples, or a single pass.
+        """Run the task on the current model: the autonomous loop or a single pass.
 
         Args:
             task: The task to run.
             img: A single image input.
             imgs: Several image inputs.
-            n: How many samples to draw on the integer-loop path.
             streaming_callback: Receives streamed tokens.
             messages: Prior turns the task continues from.
 
         Returns:
-            Any: The run's output, or a list of n outputs.
+            Any: The run's output.
         """
         if self.max_loops == "auto":
             # Constructor messages are already in short_memory; per-call ones are not.
@@ -2631,21 +2616,6 @@ Subtask Breakdown:
                 *args,
                 **kwargs,
             )
-        if n > 1:
-            stored_messages = []
-            return [
-                self._run(
-                    task=task,
-                    img=img,
-                    imgs=imgs,
-                    streaming_callback=streaming_callback,
-                    messages=messages,
-                    *args,
-                    stored_messages=stored_messages,
-                    **kwargs,
-                )
-                for _ in range(n)
-            ]
         return self._run(
             task=task,
             img=img,
