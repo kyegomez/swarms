@@ -646,12 +646,9 @@ class ConcurrentWorkflow:
                     task, img, imgs, streaming_callback
                 )
 
-            self.workspace.save_conversation()
-
             return result
-        except Exception:
+        finally:
             self.workspace.save_conversation()
-            raise
 
     def batch_run(
         self,

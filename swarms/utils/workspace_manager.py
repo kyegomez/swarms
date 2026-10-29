@@ -285,12 +285,8 @@ class WorkspaceManager:
             # temp+replace, a crash mid-write would otherwise truncate it
             temp_path = f"{path}.tmp"
             with open(temp_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    data,
-                    f,
-                    indent=2,
-                    default=str,
-                    ensure_ascii=False,
+                f.write(
+                    json.dumps(data, default=str, ensure_ascii=False)
                 )
             os.replace(temp_path, path)
 
