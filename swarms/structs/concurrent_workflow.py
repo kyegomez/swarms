@@ -4,6 +4,10 @@ from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import agent_answer
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -20,9 +24,6 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="concurrent_workflow")
-
-# Default cap on concurrent agent calls, guards provider rate limits not CPU
-MAX_CONCURRENT_AGENTS = 32
 
 
 class ConcurrentWorkflow:
@@ -47,7 +48,7 @@ class ConcurrentWorkflow:
         agent_statuses (dict): Dictionary tracking status and output of each agent
         metadata_output_path (str): Path for saving workflow metadata
         autosave (bool): Whether to persist conversation history to the workflow
-            workspace directory after each run
+            workspace directory after each run. Defaults to False
         verbose (bool): Whether to emit debug-level logging for workspace and
             autosave operations
         on_error (str): Failure policy for an agent that raises. ``"store"``
@@ -55,8 +56,7 @@ class ConcurrentWorkflow:
             agents finish; ``"raise"`` propagates the exception and aborts the run
         max_workers (Optional[int]): Thread pool size for concurrent agent
             execution. Agent calls are network-bound, so this defaults to
-            ``len(agents)`` capped at ``MAX_CONCURRENT_AGENTS`` rather than
-            deriving from CPU count.
+            ``len(agents)`` rather than deriving from CPU count.
         swarm_workspace_dir (Optional[str]): Resolved workspace directory used for
             autosave, or None when autosave is disabled or setup failed
         conversation (Conversation): Conversation object for storing agent interactions
@@ -98,10 +98,11 @@ class ConcurrentWorkflow:
         max_loops: int = 1,
         auto_generate_prompts: bool = False,
         show_dashboard: bool = False,
-        autosave: bool = True,
+        autosave: bool = False,
         verbose: bool = False,
         on_error: str = "store",
         max_workers: Optional[int] = None,
+        channel: Optional[CommsChannel] = None,
     ):
         """
         Initialize a ConcurrentWorkflow.
@@ -124,7 +125,8 @@ class ConcurrentWorkflow:
                 execution. Enabling this disables per-agent stdout printing to
                 avoid conflicting with the dashboard.
             autosave (bool): Whether to persist conversation history to the
-                workflow workspace directory after each run.
+                workflow workspace directory after each run. Defaults to
+                False.
             verbose (bool): Whether to emit debug-level logging for workspace and
                 autosave operations.
             on_error (str): Failure policy for an agent that raises. ``"store"``
@@ -133,8 +135,8 @@ class ConcurrentWorkflow:
                 aborts the run.
             max_workers (Optional[int]): Thread pool size for concurrent agent
                 execution. Agent calls are network-bound rather than CPU-bound,
-                so when omitted the pool is sized at ``len(agents)``, capped at
-                ``MAX_CONCURRENT_AGENTS``. See :meth:`_resolve_max_workers`.
+                so when omitted the pool is sized at ``len(agents)``. Set it to
+                throttle large rosters. See :meth:`_resolve_max_workers`.
 
         Raises:
             ValueError: If no agents are provided or the agents list is empty.
@@ -166,6 +168,8 @@ class ConcurrentWorkflow:
             self.agent_statuses = {}
 
         self.reliability_check()
+        self.channel = channel
+        claim_agents(self.agents, channel, self.name)
         self.conversation = self._new_conversation()
 
         if self.show_dashboard is True:
@@ -192,7 +196,8 @@ class ConcurrentWorkflow:
                 scopes :meth:`batch_run` runs each task in.
         """
         return Conversation(
-            name=f"concurrent_workflow_name_{self.name}_id_{self.id}_conversation"
+            name=f"concurrent_workflow_name_{self.name}_id_{self.id}_conversation",
+            channel=self.channel,
         )
 
     def fix_agents(self):
@@ -216,16 +221,15 @@ class ConcurrentWorkflow:
 
         Each submitted task is one agent's LLM call, which is network-bound, so
         CPU count is not the limiting factor. The pool never receives more than
-        ``len(self.agents)`` tasks, making that the natural size. The ceiling
-        guards large rosters against provider rate limits and HTTP connection
-        pool exhaustion.
+        ``len(self.agents)`` tasks, making that the natural size. Pass
+        max_workers to throttle against provider rate limits.
 
         Returns:
             int: Number of worker threads to use, at least 1.
         """
         if self.max_workers is not None:
             return max(1, self.max_workers)
-        return max(1, min(len(self.agents), MAX_CONCURRENT_AGENTS))
+        return max(1, len(self.agents))
 
     def reliability_check(self):
         """
@@ -642,12 +646,9 @@ class ConcurrentWorkflow:
                     task, img, imgs, streaming_callback
                 )
 
-            self.workspace.save_conversation()
-
             return result
-        except Exception:
+        finally:
             self.workspace.save_conversation()
-            raise
 
     def batch_run(
         self,

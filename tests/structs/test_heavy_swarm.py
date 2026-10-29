@@ -831,6 +831,34 @@ def test_second_run_carries_nothing_from_the_first(monkeypatch):
     assert "volcanoes" not in second
 
 
+@pytest.mark.parametrize(
+    "questions",
+    [
+        RuntimeError("question model is down"),
+        {"error": "question model is down"},
+    ],
+)
+def test_run_raises_when_question_generation_fails(
+    monkeypatch, questions
+):
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+    )
+
+    def generate(task, img=None):
+        if isinstance(questions, Exception):
+            raise questions
+        return questions
+
+    monkeypatch.setattr(
+        swarm, "execute_question_generation", generate
+    )
+
+    with pytest.raises(RuntimeError, match="question model is down"):
+        swarm.run("task")
+
+
 class TestSwarmRouterGrokIntegration:
     """Verify SwarmRouter passes through grok flag."""
 

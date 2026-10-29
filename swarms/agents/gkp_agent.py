@@ -105,6 +105,7 @@ class KnowledgeGenerator:
         logger.debug(f"Generating knowledge for query: {query}")
         start_time = time.time()
 
+        self.agent.reset()
         response = self.agent.run(task=prompt)
 
         end_time = time.time()
@@ -260,6 +261,7 @@ class Reasoner:
         logger.debug(f"Reasoning about query: {query}")
         start_time = time.time()
 
+        self.agent.reset()
         response = self.agent.run(task=prompt)
 
         end_time = time.time()
@@ -491,6 +493,7 @@ class GKPAgent:
         prompt = "\n".join(prompt_parts)
 
         logger.debug("Coordinating multiple reasoning paths")
+        self.coordinator.reset()
         response = self.coordinator.run(task=prompt)
 
         # Parse the coordinated response

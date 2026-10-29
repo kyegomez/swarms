@@ -354,7 +354,7 @@ class AgentLoader:
         **kwargs,
     ) -> Any:
         """
-        Load agents, and a SwarmRouter if one is configured, from a YAML config with agents and swarm_architecture sections.
+        Load agents, and a SwarmRouter if one is configured, from a YAML config with agents and swarm_architecture sections, or from a list of agents as create_agent_file writes it.
 
         Args:
             yaml_file (Optional[str]): Path to the YAML file.
@@ -381,6 +381,8 @@ class AgentLoader:
             with open(yaml_file, "r", encoding="utf-8") as f:
                 yaml_string = f.read()
         config = yaml.safe_load(yaml_string) or {}
+        if isinstance(config, list):
+            config = {"agents": config}
         if not config.get("agents"):
             raise ValueError(
                 "No agents defined in the YAML configuration."
@@ -553,7 +555,7 @@ class AgentLoader:
         Automatically load agents from a file based on its extension.
 
         Args:
-            file_path (str): Path to the agent file (Markdown, YAML, or CSV).
+            file_path (str): Path to the agent file (Markdown, YAML, CSV or JSON).
             *args: Additional positional arguments passed to the underlying loader.
             **kwargs: Additional keyword arguments passed to the underlying loader.
 
@@ -563,15 +565,16 @@ class AgentLoader:
         Raises:
             ValueError: If the file type is not supported.
         """
-        if file_path.endswith(".md"):
+        suffix = Path(file_path).suffix.lower()
+        if suffix == ".md":
             return self.load_agents_from_markdown(
                 file_path, *args, **kwargs
             )
-        elif file_path.endswith(".yaml"):
+        elif suffix in (".yaml", ".yml"):
             return self.load_agents_from_yaml(
                 file_path, *args, **kwargs
             )
-        elif file_path.endswith(".csv"):
+        elif suffix in (".csv", ".json"):
             return self.load_agents_from_csv(
                 file_path, *args, **kwargs
             )
@@ -598,7 +601,7 @@ class AgentLoader:
         Load multiple agents from a list of files of various supported types.
 
         Args:
-            file_paths (List[str]): List of file paths to agent files (Markdown, YAML, or CSV).
+            file_paths (List[str]): List of file paths to agent files (Markdown, YAML, CSV or JSON).
             *args: Additional positional arguments passed to the underlying loader.
             **kwargs: Additional keyword arguments passed to the underlying loader.
 

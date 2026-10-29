@@ -340,11 +340,9 @@ print(f"Workers: {status['max_workers']}")
 ### 2. Worker Pool Optimization
 
 ```python
-# GraphWorkflow automatically optimizes worker count
-# Based on CPU cores: max(1, int(get_cpu_cores() * 0.95))
-
-# Custom worker configuration (if needed)
-workflow._max_workers = 8  # Manual override
+# By default every node in the widest layer runs at once.
+# Cap concurrency, for example to respect a provider rate limit:
+workflow = GraphWorkflow(max_parallel_nodes=8)
 ```
 
 ### 3. Memory Management
@@ -1018,10 +1016,9 @@ workflow = GraphWorkflow(
     verbose=False,      # Reduce logging overhead in production
 )
 
-# ✅ Good: Monitor and optimize worker pool
+# ✅ Good: Inspect the worker cap (None means each layer runs fully in parallel)
 status = workflow.get_compilation_status()
-if status['max_workers'] < optimal_workers:
-    workflow._max_workers = optimal_workers
+print(status['max_workers'])
 ```
 
 ### 4. Error Handling and Reliability

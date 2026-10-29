@@ -556,6 +556,23 @@ def test_auto_unsupported_file_type():
         raise
 
 
+def test_auto_loads_every_format_create_agent_file_writes():
+    rows = [
+        {"agent_name": "Alpha", "system_prompt": "You are Alpha."},
+        {"agent_name": "Beta", "system_prompt": "You are Beta."},
+    ]
+    loader = AgentLoader()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for ext in ("csv", "json", "yaml", "yml"):
+            path = os.path.join(tmpdir, f"agents.{ext}")
+            loader.create_agent_file(path, rows)
+            agents = loader.auto(path)
+            assert [a.agent_name for a in agents] == [
+                "Alpha",
+                "Beta",
+            ], ext
+
+
 def test_load_single_agent():
     """Test load_single_agent method."""
     try:
@@ -750,6 +767,7 @@ if __name__ == "__main__":
         "test_auto_detect_yaml": test_auto_detect_yaml,
         "test_auto_detect_csv": test_auto_detect_csv,
         "test_auto_unsupported_file_type": test_auto_unsupported_file_type,
+        "test_auto_loads_every_format_create_agent_file_writes": test_auto_loads_every_format_create_agent_file_writes,
         "test_load_single_agent": test_load_single_agent,
         "test_load_multiple_agents": test_load_multiple_agents,
         "test_parse_markdown_file": test_parse_markdown_file,

@@ -24,8 +24,11 @@ from typing import (
 )
 
 from swarms.structs.agent import Agent  # noqa: F401
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
-from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -770,7 +773,7 @@ class GraphWorkflow:
         task (str): The task to be executed by the workflow.
         _compiled (bool): Whether the graph has been compiled for optimization.
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
-        _max_workers (int): Maximum nodes executed concurrently. Set from max_parallel_nodes if provided, otherwise int(get_cpu_cores() * 0.95) with a minimum of 1.
+        _max_workers (Optional[int]): Maximum nodes executed concurrently, set from max_parallel_nodes. None means no cap, so every node in the widest layer runs at once.
         verbose (bool): Whether to enable verbose logging.
         usage (dict): Provider token usage summed over every distinct agent in
             the graph, subgraphs included. See :attr:`usage`.
@@ -795,6 +798,7 @@ class GraphWorkflow:
         checkpoint_dir: Optional[str] = None,
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
+        channel: Optional[CommsChannel] = None,
     ):
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
@@ -843,10 +847,11 @@ class GraphWorkflow:
         self._successors_map = {}
         self._predecessors_cache = {}
         self.max_parallel_nodes = max_parallel_nodes
+        # Nodes are network-bound LLM calls, so the default is layer width, not CPU count.
         self._max_workers = (
             max(1, max_parallel_nodes)
             if max_parallel_nodes is not None
-            else max(1, int(get_cpu_cores() * 0.95))
+            else None
         )
         self._compilation_timestamp = None
 
@@ -855,7 +860,8 @@ class GraphWorkflow:
                 f"GraphWorkflow max_workers set to: {self._max_workers}"
             )
 
-        self.conversation = Conversation()
+        self.channel = channel
+        self.conversation = Conversation(channel=channel)
 
         # Rebuild the graph from nodes and edges if provided
         if self.nodes:
@@ -1235,6 +1241,7 @@ class GraphWorkflow:
                 raise ValueError(error_msg)
 
             self.nodes[node.id] = node
+            claim_agents([node.agent], self.channel, self.name)
             self.graph_backend.add_node(
                 node.id,
                 type=node.type,
@@ -1266,7 +1273,7 @@ class GraphWorkflow:
 
         try:
             with ContextThreadPoolExecutor(
-                max_workers=self._max_workers
+                max_workers=max(1, self._max_workers or batch_size)
             ) as executor:
                 # Process agents in batches
                 for i in range(0, len(agents), batch_size):
@@ -2046,21 +2053,27 @@ class GraphWorkflow:
         widest_layer = max(
             (len(layer) for layer in self._execution_plan), default=1
         )
+        pool_size = max(
+            1,
+            (
+                widest_layer
+                if self._max_workers is None
+                else min(self._max_workers, widest_layer)
+            ),
+        )
         executor: Optional[ContextThreadPoolExecutor] = None
 
         def _get_executor() -> ContextThreadPoolExecutor:
             nonlocal executor
             if executor is None:
                 executor = ContextThreadPoolExecutor(
-                    max_workers=max(
-                        1, min(self._max_workers, widest_layer)
-                    ),
+                    max_workers=pool_size,
                     thread_name_prefix=f"graph-{self.name}",
                 )
                 if self.verbose:
                     logger.debug(
                         f"Created shared thread pool with "
-                        f"{max(1, min(self._max_workers, widest_layer))} workers"
+                        f"{pool_size} workers"
                     )
             return executor
 

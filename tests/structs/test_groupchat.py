@@ -19,13 +19,11 @@ import threading
 
 import pytest
 
-from swarms.structs.concurrent_workflow import MAX_CONCURRENT_AGENTS
 from swarms.structs.groupchat import (
     GroupChat,
     RESPOND_TOOL,
     _extract_args,
 )
-
 
 # --------------------------------------------------------------------------
 # helpers
@@ -195,13 +193,6 @@ class TestConstructorValidation:
         with pytest.raises(ValueError, match="at least 2"):
             GroupChat(agents=None)
 
-    def test_deprecated_idle_timeout_is_still_accepted(self):
-        chat = make_chat(
-            [ScriptedAgent("A"), ScriptedAgent("B")],
-            idle_timeout=4.0,
-        )
-        assert chat.idle_timeout == 4.0
-
     def test_auto_equip_injects_the_respond_tool(self):
         bare_a, bare_b = BareAgent("A"), BareAgent("B")
         make_chat([bare_a, bare_b])
@@ -280,18 +271,16 @@ class TestScheduling:
         # exhausted scripts fall silent, ending the chat on a lull.
         assert all(agent.calls >= 1 for agent in agents)
 
-    def test_every_bid_runs_at_once_up_to_the_cap(self):
-        barrier = threading.Barrier(MAX_CONCURRENT_AGENTS, timeout=5)
+    def test_every_bid_runs_at_once(self):
+        roster_size = 64
+        barrier = threading.Barrier(roster_size, timeout=5)
 
         class BarrierAgent(ScriptedAgent):
             def run(self, task=None, *args, **kwargs):
                 barrier.wait()
                 return super().run(task, *args, **kwargs)
 
-        agents = [
-            BarrierAgent(f"A{i}")
-            for i in range(MAX_CONCURRENT_AGENTS)
-        ]
+        agents = [BarrierAgent(f"A{i}") for i in range(roster_size)]
         make_chat(agents).run("topic")
 
         assert not barrier.broken

@@ -731,6 +731,32 @@ class TestConcurrentRun:
             r.concurrent_run(["a"])
 
 
+def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
+    from swarms import Agent
+    from swarms.structs.file_channel import FileChannel
+
+    channel = FileChannel(tmp_path / "run.md")
+    agents = [
+        Agent(
+            agent_name="A",
+            model_name="gpt-4o",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+    ]
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        channel=channel,
+    )
+
+    swarm = router._create_swarm()
+
+    assert swarm.channel is channel
+    assert swarm.agent_rearrange.conversation.channel is channel
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 
@@ -1226,6 +1252,30 @@ def test_usage_counts_a_shared_agent_once():
     router._swarm_cache["fake"] = type("S", (), {"agents": [agent]})()
 
     assert router.usage["input_tokens"] == 100
+
+
+@pytest.mark.parametrize(
+    "swarm_type, attribute",
+    [("HeavySwarm", "agents"), ("CouncilAsAJudge", "judge_agents")],
+)
+def test_usage_includes_agents_a_swarm_holds_in_a_dict(
+    swarm_type, attribute
+):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        router = SwarmRouter(
+            name="usage-router",
+            agents=[_agent_with_usage("A", 0, 0)],
+            swarm_type=swarm_type,
+            autosave=False,
+        )
+        held = list(
+            getattr(router._create_swarm(), attribute).values()
+        )
+    assert held
+    for agent in held:
+        agent._add_usage({"input_tokens": 10, "total_tokens": 10})
+
+    assert router.usage["input_tokens"] == 10 * len(held)
 
 
 def _stub_council_run(agent, reply, calls):
