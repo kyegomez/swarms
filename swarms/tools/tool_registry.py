@@ -51,17 +51,16 @@ class ToolStorage:
         self.description = description
         self.verbose = verbose
         self.tools = tools
-        # self.tool_storage_schema = tool_storage_schema
         self._tools: Dict[str, Callable] = {}
         self._settings: Dict[str, Any] = {}
         self.tool_storage_schema = ToolStorageSchema(
-            name=name,
-            description=description,
+            name=name or "",
+            description=description or "",
             tools=[],
         )
 
-        # Pool
-        self.pool = ThreadPoolExecutor(max_workers=os.cpu_count())
+        for func in tools or []:
+            self.add_tool(func)
 
     def add_tool(self, func: Callable) -> None:
         """
@@ -169,8 +168,7 @@ class ToolStorage:
         Returns:
             List[str]: A list of tool names.
         """
-        # return list(self._tools.keys())
-        return self.tool_storage_schema.model_dump_json(indent=4)
+        return list(self._tools)
 
     def add_tool_to_log(self, name: str, docs: str, *args, **kwargs):
         log = ToolMetadata(
