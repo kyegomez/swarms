@@ -144,10 +144,24 @@ class TestBasicAgent:
         history = agent.short_memory.conversation_history
         contents = [str(row["content"]) for row in history]
         assert agent.autonomous_subtasks == []
-        assert history[0]["role"] == "System"
+        assert not any(row["role"] == "System" for row in history)
         assert any("Weather" in c for c in contents)
         assert not any("first task" in c for c in contents)
         assert any("second task" in c for c in contents)
+
+    def test_no_system_prompt_seeds_no_system_row(
+        self, mocked_llm, tmp_path
+    ):
+        agent = _flow("blank-flow", mocked_llm, tmp_path)
+        agent.run("the task")
+
+        history = agent.short_memory.conversation_history
+
+        assert [row["role"] for row in history] == [
+            agent.user_name,
+            "blank-flow",
+        ]
+        assert str(history[0]["content"]) == "the task"
 
     def test_bulk_run(self, basic_flow):
         inputs = [{"task": "Test1"}, {"task": "Test2"}]
