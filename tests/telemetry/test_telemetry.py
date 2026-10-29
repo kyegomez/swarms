@@ -1007,7 +1007,7 @@ class TestAgentConversation:
         """Agent.run records every parameter in its signature."""
         import inspect
 
-        fake_agent("Args-A").run("argument task", n=1)
+        fake_agent("Args-A").run("argument task")
 
         inputs = json.loads(
             _attrs(_by_name(spans, "Agent.run"))["swarms.inputs"]
@@ -1015,7 +1015,6 @@ class TestAgentConversation:
         expected = set(inspect.signature(Agent.run).parameters)
         assert set(inputs) == expected - {"self"}
         assert inputs["task"] == "argument task"
-        assert inputs["n"] == 1
 
     def test_long_history_is_not_truncated(self, spans):
         """A history past the payload cap is recorded in full."""

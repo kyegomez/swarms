@@ -2248,41 +2248,6 @@ class TestSeededMessages:
         assert "Noted: Helios." in recorded
 
 
-class TestRunSamples:
-    """Each of the ``n`` samples gets the same inputs as a single run."""
-
-    def test_every_sample_receives_the_image_and_callback(self):
-        agent = _patched_agent("Vision")
-        calls = []
-
-        def fake_call_llm(
-            task=None,
-            img=None,
-            imgs=None,
-            current_loop=0,
-            streaming_callback=None,
-            *args,
-            **kwargs,
-        ):
-            calls.append((img, streaming_callback))
-            return "A bar chart."
-
-        def on_token(token):
-            return None
-
-        agent.call_llm = fake_call_llm
-        agent.run(
-            "Describe the chart.",
-            img="https://example.com/chart.png",
-            streaming_callback=on_token,
-            n=2,
-        )
-
-        assert (
-            calls == [("https://example.com/chart.png", on_token)] * 2
-        )
-
-
 class TestLLMFailureRaises:
     """#2408: once its retries ran out, _run broke out of the loop and
     returned the formatted history, so run() returned '' with no error and
@@ -2711,51 +2676,6 @@ class TestIntegerLoopRequest:
         agent.run("task", messages=[{"role": "user", "content": "x"}])
 
         assert sent[1][1] == [{"role": "user", "content": "SUMMARY"}]
-
-    def test_each_sample_starts_at_the_callers_messages(
-        self, monkeypatch
-    ):
-        agent = self._agent(max_loops=1)
-        sent = self._capture(monkeypatch, agent, ["one", "two"])
-
-        agent.run(
-            "task",
-            messages=[{"role": "user", "content": "context"}],
-            n=2,
-        )
-
-        expected = [
-            {"role": "user", "content": "context"},
-            {"role": "user", "content": "task"},
-        ]
-        assert [messages for _, messages in sent] == [
-            expected,
-            expected,
-        ]
-
-    def test_samples_store_the_callers_messages_once(
-        self, monkeypatch
-    ):
-        agent = self._agent(max_loops=1)
-        sent = self._capture(
-            monkeypatch, agent, ["one", "two", "three", "four"]
-        )
-
-        agent.run(
-            "task",
-            messages=[{"role": "user", "content": "context"}],
-            n=3,
-        )
-        agent.run("next")
-
-        stored = [
-            row["content"]
-            for row in agent.short_memory.conversation_history
-        ]
-        assert stored.count("context") == 1
-        assert [m["content"] for m in sent[-1][1]].count(
-            "context"
-        ) == 1
 
 
 class TestAgentOutputCleanerRemoval:
