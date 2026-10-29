@@ -9,9 +9,9 @@ from swarms.agents.gkp_agent import (
     KnowledgeGenerator,
     Reasoner,
 )
+from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 
-# OpenAI shut down o1 on October 23, 2026 and lists gpt-5.6-sol
-# as its replacement.
+# OpenAI shut down o1 on October 23, 2026.
 RETIRED_DEFAULT_MODEL = "o1"
 
 
@@ -33,4 +33,4 @@ def test_default_model_is_not_the_retired_o1(agent_class):
     )
 
     assert default.split("/")[-1] != RETIRED_DEFAULT_MODEL
-    assert default == "gpt-5.6-sol"
+    assert default == DEFAULT_MODEL_NAME

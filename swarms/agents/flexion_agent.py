@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Tuple
 import time
 from datetime import datetime
 
+from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.prompts.reflexion_prompts import (
@@ -193,7 +194,7 @@ class ReflexionAgent:
         self,
         agent_name: str = "reflexion-agent",
         system_prompt: str = REFLEXION_PROMPT,
-        model_name: str = "gpt-5.6-sol",
+        model_name: str = DEFAULT_MODEL_NAME,
         max_loops: int = 3,
         memory_capacity: int = 100,
     ) -> None:
