@@ -1692,11 +1692,6 @@ Subtask Breakdown:
 
     def reliability_check(self):
 
-        if self.system_prompt is None:
-            logger.warning(
-                "The system prompt is not set. Please set a system prompt for the agent to improve reliability."
-            )
-
         if self.agent_name is None:
             logger.warning(
                 "The agent name is not set. Please set an agent name to improve reliability."
