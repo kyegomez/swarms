@@ -139,13 +139,13 @@ class Conversation:
             self._initialize_new_conversation()
 
         # Prior MEMORY.md content becomes one System preamble message
-        self._suppress_memory_md = False
         if self.memory_md_path:
             self._init_memory_md()
             self._preload_memory_md()
 
         if messages:
             self.add_messages(messages)
+        self._suppress_memory_md = False
 
         if channel is not None:
             for row in channel.messages():

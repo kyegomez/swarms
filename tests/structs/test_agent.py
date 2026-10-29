@@ -2258,12 +2258,14 @@ def test_fresh_run_sends_only_its_own_task_and_keeps_the_history():
 
     agent.call_llm = fake_call_llm
     agent.run("A")
+    agent.autonomous_subtasks = [{"step_id": "plan"}]
     agent.run("B", fresh=True)
     list(agent.run_stream("C", fresh=True))
     asyncio.run(agent.arun("D", fresh=True))
     agent.run("E")
 
     assert sizes == [1, 1, 1, 1, 3]
+    assert agent.autonomous_subtasks == [{"step_id": "plan"}]
 
 
 class TestLLMFailureRaises:

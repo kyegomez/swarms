@@ -776,6 +776,7 @@ def test_suppress_memory_md_during_setup(tmp_path):
         system_prompt="You are helpful.",
         rules="Be nice.",
         custom_rules_prompt="Custom rule.",
+        messages=[{"role": "user", "content": "Seeded turn."}],
         memory_md_path=str(md_path),
         conversations_dir=str(tmp_path / "convs"),
     )

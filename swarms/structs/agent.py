@@ -2470,7 +2470,8 @@ Subtask Breakdown:
         """
         if fresh:
             stored_memory = self.short_memory
-            self.reset()
+            self.short_memory = self.short_memory_init()
+            self.tool_manager.handle_tool_schema_ops()
             try:
                 return self.run(
                     task,
