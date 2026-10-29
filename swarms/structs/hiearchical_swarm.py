@@ -483,14 +483,14 @@ class HierarchicalSwarm:
                 out = self.setup_director_with_planning(
                     task=AGENT_TASK_TEMPLATE.format(
                         history=self._context_for(
-                            self.director.agent_name
+                            "Planning Director"
                         ),
                         task=task,
                     ),
                     img=img,
                 )
                 self.conversation.add(
-                    role=self.director.agent_name, content=out
+                    role="Planning Director", content=out
                 )
 
             # Run the director with the context
