@@ -3783,7 +3783,7 @@ class GraphWorkflow:
             "agents": [
                 {
                     "id": node.id,
-                    "type": str(node.type),
+                    "type": node.type.value,
                     "agent_name": getattr(
                         node.agent, "agent_name", "unknown"
                     ),
