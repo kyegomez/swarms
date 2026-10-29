@@ -90,8 +90,6 @@ def ensure_workspace_env(verbose: bool = False) -> Optional[str]:
     if not os.getenv("WORKSPACE_DIR"):
         default = os.path.join(os.getcwd(), DEFAULT_WORKSPACE_DIRNAME)
         os.environ["WORKSPACE_DIR"] = default
-        # get_workspace_dir is lru_cached, so a stale miss would stick.
-        get_workspace_dir.cache_clear()
         if verbose:
             logger.info(
                 f"WORKSPACE_DIR not set, using default: {default}"
