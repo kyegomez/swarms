@@ -1,5 +1,6 @@
 import asyncio
 import os
+import weakref
 from typing import Optional
 from pydantic import BaseModel, Field
 
@@ -11,6 +12,14 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
+
+def _shutdown_executor(executor: Optional[ContextThreadPoolExecutor]) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
+
 
 model_recommendations = {
     "gpt-5.4": {
@@ -233,6 +242,9 @@ class ModelRouter:
             if self.max_workers == "auto":
                 self.max_workers = os.cpu_count()
 
+            self._executor: Optional[ContextThreadPoolExecutor] = None
+            self._finalizer = None
+
             self.model_caller = LiteLLM(
                 model_name=model_name,
                 response_format=ModelOutput,
@@ -381,10 +393,8 @@ class ModelRouter:
             RuntimeError: If concurrent execution fails
         """
         try:
-            with ContextThreadPoolExecutor(
-                max_workers=self.max_workers
-            ) as executor:
-                outputs = list(executor.map(self.run, tasks))
+            executor = self._get_executor()
+            outputs = list(executor.map(self.run, tasks))
             return outputs
         except Exception as e:
             raise RuntimeError(
@@ -402,3 +412,45 @@ class ModelRouter:
             str: Model output
         """
         return await asyncio.to_thread(self.run, task)
+
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or self.max_workers or 10
+        if self._executor is not None:
+            if (
+                hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self.close()
+            else:
+                return self._executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def close(self) -> None:
+        """Shut down the reusable thread pool executor."""
+        if self._finalizer is not None:
+            try:
+                self._finalizer.detach()
+            except Exception:
+                pass
+            self._finalizer = None
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=False)
+            except Exception:
+                pass
+            self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
