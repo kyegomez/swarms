@@ -229,7 +229,6 @@ class Agent:
     Methods:
         run: Run the agent
         run_concurrent: Run the agent concurrently
-        bulk_run: Run the agent in bulk
         save: Save the agent
         load: Load the agent
         validate_response: Validate the response
@@ -1625,23 +1624,6 @@ Subtask Breakdown:
             logger.error(f"Error running concurrent tasks: {error}")
             raise
 
-    def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
-        """
-        Generate responses for multiple input sets.
-
-        Args:
-            inputs (List[Dict[str, Any]]): A list of input dictionaries containing the necessary data for each run.
-
-        Returns:
-            List[str]: A list of response strings generated for each input set.
-
-        Raises:
-            Exception: Whatever ``run`` raises for the first input that
-                fails. Inputs after it are not run.
-        """
-        logger.debug(f"Running {len(inputs)} bulk tasks")
-        return [self.run(**input_data) for input_data in inputs]
-
     def _default_context_length(self) -> int:
         """
         Returns the maximum input token window for the agent's underlying model.
@@ -2767,44 +2749,6 @@ Subtask Breakdown:
 
         if _exc[0] is not None:
             raise _exc[0]
-
-    def run_batched(
-        self,
-        tasks: List[str],
-        imgs: List[str] = None,
-        *args,
-        **kwargs,
-    ):
-        """
-        Run a batch of tasks, one after another.
-
-        Args:
-            tasks (List[str]): List of tasks to run.
-            imgs (List[str], optional): One image per task, paired by position.
-                Omit to run the tasks without images. Defaults to None.
-            *args: Additional positional arguments to be passed to the execution method.
-            **kwargs: Additional keyword arguments to be passed to the execution method.
-
-        Returns:
-            List[Any]: List of results from each task execution.
-        """
-        # Index imgs rather than zip: zip rebound imgs and raised when it was None.
-        if imgs is None:
-            return [
-                self.run(task=task, *args, **kwargs) for task in tasks
-            ]
-
-        if len(imgs) != len(tasks):
-            raise ValueError(
-                f"run_batched got {len(tasks)} tasks and {len(imgs)} images; "
-                "pass one image per task, or omit imgs entirely. Zipping them "
-                "would silently drop the extras."
-            )
-
-        return [
-            self.run(task=task, img=img, *args, **kwargs)
-            for task, img in zip(tasks, imgs)
-        ]
 
     def showcase_config(self):
 
