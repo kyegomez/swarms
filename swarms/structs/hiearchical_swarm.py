@@ -1,6 +1,7 @@
 import inspect
 import json
 import traceback
+import weakref
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -58,6 +59,14 @@ from swarms.utils.workspace_manager import WorkspaceManager
 
 _ORDER_BATCH_SCHEMA = BaseTool().base_model_to_dict(OrderBatch)
 _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
+
+
+def _shutdown_executor(executor: Optional[ContextThreadPoolExecutor]) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
 
 
 class HierarchicalSwarm:
@@ -185,6 +194,8 @@ class HierarchicalSwarm:
         self._feedback_director = None
         self._judge_agent = None
         self._planning_director = None
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer = None
         self.workspace = WorkspaceManager(
             self,
             name=self.name or "hierarchical-swarm",
@@ -892,23 +903,21 @@ class HierarchicalSwarm:
 
         if self.parallel_execution:
             futures_map = {}
-            with ContextThreadPoolExecutor(
-                max_workers=self.max_workers
-            ) as executor:
-                for index, order in enumerate(orders):
-                    future = executor.submit(
-                        self._execute_order_with_retries,
-                        order,
-                        False,
-                    )
-                    futures_map[future] = (index, order)
+            executor = self._get_executor()
+            for index, order in enumerate(orders):
+                future = executor.submit(
+                    self._execute_order_with_retries,
+                    order,
+                    False,
+                )
+                futures_map[future] = (index, order)
 
-                for future in as_completed(futures_map):
-                    index, order = futures_map[future]
-                    output, failure = future.result()
-                    results[index] = output
-                    if failure is not None:
-                        failures.append(failure)
+            for future in as_completed(futures_map):
+                index, order = futures_map[future]
+                output, failure = future.result()
+                results[index] = output
+                if failure is not None:
+                    failures.append(failure)
 
             for index, order in enumerate(orders):
                 if results[index] is not None and not (
@@ -1142,3 +1151,45 @@ class HierarchicalSwarm:
             return_exceptions=return_exceptions,
             **kwargs,
         )
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or self.max_workers
+        if self._executor is not None:
+            if (
+                hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self.close()
+            else:
+                return self._executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def close(self) -> None:
+        """Shut down the reusable thread pool executor."""
+        if self._finalizer is not None:
+            try:
+                self._finalizer.detach()
+            except Exception:
+                pass
+            self._finalizer = None
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=False)
+            except Exception:
+                pass
+            self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
