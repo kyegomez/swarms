@@ -546,5 +546,62 @@ def test_concurrent_batch_run_returns_results_in_input_order():
     ]
 
 
+
+
+def test_multi_agent_router_executor_reused_across_handoffs_and_runs():
+    """Verify that multiple handoffs reuse the same thread pool executor."""
+    router, ran = _local_router(agents=["A1", "A2"])
+
+    assert getattr(router, "_executor", None) is None
+    router.handle_multiple_handoffs(
+        {"handoffs": [{"agent_name": "A1", "task": "t1"}, {"agent_name": "A2", "task": "t2"}]}, "x"
+    )
+    first_executor = router._executor
+    assert first_executor is not None
+    assert not first_executor._shutdown
+
+    router.handle_multiple_handoffs(
+        {"handoffs": [{"agent_name": "A1", "task": "t3"}, {"agent_name": "A2", "task": "t4"}]}, "x"
+    )
+    second_executor = router._executor
+    assert second_executor is first_executor
+    assert not second_executor._shutdown
+
+    router.close()
+    assert router._executor is None
+    assert first_executor._shutdown
+
+
+def test_multi_agent_router_context_manager():
+    """Context manager enters and closes the executor on exit."""
+    router, _ = _local_router()
+    router.route_task = lambda task: f"ok:{task}"
+
+    with router:
+        router.concurrent_batch_run(["a", "b"])
+        executor = router._executor
+        assert executor is not None
+        assert not executor._shutdown
+
+    assert router._executor is None
+    assert executor._shutdown
+
+
+def test_multi_agent_router_weakref_finalizer_shuts_down_executor():
+    """Weakref finalizer shuts down executor when router is garbage collected."""
+    import gc
+
+    def _create_and_run():
+        r, _ = _local_router()
+        r.handle_multiple_handoffs(
+            {"handoffs": [{"agent_name": "A1", "task": "t1"}]}, "x"
+        )
+        return r._executor
+
+    executor = _create_and_run()
+    gc.collect()
+    assert executor._shutdown
+
+
 if __name__ == "__main__":
     pytest.main([__file__])

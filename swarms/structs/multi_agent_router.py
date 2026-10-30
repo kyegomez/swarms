@@ -1,3 +1,4 @@
+import weakref
 import json
 import traceback
 from typing import Callable, List, Optional
@@ -102,7 +103,17 @@ def agent_boss_router_prompt(agent_descriptions: any):
         """
 
 
+def _shutdown_executor(executor: Optional[ContextThreadPoolExecutor]) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
+
+
 class MultiAgentRouter:
+    _executor: Optional[ContextThreadPoolExecutor] = None
+    _finalizer: Optional[weakref.finalize] = None
     """
     Routes tasks to appropriate agents based on their capabilities.
 
@@ -181,6 +192,9 @@ class MultiAgentRouter:
             **kwargs,
         )
 
+        self._executor = None
+        self._finalizer = None
+
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
 
@@ -194,6 +208,54 @@ class MultiAgentRouter:
             ``MultiAgentRouter(name=<name>, agents=[<names>])``.
         """
         return f"MultiAgentRouter(name={self.name}, agents={[a.agent_name for a in self.agents]})"
+
+    def _get_executor(self, max_workers: Optional[int] = None) -> ContextThreadPoolExecutor:
+        """Return the shared ContextThreadPoolExecutor for this router.
+
+        Lazily created on the first call and reused across handoffs and batch runs.
+        If a higher worker count is requested or the executor was shut down,
+        a new executor is created.
+        """
+        required_workers = max_workers or max(1, len(self.agents or ()))
+        current_executor = getattr(self, "_executor", None)
+        if (
+            current_executor is None
+            or getattr(current_executor, "_shutdown", False)
+            or getattr(current_executor, "_max_workers", 0) < required_workers
+        ):
+            if current_executor is not None and not getattr(
+                current_executor, "_shutdown", False
+            ):
+                try:
+                    current_executor.shutdown(wait=False)
+                except Exception:
+                    pass
+            self._executor = ContextThreadPoolExecutor(
+                max_workers=required_workers
+            )
+            self._finalizer = weakref.finalize(
+                self, _shutdown_executor, self._executor
+            )
+        return self._executor
+
+    def close(self) -> None:
+        """Shut down the internal thread pool executor."""
+        finalizer = getattr(self, "_finalizer", None)
+        if finalizer is not None and finalizer.alive:
+            finalizer.detach()
+            self._finalizer = None
+        executor = getattr(self, "_executor", None)
+        if executor is not None:
+            try:
+                executor.shutdown(wait=True)
+            finally:
+                self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def _create_boss_system_prompt(self) -> str:
         """
@@ -334,15 +396,13 @@ class MultiAgentRouter:
         # Execute agents only if there are valid tasks
         if selected_agents:
             # The tasks are independent, in series they cost the sum of their latencies
-            with ContextThreadPoolExecutor(
-                max_workers=len(selected_agents)
-            ) as executor:
-                agent_responses = list(
-                    executor.map(
-                        lambda pair: pair[0].run(pair[1]),
-                        zip(selected_agents, final_tasks),
-                    )
+            executor = self._get_executor(len(selected_agents))
+            agent_responses = list(
+                executor.map(
+                    lambda pair: pair[0].run(pair[1]),
+                    zip(selected_agents, final_tasks),
                 )
+            )
 
             self.conversation.add(
                 role=selected_agents[0].agent_name,
@@ -465,15 +525,15 @@ class MultiAgentRouter:
             order.
         """
         results = []
-        with ContextThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(self.route_task, task)
-                for task in tasks
-            ]
-            # Read in submission order so element i belongs to tasks[i]
-            for task, future in zip(tasks, futures):
-                try:
-                    results.append(future.result())
-                except Exception as e:
-                    logger.error(f"Error routing task {task!r}: {e}")
+        executor = self._get_executor(len(tasks))
+        futures = [
+            executor.submit(self.route_task, task)
+            for task in tasks
+        ]
+        # Read in submission order so element i belongs to tasks[i]
+        for task, future in zip(tasks, futures):
+            try:
+                results.append(future.result())
+            except Exception as e:
+                logger.error(f"Error routing task {task!r}: {e}")
         return results
