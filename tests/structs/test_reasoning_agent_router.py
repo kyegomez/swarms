@@ -6,6 +6,7 @@ from swarms.agents.reasoning_agent_router import (
     ReasoningAgentInitializationError,
     ReasoningAgentRouter,
 )
+from swarms.agents.reasoning_duo import ReasoningDuo
 
 
 def test_router_init_default():
@@ -29,7 +30,7 @@ def test_router_init_default():
     assert router.eval is False
     assert router.random_models_on is False
     assert router.majority_voting_prompt is None
-    assert router.reasoning_model_name == "gpt-4o"
+    assert router.reasoning_model_name is None
     assert router.agent_factories is not None
 
 
@@ -160,7 +161,23 @@ def test_reasoning_duo_runs_its_main_agent_on_model_name():
 
     duo = ReasoningDuo(model_name="claude-sonnet-4-6")
     assert duo.main_agent.model_name == "claude-sonnet-4-6"
-    assert duo.reasoning_agent.model_name == "gpt-4o"
+    assert duo.reasoning_agent.model_name == "claude-sonnet-4-6"
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: ReasoningAgentRouter(
+            model_name="claude-sonnet-4-6"
+        )._create_reasoning_duo(),
+        lambda: ReasoningDuo(
+            model_names=["claude-sonnet-4-6", "gpt-5.4"]
+        ),
+    ],
+    ids=["router-model_name", "duo-model_names"],
+)
+def test_reasoning_agent_follows_the_configured_model(build):
+    assert build().reasoning_agent.model_name == "claude-sonnet-4-6"
 
 
 def test_create_consistency_agent():

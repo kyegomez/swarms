@@ -3,8 +3,8 @@ import json
 import os
 import threading
 import time
-import traceback
 from contextlib import nullcontext
+from functools import lru_cache
 from typing import (
     Any,
     Callable,
@@ -16,8 +16,6 @@ from typing import (
     Union,
 )
 
-import toml
-import yaml
 from loguru import logger
 from pydantic import BaseModel
 
@@ -30,9 +28,6 @@ from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.llm_manager import LLMManager
 from swarms.agents.skills_manager import SkillsManager
 from swarms.agents.tool_manager import ToolManager
-from swarms.prompts.agent_system_prompts import (
-    build_agent_system_prompt,
-)
 from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
@@ -56,13 +51,14 @@ from swarms.structs.autonomous_loop_utils import (
     MAX_SUBTASK_LOOPS,
     get_summary_prompt,
 )
+from swarms.structs.comms_channel import CommsChannel
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.safe_loading import (
     SafeLoaderUtils,
     SafeStateManager,
 )
-from swarms.structs.transcript import Transcript
 from swarms.structs.transforms import (
     MessageTransforms,
     TransformConfig,
@@ -98,6 +94,14 @@ from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
+@lru_cache(maxsize=None)
+def _model_info(model_name: str) -> Dict[str, Any]:
+    try:
+        return llm_backend.get_model_info(model_name)
+    except Exception:
+        return {}
+
+
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
     return "stop" in response.lower()
@@ -117,14 +121,14 @@ class Agent:
         max_loops (int): The maximum number of loops to run
         stopping_condition (Callable): The stopping condition to use
         loop_interval (int): The loop interval
-        retry_attempts (int): The number of retry attempts
-        stopping_token (str): The stopping token
+        retry_attempts (int): Retries litellm makes after a failed model call, with backoff on rate limits
+        stopping_token (str): A stop sequence sent to the provider, which ends generation when the model produces it.
         dynamic_loops (bool): Enable dynamic loops
         interactive (bool): Enable interactive mode
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
-        system_prompt (str): The system prompt
+        system_prompt (Optional[str]): The system prompt. Defaults to None, which sends no system prompt. With max_loops="auto" the autonomous loop prompt is used, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
         saved_state_path (str): The path to the saved state
@@ -133,9 +137,9 @@ class Agent:
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         long_term_memory (BaseVectorDatabase): The long term memory
-        fallback_model_name (str): The fallback model name to use if primary model fails
-        fallback_models (List[str]): List of model names to try in order. First model is primary, rest are fallbacks
-        preset_stopping_token (bool): Enable preset stopping token
+        fallback_model_name (str): A single fallback model, folded into fallback_models
+        fallback_models (List[str]): Models to try in order. The first is the primary; every run starts there and moves down the list when a model fails
+        preset_stopping_token (bool): Use "<DONE>" as the stopping token.
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
         streaming_callback (Optional[Callable[[str], None]]): Callback function to receive streaming tokens in real-time. Defaults to None.
@@ -144,7 +148,6 @@ class Agent:
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
         output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
-        output_cleaner (Callable): The output cleaner function
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
         planning_prompt (str): The planning prompt
@@ -219,11 +222,13 @@ class Agent:
         mcp_transport (str): Force a transport for every MCP server: "streamable_http", "sse",
             "stdio", or "auto". Defaults to auto-detection from the URL.
         mcp_timeout (int): Request timeout in seconds for every MCP server. Defaults to 30.
+        channel (CommsChannel): A shared channel such as FileChannel. When no messages are
+            passed, the agent reads the channel as prior turns and posts the task once; after a
+            successful run it posts its final answer. Defaults to None.
 
     Methods:
         run: Run the agent
         run_concurrent: Run the agent concurrently
-        bulk_run: Run the agent in bulk
         save: Save the agent
         load: Load the agent
         validate_response: Validate the response
@@ -316,7 +321,6 @@ class Agent:
         custom_exit_command: Optional[str] = "exit",
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
-        output_cleaner: Optional[Callable] = None,
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
@@ -357,6 +361,7 @@ class Agent:
         llm_api_key: Optional[str] = None,
         tool_call_summary: bool = False,
         tool_retry_attempts: int = 3,
+        channel: Optional[CommsChannel] = None,
         reasoning_prompt_on: bool = True,
         dynamic_context_window: bool = True,
         show_tool_execution_output: bool = True,
@@ -401,8 +406,6 @@ class Agent:
         self.user_name = user_name
         self.context_length = context_length
         self.tools = tools
-        if system_prompt is None:
-            system_prompt = build_agent_system_prompt()
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -421,7 +424,6 @@ class Agent:
         self.custom_exit_command = custom_exit_command
         self.tool_schema = tool_schema
         self.output_type = output_type
-        self.output_cleaner = output_cleaner
         self.list_base_models = list_base_models
         self.planning_prompt = planning_prompt
         self.rules = rules
@@ -468,6 +470,7 @@ class Agent:
         self.llm_api_key = llm_api_key
         self.tool_call_summary = tool_call_summary
         self.tool_retry_attempts = tool_retry_attempts
+        self.channel = channel
         self.reasoning_prompt_on = reasoning_prompt_on
         self.dynamic_context_window = dynamic_context_window
         self.show_tool_execution_output = show_tool_execution_output
@@ -529,11 +532,13 @@ class Agent:
 
         if self.max_loops == "auto":
             # Without this the prompt tells the model to call a think tool it lacks
-            self.system_prompt += (
-                "\n\n"
-                + get_autonomous_agent_prompt(
-                    include_think_tool=self.think_tool
-                )
+            autonomous_prompt = get_autonomous_agent_prompt(
+                include_think_tool=self.think_tool
+            )
+            self.system_prompt = (
+                f"{self.system_prompt}\n\n{autonomous_prompt}"
+                if self.system_prompt
+                else autonomous_prompt
             )
 
         # When False the agent does not read or write MEMORY.md across sessions.
@@ -586,11 +591,18 @@ class Agent:
         else:
             pass
 
-        self.fallback_models = fallback_models or []
-        self.current_model_index = 0
-
-        # If fallback_models is provided, use the first model as the primary model
-        if self.fallback_models and not self.model_name:
+        self.fallback_models = list(fallback_models or [])
+        if not self.fallback_models and fallback_model_name:
+            # The single-fallback form, folded into the list once.
+            self.fallback_models = list(
+                dict.fromkeys(
+                    m
+                    for m in (self.model_name, fallback_model_name)
+                    if m
+                )
+            )
+        # The list names the primary model, so model_name follows it.
+        if self.fallback_models:
             self.model_name = self.fallback_models[0]
 
         # Reads config off this agent, so it must come after the config is set
@@ -599,6 +611,9 @@ class Agent:
         self.autonomous_loop = AutonomousAgentLoop(agent=self)
 
         self.setup_config()
+
+        if self.safety_prompt_on is True:
+            self.system_prompt += f"\n\n{SAFETY_PROMPT}"
 
         # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
         self.short_memory = self.short_memory_init()
@@ -609,9 +624,10 @@ class Agent:
         if self.interactive is True:
             self.reasoning_prompt_on = False
 
-        if self.reasoning_prompt_on is True and (
-            (isinstance(self.max_loops, int) and self.max_loops >= 2)
-            or self.max_loops == "auto"
+        if (
+            self.reasoning_prompt_on is True
+            and isinstance(self.max_loops, int)
+            and self.max_loops >= 2
         ):
             self.system_prompt += generate_reasoning_prompt(
                 self.max_loops
@@ -713,13 +729,6 @@ class Agent:
         return self.workspace.dir
 
     def short_memory_init(self):
-        # Compactly assemble initial prompt as a string with available fields
-        prompt = self.system_prompt
-
-        if self.safety_prompt_on is True:
-            prompt += "\n\n"
-            prompt += SAFETY_PROMPT
-
         # Keyed on agent_name, not self.id, which is a fresh uuid per run and would orphan MEMORY.md.
         memory_md_path = None
         if self.persistent_memory:
@@ -736,7 +745,7 @@ class Agent:
         # Initialize the short term memory
         memory = Conversation(
             name=f"{self.agent_name}_id_{self.id}_conversation",
-            system_prompt=prompt,
+            system_prompt=self.system_prompt,
             user=self.user_name,
             rules=self.rules,
             token_count=False,
@@ -806,8 +815,8 @@ class Agent:
             logger.info("Dynamic loops enabled")
             self.max_loops = "auto"
 
-        # If the preset stopping token is enabled then set the stopping token to the preset stopping token
-        if self.preset_stopping_token is not None:
+        # The default is False, so an "is not None" check gave every agent the preset.
+        if self.preset_stopping_token:
             self.stopping_token = "<DONE>"
 
     def check_model_supports_utilities(
@@ -865,7 +874,7 @@ class Agent:
                     combined_prompt, self.llm
                 )
                 self.short_memory.add(
-                    role="system", content=self.system_prompt
+                    role="System", content=self.system_prompt
                 )
 
             logger.info("Auto-generated prompt successfully.")
@@ -978,13 +987,12 @@ class Agent:
         - Stopping condition function returns True
         - Stopping function returns True
         - Interactive mode exit command entered
-        - Error occurs after retry attempts
+        - The model call fails
 
         **Error Handling:**
-        - Retries LLM calls up to retry_attempts times
+        - A failed model call drops this run's turns and raises AgentLLMError
         - Autosaves state on errors if enabled
         - Logs detailed error information
-        - Falls back to fallback models if configured
 
         **Memory Management:**
         - Adds task to conversation memory
@@ -1015,8 +1023,7 @@ class Agent:
                 - Other types: As configured
 
         Raises:
-            AgentRunError: If execution fails after all retry attempts.
-            AgentLLMError: If LLM calls fail and no fallback models are available.
+            AgentLLMError: If the model call fails. run() then tries the next fallback model.
             KeyboardInterrupt: If interrupted by user (handles gracefully with autosave).
 
         Note:
@@ -1046,10 +1053,10 @@ class Agent:
             ...     streaming_callback=on_token
             ... )
         """
+        history_start = len(self.short_memory.conversation_history)
         try:
-            history_start = len(
-                self.short_memory.conversation_history
-            )
+            if messages:
+                self.short_memory.add_messages(messages)
 
             self.check_if_no_prompt_then_autogenerate(task)
 
@@ -1063,8 +1070,8 @@ class Agent:
             # Set the loop count
             loop_count = 0
 
-            # Built lazily so the transforms path can keep its flattened prompt
-            transcript: Optional[Transcript] = None
+            # A caller's messages stand in for the earlier history.
+            request_start = 0 if messages is None else history_start
 
             # Clear the short memory
             response = None
@@ -1080,34 +1087,17 @@ class Agent:
             ):
                 loop_count += 1
 
-                if self._context_compressor is not None:
-                    self._context_compressor.maybe_compress(self)
+                if (
+                    self._context_compressor is not None
+                    and self._context_compressor.maybe_compress(self)
+                    is not None
+                ):
+                    # The history is now the compressed summary, so the request starts over.
+                    request_start = 0
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
                     self._autosave_config_step(loop_count=loop_count)
-
-                if (
-                    isinstance(self.max_loops, int)
-                    and self.max_loops >= 2
-                ):
-                    if self.reasoning_prompt_on is True:
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=f"Current Internal Reasoning Loop: {loop_count}/{self.max_loops}",
-                        )
-
-                # If it is the final loop, then add the final loop message
-                if (
-                    loop_count >= 2
-                    and isinstance(self.max_loops, int)
-                    and loop_count == self.max_loops
-                ):
-                    if self.reasoning_prompt_on is True:
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=f"🎉 Final Internal Reasoning Loop: {loop_count}/{self.max_loops} Prepare your comprehensive response.",
-                        )
 
                 # Dynamic temperature
                 if self.dynamic_temperature_enabled is True:
@@ -1115,7 +1105,6 @@ class Agent:
 
                 # Task prompt with optional transforms.
                 task_prompt = None
-                use_transcript = self.transforms is None
 
                 if self.transforms is not None:
                     task_prompt = handle_transforms(
@@ -1123,170 +1112,91 @@ class Agent:
                         short_memory=self.short_memory,
                         model_name=self.model_name,
                     )
-                elif transcript is None:
-                    transcript = self._transcript_from_messages(
-                        messages, task
+
+                # Outside the try: except must answer tool calls.
+                turn_calls = []
+                turn_results = {}
+                try:
+                    show_loading = (
+                        self.interactive
+                        and not self.streaming_on
+                        and not self.stream
+                    )
+                    loading_ctx = (
+                        formatter.loading_status(
+                            f"👾 Agent: {self.agent_name} is thinking..."
+                        )
+                        if show_loading
+                        else nullcontext()
                     )
 
-                # Parameters
-                attempt = 0
-                success = False
-                last_error: Optional[Exception] = None
-                while attempt < self.retry_attempts and not success:
-                    # Outside the try: except must answer tool calls.
-                    turn_calls = []
-                    turn_results = {}
-                    try:
-
-                        show_loading = (
-                            self.interactive
-                            and not self.streaming_on
-                            and not self.stream
-                        )
-                        loading_ctx = (
-                            formatter.loading_status(
-                                f"👾 Agent: {self.agent_name} is thinking..."
-                            )
-                            if show_loading
-                            else nullcontext()
-                        )
-
-                        with loading_ctx:
-                            llm_kwargs = dict(kwargs)
-                            if use_transcript:
-                                llm_kwargs["messages"] = (
-                                    transcript.messages
+                    with loading_ctx:
+                        llm_kwargs = dict(kwargs)
+                        if self.transforms is None:
+                            llm_kwargs["messages"] = (
+                                self.short_memory.to_messages(
+                                    self.agent_name,
+                                    request_start,
                                 )
-
-                            response = self.call_llm(
-                                task=task_prompt,
-                                img=img,
-                                imgs=imgs,
-                                current_loop=loop_count,
-                                streaming_callback=streaming_callback,
-                                *args,
-                                **llm_kwargs,
                             )
 
-                        response = self.tool_manager.parse_response(
-                            response
+                        response = self.call_llm(
+                            task=task_prompt,
+                            img=img,
+                            imgs=imgs,
+                            current_loop=loop_count,
+                            streaming_callback=streaming_callback,
+                            *args,
+                            **llm_kwargs,
                         )
 
-                        self.short_memory.add(
-                            role=self.agent_name,
-                            content=response,
-                        )
+                    response = self.tool_manager.parse_response(
+                        response
+                    )
 
-                        # Every tool call in this turn needs a matching result before the next request.
-                        if use_transcript:
-                            turn_calls = transcript.record_assistant(
-                                response
-                            )
+                    # Every tool call in this turn needs a matching result before the next request.
+                    turn_calls = self.short_memory.record_assistant(
+                        response, self.agent_name
+                    )
 
-                        # Print
-                        if self.print_on is True:
-                            # Tool calls are visualised in execute_tools
-                            if isinstance(response, list):
-                                # Tool calls will be visualized in execute_tools, skip here
-                                pass
-                            elif self.streaming_on:
-                                pass
-                            elif self.stream:
-                                pass
-                            else:
-                                self.pretty_print(
-                                    response, loop_count
-                                )
-
-                        self.tool_manager.handle_tool_calls(
-                            response,
-                            loop_count,
-                            transcript=(
-                                transcript if use_transcript else None
-                            ),
-                            turn_calls=turn_calls,
-                            turn_results=turn_results,
-                        )
-
-                        success = True  # Mark as successful to exit the retry loop
-
-                        # Autosave config after successful step
-                        if self.autosave:
-                            self._autosave_config_step(
-                                loop_count=loop_count
-                            )
-
-                    except AgentToolExecutionError as e:
-                        # A tool failure is not a provider failure, re-running the model cannot fix it
-                        if use_transcript and turn_calls:
-                            transcript.flush_tool_results(
-                                turn_calls, turn_results
-                            )
-
-                        capture_error(
-                            e,
-                            self,
-                            name="Agent.tool_error",
-                            loop=loop_count,
-                        )
-
-                        self.short_memory.add(
-                            role="Tool Executor",
-                            content=(
-                                f"Tool execution failed after "
-                                f"{self.tool_retry_attempts} attempts: {e}"
-                            ),
-                        )
-
-                        # Exit the retry loop, not the run, so the model can read the failure
-                        success = True
-
-                    except Exception as e:
-                        last_error = e
-
-                        # Answer the recorded tool calls so the retried request is well formed
-                        if use_transcript and turn_calls:
-                            transcript.flush_tool_results(
-                                turn_calls, turn_results
-                            )
-
-                        # The retry loop swallows this, so capture_run never sees it
-                        capture_error(
-                            e,
-                            self,
-                            name="Agent.llm_error",
-                            loop=loop_count,
-                        )
-
-                        if self.autosave is True:
-                            self.save()
-                            self._autosave_config_step(
-                                loop_count=loop_count
-                            )
-
-                        logger.error(
-                            f"Attempt {attempt+1}/{self.retry_attempts}: Error generating response in loop {loop_count} for agent '{self.agent_name}': {str(e)} | Traceback: {traceback.format_exc()}"
-                        )
-                        attempt += 1
-
-                if not success:
-                    # Drop this run's turns so a fallback model starts from clean history.
-                    while (
-                        len(self.short_memory.conversation_history)
-                        > history_start
+                    # Tool calls print in execute_tools and streams print as they arrive.
+                    if self.print_on and not (
+                        isinstance(response, list)
+                        or self.streaming_on
+                        or self.stream
                     ):
-                        self.short_memory.delete(
-                            len(
-                                self.short_memory.conversation_history
-                            )
-                            - 1
-                        )
+                        self.pretty_print(response, loop_count)
 
-                    raise AgentLLMError(
-                        f"Agent '{self.agent_name}' got no response from "
-                        f"'{self.model_name}' after {self.retry_attempts} "
-                        f"attempt(s): {last_error}"
-                    ) from last_error
+                    self.tool_manager.handle_tool_calls(
+                        response,
+                        loop_count,
+                        turn_calls=turn_calls,
+                        turn_results=turn_results,
+                    )
+
+                except AgentToolExecutionError as e:
+                    # A tool failure is not a provider failure, re-running the model cannot fix it
+                    self.short_memory.flush_tool_results(
+                        turn_calls, turn_results
+                    )
+
+                    capture_error(
+                        e,
+                        self,
+                        name="Agent.tool_error",
+                        loop=loop_count,
+                    )
+
+                    self.short_memory.add(
+                        role="Tool Executor",
+                        content=(
+                            f"Tool execution failed after "
+                            f"{self.tool_retry_attempts} attempts: {e}"
+                        ),
+                    )
+
+                if self.autosave:
+                    self._autosave_config_step(loop_count=loop_count)
 
                 # Check stopping conditions
                 if (
@@ -1339,8 +1249,6 @@ class Agent:
                     self.short_memory.add(
                         role=self.user_name, content=user_input
                     )
-                    if transcript is not None:
-                        transcript.append_user(user_input)
 
                 if self.loop_interval:
                     logger.info(
@@ -1358,6 +1266,12 @@ class Agent:
             )
 
         except Exception as error:
+            # Drop this run's turns so a fallback model starts from clean history.
+            while (
+                len(self.short_memory.conversation_history)
+                > history_start
+            ):
+                self.short_memory.delete(-1)
             self._handle_run_error(error)
 
         except KeyboardInterrupt as error:
@@ -1403,20 +1317,10 @@ class Agent:
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
-        # Get detailed error information
-        error_type = type(error).__name__
-        error_message = str(error)
-        traceback_info = traceback.format_exc()
-
-        logger.error(
-            f"Agent: {self.agent_name} An error occurred while running your agent.\n"
-            f"Error Type: {error_type}\n"
-            f"Error Message: {error_message}\n"
-            f"Traceback:\n{traceback_info}\n"
-            f"Please optimize your input parameters, or create an issue on the Swarms GitHub and contact our team on Discord for support. "
-            f"For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
+        # Lazy args: an f-string with exc_info makes loguru str.format provider JSON and raise KeyError.
+        logger.opt(exception=True).error(
+            "{} error: {}", self.agent_name, error
         )
-
         raise error
 
     def _run_autonomous_loop(
@@ -1455,40 +1359,6 @@ class Agent:
             *args,
             **kwargs,
         )
-
-    def _transcript_from_memory(self) -> Transcript:
-        """
-        Seed a structured transcript from ``short_memory``.
-
-        Conversation roles are free-form strings ("User", the agent name,
-        "Tool Executor", ...), so they are mapped onto chat roles here. The
-        system prompt is skipped because the LLM wrapper supplies it. Turns
-        added *during* a run are appended structurally on top of this prefix,
-        which is what preserves tool-call fidelity where it matters most.
-        """
-        transcript = Transcript()
-        for message in self.short_memory.conversation_history:
-            if not isinstance(message, dict):
-                continue
-            role = message.get("role")
-            content = message.get("content")
-            if content is None or str(role).lower() == "system":
-                continue
-            if role == self.agent_name:
-                transcript.append_assistant_text(content)
-            else:
-                transcript.append_user(content)
-        return transcript
-
-    def _memory_and_transcript(
-        self, role: str, content: Any, transcript: Transcript
-    ) -> None:
-        """Record a turn in both ``short_memory`` and the live transcript."""
-        self.short_memory.add(role=role, content=content)
-        if role == self.agent_name:
-            transcript.append_assistant_text(content)
-        else:
-            transcript.append_user(content)
 
     def _generate_final_summary(
         self,
@@ -1754,25 +1624,6 @@ Subtask Breakdown:
             logger.error(f"Error running concurrent tasks: {error}")
             raise
 
-    def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
-        """
-        Generate responses for multiple input sets.
-
-        Args:
-            inputs (List[Dict[str, Any]]): A list of input dictionaries containing the necessary data for each run.
-
-        Returns:
-            List[str]: A list of response strings generated for each input set.
-
-        Raises:
-            Exception: If an error occurs while running the bulk tasks.
-        """
-        try:
-            logger.info(f"Running bulk tasks: {inputs}")
-            return [self.run(**input_data) for input_data in inputs]
-        except Exception as error:
-            logger.info(f"Error running bulk run: {error}", "red")
-
     def _default_context_length(self) -> int:
         """
         Returns the maximum input token window for the agent's underlying model.
@@ -1789,15 +1640,10 @@ Subtask Breakdown:
               which may not correspond to available context for input (e.g., 32768 for gpt-4.1 output, but
               over a million for certain input windows).
         """
-        try:
-            return (
-                llm_backend.get_model_info(self.model_name).get(
-                    "max_input_tokens"
-                )
-                or 16000
-            )
-        except Exception:
-            return 16000
+        return (
+            _model_info(self.model_name).get("max_input_tokens")
+            or 16000
+        )
 
     def _default_max_tokens(self) -> int:
         """
@@ -1810,23 +1656,12 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
-        # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
-        try:
-            return (
-                llm_backend.get_model_info(self.model_name).get(
-                    "max_output_tokens"
-                )
-                or 16000
-            )
-        except Exception:
-            return 16000
+        return (
+            _model_info(self.model_name).get("max_output_tokens")
+            or 16000
+        )
 
     def reliability_check(self):
-
-        if self.system_prompt is None:
-            logger.warning(
-                "The system prompt is not set. Please set a system prompt for the agent to improve reliability."
-            )
 
         if self.agent_name is None:
             logger.warning(
@@ -1858,6 +1693,12 @@ Subtask Breakdown:
             raise AgentInitializationError(
                 "Context length is not provided. Please set a valid context length."
             )
+
+        if (
+            os.getenv("SWARMS_STRICT_MODEL_CHECK", "").lower()
+            != "true"
+        ):
+            return
 
         # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
         if self.tools_list_dictionary:
@@ -2144,6 +1985,8 @@ Subtask Breakdown:
         Args:
             file_path (str): The path to the YAML file
         """
+        import yaml
+
         try:
             logger.info(f"Saving agent to YAML file: {file_path}")
             with open(file_path, "w") as f:
@@ -2168,8 +2011,21 @@ Subtask Breakdown:
         self.loop_interval = loop_interval
 
     def reset(self):
-        """Reset the agent"""
-        self.short_memory = None
+        """Start the agent over on a fresh conversation.
+
+        Rebuilds ``short_memory`` the way ``__init__`` does, so the
+        system prompt, the seeded ``messages``, the MEMORY.md preload
+        and the ``tool_schema`` / ``list_base_models`` schemas come
+        back, and clears the autonomous loop's plan. ``usage`` is
+        kept: it totals every call this agent has made.
+        """
+        self.short_memory = self.short_memory_init()
+        self.tool_manager.handle_tool_schema_ops()
+        self.autonomous_subtasks = []
+        self.current_subtask_index = 0
+        self.subtask_status = {}
+        self.plan_created = False
+        self.think_call_count = 0
 
     def send_agent_message(
         self, agent_name: str, message: str, *args, **kwargs
@@ -2269,20 +2125,6 @@ Subtask Breakdown:
         except Exception:
             pass
 
-    def check_available_tokens(self):
-        tokens_used = count_tokens(
-            self.short_memory.return_history_as_string(),
-            model=self.model_name,
-        )
-
-        limit = self.context_length - tokens_used
-
-        if self.verbose:
-            logger.info(
-                f"Tokens available: {limit} You have {tokens_used} tokens used"
-            )
-        return limit
-
     def _serialize_callable(
         self, attr_value: Callable
     ) -> Dict[str, Any]:
@@ -2352,11 +2194,15 @@ Subtask Breakdown:
         )
 
     def to_yaml(self, indent: int = 4, *args, **kwargs):
+        import yaml
+
         return yaml.dump(
             self.to_dict(), indent=indent, *args, **kwargs
         )
 
     def to_toml(self, *args, **kwargs):
+        import toml
+
         return toml.dumps(self.to_dict(), *args, **kwargs)
 
     def model_dump_json(self):
@@ -2454,10 +2300,7 @@ Subtask Breakdown:
                 list when the model made tool calls mid-stream.
 
         Raises:
-            AgentLLMError: If there's an issue with the language model.
-            BadRequestError: If the request is malformed or invalid.
-            InternalServerError: If the LLM service encounters an internal error.
-            AuthenticationError: If authentication fails with the LLM service.
+            AgentLLMError: If the model call fails, chained to the provider's error.
 
         Examples:
             >>> response = agent.call_llm("What is Python?", current_loop=1)
@@ -2474,15 +2317,24 @@ Subtask Breakdown:
                 # Not converted to messages: that path drops img and imgs.
                 task = f"{skills}\n\n{task}"
 
-        return self.llm_manager.call(
-            task=task,
-            img=img,
-            imgs=imgs,
-            current_loop=current_loop,
-            streaming_callback=streaming_callback,
-            *args,
-            **kwargs,
-        )
+        try:
+            return self.llm_manager.call(
+                task=task,
+                img=img,
+                imgs=imgs,
+                current_loop=current_loop,
+                streaming_callback=streaming_callback,
+                *args,
+                **kwargs,
+            )
+        except Exception as error:
+            capture_error(
+                error, self, name="Agent.llm_error", loop=current_loop
+            )
+            raise AgentLLMError(
+                f"Agent '{self.agent_name}': model '{self.model_name}' "
+                f"failed: {error}"
+            ) from error
 
     def load_skills_metadata(
         self, skills_dir: str = None
@@ -2537,9 +2389,7 @@ Subtask Breakdown:
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
-        correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
-        n: int = 1,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
@@ -2553,8 +2403,6 @@ Subtask Breakdown:
             - Handles both interactive (asks user) and autonomous (auto-plan/execute) operation modes.
             - Supports passing a single image or batch of images.
             - Supports streaming outputs via a callback for real-time token generation.
-            - Runs multiple outputs (n > 1), single or batched.
-            - Accepts an optional ground truth (correct_answer) for evals.
             - Merges configuration and per-call streaming callback.
             - Handles errors and device selection internally (but device_id is not used directly by this method).
 
@@ -2565,20 +2413,19 @@ Subtask Breakdown:
                 data URIs (e.g., "data:image/jpeg;base64,..."), or raw base64 strings. Defaults to None.
             imgs (Optional[List[str]]): List of multiple images if processing a batch. Each image can be a path,
                 URL, data URI, or raw base64 string. Defaults to None.
-            correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
-            n (int): How many outputs to generate (number of runs). Defaults to 1.
             messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
                 e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
                 They are added to the agent's conversation and sent as the context
-                this task continues from. Defaults to the agent's own ``messages``.
+                this task continues from. Defaults to the agent's own ``messages``,
+                or to the ``channel`` when one is set.
             *args: Additional positional arguments for extensibility.
             **kwargs: Additional keyword arguments passed to LLM/tool execution.
 
         Returns:
             Any: The agent's output. This can be:
                 - A string or structured dict (for single response).
-                - A list (if running multiple outputs/images).
+                - A list (if running with multiple images).
                 - The final agent answer, streaming response, or summary (for autonomous "auto" mode).
 
         Raises:
@@ -2644,70 +2491,53 @@ Subtask Breakdown:
             if self.streaming_callback is not None:
                 streaming_callback = self.streaming_callback
 
-        # Constructor messages are already in short_memory; per-call ones are not.
-        if messages:
-            self.short_memory.add_messages(messages)
+        # Side calls such as the tool summary stream to this run's callback too.
+        self._run_streaming_callback = streaming_callback
+        self.llm_manager.stream_mid_line = False
 
+        # A caller passing messages manages the transcript, so only the answer is posted.
+        if self.channel is not None and messages is None:
+            posted = self.channel.messages()
+            task_row = {"agent_name": self.user_name, "content": task}
+            # Posted once, so agents sharing the channel see one copy.
+            if task_row not in posted:
+                self.channel.post(self.user_name, task)
+            messages = [
+                {"role": m["agent_name"], "content": m["content"]}
+                for m in posted
+                if m != task_row
+            ]
+
+        models = self.fallback_models or [self.model_name]
         try:
-            if self.max_loops == "auto":
-                # Use autonomous loop structure: plan -> execute subtasks -> summary
-                output = self._run_autonomous_loop(
-                    task=task,
-                    img=img,
-                    streaming_callback=streaming_callback,
-                    messages=messages,
-                    *args,
-                    **kwargs,
-                )
-            elif n > 1:
-                output = [
-                    self._run(
-                        task=task,
-                        img=img,
-                        imgs=imgs,
-                        streaming_callback=streaming_callback,
-                        messages=messages,
+            for i, model in enumerate(models):
+                # Also moves back to the primary after an earlier run fell back.
+                if model != self.model_name:
+                    self.model_name = model
+                    self.llm_handling()
+                try:
+                    output = self._dispatch(
+                        task,
+                        img,
+                        imgs,
+                        streaming_callback,
+                        messages,
                         *args,
                         **kwargs,
                     )
-                    for _ in range(n)
-                ]
-            else:
-                output = self._run(
-                    task=task,
-                    img=img,
-                    imgs=imgs,
-                    streaming_callback=streaming_callback,
-                    messages=messages,
-                    *args,
-                    **kwargs,
-                )
-
-            return output
-
-        except Exception as e:
-
-            # Try fallback models if available
-            if self.is_fallback_available():
-                return self._handle_fallback_execution(
-                    task=task,
-                    img=img,
-                    imgs=imgs,
-                    correct_answer=correct_answer,
-                    streaming_callback=streaming_callback,
-                    original_error=e,
-                    *args,
-                    **kwargs,
-                )
-            else:
-                if self.verbose:
-                    # No fallback available
-                    logger.error(
-                        f"Agent Name: {self.agent_name} [NO FALLBACK] failed with model '{self.get_current_model()}' "
-                        f"and no fallback models are configured. Error: {str(e)[:100]}{'...' if len(str(e)) > 100 else ''}"
+                    if self.channel is not None:
+                        self.channel.post(
+                            self.agent_name,
+                            agent_answer(self, output),
+                        )
+                    return output
+                except AgentLLMError as error:
+                    if i + 1 == len(models):
+                        raise
+                    logger.warning(
+                        f"Agent '{self.agent_name}': '{model}' failed, "
+                        f"trying '{models[i + 1]}': {error}"
                     )
-
-                self._handle_run_error(e)
 
         except KeyboardInterrupt:
             # Save config on interrupt
@@ -2723,6 +2553,53 @@ Subtask Breakdown:
                 "For technical support, refer to this document: https://docs.swarms.world/community/technical-support"
             )
             raise KeyboardInterrupt
+
+        finally:
+            self._run_streaming_callback = None
+
+    def _dispatch(
+        self,
+        task,
+        img,
+        imgs,
+        streaming_callback,
+        messages,
+        *args,
+        **kwargs,
+    ):
+        """Run the task on the current model: the autonomous loop or a single pass.
+
+        Args:
+            task: The task to run.
+            img: A single image input.
+            imgs: Several image inputs.
+            streaming_callback: Receives streamed tokens.
+            messages: Prior turns the task continues from.
+
+        Returns:
+            Any: The run's output.
+        """
+        if self.max_loops == "auto":
+            # Constructor messages are already in short_memory; per-call ones are not.
+            if messages:
+                self.short_memory.add_messages(messages)
+            return self._run_autonomous_loop(
+                task=task,
+                img=img,
+                streaming_callback=streaming_callback,
+                messages=messages,
+                *args,
+                **kwargs,
+            )
+        return self._run(
+            task=task,
+            img=img,
+            imgs=imgs,
+            streaming_callback=streaming_callback,
+            messages=messages,
+            *args,
+            **kwargs,
+        )
 
     def run_stream(
         self,
@@ -2873,48 +2750,6 @@ Subtask Breakdown:
         if _exc[0] is not None:
             raise _exc[0]
 
-    def _handle_fallback_execution(
-        self,
-        task: Optional[Union[str, Any]] = None,
-        img: Optional[str] = None,
-        imgs: Optional[List[str]] = None,
-        correct_answer: Optional[str] = None,
-        streaming_callback: Optional[Callable[[str], None]] = None,
-        original_error: Exception = None,
-        *args,
-        **kwargs,
-    ) -> Any:
-        """
-        Handles fallback execution when the primary model fails.
-
-        Delegates to :meth:`swarms.agents.llm_manager.LLMManager.handle_fallback_execution`,
-        which walks the fallback chain until the task succeeds or every model is
-        exhausted.
-
-        Args:
-            task (Optional[Union[str, Any]], optional): The task to be executed. Defaults to None.
-            img (Optional[str], optional): The image to be processed. Defaults to None.
-            imgs (Optional[List[str]], optional): The list of images to be processed. Defaults to None.
-            correct_answer (Optional[str], optional): The correct answer for continuous run mode. Defaults to None.
-            streaming_callback (Optional[Callable[[str], None]], optional): Callback function to receive streaming tokens in real-time. Defaults to None.
-            original_error (Exception): The original error that triggered the fallback. Defaults to None.
-            *args: Additional positional arguments to be passed to the execution method.
-            **kwargs: Additional keyword arguments to be passed to the execution method.
-
-        Returns:
-            Any: The result of the execution if successful.
-        """
-        return self.llm_manager.handle_fallback_execution(
-            task=task,
-            img=img,
-            imgs=imgs,
-            correct_answer=correct_answer,
-            streaming_callback=streaming_callback,
-            original_error=original_error,
-            *args,
-            **kwargs,
-        )
-
     def run_batched(
         self,
         tasks: List[str],
@@ -3055,20 +2890,6 @@ Subtask Breakdown:
                 f"Agent Name {self.agent_name} [Loop: {loop_count}/{self.max_loops}]",
             )
 
-    def output_cleaner_op(self, response: str):
-        # Apply the cleaner function to the response
-        if self.output_cleaner is not None:
-            logger.info("Applying output cleaner to response.")
-
-            response = self.output_cleaner(response)
-
-            logger.info(f"Response after output cleaner: {response}")
-
-            self.short_memory.add(
-                role="Output Cleaner",
-                content=response,
-            )
-
     @property
     def input_tokens(self) -> int:
         """Tokens the agent's next request would carry, counted with its model's tokenizer.
@@ -3106,71 +2927,5 @@ Subtask Breakdown:
         for key in self._usage:
             self._usage[key] += call_usage.get(key, 0)
 
-    def get_available_models(self) -> List[str]:
-        """
-        Get the list of available models including primary and fallback models.
-
-        Returns:
-            List[str]: List of model names in order of preference
-        """
-        return self.llm_manager.get_available_models()
-
-    def get_current_model(self) -> str:
-        """
-        Get the current model being used.
-
-        Returns:
-            str: Current model name
-        """
-        return self.llm_manager.get_current_model()
-
-    def switch_to_next_model(self) -> bool:
-        """
-        Switch to the next available model in the fallback list.
-
-        Returns:
-            bool: True if successfully switched to next model, False if no more models available
-        """
-        return self.llm_manager.switch_to_next_model()
-
-    def reset_model_index(self) -> None:
-        """Reset the model index to use the primary model."""
-        self.llm_manager.reset_model_index()
-
-    def is_fallback_available(self) -> bool:
-        """
-        Check if fallback models are available.
-
-        Returns:
-            bool: True if fallback models are configured
-        """
-        return self.llm_manager.is_fallback_available()
-
     def list_output_types(self):
         return OutputType
-
-    def _transcript_from_messages(
-        self,
-        messages: Optional[List[Dict[str, Any]]],
-        task: Optional[Any],
-    ) -> Transcript:
-        """
-        Build this run's transcript, preferring caller-supplied turns.
-
-        Args:
-            messages: Prior conversation as typed chat messages. When given,
-                these replace the memory-derived prefix and ``task`` is
-                appended as the new user turn. ``None`` falls back to
-                :meth:`_transcript_from_memory`.
-            task: The instruction for this turn.
-
-        Returns:
-            The transcript to send with the next request.
-        """
-        if messages is None:
-            return self._transcript_from_memory()
-
-        transcript = Transcript(list(messages))
-        if task is not None:
-            transcript.append_user(task)
-        return transcript

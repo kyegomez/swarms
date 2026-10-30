@@ -90,8 +90,6 @@ def ensure_workspace_env(verbose: bool = False) -> Optional[str]:
     if not os.getenv("WORKSPACE_DIR"):
         default = os.path.join(os.getcwd(), DEFAULT_WORKSPACE_DIRNAME)
         os.environ["WORKSPACE_DIR"] = default
-        # get_workspace_dir is lru_cached, so a stale miss would stick.
-        get_workspace_dir.cache_clear()
         if verbose:
             logger.info(
                 f"WORKSPACE_DIR not set, using default: {default}"
@@ -230,6 +228,16 @@ class WorkspaceManager:
                 )
                 return None
 
+            try:
+                os.makedirs(workspace_dir, exist_ok=True)
+            except OSError as e:
+                os.environ.pop("WORKSPACE_DIR", None)
+                if ensure_workspace_env() == workspace_dir:
+                    raise
+                logger.warning(
+                    f"Unusable WORKSPACE_DIR, using the default: {e}"
+                )
+                return self._setup()
             stamp = (
                 datetime.now().strftime("%Y%m%d_%H%M%S")
                 if self.use_timestamp
@@ -275,12 +283,8 @@ class WorkspaceManager:
             # temp+replace, a crash mid-write would otherwise truncate it
             temp_path = f"{path}.tmp"
             with open(temp_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    data,
-                    f,
-                    indent=2,
-                    default=str,
-                    ensure_ascii=False,
+                f.write(
+                    json.dumps(data, default=str, ensure_ascii=False)
                 )
             os.replace(temp_path, path)
 

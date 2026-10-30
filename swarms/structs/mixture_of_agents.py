@@ -9,6 +9,10 @@ from swarms.structs.context_utils import (
     messages_for,
     split_last_turn,
 )
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import (
     batched_run,
@@ -45,7 +49,9 @@ class MixtureOfAgents:
     The aggregator always receives the full conversation transcript.
 
     Args:
-        id: Optional identifier accepted for API compatibility.
+        id: Unique identifier for this mixture instance. Used for
+            OpenTelemetry spans (``swarms.id``). Auto-generated when
+            omitted.
         name: Human-readable name for this mixture.
         description: Description added to the conversation metadata when
             listing the worker agents.
@@ -85,11 +91,14 @@ class MixtureOfAgents:
         aggregator_model_name: str = "claude-sonnet-4-20250514",
         max_workers: Optional[int] = None,
         aggegrator_args: Dict[str, Any] = None,
+        channel: Optional[CommsChannel] = None,
     ) -> None:
         """Initialize the mixture with worker and aggregator configuration.
 
         Args:
-            id: Optional identifier accepted for API compatibility.
+            id: Unique identifier for this mixture instance. Used for
+            OpenTelemetry spans (``swarms.id``). Auto-generated when
+            omitted.
             name: Human-readable name for this mixture.
             description: Description of this mixture's purpose.
             agents: Worker agents to run concurrently on each layer.
@@ -124,10 +133,16 @@ class MixtureOfAgents:
 
         self.reliability_check()
 
+        self.channel = channel
         self._reset_conversation()
 
         if self.aggregator_agent is None:
             self.aggregator_agent = self.aggregator_agent_setup()
+        claim_agents(
+            [*(self.agents or []), self.aggregator_agent],
+            channel,
+            self.name,
+        )
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -138,7 +153,7 @@ class MixtureOfAgents:
         A reused instance would otherwise carry the previous task's layers
         into the next one's aggregation.
         """
-        self.conversation = Conversation()
+        self.conversation = Conversation(channel=self.channel)
 
         list_all_agents(
             agents=self.agents,
@@ -234,6 +249,8 @@ class MixtureOfAgents:
         """
 
         self._reset_conversation()
+        for agent in self.agents:
+            agent.reset()
 
         self.conversation.add(role="User", content=task)
 
@@ -302,14 +319,14 @@ class MixtureOfAgents:
             img: Optional image input forwarded to worker agents.
 
         Returns:
-            The formatted mixture output, or an error string if execution
-            fails.
+            The formatted mixture output.
+
+        Raises:
+            Exception: Whatever the aggregator raised, so a failed run is
+                not mistaken for an answer. A failing worker does not
+                raise; its error is recorded as that worker's answer.
         """
-        try:
-            return self._run(task=task, img=img)
-        except Exception as e:
-            logger.error(f"Error running Mixture of Agents: {e}")
-            return f"Error: {e}"
+        return self._run(task=task, img=img)
 
     def run_batched(self, tasks: List[str]) -> List[str]:
         """Run tasks sequentially through the same mixture instance.

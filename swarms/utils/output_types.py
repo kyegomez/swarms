@@ -13,7 +13,6 @@ HistoryOutputType = Literal[
     "yaml",
     "dict-all-except-first",
     "str-all-except-first",
-    "basemodel",
     "dict-final",
     "list-final",
 ]

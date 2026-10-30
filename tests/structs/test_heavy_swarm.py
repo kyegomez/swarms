@@ -803,6 +803,89 @@ class TestUsage:
         assert swarm.usage["input_tokens"] == 30 + 100 * 5
 
 
+def test_the_synthesis_row_is_the_answer(monkeypatch):
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+        output_type="final",
+        max_loops=2,
+    )
+    roles = ["research", "analysis", "alternatives", "verification"]
+    monkeypatch.setattr(
+        swarm,
+        "execute_question_generation",
+        lambda task, img=None: {f"{r}_question": r for r in roles},
+    )
+    for role in roles:
+        swarm.agents[role].run = (
+            lambda *a, _r=role, **kw: f"{_r} found"
+        )
+    swarm.agents["synthesis"].call_llm = lambda *a, **kw: "SYNTHESIS"
+
+    assert swarm.run("task") == "SYNTHESIS"
+    assert [
+        m["content"]
+        for m in swarm.conversation.conversation_history
+        if m["role"] == "Synthesis Agent"
+    ] == ["SYNTHESIS", "SYNTHESIS"]
+
+
+def test_second_run_carries_nothing_from_the_first(monkeypatch):
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+    )
+    roles = ["research", "analysis", "alternatives", "verification"]
+    monkeypatch.setattr(
+        swarm,
+        "execute_question_generation",
+        lambda task, img=None: {
+            f"{role}_question": f"{role} on {task}" for role in roles
+        },
+    )
+    for agent in swarm.agents.values():
+
+        def _run(task=None, img=None, *args, _agent=agent, **kwargs):
+            _agent.short_memory.add(role="User", content=task)
+            return _agent.short_memory.get_str()
+
+        agent.run = _run
+
+    swarm.run("volcanoes")
+    second = str(swarm.run("glaciers"))
+
+    assert "research on glaciers" in second
+    assert "volcanoes" not in second
+
+
+@pytest.mark.parametrize(
+    "questions",
+    [
+        RuntimeError("question model is down"),
+        {"error": "question model is down"},
+    ],
+)
+def test_run_raises_when_question_generation_fails(
+    monkeypatch, questions
+):
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+    )
+
+    def generate(task, img=None):
+        if isinstance(questions, Exception):
+            raise questions
+        return questions
+
+    monkeypatch.setattr(
+        swarm, "execute_question_generation", generate
+    )
+
+    with pytest.raises(RuntimeError, match="question model is down"):
+        swarm.run("task")
+
+
 class TestSwarmRouterGrokIntegration:
     """Verify SwarmRouter passes through grok flag."""
 

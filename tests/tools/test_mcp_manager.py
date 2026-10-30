@@ -202,6 +202,32 @@ class TestConnectionNormalization:
         )
         assert manager.connections[0].api_key == "specific"
 
+    def test_shared_connection_keeps_each_managers_defaults(self):
+        shared = MCPConnection(url="http://localhost:1/mcp")
+        alice = MCPManager(
+            mcp_config=shared,
+            authorization_token="alice-token",
+            headers={"X-User": "alice"},
+        )
+        bob = MCPManager(
+            mcp_config=shared,
+            authorization_token="bob-token",
+            headers={"X-User": "bob"},
+        )
+
+        assert run_async(bob._build_headers(bob.connections[0])) == {
+            "X-User": "bob",
+            "Authorization": "Bearer bob-token",
+        }
+        assert run_async(
+            alice._build_headers(alice.connections[0])
+        ) == {
+            "X-User": "alice",
+            "Authorization": "Bearer alice-token",
+        }
+        assert shared.authorization_token is None
+        assert shared.headers is None
+
     def test_invalid_server_type_rejected(self):
         with pytest.raises(AgentMCPConnectionError):
             MCPManager(mcp_url=12345)
@@ -375,7 +401,7 @@ class TestTransportResolution:
             ),
             (
                 {"url": "python server.py", "transport": "auto"},
-                "stdio",
+                "streamable_http",
             ),
         ],
     )
@@ -394,7 +420,7 @@ class TestTransportResolution:
         [
             ("http://localhost:8000/sse", "sse"),
             ("https://x/mcp", "streamable_http"),
-            ("python server.py", "stdio"),
+            ("python server.py", "streamable_http"),
         ],
     )
     def test_url_detected_without_explicit_transport(
@@ -405,6 +431,44 @@ class TestTransportResolution:
             manager._resolve_transport(manager.connections[0])
             == expected
         )
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"mcp_url": "touch pwned"},
+            {"mcp_url": "touch pwned", "transport": "stdio"},
+            {"mcp_url": "file:///etc/passwd"},
+        ],
+    )
+    def test_url_is_never_run_as_a_command(self, kwargs):
+        manager = MCPManager(**kwargs)
+        with pytest.raises(AgentMCPConnectionError):
+            manager._client_context(manager.connections[0], {}, None)
+
+    def test_stdio_server_does_not_inherit_parent_env(
+        self, monkeypatch
+    ):
+        import mcp.client.stdio as mcp_stdio
+
+        monkeypatch.setenv("SWARMS_TEST_SECRET", "sk-secret")
+        captured = {}
+        monkeypatch.setattr(
+            mcp_stdio,
+            "stdio_client",
+            lambda params: captured.setdefault("params", params),
+        )
+        manager = MCPManager(
+            mcp_config=MCPConnection(
+                command="python",
+                args=["s.py"],
+                env={"WANTED": "yes"},
+            )
+        )
+        manager._client_context(manager.connections[0], {}, None)
+        env = captured["params"].env
+        assert "SWARMS_TEST_SECRET" not in env
+        assert env["WANTED"] == "yes"
+        assert "PATH" in env
 
     def test_explicit_transport_still_wins_over_url(self):
         manager = MCPManager(
@@ -1041,6 +1105,65 @@ class TestOAuthPlumbing:
         server.start()
         with pytest.raises(AgentMCPConnectionError):
             server.wait(timeout=0.5)
+
+    def test_oauth_accepts_a_resource_served_at_a_path(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        port = _free_port()
+        base = f"http://127.0.0.1:{port}"
+        metadata_path = "/.well-known/oauth-protected-resource/mcp"
+        requested = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                requested.append(self.path)
+                if self.path != metadata_path:
+                    self.send_error(404)
+                    return
+                body = json.dumps(
+                    {
+                        "resource": f"{base}/mcp",
+                        "authorization_servers": [base],
+                    }
+                ).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers["Content-Length"]))
+                self.send_response(401)
+                self.send_header(
+                    "WWW-Authenticate",
+                    f'Bearer resource_metadata="{base}{metadata_path}"',
+                )
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        server = HTTPServer(("127.0.0.1", port), Handler)
+        threading.Thread(
+            target=server.serve_forever, daemon=True
+        ).start()
+        manager = MCPManager(
+            mcp_url=MCPConnection(
+                url=f"{base}/mcp",
+                oauth=MCPOAuthConfig(use_token_cache=False),
+            ),
+            retry_attempts=1,
+        )
+        try:
+            with pytest.raises(AgentMCPConnectionError):
+                manager.get_tools()
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert "/.well-known/oauth-authorization-server" in requested
 
 
 ########################################################

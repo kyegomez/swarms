@@ -154,13 +154,12 @@ class TreeAgent(Agent):
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
         """
-        agent_name = agent_name
+        if description is not None:
+            kwargs.setdefault("agent_description", description)
         super().__init__(
-            name=name,
-            description=description,
             system_prompt=system_prompt,
             model_name=model_name,
-            agent_name=agent_name,
+            agent_name=agent_name or name,
             *args,
             **kwargs,
         )

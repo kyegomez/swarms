@@ -1,4 +1,4 @@
-from swarms.utils import load_agents_from_markdown
+from swarms import load_agents_from_markdown
 
 agents = load_agents_from_markdown(
     [
