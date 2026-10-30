@@ -1853,6 +1853,49 @@ class TestConcurrentExecutionPool:
         assert threading.active_count() <= before
 
 
+class TestRunBatchedImagePairing:
+    """`for task, imgs in zip(tasks, imgs)` rebound the parameter, so `imgs`
+    received a bare str — and with the documented imgs=None default the zip
+    raised before any task ran.
+    """
+
+    @staticmethod
+    def _agent():
+        agent = Agent.__new__(Agent)
+        agent.agent_name = "batched"
+        return agent
+
+    def test_tasks_without_images_run(self):
+        """The documented default: imgs is optional."""
+        agent = self._agent()
+        with patch.object(Agent, "run", side_effect=lambda **kw: kw):
+            assert Agent.run_batched(agent, ["t1", "t2"]) == [
+                {"task": "t1"},
+                {"task": "t2"},
+            ]
+
+    def test_each_task_gets_its_own_image_as_a_single_image(self):
+        agent = self._agent()
+        with patch.object(Agent, "run", side_effect=lambda **kw: kw):
+            assert Agent.run_batched(
+                agent, ["t1", "t2"], imgs=["a.png", "b.png"]
+            ) == [
+                {"task": "t1", "img": "a.png"},
+                {"task": "t2", "img": "b.png"},
+            ]
+
+    def test_mismatched_lengths_raise_instead_of_dropping_tasks(self):
+        """zip() would have run one task and discarded the rest in silence."""
+        agent = self._agent()
+        with patch.object(Agent, "run", side_effect=lambda **kw: kw):
+            with pytest.raises(
+                ValueError, match="one image per task"
+            ):
+                Agent.run_batched(
+                    agent, ["t1", "t2", "t3"], imgs=["a.png"]
+                )
+
+
 class TestEmptyToolsList:
     """`tools=[]` must mean the same as `tools=None`.
 

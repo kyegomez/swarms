@@ -2750,6 +2750,44 @@ Subtask Breakdown:
         if _exc[0] is not None:
             raise _exc[0]
 
+    def run_batched(
+        self,
+        tasks: List[str],
+        imgs: List[str] = None,
+        *args,
+        **kwargs,
+    ):
+        """
+        Run a batch of tasks, one after another.
+
+        Args:
+            tasks (List[str]): List of tasks to run.
+            imgs (List[str], optional): One image per task, paired by position.
+                Omit to run the tasks without images. Defaults to None.
+            *args: Additional positional arguments to be passed to the execution method.
+            **kwargs: Additional keyword arguments to be passed to the execution method.
+
+        Returns:
+            List[Any]: List of results from each task execution.
+        """
+        # Index imgs rather than zip: zip rebound imgs and raised when it was None.
+        if imgs is None:
+            return [
+                self.run(task=task, *args, **kwargs) for task in tasks
+            ]
+
+        if len(imgs) != len(tasks):
+            raise ValueError(
+                f"run_batched got {len(tasks)} tasks and {len(imgs)} images; "
+                "pass one image per task, or omit imgs entirely. Zipping them "
+                "would silently drop the extras."
+            )
+
+        return [
+            self.run(task=task, img=img, *args, **kwargs)
+            for task, img in zip(tasks, imgs)
+        ]
+
     def showcase_config(self):
 
         # Convert all values in config_dict to concise string representations
