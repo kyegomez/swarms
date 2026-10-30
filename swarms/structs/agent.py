@@ -2218,11 +2218,6 @@ Subtask Breakdown:
             self.to_dict(), indent=indent, *args, **kwargs
         )
 
-    def to_toml(self, *args, **kwargs):
-        import toml
-
-        return toml.dumps(self.to_dict(), *args, **kwargs)
-
     def model_dump_json(self):
         """
         Save the agent model configuration to JSON in the agent-specific workspace directory.
