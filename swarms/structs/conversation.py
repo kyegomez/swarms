@@ -6,7 +6,6 @@ import threading
 import traceback
 import uuid
 from typing import (
-    TYPE_CHECKING,
     Any,
     Dict,
     List,
@@ -18,9 +17,6 @@ from typing import (
 
 from swarms.structs.comms_channel import CommsChannel
 from swarms.utils.litellm_tokenizer import count_tokens
-
-if TYPE_CHECKING:
-    from swarms.structs.agent import Agent
 
 from loguru import logger
 from swarms.utils.generate_id import generate_id
@@ -58,8 +54,6 @@ class Conversation:
         custom_rules_prompt (str): Custom prompt for rules.
         user (str): The user identifier for messages.
         auto_save (bool): Flag to enable auto-saving of conversation history.
-        save_as_yaml_on (bool): Flag to save conversation history as YAML.
-        save_as_json_bool (bool): Flag to save conversation history as JSON.
         token_count (bool): Flag to enable token counting for messages.
         channel (CommsChannel): Seeds the history from the channel at construction, then
             posts every later message to it, except System rows.
@@ -79,8 +73,6 @@ class Conversation:
         rules: str = None,
         custom_rules_prompt: str = None,
         user: str = "User",
-        save_as_yaml_on: bool = False,
-        save_as_json_bool: bool = False,
         token_count: bool = False,
         message_id_on: bool = False,
         tokenizer_model_name: str = "gpt-5.4",
@@ -115,8 +107,6 @@ class Conversation:
         self.rules = rules
         self.custom_rules_prompt = custom_rules_prompt
         self.user = user
-        self.save_as_yaml_on = save_as_yaml_on
-        self.save_as_json_bool = save_as_json_bool
         self.token_count = token_count
         self.export_method = export_method
         self.dynamic_context_window = dynamic_context_window
@@ -895,14 +885,6 @@ class Conversation:
                         f"{message['role']}: {message['content']}\n"
                     )
 
-    def import_conversation(self, filename: str):
-        """Import a conversation history from a file.
-
-        Args:
-            filename (str): Filename to import from.
-        """
-        self.load_from_json(filename)
-
     def count_messages_by_role(self):
         """Count the number of messages by role.
 
@@ -1306,21 +1288,6 @@ class Conversation:
             )
             raise
 
-    def search_keyword_in_conversation(self, keyword: str):
-        """Search for a keyword in the conversation history.
-
-        Args:
-            keyword (str): Keyword to search for.
-
-        Returns:
-            list: List of messages containing the keyword.
-        """
-        return [
-            msg
-            for msg in self.conversation_history
-            if keyword in msg["content"]
-        ]
-
     def truncate_memory_with_tokenizer(self):
         """
         Truncate conversation history based on the total token count using tokenizer.
@@ -1474,33 +1441,6 @@ class Conversation:
         """
         return self.conversation_history
 
-    def get_visible_messages(self, agent: "Agent", turn: int):
-        """
-        Get the visible messages for a given agent and turn.
-
-        Args:
-            agent (Agent): The agent.
-            turn (int): The turn number.
-
-        Returns:
-            List[Dict]: The list of visible messages.
-        """
-        # Get the messages before the current turn
-        prev_messages = [
-            message
-            for message in self.conversation_history
-            if message["turn"] < turn
-        ]
-
-        visible_messages = []
-        for message in prev_messages:
-            if (
-                message["visible_to"] == "all"
-                or agent.agent_name in message["visible_to"]
-            ):
-                visible_messages.append(message)
-        return visible_messages
-
     def get_last_message_as_string(self):
         """Fetch the last message from the conversation history.
 
@@ -1549,16 +1489,6 @@ class Conversation:
             list: List of dictionaries containing role and content of each message.
         """
         return self.return_messages_as_list()
-
-    def add_tool_output_to_agent(self, role: str, tool_output: dict):
-        """
-        Add a tool output to the conversation history.
-
-        Args:
-            role (str): The role of the tool.
-            tool_output (dict): The output from the tool to be added.
-        """
-        self.add(role, tool_output)
 
     def return_json(self):
         """Return the conversation messages as a JSON string.
