@@ -19,6 +19,7 @@ def batched_run(
     img: Optional[Union[str, Sequence[Optional[str]]]] = None,
     imgs: Optional[Sequence[Optional[str]]] = None,
     max_workers: Optional[int] = None,
+    executor: Optional[ContextThreadPoolExecutor] = None,
     return_agent_output_dict: bool = False,
     return_exceptions: bool = False,
     **kwargs: Any,
@@ -102,16 +103,22 @@ def batched_run(
                 return exc
         return func(task, *args, **per_task)
 
-    if max_workers is None:
+    if executor is not None:
+        futures = [
+            executor.submit(call, i, task)
+            for i, task in enumerate(tasks)
+        ]
+        results = [future.result() for future in futures]
+    elif max_workers is None:
         results = [call(i, task) for i, task in enumerate(tasks)]
     else:
         # ContextThreadPoolExecutor carries the tracing context into the workers
         with ContextThreadPoolExecutor(
             max_workers=max_workers
-        ) as executor:
+        ) as pool:
             # Read in submission order, so element i is the result for tasks[i]
             futures = [
-                executor.submit(call, i, task)
+                pool.submit(call, i, task)
                 for i, task in enumerate(tasks)
             ]
             results = [future.result() for future in futures]
@@ -126,6 +133,7 @@ def run_concurrently(
     tasks: Sequence[Any],
     *args: Any,
     max_workers: Optional[int] = None,
+    executor: Optional[ContextThreadPoolExecutor] = None,
     **kwargs: Any,
 ) -> Union[List[Any], Dict[Any, Any]]:
     """
@@ -153,5 +161,6 @@ def run_concurrently(
         tasks,
         *args,
         max_workers=max_workers or os.cpu_count() or 1,
+        executor=executor,
         **kwargs,
     )

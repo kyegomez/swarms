@@ -9,6 +9,7 @@ exceptions propagating is what they are relying on.
 
 import pytest
 
+from swarms.telemetry.otel import ContextThreadPoolExecutor
 from swarms.structs.execution_utils import (
     batched_run,
     run_concurrently,
@@ -339,3 +340,51 @@ class TestMigratedCallers:
         assert batched_run(run, ["t"], "positional.png") == [
             ("t", "positional.png")
         ]
+
+
+
+class TestExecutorReuse:
+    def test_batched_run_reuses_provided_executor(self):
+        pool = ContextThreadPoolExecutor(max_workers=2)
+        try:
+            results1 = batched_run(lambda x: x * 2, [1, 2, 3], executor=pool)
+            assert results1 == [2, 4, 6]
+            assert not pool._shutdown
+
+            results2 = batched_run(lambda x: x + 10, [1, 2, 3], executor=pool)
+            assert results2 == [11, 12, 13]
+            assert not pool._shutdown
+        finally:
+            pool.shutdown(wait=True)
+
+    def test_provided_executor_is_not_closed_by_batched_run(self):
+        pool = ContextThreadPoolExecutor(max_workers=3)
+        try:
+            batched_run(lambda x: f"out-{x}", ["a", "b"], executor=pool)
+            assert not pool._shutdown
+        finally:
+            pool.shutdown(wait=True)
+
+    def test_run_concurrently_forwards_provided_executor(self):
+        pool = ContextThreadPoolExecutor(max_workers=2)
+        try:
+            results = run_concurrently(lambda x: x.upper(), ["hello", "world"], executor=pool)
+            assert results == ["HELLO", "WORLD"]
+            assert not pool._shutdown
+        finally:
+            pool.shutdown(wait=True)
+
+    def test_provided_executor_order_and_exception_handling(self):
+        pool = ContextThreadPoolExecutor(max_workers=2)
+        try:
+            def erratic(x):
+                if x == 2:
+                    raise ValueError("bad number")
+                return x * 10
+
+            caught = batched_run(erratic, [1, 2, 3], return_exceptions=True, executor=pool)
+            assert caught[0] == 10
+            assert isinstance(caught[1], ValueError)
+            assert caught[2] == 30
+        finally:
+            pool.shutdown(wait=True)
