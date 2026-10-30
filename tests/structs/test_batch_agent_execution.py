@@ -153,3 +153,55 @@ def test_a_plain_callable_is_run_directly():
 
     assert results == ["ran do the thing"]
     assert calls == [("do the thing", None)]
+
+
+def test_batch_agent_execution_with_custom_executor():
+    import concurrent.futures
+
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+    try:
+        agents = [StubAgent("a"), StubAgent("b")]
+        results = batch_agent_execution(
+            agents, ["task a", "task b"], executor=pool
+        )
+        assert results == ["a:task a", "b:task b"]
+        future = pool.submit(lambda: 42)
+        assert future.result() == 42
+    finally:
+        pool.shutdown(wait=True)
+
+
+def test_batch_agent_execution_reuses_executor_across_calls():
+    import concurrent.futures
+
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+    try:
+        agents1 = [StubAgent("a1"), StubAgent("b1")]
+        results1 = batch_agent_execution(
+            agents1, ["t1", "t2"], executor=pool
+        )
+        assert results1 == ["a1:t1", "b1:t2"]
+
+        agents2 = [StubAgent("a2"), StubAgent("b2")]
+        results2 = batch_agent_execution(
+            agents2, ["t3", "t4"], executor=pool
+        )
+        assert results2 == ["a2:t3", "b2:t4"]
+    finally:
+        pool.shutdown(wait=True)
+
+
+def test_batch_agent_execution_custom_executor_handles_failure():
+    import concurrent.futures
+
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+    try:
+        agents = [StubAgent("a"), BoomAgent("b"), StubAgent("c")]
+        results = batch_agent_execution(
+            agents, ["t1", "t2", "t3"], executor=pool
+        )
+        assert results == ["a:t1", None, "c:t3"]
+        future = pool.submit(lambda: 99)
+        assert future.result() == 99
+    finally:
+        pool.shutdown(wait=True)

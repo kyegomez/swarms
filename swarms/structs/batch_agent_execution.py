@@ -18,6 +18,7 @@ def batch_agent_execution(
     tasks: Optional[List[str]] = None,
     imgs: Optional[List[str]] = None,
     max_workers: int = max(1, int(os.cpu_count() * 0.9)),
+    executor: Optional[concurrent.futures.ThreadPoolExecutor] = None,
 ):
     """
     Concurrently execute agents (or callables) on tasks (with optional images).
@@ -27,6 +28,9 @@ def batch_agent_execution(
         tasks (List[str]): Tasks (one per agent).
         imgs (List[str], optional): Images for agents; None for no images.
         max_workers (int): Thread pool size.
+        executor (concurrent.futures.ThreadPoolExecutor, optional): Reusable executor
+            instance. If provided, tasks are executed on it without shutting it down.
+            Defaults to None.
 
     Returns:
         List[Any]: Results (aligned to agents, None if exception).
@@ -67,11 +71,9 @@ def batch_agent_execution(
             f"Executing {len(agents)} agents on {len(tasks)} tasks using {max_workers} workers"
         )
 
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=max_workers
-        ) as executor:
+        def _execute_with_pool(pool):
             future_to_index = {
-                executor.submit(
+                pool.submit(
                     getattr(agent, "run", agent), task, img
                 ): index
                 for index, (agent, task, img) in enumerate(
@@ -89,6 +91,14 @@ def batch_agent_execution(
                     logger.error(
                         f"Task failed for agent {names[index]}: {e}"
                     )
+
+        if executor is not None:
+            _execute_with_pool(executor)
+        else:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_workers
+            ) as pool:
+                _execute_with_pool(pool)
 
         return results
     except Exception as e:
