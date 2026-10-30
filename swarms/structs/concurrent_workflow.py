@@ -1,5 +1,6 @@
 import concurrent.futures
 import time
+import weakref
 from typing import Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent
@@ -24,6 +25,15 @@ from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="concurrent_workflow")
+
+
+def _shutdown_executor(executor: Optional[ContextThreadPoolExecutor]) -> None:
+    """Best-effort shutdown helper for weakref finalizer."""
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
 
 
 class ConcurrentWorkflow:
@@ -157,6 +167,8 @@ class ConcurrentWorkflow:
             f"concurrent_workflow_name_{name}_id_{self.id}.json"
         )
         self.max_workers = max_workers
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
 
         # Initialize agent statuses if agents are provided
         if agents is not None:
@@ -185,6 +197,40 @@ class ConcurrentWorkflow:
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or self._resolve_max_workers()
+        if self._executor is None:
+            self._executor = ContextThreadPoolExecutor(max_workers=workers)
+            self._finalizer = weakref.finalize(
+                self, _shutdown_executor, self._executor
+            )
+        elif max_workers is not None and max_workers > self._executor._max_workers:
+            if self._finalizer is not None:
+                self._finalizer.detach()
+            _shutdown_executor(self._executor)
+            self._executor = ContextThreadPoolExecutor(max_workers=workers)
+            self._finalizer = weakref.finalize(
+                self, _shutdown_executor, self._executor
+            )
+        return self._executor
+
+    def close(self) -> None:
+        """Shut down the cached thread pool executor."""
+        if self._finalizer is not None:
+            self._finalizer.detach()
+            self._finalizer = None
+        if self._executor is not None:
+            _shutdown_executor(self._executor)
+            self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def _new_conversation(self) -> Conversation:
         """
@@ -409,39 +455,37 @@ class ConcurrentWorkflow:
 
                     raise
 
-            with ContextThreadPoolExecutor(
-                max_workers=self._resolve_max_workers()
-            ) as executor:
-                futures = [
-                    executor.submit(
-                        run_agent_with_status, agent, task, img, imgs
-                    )
-                    for agent in self.agents
-                ]
-                concurrent.futures.wait(futures)
+            executor = self._get_executor()
+            futures = [
+                executor.submit(
+                    run_agent_with_status, agent, task, img, imgs
+                )
+                for agent in self.agents
+            ]
+            concurrent.futures.wait(futures)
 
-                for future, agent in zip(futures, self.agents):
-                    try:
-                        output = agent_answer(
-                            agent, fallback=future.result()
-                        )
-                        results.append((agent.agent_name, output))
-                    except Exception as e:
-                        # Same failure policy as _run: the dashboard must not revoke on_error.
-                        if self.on_error == "raise":
-                            raise
-                        capture_error(
-                            e,
-                            self,
-                            name="ConcurrentWorkflow.agent_error",
-                            agent=getattr(agent, "agent_name", None),
-                        )
-                        logger.error(
-                            f"Agent {agent.agent_name} failed: {str(e)}"
-                        )
-                        results.append(
-                            (agent.agent_name, f"Error: {str(e)}")
-                        )
+            for future, agent in zip(futures, self.agents):
+                try:
+                    output = agent_answer(
+                        agent, fallback=future.result()
+                    )
+                    results.append((agent.agent_name, output))
+                except Exception as e:
+                    # Same failure policy as _run: the dashboard must not revoke on_error.
+                    if self.on_error == "raise":
+                        raise
+                    capture_error(
+                        e,
+                        self,
+                        name="ConcurrentWorkflow.agent_error",
+                        agent=getattr(agent, "agent_name", None),
+                    )
+                    logger.error(
+                        f"Agent {agent.agent_name} failed: {str(e)}"
+                    )
+                    results.append(
+                        (agent.agent_name, f"Error: {str(e)}")
+                    )
 
             for agent_name, output in results:
                 self.conversation.add(role=agent_name, content=output)
@@ -486,46 +530,44 @@ class ConcurrentWorkflow:
         """
         self.conversation.add(role="User", content=task)
 
-        with ContextThreadPoolExecutor(
-            max_workers=self._resolve_max_workers()
-        ) as executor:
-            futures = [
-                executor.submit(
-                    self._run_agent_with_streaming,
-                    agent,
-                    task,
-                    img,
-                    imgs,
-                    streaming_callback,
-                )
-                for agent in self.agents
-            ]
+        executor = self._get_executor()
+        futures = [
+            executor.submit(
+                self._run_agent_with_streaming,
+                agent,
+                task,
+                img,
+                imgs,
+                streaming_callback,
+            )
+            for agent in self.agents
+        ]
 
-            for future, agent in zip(futures, self.agents):
-                try:
-                    output = agent_answer(
-                        agent, fallback=future.result()
-                    )
-                    self.conversation.add(
-                        role=agent.agent_name, content=output
-                    )
-                except Exception as e:
-                    if self.on_error == "raise":
-                        raise
-                    # Track the swallowed per-agent failure so it isn't lost.
-                    capture_error(
-                        e,
-                        self,
-                        name="ConcurrentWorkflow.agent_error",
-                        agent=getattr(agent, "agent_name", None),
-                    )
-                    logger.error(
-                        f"Agent {agent.agent_name} failed: {str(e)}"
-                    )
-                    self.conversation.add(
-                        role=f"{agent.agent_name} (failed)",
-                        content=f"Error: {str(e)}",
-                    )
+        for future, agent in zip(futures, self.agents):
+            try:
+                output = agent_answer(
+                    agent, fallback=future.result()
+                )
+                self.conversation.add(
+                    role=agent.agent_name, content=output
+                )
+            except Exception as e:
+                if self.on_error == "raise":
+                    raise
+                # Track the swallowed per-agent failure so it isn't lost.
+                capture_error(
+                    e,
+                    self,
+                    name="ConcurrentWorkflow.agent_error",
+                    agent=getattr(agent, "agent_name", None),
+                )
+                logger.error(
+                    f"Agent {agent.agent_name} failed: {str(e)}"
+                )
+                self.conversation.add(
+                    role=f"{agent.agent_name} (failed)",
+                    content=f"Error: {str(e)}",
+                )
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
