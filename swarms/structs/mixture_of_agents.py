@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 
+from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import (
@@ -86,7 +87,7 @@ class MixtureOfAgents:
         layers: int = 3,
         max_loops: int = 1,
         output_type: OutputType = "final",
-        aggregator_model_name: str = "claude-sonnet-4-20250514",
+        aggregator_model_name: str = DEFAULT_MODEL_NAME,
         max_workers: Optional[int] = None,
         aggegrator_args: Dict[str, Any] = None,
         channel: Optional[CommsChannel] = None,
