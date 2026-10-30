@@ -638,14 +638,18 @@ class LLMManager:
         original_stream = self.agent.llm.stream
         self.agent.llm.stream = True
 
-        if img is not None:
-            response = self.agent.llm.run(
-                task=task, img=img, *args, **kwargs
-            )
-        else:
-            response = self.agent.llm.run(task=task, *args, **kwargs)
+        try:
+            if img is not None:
+                response = self.agent.llm.run(
+                    task=task, img=img, *args, **kwargs
+                )
+            else:
+                response = self.agent.llm.run(task=task, *args, **kwargs)
 
-        return response, original_stream
+            return response, original_stream
+        except BaseException:
+            self.agent.llm.stream = original_stream
+            raise
 
     def _call_detailed_streaming(
         self,
@@ -660,17 +664,17 @@ class LLMManager:
             task, img, *args, **kwargs
         )
 
-        if not hasattr(streaming_response, "__iter__") or isinstance(
-            streaming_response, str
-        ):
-            self.agent.llm.stream = original_stream
-            return streaming_response
+        try:
+            if not hasattr(streaming_response, "__iter__") or isinstance(
+                streaming_response, str
+            ):
+                return streaming_response
 
-        result = self._consume_detailed(
-            streaming_response, streaming_callback
-        )
-        self.agent.llm.stream = original_stream
-        return result
+            return self._consume_detailed(
+                streaming_response, streaming_callback
+            )
+        finally:
+            self.agent.llm.stream = original_stream
 
     def _consume_detailed(
         self,
@@ -809,18 +813,17 @@ class LLMManager:
             task, img, *args, **kwargs
         )
 
-        if not hasattr(streaming_response, "__iter__") or isinstance(
-            streaming_response, str
-        ):
-            # Restore original stream setting
-            self.agent.llm.stream = original_stream
-            return streaming_response
+        try:
+            if not hasattr(streaming_response, "__iter__") or isinstance(
+                streaming_response, str
+            ):
+                return streaming_response
 
-        result = self._consume_panel(
-            streaming_response, current_loop, streaming_callback
-        )
-        self.agent.llm.stream = original_stream
-        return result
+            return self._consume_panel(
+                streaming_response, current_loop, streaming_callback
+            )
+        finally:
+            self.agent.llm.stream = original_stream
 
     def _consume_panel(
         self,
@@ -948,16 +951,20 @@ class LLMManager:
         ) or not hasattr(llm, "stream"):
             return llm.run(task)
 
+        original_stream = getattr(llm, "stream", False)
         llm.stream = True
-        response = llm.run(task)
-        if not hasattr(response, "__iter__") or isinstance(
-            response, str
-        ):
-            return response
-        if agent.stream:
-            return self._consume_detailed(
-                response, streaming_callback
+        try:
+            response = llm.run(task)
+            if not hasattr(response, "__iter__") or isinstance(
+                response, str
+            ):
+                return response
+            if agent.stream:
+                return self._consume_detailed(
+                    response, streaming_callback
+                )
+            return self._consume_panel(
+                response, current_loop, streaming_callback
             )
-        return self._consume_panel(
-            response, current_loop, streaming_callback
-        )
+        finally:
+            llm.stream = original_stream
