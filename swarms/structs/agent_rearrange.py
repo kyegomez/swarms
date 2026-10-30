@@ -796,14 +796,16 @@ class AgentRearrange(SerializableMixin):
             )
 
         # The system_prompt is baked into the LLM at build time, so assigning to it here never reaches the request.
-        awareness_info = self._get_sequential_awareness(
-            agent_name, steps, task_idx=task_idx
-        )
-        if awareness_info:
-            self._log(
-                "info",
-                f"Added sequential awareness for {agent_name}: {awareness_info}",
+        awareness_info = None
+        if self.team_awareness:
+            awareness_info = self._get_sequential_awareness(
+                agent_name, steps, task_idx=task_idx
             )
+            if awareness_info:
+                self._log(
+                    "info",
+                    f"Added sequential awareness for {agent_name}: {awareness_info}",
+                )
 
         prior, step_task = self._messages_for(
             agent_name, extra_system=awareness_info
@@ -1223,9 +1225,11 @@ class AgentRearrange(SerializableMixin):
         agent = find_agent_by_name(self.agents, agent_name)
 
         # Injected via a temporary system-prompt extension, see _run_sequential_workflow
-        awareness_info = self._get_sequential_awareness(
-            agent_name, steps, task_idx=task_idx
-        )
+        awareness_info = None
+        if self.team_awareness:
+            awareness_info = self._get_sequential_awareness(
+                agent_name, steps, task_idx=task_idx
+            )
         original_system_prompt = getattr(agent, "system_prompt", None)
         if awareness_info and original_system_prompt is not None:
             agent.system_prompt = (

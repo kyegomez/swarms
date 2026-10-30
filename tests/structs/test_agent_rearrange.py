@@ -931,6 +931,7 @@ def test_awareness_delivered_per_agent_as_system_message():
         agents=agents,
         flow="Writer -> Reviewer -> Writer",
         max_loops=1,
+        team_awareness=True,
     )
     rearrange.run("Write about thunder.")
 
