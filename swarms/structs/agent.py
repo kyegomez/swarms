@@ -19,9 +19,7 @@ from typing import (
 from loguru import logger
 from pydantic import BaseModel
 
-from swarms.agents.agent_marketplace_handler import (
-    AgentMarketplaceHandler,
-)
+
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.agents.context_compressor import ContextCompressor
@@ -35,7 +33,9 @@ from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
+    AgentError,
     AgentInitializationError,
+    AgentLLMInitializationError,
     AgentLLMError,
     AgentRunError,  # noqa: F401  re-exported from this module
     AgentToolExecutionError,
@@ -575,6 +575,10 @@ class Agent:
         self._subagent_registry = None
 
         # Owns fetching prompts from, and publishing prompts to, the Swarms Marketplace
+        from swarms.agents.agent_marketplace_handler import (
+            AgentMarketplaceHandler,
+        )
+
         self.marketplace = AgentMarketplaceHandler(agent=self)
 
         # Load prompt from marketplace if marketplace_prompt_id is provided

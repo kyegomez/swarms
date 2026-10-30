@@ -25,10 +25,12 @@ owning agent.
 
 import os
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import quote
 
-import httpx
+if TYPE_CHECKING:
+    import httpx
+
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentInitializationError
@@ -42,7 +44,7 @@ API_KEYS_URL = "https://swarms.world/platform/api-keys"
 
 
 @lru_cache(maxsize=8)
-def _client(timeout: float) -> httpx.Client:
+def _client(timeout: float) -> "httpx.Client":
     """
     Return a connection-pooled client for the given timeout.
 
@@ -50,6 +52,8 @@ def _client(timeout: float) -> httpx.Client:
     instead of paying for a fresh handshake on every call. ``httpx.Client`` is
     thread-safe, so concurrent agents can share one.
     """
+    import httpx
+
     return httpx.Client(timeout=timeout)
 
 
@@ -151,6 +155,8 @@ class AgentMarketplaceHandler:
         logger.debug(
             f"Fetching prompt: prompt_id={prompt_id}, name={name} url={url}"
         )
+
+        import httpx
 
         try:
             response = _client(timeout).get(
@@ -313,6 +319,8 @@ class AgentMarketplaceHandler:
             "price_usd": price_usd,
             "category": category,
         }
+
+        import httpx
 
         try:
             with httpx.Client(timeout=timeout) as client:
