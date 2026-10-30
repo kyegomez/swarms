@@ -757,6 +757,27 @@ def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
     assert swarm.agent_rearrange.conversation.channel is channel
 
 
+@pytest.mark.parametrize(
+    "swarm_type, fallback_swarms",
+    [
+        ("RoundRobin", None),
+        ("SequentialWorkflow", ["DebateWithJudge"]),
+    ],
+)
+def test_channel_rejected_by_a_swarm_type_without_one(
+    tmp_path, swarm_type, fallback_swarms
+):
+    from swarms.structs.file_channel import FileChannel
+
+    with pytest.raises(SwarmRouterConfigError, match="channel"):
+        SwarmRouter(
+            agents=[Agent(agent_name="A", print_on=False)],
+            swarm_type=swarm_type,
+            fallback_swarms=fallback_swarms,
+            channel=FileChannel(tmp_path / "run.md"),
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 

@@ -144,6 +144,13 @@ def _msg_invalid_fallback_swarm_type(swarm_type, valid_types) -> str:
     )
 
 
+def _msg_channel_unsupported(swarm_types) -> str:
+    return (
+        f"SwarmRouter channel is not supported by {', '.join(swarm_types)}. "
+        f"Use one of: {', '.join(_CHANNEL_SWARM_TYPES)}."
+    )
+
+
 def _msg_fallback_rearrange_flow_required() -> str:
     return (
         "SwarmRouter fallback_swarms includes 'AgentRearrange', which "
@@ -200,6 +207,17 @@ SwarmType = Literal[
     "RoundRobin",
     "PlannerWorkerSwarm",
 ]
+
+_CHANNEL_SWARM_TYPES = (
+    "AgentRearrange",
+    "MixtureOfAgents",
+    "SequentialWorkflow",
+    "ConcurrentWorkflow",
+    "GroupChat",
+    "HierarchicalSwarm",
+    "MajorityVoting",
+    "PlannerWorkerSwarm",
+)
 
 
 class SwarmRouterConfig(BaseModel):
@@ -497,6 +515,8 @@ class SwarmRouter(SerializableMixin):
             * ``max_loops != 0``.
             * ``fallback_swarms``, if given, is a list of valid swarm types,
               and ``rearrange_flow`` is set if it includes ``AgentRearrange``.
+              When ``channel`` is set, ``swarm_type`` and every fallback
+              must be a swarm type that accepts one.
 
         On success, calls :meth:`setup` to apply collaboration prompts and
         agent listing.
@@ -563,6 +583,20 @@ class SwarmRouter(SerializableMixin):
                 ):
                     raise SwarmRouterConfigError(
                         _msg_fallback_rearrange_flow_required()
+                    )
+
+            if self.channel is not None:
+                unsupported = [
+                    swarm_type
+                    for swarm_type in [
+                        self.swarm_type,
+                        *(self.fallback_swarms or []),
+                    ]
+                    if swarm_type not in _CHANNEL_SWARM_TYPES
+                ]
+                if unsupported:
+                    raise SwarmRouterConfigError(
+                        _msg_channel_unsupported(unsupported)
                     )
 
             self.setup()
