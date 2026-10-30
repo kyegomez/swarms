@@ -212,7 +212,10 @@ class MultiAgentRouter:
         return agent_boss_router_prompt(agent_descriptions)
 
     def handle_single_handoff(
-        self, boss_response_str: dict, task: str
+        self,
+        boss_response_str: dict,
+        task: str,
+        conversation: Optional[Conversation] = None,
     ) -> None:
         """
         Execute the single agent selected by the boss and record its response.
@@ -264,12 +267,20 @@ class MultiAgentRouter:
         # Use the agent's run method directly
         agent_response = selected_agent.run(final_task)
 
-        self.conversation.add(
+        conv = (
+            conversation
+            if conversation is not None
+            else self.conversation
+        )
+        conv.add(
             role=selected_agent.agent_name, content=agent_response
         )
 
     def handle_multiple_handoffs(
-        self, boss_response_str: dict, task: str
+        self,
+        boss_response_str: dict,
+        task: str,
+        conversation: Optional[Conversation] = None,
     ) -> None:
         """
         Execute every agent selected by the boss and record the first response.
@@ -344,7 +355,12 @@ class MultiAgentRouter:
                     )
                 )
 
-            self.conversation.add(
+            conv = (
+                conversation
+                if conversation is not None
+                else self.conversation
+            )
+            conv.add(
                 role=selected_agents[0].agent_name,
                 content=agent_responses[0],
             )
@@ -362,7 +378,9 @@ class MultiAgentRouter:
             dict: A dictionary containing the routing result, including the selected agent, reasoning, and response.
         """
         try:
-            self.conversation.add(role="user", content=task)
+            conversation = Conversation()
+            self.conversation = conversation
+            conversation.add(role="user", content=task)
 
             # Get boss decision using function calling
             boss_response_str = self.function_caller.run(task)
@@ -376,12 +394,16 @@ class MultiAgentRouter:
                 )
 
             if len(boss_response_str["handoffs"]) > 1:
-                self.handle_multiple_handoffs(boss_response_str, task)
+                self.handle_multiple_handoffs(
+                    boss_response_str, task, conversation=conversation
+                )
             else:
-                self.handle_single_handoff(boss_response_str, task)
+                self.handle_single_handoff(
+                    boss_response_str, task, conversation=conversation
+                )
 
             return history_output_formatter(
-                conversation=self.conversation, type=self.output_type
+                conversation=conversation, type=self.output_type
             )
 
         except Exception as e:
@@ -453,9 +475,8 @@ class MultiAgentRouter:
         with the task that caused them and omitted from the result list.
 
         Note:
-            All tasks share this router's ``Conversation``, so their histories
-            interleave. Prefer :meth:`batch_run` when the per-task history
-            matters.
+            Each task executes with its own isolated ``Conversation`` instance,
+            preventing task histories from interleaving.
 
         Args:
             tasks (List[str]): Tasks to route concurrently.
