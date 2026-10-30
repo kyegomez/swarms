@@ -269,12 +269,13 @@ class AgentLoader:
                     f"Path {file_paths} not found."
                 )
         elif isinstance(file_paths, list):
-            paths_to_process = file_paths
+            paths_to_process = list(file_paths)
         else:
             raise ValueError(
                 "file_paths must be a string or list of strings"
             )
 
+        valid_paths = []
         for file_path in paths_to_process:
             try:
                 file_size_mb = os.path.getsize(file_path) / (
@@ -284,11 +285,14 @@ class AgentLoader:
                     logger.warning(
                         f"Skipping {file_path}: size {file_size_mb:.2f}MB exceeds limit {max_file_size_mb}MB"
                     )
-                    paths_to_process.remove(file_path)
+                    continue
             except OSError:
                 logger.warning(
                     f"Could not check size of {file_path}, skipping validation"
                 )
+            valid_paths.append(file_path)
+
+        paths_to_process = valid_paths
 
         if concurrent and len(paths_to_process) > 1:
             logger.info(
