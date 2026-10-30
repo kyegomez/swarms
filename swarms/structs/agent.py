@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import threading
+import weakref
 import time
 from contextlib import nullcontext
 from functools import lru_cache
@@ -109,6 +110,13 @@ def stop_when_repeats(response: str) -> bool:
 
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
+
+
+def _shutdown_executor(executor: ContextThreadPoolExecutor) -> None:
+    try:
+        executor.shutdown(wait=False)
+    except Exception:
+        pass
 
 
 class Agent:
@@ -285,6 +293,9 @@ class Agent:
     >>> # The agent automatically loads the system prompt from the Swarms marketplace
 
     """
+
+    _executor: Optional[ContextThreadPoolExecutor] = None
+    _finalizer: Optional[weakref.finalize] = None
 
     def __init__(
         self,
@@ -659,8 +670,46 @@ class Agent:
         if self.publish_to_marketplace is True:
             self.handle_publish_to_marketplace()
 
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
+
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or os.cpu_count() or 4
+        if self._executor is not None:
+            if (
+                hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self.close()
+            else:
+                return self._executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def close(self) -> None:
+        """Shut down the agent's background thread pool executor."""
+        if self._finalizer is not None and self._finalizer.alive:
+            self._finalizer()
+        elif self._executor is not None:
+            _shutdown_executor(self._executor)
+        self._executor = None
+        self._finalizer = None
+
+    def __enter__(self) -> "Agent":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
     def handle_publish_to_marketplace(self):
         """
@@ -1608,17 +1657,14 @@ Subtask Breakdown:
         """
         try:
             logger.info(f"Running concurrent tasks: {tasks}")
-            # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
-            with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
-            ) as executor:
-                futures = [
-                    executor.submit(
-                        self.run, *args, task=task, **kwargs
-                    )
-                    for task in tasks
-                ]
-                results = [future.result() for future in futures]
+            executor = self._get_executor()
+            futures = [
+                executor.submit(
+                    self.run, *args, task=task, **kwargs
+                )
+                for task in tasks
+            ]
+            results = [future.result() for future in futures]
             logger.info(f"Completed tasks: {results}")
             return results
         except Exception as error:
@@ -2865,29 +2911,26 @@ Subtask Breakdown:
             List[Any]: One entry per agent, in the order the agents were given.
                 An agent whose conversation raised contributes None.
         """
-        # Scoped to the call, see run_concurrent_tasks for why
-        with ContextThreadPoolExecutor(
-            max_workers=os.cpu_count()
-        ) as executor:
-            # Create futures for each agent conversation
-            futures = [
-                executor.submit(
-                    self.talk_to, agent, task, *args, **kwargs
-                )
-                for agent in agents
-            ]
+        executor = self._get_executor()
+        # Create futures for each agent conversation
+        futures = [
+            executor.submit(
+                self.talk_to, agent, task, *args, **kwargs
+            )
+            for agent in agents
+        ]
 
-            # Wait for all futures to complete and collect results
-            outputs = []
-            for future in futures:
-                try:
-                    result = future.result()
-                    outputs.append(result)
-                except Exception as e:
-                    logger.error(f"Error in agent communication: {e}")
-                    outputs.append(
-                        None
-                    )  # or handle error case as needed
+        # Wait for all futures to complete and collect results
+        outputs = []
+        for future in futures:
+            try:
+                result = future.result()
+                outputs.append(result)
+            except Exception as e:
+                logger.error(f"Error in agent communication: {e}")
+                outputs.append(
+                    None
+                )  # or handle error case as needed
 
         return outputs
 

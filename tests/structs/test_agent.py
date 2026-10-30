@@ -1855,22 +1855,77 @@ class TestConcurrentExecutionPool:
 
         assert outputs == [None, "to:C"]
 
-    def test_pool_is_shut_down_after_each_call(self):
-        """Call-scoped, so a reused agent must not leak a pool per call."""
+    def test_pool_is_reused_across_calls_and_shut_down_on_close(self):
+        """#2958: pool is reused across calls, shut down on close()."""
         agent = self._agent()
         before = threading.active_count()
         with patch.object(
             Agent, "run", side_effect=lambda task, *a, **kw: task
         ):
-            for _ in range(3):
-                Agent.run_concurrent_tasks(agent, ["t1", "t2"])
+            Agent.run_concurrent_tasks(agent, ["t1", "t2"])
+            exec1 = agent._executor
+            assert exec1 is not None
 
-        # Worker threads are joined on __exit__; allow a moment for teardown.
+            Agent.run_concurrent_tasks(agent, ["t3", "t4"])
+            assert agent._executor is exec1
+
+            agent.close()
+            assert agent._executor is None
+
+        # Worker threads are joined on close(); allow a moment for teardown.
         for _ in range(50):
             if threading.active_count() <= before:
                 break
             time.sleep(0.02)
         assert threading.active_count() <= before
+
+    def test_talk_to_multiple_agents_reuses_executor(self):
+        """#2958: talk_to_multiple_agents reuses the agent executor across calls."""
+        agent = self._agent()
+        others = [self._agent("B"), self._agent("C")]
+        with patch.object(
+            Agent,
+            "talk_to",
+            side_effect=lambda other, task, *a, **kw: f"to:{other.agent_name}",
+        ):
+            r1 = agent.talk_to_multiple_agents(others, "hello")
+            assert r1 == ["to:B", "to:C"]
+            exec1 = agent._executor
+            assert exec1 is not None
+
+            r2 = agent.talk_to_multiple_agents(others, "world")
+            assert r2 == ["to:B", "to:C"]
+            assert agent._executor is exec1
+        agent.close()
+
+    def test_close_shuts_down_and_later_call_recreates(self):
+        """#2958: close() cleans up executor; subsequent calls recreate it."""
+        agent = self._agent()
+        with patch.object(
+            Agent, "run", side_effect=lambda task, *a, **kw: f"ran:{task}"
+        ):
+            agent.run_concurrent_tasks(["t1"])
+            exec1 = agent._executor
+            assert exec1 is not None
+
+            agent.close()
+            assert agent._executor is None
+
+            agent.run_concurrent_tasks(["t2"])
+            assert agent._executor is not None
+            assert agent._executor is not exec1
+        agent.close()
+
+    def test_context_manager_closes_executor(self):
+        """#2958: context manager cleans up executor on exit."""
+        agent = self._agent()
+        with patch.object(
+            Agent, "run", side_effect=lambda task, *a, **kw: f"ran:{task}"
+        ):
+            with agent as a:
+                a.run_concurrent_tasks(["t1"])
+                assert a._executor is not None
+            assert agent._executor is None
 
 
 class TestRunBatchedImagePairing:
