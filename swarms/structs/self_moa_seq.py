@@ -1,5 +1,7 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+import functools
+import time
+from typing import Any, Callable, Dict, List, Optional
 from swarms.structs.serialization import SerializableMixin
 from swarms.structs.agent import Agent
 from swarms.telemetry.otel import capture_init, trace_run
@@ -20,6 +22,11 @@ class SelfMoASeq(SerializableMixin):
     - Phase 3: Iterate until all samples are processed
     """
 
+    max_retries: int = 3
+    retry_delay: float = 1.0
+    retry_backoff_multiplier: float = 2.0
+    retry_max_delay: float = 60.0
+
     def __init__(
         self,
         name: str = "SelfMoASeq",
@@ -27,7 +34,7 @@ class SelfMoASeq(SerializableMixin):
         model_name: str = "gpt-5.4",
         temperature: float = 0.7,
         window_size: int = 6,
-        reserved_slots: int = 3,
+        reserved_slots: Optional[int] = None,
         max_loops: int = 10,
         max_tokens: int = 2000,
         num_samples: int = 30,
@@ -47,7 +54,9 @@ class SelfMoASeq(SerializableMixin):
         self.model_name = model_name
         self.temperature = temperature
         self.window_size = window_size
-        self.reserved_slots = reserved_slots
+        self.reserved_slots = (
+            min(3, window_size - 1) if reserved_slots is None else reserved_slots
+        )
         self.max_loops = max_loops
         self.max_tokens = max_tokens
         self.num_samples = num_samples
@@ -172,7 +181,7 @@ class SelfMoASeq(SerializableMixin):
                 self.proposer.short_memory = (
                     self.proposer.short_memory_init()
                 )
-                sample = self.proposer.run(task)
+                sample = self.retry_decorator(self.proposer.run)(task)
                 samples.append(sample)
                 self.metrics["total_samples_generated"] += 1
 
@@ -187,6 +196,60 @@ class SelfMoASeq(SerializableMixin):
                 "error", f"Error during sample generation: {str(e)}"
             )
             raise
+
+    def _get_retry_decorator(self) -> Callable:
+        """Create a retry decorator configured with current retry settings."""
+
+        def decorator(func: Callable) -> Callable:
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                max_retries = getattr(self, "max_retries", 3)
+                retry_delay = getattr(self, "retry_delay", 1.0)
+                retry_backoff = getattr(self, "retry_backoff_multiplier", 2.0)
+                retry_max = getattr(self, "retry_max_delay", 60.0)
+
+                delay = retry_delay
+                last_exc = None
+                for attempt in range(max_retries + 1):
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as e:
+                        last_exc = e
+                        if attempt < max_retries:
+                            log_fn = getattr(self, "_log", None)
+                            if log_fn:
+                                try:
+                                    log_fn(
+                                        "warning",
+                                        f"{getattr(func, '__name__', 'operation')} failed "
+                                        f"(attempt {attempt + 1}/{max_retries + 1}): {e}. "
+                                        f"Retrying in {delay:.2f}s...",
+                                    )
+                                except Exception:
+                                    pass
+                            time.sleep(delay)
+                            delay = min(delay * retry_backoff, retry_max)
+                raise last_exc
+
+            return wrapper
+
+        return decorator
+
+    @property
+    def retry_decorator(self) -> Callable:
+        """Property returning the retry decorator."""
+        return self._get_retry_decorator()
+
+    def _log_summary(self, result: Dict[str, Any]) -> None:
+        """Log a summary of execution metrics."""
+        metrics = result.get("metrics", {})
+        elapsed = metrics.get("execution_time_seconds", 0.0)
+        steps = result.get("aggregation_steps", 0)
+        samples = metrics.get("total_samples_generated", 0)
+        self._log(
+            "info",
+            f"Execution Summary: {steps} steps, {samples} samples, {elapsed:.2f}s",
+        )
 
     def _format_aggregation_prompt(
         self,
@@ -253,7 +316,7 @@ class SelfMoASeq(SerializableMixin):
             self.aggregator.short_memory = (
                 self.aggregator.short_memory_init()
             )
-            aggregated = self.aggregator.run(prompt)
+            aggregated = self.retry_decorator(self.aggregator.run)(prompt)
             self.metrics["total_aggregations"] += 1
 
             self._log("debug", "Window aggregation complete")
@@ -368,6 +431,7 @@ class SelfMoASeq(SerializableMixin):
                     f"Self MoA Seq result: {result}",
                 )
 
+            self._log_summary(result)
             return result
 
         except Exception as e:
