@@ -93,18 +93,8 @@ def grid_swarm(
         content=tasks,
     )
 
-    grid_size = int(len(agents) ** 0.5)
-    # Row-major grid order, then any agents left outside the square.
-    grid_order = [
-        agents[i * grid_size + j]
-        for i in range(grid_size)
-        for j in range(grid_size)
-    ]
-    visit_order = grid_order + agents[len(grid_order) :]
-
-    # Every task runs: the grid orders the visits, it does not cap them.
     for index, task in enumerate(tasks):
-        agent = visit_order[index % len(visit_order)]
+        agent = agents[index % len(agents)]
         response = agent.run(task)
         conversation.add(
             role=agent.agent_name,

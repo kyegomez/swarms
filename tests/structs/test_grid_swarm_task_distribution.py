@@ -36,18 +36,19 @@ def test_grid_swarm_runs_every_task_once_and_keeps_the_caller_list():
     assert len(turns) == len(tasks)
 
 
-def test_grid_swarm_visits_a_square_roster_in_grid_order():
-    """The 2x2 case keeps its row-major pairing: A0, A1, A2, A3."""
+def test_grid_swarm_cycles_the_roster_in_order():
+    """Iteration ``i`` goes to ``agents[i % len(agents)]``, wrapping as needed."""
     calls = []
-    agents = [RecordingAgent(f"A{i}", calls) for i in range(4)]
+    agents = [RecordingAgent(f"A{i}", calls) for i in range(3)]
 
-    grid_swarm(agents=agents, tasks=["t0", "t1", "t2", "t3"])
+    grid_swarm(agents=agents, tasks=[f"t{i}" for i in range(5)])
 
     assert calls == [
         ("A0", "t0"),
         ("A1", "t1"),
         ("A2", "t2"),
-        ("A3", "t3"),
+        ("A0", "t3"),
+        ("A1", "t4"),
     ]
 
 
