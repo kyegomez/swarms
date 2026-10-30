@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import os
+import weakref
 from concurrent.futures import as_completed
 from typing import Any, Dict, List, Optional, get_args
 
@@ -33,6 +34,14 @@ from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 
 logger = initialize_logger(log_folder="rearrange")
+
+
+def _shutdown_executor(executor: Optional[ContextThreadPoolExecutor]) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
 
 
 def _split_steps(segments: List[str]) -> List[List[str]]:
@@ -295,6 +304,8 @@ class AgentRearrange(SerializableMixin):
             verbose=self.verbose,
             enabled=self.autosave,
         )
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer = None
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -718,25 +729,23 @@ class AgentRearrange(SerializableMixin):
 
         # Built per agent, not shared: each sees its own turns as `assistant`.
         results = [None] * len(agents_to_run)
-        with ContextThreadPoolExecutor(
-            max_workers=len(agents_to_run)
-        ) as executor:
-            future_to_index = {}
-            for index, (agent, name) in enumerate(
-                zip(agents_to_run, agent_names)
-            ):
-                prior, step_task = self._messages_for(name)
-                future = executor.submit(
-                    agent.run,
-                    task=step_task,
-                    messages=prior,
-                    img=img,
-                    **kwargs,
-                )
-                future_to_index[future] = index
+        executor = self._get_executor(max_workers=len(agents_to_run))
+        future_to_index = {}
+        for index, (agent, name) in enumerate(
+            zip(agents_to_run, agent_names)
+        ):
+            prior, step_task = self._messages_for(name)
+            future = executor.submit(
+                agent.run,
+                task=step_task,
+                messages=prior,
+                img=img,
+                **kwargs,
+            )
+            future_to_index[future] = index
 
-            for future in as_completed(future_to_index):
-                results[future_to_index[future]] = future.result()
+        for future in as_completed(future_to_index):
+            results[future_to_index[future]] = future.result()
 
         response_dict = {}
         for i, agent_name in enumerate(agent_names):
@@ -1026,6 +1035,8 @@ class AgentRearrange(SerializableMixin):
         """
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
+        clone._executor = None
+        clone._finalizer = None
         clone.workspace = WorkspaceManager(clone, enabled=False)
 
         clone.conversation = Conversation(
@@ -1098,23 +1109,21 @@ class AgentRearrange(SerializableMixin):
 
             # Each task gets an isolated clone; _clone_for_task survives agents a full deepcopy(self) would choke on.
             max_workers = min(len(batch_tasks), os.cpu_count() or 4)
+            executor = self._get_executor(max_workers=max_workers)
             futures_ordered = []
-            with ContextThreadPoolExecutor(
-                max_workers=max_workers
-            ) as executor:
-                for task_item, img_path in zip(
-                    batch_tasks, batch_imgs
-                ):
-                    clone = self._clone_for_task()
-                    future = executor.submit(
-                        clone.run,
-                        task_item,
-                        img_path,
-                        *args,
-                        **kwargs,
-                    )
-                    futures_ordered.append(future)
-                batch_results = [f.result() for f in futures_ordered]
+            for task_item, img_path in zip(
+                batch_tasks, batch_imgs
+            ):
+                clone = self._clone_for_task()
+                future = executor.submit(
+                    clone.run,
+                    task_item,
+                    img_path,
+                    *args,
+                    **kwargs,
+                )
+                futures_ordered.append(future)
+            batch_results = [f.result() for f in futures_ordered]
             results.extend(batch_results)
 
         return results
@@ -1451,6 +1460,47 @@ class AgentRearrange(SerializableMixin):
         t.join()
         if exc_holder[0] is not None:
             raise exc_holder[0]
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or len(self.agents) or 4
+        if self._executor is not None:
+            if (
+                hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self.close()
+            else:
+                return self._executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def close(self) -> None:
+        """Shut down the reusable thread pool executor."""
+        if self._finalizer is not None:
+            try:
+                self._finalizer.detach()
+            except Exception:
+                pass
+            self._finalizer = None
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=False)
+            except Exception:
+                pass
+            self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
 
 def rearrange(
