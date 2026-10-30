@@ -1712,3 +1712,26 @@ def test_nested_swarm_without_a_name_is_rejected():
     """A swarm needs a name for the flow to reference it."""
     with pytest.raises(ValueError, match="needs a name"):
         AgentRearrange(agents=[_RecordingSwarm("")], flow="x")
+
+
+def test_agent_rearrange_reuses_its_pool_until_closed():
+    threads = []
+
+    def run(task, *args, **kwargs):
+        threads.append(threading.current_thread())
+        return "ok"
+
+    agents = [_make_agent("A"), _make_agent("B")]
+    for agent in agents:
+        agent.run = run
+
+    swarm = AgentRearrange(agents=agents, flow="A, B", max_loops=1)
+
+    swarm.run("first filing")
+    first = set(threads)
+    threads.clear()
+    swarm.run("second filing")
+    assert first & set(threads)
+
+    swarm.close()
+    assert not any(t.is_alive() for t in first)

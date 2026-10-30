@@ -1,7 +1,7 @@
 import asyncio
 import copy
 import os
-from concurrent.futures import as_completed
+from concurrent.futures import as_completed, wait
 from typing import Any, Dict, List, Optional, get_args
 
 from swarms.structs.agent import Agent
@@ -16,6 +16,7 @@ from swarms.structs.comms_channel import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import run_concurrently
+from swarms.structs.executor_utils import ReusableExecutorMixin
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.serialization import SerializableMixin
 from swarms.telemetry.otel import (
@@ -146,7 +147,7 @@ def _as_member(member: Any) -> Any:
 _VALID_OUTPUT_TYPES = set(get_args(OutputType))
 
 
-class AgentRearrange(SerializableMixin):
+class AgentRearrange(ReusableExecutorMixin, SerializableMixin):
     """
     A sophisticated multi-agent system for task rearrangement and orchestration.
 
@@ -718,25 +719,26 @@ class AgentRearrange(SerializableMixin):
 
         # Built per agent, not shared: each sees its own turns as `assistant`.
         results = [None] * len(agents_to_run)
-        with ContextThreadPoolExecutor(
-            max_workers=len(agents_to_run)
-        ) as executor:
-            future_to_index = {}
-            for index, (agent, name) in enumerate(
-                zip(agents_to_run, agent_names)
-            ):
-                prior, step_task = self._messages_for(name)
-                future = executor.submit(
-                    agent.run,
-                    task=step_task,
-                    messages=prior,
-                    img=img,
-                    **kwargs,
-                )
-                future_to_index[future] = index
+        executor = self._get_executor(len(agents_to_run))
+        future_to_index = {}
+        for index, (agent, name) in enumerate(
+            zip(agents_to_run, agent_names)
+        ):
+            prior, step_task = self._messages_for(name)
+            future = executor.submit(
+                agent.run,
+                task=step_task,
+                messages=prior,
+                img=img,
+                **kwargs,
+            )
+            future_to_index[future] = index
 
+        try:
             for future in as_completed(future_to_index):
                 results[future_to_index[future]] = future.result()
+        finally:
+            wait(future_to_index)
 
         response_dict = {}
         for i, agent_name in enumerate(agent_names):
@@ -1026,6 +1028,7 @@ class AgentRearrange(SerializableMixin):
         """
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
+        clone._executor = None
         clone.workspace = WorkspaceManager(clone, enabled=False)
 
         clone.conversation = Conversation(
