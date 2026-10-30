@@ -98,6 +98,7 @@ def run_agents_concurrently(
     img: Optional[str] = None,
     max_workers: Optional[int] = None,
     return_agent_output_dict: bool = False,
+    executor: Optional[concurrent.futures.ThreadPoolExecutor] = None,
 ) -> Any:
     """
     Execute multiple agents concurrently using a ThreadPoolExecutor.
@@ -143,16 +144,14 @@ def run_agents_concurrently(
 
         futures = []
 
-        with ContextThreadPoolExecutor(
-            max_workers=max_workers
-        ) as executor:
+        def _execute_in_pool(pool):
             for agent in agents:
                 agent_kwargs = {}
                 if task is not None:
                     agent_kwargs["task"] = task
                 if img is not None:
                     agent_kwargs["img"] = img
-                future = executor.submit(agent.run, **agent_kwargs)
+                future = pool.submit(agent.run, **agent_kwargs)
                 futures.append(future)
 
             if return_agent_output_dict:
@@ -180,6 +179,14 @@ def run_agents_concurrently(
                     except Exception as e:
                         results.append(e)
                 return results
+
+        if executor is not None:
+            return _execute_in_pool(executor)
+        else:
+            with ContextThreadPoolExecutor(
+                max_workers=max_workers
+            ) as pool:
+                return _execute_in_pool(pool)
 
     except Exception as e:
         logger.error(
@@ -239,6 +246,7 @@ def batched_grid_agent_execution(
     agents: List["AgentType"],
     tasks: List[str],
     max_workers: int = None,
+    executor: Optional[concurrent.futures.ThreadPoolExecutor] = None,
 ) -> List[Any]:
     """
     Run multiple agents with different tasks concurrently using ThreadPoolExecutor.
@@ -286,11 +294,10 @@ def batched_grid_agent_execution(
         )
 
     results = [None] * len(agents)
-    with ContextThreadPoolExecutor(
-        max_workers=max_workers
-    ) as executor:
+
+    def _execute_in_pool(pool):
         future_to_index = {
-            executor.submit(run_single_agent, agent, task): idx
+            pool.submit(run_single_agent, agent, task): idx
             for idx, (agent, task) in enumerate(zip(agents, tasks))
         }
         for future in concurrent.futures.as_completed(
@@ -301,6 +308,14 @@ def batched_grid_agent_execution(
                 results[idx] = future.result()
             except Exception as e:
                 results[idx] = e
+
+    if executor is not None:
+        _execute_in_pool(executor)
+    else:
+        with ContextThreadPoolExecutor(
+            max_workers=max_workers
+        ) as pool:
+            _execute_in_pool(pool)
 
     return results
 
