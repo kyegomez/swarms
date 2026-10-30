@@ -524,11 +524,10 @@ class Agent:
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
 
-        if self.context_length is None:
-            self.context_length = self._default_context_length()
-
-        if self.max_tokens is None or self.max_tokens <= 0:
-            self.max_tokens = self._default_max_tokens() or 16000
+        self._default_context_length_on = self.context_length is None
+        self._default_max_tokens_on = (
+            self.max_tokens is None or self.max_tokens <= 0
+        )
 
         if self.max_loops == "auto":
             # Without this the prompt tells the model to call a think tool it lacks
@@ -604,6 +603,7 @@ class Agent:
         # The list names the primary model, so model_name follows it.
         if self.fallback_models:
             self.model_name = self.fallback_models[0]
+        self._apply_model_limits()
 
         # Reads config off this agent, so it must come after the config is set
         self.llm_manager = LLMManager(agent=self)
@@ -1624,6 +1624,12 @@ Subtask Breakdown:
             logger.error(f"Error running concurrent tasks: {error}")
             raise
 
+    def _apply_model_limits(self) -> None:
+        if self._default_context_length_on:
+            self.context_length = self._default_context_length()
+        if self._default_max_tokens_on:
+            self.max_tokens = self._default_max_tokens()
+
     def _default_context_length(self) -> int:
         """
         Returns the maximum input token window for the agent's underlying model.
@@ -2514,6 +2520,7 @@ Subtask Breakdown:
                 # Also moves back to the primary after an earlier run fell back.
                 if model != self.model_name:
                     self.model_name = model
+                    self._apply_model_limits()
                     self.llm_handling()
                 try:
                     output = self._dispatch(

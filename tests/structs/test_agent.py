@@ -2342,6 +2342,30 @@ class TestLLMFailureRaises:
             self.TASK,
         ]
 
+    def test_each_model_is_sent_its_own_max_tokens(self):
+        agent = self._agent(
+            fallback_models=["gpt-4o-mini", "gpt-4.1"]
+        )
+        calls = []
+        sent = {}
+        fake_completion = self._completion(calls, {"gpt-4o-mini"})
+
+        def recording_completion(**params):
+            sent[params["model"]] = params["max_tokens"]
+            return fake_completion(**params)
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=recording_completion,
+        ):
+            agent.run(self.TASK)
+
+        alone = {m: self._agent(model_name=m) for m in calls}
+        assert calls == ["gpt-4o-mini", "gpt-4.1"]
+        assert sent == {m: a.max_tokens for m, a in alone.items()}
+        assert agent.context_length == alone["gpt-4.1"].context_length
+
     def test_raises_once_every_fallback_fails(self):
         agent = self._agent(
             fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
