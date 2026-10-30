@@ -24,7 +24,17 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.utils.output_types import OutputType
 
+import weakref
+
 PLACEHOLDER = re.compile(r"\{([A-Za-z_][\w\-]*)\}")
+
+
+def _shutdown_executor(executor: Optional[ContextThreadPoolExecutor]) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
 
 
 class PhasedFanOutWorkflowError(Exception):
@@ -210,6 +220,9 @@ class PhasedFanOutWorkflow:
         self.last_plan: Optional[WorkflowPlan] = None
         self.last_run: Optional[Dict[str, Any]] = None
 
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
+
         self.reliability_check()
         capture_init(self)
 
@@ -240,6 +253,51 @@ class PhasedFanOutWorkflow:
             raise ValueError(
                 "Give predefined agents or allow inline agents"
             )
+
+    def _get_executor(self) -> ContextThreadPoolExecutor:
+        """Return the shared ContextThreadPoolExecutor for this workflow.
+
+        Lazily created on the first call and reused across phases and runs.
+        If max_concurrent_agents has changed or the executor was shut down,
+        a new executor is created.
+        """
+        required_workers = self.max_concurrent_agents
+        if (
+            self._executor is None
+            or getattr(self._executor, "_shutdown", False)
+            or getattr(self._executor, "_max_workers", None) != required_workers
+        ):
+            if self._executor is not None and not getattr(
+                self._executor, "_shutdown", False
+            ):
+                try:
+                    self._executor.shutdown(wait=False)
+                except Exception:
+                    pass
+            self._executor = ContextThreadPoolExecutor(
+                max_workers=required_workers
+            )
+            self._finalizer = weakref.finalize(
+                self, _shutdown_executor, self._executor
+            )
+        return self._executor
+
+    def close(self) -> None:
+        """Shut down the internal thread pool executor."""
+        if self._finalizer is not None and self._finalizer.alive:
+            self._finalizer.detach()
+            self._finalizer = None
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=True)
+            finally:
+                self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def _fresh_lead(self) -> Agent:
         """Copy of the lead agent with no state from earlier runs.
@@ -619,46 +677,45 @@ class PhasedFanOutWorkflow:
             return
 
         snapshot = {"task": state["task"], **outputs}
-        workers = min(self.max_concurrent_agents, len(jobs))
-        with ContextThreadPoolExecutor(max_workers=workers) as pool:
-            futures = [
-                (
-                    pool.submit(
-                        self._run_agent,
-                        step,
-                        self._render(step.prompt, snapshot, item),
-                        plan,
-                    ),
+        pool = self._get_executor()
+        futures = [
+            (
+                pool.submit(
+                    self._run_agent,
                     step,
-                    slot,
-                    item,
+                    self._render(step.prompt, snapshot, item),
+                    plan,
+                ),
+                step,
+                slot,
+                item,
+            )
+            for step, slot, item in jobs
+        ]
+        single_failures = []
+        for future, step, slot, item in futures:
+            try:
+                output, used = future.result()
+            except Exception as error:
+                state["agents"].extend(
+                    getattr(error, "agents_used", [])
                 )
-                for step, slot, item in jobs
-            ]
-            single_failures = []
-            for future, step, slot, item in futures:
-                try:
-                    output, used = future.result()
-                except Exception as error:
-                    state["agents"].extend(
-                        getattr(error, "agents_used", [])
-                    )
-                    state["failures"].append(
-                        {
-                            "phase": phase.title,
-                            "step": step.id,
-                            "item": item,
-                            "error": f"{type(error).__name__}: {error}",
-                        }
-                    )
-                    if slot is None:
-                        single_failures.append((step.id, error))
-                    continue
-                state["agents"].extend(used)
+                state["failures"].append(
+                    {
+                        "phase": phase.title,
+                        "step": step.id,
+                        "item": item,
+                        "error": f"{type(error).__name__}: {error}",
+                    }
+                )
                 if slot is None:
-                    outputs[step.id] = output
-                else:
-                    outputs[step.id][slot] = output
+                    single_failures.append((step.id, error))
+                continue
+            state["agents"].extend(used)
+            if slot is None:
+                outputs[step.id] = output
+            else:
+                outputs[step.id][slot] = output
 
         if single_failures:
             step_id, error = single_failures[0]
