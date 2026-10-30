@@ -12,6 +12,171 @@ from swarms.structs import conversation as conversation_module
 from swarms.structs.conversation import Conversation
 from swarms.utils.litellm_tokenizer import count_tokens
 
+from unittest.mock import patch
+import pytest
+import yaml
+
+
+def test_add_multiple_messages_autosaves_once(tmp_path):
+    conv = Conversation(
+        autosave=True,
+        save_filepath=str(tmp_path / "batch.json"),
+    )
+
+    with patch.object(
+        conv, "_autosave", wraps=conv._autosave
+    ) as autosave:
+        conv.add_multiple_messages(
+            ["user", "assistant"],
+            ["hello", "hi"],
+        )
+
+    assert len(conv.conversation_history) == 2
+    autosave.assert_called_once_with()
+
+
+@pytest.mark.parametrize("method", ["json", "yaml"])
+def test_autosave_appends_without_full_export(tmp_path, method):
+    path = tmp_path / f"incremental.{method}"
+    conv = Conversation(
+        autosave=True,
+        save_filepath=str(path),
+        export_method=method,
+    )
+    conv.add("user", "first")
+
+    with patch.object(conv, "export", wraps=conv.export) as export:
+        conv.add("assistant", "second")
+        conv.add("user", "third")
+
+    export.assert_not_called()
+
+    with path.open(encoding="utf-8") as f:
+        if method == "json":
+            saved = json.load(f)
+        else:
+            saved = yaml.safe_load(f)
+
+    assert saved == conv.conversation_history
+
+
+@pytest.mark.parametrize("method", ["json", "yaml"])
+@pytest.mark.parametrize(
+    "operation", ["update", "delete", "clear", "compact", "truncate"]
+)
+def test_autosave_preserves_history_changes(
+    tmp_path, method, operation
+):
+    path = tmp_path / f"changed.{method}"
+    conv = Conversation(
+        autosave=True,
+        save_filepath=str(path),
+        export_method=method,
+    )
+
+    conv.add("user", "old")
+    conv.add("assistant", "reply")
+
+    if operation == "update":
+        conv.update(0, "user", "changed")
+    elif operation == "delete":
+        conv.delete(0)
+    elif operation == "clear":
+        conv.clear()
+    elif operation == "compact":
+        conv.compact("summary")
+    else:
+        conv.context_length = 0
+        conv.truncate_memory_with_tokenizer()
+
+    conv.add("user", "new")
+
+    with path.open(encoding="utf-8") as f:
+        if method == "json":
+            saved = json.load(f)
+        else:
+            saved = yaml.safe_load(f)
+
+    assert saved == conv.conversation_history
+
+
+@pytest.mark.parametrize("method", ["json", "yaml"])
+def test_autosave_after_explicit_export(tmp_path, method):
+    path = tmp_path / f"exported.{method}"
+    conv = Conversation(
+        autosave=True,
+        save_filepath=str(path),
+        export_method=method,
+    )
+
+    conv.add("user", "first")
+    conv.add_in_memory("user", "second")
+    conv.export()
+    conv.add("assistant", "third")
+
+    with path.open(encoding="utf-8") as f:
+        if method == "json":
+            saved = json.load(f)
+        else:
+            saved = yaml.safe_load(f)
+
+    assert saved == conv.conversation_history
+
+
+@pytest.mark.parametrize("method", ["json", "yaml"])
+def test_autosave_after_loading_history(tmp_path, method):
+    source_path = tmp_path / f"source.{method}"
+    source = Conversation(
+        save_filepath=str(source_path),
+        export_method=method,
+        autosave=True,
+    )
+    source.add("user", "loaded first")
+    source.add("assistant", "loaded second")
+
+    target_path = tmp_path / f"target.{method}"
+    target = Conversation(
+        save_filepath=str(target_path),
+        export_method=method,
+        autosave=True,
+    )
+    target.add("user", "old history")
+
+    target.load(str(source_path))
+    assert target.conversation_history == source.conversation_history
+
+    target.add("user", "new")
+
+    with target_path.open(encoding="utf-8") as f:
+        if method == "json":
+            saved = json.load(f)
+        else:
+            saved = yaml.safe_load(f)
+
+    assert saved == target.conversation_history
+
+
+@pytest.mark.parametrize("method", ["json", "yaml"])
+def test_autosave_recreates_missing_file(tmp_path, method):
+    path = tmp_path / f"missing.{method}"
+    conv = Conversation(
+        autosave=True,
+        save_filepath=str(path),
+        export_method=method,
+    )
+
+    conv.add("user", "first")
+    path.unlink()
+    conv.add("assistant", "second")
+
+    with path.open(encoding="utf-8") as f:
+        if method == "json":
+            saved = json.load(f)
+        else:
+            saved = yaml.safe_load(f)
+
+    assert saved == conv.conversation_history
+
 
 def setup_temp_conversations_dir():
     """Create a temporary directory for conversation cache files."""
