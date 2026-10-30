@@ -635,17 +635,21 @@ class LLMManager:
         self, task: str, img: Optional[str], *args, **kwargs
     ):
         """Invoke ``llm.run`` with streaming forced on, returning (response, original_stream)."""
-        original_stream = self.agent.llm.stream
+        original_stream = getattr(self.agent.llm, "stream", False)
         self.agent.llm.stream = True
 
-        if img is not None:
-            response = self.agent.llm.run(
-                task=task, img=img, *args, **kwargs
-            )
-        else:
-            response = self.agent.llm.run(task=task, *args, **kwargs)
+        try:
+            if img is not None:
+                response = self.agent.llm.run(
+                    task=task, img=img, *args, **kwargs
+                )
+            else:
+                response = self.agent.llm.run(task=task, *args, **kwargs)
 
-        return response, original_stream
+            return response, original_stream
+        except Exception:
+            self.agent.llm.stream = original_stream
+            raise
 
     def _call_detailed_streaming(
         self,
@@ -656,21 +660,23 @@ class LLMManager:
         **kwargs,
     ) -> Any:
         """Stream tokens with full per-token metadata printed and forwarded."""
-        streaming_response, original_stream = self._run_stream(
-            task, img, *args, **kwargs
-        )
+        original_stream = getattr(self.agent.llm, "stream", False)
+        try:
+            streaming_response, original_stream = self._run_stream(
+                task, img, *args, **kwargs
+            )
 
-        if not hasattr(streaming_response, "__iter__") or isinstance(
-            streaming_response, str
-        ):
+            if not hasattr(streaming_response, "__iter__") or isinstance(
+                streaming_response, str
+            ):
+                return streaming_response
+
+            result = self._consume_detailed(
+                streaming_response, streaming_callback
+            )
+            return result
+        finally:
             self.agent.llm.stream = original_stream
-            return streaming_response
-
-        result = self._consume_detailed(
-            streaming_response, streaming_callback
-        )
-        self.agent.llm.stream = original_stream
-        return result
 
     def _consume_detailed(
         self,
@@ -805,22 +811,23 @@ class LLMManager:
         **kwargs,
     ) -> Any:
         """Stream with a callback, silently, or through a Rich streaming panel."""
-        streaming_response, original_stream = self._run_stream(
-            task, img, *args, **kwargs
-        )
+        original_stream = getattr(self.agent.llm, "stream", False)
+        try:
+            streaming_response, original_stream = self._run_stream(
+                task, img, *args, **kwargs
+            )
 
-        if not hasattr(streaming_response, "__iter__") or isinstance(
-            streaming_response, str
-        ):
-            # Restore original stream setting
+            if not hasattr(streaming_response, "__iter__") or isinstance(
+                streaming_response, str
+            ):
+                return streaming_response
+
+            result = self._consume_panel(
+                streaming_response, current_loop, streaming_callback
+            )
+            return result
+        finally:
             self.agent.llm.stream = original_stream
-            return streaming_response
-
-        result = self._consume_panel(
-            streaming_response, current_loop, streaming_callback
-        )
-        self.agent.llm.stream = original_stream
-        return result
 
     def _consume_panel(
         self,
