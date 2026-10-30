@@ -2,6 +2,7 @@ import copy
 import inspect
 import json
 import re
+import weakref
 from typing import Any, Dict, List, Optional, Tuple
 
 from loguru import logger
@@ -25,6 +26,15 @@ from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.utils.output_types import OutputType
 
 PLACEHOLDER = re.compile(r"\{([A-Za-z_][\w\-]*)\}")
+
+
+def _shutdown_executor(executor: Any) -> None:
+    """Best-effort shutdown helper for weakref finalizer."""
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
 
 
 class PhasedFanOutWorkflowError(Exception):
@@ -209,9 +219,45 @@ class PhasedFanOutWorkflow:
         self.output_type = output_type
         self.last_plan: Optional[WorkflowPlan] = None
         self.last_run: Optional[Dict[str, Any]] = None
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
 
         self.reliability_check()
         capture_init(self)
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or self.max_concurrent_agents
+        if self._executor is None:
+            self._executor = ContextThreadPoolExecutor(max_workers=workers)
+            self._finalizer = weakref.finalize(
+                self, _shutdown_executor, self._executor
+            )
+        elif max_workers is not None and max_workers > self._executor._max_workers:
+            if self._finalizer is not None:
+                self._finalizer.detach()
+            _shutdown_executor(self._executor)
+            self._executor = ContextThreadPoolExecutor(max_workers=workers)
+            self._finalizer = weakref.finalize(
+                self, _shutdown_executor, self._executor
+            )
+        return self._executor
+
+    def close(self) -> None:
+        """Shut down the cached thread pool executor."""
+        if self._finalizer is not None:
+            self._finalizer.detach()
+            self._finalizer = None
+        if self._executor is not None:
+            _shutdown_executor(self._executor)
+            self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def reliability_check(self) -> None:
         """Validate the configuration.
@@ -620,45 +666,45 @@ class PhasedFanOutWorkflow:
 
         snapshot = {"task": state["task"], **outputs}
         workers = min(self.max_concurrent_agents, len(jobs))
-        with ContextThreadPoolExecutor(max_workers=workers) as pool:
-            futures = [
-                (
-                    pool.submit(
-                        self._run_agent,
-                        step,
-                        self._render(step.prompt, snapshot, item),
-                        plan,
-                    ),
+        pool = self._get_executor(workers)
+        futures = [
+            (
+                pool.submit(
+                    self._run_agent,
                     step,
-                    slot,
-                    item,
+                    self._render(step.prompt, snapshot, item),
+                    plan,
+                ),
+                step,
+                slot,
+                item,
+            )
+            for step, slot, item in jobs
+        ]
+        single_failures = []
+        for future, step, slot, item in futures:
+            try:
+                output, used = future.result()
+            except Exception as error:
+                state["agents"].extend(
+                    getattr(error, "agents_used", [])
                 )
-                for step, slot, item in jobs
-            ]
-            single_failures = []
-            for future, step, slot, item in futures:
-                try:
-                    output, used = future.result()
-                except Exception as error:
-                    state["agents"].extend(
-                        getattr(error, "agents_used", [])
-                    )
-                    state["failures"].append(
-                        {
-                            "phase": phase.title,
-                            "step": step.id,
-                            "item": item,
-                            "error": f"{type(error).__name__}: {error}",
-                        }
-                    )
-                    if slot is None:
-                        single_failures.append((step.id, error))
-                    continue
-                state["agents"].extend(used)
+                state["failures"].append(
+                    {
+                        "phase": phase.title,
+                        "step": step.id,
+                        "item": item,
+                        "error": f"{type(error).__name__}: {error}",
+                    }
+                )
                 if slot is None:
-                    outputs[step.id] = output
-                else:
-                    outputs[step.id][slot] = output
+                    single_failures.append((step.id, error))
+                continue
+            state["agents"].extend(used)
+            if slot is None:
+                outputs[step.id] = output
+            else:
+                outputs[step.id][slot] = output
 
         if single_failures:
             step_id, error = single_failures[0]
