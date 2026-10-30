@@ -1,5 +1,6 @@
 import json
 import traceback
+import weakref
 from typing import Callable, List, Optional
 
 from loguru import logger
@@ -19,6 +20,16 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+
+
+def _shutdown_executor(
+    executor: Optional[ContextThreadPoolExecutor],
+) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
 
 
 class HandOffsResponse(BaseModel):
@@ -181,6 +192,10 @@ class MultiAgentRouter:
             **kwargs,
         )
 
+        self.max_workers = kwargs.get("max_workers", None)
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer = None
+
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
 
@@ -334,15 +349,15 @@ class MultiAgentRouter:
         # Execute agents only if there are valid tasks
         if selected_agents:
             # The tasks are independent, in series they cost the sum of their latencies
-            with ContextThreadPoolExecutor(
+            executor = self._get_executor(
                 max_workers=len(selected_agents)
-            ) as executor:
-                agent_responses = list(
-                    executor.map(
-                        lambda pair: pair[0].run(pair[1]),
-                        zip(selected_agents, final_tasks),
-                    )
+            )
+            agent_responses = list(
+                executor.map(
+                    lambda pair: pair[0].run(pair[1]),
+                    zip(selected_agents, final_tasks),
                 )
+            )
 
             self.conversation.add(
                 role=selected_agents[0].agent_name,
@@ -465,15 +480,63 @@ class MultiAgentRouter:
             order.
         """
         results = []
-        with ContextThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(self.route_task, task)
-                for task in tasks
-            ]
-            # Read in submission order so element i belongs to tasks[i]
-            for task, future in zip(tasks, futures):
-                try:
-                    results.append(future.result())
-                except Exception as e:
-                    logger.error(f"Error routing task {task!r}: {e}")
+        executor = self._get_executor(
+            max_workers=len(tasks) if tasks else None
+        )
+        futures = [
+            executor.submit(self.route_task, task)
+            for task in tasks
+        ]
+        # Read in submission order so element i belongs to tasks[i]
+        for task, future in zip(tasks, futures):
+            try:
+                results.append(future.result())
+            except Exception as e:
+                logger.error(f"Error routing task {task!r}: {e}")
         return results
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or self.max_workers
+        if self._executor is not None:
+            if (
+                workers is not None
+                and hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self.close()
+            else:
+                return self._executor
+
+        executor = (
+            ContextThreadPoolExecutor(max_workers=workers)
+            if workers is not None
+            else ContextThreadPoolExecutor()
+        )
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def close(self) -> None:
+        """Shut down the reusable thread pool executor."""
+        if self._finalizer is not None:
+            try:
+                self._finalizer.detach()
+            except Exception:
+                pass
+            self._finalizer = None
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=False)
+            except Exception:
+                pass
+            self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
