@@ -38,20 +38,24 @@ def run_single_agent(
     return agent.run(task=task, *args, **kwargs)
 
 
-async def run_agent_async(agent: AgentType, task: str) -> Any:
+async def run_agent_async(
+    agent: AgentType, task: str, *args, **kwargs
+) -> Any:
     """
     Run an agent asynchronously using asyncio event loop.
 
-    This function executes a single agent asynchronously by running it in a
-    thread executor to avoid blocking the event loop. It's designed to be
-    used within async contexts for concurrent execution.
+    Uses the agent's native arun method when available to run on the event
+    loop without consuming an OS worker thread. Falls back to asyncio.to_thread
+    if arun is not implemented.
 
     Args:
         agent (AgentType): The agent instance to execute asynchronously
         task (str): The task string to be executed by the agent
+        *args: Extra positional arguments forwarded to the agent
+        **kwargs: Extra keyword arguments forwarded to the agent
 
     Returns:
-        Any: The result returned by the agent's run method
+        Any: The result returned by the agent's execution
 
     Example:
         >>> async def main():
@@ -59,22 +63,33 @@ async def run_agent_async(agent: AgentType, task: str) -> Any:
         ...     result = await run_agent_async(agent, "Process data")
         ...     return result
     """
-    return await asyncio.to_thread(run_single_agent, agent, task)
+    if hasattr(agent, "arun") and callable(agent.arun):
+        return await agent.arun(task, *args, **kwargs)
+    return await asyncio.to_thread(run_single_agent, agent, task, *args, **kwargs)
 
 
 async def run_agents_concurrently_async(
-    agents: List[AgentType], task: str
+    agents: List[AgentType],
+    task: str,
+    *args,
+    max_concurrency: Optional[int] = None,
+    return_exceptions: bool = False,
+    **kwargs,
 ) -> List[Any]:
     """
     Run multiple agents concurrently using asyncio gather.
 
-    This function executes multiple agents concurrently using asyncio.gather(),
-    which runs all agents in parallel and waits for all to complete. Each agent
-    runs the same task asynchronously.
+    This function executes multiple agents concurrently using asyncio.gather().
+    If max_concurrency is provided, execution is bounded by an asyncio.Semaphore
+    to avoid overwhelming provider rate limits or system resources.
 
     Args:
         agents (List[AgentType]): List of agent instances to run concurrently
         task (str): The task string to be executed by all agents
+        *args: Extra positional arguments forwarded to each agent
+        max_concurrency (Optional[int]): Maximum concurrent tasks running at once
+        return_exceptions (bool): Whether to return exceptions in results list
+        **kwargs: Extra keyword arguments forwarded to each agent
 
     Returns:
         List[Any]: List of results from each agent in the same order as input
@@ -86,10 +101,22 @@ async def run_agents_concurrently_async(
         ...     for i, result in enumerate(results):
         ...         print(f"Agent {i+1} result: {result}")
     """
-    results = await asyncio.gather(
-        *(run_agent_async(agent, task) for agent in agents)
+    if max_concurrency is not None and max_concurrency > 0:
+        semaphore = asyncio.Semaphore(max_concurrency)
+
+        async def _run_bounded(ag):
+            async with semaphore:
+                return await run_agent_async(ag, task, *args, **kwargs)
+
+        return await asyncio.gather(
+            *(_run_bounded(agent) for agent in agents),
+            return_exceptions=return_exceptions,
+        )
+
+    return await asyncio.gather(
+        *(run_agent_async(agent, task, *args, **kwargs) for agent in agents),
+        return_exceptions=return_exceptions,
     )
-    return results
 
 
 def run_agents_concurrently(
