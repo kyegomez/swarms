@@ -55,9 +55,14 @@ class FakeIMAP:
         return ("OK", [b"1"])
 
     def search(self, charset, *criteria):
+        # Support simulating BAD response for header searches to test fallback
+        if hasattr(self, "search_fails") and self.search_fails:
+            if criteria and any("HEADER" in str(c) for c in criteria):
+                return ("BAD", [b"Command not supported"])
         # Return all keys in messages_store
         ids = [str(k).encode("ascii") for k in sorted(self.messages_store.keys())]
         return ("OK", [b" ".join(ids)])
+
 
     def fetch(self, msg_id, part):
         int_id = int(msg_id.decode("ascii") if isinstance(msg_id, bytes) else msg_id)
@@ -214,6 +219,8 @@ class TestSmtpChannel:
         msg3["From"] = "Alice <alice@example.com>"
         msg3["To"] = "agents@example.com"
         msg3["Date"] = "Wed, 29 Oct 2026 10:05:00 +0000"
+        msg3["In-Reply-To"] = "<msg-1@example.com>"
+        msg3["References"] = "<msg-1@example.com>"
         msg3.set_content("Looks good, proceed.\n\nOn Wed, Oct 29, 2026 at 10:00 AM Planner wrote:\n> Plan step 1.")
 
         fake_imap.messages_store[1] = msg3.as_bytes()  # arrives out of order
@@ -246,7 +253,10 @@ class TestSmtpChannel:
     def test_clear_flags_deleted_and_expunges(self, mock_imap_ssl):
         fake_imap = FakeIMAP("imap.example.com", 993)
         mock_imap_ssl.return_value = fake_imap
-        fake_imap.messages_store[1] = b"raw email"
+        msg = EmailMessage()
+        msg["Message-ID"] = "<root@example.com>"
+        msg.set_content("root")
+        fake_imap.messages_store[1] = msg.as_bytes()
 
         channel = SmtpChannel(
             from_address="agents@example.com",
@@ -274,3 +284,95 @@ class TestSmtpChannel:
         )
         cleaned = strip_quoted_history(text)
         assert cleaned == "I approve this task."
+
+
+    @patch("imaplib.IMAP4_SSL")
+    def test_messages_excludes_unrelated_mailbox_messages_on_search_fallback(self, mock_imap_ssl):
+        """Kpeguero16 review: when search falls back to ALL on BAD, unrelated mail must not appear as turns."""
+        fake_imap = FakeIMAP("imap.example.com", 993)
+        fake_imap.search_fails = True
+        mock_imap_ssl.return_value = fake_imap
+
+        m1 = EmailMessage()
+        m1["Message-ID"] = "<thread-root@example.com>"
+        m1["From"] = "agents@example.com"
+        m1.set_content("Thread turn 1")
+
+        m2 = EmailMessage()
+        m2["Message-ID"] = "<unrelated@other.com>"
+        m2["From"] = "other@other.com"
+        m2.set_content("Unrelated message")
+
+        fake_imap.messages_store[1] = m1.as_bytes()
+        fake_imap.messages_store[2] = m2.as_bytes()
+
+        channel = SmtpChannel(
+            from_address="agents@example.com",
+            to="user@example.com",
+            smtp_host="smtp.example.com",
+            imap_host="imap.example.com",
+            password="pwd",
+            thread_id="<thread-root@example.com>",
+        )
+
+        turns = channel.messages()
+        assert len(turns) == 1
+        assert turns[0]["content"] == "Thread turn 1"
+
+    @patch("imaplib.IMAP4_SSL")
+    def test_clear_does_not_flag_or_expunge_unrelated_messages_on_search_fallback(self, mock_imap_ssl):
+        """Kpeguero16 review: clear() must only flag thread messages, never unrelated messages."""
+        fake_imap = FakeIMAP("imap.example.com", 993)
+        fake_imap.search_fails = True
+        mock_imap_ssl.return_value = fake_imap
+
+        m_thread = EmailMessage()
+        m_thread["Message-ID"] = "<thread-root@example.com>"
+        m_thread.set_content("Thread content")
+
+        m_other = EmailMessage()
+        m_other["Message-ID"] = "<unrelated@other.com>"
+        m_other.set_content("Do not delete me!")
+
+        fake_imap.messages_store[10] = m_thread.as_bytes()
+        fake_imap.messages_store[20] = m_other.as_bytes()
+
+        channel = SmtpChannel(
+            from_address="agents@example.com",
+            to="user@example.com",
+            smtp_host="smtp.example.com",
+            imap_host="imap.example.com",
+            password="pwd",
+            thread_id="<thread-root@example.com>",
+        )
+
+        channel.clear()
+
+        assert 10 in fake_imap.deleted_ids
+        assert 20 not in fake_imap.deleted_ids
+        assert fake_imap.expunged is True
+
+    @patch("imaplib.IMAP4_SSL")
+    def test_clear_skips_expunge_when_no_thread_messages_found(self, mock_imap_ssl):
+        """Kpeguero16 review: if no thread messages match, do not expunge mailbox."""
+        fake_imap = FakeIMAP("imap.example.com", 993)
+        fake_imap.search_fails = True
+        mock_imap_ssl.return_value = fake_imap
+
+        m_other = EmailMessage()
+        m_other["Message-ID"] = "<unrelated@other.com>"
+        fake_imap.messages_store[99] = m_other.as_bytes()
+
+        channel = SmtpChannel(
+            from_address="agents@example.com",
+            to="user@example.com",
+            smtp_host="smtp.example.com",
+            imap_host="imap.example.com",
+            password="pwd",
+            thread_id="<nonexistent-thread@example.com>",
+        )
+
+        channel.clear()
+
+        assert fake_imap.deleted_ids == []
+        assert fake_imap.expunged is False

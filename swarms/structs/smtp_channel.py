@@ -10,10 +10,32 @@ import smtplib
 import ssl
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 from swarms.structs.comms_channel import CommsChannel
+
+def _is_thread_message(msg: email.message.Message, thread_id: str) -> bool:
+    """Check if an email message belongs strictly to the given thread_id."""
+    if not thread_id:
+        return False
+    target = thread_id.strip()
+    target_unwrapped = target.strip("<>")
+
+    msg_id = (msg.get("Message-ID") or "").strip()
+    if msg_id and (msg_id == target or msg_id.strip("<>") == target_unwrapped):
+        return True
+
+    references = msg.get("References") or ""
+    if target in references or target_unwrapped in references:
+        return True
+
+    in_reply_to = (msg.get("In-Reply-To") or "").strip()
+    if in_reply_to and (in_reply_to == target or in_reply_to.strip("<>") == target_unwrapped or target in in_reply_to):
+        return True
+
+    return False
+
 
 
 def strip_quoted_history(text: str) -> str:
@@ -163,36 +185,58 @@ class SmtpChannel(CommsChannel):
             self._imap_client = client
         return self._imap_client
 
-    def messages(self) -> List[Dict[str, Any]]:
-        """Fetch every message in this thread from the IMAP mailbox, oldest first.
+    def _find_thread_messages(
+        self, client: imaplib.IMAP4_SSL
+    ) -> List[Tuple[Any, email.message.Message]]:
+        """Locate and verify all messages in the mailbox belonging to this thread.
 
         Returns:
-            List[Dict[str, Any]]: List of messages shaped like {"agent_name": ..., "content": ...}.
+            List[Tuple[Any, email.message.Message]]: List of (msg_id, parsed_msg) pairs
+            that strictly belong to self.thread_id.
         """
         if self.thread_id is None:
             return []
 
-        client = self._get_imap_client()
         client.select(self.mailbox)
 
-        # Search for messages belonging to this thread
-        # RFC 3501 query for root Message-ID or References containing root
-        search_query = f'OR HEADER Message-ID "{self.thread_id}" HEADER References "{self.thread_id}"'
-        try:
-            status, data = client.search(None, search_query)
-            if status != "OK" or not data or not data[0]:
-                status, data = client.search(None, f'HEADER Message-ID "{self.thread_id}"')
-        except Exception:
-            status, data = client.search(None, "ALL")
+        # 1. Try search criteria targeted at Message-ID and References
+        candidate_ids = []
+        search_queries = [
+            f'OR HEADER Message-ID "{self.thread_id}" HEADER References "{self.thread_id}"',
+            f'HEADER Message-ID "{self.thread_id}"',
+            f'HEADER References "{self.thread_id}"',
+        ]
 
-        if status != "OK" or not data or not data[0]:
+        for q in search_queries:
+            try:
+                status, data = client.search(None, q)
+                if status == "OK" and data and data[0]:
+                    for mid in data[0].split():
+                        if mid not in candidate_ids:
+                            candidate_ids.append(mid)
+                    if candidate_ids:
+                        break
+            except Exception as e:
+                logger.debug(f"IMAP search query '{q}' failed: {e}")
+
+        # If the IMAP server failed (status != OK or exception) or returned no results
+        # (e.g. server answers BAD or does not support HEADER search), fallback to ALL
+        # to inspect headers client-side safely.
+        if not candidate_ids:
+            try:
+                status, data = client.search(None, "ALL")
+                if status == "OK" and data and data[0]:
+                    candidate_ids = data[0].split()
+            except Exception as e:
+                logger.debug(f"IMAP search ALL failed: {e}")
+
+        if not candidate_ids:
             return []
 
-        msg_ids = data[0].split()
+        verified_messages = []
         seen_message_ids = set()
-        parsed_entries = []
 
-        for mid in msg_ids:
+        for mid in candidate_ids:
             try:
                 res_status, fetch_data = client.fetch(mid, "(RFC822)")
                 if res_status != "OK" or not fetch_data:
@@ -206,54 +250,77 @@ class SmtpChannel(CommsChannel):
                     continue
 
                 msg = email.message_from_bytes(raw_bytes)
-                msg_id_hdr = msg.get("Message-ID", "").strip()
 
-                # Deduplicate by Message-ID
+                # Strict check: only accept messages belonging to this thread
+                if not _is_thread_message(msg, self.thread_id):
+                    continue
+
+                msg_id_hdr = (msg.get("Message-ID") or "").strip()
                 if msg_id_hdr and msg_id_hdr in seen_message_ids:
                     continue
                 if msg_id_hdr:
                     seen_message_ids.add(msg_id_hdr)
 
-                # Parse date for chronological sorting
-                date_str = msg.get("Date")
-                dt = None
-                if date_str:
-                    try:
-                        dt = email.utils.parsedate_to_datetime(date_str)
-                    except Exception:
-                        pass
-                if dt is None:
-                    dt = datetime.now(timezone.utc)
-
-                # Determine agent_name (from X-Swarms-Agent header or From header)
-                agent_name = msg.get("X-Swarms-Agent")
-                if not agent_name:
-                    from_hdr = msg.get("From", "")
-                    _, addr = email.utils.parseaddr(from_hdr)
-                    agent_name = from_hdr if from_hdr else addr
-
-                # Extract plain text content and strip quotes
-                content = ""
-                if msg.is_multipart():
-                    for part in msg.walk():
-                        if part.get_content_type() == "text/plain":
-                            payload = part.get_payload(decode=True)
-                            charset = part.get_content_charset() or "utf-8"
-                            content = payload.decode(charset, errors="replace")
-                            break
-                else:
-                    payload = msg.get_payload(decode=True)
-                    if payload:
-                        charset = msg.get_content_charset() or "utf-8"
-                        content = payload.decode(charset, errors="replace")
-                    else:
-                        content = str(msg.get_payload() or "")
-
-                content = strip_quoted_history(content)
-                parsed_entries.append((dt, {"agent_name": str(agent_name), "content": content}))
+                verified_messages.append((mid, msg))
             except Exception as e:
-                logger.warning(f"Failed to parse IMAP message id {mid}: {e}")
+                logger.warning(f"Failed to fetch/parse message {mid}: {e}")
                 continue
+
+        return verified_messages
+
+    def messages(self) -> List[Dict[str, Any]]:
+        """Fetch every message in this thread from the IMAP mailbox, oldest first.
+
+        Returns:
+            List[Dict[str, Any]]: List of messages shaped like {"agent_name": ..., "content": ...}.
+        """
+        if self.thread_id is None:
+            return []
+
+        client = self._get_imap_client()
+        verified = self._find_thread_messages(client)
+        if not verified:
+            return []
+
+        parsed_entries = []
+        for mid, msg in verified:
+            # Parse date for chronological sorting
+            date_str = msg.get("Date")
+            dt = None
+            if date_str:
+                try:
+                    dt = email.utils.parsedate_to_datetime(date_str)
+                except Exception:
+                    pass
+            if dt is None:
+                dt = datetime.now(timezone.utc)
+
+            # Determine agent_name (from X-Swarms-Agent header or From header)
+            agent_name = msg.get("X-Swarms-Agent")
+            if not agent_name:
+                from_hdr = msg.get("From", "")
+                _, addr = email.utils.parseaddr(from_hdr)
+                agent_name = from_hdr if from_hdr else addr
+
+            # Extract plain text content and strip quotes
+            content = ""
+            if msg.is_multipart():
+                for part in msg.walk():
+                    if part.get_content_type() == "text/plain":
+                        payload = part.get_payload(decode=True)
+                        charset = part.get_content_charset() or "utf-8"
+                        content = payload.decode(charset, errors="replace")
+                        break
+            else:
+                payload = msg.get_payload(decode=True)
+                if payload:
+                    charset = msg.get_content_charset() or "utf-8"
+                    content = payload.decode(charset, errors="replace")
+                else:
+                    content = str(msg.get_payload() or "")
+
+            content = strip_quoted_history(content)
+            parsed_entries.append((dt, {"agent_name": str(agent_name), "content": content}))
 
         # Sort chronologically, oldest first
         parsed_entries.sort(key=lambda x: x[0])
@@ -265,24 +332,33 @@ class SmtpChannel(CommsChannel):
             return
 
         client = self._get_imap_client()
-        client.select(self.mailbox)
+        verified = self._find_thread_messages(client)
 
-        search_query = f'OR HEADER Message-ID "{self.thread_id}" HEADER References "{self.thread_id}"'
-        try:
-            status, data = client.search(None, search_query)
-            if status != "OK" or not data or not data[0]:
-                status, data = client.search(None, f'HEADER Message-ID "{self.thread_id}"')
-        except Exception:
-            status, data = client.search(None, "ALL")
-
-        if status == "OK" and data and data[0]:
-            for mid in data[0].split():
+        if verified:
+            for mid, _ in verified:
                 try:
                     client.store(mid, "+FLAGS", "\\Deleted")
                 except Exception as e:
                     logger.warning(f"Failed to flag message {mid} for deletion: {e}")
+
+            # Only expunge when verified thread messages were flagged.
+            # Prefer UID EXPUNGE (RFC 4315) when supported to avoid expunging
+            # other pre-existing deleted messages in the mailbox.
             try:
-                client.expunge()
+                expunged = False
+                capabilities = getattr(client, "capabilities", ())
+                if "UIDPLUS" in capabilities:
+                    try:
+                        uids = [
+                            m.decode("ascii") if isinstance(m, bytes) else str(m)
+                            for m, _ in verified
+                        ]
+                        client.uid("EXPUNGE", ",".join(uids))
+                        expunged = True
+                    except Exception:
+                        pass
+                if not expunged:
+                    client.expunge()
             except Exception as e:
                 logger.warning(f"Failed to expunge mailbox: {e}")
 
