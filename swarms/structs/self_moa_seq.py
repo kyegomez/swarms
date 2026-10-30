@@ -82,6 +82,7 @@ class SelfMoASeq(SerializableMixin):
             ),
             model_name=proposer_model,
             temperature=self.temperature,
+            max_tokens=self.max_tokens,
             max_loops=1,
             verbose=self.verbose,
             top_p=top_p,
@@ -99,6 +100,7 @@ class SelfMoASeq(SerializableMixin):
             ),
             model_name=aggregator_model,
             temperature=0.0,  # Deterministic aggregation
+            max_tokens=self.max_tokens,
             max_loops=1,
             verbose=self.verbose,
             top_p=top_p,
@@ -274,7 +276,8 @@ class SelfMoASeq(SerializableMixin):
         Execute Self-MoA-Seq on the given task.
 
         This method implements the sequential aggregation algorithm:
-        1. Generate num_samples from the proposer model
+        1. Generate num_samples from the proposer model, but no more
+           than max_loops windows can aggregate
         2. Use sliding window to aggregate in chunks
         3. Progressively synthesize outputs, biasing aggregator toward best
         4. Return final synthesized output
@@ -302,7 +305,12 @@ class SelfMoASeq(SerializableMixin):
 
             # Phase 1: Generate samples
             self._log("info", "Phase 1: Generating initial samples")
-            samples = self._generate_samples(task, self.num_samples)
+            usable = 1 + self.max_loops * (
+                self.window_size - self.reserved_slots
+            )
+            samples = self._generate_samples(
+                task, min(self.num_samples, usable)
+            )
 
             # Phase 2: Sequential aggregation with sliding window
             self._log("info", "Phase 2: Sequential aggregation")
