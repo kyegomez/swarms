@@ -2,6 +2,7 @@ import concurrent.futures
 import json
 import os
 import threading
+import weakref
 import time
 import traceback
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -359,6 +360,13 @@ class TaskQueue:
             return len(self._tasks)
 
 
+def _shutdown_executor(executor: ContextThreadPoolExecutor) -> None:
+    try:
+        executor.shutdown(wait=False)
+    except Exception:
+        pass
+
+
 class WorkerPool:
     """Manages a pool of worker agents that claim and execute tasks from a TaskQueue.
 
@@ -388,6 +396,77 @@ class WorkerPool:
         self.poll_interval = poll_interval
         self.task_timeout = task_timeout
         self._stop_event = threading.Event()
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
+        self._task_executor: Optional[ContextThreadPoolExecutor] = None
+        self._task_finalizer: Optional[weakref.finalize] = None
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or self.max_workers
+        if self._executor is not None:
+            if (
+                hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self._shutdown_main_executor()
+            else:
+                return self._executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def _get_task_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or self.max_workers
+        if self._task_executor is not None:
+            if (
+                hasattr(self._task_executor, "_max_workers")
+                and self._task_executor._max_workers < workers
+            ):
+                self._shutdown_task_executor()
+            else:
+                return self._task_executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._task_executor = executor
+        self._task_finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def _shutdown_main_executor(self) -> None:
+        if self._finalizer is not None and self._finalizer.alive:
+            self._finalizer()
+        elif self._executor is not None:
+            _shutdown_executor(self._executor)
+        self._executor = None
+        self._finalizer = None
+
+    def _shutdown_task_executor(self) -> None:
+        if self._task_finalizer is not None and self._task_finalizer.alive:
+            self._task_finalizer()
+        elif self._task_executor is not None:
+            _shutdown_executor(self._task_executor)
+        self._task_executor = None
+        self._task_finalizer = None
+
+    def close(self) -> None:
+        """Shut down the worker pool and task executors."""
+        self._shutdown_main_executor()
+        self._shutdown_task_executor()
+
+    def __enter__(self) -> "WorkerPool":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
     def run(self, timeout: Optional[float] = None) -> Dict[str, str]:
         """Run all workers until queue is drained or timeout.
@@ -397,21 +476,19 @@ class WorkerPool:
         self._stop_event.clear()
         start_time = time.time()
 
-        with ContextThreadPoolExecutor(
-            max_workers=self.max_workers
-        ) as executor:
-            futures = []
-            for agent in self.agents:
-                future = executor.submit(
-                    self._worker_loop, agent, timeout, start_time
-                )
-                futures.append(future)
+        executor = self._get_executor()
+        futures = []
+        for agent in self.agents:
+            future = executor.submit(
+                self._worker_loop, agent, timeout, start_time
+            )
+            futures.append(future)
 
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    future.result()
-                except Exception as e:
-                    logger.error(f"[WorkerPool] Worker failed: {e}")
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                logger.error(f"[WorkerPool] Worker failed: {e}")
 
         return self.task_queue.get_results_summary()
 
@@ -475,20 +552,18 @@ class WorkerPool:
 
                 # Run with per-task timeout to detect stuck workers
                 if self.task_timeout:
-                    with ContextThreadPoolExecutor(
-                        max_workers=1
-                    ) as task_executor:
-                        future = task_executor.submit(
-                            agent.run, task=context, img=self.img
+                    task_executor = self._get_task_executor()
+                    future = task_executor.submit(
+                        agent.run, task=context, img=self.img
+                    )
+                    try:
+                        result = future.result(
+                            timeout=self.task_timeout
                         )
-                        try:
-                            result = future.result(
-                                timeout=self.task_timeout
-                            )
-                        except concurrent.futures.TimeoutError:
-                            raise TimeoutError(
-                                f"Task execution exceeded {self.task_timeout}s timeout"
-                            )
+                    except concurrent.futures.TimeoutError:
+                        raise TimeoutError(
+                            f"Task execution exceeded {self.task_timeout}s timeout"
+                        )
                 else:
                     result = agent.run(task=context, img=self.img)
 
@@ -599,6 +674,8 @@ class PlannerWorkerSwarm:
         # Internal state
         self.task_queue = TaskQueue()
         self.channel = channel
+        self._worker_pool: Optional[WorkerPool] = None
+        self._finalizer = weakref.finalize(self, self._shutdown_swarm_pool, self)
         claim_agents(self.agents, channel, self.name)
         self.conversation = Conversation(
             time_enabled=False, channel=channel
@@ -714,6 +791,27 @@ class PlannerWorkerSwarm:
                 f"[TRACE] {traceback.format_exc()}"
             )
             raise
+
+    @staticmethod
+    def _shutdown_swarm_pool(swarm_ref) -> None:
+        try:
+            pool = getattr(swarm_ref, "_worker_pool", None)
+            if pool is not None:
+                pool.close()
+        except Exception:
+            pass
+
+    def close(self) -> None:
+        """Clean up active worker pools."""
+        if getattr(self, "_worker_pool", None) is not None:
+            self._worker_pool.close()
+            self._worker_pool = None
+
+    def __enter__(self) -> "PlannerWorkerSwarm":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
     def _run_planner(
         self,
@@ -933,15 +1031,21 @@ class PlannerWorkerSwarm:
             self._run_planner(planner_task, img=img)
 
             # Phase 2: Worker execution
-            worker_pool = WorkerPool(
-                agents=self.agents,
-                task_queue=self.task_queue,
-                conversation=self.conversation,
-                max_workers=self.max_workers,
-                task_timeout=self.task_timeout,
-                img=img,
-            )
-            worker_pool.run(timeout=self.worker_timeout)
+            if getattr(self, "_worker_pool", None) is None:
+                self._worker_pool = WorkerPool(
+                    agents=self.agents,
+                    task_queue=self.task_queue,
+                    conversation=self.conversation,
+                    max_workers=self.max_workers,
+                    task_timeout=self.task_timeout,
+                    img=img,
+                )
+            else:
+                self._worker_pool.agents = self.agents
+                self._worker_pool.task_queue = self.task_queue
+                self._worker_pool.conversation = self.conversation
+                self._worker_pool.img = img
+            self._worker_pool.run(timeout=self.worker_timeout)
 
             # Log progress
             status = self.task_queue.get_status()
