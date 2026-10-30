@@ -658,9 +658,14 @@ class AgentRearrange(SerializableMixin):
             messages_for(agent_name, self.conversation)
         )
 
+        flow_info = (
+            self._get_sequential_flow_info()
+            if self.team_awareness
+            else None
+        )
         preamble = "\n\n".join(
             part
-            for part in (self.collab_prompt, extra_system)
+            for part in (self.collab_prompt, flow_info, extra_system)
             if part
         )
         if preamble:
