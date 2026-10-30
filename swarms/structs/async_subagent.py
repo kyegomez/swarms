@@ -197,6 +197,7 @@ class SubagentRegistry:
         self,
         strategy: str = "wait_all",
         timeout: Optional[float] = None,
+        task_ids: Optional[List[str]] = None,
     ) -> List[Any]:
         """
         Wait for tasks and return results.
@@ -204,14 +205,27 @@ class SubagentRegistry:
         Args:
             strategy: "wait_all" or "wait_first"
             timeout: Max seconds to wait
+            task_ids: Optional list of task IDs to wait for. If None, waits for all tasks.
 
         Returns:
             List of results (or exceptions for failed tasks)
         """
+        if task_ids is not None and len(task_ids) == 0:
+            return []
+
+        with self._lock:
+            if task_ids is not None:
+                task_id_set = set(task_ids)
+                target_tasks = [
+                    st for tid, st in self._tasks.items() if tid in task_id_set
+                ]
+            else:
+                target_tasks = list(self._tasks.values())
+
         # Collect already-completed results
         already_done = []
         pending_futures = {}
-        for st in self._tasks.values():
+        for st in target_tasks:
             if st.status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
                 already_done.append(st)
             elif st.future is not None:
