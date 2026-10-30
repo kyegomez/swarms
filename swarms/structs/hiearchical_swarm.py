@@ -1,8 +1,9 @@
 import inspect
 import json
 import traceback
+from collections import defaultdict
 from concurrent.futures import as_completed
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 
@@ -891,24 +892,39 @@ class HierarchicalSwarm:
         failures = []
 
         if self.parallel_execution:
-            futures_map = {}
+            # Group orders by worker so multiple orders for the same worker run
+            # sequentially in the order given by the director, avoiding concurrency
+            # collisions on shared agent state, while distinct workers run in parallel.
+            worker_orders: Dict[str, List[Tuple[int, HierarchicalOrder]]] = (
+                defaultdict(list)
+            )
+            for index, order in enumerate(orders):
+                worker_orders[order.agent_name].append((index, order))
+
+            def _execute_worker_orders(order_group):
+                worker_results = []
+                for idx, ord in order_group:
+                    output, failure = self._execute_order_with_retries(
+                        ord,
+                        False,
+                    )
+                    worker_results.append((idx, ord, output, failure))
+                return worker_results
+
+            futures = []
             with ContextThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
-                for index, order in enumerate(orders):
-                    future = executor.submit(
-                        self._execute_order_with_retries,
-                        order,
-                        False,
+                for order_group in worker_orders.values():
+                    futures.append(
+                        executor.submit(_execute_worker_orders, order_group)
                     )
-                    futures_map[future] = (index, order)
 
-                for future in as_completed(futures_map):
-                    index, order = futures_map[future]
-                    output, failure = future.result()
-                    results[index] = output
-                    if failure is not None:
-                        failures.append(failure)
+                for future in as_completed(futures):
+                    for idx, ord, output, failure in future.result():
+                        results[idx] = output
+                        if failure is not None:
+                            failures.append(failure)
 
             for index, order in enumerate(orders):
                 if results[index] is not None and not (

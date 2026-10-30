@@ -1304,4 +1304,64 @@ def test_harness_result_reflects_conversation_state(tmp_path):
     assert len(after["conversation"]) == 1
     assert after["conversation"][-1]["role"] == "System"
     assert after["conversation"][-1]["content"] == "step one passed"
-    assert after["id"] == before["id"]
+    assert after["id"] == before["id"]
+def test_parallel_execution_serializes_orders_for_same_worker():
+    import threading
+    import time
+
+    class ConcurrencyTrackingWorker:
+        def __init__(self, name: str):
+            self.agent_name = name
+            self.active_runs = 0
+            self.max_concurrent_runs = 0
+            self.lock = threading.Lock()
+            self.tasks_executed = []
+
+        def run(self, task: str, *args, **kwargs):
+            with self.lock:
+                self.active_runs += 1
+                if self.active_runs > self.max_concurrent_runs:
+                    self.max_concurrent_runs = self.active_runs
+
+            time.sleep(0.04)
+
+            with self.lock:
+                self.active_runs -= 1
+                self.tasks_executed.append(task)
+
+            return f"ANSWER-FOR-{task}"
+
+    director = StubAgent("Director", [])
+    worker = ConcurrencyTrackingWorker("Worker")
+    other = ConcurrencyTrackingWorker("Other")
+
+    swarm = make_recovery_swarm(
+        director,
+        [worker, other],
+        max_agent_retries=0,
+        max_reassignment_attempts=0,
+        parallel_execution=True,
+        max_workers=4,
+    )
+
+    orders = [
+        HierarchicalOrder(agent_name="Worker", task="TASK-A"),
+        HierarchicalOrder(agent_name="Worker", task="TASK-B"),
+        HierarchicalOrder(agent_name="Other", task="TASK-C"),
+    ]
+
+    outputs = swarm.execute_orders(orders)
+
+    assert outputs == [
+        "ANSWER-FOR-TASK-A",
+        "ANSWER-FOR-TASK-B",
+        "ANSWER-FOR-TASK-C",
+    ]
+    assert worker.max_concurrent_runs == 1, (
+        f"Multiple orders for the same worker ran concurrently "
+        f"(max_concurrent_runs={worker.max_concurrent_runs})"
+    )
+    assert worker.tasks_executed == ["TASK-A", "TASK-B"], (
+        f"Worker tasks executed out of order: {worker.tasks_executed}"
+    )
+    assert other.max_concurrent_runs == 1
