@@ -683,27 +683,16 @@ result = mv.run("Is Python or Rust better for building a high-performance web se
 
 ### CouncilAsAJudge
 
-A council of agents each deliberate, then a judge agent makes the final ruling based on the council's reasoning.
+Evaluates task responses across multiple dimensions in parallel, then synthesizes a comprehensive final report.
 
 ```python
-from swarms import Agent, CouncilAsAJudge
-
-council = [
-    Agent(agent_name="Expert-Security", model_name="gpt-5.4", max_loops=1),
-    Agent(agent_name="Expert-Privacy",  model_name="gpt-5.4", max_loops=1),
-    Agent(agent_name="Expert-Legal",    model_name="gpt-5.4", max_loops=1),
-]
-
-judge = Agent(
-    agent_name="Judge",
-    system_prompt="Given the council's analysis, deliver a final verdict.",
-    model_name="gpt-5.4",
-    max_loops=1,
-)
+from swarms import CouncilAsAJudge
 
 council_swarm = CouncilAsAJudge(
-    agents=council,
-    judge=judge,
+    name="SecurityEvaluationCouncil",
+    model_name="gpt-5.4",
+    judge_agent_model_name="gpt-5.4",
+    aggregation_model_name="gpt-5.4",
     max_loops=1,
 )
 result = council_swarm.run("Should we store user biometric data on-device only?")
@@ -729,8 +718,9 @@ judge = Agent(
 )
 
 debate = DebateWithJudge(
-    agents=[pro, con],
-    judge=judge,
+    pro_agent=pro,
+    con_agent=con,
+    judge_agent=judge,
     max_loops=3,   # 3 rounds of argument
 )
 result = debate.run("Motion: Open-source LLMs will surpass closed-source models by 2027.")
@@ -740,16 +730,17 @@ result = debate.run("Motion: Open-source LLMs will surpass closed-source models 
 
 ### HeavySwarm
 
-Intensive multi-loop analysis. Each agent runs for many loops on the problem, producing deep reasoning. Best for research-grade analysis.
+Intensive multi-loop analysis. Decomposes complex tasks into specialized questions across research, analysis, alternatives, and verification, synthesizing results across multiple loops.
 
 ```python
 from swarms import HeavySwarm
 
 swarm = HeavySwarm(
-    num_agents=4,
-    model_name="gpt-5.4",
-    loops_per_agent=5,       # each agent reasons for 5 loops
-    show_output=True,
+    name="ResearchSwarm",
+    question_agent_model_name="gpt-5.4",
+    worker_model_name="gpt-5.4",
+    max_loops=3,
+    variant="heavy",
 )
 result = swarm.run("Derive a novel approach to solving the alignment problem in AI.")
 ```
