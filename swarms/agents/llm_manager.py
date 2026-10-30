@@ -572,6 +572,54 @@ class LLMManager:
             if response_model:
                 span.set("gen_ai.response.model", response_model)
             span.record_success()
+
+            # Warn if the model was cut off at max_tokens with empty output
+            if finish_reason == 'length' and (
+                result is None
+                or (isinstance(result, str) and not result.strip())
+            ):
+                max_tokens = getattr(agent, 'max_tokens', None) or getattr(
+                    agent.llm, 'max_tokens', None
+                )
+                reasoning_tokens = 0
+                if isinstance(usage_after, dict) and isinstance(
+                    usage_before, dict
+                ):
+                    diff = usage_after.get(
+                        'reasoning_tokens', 0
+                    ) - usage_before.get('reasoning_tokens', 0)
+                    if isinstance(diff, (int, float)):
+                        reasoning_tokens = max(0, int(diff))
+                if not reasoning_tokens and hasattr(agent.llm, 'usage'):
+                    llm_u = getattr(agent.llm, 'usage', None)
+                    if isinstance(llm_u, dict):
+                        u_val = llm_u.get('reasoning_tokens', 0)
+                        if isinstance(u_val, (int, float)):
+                            reasoning_tokens = int(u_val)
+                if not reasoning_tokens and response is not None:
+                    resp_usage = getattr(response, 'usage', None)
+                    if isinstance(resp_usage, dict):
+                        details = resp_usage.get('completion_tokens_details')
+                        if isinstance(details, dict):
+                            val = details.get('reasoning_tokens', 0)
+                            if isinstance(val, (int, float)):
+                                reasoning_tokens = int(val)
+                    elif resp_usage is not None and type(resp_usage).__name__ != 'MagicMock':
+                        details = getattr(
+                            resp_usage, 'completion_tokens_details', None
+                        )
+                        if details is not None and type(details).__name__ != 'MagicMock':
+                            val = getattr(details, 'reasoning_tokens', 0)
+                            if isinstance(val, (int, float)):
+                                reasoning_tokens = int(val)
+
+                logger.warning(
+                    f"Agent '{agent.agent_name}': model response cut off at "
+                    f"max_tokens={max_tokens} with empty output "
+                    f"({reasoning_tokens} reasoning tokens consumed). "
+                    "Consider increasing max_tokens."
+                )
+
             return result
 
     def _call_llm(
