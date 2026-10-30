@@ -541,5 +541,104 @@ class TestRunsAreIndependent:
         assert "cats" not in str(outputs[1])
 
 
+
+
+class SleepingAgent(ScriptedAgent):
+    """An agent that sleeps for a set duration during bid deliberation."""
+
+    def __init__(self, name, duration=0.1, bids=()):
+        super().__init__(name, bids)
+        self.duration = duration
+
+    def run(self, task=None, *args, **kwargs):
+        import time
+        time.sleep(self.duration)
+        return super().run(task, *args, **kwargs)
+
+
+def test_executor_reused_across_runs():
+    """Verify that multiple GroupChat runs reuse the same thread pool executor."""
+    chat = make_chat(
+        [
+            ScriptedAgent("AgentA", [(0.8, "hello")]),
+            ScriptedAgent("AgentB", [(0.0, "")]),
+        ],
+        max_loops=2,
+    )
+
+    assert getattr(chat, "_executor", None) is None
+    chat.run("task 1")
+    first_executor = chat._executor
+    assert first_executor is not None
+    assert not first_executor._shutdown
+
+    chat.run("task 2")
+    second_executor = chat._executor
+    assert second_executor is first_executor
+    assert not second_executor._shutdown
+
+    chat.close()
+    assert chat._executor is None
+    assert first_executor._shutdown
+
+
+def test_bids_run_concurrently_in_executor():
+    """Bids for multiple agents run concurrently in the executor."""
+    import time
+
+    agents = [
+        SleepingAgent(f"Agent_{i}", duration=0.15, bids=[(0.1, "")])
+        for i in range(10)
+    ]
+    chat = make_chat(agents, max_loops=2, threshold=0.5)
+
+    start = time.perf_counter()
+    chat.run("test task")
+    elapsed = time.perf_counter() - start
+
+    # 10 agents sleeping 0.15s sequentially would take 1.5s+
+    # In parallel it finishes in under 0.8s
+    assert elapsed < 0.8, f"Bids ran sequentially ({elapsed:.2f}s) instead of concurrently"
+    chat.close()
+
+
+def test_groupchat_context_manager():
+    """Context manager properly cleans up executor on exit."""
+    with make_chat(
+        [
+            ScriptedAgent("AgentA", [(0.8, "hello")]),
+            ScriptedAgent("AgentB", [(0.0, "")]),
+        ],
+        max_loops=2,
+    ) as chat:
+        chat.run("task")
+        executor = chat._executor
+        assert executor is not None
+        assert not executor._shutdown
+
+    assert chat._executor is None
+    assert executor._shutdown
+
+
+def test_groupchat_weakref_finalizer_shuts_down_executor():
+    """Weakref finalizer shuts down executor when GroupChat is garbage collected."""
+    import gc
+
+    def _create_and_run():
+        chat = make_chat(
+            [
+                ScriptedAgent("AgentA", [(0.8, "hello")]),
+                ScriptedAgent("AgentB", [(0.0, "")]),
+            ],
+            max_loops=2,
+        )
+        chat.run("task")
+        return chat._executor
+
+    executor = _create_and_run()
+    gc.collect()
+    assert executor._shutdown
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-q"])

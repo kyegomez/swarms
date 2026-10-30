@@ -1,3 +1,4 @@
+import weakref
 """
 GroupChat
 ================
@@ -164,6 +165,14 @@ def _extract_args(tool_output: Any) -> Tuple[float, str]:
     return max(0.0, min(1.0, score)), message
 
 
+def _shutdown_executor(executor: Optional[ThreadPoolExecutor]) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
+
+
 class GroupChat(SerializableMixin):
     """Coordinate a turn-based, self-selecting agent groupchat.
 
@@ -251,8 +260,55 @@ class GroupChat(SerializableMixin):
         if self.auto_equip:
             self._ensure_respond_tool()
 
+        self._executor: Optional[ThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
+
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
+
+    def _get_executor(self) -> ThreadPoolExecutor:
+        """Return the shared ThreadPoolExecutor for this GroupChat instance.
+
+        Lazily created on the first call and reused across runs. If the agent count
+        has changed or the executor was shut down, a new executor is created.
+        """
+        required_workers = max(1, len(self.agents or ()))
+        if (
+            self._executor is None
+            or getattr(self._executor, "_shutdown", False)
+            or getattr(self._executor, "_max_workers", None) != required_workers
+        ):
+            if self._executor is not None and not getattr(
+                self._executor, "_shutdown", False
+            ):
+                try:
+                    self._executor.shutdown(wait=False)
+                except Exception:
+                    pass
+            self._executor = ThreadPoolExecutor(
+                max_workers=required_workers
+            )
+            self._finalizer = weakref.finalize(
+                self, _shutdown_executor, self._executor
+            )
+        return self._executor
+
+    def close(self) -> None:
+        """Shut down the internal thread pool executor."""
+        if self._finalizer is not None and self._finalizer.alive:
+            self._finalizer.detach()
+            self._finalizer = None
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=True)
+            finally:
+                self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def _ensure_respond_tool(self) -> None:
         """Inject ``RESPOND_TOOL`` into agents that do not already carry it.
@@ -405,10 +461,16 @@ class GroupChat(SerializableMixin):
         calls are blocking, so each runs in its own thread via
         ``asyncio.to_thread`` and one slow model cannot stall the turn.
         """
+        loop = asyncio.get_running_loop()
+        executor = self._get_executor()
         results = await asyncio.gather(
             *(
-                asyncio.to_thread(
-                    self._decide_sync, agent, sender, message
+                loop.run_in_executor(
+                    executor,
+                    self._decide_sync,
+                    agent,
+                    sender,
+                    message,
                 )
                 for agent in self.agents
             )
@@ -475,11 +537,6 @@ class GroupChat(SerializableMixin):
         Returns:
             Conversation history formatted according to ``self.output_type``.
         """
-        asyncio.get_running_loop().set_default_executor(
-            ThreadPoolExecutor(
-                max_workers=max(1, len(self.agents or ()))
-            )
-        )
         self._log("info", f"[{self.name}] initial task: {task}")
 
         self.conversation = Conversation(
