@@ -1,4 +1,5 @@
 import ast
+import weakref
 import json
 import os
 from concurrent.futures import as_completed
@@ -53,7 +54,19 @@ DRIFT_SCORE_TOOL = [
 ]
 
 
+def _shutdown_executor(
+    executor: Optional[ContextThreadPoolExecutor],
+) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
+
+
 class SequentialWorkflow:
+    _executor: Optional[ContextThreadPoolExecutor] = None
+    _finalizer: Optional[weakref.finalize] = None
     """
     Orchestrates the execution of a sequence of agents in a defined workflow.
 
@@ -184,8 +197,45 @@ class SequentialWorkflow:
             channel=channel,
         )
 
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
+
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or os.cpu_count() or 4
+        if self._executor is not None:
+            if (
+                hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self.close()
+            else:
+                return self._executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def close(self) -> None:
+        if self._finalizer is not None and self._finalizer.alive:
+            self._finalizer()
+        elif self._executor is not None:
+            _shutdown_executor(self._executor)
+        self._executor = None
+        self._finalizer = None
+
+    def __enter__(self) -> "SequentialWorkflow":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
     def reliability_check(self):
         """
@@ -543,20 +593,18 @@ class SequentialWorkflow:
             )
 
         try:
-            with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
-            ) as executor:
-                results = [
-                    executor.submit(
-                        self.agent_rearrange._clone_for_task().run,
-                        task,
-                    )
-                    for task in tasks
-                ]
-                return [
-                    result.result()
-                    for result in as_completed(results)
-                ]
+            executor = self._get_executor()
+            results = [
+                executor.submit(
+                    self.agent_rearrange._clone_for_task().run,
+                    task,
+                )
+                for task in tasks
+            ]
+            return [
+                result.result()
+                for result in as_completed(results)
+            ]
         except Exception as e:
             logger.error(
                 f"An error occurred while executing the batch of tasks concurrently: {e}"

@@ -830,3 +830,64 @@ def test_member_channels_are_detached_in_favour_of_the_workflows(
         "A",
         "B",
     ]
+
+
+# ============================================================================
+# Executor reuse across runs (Issue #2958)
+# ============================================================================
+
+
+class TestSequentialWorkflowExecutorReuse:
+    """Tests verifying thread pool executor reuse, context management, and cleanup in SequentialWorkflow."""
+
+    @pytest.mark.asyncio
+    async def test_sequential_workflow_executor_reused_across_runs(self):
+        agents, _ = _recording_agents(["A", "B"])
+        wf = SequentialWorkflow(agents=agents, autosave=False)
+        res1 = await wf.run_concurrent(["task1", "task2"])
+        assert len(res1) == 2
+        exec1 = getattr(wf, "_executor", None)
+        assert exec1 is not None
+
+        res2 = await wf.run_concurrent(["task3", "task4"])
+        assert len(res2) == 2
+        exec2 = getattr(wf, "_executor", None)
+        assert exec1 is exec2
+        assert not exec1._shutdown
+
+    def test_sequential_workflow_context_manager_and_close(self):
+        agents, _ = _recording_agents(["A"])
+        with SequentialWorkflow(agents=agents, autosave=False) as wf:
+            executor = wf._get_executor()
+            assert executor is not None
+            assert not executor._shutdown
+
+        assert wf._executor is None
+        assert executor._shutdown
+
+    def test_sequential_workflow_weakref_finalizer(self):
+        import gc
+
+        agents, _ = _recording_agents(["A"])
+        wf = SequentialWorkflow(agents=agents, autosave=False)
+        executor = wf._get_executor()
+        assert not executor._shutdown
+
+        del wf
+        gc.collect()
+
+        assert executor._shutdown
+
+    def test_sequential_workflow_executor_resizes_when_larger_workers_requested(self):
+        agents, _ = _recording_agents(["A"])
+        wf = SequentialWorkflow(agents=agents, autosave=False)
+        exec1 = wf._get_executor(max_workers=2)
+        assert getattr(exec1, "_max_workers", None) == 2
+
+        exec2 = wf._get_executor(max_workers=8)
+        assert exec1 is not exec2
+        assert exec1._shutdown
+        assert getattr(exec2, "_max_workers", None) == 8
+
+        wf.close()
+        assert exec2._shutdown
