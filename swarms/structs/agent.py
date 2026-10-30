@@ -2068,51 +2068,162 @@ Subtask Breakdown:
         """
         return self.tool_manager.list_tools()
 
+    def _sync_tools_state(self) -> None:
+        """Synchronize tool_struct executor and LLM client configuration after tools change."""
+        from swarms.tools.base_tool import BaseTool
+
+        if self.tools is None:
+            self.tools = []
+
+        self.tool_struct = BaseTool(
+            tools=list(self.tools), verbose=self.verbose
+        )
+
+        if self.llm is not None:
+            self.llm.tools_list_dictionary = (
+                list(self.tools_list_dictionary)
+                if self.tools_list_dictionary
+                else None
+            )
+            if hasattr(self.llm, "parallel_tool_calls"):
+                self.llm.parallel_tool_calls = bool(
+                    self.tools and len(self.tools) >= 2
+                )
+
     def add_tool(self, tool: Callable):
-        """Add a single tool to the agent's tools list.
+        """Add a single tool to the agent's tools list and update schemas/executor.
 
         Args:
             tool (Callable): The tool function to add
 
         Returns:
-            The result of appending the tool to the tools list
+            The added tool
         """
-        logger.info(f"Adding tool: {tool.__name__}")
-        return self.tools.append(tool)
+        from swarms.tools.py_func_to_openai_func_str import (
+            convert_multiple_functions_to_openai_function_schema,
+        )
+
+        tool_name = getattr(tool, "__name__", str(tool))
+        logger.info(f"Adding tool: {tool_name}")
+
+        if self.tools is None:
+            self.tools = []
+        if tool not in self.tools:
+            self.tools.append(tool)
+
+        if self.tools_list_dictionary is None:
+            self.tools_list_dictionary = []
+
+        schemas = convert_multiple_functions_to_openai_function_schema([tool])
+        existing_names = {
+            s["function"]["name"]
+            for s in self.tools_list_dictionary
+            if isinstance(s, dict) and "function" in s and "name" in s["function"]
+        }
+        for s in schemas:
+            fname = s.get("function", {}).get("name")
+            if fname and fname not in existing_names:
+                self.tools_list_dictionary.append(s)
+                existing_names.add(fname)
+
+        self._sync_tools_state()
+        return tool
 
     def add_tools(self, tools: List[Callable]):
-        """Add multiple tools to the agent's tools list.
+        """Add multiple tools to the agent's tools list and update schemas/executor.
 
         Args:
             tools (List[Callable]): List of tool functions to add
 
         Returns:
-            The result of extending the tools list
+            The added tools list
         """
-        logger.info(f"Adding tools: {[t.__name__ for t in tools]}")
-        return self.tools.extend(tools)
+        from swarms.tools.py_func_to_openai_func_str import (
+            convert_multiple_functions_to_openai_function_schema,
+        )
+
+        logger.info(
+            f"Adding tools: {[getattr(t, '__name__', str(t)) for t in tools]}"
+        )
+
+        if self.tools is None:
+            self.tools = []
+
+        for tool in tools:
+            if tool not in self.tools:
+                self.tools.append(tool)
+
+        if self.tools_list_dictionary is None:
+            self.tools_list_dictionary = []
+
+        schemas = convert_multiple_functions_to_openai_function_schema(tools)
+        existing_names = {
+            s["function"]["name"]
+            for s in self.tools_list_dictionary
+            if isinstance(s, dict) and "function" in s and "name" in s["function"]
+        }
+        for s in schemas:
+            fname = s.get("function", {}).get("name")
+            if fname and fname not in existing_names:
+                self.tools_list_dictionary.append(s)
+                existing_names.add(fname)
+
+        self._sync_tools_state()
+        return tools
 
     def remove_tool(self, tool: Callable):
-        """Remove a single tool from the agent's tools list.
+        """Remove a single tool from the agent's tools list and update schemas/executor.
 
         Args:
             tool (Callable): The tool function to remove
-
-        Returns:
-            The result of removing the tool from the tools list
         """
-        logger.info(f"Removing tool: {tool.__name__}")
-        return self.tools.remove(tool)
+        tool_name = getattr(tool, "__name__", str(tool))
+        logger.info(f"Removing tool: {tool_name}")
+
+        if self.tools and tool in self.tools:
+            self.tools.remove(tool)
+
+        if self.tools_list_dictionary:
+            self.tools_list_dictionary = [
+                s
+                for s in self.tools_list_dictionary
+                if not (
+                    isinstance(s, dict)
+                    and "function" in s
+                    and s["function"].get("name") == tool_name
+                )
+            ]
+
+        self._sync_tools_state()
 
     def remove_tools(self, tools: List[Callable]):
-        """Remove multiple tools from the agent's tools list.
+        """Remove multiple tools from the agent's tools list and update schemas/executor.
 
         Args:
             tools (List[Callable]): List of tool functions to remove
         """
-        logger.info(f"Removing tools: {[t.__name__ for t in tools]}")
-        for tool in tools:
-            self.tools.remove(tool)
+        logger.info(
+            f"Removing tools: {[getattr(t, '__name__', str(t)) for t in tools]}"
+        )
+        remove_names = {getattr(t, "__name__", str(t)) for t in tools}
+
+        if self.tools:
+            for tool in tools:
+                if tool in self.tools:
+                    self.tools.remove(tool)
+
+        if self.tools_list_dictionary:
+            self.tools_list_dictionary = [
+                s
+                for s in self.tools_list_dictionary
+                if not (
+                    isinstance(s, dict)
+                    and "function" in s
+                    and s["function"].get("name") in remove_names
+                )
+            ]
+
+        self._sync_tools_state()
 
     def stream_response(
         self, response: str, delay: float = 0.001
