@@ -22,7 +22,7 @@ import traceback
 from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
-import requests
+
 from loguru import logger
 from pydantic import BaseModel
 
@@ -1162,7 +1162,7 @@ class LiteLLM:
             audio input before using this method.
 
         Raises:
-            requests.HTTPError: If fetching audio from a URL fails.
+            Exception: If fetching audio from a URL fails.
             FileNotFoundError: If the local audio file does not exist.
         """
         encoded_string = get_media_base64(audio)
@@ -1476,11 +1476,9 @@ class LiteLLM:
         raise NetworkConnectionError(error_msg) from network_error
 
     _NETWORK_ERRORS = (
-        requests.exceptions.ConnectionError,
-        requests.exceptions.Timeout,
-        requests.exceptions.RequestException,
         ConnectionError,
         TimeoutError,
+        OSError,
     )
 
     def run(
