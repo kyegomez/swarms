@@ -407,7 +407,8 @@ class PlannerGeneratorEvaluator:
     def _extract_step_count(self, plan: str) -> int:
         """Extract the number of steps from the plan.
 
-        Looks for step patterns like "Step 1:", "Step 2:", etc.
+        Looks for step patterns like "Step 1:", "#### Step 1:", "**Step 1:**", etc.,
+        prioritizing the plan's Steps section.
 
         Args:
             plan: The plan text to parse.
@@ -415,15 +416,32 @@ class PlannerGeneratorEvaluator:
         Returns:
             Number of steps found, capped at max_steps.
         """
-        # Match patterns like "Step 1", "Step 2:", "- Step 1"
-        step_matches = re.findall(
-            r"(?:^|\n)\s*(?:-\s*)?Step\s+(\d+)", plan, re.IGNORECASE
+        step_pattern = (
+            r"(?:^|\n)\s*(?:#+\s*)?(?:[-*+]|\d+\.)?\s*(?:\*{1,2}|_{1,2})?\s*Step\s+(\d+)"
         )
+
+        # 1. Search for explicit "Step N" across the plan
+        step_matches = re.findall(step_pattern, plan, re.IGNORECASE)
         if step_matches:
             count = max(int(s) for s in step_matches)
             return min(count, self.max_steps)
 
-        # Fallback: count numbered items
+        # 2. Fallback: If no explicit "Step N" lines, look for a Steps section with numbered items
+        steps_section_match = re.search(
+            r"(?:^|\n)\s*#+\s*(?:[A-Za-z0-9_-]+\s+)*Steps\b.*?\n(.*?)(?=\n\s*#+\s+(?!Step\b)[A-Za-z]|\Z)",
+            plan,
+            re.DOTALL | re.IGNORECASE,
+        )
+        if steps_section_match:
+            steps_text = steps_section_match.group(1)
+            numbered_matches = re.findall(
+                r"(?:^|\n)\s*(\d+)\.\s+", steps_text
+            )
+            if numbered_matches:
+                count = max(int(n) for n in numbered_matches)
+                return min(count, self.max_steps)
+
+        # 3. Fallback: count numbered items anywhere in plan
         numbered_matches = re.findall(r"(?:^|\n)\s*(\d+)\.\s+", plan)
         if numbered_matches:
             count = max(int(n) for n in numbered_matches)
