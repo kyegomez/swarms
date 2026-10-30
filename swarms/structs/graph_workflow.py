@@ -844,7 +844,6 @@ class GraphWorkflow:
         self._compiled = False
         self._sorted_layers = []
         self._execution_plan = []
-        self._successors_map = {}
         self._predecessors_cache = {}
         self.max_parallel_nodes = max_parallel_nodes
         # Nodes are network-bound LLM calls, so the default is layer width, not CPU count.
@@ -951,7 +950,6 @@ class GraphWorkflow:
         self._compiled = False
         self._sorted_layers = []
         self._execution_plan = []
-        self._successors_map = {}
         self._compilation_timestamp = None
 
         # Clear predecessors cache when graph structure changes
@@ -1004,7 +1002,6 @@ class GraphWorkflow:
 
             # Built once, reused for validation and per-node predecessor lookups
             succ, pred = self.graph_backend.adjacency()
-            self._successors_map = succ
             self._predecessors_cache = {
                 node_id: tuple(parents)
                 for node_id, parents in pred.items()
