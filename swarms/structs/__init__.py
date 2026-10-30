@@ -23,6 +23,7 @@ from swarms.structs.file_channel import FileChannel
 from swarms.structs.http_channel import HttpChannel
 from swarms.structs.queue_channel import QueueChannel
 from swarms.structs.sqlite_channel import SqliteChannel
+from swarms.structs.smtp_channel import SmtpChannel
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
@@ -111,6 +112,7 @@ __all__ = [
     "HttpChannel",
     "QueueChannel",
     "SqliteChannel",
+    "SmtpChannel",
     "Conversation",
     "GroupChat",
     "MajorityVoting",
