@@ -715,7 +715,7 @@ class PlannerGeneratorEvaluator:
         # No table, try "Criterion: score/10" and "Criterion: score out of 10"
         if not criterion_scores:
             alt_scores = re.findall(
-                r"([^\W\d_][^:\n]*?)\s*:\s*(\d+(?:\.\d+)?)\s*(?:/\s*10|out of 10)",
+                r"(\d*[^\W\d_][^:\n]*?)\s*:\s*(\d+(?:\.\d+)?)\s*(?:/\s*10|out of 10)",
                 text,
                 re.IGNORECASE,
             )
