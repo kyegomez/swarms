@@ -479,7 +479,6 @@ class Agent:
 
         self.dynamic_tools = dynamic_tools
         self.tool_loader: Optional[DynamicToolLoader] = None
-        self._mcp_tools_deferred = False
         self._usage = empty_usage()
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
