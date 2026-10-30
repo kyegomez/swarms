@@ -13,7 +13,7 @@ def list_all_agents(
     name: Optional[str] = None,
     description: Optional[str] = None,
     add_to_conversation: Optional[bool] = False,
-    add_collaboration_prompt: Optional[bool] = True,
+    add_collaboration_prompt: Optional[bool] = False,
 ) -> str:
     """Lists all agents in a swarm and optionally adds them to a conversation.
 
@@ -76,6 +76,11 @@ def list_all_agents(
         "Collaborate effectively by assigning tasks according to these roles."
     )
 
+    if add_collaboration_prompt:
+        all_agents += get_multi_agent_collaboration_prompt_one(
+            agents=all_agents
+        )
+
     if add_to_conversation:
         # Add the agent information to the conversation
         conversation.add(
@@ -84,12 +89,6 @@ def list_all_agents(
         )
 
         return None
-
-    elif add_collaboration_prompt:
-        all_agents += get_multi_agent_collaboration_prompt_one(
-            agents=all_agents
-        )
-        return all_agents
 
     return all_agents
 
