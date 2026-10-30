@@ -1,4 +1,5 @@
 import os
+import weakref
 from concurrent.futures import as_completed
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
@@ -22,6 +23,14 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+
+
+def _shutdown_executor(executor: Optional[ContextThreadPoolExecutor]) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
 
 
 class EvaluationError(Exception):
@@ -239,6 +248,7 @@ class CouncilAsAJudge:
         max_loops: int = 1,
         aggregation_model_name: str = "gpt-5.4",
         judge_agent_model_name: Optional[str] = None,
+        max_workers: Optional[int] = None,
     ):
         """
         Initialize the CouncilAsAJudge.
@@ -265,7 +275,9 @@ class CouncilAsAJudge:
         self.max_loops = max_loops
         self.aggregation_model_name = aggregation_model_name
         self.judge_agent_model_name = judge_agent_model_name
-        self.max_workers = max(1, int(os.cpu_count() * 0.75))
+        self.max_workers = max_workers or max(1, int(os.cpu_count() * 0.75))
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer = None
 
         self.reliability_check()
 
@@ -441,32 +453,29 @@ class CouncilAsAJudge:
                 for dim, agent in self.judge_agents.items()
             ]
 
-            # Run evaluations in parallel using ThreadPoolExecutor
-            with ContextThreadPoolExecutor(
-                max_workers=self.max_workers
-            ) as executor:
-                # Submit all tasks
-                future_to_dim = {
-                    executor.submit(
-                        self._evaluate_dimension,
-                        dim,
-                        agent,
-                        task,
-                    ): dim
-                    for dim, agent, _ in tasks
-                }
+            # Run evaluations in parallel using reused ThreadPoolExecutor
+            executor = self._get_executor()
+            future_to_dim = {
+                executor.submit(
+                    self._evaluate_dimension,
+                    dim,
+                    agent,
+                    task,
+                ): dim
+                for dim, agent, _ in tasks
+            }
 
-                for future in as_completed(future_to_dim):
-                    try:
-                        future.result()
-                    except Exception as e:
-                        dim = future_to_dim[future]
-                        logger.error(
-                            f"Task for dimension {dim} failed: {str(e)}"
-                        )
-                        raise DimensionEvaluationError(
-                            f"Failed to evaluate dimension {dim}: {str(e)}"
-                        )
+            for future in as_completed(future_to_dim):
+                try:
+                    future.result()
+                except Exception as e:
+                    dim = future_to_dim[future]
+                    logger.error(
+                        f"Task for dimension {dim} failed: {str(e)}"
+                    )
+                    raise DimensionEvaluationError(
+                        f"Failed to evaluate dimension {dim}: {str(e)}"
+                    )
 
             prior, aggregation_task = split_last_turn(
                 messages_for(
@@ -492,3 +501,44 @@ class CouncilAsAJudge:
             raise EvaluationError(
                 f"Evaluation process failed: {str(e)}"
             )
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or self.max_workers
+        if self._executor is not None:
+            if (
+                hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self.close()
+            else:
+                return self._executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def close(self) -> None:
+        """Shut down the reusable thread pool executor."""
+        if self._finalizer is not None:
+            try:
+                self._finalizer.detach()
+            except Exception:
+                pass
+            self._finalizer = None
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=False)
+            except Exception:
+                pass
+            self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
