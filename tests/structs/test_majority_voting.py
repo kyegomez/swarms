@@ -417,3 +417,52 @@ def test_consensus_agent_sees_its_own_prior_consensus_as_assistant():
             assert not any(
                 call["answer"] in content for content in assistant
             ), f"{name}'s vote arrived as the consensus agent's own turn"
+
+
+
+def test_majority_voting_executor_reused_across_loops_and_runs():
+    """Verify that multiple loops and multiple runs reuse the same thread pool executor."""
+    mv, calls = _voting_system(["Voter-A", "Voter-B"], max_loops=2)
+
+    assert getattr(mv, "_executor", None) is None
+    mv.run("first task")
+    first_executor = mv._executor
+    assert first_executor is not None
+    assert not first_executor._shutdown
+
+    mv.run("second task")
+    second_executor = mv._executor
+    assert second_executor is first_executor
+    assert not second_executor._shutdown
+
+    mv.close()
+    assert mv._executor is None
+    assert first_executor._shutdown
+
+
+def test_majority_voting_context_manager():
+    """Context manager enters and closes the executor on exit."""
+    agents, calls = _recording_agents(["Voter-A", "Voter-B"])
+    with MajorityVoting(agents=agents, max_loops=1) as mv:
+        _record(mv.consensus_agent, calls)
+        mv.run("task")
+        executor = mv._executor
+        assert executor is not None
+        assert not executor._shutdown
+
+    assert mv._executor is None
+    assert executor._shutdown
+
+
+def test_majority_voting_weakref_finalizer_shuts_down_executor():
+    """Weakref finalizer shuts down executor when MajorityVoting is garbage collected."""
+    import gc
+
+    def _create_and_run():
+        mv, calls = _voting_system(["Voter-A", "Voter-B"], max_loops=1)
+        mv.run("task")
+        return mv._executor
+
+    executor = _create_and_run()
+    gc.collect()
+    assert executor._shutdown

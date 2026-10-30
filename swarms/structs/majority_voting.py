@@ -1,3 +1,4 @@
+import weakref
 import copy
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -102,6 +103,14 @@ def default_consensus_agent(
     )
 
 
+def _shutdown_executor(executor: Optional[ContextThreadPoolExecutor]) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
+
+
 class MajorityVoting:
     """
     A multi-loop majority voting system for agents that enables iterative consensus building.
@@ -179,7 +188,56 @@ class MajorityVoting:
         )
 
         # Capture the full __init__ configuration if telemetry is enabled.
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
+
+        # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
+
+    def _get_executor(self) -> ContextThreadPoolExecutor:
+        """Return the shared ContextThreadPoolExecutor for this voting system.
+
+        Lazily created on the first call and reused across voting loops and runs.
+        If the required agent count has changed or the executor was shut down,
+        a new executor is created.
+        """
+        required_workers = max(1, len(self.agents or ()))
+        if (
+            self._executor is None
+            or getattr(self._executor, "_shutdown", False)
+            or getattr(self._executor, "_max_workers", None) != required_workers
+        ):
+            if self._executor is not None and not getattr(
+                self._executor, "_shutdown", False
+            ):
+                try:
+                    self._executor.shutdown(wait=False)
+                except Exception:
+                    pass
+            self._executor = ContextThreadPoolExecutor(
+                max_workers=required_workers
+            )
+            self._finalizer = weakref.finalize(
+                self, _shutdown_executor, self._executor
+            )
+        return self._executor
+
+    def close(self) -> None:
+        """Shut down the internal thread pool executor."""
+        if self._finalizer is not None and self._finalizer.alive:
+            self._finalizer.detach()
+            self._finalizer = None
+        if self._executor is not None:
+            try:
+                self._executor.shutdown(wait=True)
+            finally:
+                self._executor = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def reliability_check(self):
 
@@ -216,29 +274,27 @@ class MajorityVoting:
             Maps agent name to that voter's answer.
         """
         answers: Dict[str, Any] = {}
-        with ContextThreadPoolExecutor(
-            max_workers=len(self.agents)
-        ) as executor:
-            future_to_agent = {}
-            for agent in self.agents:
-                prior, vote_task = split_last_turn(
-                    messages_for(agent.agent_name, self.conversation)
-                )
-                future = executor.submit(
-                    agent.run, task=vote_task, messages=prior
-                )
-                future_to_agent[future] = agent
+        executor = self._get_executor()
+        future_to_agent = {}
+        for agent in self.agents:
+            prior, vote_task = split_last_turn(
+                messages_for(agent.agent_name, self.conversation)
+            )
+            future = executor.submit(
+                agent.run, task=vote_task, messages=prior
+            )
+            future_to_agent[future] = agent
 
-            for future in as_completed(future_to_agent):
-                agent = future_to_agent[future]
-                try:
-                    result = future.result()
-                except Exception as error:
-                    answers[agent.agent_name] = error
-                    continue
-                answers[agent.agent_name] = agent_answer(
-                    agent, fallback=result
-                )
+        for future in as_completed(future_to_agent):
+            agent = future_to_agent[future]
+            try:
+                result = future.result()
+            except Exception as error:
+                answers[agent.agent_name] = error
+                continue
+            answers[agent.agent_name] = agent_answer(
+                agent, fallback=result
+            )
 
         return answers
 
