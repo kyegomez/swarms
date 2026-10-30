@@ -2,20 +2,22 @@ import time
 import re
 from typing import Any, Callable, Dict, List, Optional
 
-from rich.console import Console, Group
-from rich.live import Live
-from rich.panel import Panel
-from rich.progress import (
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-)
-from rich.table import Table
-from rich.text import Text
-from rich.spinner import Spinner
-from rich.tree import Tree
+from typing import TYPE_CHECKING
 
-from rich.markdown import Markdown
+if TYPE_CHECKING:
+    from rich.console import Console, Group
+    from rich.live import Live
+    from rich.markdown import Markdown
+    from rich.panel import Panel
+    from rich.progress import (
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+    )
+    from rich.spinner import Spinner
+    from rich.table import Table
+    from rich.text import Text
+    from rich.tree import Tree
 
 DEFAULT_CONTENT_STYLE = "grey85"
 
@@ -23,8 +25,12 @@ DEFAULT_CONTENT_STYLE = "grey85"
 # Global Live display for the dashboard
 dashboard_live = None
 
-# Create a spinner for loading animation
-spinner = Spinner("dots", style="yellow")
+def __getattr__(name: str):
+    if name == "spinner":
+        from rich.spinner import Spinner
+
+        return Spinner("dots", style="yellow")
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class MarkdownOutputHandler:
@@ -176,6 +182,8 @@ class MarkdownOutputHandler:
             if part_type == "markdown":
                 # Render markdown
                 try:
+                    from rich.markdown import Markdown
+
                     md = Markdown(
                         content,
                         code_theme="monokai",
@@ -183,6 +191,8 @@ class MarkdownOutputHandler:
                     )
                     rendered_parts.append(md)
                 except Exception:
+                    from rich.text import Text
+
                     # Fallback to plain text with error indication
                     rendered_parts.append(
                         Text(content, style=DEFAULT_CONTENT_STYLE)
@@ -203,6 +213,8 @@ class MarkdownOutputHandler:
                     )
                     rendered_parts.append(syntax)
                 except Exception:
+                    from rich.text import Text
+
                     # Fallback to text with code styling
                     rendered_parts.append(
                         Text(
@@ -244,6 +256,7 @@ class MarkdownOutputHandler:
 
             # Create a group of rendered parts
             from rich.console import Group
+            from rich.panel import Panel
 
             if rendered_parts:
                 content_group = Group(*rendered_parts)
@@ -259,6 +272,8 @@ class MarkdownOutputHandler:
                     )
                 )
             else:
+                from rich.text import Text
+
                 # No content to render
                 self.console.print(
                     Panel(
@@ -271,6 +286,8 @@ class MarkdownOutputHandler:
                     )
                 )
         except Exception as e:
+            from rich.panel import Panel
+
             # Fallback to plain text if rendering fails with better error info
             error_msg = f"Markdown rendering error: {str(e)}"
             self.console.print(
@@ -318,7 +335,9 @@ class Formatter:
         Args:
             md (bool): Enable markdown output rendering. Defaults to True.
         """
-        self.console = Console()
+        self._console = None
+        self._md = md
+        self._markdown_handler = None
         self._dashboard_live = None
         self._spinner_frames = [
             "⠋",
@@ -334,15 +353,34 @@ class Formatter:
         ]
         self._spinner_idx = 0
 
-        # Set markdown capability based on user preference
-        self.markdown_handler = (
-            MarkdownOutputHandler(self.console) if md else None
-        )
+    @property
+    def console(self):
+        if self._console is None:
+            from rich.console import Console
 
-    def _get_status_with_loading(self, status: str) -> Text:
+            self._console = Console()
+        return self._console
+
+    @console.setter
+    def console(self, value):
+        self._console = value
+
+    @property
+    def markdown_handler(self):
+        if self._markdown_handler is None and self._md:
+            self._markdown_handler = MarkdownOutputHandler(self.console)
+        return self._markdown_handler
+
+    @markdown_handler.setter
+    def markdown_handler(self, value):
+        self._markdown_handler = value
+
+    def _get_status_with_loading(self, status: str) -> "Text":
         """
         Creates a status text with loading animation for running status.
         """
+        from rich.text import Text
+
         if status.lower() == "running":
             # Create loading bar effect
             self._spinner_idx = (self._spinner_idx + 1) % len(
@@ -409,6 +447,9 @@ class Formatter:
             title (str, optional): The title of the panel. Defaults to "".
             style (str, optional): The style of the panel. Defaults to "bold blue".
         """
+        from rich.panel import Panel
+        from rich.text import Text
+
         random_color = choose_random_color()
 
         panel = Panel(
@@ -484,6 +525,8 @@ class Formatter:
             title (str): The title of the table.
             data (Dict[str, List[str]]): A dictionary where keys are categories and values are lists of capabilities.
         """
+        from rich.table import Table
+
         table = Table(show_header=True, header_style="bold magenta")
         table.add_column("Category", style="cyan")
         table.add_column("Capabilities", style="green")
@@ -513,6 +556,8 @@ class Formatter:
         Returns:
             Any: The result of the task function.
         """
+        from rich.progress import Progress, SpinnerColumn, TextColumn
+
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -540,6 +585,10 @@ class Formatter:
             delay (float): Delay in seconds between displaying each token.
             by_word (bool): If True, display by words; otherwise, display by characters.
         """
+        from rich.live import Live
+        from rich.panel import Panel
+        from rich.text import Text
+
         text = Text(style=DEFAULT_CONTENT_STYLE)
 
         # Split tokens into characters or words
@@ -580,6 +629,10 @@ class Formatter:
         Returns:
             str: The complete accumulated response text.
         """
+        from rich.live import Live
+        from rich.panel import Panel
+        from rich.text import Text
+
         # Get random color similar to non-streaming approach
         random_color = choose_random_color()
         panel_style = (
@@ -675,10 +728,14 @@ class Formatter:
 
     def _create_dashboard_table(
         self, agents_data: List[Dict[str, Any]], title: str
-    ) -> Panel:
+    ) -> "Panel":
         """
         Creates the dashboard table with the current agent statuses.
         """
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.text import Text
+
         # Create main table
         table = Table(
             show_header=True,
@@ -735,6 +792,8 @@ class Formatter:
             title (str): The title of the dashboard.
             is_final (bool): Whether this is the final update of the dashboard.
         """
+        from rich.live import Live
+
         if self._dashboard_live is None:
             # Create new Live display if none exists
             self._dashboard_live = Live(
@@ -780,6 +839,8 @@ class Formatter:
         import logging
 
         logger = logging.getLogger(__name__)
+
+        from rich.tree import Tree
 
         # Create root tree
         tree = Tree(
@@ -865,6 +926,10 @@ class Formatter:
             agents (List[Any]): List of worker agents in the swarm.
             swarm_name (str): Name of the hierarchical swarm.
         """
+        from rich.panel import Panel
+        from rich.text import Text
+        from rich.tree import Tree
+
         # Create the root tree with Director
         director_label = Text()
         director_label.append("🎯 ", style="bold red")
@@ -942,6 +1007,11 @@ class Formatter:
             title (Optional[str]): Panel title. Defaults to the director's
                 own name, so a swarm with several directors is readable.
         """
+        from rich.console import Group
+        from rich.panel import Panel
+        from rich.text import Text
+        from rich.tree import Tree
+
         title = title or f"Director Name: {director_name}"
         tree = Tree(
             f"[bold red]🎯 {director_name}[/bold red]",
@@ -1004,6 +1074,9 @@ class Formatter:
         """
         if not content:
             return
+        from rich.panel import Panel
+        from rich.text import Text
+
         text = Text(content, style="dim italic")
         panel = Panel(
             text,
