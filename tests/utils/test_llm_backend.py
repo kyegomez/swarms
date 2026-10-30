@@ -5,13 +5,14 @@ simulated through importlib.util.find_spec, and backend names are replaced
 in the module's namespace so nothing is fetched.
 """
 
+import asyncio
 import importlib
 import importlib.util
 import socket
 import subprocess
 import sys
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -140,6 +141,39 @@ class TestOptionsPerCall:
         """litellm clears its module-level count after the first retried call, so each request carries it."""
         _use_backend(monkeypatch, backend)
         assert self._sent()["num_retries"] == 5
+
+
+@pytest.mark.parametrize("async_mode", [False, True])
+@pytest.mark.parametrize("at_construction", [False, True])
+def test_provider_overrides_reach_each_completion(
+    async_mode, at_construction
+):
+    options = {
+        "audio": {"format": "wav", "voice": "alloy"},
+        "max_completion_tokens": 17,
+        "modalities": ["text", "audio"],
+    }
+    llm = LiteLLM(
+        model_name="gpt-5.4", **(options if at_construction else {})
+    )
+    with (
+        patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=_response(),
+        ) as sync_call,
+        patch(
+            "swarms.utils.litellm_wrapper.acompletion",
+            new_callable=AsyncMock,
+            return_value=_response(),
+        ) as async_call,
+    ):
+        kwargs = {} if at_construction else options
+        if async_mode:
+            assert asyncio.run(llm.arun("hi", **kwargs)) == "ok"
+        else:
+            assert llm.run("hi", **kwargs) == "ok"
+    sent = (async_call if async_mode else sync_call).call_args.kwargs
+    assert {key: sent[key] for key in options} == options
 
 
 class TestVisionCheck:
