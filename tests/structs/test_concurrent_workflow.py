@@ -678,5 +678,88 @@ def test_comms_channel_records_answers_in_agent_order(tmp_path):
     ]
 
 
+
+
+def test_executor_reused_across_runs():
+    """Verify that multiple run() calls reuse the same thread pool executor."""
+    workflow = ConcurrentWorkflow(
+        agents=_channel_agents(["A", "B"]),
+        autosave=False,
+        show_dashboard=False,
+    )
+
+    assert getattr(workflow, "_executor", None) is None
+    workflow.run("First task")
+    executor_first = workflow._executor
+    assert executor_first is not None
+    assert not executor_first._shutdown
+
+    workflow.run("Second task")
+    executor_second = workflow._executor
+    assert executor_second is executor_first
+    assert not executor_second._shutdown
+
+    workflow.close()
+    assert workflow._executor is None
+    assert executor_first._shutdown
+
+
+def test_executor_rebuilt_when_workers_change():
+    """Rebuilding executor when max_workers changes."""
+    workflow = ConcurrentWorkflow(
+        agents=_channel_agents(["A", "B"]),
+        autosave=False,
+        show_dashboard=False,
+    )
+
+    workflow.run("First task")
+    first_executor = workflow._executor
+    assert first_executor._max_workers == 2
+
+    # Change max_workers
+    workflow.max_workers = 4
+    workflow.run("Second task")
+    second_executor = workflow._executor
+    assert second_executor is not first_executor
+    assert second_executor._max_workers == 4
+    assert first_executor._shutdown
+
+    workflow.close()
+
+
+def test_executor_context_manager():
+    """Context manager enters and closes the executor on exit."""
+    with ConcurrentWorkflow(
+        agents=_channel_agents(["A", "B"]),
+        autosave=False,
+        show_dashboard=False,
+    ) as workflow:
+        workflow.run("Test task")
+        executor = workflow._executor
+        assert executor is not None
+        assert not executor._shutdown
+
+    assert workflow._executor is None
+    assert executor._shutdown
+
+
+def test_weakref_finalizer_shuts_down_executor():
+    """Weakref finalizer shuts down executor when workflow is garbage collected."""
+    import gc
+
+    def _create_and_run():
+        wf = ConcurrentWorkflow(
+            agents=_channel_agents(["A", "B"]),
+            autosave=False,
+            show_dashboard=False,
+        )
+        wf.run("Task")
+        return wf._executor
+
+    executor = _create_and_run()
+    gc.collect()
+    assert executor._shutdown
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
