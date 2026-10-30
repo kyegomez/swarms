@@ -529,6 +529,38 @@ class TestHandleOnboarding:
         mock_check.assert_called_once_with(verbose=True)
 
 
+class TestHandleInit:
+    def test_existing_env_keeps_its_entries(
+        self, tmp_path, monkeypatch
+    ):
+        from dotenv import dotenv_values
+
+        from swarms.cli import main as cli
+
+        env_path = tmp_path / ".env"
+        env_path.write_text(
+            "OPENAI_API_KEY=sk-existing\nDATABASE_URL=postgres://db\n"
+        )
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-existing")
+        answers = iter(["", "1,2"])
+        monkeypatch.setattr(
+            cli.console, "input", lambda *a, **k: next(answers)
+        )
+        keys = iter(["", "sk-ant-new", ""])
+        monkeypatch.setattr(
+            cli.getpass, "getpass", lambda *a, **k: next(keys)
+        )
+
+        cli.handle_init(make_args(command="init", dir=str(tmp_path)))
+
+        assert dotenv_values(env_path) == {
+            "OPENAI_API_KEY": "sk-existing",
+            "DATABASE_URL": "postgres://db",
+            "WORKSPACE_DIR": str(tmp_path / "workspace"),
+            "ANTHROPIC_API_KEY": "sk-ant-new",
+        }
+
+
 # ===========================================================================
 # 9. handle_llm_council
 # ===========================================================================
