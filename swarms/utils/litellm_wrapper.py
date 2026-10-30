@@ -19,6 +19,7 @@ for various input modalities and output formats.
 
 import copy
 import traceback
+import warnings
 from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
@@ -293,8 +294,8 @@ class LiteLLM:
                 Defaults to 3.
             verbose (bool, optional): Whether to enable verbose logging for debugging.
                 Defaults to False.
-            caching (bool, optional): Whether to enable LiteLLM response caching for
-                identical requests (a full-response cache). Defaults to False.
+            caching (bool, optional): Deprecated. Previously enabled LiteLLM response caching.
+                Ignored by RouteHub and will be removed in a future release. Defaults to False.
             prompt_caching (bool, optional): Whether to enable provider-side prompt
                 caching. When True, ephemeral ``cache_control`` breakpoints are added to
                 the system prompt and the final message so the large, stable prefix of
@@ -370,6 +371,13 @@ class LiteLLM:
         self.tools_list_dictionary = tools_list_dictionary
         self.tool_choice = tool_choice
         self.parallel_tool_calls = parallel_tool_calls
+        if caching:
+            warnings.warn(
+                "The 'caching' argument in LiteLLM is deprecated and ignored when using RouteHub. "
+                "It will be removed in a future release.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self.caching = caching
         self.prompt_caching = prompt_caching
         self.cache_config = cache_config or {}
@@ -1268,7 +1276,6 @@ class LiteLLM:
             ),
             "stream": self.stream,
             self._output_token_key(): self.max_tokens,
-            "caching": self.caching,
             # Per request: litellm drops its module-level count after the first retried call.
             "num_retries": self.retries,
         }
