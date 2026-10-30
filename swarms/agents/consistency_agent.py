@@ -21,7 +21,9 @@ Author: Swarms Team
 License: MIT
 """
 
+import weakref
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from swarms.telemetry.otel import ContextThreadPoolExecutor
 from typing import List, Optional, Union, Dict, Any
 
 from loguru import logger
@@ -111,7 +113,19 @@ def aggregation_agent(
     return final_answer
 
 
+def _shutdown_executor(
+    executor: Optional[ContextThreadPoolExecutor],
+) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
+
+
 class SelfConsistencyAgent:
+    _executor: Optional[ContextThreadPoolExecutor] = None
+    _finalizer: Optional[weakref.finalize] = None
     """
     A specialized agent that implements self-consistency for improved reasoning reliability.
 
@@ -214,6 +228,42 @@ class SelfConsistencyAgent:
         self.conversation = Conversation()
         self.args = args
         self.kwargs = kwargs
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = max_workers or self.num_samples or 5
+        if self._executor is not None:
+            if (
+                hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self.close()
+            else:
+                return self._executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def close(self) -> None:
+        if self._finalizer is not None and self._finalizer.alive:
+            self._finalizer()
+        elif self._executor is not None:
+            _shutdown_executor(self._executor)
+        self._executor = None
+        self._finalizer = None
+
+    def __enter__(self) -> "SelfConsistencyAgent":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
     def run(
         self,
@@ -258,21 +308,21 @@ class SelfConsistencyAgent:
 
         self.conversation.add(role="User", content=task)
 
-        # Generate multiple independent responses concurrently
-        with ThreadPoolExecutor() as executor:
-            futures = {
-                executor.submit(
-                    self._create_reasoning_agent().run,
-                    task=task,
-                    img=img,
-                    *args,
-                    **kwargs,
-                ): i
-                for i in range(self.num_samples)
-            }
-            for future in as_completed(futures):
-                response = future.result()
-                responses.append(response)
+        # Generate multiple independent responses concurrently using reusable thread pool
+        executor = self._get_executor()
+        futures = {
+            executor.submit(
+                self._create_reasoning_agent().run,
+                task=task,
+                img=img,
+                *args,
+                **kwargs,
+            ): i
+            for i in range(self.num_samples)
+        }
+        for future in as_completed(futures):
+            response = future.result()
+            responses.append(response)
 
         self.conversation.add(role=self.name, content=responses)
 
