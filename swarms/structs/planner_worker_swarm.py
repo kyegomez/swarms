@@ -475,9 +475,10 @@ class WorkerPool:
 
                 # Run with per-task timeout to detect stuck workers
                 if self.task_timeout:
-                    with ContextThreadPoolExecutor(
+                    task_executor = ContextThreadPoolExecutor(
                         max_workers=1
-                    ) as task_executor:
+                    )
+                    try:
                         future = task_executor.submit(
                             agent.run, task=context, img=self.img
                         )
@@ -486,9 +487,14 @@ class WorkerPool:
                                 timeout=self.task_timeout
                             )
                         except concurrent.futures.TimeoutError:
+                            task_executor.shutdown(
+                                wait=False, cancel_futures=True
+                            )
                             raise TimeoutError(
                                 f"Task execution exceeded {self.task_timeout}s timeout"
                             )
+                    finally:
+                        task_executor.shutdown(wait=False)
                 else:
                     result = agent.run(task=context, img=self.img)
 
