@@ -33,6 +33,24 @@ def test_dict_aliases_match_to_dict(conversation, output_type):
     assert result == conversation.to_dict()
 
 
+def test_dict_result_is_detached_from_the_history(conversation):
+    result = history_output_formatter(conversation, "dict")
+    conversation.add("user", "And 3+3?")
+    result[0]["content"] = "edited"
+    result.append({"role": "user", "content": "injected"})
+
+    assert [m["content"] for m in result] == [
+        "edited",
+        "4.",
+        "injected",
+    ]
+    assert [m["content"] for m in conversation.to_dict()] == [
+        "What is 2+2?",
+        "4.",
+        "And 3+3?",
+    ]
+
+
 @pytest.mark.parametrize("output_type", ["string", "str", "all"])
 def test_string_aliases_include_every_message(
     conversation, output_type
