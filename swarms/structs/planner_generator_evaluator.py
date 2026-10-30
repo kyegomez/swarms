@@ -715,12 +715,12 @@ class PlannerGeneratorEvaluator:
         # No table, try "Criterion: score/10" and "Criterion: score out of 10"
         if not criterion_scores:
             alt_scores = re.findall(
-                r"([^:\n]+?)\s*:\s*(\d+(?:\.\d+)?)\s*(?:/\s*10|out of 10)",
+                r"([^\W\d_][^:\n]*?)\s*:\s*(\d+(?:\.\d+)?)\s*(?:/\s*10|out of 10)",
                 text,
                 re.IGNORECASE,
             )
             for criterion, score in alt_scores:
-                criterion = criterion.strip(" -").lower()
+                criterion = criterion.strip().lower()
                 if criterion:
                     criterion_scores[criterion] = float(score)
                     criterion_thresholds[criterion] = thresholds.get(
