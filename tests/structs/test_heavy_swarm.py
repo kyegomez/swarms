@@ -1093,5 +1093,80 @@ class TestGrokHeavyFullPipeline:
         assert len(result) > 100
 
 
+# ============================================================================
+# Executor reuse across runs (Issue #2958)
+# ============================================================================
+
+
+class TestHeavySwarmExecutorReuse:
+    """Tests verifying thread pool executor reuse, context management and cleanup."""
+
+    def test_heavy_swarm_executor_reused_across_runs(self, monkeypatch):
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+        )
+        for agent in swarm.agents.values():
+            monkeypatch.setattr(agent, "run", lambda *a, **kw: "dummy_answer")
+
+        questions = {
+            "research_question": "q1",
+            "analysis_question": "q2",
+            "alternatives_question": "q3",
+            "verification_question": "q4",
+        }
+
+        swarm._execute_agents_parallel(questions, swarm.agents)
+        exec1 = getattr(swarm, "_executor", None)
+        assert exec1 is not None
+
+        swarm._execute_agents_parallel(questions, swarm.agents)
+        exec2 = getattr(swarm, "_executor", None)
+        assert exec1 is exec2
+        assert not exec1._shutdown
+
+    def test_heavy_swarm_context_manager_and_close(self):
+        with HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+        ) as swarm:
+            executor = swarm._get_executor()
+            assert executor is not None
+            assert not executor._shutdown
+
+        assert swarm._executor is None
+        assert executor._shutdown
+
+    def test_heavy_swarm_executor_resizes_when_larger_workers_requested(self):
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+        )
+        exec1 = swarm._get_executor(max_workers=2)
+        assert getattr(exec1, '_max_workers', None) == 2
+
+        exec2 = swarm._get_executor(max_workers=8)
+        assert exec1 is not exec2
+        assert exec1._shutdown
+        assert getattr(exec2, '_max_workers', None) == 8
+        swarm.close()
+        assert exec2._shutdown
+
+    def test_heavy_swarm_weakref_finalizer(self):
+        import gc
+
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+        )
+        executor = swarm._get_executor()
+        assert not executor._shutdown
+
+        del swarm
+        gc.collect()
+
+        assert executor._shutdown
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

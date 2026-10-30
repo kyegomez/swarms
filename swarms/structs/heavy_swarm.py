@@ -1,4 +1,5 @@
 import concurrent.futures
+import weakref
 import json
 import traceback
 from typing import Dict, List, Optional
@@ -28,6 +29,16 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
+
+
+def _shutdown_executor(
+    executor: Optional[ContextThreadPoolExecutor],
+) -> None:
+    if executor is not None:
+        try:
+            executor.shutdown(wait=False)
+        except Exception:
+            pass
 
 
 class HeavySwarm(SerializableMixin):
@@ -91,11 +102,16 @@ class HeavySwarm(SerializableMixin):
             >>> # The swarm will run 3 iterations, each building upon the previous results
     """
 
+    _executor: Optional[ContextThreadPoolExecutor] = None
+    _finalizer: Optional[weakref.finalize] = None
+
     _to_dict_exclude = (
         "agents",
         "conversation",
         "dashboard",
         "worker_tools",
+        "_executor",
+        "_finalizer",
     )
 
     def __init__(
@@ -177,6 +193,9 @@ class HeavySwarm(SerializableMixin):
         self.dashboard = HeavySwarmDashboard()
         self._question_usage = empty_usage()
 
+        self._executor: Optional[ContextThreadPoolExecutor] = None
+        self._finalizer: Optional[weakref.finalize] = None
+
         self.agents = self.create_agents()
 
         if self.show_dashboard:
@@ -186,6 +205,44 @@ class HeavySwarm(SerializableMixin):
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
+
+    def _get_executor(
+        self, max_workers: Optional[int] = None
+    ) -> ContextThreadPoolExecutor:
+        workers = (
+            max_workers
+            or self.max_workers
+            or max_workers_95_percent()
+        )
+        if self._executor is not None:
+            if (
+                hasattr(self._executor, "_max_workers")
+                and self._executor._max_workers < workers
+            ):
+                self.close()
+            else:
+                return self._executor
+
+        executor = ContextThreadPoolExecutor(max_workers=workers)
+        self._executor = executor
+        self._finalizer = weakref.finalize(
+            self, _shutdown_executor, executor
+        )
+        return executor
+
+    def close(self) -> None:
+        if self._finalizer is not None and self._finalizer.alive:
+            self._finalizer()
+        elif self._executor is not None:
+            _shutdown_executor(self._executor)
+        self._executor = None
+        self._finalizer = None
+
+    def __enter__(self) -> "HeavySwarm":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
     def show_swarm_info(self):
         """
@@ -731,43 +788,41 @@ class HeavySwarm(SerializableMixin):
                 ),
             ]
 
-        # Execute agents in parallel using ThreadPoolExecutor
+        # Execute agents in parallel using reusable thread pool
         results = {}
-        with ContextThreadPoolExecutor(
-            max_workers=self.max_workers
-        ) as executor:
-            # Submit all agent tasks
-            future_to_agent = {
-                executor.submit(execute_agent, task): task[0]
-                for task in agent_tasks
-            }
+        executor = self._get_executor()
+        # Submit all agent tasks
+        future_to_agent = {
+            executor.submit(execute_agent, task): task[0]
+            for task in agent_tasks
+        }
 
-            # Collect results as they complete
-            for future in concurrent.futures.as_completed(
-                future_to_agent
-            ):
-                agent_type = future_to_agent[future]
-                try:
-                    agent_name, result = future.result(
-                        timeout=self.timeout
-                    )
-                    results[agent_name.lower()] = result
-                except concurrent.futures.TimeoutError:
-                    self._log(
-                        "ERROR",
-                        f"⏰ Timeout for {agent_type} Agent after {self.timeout}s",
-                    )
-                    results[agent_type.lower()] = (
-                        f"Timeout after {self.timeout} seconds"
-                    )
-                except Exception as e:
-                    self._log(
-                        "ERROR",
-                        f"❌ Exception in {agent_type} Agent: {str(e)}",
-                    )
-                    results[agent_type.lower()] = (
-                        f"Exception: {str(e)}"
-                    )
+        # Collect results as they complete
+        for future in concurrent.futures.as_completed(
+            future_to_agent
+        ):
+            agent_type = future_to_agent[future]
+            try:
+                agent_name, result = future.result(
+                    timeout=self.timeout
+                )
+                results[agent_name.lower()] = result
+            except concurrent.futures.TimeoutError:
+                self._log(
+                    "ERROR",
+                    f"⏰ Timeout for {agent_type} Agent after {self.timeout}s",
+                )
+                results[agent_type.lower()] = (
+                    f"Timeout after {self.timeout} seconds"
+                )
+            except Exception as e:
+                self._log(
+                    "ERROR",
+                    f"❌ Exception in {agent_type} Agent: {str(e)}",
+                )
+                results[agent_type.lower()] = (
+                    f"Exception: {str(e)}"
+                )
 
         return results
 
@@ -1080,41 +1135,40 @@ class HeavySwarm(SerializableMixin):
                 ]
 
             # Execute agents in parallel
-            with ContextThreadPoolExecutor(
-                max_workers=self.max_workers
-            ) as executor:
-                # Submit all agent tasks
-                future_to_agent = {
-                    executor.submit(
-                        execute_agent_with_progress, task
-                    ): task[1]
-                    for task in agent_tasks
-                }
+            # Execute agents in parallel using reusable thread pool
+            executor = self._get_executor()
+            # Submit all agent tasks
+            future_to_agent = {
+                executor.submit(
+                    execute_agent_with_progress, task
+                ): task[1]
+                for task in agent_tasks
+            }
 
-                # Collect results as they complete
-                for future in concurrent.futures.as_completed(
-                    future_to_agent
-                ):
-                    agent_key = future_to_agent[future]
-                    try:
-                        agent_name, result = future.result(
-                            timeout=self.timeout
-                        )
-                        results[
-                            agent_name.lower()
-                            .replace("🔍 ", "")
-                            .replace("📊 ", "")
-                            .replace("⚡ ", "")
-                            .replace("✅ ", "")
-                        ] = result
-                    except concurrent.futures.TimeoutError:
-                        tracker.timeout(agent_key, agent_key)
-                        results[agent_key] = (
-                            f"Timeout after {self.timeout} seconds"
-                        )
-                    except Exception as e:
-                        tracker.error(agent_key, agent_key)
-                        results[agent_key] = f"Exception: {str(e)}"
+            # Collect results as they complete
+            for future in concurrent.futures.as_completed(
+                future_to_agent
+            ):
+                agent_key = future_to_agent[future]
+                try:
+                    agent_name, result = future.result(
+                        timeout=self.timeout
+                    )
+                    results[
+                        agent_name.lower()
+                        .replace("🔍 ", "")
+                        .replace("📊 ", "")
+                        .replace("⚡ ", "")
+                        .replace("✅ ", "")
+                    ] = result
+                except concurrent.futures.TimeoutError:
+                    tracker.timeout(agent_key, agent_key)
+                    results[agent_key] = (
+                        f"Timeout after {self.timeout} seconds"
+                    )
+                except Exception as e:
+                    tracker.error(agent_key, agent_key)
+                    results[agent_key] = f"Exception: {str(e)}"
 
         # Show completion summary
         agent_count = (
