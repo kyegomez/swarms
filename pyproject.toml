@@ -80,7 +80,7 @@ schedule = "*"
 opentelemetry-sdk = "*"
 opentelemetry-exporter-otlp-proto-http = "*"
 zstandard = "*"
-routehub = { version = ">=0.2.0", extras = ["fast"], optional = true }
+routehub = { version = ">=0.4.0", extras = ["fast"], optional = true }
 rustworkx = { version = "*", optional = true }
 
 [tool.poetry.extras]

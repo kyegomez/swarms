@@ -99,6 +99,11 @@ def _model_info(model_name: str) -> Dict[str, Any]:
     try:
         return llm_backend.get_model_info(model_name)
     except Exception:
+        if "/" in model_name:
+            try:
+                return llm_backend.get_model_info(model_name.split("/", 1)[1])
+            except Exception:
+                pass
         return {}
 
 
@@ -1674,10 +1679,19 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
-        return (
-            _model_info(self.model_name).get("max_output_tokens")
-            or 16000
-        )
+        tokens = _model_info(self.model_name).get("max_output_tokens")
+        if not tokens:
+            try:
+                tokens = llm_backend.get_max_tokens(self.model_name)
+            except Exception:
+                if "/" in self.model_name:
+                    try:
+                        tokens = llm_backend.get_max_tokens(
+                            self.model_name.split("/", 1)[1]
+                        )
+                    except Exception:
+                        pass
+        return tokens or 16000
 
     def reliability_check(self):
 
@@ -1696,9 +1710,20 @@ Subtask Breakdown:
 
         # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
         if self.max_tokens is None or self.max_tokens <= 0:
-            suggested_tokens = llm_backend.get_max_tokens(
-                self.model_name
-            )
+            suggested_tokens = None
+            try:
+                suggested_tokens = llm_backend.get_max_tokens(
+                    self.model_name
+                )
+            except Exception:
+                pass
+            if (suggested_tokens is None or suggested_tokens <= 0) and "/" in self.model_name:
+                try:
+                    suggested_tokens = llm_backend.get_max_tokens(
+                        self.model_name.split("/", 1)[1]
+                    )
+                except Exception:
+                    pass
             if suggested_tokens is not None and suggested_tokens > 0:
                 self.max_tokens = suggested_tokens
             else:
@@ -1740,10 +1765,14 @@ Subtask Breakdown:
 
         model_list = llm_backend.model_list
         # Empty when RouteHub cannot reach OpenRouter, which says nothing about the model.
-        if model_list and self.model_name not in model_list:
-            logger.warning(
-                f"The model '{self.model_name}' may not be supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
-            )
+        if model_list:
+            is_supported = self.model_name in model_list
+            if not is_supported and "/" in self.model_name:
+                is_supported = self.model_name.split("/", 1)[1] in model_list
+            if not is_supported:
+                logger.warning(
+                    f"The model '{self.model_name}' may not be supported. Please use a supported model, or override the model name with the 'llm' parameter, which should be a class with a 'run(task: str)' method or a '__call__' method."
+                )
 
     def save(self, file_path: str = None) -> None:
         """
