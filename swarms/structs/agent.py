@@ -2017,8 +2017,45 @@ Subtask Breakdown:
         return self.llm_manager.get_parameters()
 
     def update_system_prompt(self, system_prompt: str):
-        """Upddate the system message"""
+        """Update the system message across agent state, short memory, and the LLM client."""
         self.system_prompt = system_prompt
+        if hasattr(self, "short_memory") and self.short_memory is not None:
+            self.short_memory.system_prompt = system_prompt
+            if hasattr(self.short_memory, "conversation_history") and isinstance(
+                self.short_memory.conversation_history, list
+            ):
+                updated = False
+                for msg in self.short_memory.conversation_history:
+                    if (
+                        isinstance(msg, dict)
+                        and msg.get("role", "").lower() == "system"
+                    ):
+                        msg["content"] = system_prompt
+                        updated = True
+                if not updated and system_prompt:
+                    self.short_memory.conversation_history.insert(
+                        0, {"role": "System", "content": system_prompt}
+                    )
+                self.short_memory._str_cache = None
+
+        if hasattr(self, "llm") and self.llm is not None:
+            if hasattr(self.llm, "system_prompt"):
+                self.llm.system_prompt = system_prompt
+            if hasattr(self.llm, "messages") and isinstance(
+                self.llm.messages, list
+            ):
+                updated = False
+                for msg in self.llm.messages:
+                    if (
+                        isinstance(msg, dict)
+                        and msg.get("role", "").lower() == "system"
+                    ):
+                        msg["content"] = system_prompt
+                        updated = True
+                if not updated and system_prompt:
+                    self.llm.messages.insert(
+                        0, {"role": "system", "content": system_prompt}
+                    )
 
     def update_max_loops(self, max_loops: Union[int, str]):
         """Update the max loops"""
@@ -2324,6 +2361,13 @@ Subtask Breakdown:
             >>> response = agent.call_llm("What is Python?", current_loop=1)
             >>> response = agent.call_llm("Describe this image", img="chart.png")
         """
+        if (
+            hasattr(self, "llm")
+            and self.llm is not None
+            and getattr(self.llm, "system_prompt", None) != self.system_prompt
+        ):
+            self.update_system_prompt(self.system_prompt)
+
         skills = self._skills_prompt.strip()
         if skills:
             if kwargs.get("messages") is not None:
