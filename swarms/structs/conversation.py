@@ -830,6 +830,28 @@ class Conversation:
         self.conversation_history.pop(int(index))
         self._str_cache = None
 
+    def truncate(self, index: Union[int, str] = 0) -> List[Dict[str, Any]]:
+        """Drop every row in the conversation history from index onward.
+
+        Invalidates the string cache once and returns the removed rows.
+
+        Args:
+            index (Union[int, str]): The starting index from which messages are dropped.
+
+        Returns:
+            List[Dict[str, Any]]: The removed messages.
+        """
+        idx = int(index)
+        n = len(self.conversation_history)
+        if idx < 0:
+            idx = max(0, n + idx)
+        if idx >= n:
+            return []
+        removed = self.conversation_history[idx:]
+        del self.conversation_history[idx:]
+        self._str_cache = None
+        return removed
+
     def update(self, index: str, role, content):
         """Update a message in the conversation history.
 

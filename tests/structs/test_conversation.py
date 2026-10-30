@@ -1693,6 +1693,63 @@ class TestCommsChannelMirror:
         assert len(channel.messages()) == 2
 
 
+class TestConversationTruncate:
+    def test_conversation_truncate_drops_rows_from_index_onward(self):
+        conv = Conversation()
+        for i in range(5):
+            conv.add(role="user" if i % 2 == 0 else "assistant", content=f"msg{i}")
+
+        assert len(conv.conversation_history) == 5
+        removed = conv.truncate(2)
+
+        assert len(conv.conversation_history) == 2
+        assert [m["content"] for m in conv.conversation_history] == ["msg0", "msg1"]
+        assert len(removed) == 3
+        assert [m["content"] for m in removed] == ["msg2", "msg3", "msg4"]
+
+    def test_conversation_truncate_invalidates_str_cache(self):
+        conv = Conversation(cache_enabled=True)
+        conv.add("user", "Hello")
+        conv.add("assistant", "Hi there")
+
+        _ = conv.return_history_as_string()
+        assert conv._str_cache is not None
+
+        conv.truncate(1)
+        assert conv._str_cache is None
+        assert len(conv.conversation_history) == 1
+
+    def test_conversation_truncate_out_of_bounds_or_empty(self):
+        conv = Conversation()
+        removed = conv.truncate(0)
+        assert removed == []
+
+        conv.add("user", "only message")
+        removed = conv.truncate(10)
+        assert removed == []
+        assert len(conv.conversation_history) == 1
+
+    def test_conversation_truncate_negative_index(self):
+        conv = Conversation()
+        conv.add("user", "msg0")
+        conv.add("assistant", "msg1")
+        conv.add("user", "msg2")
+
+        removed = conv.truncate(-1)
+        assert len(removed) == 1
+        assert removed[0]["content"] == "msg2"
+        assert len(conv.conversation_history) == 2
+
+    def test_conversation_truncate_string_index(self):
+        conv = Conversation()
+        conv.add("user", "first")
+        conv.add("assistant", "second")
+        removed = conv.truncate("1")
+        assert len(conv.conversation_history) == 1
+        assert len(removed) == 1
+        assert removed[0]["content"] == "second"
+
+
 if __name__ == "__main__":
     logger.info("Starting test execution")
     results = run_all_tests()
