@@ -518,10 +518,15 @@ class CouncilAsAJudge:
         async def _judge(dim: str, agent: Agent) -> Tuple[str, str]:
             prompt = build_judge_prompt(dim, task, task)
             async with semaphore:
-                return agent.agent_name, await agent.arun(
-                    f"{prompt} \n\n Evaluate the following response for the {dim} dimension: {task}.",
-                    messages=[],
-                )
+                try:
+                    return agent.agent_name, await agent.arun(
+                        f"{prompt} \n\n Evaluate the following response for the {dim} dimension: {task}.",
+                        messages=[],
+                    )
+                except Exception as e:
+                    raise DimensionEvaluationError(
+                        f"Failed to evaluate dimension {dim}: {str(e)}"
+                    ) from e
 
         try:
             self.conversation.clear()
@@ -535,18 +540,15 @@ class CouncilAsAJudge:
             for name, verdict in verdicts:
                 self.conversation.add(role=name, content=verdict)
 
+            aggregator = self.aggregator_agent
             prior, aggregation_task = split_last_turn(
-                messages_for(
-                    self.aggregator_agent.agent_name,
-                    self.conversation,
-                )
+                messages_for(aggregator.agent_name, self.conversation)
             )
-            final_report = await self.aggregator_agent.arun(
+            final_report = await aggregator.arun(
                 task=aggregation_task, messages=prior
             )
             self.conversation.add(
-                role=self.aggregator_agent.agent_name,
-                content=final_report,
+                role=aggregator.agent_name, content=final_report
             )
 
             return history_output_formatter(

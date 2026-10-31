@@ -49,11 +49,9 @@ def test_arun_awaits_every_judge_within_max_concurrency():
         return "verdict"
 
     council = CouncilAsAJudge(model_name="gpt-4o-mini")
-    for agent in [
-        *council.judge_agents.values(),
-        council.aggregator_agent,
-    ]:
-        agent.arun = arun
+    council.aggregator_agent.arun = arun
+    for judge in council.judge_agents.values():
+        judge.arun = arun
 
     report = asyncio.run(council.arun("T", max_concurrency=2))
 
