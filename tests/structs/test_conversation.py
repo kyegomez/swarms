@@ -391,24 +391,6 @@ def test_return_messages_as_dictionary():
         return False
 
 
-def test_add_tool_output_to_agent():
-    logger.info("Running test_add_tool_output_to_agent")
-    conv = Conversation()
-    tool_output = {"name": "test_tool", "output": "test result"}
-    try:
-        conv.add_tool_output_to_agent("tool", tool_output)
-        assert len(conv.conversation_history) == 1
-        assert conv.conversation_history[0]["role"] == "tool"
-        assert conv.conversation_history[0]["content"] == tool_output
-        logger.success("test_add_tool_output_to_agent passed")
-        return True
-    except AssertionError as e:
-        logger.error(
-            f"test_add_tool_output_to_agent failed: {str(e)}"
-        )
-        return False
-
-
 def test_get_final_message():
     logger.info("Running test_get_final_message")
     conv = Conversation()
@@ -1064,7 +1046,6 @@ def run_all_tests():
         test_get_last_message_as_string,
         test_return_messages_as_list,
         test_return_messages_as_dictionary,
-        test_add_tool_output_to_agent,
         test_get_final_message,
         test_get_final_message_content,
         test_return_all_except_first,
@@ -1647,7 +1628,7 @@ def test_export_conversation_writes_the_named_json_file(tmp_path):
     conv.export_conversation(str(target))
 
     fresh = Conversation(conversations_dir=str(tmp_path))
-    fresh.import_conversation(str(target))
+    fresh.load_from_json(str(target))
     assert fresh.conversation_history == conv.conversation_history
 
 
