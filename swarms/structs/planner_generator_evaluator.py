@@ -448,7 +448,7 @@ class PlannerGeneratorEvaluator:
         # Match table rows: | criterion | weight | description | threshold |
         table_rows = re.findall(
             r"\|\s*([^|]+?)\s*\|\s*(?:high|standard|low|[^|]*?)\s*\|\s*[^|]*?\s*\|\s*(\d+(?:\.\d+)?)\s*\|",
-            plan,
+            plan.replace("*", ""),
             re.IGNORECASE,
         )
         for criterion, threshold in table_rows:
@@ -693,11 +693,12 @@ class PlannerGeneratorEvaluator:
         """
         criterion_scores = {}
         criterion_thresholds = {}
+        text = raw_evaluation.replace("*", "")
 
         # Parse table rows: | criterion | score | threshold | status |
         score_rows = re.findall(
             r"\|\s*([^|]+?)\s*\|\s*(\d+(?:\.\d+)?)\s*\|\s*(\d+(?:\.\d+)?)\s*\|\s*(PASS|FAIL)\s*\|",
-            raw_evaluation,
+            text,
             re.IGNORECASE,
         )
 
@@ -714,8 +715,8 @@ class PlannerGeneratorEvaluator:
         # No table, try "Criterion: score/10" and "Criterion: score out of 10"
         if not criterion_scores:
             alt_scores = re.findall(
-                r"\*?\*?([^*:\n]+?)\*?\*?\s*:\s*(\d+(?:\.\d+)?)\s*(?:/\s*10|out of 10)",
-                raw_evaluation,
+                r"(\d*[^\W\d_][^:\n]*?)\s*:\s*(\d+(?:\.\d+)?)\s*(?:/\s*10|out of 10)",
+                text,
                 re.IGNORECASE,
             )
             for criterion, score in alt_scores:
@@ -741,7 +742,7 @@ class PlannerGeneratorEvaluator:
             # If we couldn't parse scores, check for explicit PASS/FAIL
             overall_status_match = re.search(
                 r"Overall\s+Status\s*:\s*(PASS|FAIL)",
-                raw_evaluation,
+                text,
                 re.IGNORECASE,
             )
             if overall_status_match:

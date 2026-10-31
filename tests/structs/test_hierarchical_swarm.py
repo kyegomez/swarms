@@ -1283,6 +1283,27 @@ def test_a_run_continues_from_a_non_empty_channel(tmp_path):
         assert "About 120B USD in 2025." in history, history
 
 
+def test_pge_reads_bold_markdown_verdicts_and_thresholds(tmp_path):
+    harness = PlannerGeneratorEvaluator(
+        working_directory=str(tmp_path)
+    )
+    thresholds = harness._extract_thresholds(
+        "| **Functionality** | high | It runs | **8** |"
+    )
+    evaluations = [
+        "| Functionality | **4** | 6 | **FAIL** |",
+        "**Overall Status:** FAIL",
+        "### Overall Status: **FAIL**",
+        "- **Functionality**: 7/10",
+    ]
+
+    assert thresholds["functionality"] == 8.0
+    assert [
+        harness._parse_evaluation(1, text, thresholds).passed
+        for text in evaluations
+    ] == [False] * len(evaluations)
+
+
 def test_harness_result_reflects_conversation_state(tmp_path):
     """get_harness_result reports identity plus the live conversation history."""
     harness = PlannerGeneratorEvaluator(
