@@ -128,7 +128,7 @@ def run_agent(
         raise TypeError("Agent must be an instance of Agent")
 
     try:
-        return agent.run(task=task, *args, **kwargs)
+        return agent.run(task, *args, **kwargs)
     except Exception as e:
         raise RuntimeError(f"Error running agent: {str(e)}")
 

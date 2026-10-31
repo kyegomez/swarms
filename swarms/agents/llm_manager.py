@@ -640,10 +640,10 @@ class LLMManager:
 
         if img is not None:
             response = self.agent.llm.run(
-                task=task, img=img, *args, **kwargs
+                task, img, *args, **kwargs
             )
         else:
-            response = self.agent.llm.run(task=task, *args, **kwargs)
+            response = self.agent.llm.run(task, *args, **kwargs)
 
         return response, original_stream
 

@@ -1352,10 +1352,10 @@ class Agent:
             The agent's final answer once it determines the task is complete.
         """
         return self.autonomous_loop._run_autonomous_loop(
-            task=task,
-            img=img,
-            streaming_callback=streaming_callback,
-            messages=messages,
+            task,
+            img,
+            streaming_callback,
+            messages,
             *args,
             **kwargs,
         )
@@ -1510,8 +1510,8 @@ Subtask Breakdown:
         """
         try:
             return self.run(
-                task=task,
-                img=img,
+                task,
+                img,
                 *args,
                 **kwargs,
             )
@@ -2584,19 +2584,19 @@ Subtask Breakdown:
             if messages:
                 self.short_memory.add_messages(messages)
             return self._run_autonomous_loop(
-                task=task,
-                img=img,
-                streaming_callback=streaming_callback,
-                messages=messages,
+                task,
+                img,
+                streaming_callback,
+                messages,
                 *args,
                 **kwargs,
             )
         return self._run(
-            task=task,
-            img=img,
-            imgs=imgs,
-            streaming_callback=streaming_callback,
-            messages=messages,
+            task,
+            img,
+            imgs,
+            streaming_callback,
+            messages,
             *args,
             **kwargs,
         )

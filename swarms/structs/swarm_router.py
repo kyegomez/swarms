@@ -1105,9 +1105,9 @@ class SwarmRouter(SerializableMixin):
                 f"SwarmRouter '{self.name}': Executing task: {task}",
             )
             return self._run(
-                task=task,
-                img=img,
-                tasks=tasks,
+                task,
+                tasks,
+                img,
                 *args,
                 **kwargs,
             )
@@ -1142,7 +1142,7 @@ class SwarmRouter(SerializableMixin):
         """
         if imgs is not None:
             kwargs["imgs"] = imgs
-        result = self.run(task=task, img=img, *args, **kwargs)
+        result = self.run(task, img, *args, **kwargs)
         return result
 
     def batch_run(

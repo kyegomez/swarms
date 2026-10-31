@@ -274,7 +274,7 @@ class TreeAgent(Agent):
             logger.info(f"Running task on {self.agent_name}: {task}")
             logger.debug(f"Input Log: {input_log.json()}")
 
-        result = self.run(task=task, img=img, *args, **kwargs)
+        result = self.run(task, img, *args, **kwargs)
 
         output_log = AgentLogOutput(
             agent_name=self.agent_name,

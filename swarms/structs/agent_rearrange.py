@@ -962,6 +962,7 @@ class AgentRearrange(SerializableMixin):
         self,
         task: str = None,
         img: str = None,
+        custom_tasks: Optional[Dict[str, str]] = None,
         *args,
         **kwargs,
     ):
@@ -987,8 +988,9 @@ class AgentRearrange(SerializableMixin):
         """
         try:
             out = self._run(
-                task=task,
-                img=img,
+                task,
+                img,
+                custom_tasks,
                 *args,
                 **kwargs,
             )

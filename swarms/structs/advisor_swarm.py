@@ -283,4 +283,4 @@ class AdvisorSwarm:
 
     def __call__(self, task: str, *args, **kwargs) -> Any:
         """Make the swarm callable."""
-        return self.run(task=task, *args, **kwargs)
+        return self.run(task, *args, **kwargs)

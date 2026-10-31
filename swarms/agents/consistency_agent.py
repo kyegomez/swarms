@@ -263,8 +263,8 @@ class SelfConsistencyAgent:
             futures = {
                 executor.submit(
                     self._create_reasoning_agent().run,
-                    task=task,
-                    img=img,
+                    task,
+                    img,
                     *args,
                     **kwargs,
                 ): i

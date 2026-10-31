@@ -35,7 +35,7 @@ def run_single_agent(
         >>> result = run_single_agent(agent, "Analyze this data")
         >>> print(result)
     """
-    return agent.run(task=task, *args, **kwargs)
+    return agent.run(task, *args, **kwargs)
 
 
 async def run_agent_async(agent: AgentType, task: str) -> Any:
