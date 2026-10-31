@@ -198,6 +198,7 @@ class GroupChat(SerializableMixin):
         verbose: bool = False,
         auto_equip: bool = True,
         channel: Optional[CommsChannel] = None,
+        max_concurrency: Optional[int] = None,
     ):
         """Initialize the turn-based groupchat runtime.
 
@@ -237,6 +238,7 @@ class GroupChat(SerializableMixin):
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
+        self.max_concurrency = max_concurrency
 
         self.channel = channel
         claim_agents(self.agents, channel, self.name)
@@ -326,6 +328,52 @@ class GroupChat(SerializableMixin):
             agent.output_type = previous_output_type
         return _extract_args(tool_output)
 
+    async def _decide_async(
+        self, agent: Agent, sender: str, message: str
+    ) -> Tuple[float, str]:
+        """Ask one agent whether it wants to respond to a message asynchronously.
+
+        Prefers the native agent.arun when available so bidding executes on
+        the event loop without consuming an OS worker thread. Falls back to
+        asyncio.to_thread for synchronous agents.
+        """
+        prompt = GROUPCHAT_DECIDE_PROMPT.format(
+            agent_name=agent.agent_name,
+            other_agents=self._other_agents(agent.agent_name),
+            sender=sender,
+            message=message,
+        )
+        previous_output_type = getattr(agent, "output_type", None)
+        agent.output_type = "final"
+        try:
+            prior_messages = messages_for(
+                agent.agent_name, self.conversation
+            )
+            if hasattr(agent, "arun") and callable(getattr(agent, "arun")):
+                coro = agent.arun(
+                    task=prompt,
+                    messages=prior_messages,
+                )
+                if asyncio.iscoroutine(coro):
+                    tool_output = await coro
+                else:
+                    tool_output = coro
+            else:
+                tool_output = await asyncio.to_thread(
+                    agent.run,
+                    task=prompt,
+                    messages=prior_messages,
+                )
+        except Exception as e:
+            logger.warning(
+                f"[{self.name}] {agent.agent_name} failed to bid: "
+                f"{type(e).__name__}: {e}"
+            )
+            return 0.0, ""
+        finally:
+            agent.output_type = previous_output_type
+        return _extract_args(tool_output)
+
     def _post(
         self,
         sender: str,
@@ -400,18 +448,24 @@ class GroupChat(SerializableMixin):
 
         Each agent returns a ``(score, message)`` pair: how much it wants the
         floor and the reply it would give. Bidding is the cheap "do I have
-        something to add right now?" instinct — it runs in parallel for speed,
-        but at most one bid is ever posted (see ``_select_speaker``). Agent
-        calls are blocking, so each runs in its own thread via
-        ``asyncio.to_thread`` and one slow model cannot stall the turn.
+        something to add right now?" instinct - it runs in parallel for speed,
+        but at most one bid is ever posted (see ``_select_speaker``). Uses
+        native ``arun`` when supported or ``asyncio.to_thread`` for sync agents.
         """
+        semaphore = (
+            asyncio.Semaphore(self.max_concurrency)
+            if getattr(self, "max_concurrency", None) and self.max_concurrency > 0
+            else None
+        )
+
+        async def _bid_with_semaphore(agent: Agent) -> Tuple[float, str]:
+            if semaphore is not None:
+                async with semaphore:
+                    return await self._decide_async(agent, sender, message)
+            return await self._decide_async(agent, sender, message)
+
         results = await asyncio.gather(
-            *(
-                asyncio.to_thread(
-                    self._decide_sync, agent, sender, message
-                )
-                for agent in self.agents
-            )
+            *(_bid_with_semaphore(agent) for agent in self.agents)
         )
         return [
             (agent, score, reply)
@@ -577,3 +631,57 @@ class GroupChat(SerializableMixin):
             List of formatted conversation outputs from ``_run_async``.
         """
         return batched_run(self.run, tasks)
+
+    async def arun(
+        self,
+        task: str,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ) -> Any:
+        """Asynchronously run the groupchat until a lull or ``max_loops``.
+
+        Args:
+            task: Initial user task or message for the group.
+            streaming_callback: Optional ``(agent_name, chunk, is_final)``
+                callback that receives each posted message as a stream of token
+                chunks, with ``is_final=True`` marking the end of a speaker's
+                turn.
+
+        Returns:
+            Formatted conversation output from ``_run_async``.
+        """
+        return await self._run_async(
+            task, streaming_callback=streaming_callback
+        )
+
+    async def batch_arun(
+        self,
+        tasks: List[str],
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+        *args,
+        **kwargs,
+    ) -> List[Any]:
+        """Asynchronously run the groupchat across multiple tasks.
+
+        Args:
+            tasks: List of user tasks or messages for the group.
+            streaming_callback: Optional streaming callback.
+            *args: Additional positional arguments.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            List of formatted conversation outputs from ``_run_async``.
+        """
+        coros = [
+            self.arun(
+                task,
+                streaming_callback=streaming_callback,
+                *args,
+                **kwargs,
+            )
+            for task in tasks
+        ]
+        return await asyncio.gather(*coros)
