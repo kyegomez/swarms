@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from typing import Optional
 
 import pytest
@@ -352,6 +353,33 @@ def test_tool_call_objects_return_results_in_call_order(sequential):
 
     assert raw == [5, {"location": "Paris", "unit": "celsius"}]
     assert text[0] == "Function 'add_numbers' result:\n5"
+
+
+def list_line_items(order_id: str) -> list:
+    return [LineItem(sku="pen", qty=2)]
+
+
+def get_shipment(order_id: str) -> dict:
+    return {"order_id": order_id, "shipped": date(2026, 10, 1)}
+
+
+def test_results_holding_models_or_dates_are_returned_as_json():
+    calls = [
+        SdkToolCall("c1", "list_line_items", {"order_id": "A7"}),
+        SdkToolCall("c2", "get_shipment", {"order_id": "A7"}),
+    ]
+    tool = BaseTool(tools=[list_line_items, get_shipment])
+
+    text = tool.execute_function_calls_from_api_response(calls)
+
+    assert text == [
+        "Function 'list_line_items' result:\n"
+        + json.dumps([{"sku": "pen", "qty": 2}], indent=2),
+        "Function 'get_shipment' result:\n"
+        + json.dumps(
+            {"order_id": "A7", "shipped": "2026-10-01"}, indent=2
+        ),
+    ]
 
 
 def run_all_tests():
