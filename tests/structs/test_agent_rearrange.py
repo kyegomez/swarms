@@ -571,6 +571,29 @@ def _make_rearrange(agents, flow, **kwargs):
     )
 
 
+def test_custom_tasks_replace_the_task_for_named_agents():
+    seen = {}
+
+    def make(name):
+        def run(task=None, messages=None, **kwargs):
+            seen[name] = (task, [m["content"] for m in messages])
+            return f"{name} answer"
+
+        return MagicMock(agent_name=name, run=run)
+
+    rearrange = AgentRearrange(
+        agents=[make(n) for n in "ABCD"], flow="A -> B, C -> D"
+    )
+    rearrange.run("Main", custom_tasks={"C": "For C", "D": "For D"})
+
+    assert seen["A"][0] == "Main"
+    assert seen["B"][0] == "A: A answer"
+    assert seen["C"] == ("For C", ["Main", "A: A answer"])
+    assert seen["D"][0] == "For D"
+    with pytest.raises(ValueError, match="not in the flow"):
+        rearrange.run("Main", custom_tasks={"E": "For E"})
+
+
 def test_missing_agent_raises():
     """run() must raise when flow references a removed agent."""
     agents = create_sample_agents()
