@@ -231,13 +231,8 @@ class MajorityVoting:
 
             for future in as_completed(future_to_agent):
                 agent = future_to_agent[future]
-                try:
-                    result = future.result()
-                except Exception as error:
-                    answers[agent.agent_name] = error
-                    continue
                 answers[agent.agent_name] = agent_answer(
-                    agent, fallback=result
+                    agent, fallback=future.result()
                 )
 
         return answers

@@ -1,3 +1,5 @@
+import pytest
+
 from swarms.structs.agent import Agent
 from swarms.structs.majority_voting import MajorityVoting
 
@@ -381,6 +383,21 @@ def test_votes_recorded_are_answers_not_transcripts():
         assert not any(
             task in content for content in recorded
         ), f"{name} echoed the task back into the shared conversation"
+
+
+def test_failing_voter_raises_instead_of_casting_its_error_as_a_vote():
+    mv, calls = _voting_system(
+        ["Voter-A", "Voter-B", "Voter-C"], max_loops=1
+    )
+
+    def down(task=None, messages=None, **kwargs):
+        raise RuntimeError("invalid x-api-key")
+
+    mv.agents[1].run = down
+
+    with pytest.raises(RuntimeError, match="invalid x-api-key"):
+        mv.run("go")
+    assert {c["agent"] for c in calls} == {"Voter-A", "Voter-C"}
 
 
 def test_consensus_agent_sees_its_own_prior_consensus_as_assistant():
