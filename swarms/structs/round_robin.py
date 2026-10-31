@@ -3,6 +3,7 @@ from typing import List, Union
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import (
+    NO_NEW_MESSAGES,
     agent_answer,
     messages_for,
     split_last_turn,
@@ -286,6 +287,8 @@ class RoundRobinSwarm(SerializableMixin):
                             conversation_context="",
                             turn_header=turn_header,
                         )
+                    elif prior_turns[-1]["role"] == "assistant":
+                        collaborative_task = NO_NEW_MESSAGES
                     else:
                         prior_turns, collaborative_task = (
                             split_last_turn(prior_turns)
