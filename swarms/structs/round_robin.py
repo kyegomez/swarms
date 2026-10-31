@@ -2,7 +2,11 @@ from typing import List, Union
 
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
-from swarms.structs.context_utils import agent_answer, messages_for
+from swarms.structs.context_utils import (
+    agent_answer,
+    messages_for,
+    split_last_turn,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -94,6 +98,10 @@ class RoundRobinSwarm(SerializableMixin):
         verbose (bool, optional): Flag to enable verbose mode. Defaults to False.
         max_loops (int, optional): Maximum number of loops to run. Defaults to 1.
         output_type (OutputType, optional): Type of output format. Defaults to "final".
+        turn_prompt (bool, optional): Send each agent a turn instruction
+            naming its position and the other speakers. When False, each
+            agent gets the conversation as chat turns with the newest turn
+            as its task, and nothing is added. Defaults to True.
 
     Attributes:
         name (str): Name of the swarm.
@@ -124,6 +132,7 @@ class RoundRobinSwarm(SerializableMixin):
         verbose: bool = False,
         max_loops: int = 1,
         output_type: OutputType = "final",
+        turn_prompt: bool = True,
     ):
 
         self.name = name
@@ -133,6 +142,7 @@ class RoundRobinSwarm(SerializableMixin):
         self.max_loops = max_loops
         self.index = 0
         self.output_type = output_type
+        self.turn_prompt = turn_prompt
 
         # Initialize conversation for tracking agent interactions
         self.conversation = Conversation(
@@ -261,21 +271,25 @@ class RoundRobinSwarm(SerializableMixin):
                         self.conversation,
                     )
 
-                    turn_header = build_turn_header(
-                        agent_name=current_agent.agent_name,
-                        position=i + 1,
-                        total=n,
-                        loop=loop + 1,
-                        max_loops=self.max_loops,
-                        prev_name=prev_name,
-                        next_name=next_name,
-                        agent_names=agent_names,
-                    )
-
-                    collaborative_task = build_collaborative_task(
-                        conversation_context="",
-                        turn_header=turn_header,
-                    )
+                    if self.turn_prompt:
+                        turn_header = build_turn_header(
+                            agent_name=current_agent.agent_name,
+                            position=i + 1,
+                            total=n,
+                            loop=loop + 1,
+                            max_loops=self.max_loops,
+                            prev_name=prev_name,
+                            next_name=next_name,
+                            agent_names=agent_names,
+                        )
+                        collaborative_task = build_collaborative_task(
+                            conversation_context="",
+                            turn_header=turn_header,
+                        )
+                    else:
+                        prior_turns, collaborative_task = (
+                            split_last_turn(prior_turns)
+                        )
 
                     try:
                         self._execute_agent(
