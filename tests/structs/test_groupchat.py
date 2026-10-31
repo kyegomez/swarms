@@ -362,6 +362,24 @@ class TestScheduling:
 
         assert "still works" in contents(chat)
 
+    def test_max_bidders_skips_an_agent_that_passed(self):
+        quiet = ScriptedAgent("Quiet")
+        a = ScriptedAgent("A", [(0.9, "a")] * 3)
+        b = ScriptedAgent("B", [(0.9, "b")] * 3)
+        chat = make_chat([quiet, a, b], max_loops=4, max_bidders=1)
+        chat.run("topic")
+
+        assert roles(chat) == ["User", "A", "B", "A"]
+        assert [quiet.calls, a.calls, b.calls] == [1, 2, 2]
+
+    def test_max_bidders_asks_the_rest_before_a_lull(self):
+        quiet = ScriptedAgent("Quiet")
+        eager = ScriptedAgent("Eager", [(0.9, "eager speaks")])
+        chat = make_chat([quiet, eager], max_bidders=1)
+        chat.run("topic")
+
+        assert roles(chat) == ["User", "Eager"]
+
 
 # --------------------------------------------------------------------------
 # run() surface — return value, batching, streaming
