@@ -1,3 +1,5 @@
+import asyncio
+import inspect
 from typing import List, Union
 
 from swarms.structs.execution_utils import batched_run
@@ -189,6 +191,67 @@ class RoundRobinSwarm(SerializableMixin):
             )
             raise
 
+    async def _execute_agent_async(
+        self, agent: Agent, task: str, *args, **kwargs
+    ) -> str:
+        """
+        Execute a single agent asynchronously and append its response to the conversation.
+
+        Args:
+            agent (Agent): The agent to execute.
+            task (str): The task to be executed.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            str: The result of the agent execution.
+        """
+        try:
+            self._log(
+                "info",
+                f"Running Agent {agent.agent_name} asynchronously on task: {task}",
+            )
+            if hasattr(agent, "arun") and callable(agent.arun):
+                try:
+                    resp = await agent.arun(task, *args, **kwargs)
+                except TypeError:
+                    try:
+                        resp = await agent.arun(task)
+                    except TypeError:
+                        resp = await agent.arun()
+            elif hasattr(agent, "run") and callable(agent.run):
+                try:
+                    resp = await asyncio.to_thread(
+                        agent.run, task, *args, **kwargs
+                    )
+                except TypeError:
+                    try:
+                        resp = await asyncio.to_thread(agent.run, task)
+                    except TypeError:
+                        resp = await asyncio.to_thread(agent.run)
+            elif callable(agent):
+                if inspect.iscoroutinefunction(agent):
+                    resp = await agent(task)
+                else:
+                    resp = await asyncio.to_thread(agent, task)
+            else:
+                raise TypeError(
+                    f"Agent {agent} is neither callable nor has run/arun method."
+                )
+
+            result = agent_answer(agent, fallback=resp)
+            self.conversation.add(
+                role=agent.agent_name,
+                content=result,
+            )
+            return result
+        except Exception as e:
+            self._log(
+                "error",
+                f"Error executing agent {agent.agent_name} asynchronously: {str(e)}",
+            )
+            raise
+
     @trace_run(
         "RoundRobinSwarm.run",
         input_params=("task", "tasks", "img", "imgs"),
@@ -329,3 +392,140 @@ class RoundRobinSwarm(SerializableMixin):
             >>> results = swarm.run_batch(["Task 1", "Task 2", "Task 3"])
         """
         return batched_run(self.run, tasks)
+
+    async def arun(
+        self, task: str, *args, **kwargs
+    ) -> Union[str, dict, list]:
+        """
+        Execute the task across agents in true round-robin order on the event loop.
+
+        The schedule is deterministic: for N agents and max_loops loops the
+        visit order is agents[t % N] for t in range(max_loops * N). The
+        order is identical on every loop, every agent reads the full
+        conversation transcript accumulated so far, and every agent receives
+        exactly max_loops turns.
+
+        Args:
+            task (str): The task to be executed.
+            *args: Variable length argument list passed to each agent.
+            **kwargs: Arbitrary keyword arguments passed to each agent.
+
+        Returns:
+            Union[str, dict, list]: The result of the task execution in the
+                format specified by output_type.
+
+        Raises:
+            Exception: If an exception occurs during task execution.
+        """
+        try:
+            self.conversation.clear()
+            self.conversation.add(role="User", content=task)
+            n = len(self.agents)
+            agent_names = return_all_agent_names(self.agents)
+
+            self._log(
+                "info",
+                f"Starting async round-robin execution with task on {n} agents: {agent_names}",
+            )
+
+            for loop in range(self.max_loops):
+                self._log(
+                    "debug",
+                    f"Starting loop {loop + 1}/{self.max_loops}",
+                )
+
+                for i, current_agent in enumerate(self.agents):
+                    self.index = (loop * n) + i
+
+                    prev_name = (
+                        self.agents[i - 1].agent_name
+                        if i > 0
+                        else (
+                            self.agents[-1].agent_name
+                            if loop > 0
+                            else None
+                        )
+                    )
+                    next_name = (
+                        self.agents[i + 1].agent_name
+                        if i + 1 < n
+                        else (
+                            self.agents[0].agent_name
+                            if loop + 1 < self.max_loops
+                            else None
+                        )
+                    )
+
+                    prior_turns = messages_for(
+                        current_agent.agent_name or "",
+                        self.conversation,
+                    )
+
+                    turn_header = build_turn_header(
+                        agent_name=current_agent.agent_name,
+                        position=i + 1,
+                        total=n,
+                        loop=loop + 1,
+                        max_loops=self.max_loops,
+                        prev_name=prev_name,
+                        next_name=next_name,
+                        agent_names=agent_names,
+                    )
+
+                    collaborative_task = build_collaborative_task(
+                        conversation_context="",
+                        turn_header=turn_header,
+                    )
+
+                    try:
+                        await self._execute_agent_async(
+                            current_agent,
+                            collaborative_task,
+                            *args,
+                            messages=prior_turns,
+                            **kwargs,
+                        )
+                    except Exception as e:
+                        self._log(
+                            "error",
+                            f"Agent {current_agent.agent_name} failed: {str(e)}",
+                        )
+                        raise
+
+            self._log(
+                "success",
+                f"Successfully completed {self.max_loops} loops of async round-robin execution",
+            )
+
+            return history_output_formatter(
+                conversation=self.conversation,
+                type=self.output_type,
+            )
+
+        except Exception as e:
+            self._log(
+                "error", f"Async round-robin execution failed: {str(e)}"
+            )
+            raise
+
+    async def batch_arun(
+        self, tasks: List[str], *args, **kwargs
+    ) -> List[Union[str, dict, list]]:
+        """
+        Execute multiple tasks asynchronously through the round-robin swarm.
+
+        Each task is processed through the full round-robin execution cycle.
+
+        Args:
+            tasks (List[str]): A list of task strings to be executed.
+            *args: Additional arguments passed to arun.
+            **kwargs: Additional keyword arguments passed to arun.
+
+        Returns:
+            List[Union[str, dict, list]]: Results for each task in the format
+                specified by output_type.
+        """
+        results = []
+        for task in tasks:
+            results.append(await self.arun(task, *args, **kwargs))
+        return results
