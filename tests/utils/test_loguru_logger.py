@@ -261,5 +261,94 @@ def test_turning_log_files_on_rebuilds_handlers(
     assert "while off" not in written
 
 
+
+
+# ---------------------------------------------------------------------------
+# Issue #2717: diagnose off on file sinks to prevent leaking secrets
+# ---------------------------------------------------------------------------
+
+
+def _fail_with_secret_in_frame(param):
+    raise ValueError("simulated network failure")
+
+
+def _execute_api_call_with_secret(secret_token: str):
+    headers = {"Authorization": f"Bearer {secret_token}"}
+    _fail_with_secret_in_frame(headers)
+
+
+def test_file_sink_does_not_diagnose_local_variables_or_secrets(
+    monkeypatch, tmp_path
+):
+    """Diagnose on file sinks leaks local variables and api keys to disk."""
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "ws"))
+    monkeypatch.setenv("SWARMS_LOG_FILES", "True")
+
+    initialize_logger("mod")
+
+    secret_key = "sk-live-super-secret-key-123456789"
+    try:
+        _execute_api_call_with_secret(secret_key)
+    except ValueError:
+        logger.exception("API call failed")
+
+    logger.remove()  # flush enqueued file handler
+
+    combined = list((tmp_path / "ws" / "logs").glob("swarms_*.log"))
+    assert len(combined) == 1
+    log_content = combined[0].read_text(encoding="utf-8")
+
+    assert "simulated network failure" in log_content
+    assert "API call failed" in log_content
+    assert secret_key not in log_content
+
+
+def test_console_sink_diagnose_respects_verbose_global(monkeypatch):
+    """Console diagnose must only be enabled when SWARMS_VERBOSE_GLOBAL is true."""
+    monkeypatch.setenv("SWARMS_VERBOSE_GLOBAL", "False")
+    initialize_logger("mod")
+
+    handlers = list(logger._core.handlers.values())
+    assert len(handlers) >= 1
+    console_handler = handlers[0]
+    assert console_handler._exception_formatter._diagnose is False
+
+
+def test_console_sink_diagnose_enabled_when_verbose_global_true(monkeypatch):
+    monkeypatch.setenv("SWARMS_VERBOSE_GLOBAL", "True")
+    initialize_logger("mod")
+
+    handlers = list(logger._core.handlers.values())
+    assert len(handlers) >= 1
+    console_handler = handlers[0]
+    assert console_handler._exception_formatter._diagnose is True
+
+
+def test_file_sink_diagnose_stays_false_even_if_verbose_global_true(
+    monkeypatch, tmp_path
+):
+    """SWARMS_VERBOSE_GLOBAL=True must only enable diagnose on the console, never files."""
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "ws"))
+    monkeypatch.setenv("SWARMS_LOG_FILES", "True")
+    monkeypatch.setenv("SWARMS_VERBOSE_GLOBAL", "True")
+
+    initialize_logger("mod")
+
+    secret_key = "sk-live-secret-never-in-file-5555"
+    try:
+        _execute_api_call_with_secret(secret_key)
+    except ValueError:
+        logger.exception("Verbose error")
+
+    logger.remove()
+
+    combined = list((tmp_path / "ws" / "logs").glob("swarms_*.log"))
+    assert len(combined) == 1
+    log_content = combined[0].read_text(encoding="utf-8")
+
+    assert "simulated network failure" in log_content
+    assert secret_key not in log_content
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

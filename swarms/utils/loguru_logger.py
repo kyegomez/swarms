@@ -48,6 +48,17 @@ def log_files_enabled() -> bool:
     return value.strip().lower() in ("true", "1", "yes", "on")
 
 
+def verbose_global_enabled() -> bool:
+    """
+    Whether global verbose logging is enabled, read from SWARMS_VERBOSE_GLOBAL.
+
+    Returns:
+        bool: True when SWARMS_VERBOSE_GLOBAL is True; False by default.
+    """
+    value = os.getenv("SWARMS_VERBOSE_GLOBAL", "False")
+    return value.strip().lower() in ("true", "1", "yes", "on")
+
+
 def _module_log_router(message) -> None:
     """
     Append each record to a file named after the module that emitted it.
@@ -105,7 +116,8 @@ def initialize_logger(log_folder: str = "swarms"):
 
     log_dir = get_log_dir()
     write_files = log_files_enabled()
-    if _CONFIGURED and (log_dir, write_files) == _CONFIGURED_DIR:
+    verbose_global = verbose_global_enabled()
+    if _CONFIGURED and (log_dir, write_files, verbose_global) == _CONFIGURED_DIR:
         return logger
     file_logging = False
     log_dir_error = None
@@ -127,7 +139,7 @@ def initialize_logger(log_folder: str = "swarms"):
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
         level="INFO",
         backtrace=True,
-        diagnose=True,
+        diagnose=verbose_global,
         enqueue=True,
     )
 
@@ -142,7 +154,7 @@ def initialize_logger(log_folder: str = "swarms"):
             retention="10 days",
             level="INFO",
             backtrace=True,
-            diagnose=True,
+            diagnose=False,
             enqueue=True,
             format=LOG_FORMAT,
         )
@@ -151,6 +163,8 @@ def initialize_logger(log_folder: str = "swarms"):
         logger.add(
             _module_log_router,
             level="INFO",
+            backtrace=True,
+            diagnose=False,
             format=LOG_FORMAT,
         )
     elif log_dir_error is not None:
@@ -160,5 +174,5 @@ def initialize_logger(log_folder: str = "swarms"):
         )
 
     _CONFIGURED = True
-    _CONFIGURED_DIR = (log_dir, write_files)
+    _CONFIGURED_DIR = (log_dir, write_files, verbose_global)
     return logger
