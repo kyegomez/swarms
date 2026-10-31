@@ -1267,11 +1267,7 @@ class Agent:
 
         except Exception as error:
             # Drop this run's turns so a fallback model starts from clean history.
-            while (
-                len(self.short_memory.conversation_history)
-                > history_start
-            ):
-                self.short_memory.delete(-1)
+            self.short_memory.truncate(history_start)
             self._handle_run_error(error)
 
         except KeyboardInterrupt as error:

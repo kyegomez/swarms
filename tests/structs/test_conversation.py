@@ -1651,6 +1651,21 @@ def test_export_conversation_writes_the_named_json_file(tmp_path):
     assert fresh.conversation_history == conv.conversation_history
 
 
+def test_truncate_cuts_the_history_at_an_index():
+    conv = Conversation()
+    conv.add("User", "keep")
+    start = len(conv.conversation_history)
+    conv.add("User", "drop one")
+    conv.add("Bot", "drop two")
+    assert "drop two" in conv.return_history_as_string()
+
+    removed = conv.truncate(start)
+
+    assert [m["content"] for m in removed] == ["drop one", "drop two"]
+    assert len(conv.conversation_history) == start
+    assert "drop" not in conv.return_history_as_string()
+
+
 class TestCommsChannelMirror:
     def test_adds_are_posted_and_system_rows_are_not(self, tmp_path):
         from swarms.structs.file_channel import FileChannel
