@@ -457,6 +457,67 @@ class TestToolErrorFeedback:
         ), "a malformed call aborted the whole response"
         assert "ERROR: think failed" in history(agent)
 
+    def test_errors_reach_the_model_as_tool_results(
+        self, monkeypatch
+    ):
+        agent = build_agent(tools=[lookup])
+        responses = [
+            [
+                {
+                    "id": "call_bad_plan",
+                    "function": {
+                        "name": "create_plan",
+                        "arguments": "{",
+                    },
+                }
+            ],
+            plan(("step1", [])),
+            [
+                {
+                    **tool_call("lookup", term="x"),
+                    "id": "call_bad_args",
+                }
+            ],
+            [
+                {
+                    "id": "call_bad_json",
+                    "type": "function",
+                    "function": {
+                        "name": "create_file",
+                        "arguments": '{"file_path": "a.txt", "content": "cut',
+                    },
+                }
+            ],
+            [
+                tool_call(
+                    "subtask_done",
+                    task_id="step1",
+                    summary="done",
+                    success=True,
+                )
+            ],
+        ]
+        requests = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            requests.append(kwargs.get("messages"))
+            return (
+                responses.pop(0) if responses else "no further action"
+            )
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        agent.run("test task")
+
+        results = {
+            message["tool_call_id"]: message["content"]
+            for message in requests[4]
+            if message["role"] == "tool"
+        }
+        assert "JSONDecodeError" in results["call_bad_plan"]
+        assert "AgentToolExecutionError" in results["call_bad_args"]
+        assert "JSONDecodeError" in results["call_bad_json"]
+
     def test_failed_subtask_done_does_not_complete_the_subtask(
         self, monkeypatch
     ):
