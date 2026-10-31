@@ -231,17 +231,6 @@ class HierarchicalSwarm:
             swarm_name=self.name,
         )
 
-    def prepare_worker_agents(self):
-        for agent in self.agents:
-            prompt = (
-                MULTI_AGENT_COLLAB_PROMPT_TWO
-                + self.list_worker_agents()
-            )
-            if hasattr(agent, "system_prompt"):
-                agent.system_prompt += prompt
-            else:
-                agent.system_prompt = prompt
-
     def init_swarm(self):
         """Initialize conversation state and validate the swarm."""
         # Reliability checks
@@ -252,9 +241,6 @@ class HierarchicalSwarm:
 
         # Add agent context to the director
         self.add_context_to_director()
-
-        if self.multi_agent_prompt_improvements:
-            self.prepare_worker_agents()
 
     def enforce_final_agent_outputs(self) -> None:
         """Force every configurable agent to return only its final response."""
@@ -407,9 +393,16 @@ class HierarchicalSwarm:
         """Build a worker payload without duplicating conversation history."""
         if not self._agent_run_accepts(agent, "messages"):
             return task, {}
-        return task, {
-            "messages": messages_for(agent_name, self.conversation)
-        }
+        messages = messages_for(agent_name, self.conversation)
+        if self.multi_agent_prompt_improvements:
+            preamble = (
+                MULTI_AGENT_COLLAB_PROMPT_TWO
+                + self.list_worker_agents()
+            )
+            messages = [
+                {"role": "system", "content": preamble}
+            ] + messages
+        return task, {"messages": messages}
 
     def _format_worker_responses(self, outputs: list) -> str:
         """Current-step worker results, not the full conversation log."""
