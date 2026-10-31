@@ -300,12 +300,6 @@ class SequentialWorkflow:
             result = self.agent_rearrange.run(**run_kwargs)
         return result
 
-    def _autosave_conversation(self) -> None:
-        """Persist history; SequentialWorkflow keeps it on AgentRearrange."""
-        self.workspace.save_conversation(
-            getattr(self.agent_rearrange, "conversation", None)
-        )
-
     @trace_run(
         "SequentialWorkflow.run",
         input_params=("task", "img", "imgs"),
@@ -361,17 +355,17 @@ class SequentialWorkflow:
                     task, result, run_kwargs
                 )
 
-            self._autosave_conversation()
-
             return result
 
         except Exception as e:
-            self._autosave_conversation()
-
             logger.error(
                 f"An error occurred while executing the task: {e}"
             )
             raise e
+        finally:
+            self.workspace.save_conversation(
+                getattr(self.agent_rearrange, "conversation", None)
+            )
 
     def run_stream(
         self,

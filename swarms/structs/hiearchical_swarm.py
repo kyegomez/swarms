@@ -662,15 +662,13 @@ class HierarchicalSwarm:
                 conversation=self.conversation, type=self.output_type
             )
 
-            self.workspace.save_conversation()
-
             return result
 
         except Exception as e:
-
-            self.workspace.save_conversation()
             logger.error(f"Hiearchical Swarm: Swarm run failed: {e}")
             raise
+        finally:
+            self.workspace.save_conversation()
 
     def _get_interactive_task(self) -> str:
         """Read and return an interactive task."""
