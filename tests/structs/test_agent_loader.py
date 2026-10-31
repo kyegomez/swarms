@@ -3,11 +3,6 @@ import tempfile
 import threading
 from types import SimpleNamespace
 
-try:
-    import pytest
-except ImportError:
-    pytest = None
-
 from loguru import logger
 
 
@@ -789,88 +784,3 @@ def test_error_handling_nonexistent_file():
             f"Error in test_error_handling_nonexistent_file: {str(e)}"
         )
         raise
-
-
-if __name__ == "__main__":
-    import sys
-
-    test_dict = {
-        "test_agent_loader_initialization": test_agent_loader_initialization,
-        "test_load_agent_from_markdown": test_load_agent_from_markdown,
-        "test_load_agents_from_markdown_single_file": test_load_agents_from_markdown_single_file,
-        "test_load_agents_from_markdown_multiple_files": test_load_agents_from_markdown_multiple_files,
-        "test_load_agents_from_yaml": test_load_agents_from_yaml,
-        "test_load_many_agents_from_yaml": test_load_many_agents_from_yaml,
-        "test_load_agents_from_csv": test_load_agents_from_csv,
-        "test_load_agents_from_csv_keeps_file_order": test_load_agents_from_csv_keeps_file_order,
-        "test_agent_files_accept_max_loops_auto": test_agent_files_accept_max_loops_auto,
-        "test_auto_detect_markdown": test_auto_detect_markdown,
-        "test_auto_detect_yaml": test_auto_detect_yaml,
-        "test_auto_detect_csv": test_auto_detect_csv,
-        "test_auto_unsupported_file_type": test_auto_unsupported_file_type,
-        "test_auto_loads_every_format_create_agent_file_writes": test_auto_loads_every_format_create_agent_file_writes,
-        "test_load_single_agent": test_load_single_agent,
-        "test_load_multiple_agents": test_load_multiple_agents,
-        "test_parse_markdown_file": test_parse_markdown_file,
-        "test_loaded_agents_can_run": test_loaded_agents_can_run,
-        "test_load_agents_with_streaming": test_load_agents_with_streaming,
-        "test_error_handling_nonexistent_file": test_error_handling_nonexistent_file,
-    }
-
-    if len(sys.argv) > 1:
-        requested_tests = []
-        for test_name in sys.argv[1:]:
-            if test_name in test_dict:
-                requested_tests.append(test_dict[test_name])
-            elif test_name == "all" or test_name == "--all":
-                requested_tests = list(test_dict.values())
-                break
-            else:
-                print(f"⚠ Warning: Test '{test_name}' not found.")
-                print(
-                    f"Available tests: {', '.join(test_dict.keys())}"
-                )
-                sys.exit(1)
-
-        tests_to_run = requested_tests
-    else:
-        tests_to_run = list(test_dict.values())
-
-    if len(tests_to_run) == 1:
-        print(f"Running: {tests_to_run[0].__name__}")
-    else:
-        print(f"Running {len(tests_to_run)} test(s)...")
-
-    passed = 0
-    failed = 0
-
-    for test_func in tests_to_run:
-        try:
-            print(f"\n{'='*60}")
-            print(f"Running: {test_func.__name__}")
-            print(f"{'='*60}")
-            test_func()
-            print(f"✓ PASSED: {test_func.__name__}")
-            passed += 1
-        except Exception as e:
-            print(f"✗ FAILED: {test_func.__name__}")
-            print(f"  Error: {str(e)}")
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"Test Summary: {passed} passed, {failed} failed")
-    print(f"{'='*60}")
-
-    if len(sys.argv) == 1:
-        print("\n💡 Tip: Run a specific test with:")
-        print(
-            "   python test_agent_loader.py test_load_agent_from_markdown"
-        )
-        print("\n   Or use pytest:")
-        print("   pytest test_agent_loader.py")
-        print(
-            "   pytest test_agent_loader.py::test_load_agent_from_markdown"
-        )
