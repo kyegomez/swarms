@@ -1,6 +1,7 @@
 import json
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -616,3 +617,38 @@ def test_identical_steps_in_a_phase_are_rejected():
         )
     )
     assert any("Steps 'a' and 'b'" in e for e in errors)
+
+
+def test_plan_works_before_any_run():
+    workflow = PhasedFanOutWorkflow(
+        lead_agent=FakeLead([fan_out_plan()])
+    )
+
+    assert isinstance(workflow.plan("task"), dw.WorkflowPlan)
+
+
+def test_overlapping_runs_combine_with_the_lead_that_planned_them():
+    a_planning, b_done = threading.Event(), threading.Event()
+
+    class Lead(FakeLead):
+        def __deepcopy__(self, memo):
+            return Lead(self.plans)
+
+        def run(self, task, img=None):
+            # Each copy answers with the task it planned.
+            if "Outputs:" in task:
+                return self.planned
+            self.planned = task.split("\n")[1]
+            if self.planned == "A":
+                a_planning.set()
+                b_done.wait(5)
+            return super().run(task, img)
+
+    FakeAgent.handler = file_handler(1)
+    workflow = PhasedFanOutWorkflow(lead_agent=Lead([fan_out_plan()]))
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        run_a = pool.submit(workflow.run, "A")
+        assert a_planning.wait(5)
+        answer_b = workflow.run("B")
+        b_done.set()
+        assert [run_a.result(), answer_b] == ["A", "B"]
