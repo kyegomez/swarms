@@ -335,7 +335,7 @@ class Agent:
         cache_config: dict = None,
         load_state_path: str = None,
         role: agent_roles = "worker",
-        print_on: bool = True,
+        print_on: Optional[bool] = None,
         tools_list_dictionary: Optional[List[Dict[str, Any]]] = None,
         mcp_url: Optional[Union[str, MCPConnection, Dict]] = None,
         mcp_urls: Optional[
@@ -445,7 +445,11 @@ class Agent:
         self.cache_config = cache_config
         self.load_state_path = load_state_path
         self.role = role
-        self.print_on = print_on
+        self.print_on = (
+            bool(interactive or streaming_on)
+            if print_on is None
+            else print_on
+        )
         # Own list per agent: a literal [] default made every agent share one object.
         self.tools_list_dictionary = (
             tools_list_dictionary
