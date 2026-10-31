@@ -1211,14 +1211,14 @@ class GraphWorkflow:
 
     def add_node(
         self,
-        agent: Union[Agent, "GraphWorkflow"],
+        agent: Union[Agent, "GraphWorkflow", Node],
         **kwargs: Any,
     ) -> None:
         """
         Adds an agent or a nested GraphWorkflow as a node in the workflow graph.
 
         Args:
-            agent (Union[Agent, GraphWorkflow]): The agent or inner workflow to add.
+            agent (Union[Agent, GraphWorkflow, Node]): The agent, inner workflow or prebuilt Node to add.
             **kwargs: Additional keyword arguments for the node.
         """
         if self.verbose:
@@ -1228,12 +1228,17 @@ class GraphWorkflow:
             logger.debug(f"Adding node: {label}")
 
         try:
-            if isinstance(agent, GraphWorkflow):
+            if isinstance(agent, Node):
+                node = agent
+            elif isinstance(agent, GraphWorkflow):
                 node = Node.from_subgraph(agent, **kwargs)
-                if not agent._compiled:
-                    agent.compile()
             else:
                 node = Node.from_agent(agent, **kwargs)
+            if (
+                isinstance(node.agent, GraphWorkflow)
+                and not node.agent._compiled
+            ):
+                node.agent.compile()
 
             if node.id in self.nodes:
                 error_msg = f"Node with id {node.id} already exists in GraphWorkflow"
@@ -1608,7 +1613,7 @@ class GraphWorkflow:
                     raise ValueError(error_msg)
 
             for node in node_objs:
-                wf.add_node(node.agent)
+                wf.add_node(node)
 
             for i, e in enumerate(edges):
                 if isinstance(e, Edge):
