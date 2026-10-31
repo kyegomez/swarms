@@ -626,7 +626,6 @@ class AgentRearrange(SerializableMixin):
     def _reset_conversation(self) -> None:
         """Start a fresh shared conversation, re-seeding team awareness."""
         self.conversation = Conversation(
-            name=f"{self.name}-Conversation",
             time_enabled=self.time_enabled,
             token_count=False,
             message_id_on=self.message_id_on,
@@ -1029,7 +1028,6 @@ class AgentRearrange(SerializableMixin):
         clone.workspace = WorkspaceManager(clone, enabled=False)
 
         clone.conversation = Conversation(
-            name=f"{self.name}-Conversation",
             time_enabled=self.time_enabled,
             token_count=False,
             message_id_on=self.message_id_on,
