@@ -332,6 +332,37 @@ class TestAgentFeatures:
         assert agent.loop_interval == 2
         assert isinstance(agent.to_dict(), dict)
 
+    def test_update_system_prompt_reaches_the_request(self):
+        agent = Agent(
+            agent_name="Prompt-Update-Agent",
+            model_name="gpt-5.4-mini",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+        agent.update_system_prompt("NEW-PROMPT-XYZ")
+        response = SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content="ok", tool_calls=None
+                    )
+                )
+            ],
+            usage=None,
+        )
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=response,
+        ) as completion:
+            agent.run("hi")
+        system = [
+            m["content"]
+            for m in completion.call_args.kwargs["messages"]
+            if m["role"] == "system"
+        ]
+        assert system == ["NEW-PROMPT-XYZ"]
+
     def test_agent_with_stopping_condition(self):
         def custom_stopping_condition(response: str) -> bool:
             return "STOP" in response.upper()
