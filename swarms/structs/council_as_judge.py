@@ -1,4 +1,5 @@
 import os
+import asyncio
 from concurrent.futures import as_completed
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
@@ -410,6 +411,147 @@ class CouncilAsAJudge:
         except Exception as e:
             raise DimensionEvaluationError(
                 f"Failed to evaluate dimension {dim}: {str(e)}"
+            )
+
+    async def _evaluate_dimension_async(
+        self,
+        dim: str,
+        agent: Agent,
+        task: str,
+    ) -> Tuple[str, str]:
+        """
+        Evaluate a single dimension of the task response asynchronously.
+
+        Args:
+            dim (str): Dimension to evaluate
+            agent (Agent): Judge agent for this dimension
+            task (str): Task containing the response to evaluate
+
+        Returns:
+            Tuple[str, str]: Tuple of (dimension name, evaluation result)
+
+        Raises:
+            DimensionEvaluationError: If evaluation fails
+        """
+        try:
+            prompt = build_judge_prompt(dim, task, task)
+            prompt_text = (
+                f"{prompt} \n\n Evaluate the following response for the"
+                f" {dim} dimension: {task}."
+            )
+            if hasattr(agent, "arun") and callable(getattr(agent, "arun")):
+                res = agent.arun(prompt_text, messages=[])
+                if asyncio.iscoroutine(res):
+                    result = await res
+                else:
+                    result = res
+            else:
+                result = await asyncio.to_thread(
+                    agent.run, prompt_text, messages=[]
+                )
+
+            self.conversation.add(
+                role=agent.agent_name,
+                content=result,
+            )
+
+            return dim, str(result).strip()
+        except Exception as e:
+            raise DimensionEvaluationError(
+                f"Failed to evaluate dimension {dim}: {str(e)}"
+            )
+
+    async def arun(
+        self,
+        task: str,
+        max_concurrency: Optional[int] = None,
+        *args,
+        **kwargs,
+    ):
+        """
+        Run the evaluation process asynchronously using coroutines on the event loop.
+
+        Args:
+            task (str): Task containing the response to evaluate
+            max_concurrency (Optional[int]): Maximum concurrent evaluations
+
+        Raises:
+            EvaluationError: If evaluation process fails
+        """
+        try:
+            self.conversation.clear()
+            self.conversation.add(
+                role="User",
+                content=task,
+            )
+
+            semaphore = (
+                asyncio.Semaphore(max_concurrency)
+                if max_concurrency and max_concurrency > 0
+                else None
+            )
+
+            async def _eval_with_sem(dim, agent):
+                if semaphore is not None:
+                    async with semaphore:
+                        return await self._evaluate_dimension_async(
+                            dim, agent, task
+                        )
+                return await self._evaluate_dimension_async(dim, agent, task)
+
+            coros = [
+                _eval_with_sem(dim, agent)
+                for dim, agent in self.judge_agents.items()
+            ]
+
+            results = await asyncio.gather(*coros, return_exceptions=True)
+
+            for result in results:
+                if isinstance(result, Exception):
+                    logger.error(
+                        f"Dimension evaluation failed: {str(result)}"
+                    )
+                    raise DimensionEvaluationError(str(result))
+
+            prior, aggregation_task = split_last_turn(
+                messages_for(
+                    self.aggregator_agent.agent_name,
+                    self.conversation,
+                )
+            )
+
+            if hasattr(self.aggregator_agent, "arun") and callable(
+                getattr(self.aggregator_agent, "arun")
+            ):
+                final_res = self.aggregator_agent.arun(
+                    task=aggregation_task, messages=prior
+                )
+                if asyncio.iscoroutine(final_res):
+                    final_report = await final_res
+                else:
+                    final_report = final_res
+            else:
+                final_report = await asyncio.to_thread(
+                    self.aggregator_agent.run,
+                    task=aggregation_task,
+                    messages=prior,
+                )
+
+            self.conversation.add(
+                role=self.aggregator_agent.agent_name,
+                content=final_report,
+            )
+
+            return history_output_formatter(
+                conversation=self.conversation,
+                type=self.output_type,
+            )
+
+        except Exception as e:
+            if isinstance(e, EvaluationError):
+                raise e
+            raise EvaluationError(
+                f"Evaluation process failed: {str(e)}"
             )
 
     @trace_run(
