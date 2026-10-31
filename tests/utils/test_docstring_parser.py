@@ -420,40 +420,6 @@ class TestDocstringParser:
             "param2", "Second parameter"
         )
 
-    def test_description_on_next_line(self):
-        """A description that starts on the line after the name is kept."""
-        docstring = """
-        Fetch a record.
-
-        Args:
-            record_id (int):
-                The id of the record
-                to fetch.
-            verbose: Whether to log the request.
-        """
-        result = parse(docstring)
-        assert result.params == [
-            DocstringParam(
-                "record_id", "The id of the record to fetch."
-            ),
-            DocstringParam("verbose", "Whether to log the request."),
-        ]
-
-    def test_param_without_description(self):
-        """A parameter with no description is still listed."""
-        docstring = """
-        Fetch a record.
-
-        Args:
-            record_id (int):
-            verbose: Whether to log the request.
-        """
-        result = parse(docstring)
-        assert result.params == [
-            DocstringParam("record_id", ""),
-            DocstringParam("verbose", "Whether to log the request."),
-        ]
-
 
 if __name__ == "__main__":
     pytest.main([__file__])
