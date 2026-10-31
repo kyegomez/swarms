@@ -1,4 +1,5 @@
 import os
+import threading
 from typing import Any
 
 import pytest
@@ -745,6 +746,45 @@ def test_one_failed_worker_does_not_stop_other_orders():
     assert outputs[0]["status"] == "failed"
     assert outputs[1] == "completed"
     assert healthy_worker.calls == 1
+
+
+def test_orders_for_one_worker_run_in_director_order():
+    class SharedMemoryWorker(StubAgent):
+        def __init__(self):
+            super().__init__("Worker", [])
+            self.memory = []
+            self.overlap = threading.Barrier(2, timeout=0.2)
+
+        def run(self, task=None, **kwargs):
+            self.memory.append(task)
+            try:
+                self.overlap.wait()
+            except threading.BrokenBarrierError:
+                pass
+            return f"answer to {self.memory[-1]}"
+
+    worker = SharedMemoryWorker()
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [worker, StubAgent("Other", ["other answer"])],
+        parallel_execution=True,
+        max_workers=3,
+    )
+
+    outputs = swarm.execute_orders(
+        [
+            HierarchicalOrder(agent_name="Worker", task="TASK-A"),
+            HierarchicalOrder(agent_name="Worker", task="TASK-B"),
+            HierarchicalOrder(agent_name="Other", task="TASK-C"),
+        ]
+    )
+
+    assert worker.memory == ["TASK-A", "TASK-B"]
+    assert outputs == [
+        "answer to TASK-A",
+        "answer to TASK-B",
+        "other answer",
+    ]
 
 
 ##############################################################################
