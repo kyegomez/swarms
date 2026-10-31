@@ -400,6 +400,47 @@ def test_load_agents_from_csv_keeps_file_order():
     ]
 
 
+def test_load_agents_from_markdown_keeps_file_order():
+    """A directory loads in name order even when a later file builds first."""
+    second_built = threading.Event()
+
+    class FirstFileBuildsLast(AgentLoader):
+        def load_agent_from_markdown(self, file_path, **kwargs):
+            name = os.path.basename(file_path)
+            if name == "a.md":
+                assert second_built.wait(timeout=10)
+            else:
+                second_built.set()
+            return SimpleNamespace(agent_name=name)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for name in ("b.md", "a.md"):
+            create_test_markdown_file(
+                os.path.join(tmpdir, name), name
+            )
+        agents = FirstFileBuildsLast().load_agents_from_markdown(
+            tmpdir
+        )
+
+    assert [agent.agent_name for agent in agents] == ["a.md", "b.md"]
+
+
+def test_loader_concurrent_false_loads_in_the_calling_thread():
+    """AgentLoader(concurrent=False) is honoured when the call does not override it."""
+    threads = []
+
+    class Recording(AgentLoader):
+        def load_agent_from_markdown(self, file_path, **kwargs):
+            threads.append(threading.current_thread())
+            return SimpleNamespace(agent_name=file_path)
+
+    Recording(concurrent=False).load_agents_from_markdown(
+        ["one.md", "two.md"]
+    )
+
+    assert threads == [threading.current_thread()] * 2
+
+
 def test_agent_files_accept_max_loops_auto():
     with tempfile.TemporaryDirectory() as tmpdir:
         md_file = os.path.join(tmpdir, "researcher.md")

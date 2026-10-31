@@ -22,6 +22,7 @@ edit it between runs to steer the next one.
 | `sqlite_channel_example.py` | Three agents in one named SQLite conversation, read back with `fetch_messages` and `list_conversations` |
 | `queue_channel_example.py` | Three agents through a `QueueChannel` while the main thread prints each message as it lands |
 | `http_channel_example.py` | Two agents sharing a conversation kept on another server through an `HttpChannel`; start `http_channel_server.py` first |
+| `smtp_channel_example.py` | Two agents sharing an email thread in your own mailbox through an `SmtpChannel`; people in `to` can reply from their mail client |
 | `agentmail_channel_example.py` | Two agents sharing an AgentMail email thread through an `AgentMailChannel`; the people in `to` get each post by email and can reply |
 
 Run any of them from the repository root, for example:
