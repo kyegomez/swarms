@@ -903,6 +903,28 @@ def test_awareness_not_in_shared_conversation():
     ), f"Sequential awareness leaked into the shared conversation: {leaked}"
 
 
+def test_sequential_awareness_sent_only_with_team_awareness():
+    for team_awareness in (False, True):
+        agents, calls = _recording_agents(["A", "B"])
+        AgentRearrange(
+            agents=agents,
+            flow="A -> B",
+            max_loops=1,
+            team_awareness=team_awareness,
+        ).run("go")
+
+        assert len(calls) == 2
+        for call in calls:
+            system_text = " ".join(
+                m["content"]
+                for m in call["messages"]
+                if m["role"] == "system"
+            )
+            assert (
+                "Sequential awareness" in system_text
+            ) is team_awareness
+
+
 def test_awareness_delivered_per_agent_as_system_message():
     """Awareness rides in the message list, not the agent's system_prompt.
 
@@ -931,6 +953,7 @@ def test_awareness_delivered_per_agent_as_system_message():
         agents=agents,
         flow="Writer -> Reviewer -> Writer",
         max_loops=1,
+        team_awareness=True,
     )
     rearrange.run("Write about thunder.")
 
