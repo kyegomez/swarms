@@ -145,9 +145,13 @@ class TaskQueue:
             return True
 
     def fail(
-        self, task_id: str, error: str, expected_version: int
+        self,
+        task_id: str,
+        error: str,
+        expected_version: int,
+        retry: bool = True,
     ) -> bool:
-        """Mark a running task as FAILED. Resets to PENDING if retries remain."""
+        """Mark a running task as FAILED. Resets to PENDING if retry is set and retries remain."""
         with self._lock:
             task = self._tasks.get(task_id)
             if task is None:
@@ -160,7 +164,7 @@ class TaskQueue:
             task.retries += 1
             task.error = error
 
-            if task.retries <= task.max_retries:
+            if retry and task.retries <= task.max_retries:
                 # Reset for retry
                 task.status = PlannerTaskStatus.PENDING
                 task.assigned_worker = None
@@ -377,8 +381,14 @@ class WorkerPool:
         poll_interval: float = 0.1,
         task_timeout: Optional[float] = None,
         img: Optional[str] = None,
+        running_calls: Optional[
+            Dict[int, concurrent.futures.Future]
+        ] = None,
     ):
         self.agents = agents
+        self.running_calls = (
+            {} if running_calls is None else running_calls
+        )
         self.task_queue = task_queue
         self.conversation = conversation
         self.img = img
@@ -402,6 +412,9 @@ class WorkerPool:
         ) as executor:
             futures = []
             for agent in self.agents:
+                running = self.running_calls.get(id(agent))
+                if running is not None and not running.done():
+                    continue
                 future = executor.submit(
                     self._worker_loop, agent, timeout, start_time
                 )
@@ -454,6 +467,7 @@ class WorkerPool:
                 f"[WorkerPool] Worker {worker_name} executing: {task.title}"
             )
 
+            timed_out = False
             try:
                 # Reset agent memory so prior tasks don't leak into this one
                 agent.short_memory = agent.short_memory_init()
@@ -475,20 +489,23 @@ class WorkerPool:
 
                 # Run with per-task timeout to detect stuck workers
                 if self.task_timeout:
-                    with ContextThreadPoolExecutor(
+                    task_executor = ContextThreadPoolExecutor(
                         max_workers=1
-                    ) as task_executor:
-                        future = task_executor.submit(
-                            agent.run, task=context, img=self.img
+                    )
+                    future = task_executor.submit(
+                        agent.run, task=context, img=self.img
+                    )
+                    task_executor.shutdown(wait=False)
+                    concurrent.futures.wait(
+                        [future], timeout=self.task_timeout
+                    )
+                    timed_out = not future.done()
+                    if timed_out:
+                        self.running_calls[id(agent)] = future
+                        raise TimeoutError(
+                            f"Task execution exceeded {self.task_timeout}s timeout"
                         )
-                        try:
-                            result = future.result(
-                                timeout=self.task_timeout
-                            )
-                        except concurrent.futures.TimeoutError:
-                            raise TimeoutError(
-                                f"Task execution exceeded {self.task_timeout}s timeout"
-                            )
+                    result = future.result()
                 else:
                     result = agent.run(task=context, img=self.img)
 
@@ -515,8 +532,16 @@ class WorkerPool:
                 current = self.task_queue.get_task(task.id)
                 if current:
                     self.task_queue.fail(
-                        task.id, str(e), current.version
+                        task.id,
+                        str(e),
+                        current.version,
+                        retry=not timed_out,
                     )
+                if timed_out:
+                    logger.warning(
+                        f"[WorkerPool] Worker {worker_name} stopped: its agent is still running {task.id}"
+                    )
+                    break
 
 
 class PlannerWorkerSwarm:
@@ -604,6 +629,7 @@ class PlannerWorkerSwarm:
             time_enabled=False, channel=channel
         )
         self._original_task: Optional[str] = None
+        self._running_calls: Dict[int, concurrent.futures.Future] = {}
 
         self._reliability_checks()
 
@@ -940,6 +966,7 @@ class PlannerWorkerSwarm:
                 max_workers=self.max_workers,
                 task_timeout=self.task_timeout,
                 img=img,
+                running_calls=self._running_calls,
             )
             worker_pool.run(timeout=self.worker_timeout)
 

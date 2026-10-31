@@ -1,13 +1,15 @@
 import os
+import threading
 from typing import Any
 
 import pytest
 
-from swarms import Agent, PlannerGeneratorEvaluator
+from swarms import Agent, Conversation, PlannerGeneratorEvaluator
 from swarms.schemas.hs_schemas import OrderBatch
 from swarms.schemas.planner_worker_schemas import (
     CycleVerdict,
     PlannerTask,
+    PlannerTaskStatus,
 )
 from swarms.structs.hiearchical_swarm import (
     HierarchicalOrder,
@@ -16,6 +18,7 @@ from swarms.structs.hiearchical_swarm import (
 from swarms.structs.planner_worker_swarm import (
     PlannerWorkerSwarm,
     TaskQueue,
+    WorkerPool,
 )
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -1209,6 +1212,89 @@ def test_task_queue_is_done_when_pending_tasks_can_never_run():
     cycle.add_tasks([first, second])
 
     assert cycle.is_all_done()
+
+
+def test_worker_pool_task_timeout_fails_a_stuck_task_without_waiting():
+    release = threading.Event()
+    returned = threading.Event()
+    calls = []
+
+    class Worker:
+        agent_name = "A"
+
+        def short_memory_init(self):
+            return None
+
+        def run(self, task=None, img=None):
+            calls.append(task)
+            release.wait(timeout=5)
+            returned.set()
+            return "answer"
+
+    queue = TaskQueue()
+    queue.add_task(PlannerTask(title="Report", description="Write"))
+    pool = WorkerPool(
+        agents=[Worker()],
+        task_queue=queue,
+        conversation=Conversation(),
+        task_timeout=0.2,
+    )
+    try:
+        pool.run()
+        stuck_call_returned = returned.is_set()
+    finally:
+        release.set()
+
+    task = queue.get_all_tasks()[0]
+    assert not stuck_call_returned
+    assert len(calls) == 1
+    assert task.status == PlannerTaskStatus.FAILED
+    assert task.error == "Task execution exceeded 0.2s timeout"
+
+
+def test_planner_worker_swarm_keeps_a_timed_out_agent_out_of_the_next_cycle():
+    release = threading.Event()
+    calls = []
+    memory_resets = []
+
+    class Worker:
+        agent_name = "A"
+
+        def short_memory_init(self):
+            memory_resets.append(len(calls))
+
+        def run(self, task=None, img=None):
+            calls.append(task)
+            if len(calls) == 1:
+                release.wait(timeout=5)
+            return "answer"
+
+    planner = StubAgent(
+        "Planner",
+        [
+            {
+                "plan": title,
+                "tasks": [{"title": title, "description": title}],
+            }
+            for title in ["First", "Second"]
+        ],
+    )
+    swarm = PlannerWorkerSwarm(
+        agents=[Worker()], max_loops=2, task_timeout=0.2
+    )
+    swarm._create_planner_agent = lambda name="Planner": planner
+    swarm._run_judge = lambda img=None: CycleVerdict(
+        is_complete=False, overall_quality=1, summary="again"
+    )
+    try:
+        swarm.run("goal")
+        calls_while_stuck = len(calls)
+        resets_while_stuck = len(memory_resets)
+    finally:
+        release.set()
+
+    assert calls_while_stuck == 1
+    assert resets_while_stuck == 1
 
 
 def test_planner_worker_swarm_run_starts_with_an_empty_task_queue():
