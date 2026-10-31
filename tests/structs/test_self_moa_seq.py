@@ -13,6 +13,7 @@ def basic_seq():
         window_size=4,
         reserved_slots=2,
         max_loops=5,
+        retry_delay=0.0,
         verbose=False,
         enable_logging=False,
     )
@@ -218,18 +219,6 @@ def test_retry_parameters_validation():
 # ============================================================================
 
 
-def test_retry_decorator_property(basic_seq):
-    """Test that retry decorator property works correctly."""
-    decorator = basic_seq.retry_decorator
-    assert callable(decorator)
-
-
-def test_get_retry_decorator(basic_seq):
-    """Test _get_retry_decorator method."""
-    decorator = basic_seq._get_retry_decorator()
-    assert callable(decorator)
-
-
 def test_retry_configuration_inheritance(custom_retry_seq):
     """Test that retry configuration is properly inherited."""
     assert custom_retry_seq.max_retries == 5
@@ -266,6 +255,29 @@ def test_retry_functionality_with_mock(custom_retry_seq, mock_agents):
         assert "final_output" in result
         assert "all_samples" in result
         assert "metrics" in result
+
+
+def test_retry_backoff_grows_and_caps_at_retry_max_delay(mock_agents):
+    proposer, _ = mock_agents
+    proposer.run.side_effect = Exception("Persistent failure")
+    seq = SelfMoASeq(
+        num_samples=2,
+        max_retries=3,
+        retry_delay=1.0,
+        retry_backoff_multiplier=2.0,
+        retry_max_delay=3.0,
+        verbose=False,
+    )
+
+    with patch.object(seq, "proposer", proposer), patch(
+        "time.sleep"
+    ) as sleep:
+        with pytest.raises(Exception, match="Persistent failure"):
+            seq._generate_samples("Test task", 2)
+
+    delays = [c.args[0] for c in sleep.call_args_list]
+    assert proposer.run.call_count == 4
+    assert delays == [1.0, 2.0, 3.0]
 
 
 # ============================================================================
@@ -755,6 +767,7 @@ def _bare_seq(num_samples=3):
         "total_aggregations": 0,
     }
     seq.num_samples = num_samples
+    seq.max_retries = 0
     return seq
 
 
