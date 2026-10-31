@@ -957,6 +957,41 @@ def test_awareness_delivered_per_agent_as_system_message():
         ), f"system_prompt for {agent.agent_name} was mutated"
 
 
+def test_run_stream_delivers_awareness_as_system_message():
+    """run_stream gives each step the same awareness turn as run."""
+    agents = create_repeated_flow_agents()
+    observed = []
+
+    def _make_tracker(agent):
+        def _track(
+            task=None, messages=None, streaming_callback=None, **kw
+        ):
+            observed.append((agent.system_prompt, messages or []))
+            streaming_callback(f"{agent.agent_name} acknowledged")
+
+        return _track
+
+    originals = [agent.system_prompt for agent in agents]
+    for agent in agents:
+        agent.run = _make_tracker(agent)
+
+    rearrange = AgentRearrange(
+        agents=agents,
+        flow="Writer -> Reviewer -> Writer",
+        max_loops=1,
+    )
+    list(rearrange.run_stream("Write about thunder."))
+
+    assert len(observed) == 3
+    for prompt_during_run, messages in observed:
+        assert any(
+            m.get("role") == "system"
+            and "Sequential awareness" in m["content"]
+            for m in messages
+        )
+        assert prompt_during_run in originals
+
+
 # ============================================================================
 # batch_run — return-value correctness (mock-based)
 # ============================================================================

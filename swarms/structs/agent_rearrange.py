@@ -1222,39 +1222,31 @@ class AgentRearrange(SerializableMixin):
         """
         agent = find_agent_by_name(self.agents, agent_name)
 
-        # Injected via a temporary system-prompt extension, see _run_sequential_workflow
         awareness_info = self._get_sequential_awareness(
             agent_name, steps, task_idx=task_idx
         )
-        original_system_prompt = getattr(agent, "system_prompt", None)
-        if awareness_info and original_system_prompt is not None:
-            agent.system_prompt = (
-                f"{original_system_prompt}\n\n{awareness_info}"
-            )
 
         if with_events:
             yield {"type": "agent_start", "agent": agent_name}
 
         chunks: List[str] = []
-        prior, step_task = self._messages_for(agent_name)
+        prior, step_task = self._messages_for(
+            agent_name, extra_system=awareness_info
+        )
         run_kwargs = {"task": step_task, "messages": prior}
         if img is not None:
             run_kwargs["img"] = img
         run_kwargs.update(kwargs)
-        try:
-            async for token in agent.arun_stream(**run_kwargs):
-                chunks.append(token)
-                if with_events:
-                    yield {
-                        "type": "token",
-                        "agent": agent_name,
-                        "token": token,
-                    }
-                else:
-                    yield (agent_name, token)
-        finally:
-            if awareness_info and original_system_prompt is not None:
-                agent.system_prompt = original_system_prompt
+        async for token in agent.arun_stream(**run_kwargs):
+            chunks.append(token)
+            if with_events:
+                yield {
+                    "type": "token",
+                    "agent": agent_name,
+                    "token": token,
+                }
+            else:
+                yield (agent_name, token)
 
         output = "".join(chunks)
         self.conversation.add(agent.agent_name, output)
