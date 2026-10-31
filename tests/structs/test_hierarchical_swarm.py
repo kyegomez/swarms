@@ -1305,3 +1305,26 @@ def test_harness_result_reflects_conversation_state(tmp_path):
     assert after["conversation"][-1]["role"] == "System"
     assert after["conversation"][-1]["content"] == "step one passed"
     assert after["id"] == before["id"]
+
+
+def test_harness_counts_the_steps_in_the_plan_steps_section(tmp_path):
+    harness = PlannerGeneratorEvaluator(
+        working_directory=str(tmp_path)
+    )
+    deliverables = "\n".join(
+        f"{n}. Deliverable {n}" for n in range(1, 8)
+    )
+
+    for line in (
+        "#### Step {n}: Part {n}",
+        "**Step {n}:** Part {n}",
+        "{n}. Part {n}",
+    ):
+        steps = "\n".join(line.format(n=n) for n in range(1, 6))
+        plan = (
+            f"## PLAN\n\n### Deliverables\n{deliverables}\n\n"
+            f"### Steps\n{steps}\n\n### Evaluation Criteria\n"
+            "| correctness | high | works | 7 |\n"
+        )
+
+        assert harness._extract_step_count(plan) == 5, line

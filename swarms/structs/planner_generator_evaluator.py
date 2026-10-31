@@ -415,16 +415,34 @@ class PlannerGeneratorEvaluator:
         Returns:
             Number of steps found, capped at max_steps.
         """
+        steps = plan
+        heading = re.search(
+            r"^(#+)\s*Steps\b.*$", plan, re.IGNORECASE | re.MULTILINE
+        )
+        if heading:
+            steps = plan[heading.end() :]
+            end = re.search(
+                rf"^#{{1,{len(heading.group(1))}}}\s+(?![*_\s]*Step\b)",
+                steps,
+                re.IGNORECASE | re.MULTILINE,
+            )
+            if end:
+                steps = steps[: end.start()]
+
         # Match patterns like "Step 1", "Step 2:", "- Step 1"
         step_matches = re.findall(
-            r"(?:^|\n)\s*(?:-\s*)?Step\s+(\d+)", plan, re.IGNORECASE
+            r"^[\s#*_>-]*Step\s+(\d+)",
+            steps,
+            re.IGNORECASE | re.MULTILINE,
         )
         if step_matches:
             count = max(int(s) for s in step_matches)
             return min(count, self.max_steps)
 
         # Fallback: count numbered items
-        numbered_matches = re.findall(r"(?:^|\n)\s*(\d+)\.\s+", plan)
+        numbered_matches = re.findall(
+            r"^\s*(\d+)\.\s+", steps, re.MULTILINE
+        )
         if numbered_matches:
             count = max(int(n) for n in numbered_matches)
             return min(count, self.max_steps)
