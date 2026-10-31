@@ -1,0 +1,73 @@
+---
+# Closes and locks issues and PRs that ask for payment, and hides such comments as spam.
+name: Block payout spam
+on:
+  pull_request_target:
+    types: [opened, reopened, edited]
+  issues:
+    types: [opened, reopened, edited]
+  issue_comment:
+    types: [created, edited]
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+jobs:
+  block:
+    runs-on: ubuntu-latest
+    steps:
+      # Reads only the event payload and the API; PR code is never checked out.
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const PATTERN = /payout\s*wallet|claim\s*fees|pay\s*pal|solana\s*address/i;
+            const TRUSTED = ["OWNER", "MEMBER", "COLLABORATOR"];
+
+            const { owner, repo } = context.repo;
+            const comment = context.payload.comment;
+            const item = context.payload.pull_request || context.payload.issue;
+            const source = comment || item;
+
+            if (TRUSTED.includes(source.author_association)) {
+              core.info(`Skipping ${source.author_association} ${source.user.login}.`);
+              return;
+            }
+            const text = comment ? comment.body : `${item.title}\n${item.body || ""}`;
+            const match = (text || "").match(PATTERN);
+            if (!match) {
+              core.info("No payout keywords found.");
+              return;
+            }
+
+            if (comment) {
+              await github.graphql(
+                `mutation($id: ID!) {
+                  minimizeComment(input: {subjectId: $id, classifier: SPAM}) {
+                    clientMutationId
+                  }
+                }`,
+                { id: comment.node_id },
+              );
+              core.notice(`Hid comment ${comment.html_url} for "${match[0]}".`);
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner, repo, issue_number: item.number,
+              body: "Closed automatically: requests for payment, such as wallet or " +
+                "payment account addresses, are not accepted in this repository.",
+            });
+            if (context.payload.pull_request) {
+              await github.rest.pulls.update({
+                owner, repo, pull_number: item.number, state: "closed",
+              });
+            } else {
+              await github.rest.issues.update({
+                owner, repo, issue_number: item.number,
+                state: "closed", state_reason: "not_planned",
+              });
+            }
+            await github.rest.issues.lock({
+              owner, repo, issue_number: item.number, lock_reason: "spam",
+            });
+            core.notice(`Closed and locked #${item.number} for "${match[0]}".`);
