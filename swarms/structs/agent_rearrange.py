@@ -1015,14 +1015,8 @@ class AgentRearrange(SerializableMixin):
         Each clone gets:
         - A fresh ``Conversation`` so per-task history does not bleed across
           parallel workers and the original conversation is never mutated.
-        - A per-agent ``deepcopy`` where the agent supports it (so stateful
-          agents do not race), falling back to the original instance when
-          deepcopy fails (e.g. the agent holds a ``_thread.lock``, an HTTP
-          connection pool, or other non-picklable resources).
-
-        This replaces a previous ``copy.deepcopy(self)`` strategy that raised
-        ``TypeError: cannot pickle '_thread.lock' object`` whenever any agent
-        contained non-picklable internals.
+        - ``Agent.clone()`` of every ``Agent``. Any other member is
+          deep-copied, or shared when that fails.
         """
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
@@ -1038,6 +1032,9 @@ class AgentRearrange(SerializableMixin):
 
         cloned_agents: List[Any] = []
         for agent in self.agents:
+            if isinstance(agent, Agent):
+                cloned_agents.append(agent.clone())
+                continue
             try:
                 cloned_agents.append(copy.deepcopy(agent))
             except Exception:
