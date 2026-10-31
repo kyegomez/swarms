@@ -84,6 +84,29 @@ def test_ire_agent_workflow():
     assert agent.conversation is not None
 
 
+def test_ire_agent_second_run_starts_from_a_clean_slate():
+    from unittest.mock import patch
+
+    from swarms.structs.agent import Agent
+
+    calls = []
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        calls.append(task)
+        return "Outcome: done\nScore: 0.9\nErrors: none"
+
+    agent = IterativeReflectiveExpansion(max_loops=1)
+
+    with patch.object(Agent, "call_llm", fake_call_llm):
+        first = agent.run("Plan a picnic")
+        first_rows, first_calls = len(first), len(calls)
+        second = agent.run("Fix a bike")
+
+    assert len(first) == first_rows
+    assert len(second) == first_rows
+    assert len(calls) - first_calls == first_calls
+
+
 def test_ire_agent_steps_read_only_the_latest_reply():
     from unittest.mock import patch
 
