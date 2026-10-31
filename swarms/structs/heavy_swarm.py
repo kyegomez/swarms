@@ -426,7 +426,7 @@ class HeavySwarm(SerializableMixin):
                                 agent_count, agent_label
                             )
 
-                        agent_results = self._execute_agents_parallel(
+                        self._execute_agents_parallel(
                             questions=questions,
                             agents=self.agents,
                             img=img,
@@ -460,8 +460,6 @@ class HeavySwarm(SerializableMixin):
                                 final_result = (
                                     self._synthesize_results(
                                         original_task=loop_task,
-                                        questions=questions,
-                                        agent_results=agent_results,
                                     )
                                 )
                                 update_stage("generating")
@@ -471,8 +469,6 @@ class HeavySwarm(SerializableMixin):
                         else:
                             final_result = self._synthesize_results(
                                 original_task=loop_task,
-                                questions=questions,
-                                agent_results=agent_results,
                             )
 
                         self.conversation.add(
@@ -1137,16 +1133,12 @@ class HeavySwarm(SerializableMixin):
 
         return results
 
-    def _synthesize_results(
-        self, original_task: str, questions: Dict, agent_results: Dict
-    ) -> str:
+    def _synthesize_results(self, original_task: str) -> str:
         """
         Synthesize all agent results into a comprehensive final answer.
 
         Args:
             original_task (str): The original user task
-            questions (Dict): Generated questions
-            agent_results (Dict): Results from all agents
 
         Returns:
             str: Comprehensive synthesized analysis
