@@ -10,8 +10,10 @@ The council demonstrates how different models evaluate and rank each other's wor
 often selecting responses from other models as superior to their own.
 """
 
+import asyncio
+import inspect
 import random
-from typing import List, Optional
+from typing import Any, List, Optional, Tuple, Union
 
 from loguru import logger
 
@@ -26,6 +28,7 @@ from swarms.prompts.llm_council_prompts import (
 )
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
@@ -301,3 +304,179 @@ class LLMCouncil:
             List of formatted outputs based on output_type
         """
         return batched_run(self.run, tasks)
+
+    async def _execute_agent_async(
+        self, agent: Agent, task: str, *args, **kwargs
+    ) -> str:
+        """
+        Execute a single agent asynchronously and return its answer.
+        """
+        if hasattr(agent, "arun") and callable(agent.arun):
+            try:
+                resp = await agent.arun(task, *args, **kwargs)
+            except TypeError:
+                try:
+                    resp = await agent.arun(task)
+                except TypeError:
+                    resp = await agent.arun()
+        elif hasattr(agent, "run") and callable(agent.run):
+            try:
+                resp = await asyncio.to_thread(
+                    agent.run, task, *args, **kwargs
+                )
+            except TypeError:
+                try:
+                    resp = await asyncio.to_thread(agent.run, task)
+                except TypeError:
+                    resp = await asyncio.to_thread(agent.run)
+        elif callable(agent):
+            if inspect.iscoroutinefunction(agent):
+                resp = await agent(task)
+            else:
+                resp = await asyncio.to_thread(agent, task)
+        else:
+            raise TypeError(
+                f"Agent {agent} is neither callable nor has run/arun method."
+            )
+
+        return agent_answer(agent, fallback=resp)
+
+    async def arun(
+        self, task: str, max_concurrency: Optional[int] = None
+    ) -> Any:
+        """
+        Asynchronously execute the full LLM Council workflow on the event loop.
+
+        Args:
+            task: The user query or task to process.
+            max_concurrency: Optional limit on concurrent agent calls.
+
+        Returns:
+            Formatted conversation history based on output_type.
+
+        Raises:
+            ValueError: If task is not a non-empty string.
+        """
+        if not isinstance(task, str) or not task.strip():
+            raise ValueError("task must be a non-empty string")
+
+        self.conversation.clear()
+        self.conversation.add(role="User", content=task)
+
+        if self.verbose:
+            logger.info(
+                f"[{self.name}] Asynchronously collecting responses from {len(self.council_members)} members"
+            )
+
+        semaphore = (
+            asyncio.Semaphore(max_concurrency)
+            if max_concurrency and max_concurrency > 0
+            else None
+        )
+
+        async def _fetch_member_response(member: Agent) -> Tuple[str, str]:
+            if semaphore:
+                async with semaphore:
+                    resp = await self._execute_agent_async(member, task=task)
+            else:
+                resp = await self._execute_agent_async(member, task=task)
+            return member.agent_name, resp
+
+        member_tasks = [
+            _fetch_member_response(m) for m in self.council_members
+        ]
+        member_results = await asyncio.gather(*member_tasks)
+        original_responses = dict(member_results)
+
+        for member_name, response in original_responses.items():
+            self.conversation.add(role=member_name, content=response)
+
+        anonymous_ids = [
+            chr(65 + i) for i in range(len(self.council_members))
+        ]
+        random.shuffle(anonymous_ids)
+
+        anonymous_responses = {
+            anonymous_ids[i]: original_responses[member.agent_name]
+            for i, member in enumerate(self.council_members)
+        }
+
+        id_to_member = {
+            anonymous_ids[i]: member.agent_name
+            for i, member in enumerate(self.council_members)
+        }
+
+        if self.verbose:
+            logger.info(
+                f"[{self.name}] Members asynchronously ranking anonymized responses"
+            )
+
+        evaluation_prompts = [
+            get_evaluation_prompt(
+                task, anonymous_responses, member.agent_name
+            )
+            for member in self.council_members
+        ]
+
+        async def _fetch_evaluation(
+            member: Agent, eval_prompt: str
+        ) -> Tuple[str, str]:
+            if semaphore:
+                async with semaphore:
+                    eval_resp = await self._execute_agent_async(
+                        member, task=eval_prompt
+                    )
+            else:
+                eval_resp = await self._execute_agent_async(
+                    member, task=eval_prompt
+                )
+            return member.agent_name, eval_resp
+
+        eval_tasks = [
+            _fetch_evaluation(m, p)
+            for m, p in zip(self.council_members, evaluation_prompts)
+        ]
+        eval_results = await asyncio.gather(*eval_tasks)
+        evaluations = dict(eval_results)
+
+        for member_name, evaluation in evaluations.items():
+            self.conversation.add(
+                role=f"{member_name}-Evaluation", content=evaluation
+            )
+
+        if self.verbose:
+            logger.info(
+                f"[{self.name}] Chairman synthesizing the final answer"
+            )
+
+        synthesis_prompt = get_synthesis_prompt(
+            task, original_responses, evaluations, id_to_member
+        )
+
+        final_response = await self._execute_agent_async(
+            self.chairman, task=synthesis_prompt
+        )
+
+        self.conversation.add(role="Chairman", content=final_response)
+
+        if self.verbose:
+            logger.info(f"[{self.name}] Session complete")
+
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )
+
+    async def batch_arun(
+        self, tasks: List[str], max_concurrency: Optional[int] = None
+    ) -> List[Any]:
+        """
+        Execute multiple tasks asynchronously through the LLM Council.
+
+        Each task is processed through the full council deliberation workflow.
+        """
+        results = []
+        for task in tasks:
+            results.append(
+                await self.arun(task, max_concurrency=max_concurrency)
+            )
+        return results
