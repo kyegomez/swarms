@@ -312,6 +312,7 @@ class AgentRearrange(SerializableMixin):
                 - max_loops is 0
                 - flow is None or empty string
                 - output_type is None or empty string
+                - two different agents share an agent_name
 
         Note:
             This method is called automatically during initialization to ensure
@@ -334,6 +335,23 @@ class AgentRearrange(SerializableMixin):
                 f"output_type must be one of "
                 f"{sorted(_VALID_OUTPUT_TYPES)}; got {self.output_type!r}"
             )
+
+        seen = {}
+        for member in self.agents:
+            target = (
+                member.swarm
+                if isinstance(member, _SwarmMember)
+                else member
+            )
+            if (
+                seen.setdefault(member.agent_name, target)
+                is not target
+            ):
+                raise ValueError(
+                    f"Two different agents are named {member.agent_name!r}; "
+                    "the flow finds agents by name, so give each one a "
+                    "unique agent_name"
+                )
 
     def set_custom_flow(self, flow: str):
         """
