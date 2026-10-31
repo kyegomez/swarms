@@ -186,6 +186,7 @@ def get_typed_signature(
             ),
         )
         for param in signature.parameters.values()
+        if param.kind not in (param.VAR_POSITIONAL, param.VAR_KEYWORD)
     ]
     typed_signature = inspect.Signature(typed_params)
     return typed_signature
