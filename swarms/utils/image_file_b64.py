@@ -13,7 +13,6 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlparse
 
-import requests
 from loguru import logger
 
 
@@ -110,8 +109,15 @@ def _fetch_image_url(url: str) -> bytes:
         raise ValueError(
             f"Blocked URL '{url}': only external HTTP/HTTPS URLs are permitted."
         )
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
+    import requests
+
+    try:
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+    except requests.Timeout as e:
+        raise TimeoutError(f"Timed out fetching {url}") from e
+    except requests.RequestException as e:
+        raise ConnectionError(f"Failed to fetch {url}: {e}") from e
     return response.content
 
 
@@ -130,7 +136,8 @@ def get_media_base64(source: str) -> str:
 
     Raises:
         ValueError: If the URL targets a blocked (non-public) address.
-        requests.HTTPError: If fetching from a URL fails.
+        ConnectionError: If fetching from a URL fails.
+        TimeoutError: If fetching from a URL times out.
         FileNotFoundError: If the local file does not exist.
     """
     if source.startswith(("http://", "https://")):
@@ -180,7 +187,8 @@ def get_image_base64(image_source: str) -> str:
         str: The image as a base64-encoded data URI string.
 
     Raises:
-        requests.HTTPError: If fetching the image from a URL fails.
+        ConnectionError: If fetching the image from a URL fails.
+        TimeoutError: If fetching the image from a URL times out.
         FileNotFoundError: If the local image file does not exist.
         ValueError: If the base64 string is invalid.
 

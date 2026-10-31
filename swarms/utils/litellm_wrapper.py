@@ -22,7 +22,6 @@ import traceback
 from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
-import requests
 from loguru import logger
 from pydantic import BaseModel
 
@@ -35,7 +34,6 @@ from swarms.utils.image_file_b64 import (
     save_base64_as_image,
 )
 from swarms.utils.llm_backend import acompletion, completion
-
 
 # Only a yes is remembered: RouteHub answers no while OpenRouter's model list is unreachable.
 _VISION_MODELS = set()
@@ -1162,7 +1160,8 @@ class LiteLLM:
             audio input before using this method.
 
         Raises:
-            requests.HTTPError: If fetching audio from a URL fails.
+            ConnectionError: If fetching audio from a URL fails.
+            TimeoutError: If fetching audio from a URL times out.
             FileNotFoundError: If the local audio file does not exist.
         """
         encoded_string = get_media_base64(audio)
@@ -1476,9 +1475,6 @@ class LiteLLM:
         raise NetworkConnectionError(error_msg) from network_error
 
     _NETWORK_ERRORS = (
-        requests.exceptions.ConnectionError,
-        requests.exceptions.Timeout,
-        requests.exceptions.RequestException,
         ConnectionError,
         TimeoutError,
     )
