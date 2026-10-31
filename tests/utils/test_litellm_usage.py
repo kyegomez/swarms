@@ -208,6 +208,29 @@ class TestLiteLLMUsage:
         }
         assert seen == [llm.usage]
 
+    def test_arun_streams_the_async_completion(self):
+        llm = LiteLLM(model_name="gpt-5.4", stream=True)
+
+        async def _stream():
+            yield self._content_chunk("hel")
+            yield self._content_chunk("lo")
+            yield self._usage_chunk(10, 5)
+
+        async def _fake(**kwargs):
+            return _stream()
+
+        async def _consume():
+            stream = await llm.arun("x")
+            return [c.choices[0].delta.content async for c in stream]
+
+        with patch(
+            "swarms.utils.litellm_wrapper.acompletion",
+            side_effect=_fake,
+        ):
+            assert asyncio.run(_consume()) == ["hel", "lo"]
+
+        assert llm.usage["total_tokens"] == 15
+
     def test_streaming_asks_the_provider_for_usage(self):
         llm = LiteLLM(model_name="gpt-5.4", stream=True)
         with patch(
