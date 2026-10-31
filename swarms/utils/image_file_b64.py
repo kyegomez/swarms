@@ -153,6 +153,13 @@ def is_base64_encoded(image_source: str) -> bool:
     return False
 
 
+def file_extension(source: str) -> str:
+    """Return the lowercase extension of a path or URL, ignoring any URL query."""
+    if source.startswith(("http://", "https://")):
+        source = urlparse(source).path
+    return Path(source).suffix.lower()
+
+
 def get_image_base64(image_source: str) -> str:
     """
     Convert image data from a URL, local file path, data URI, or raw base64 string to a base64-encoded string in data URI format.
@@ -185,7 +192,7 @@ def get_image_base64(image_source: str) -> str:
         >>> uri = get_image_base64("data:image/png;base64,iVBORw0KGgo...")
     """
     # If already a data URI, return as-is
-    if image_source.startswith("data:image"):
+    if image_source.startswith("data:"):
         return image_source
 
     # Check if it's a raw base64 string (without data URI prefix)
@@ -204,7 +211,7 @@ def get_image_base64(image_source: str) -> str:
         with open(image_source, "rb") as file:
             image_data = file.read()
 
-    extension = Path(image_source).suffix.lower()
+    extension = file_extension(image_source)
     mime_type_mapping = {
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
@@ -215,6 +222,7 @@ def get_image_base64(image_source: str) -> str:
         ".tiff": "image/tiff",
         ".tif": "image/tiff",
         ".svg": "image/svg+xml",
+        ".pdf": "application/pdf",
     }
     mime_type = mime_type_mapping.get(extension, "image/jpeg")
     encoded_string = base64.b64encode(image_data).decode("utf-8")
