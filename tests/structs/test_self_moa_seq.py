@@ -464,6 +464,33 @@ def test_run_max_loops_reached(basic_seq, mock_agents):
         assert result["aggregation_steps"] <= 1
 
 
+def test_max_tokens_reaches_both_agents():
+    """max_tokens caps the proposer's and the aggregator's responses."""
+    seq = SelfMoASeq(max_tokens=123, verbose=False)
+
+    assert seq.proposer.max_tokens == 123
+    assert seq.aggregator.max_tokens == 123
+
+
+def test_run_generates_only_samples_max_loops_can_aggregate(
+    basic_seq, mock_agents
+):
+    """Samples past the last window max_loops reaches are never requested."""
+    proposer, aggregator = mock_agents
+    proposer.run.return_value = "Generated sample"
+    aggregator.run.return_value = "Aggregated result"
+    basic_seq.num_samples = 10
+    basic_seq.max_loops = 1
+
+    with patch.object(basic_seq, "proposer", proposer), patch.object(
+        basic_seq, "aggregator", aggregator
+    ):
+        result = basic_seq.run("Test task")
+
+    assert proposer.run.call_count == 3
+    assert len(result["all_samples"]) == 3
+
+
 def test_generate_samples_exception_propagation(
     basic_seq, mock_agents
 ):
