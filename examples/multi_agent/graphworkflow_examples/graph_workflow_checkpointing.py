@@ -81,11 +81,12 @@ workflow.compile()
 # 3. First run — all three agents execute, checkpoints written after each layer
 # ---------------------------------------------------------------------------
 TASK = "Summarise the main benefits of multi-agent AI systems."
+RUN_ID = "demo-run"
 
 print("\n" + "=" * 60)
 print("FIRST RUN — all layers execute")
 print("=" * 60)
-results_first = workflow.run(TASK)
+results_first = workflow.run(TASK, run_id=RUN_ID)
 print("\nResults after first run:")
 for agent_name, output in results_first.items():
     print(f"  [{agent_name}] {str(output)[:120]}")
@@ -100,7 +101,7 @@ for f in sorted(cp_dir.glob("*.json")):
 # 4. Simulate a mid-run crash: delete the Writer checkpoint so only that
 #    layer needs to re-execute on the next run.
 # ---------------------------------------------------------------------------
-task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
+task_key = hashlib.sha256(RUN_ID.encode("utf-8")).hexdigest()[:16]
 writer_layer_idx = 2  # layer 0=Researcher, 1=Analyst, 2=Writer
 writer_cp = cp_dir / f"{task_key}_layer_{writer_layer_idx}.json"
 
@@ -117,7 +118,7 @@ print(
     "SECOND RUN — Researcher & Analyst restored, Writer re-executes"
 )
 print("=" * 60)
-results_second = workflow.run(TASK)
+results_second = workflow.run(TASK, run_id=RUN_ID)
 
 print(
     "\nResults after second run (Writer output is freshly generated):"
@@ -128,7 +129,7 @@ for agent_name, output in results_second.items():
 # ---------------------------------------------------------------------------
 # 6. Clean up checkpoints after a confirmed successful run
 # ---------------------------------------------------------------------------
-deleted = workflow.clear_checkpoints(TASK)
+deleted = workflow.clear_checkpoints(RUN_ID)
 print(f"\nCleared {deleted} checkpoint file(s).")
 
 shutil.rmtree(CHECKPOINT_DIR, ignore_errors=True)
