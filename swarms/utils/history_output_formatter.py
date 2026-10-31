@@ -14,7 +14,8 @@ def history_output_formatter(
             Supported values:
                 - "list": Returns the conversation as a list of message dicts.
                 - "dict" or "dictionary": Returns the conversation as a dictionary.
-                - "string" or "str": Returns the conversation as a string.
+                - "string" or "str": Returns the whole conversation as a
+                  string, even past the conversation's context window.
                 - "final" or "last": Returns the content of the final message.
                 - "json": Returns the conversation as a JSON string.
                 - "all": Returns the conversation as a string (same as "string").
@@ -35,14 +36,12 @@ def history_output_formatter(
         return conversation.return_messages_as_list()
     elif type in ["dict", "dictionary"]:
         return conversation.to_dict()
-    elif type in ["string", "str"]:
-        return conversation.get_str()
+    elif type in ["string", "str", "all"]:
+        return conversation._return_history_as_string_worker()
     elif type in ["final", "last"]:
         return conversation.get_final_message_content()
     elif type == "json":
         return conversation.to_json()
-    elif type == "all":
-        return conversation.get_str()
     elif type == "yaml":
         import yaml
 
