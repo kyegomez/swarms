@@ -1800,5 +1800,30 @@ def test_graph_workflow_max_parallel_nodes_still_caps_the_pool():
     assert peak <= 3
 
 
+def test_graph_workflow_reuses_its_pool_until_closed():
+    import threading
+
+    barrier = threading.Barrier(2, timeout=5)
+    threads = set()
+
+    def run(*args, **kwargs):
+        threads.add(threading.current_thread())
+        barrier.wait()
+        return "ok"
+
+    wf = GraphWorkflow(name="reuse")
+    for i in range(2):
+        a = _mock_agent(f"n{i}")
+        a.run.side_effect = run
+        wf.add_node(a)
+
+    wf.run("task")
+    wf.run("task")
+    assert len(threads) == 2
+    wf.close()
+    wf.run("task")
+    assert len(threads) == 4
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

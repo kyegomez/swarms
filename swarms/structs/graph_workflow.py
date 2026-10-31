@@ -29,6 +29,7 @@ from swarms.structs.comms_channel import (
     claim_agents,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.executor_utils import ReusableExecutorMixin
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -760,7 +761,7 @@ class Edge:
         return cls(source=src, target=tgt, metadata=metadata)
 
 
-class GraphWorkflow:
+class GraphWorkflow(ReusableExecutorMixin):
     """
     Represents a workflow graph where each node is an agent.
 
@@ -2049,7 +2050,6 @@ class GraphWorkflow:
                 f"Using cached compilation for {self.max_loops} loops (compiled at {getattr(self, '_compilation_timestamp', 'unknown time')})"
             )
 
-        # One executor for the whole run; per-layer pools dominated runtime on deep graphs.
         widest_layer = max(
             (len(layer) for layer in self._execution_plan), default=1
         )
@@ -2061,21 +2061,6 @@ class GraphWorkflow:
                 else min(self._max_workers, widest_layer)
             ),
         )
-        executor: Optional[ContextThreadPoolExecutor] = None
-
-        def _get_executor() -> ContextThreadPoolExecutor:
-            nonlocal executor
-            if executor is None:
-                executor = ContextThreadPoolExecutor(
-                    max_workers=pool_size,
-                    thread_name_prefix=f"graph-{self.name}",
-                )
-                if self.verbose:
-                    logger.debug(
-                        f"Created shared thread pool with "
-                        f"{pool_size} workers"
-                    )
-            return executor
 
         try:
             loop = 0
@@ -2343,8 +2328,7 @@ class GraphWorkflow:
                             node_id, agent_name, node_type, output
                         )
                     else:
-                        # Parallel layer: dispatch onto the run-wide pool.
-                        pool = _get_executor()
+                        pool = self._get_executor(pool_size)
                         future_to_data = {}
 
                         for (
@@ -2491,10 +2475,6 @@ class GraphWorkflow:
                 f"Error in GraphWorkflow.run after {total_time:.3f}s: {e}"
             )
             raise e
-
-        finally:
-            if executor is not None:
-                executor.shutdown(wait=True)
 
     def _fan_patterns(
         self,
