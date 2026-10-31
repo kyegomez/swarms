@@ -56,7 +56,9 @@ def messages_for(
     Args:
         agent_name: The agent about to run. Its own messages in the shared
             conversation carry this as their role.
-        conversation: A :class:`~swarms.structs.conversation.Conversation`.
+        conversation: A :class:`~swarms.structs.conversation.Conversation`,
+            or the ``{"role": ..., "content": ...}`` rows themselves, as a
+            comms channel hands them over.
 
     Returns:
         Chat-completions messages, oldest first. Structure bookkeeping
@@ -70,7 +72,9 @@ def messages_for(
          {'role': 'user', 'content': 'Editor: needs a stronger opening'}]
     """
     history = (
-        getattr(conversation, "conversation_history", None) or []
+        conversation
+        if isinstance(conversation, list)
+        else getattr(conversation, "conversation_history", None) or []
     )
 
     messages: List[Dict[str, str]] = []

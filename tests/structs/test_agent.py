@@ -2443,7 +2443,10 @@ class TestCommsChannel:
         agent.run("Write the report.")
 
         sent = [m["content"] for m in agent.requests[0]]
-        assert sent[-2:] == ["Growth was 31%.", "Write the report."]
+        assert sent[-2:] == [
+            "Researcher: Growth was 31%.",
+            "Write the report.",
+        ]
         assert channel.messages() == [
             {
                 "agent_name": "Researcher",
@@ -2456,6 +2459,26 @@ class TestCommsChannel:
             {
                 "agent_name": "Writer",
                 "content": "Report: 31% growth.",
+            },
+        ]
+
+    def test_a_peers_turn_is_labelled_and_the_agents_own_is_not(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        channel.post("Writer", "A first draft.")
+        channel.post("Editor", "Tighten the opening.")
+        agent = self._agent(
+            "Writer", channel, reply="A second draft."
+        )
+
+        agent.run("Revise it.")
+
+        assert agent.requests[0][:2] == [
+            {"role": "assistant", "content": "A first draft."},
+            {
+                "role": "user",
+                "content": "Editor: Tighten the opening.",
             },
         ]
 
@@ -2474,7 +2497,7 @@ class TestCommsChannel:
         # The second agent saw the first's answer, and the task only as its own turn.
         sent = [m["content"] for m in second.requests[0]]
         assert sent.count("Discuss.") == 1
-        assert "one" in sent
+        assert "First: one" in sent
 
     def test_given_messages_skip_the_channel_and_only_the_answer_is_posted(
         self, tmp_path

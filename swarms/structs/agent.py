@@ -52,7 +52,10 @@ from swarms.structs.autonomous_loop_utils import (
     get_summary_prompt,
 )
 from swarms.structs.comms_channel import CommsChannel
-from swarms.structs.context_utils import agent_answer
+from swarms.structs.context_utils import (
+    agent_answer,
+    messages_for,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_utils import set_random_models_for_agents
 from swarms.structs.safe_loading import (
@@ -2502,11 +2505,14 @@ Subtask Breakdown:
             # Posted once, so agents sharing the channel see one copy.
             if task_row not in posted:
                 self.channel.post(self.user_name, task)
-            messages = [
-                {"role": m["agent_name"], "content": m["content"]}
-                for m in posted
-                if m != task_row
-            ]
+            messages = messages_for(
+                self.agent_name,
+                [
+                    {"role": m["agent_name"], "content": m["content"]}
+                    for m in posted
+                    if m != task_row
+                ],
+            )
 
         models = self.fallback_models or [self.model_name]
         try:
