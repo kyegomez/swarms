@@ -307,11 +307,9 @@ class ToolManager:
                     f"Could not fetch MCP tools to defer: {error}"
                 )
                 agent._mcp_schemas_cache = []
-                agent._mcp_tools_deferred = True
                 return 0
             agent._mcp_schemas_cache = cached
 
-        agent._mcp_tools_deferred = True
         self.defer_tool_schemas(cached)
         if agent.verbose:
             logger.info(
