@@ -1,3 +1,4 @@
+import asyncio
 import copy
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -242,6 +243,54 @@ class MajorityVoting:
 
         return answers
 
+    async def _run_voters_async(
+        self, max_concurrency: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Run every voter on the shared conversation asynchronously.
+
+        Each voter receives the history as typed turns and contributes its
+        answer. Handles both async and sync agent implementations without
+        blocking the event loop.
+
+        Returns:
+            Maps agent name to that voter's answer.
+        """
+        semaphore = (
+            asyncio.Semaphore(max_concurrency)
+            if max_concurrency and max_concurrency > 0
+            else None
+        )
+
+        async def _call_voter(agent: Any) -> Any:
+            async def _run_voter_inner():
+                prior, vote_task = split_last_turn(
+                    messages_for(agent.agent_name, self.conversation)
+                )
+                if hasattr(agent, "arun") and callable(getattr(agent, "arun")):
+                    res = agent.arun(task=vote_task, messages=prior)
+                    if asyncio.iscoroutine(res):
+                        res = await res
+                else:
+                    res = await asyncio.to_thread(
+                        agent.run, task=vote_task, messages=prior
+                    )
+                return agent_answer(agent, fallback=res)
+
+            if semaphore is not None:
+                async with semaphore:
+                    return await _run_voter_inner()
+            return await _run_voter_inner()
+
+        coros = [_call_voter(agent) for agent in self.agents]
+        results = await asyncio.gather(*coros, return_exceptions=True)
+
+        answers: Dict[str, Any] = {}
+        for agent, result in zip(self.agents, results):
+            answers[agent.agent_name] = result
+
+        return answers
+
     @trace_run(
         "MajorityVoting.run",
         input_params=("task", "tasks", "img", "imgs"),
@@ -338,6 +387,111 @@ class MajorityVoting:
             type=self.output_type,
         )
 
+    async def arun(
+        self,
+        task: str,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+        max_concurrency: Optional[int] = None,
+        *args,
+        **kwargs,
+    ) -> List[Any]:
+        """
+        Runs the majority voting system asynchronously with multi-loop functionality.
+
+        Args:
+            task (str): The task to be performed by the agents.
+            streaming_callback (Optional[Callable[[str, str, bool], None]]): Callback
+                for streaming tokens.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            List[Any]: Formatted majority voting conversation history.
+        """
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
+
+        self.conversation.add(
+            role="user",
+            content=task,
+        )
+
+        for _ in range(self.max_loops):
+            outputs = await self._run_voters_async(
+                max_concurrency=max_concurrency
+            )
+
+            for agent in self.agents:
+                self.conversation.add(
+                    role=agent.agent_name,
+                    content=outputs[agent.agent_name],
+                )
+
+            self.consensus_agent.streaming_on = (
+                streaming_callback is not None
+            )
+
+            consensus_agent_name = self.consensus_agent.agent_name
+
+            if streaming_callback is not None:
+
+                def consensus_streaming_callback(chunk: str):
+                    try:
+                        if chunk is not None and chunk.strip():
+                            streaming_callback(
+                                consensus_agent_name, chunk, False
+                            )
+                    except Exception as callback_error:
+                        raise callback_error
+
+            else:
+                consensus_streaming_callback = None
+
+            prior, consensus_task = split_last_turn(
+                messages_for(
+                    self.consensus_agent.agent_name, self.conversation
+                )
+            )
+
+            if hasattr(self.consensus_agent, "arun") and callable(
+                getattr(self.consensus_agent, "arun")
+            ):
+                consensus_res = self.consensus_agent.arun(
+                    task=consensus_task,
+                    messages=prior,
+                    streaming_callback=consensus_streaming_callback,
+                )
+                if asyncio.iscoroutine(consensus_res):
+                    consensus_output = await consensus_res
+                else:
+                    consensus_output = consensus_res
+            else:
+                consensus_output = await asyncio.to_thread(
+                    self.consensus_agent.run,
+                    task=consensus_task,
+                    messages=prior,
+                    streaming_callback=consensus_streaming_callback,
+                )
+
+            consensus_output = agent_answer(
+                self.consensus_agent, fallback=consensus_output
+            )
+
+            self.conversation.add(
+                role=self.consensus_agent.agent_name,
+                content=consensus_output,
+            )
+
+        self.workspace.save_conversation(self.conversation)
+
+        return history_output_formatter(
+            conversation=self.conversation,
+            type=self.output_type,
+        )
+
     def batch_run(
         self, tasks: List[str], *args, **kwargs
     ) -> List[Any]:
@@ -353,6 +507,36 @@ class MajorityVoting:
             List[Any]: List of majority votes for each task.
         """
         return batched_run(self.run, tasks, *args, **kwargs)
+
+    async def batch_arun(
+        self,
+        tasks: List[str],
+        max_concurrency: Optional[int] = None,
+        *args,
+        **kwargs,
+    ) -> List[Any]:
+        """
+        Runs the majority voting system in async batch mode across tasks concurrently.
+
+        Args:
+            tasks (List[str]): List of tasks to be performed by the agents.
+            max_concurrency (Optional[int]): Max concurrent voters per voting system.
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            List[Any]: List of majority votes for each task.
+        """
+        coros = [
+            self._clone_for_task().arun(
+                task,
+                max_concurrency=max_concurrency,
+                *args,
+                **kwargs,
+            )
+            for task in tasks
+        ]
+        return await asyncio.gather(*coros)
 
     def _clone_for_task(self) -> "MajorityVoting":
         """Build a copy of this system for one concurrent task.
