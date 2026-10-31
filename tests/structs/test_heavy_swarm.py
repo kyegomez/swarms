@@ -12,6 +12,8 @@ Covers:
 """
 
 import os
+import time
+from types import SimpleNamespace
 
 import pytest
 from dotenv import load_dotenv
@@ -329,6 +331,16 @@ class TestGrokHeavyFlagBehavior:
         )
         assert "research" in swarm.agents
         assert len(swarm.agents) == 5
+
+    def test_timeout_stops_waiting_for_stuck_agents(self):
+        stuck = SimpleNamespace(run=lambda *a, **k: time.sleep(0.5))
+        keys = "research analysis alternatives verification".split()
+        results = HeavySwarm(timeout=0.1)._execute_agents_basic(
+            {}, dict.fromkeys(keys, stuck)
+        )
+        assert results == dict.fromkeys(
+            keys, "Timeout after 0.1 seconds"
+        )
 
 
 # ============================================================================
