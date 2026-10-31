@@ -1,5 +1,8 @@
+import signal
+import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor, wait
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
@@ -323,24 +326,37 @@ class SocialAlgorithms:
         Raises:
             TimeoutError: If the function execution exceeds max_execution_time.
         """
-        import signal
+        message = f"Algorithm execution exceeded {self.max_execution_time} seconds"
 
-        def timeout_handler(signum, frame):
-            raise TimeoutError(
-                f"Algorithm execution exceeded {self.max_execution_time} seconds"
+        if (
+            hasattr(signal, "setitimer")
+            and threading.current_thread() is threading.main_thread()
+        ):
+
+            def timeout_handler(signum, frame):
+                raise TimeoutError(message)
+
+            old_handler = signal.signal(
+                signal.SIGALRM, timeout_handler
             )
+            signal.setitimer(
+                signal.ITIMER_REAL, self.max_execution_time
+            )
+            try:
+                return func(*args, **kwargs)
+            finally:
+                signal.setitimer(signal.ITIMER_REAL, 0)
+                signal.signal(signal.SIGALRM, old_handler)
 
-        # Set up timeout
-        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(int(self.max_execution_time))
-
-        try:
-            result = func(*args, **kwargs)
-            return result
-        finally:
-            # Restore original handler
-            signal.alarm(0)
-            signal.signal(signal.SIGALRM, old_handler)
+        pool = ThreadPoolExecutor(max_workers=1)
+        future = pool.submit(func, *args, **kwargs)
+        pool.shutdown(wait=False)
+        if not wait([future], timeout=self.max_execution_time).done:
+            raise TimeoutError(
+                f"{message}; off the main thread the call cannot be "
+                "interrupted and keeps running in the background"
+            )
+        return future.result()
 
     def _format_output(self, result: Any) -> Any:
         """
