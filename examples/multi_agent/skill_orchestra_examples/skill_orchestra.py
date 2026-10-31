@@ -317,6 +317,7 @@ class SkillOrchestra:
             name=self.name,
             description=self.description,
             add_to_conversation=True,
+            add_collaboration_prompt=False,
         )
 
         # Skill handbook
