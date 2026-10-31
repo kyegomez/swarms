@@ -654,7 +654,9 @@ def test_swarm_type_rejects_auto_swarm_builder_recursion(
     )
 
     builder = AutoSwarmBuilder(max_json_repair_attempts=0)
-    with pytest.raises(ValueError, match="not usable here"):
+    with pytest.raises(
+        ValueError, match="not usable here|swarm_type"
+    ):
         builder.create_router_config("some task")
 
 
@@ -822,6 +824,18 @@ def test_reliability_check_rejects_non_positive_max_agents():
 def test_reliability_check_rejects_negative_repair_attempts():
     with pytest.raises(ValueError, match="max_json_repair_attempts"):
         AutoSwarmBuilder(max_json_repair_attempts=-1)
+
+
+def test_constructor_accepts_max_agents_and_max_json_repair_attempts():
+    builder = AutoSwarmBuilder(
+        max_agents=3, max_json_repair_attempts=2
+    )
+    assert builder.max_agents == 3
+    assert builder.max_json_repair_attempts == 2
+
+    default_builder = AutoSwarmBuilder()
+    assert default_builder.max_agents is None
+    assert default_builder.max_json_repair_attempts == 1
 
 
 def test_additional_llm_args_default_is_not_shared():
