@@ -271,27 +271,19 @@ def get_parameter_json_schema(
         A Pydanitc model for the parameter
     """
 
-    def type2description(
-        k: str, v: Union[Annotated[Type[Any], str], Type[Any]]
-    ) -> str:
-        # handles Annotated
-        if hasattr(v, "__metadata__"):
-            retval = v.__metadata__[0]
-            if isinstance(retval, str):
-                return retval
-            else:
-                raise ValueError(
-                    f"Invalid description {retval} for parameter {k}, should be a string."
-                )
-        else:
-            return k
-
     schema = type2schema(v)
     if k in default_values:
         dv = default_values[k]
         schema["default"] = dv
 
-    schema["description"] = type2description(k, v)
+    described = [
+        m
+        for m in getattr(v, "__metadata__", ())
+        if isinstance(m, str)
+    ]
+    schema["description"] = (
+        described[0] if described else schema.get("description", k)
+    )
 
     return schema
 
