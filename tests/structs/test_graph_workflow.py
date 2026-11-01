@@ -1800,5 +1800,171 @@ def test_graph_workflow_max_parallel_nodes_still_caps_the_pool():
     assert peak <= 3
 
 
+# ---------------------------------------------------------------------------
+# on_error policy tests (continue, skip_descendants, raise)
+# ---------------------------------------------------------------------------
+
+
+def test_graph_workflow_invalid_on_error_raises_value_error():
+    """An invalid on_error value raises ValueError at construction."""
+    with pytest.raises(ValueError, match="on_error"):
+        GraphWorkflow(name="invalid", on_error="invalid_policy")
+
+
+@pytest.mark.parametrize(
+    "policy",
+    ["continue", None],
+)
+def test_graph_workflow_on_error_continue_and_default(policy):
+    """
+    on_error='continue' and default: the error string becomes the failed node's
+    output, and downstream nodes still execute.
+    """
+    kwargs = {"on_error": policy} if policy is not None else {}
+    wf = GraphWorkflow(name="test-continue", **kwargs)
+
+    agent_a = _mock_agent("A")
+    agent_a.run.side_effect = RuntimeError("Node A crashed")
+
+    agent_b = _mock_agent("B", "output-B")
+    agent_c = _mock_agent("C", "output-C")
+    agent_d = _mock_agent("D", "output-D")
+    agent_e = _mock_agent("E", "output-E")
+
+    for a in [agent_a, agent_b, agent_c, agent_d, agent_e]:
+        wf.add_node(a)
+
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+    wf.add_edge("D", "E")
+
+    results = wf.run("task")
+
+    assert "[ERROR]" in str(results["A"])
+    assert "Node A crashed" in str(results["A"])
+    assert agent_b.run.called
+    assert agent_c.run.called
+    assert agent_d.run.called
+    assert agent_e.run.called
+    assert results["B"] == "output-B"
+    assert results["C"] == "output-C"
+    assert results["D"] == "output-D"
+    assert results["E"] == "output-E"
+
+
+def test_graph_workflow_on_error_skip_descendants():
+    """
+    on_error='skip_descendants': none of the failed node's descendants are called,
+    while independent branches complete. Skipped nodes map to None in results and
+    are omitted from conversation.
+    """
+    wf = GraphWorkflow(name="test-skip", on_error="skip_descendants")
+
+    agent_a = _mock_agent("A")
+    agent_a.run.side_effect = RuntimeError("Node A crashed")
+
+    agent_b = _mock_agent("B", "output-B")
+    agent_c = _mock_agent("C", "output-C")
+    agent_d = _mock_agent("D", "output-D")
+    agent_e = _mock_agent("E", "output-E")
+
+    for a in [agent_a, agent_b, agent_c, agent_d, agent_e]:
+        wf.add_node(a)
+
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+    wf.add_edge("D", "E")
+
+    results = wf.run("task")
+
+    # A failed
+    assert "[ERROR]" in str(results["A"])
+    # B and C are descendants of A: never called, map to None
+    assert not agent_b.run.called
+    assert not agent_c.run.called
+    assert results["B"] is None
+    assert results["C"] is None
+
+    # D and E are independent: called and complete
+    assert agent_d.run.called
+    assert agent_e.run.called
+    assert results["D"] == "output-D"
+    assert results["E"] == "output-E"
+
+    # Skipped nodes are left out of the shared conversation
+    conv_str = wf.conversation.get_str()
+    assert "output-B" not in conv_str
+    assert "output-C" not in conv_str
+    assert "output-D" in conv_str
+    assert "output-E" in conv_str
+
+
+def test_graph_workflow_on_error_raise():
+    """
+    on_error='raise': run raises the original exception, and nodes that hadn't started
+    never run.
+    """
+    wf = GraphWorkflow(name="test-raise", on_error="raise")
+
+    agent_a = _mock_agent("A")
+    err = RuntimeError("Node A crashed fatally")
+    agent_a.run.side_effect = err
+
+    agent_b = _mock_agent("B", "output-B")
+    agent_c = _mock_agent("C", "output-C")
+
+    for a in [agent_a, agent_b, agent_c]:
+        wf.add_node(a)
+
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+
+    with pytest.raises(RuntimeError) as exc_info:
+        wf.run("task")
+
+    assert exc_info.value is err
+    assert not agent_b.run.called
+    assert not agent_c.run.called
+
+
+def test_graph_workflow_on_error_raise_parallel_layer():
+    """
+    In a parallel layer, already running nodes finish, but future layers do not run,
+    and run raises the original exception.
+    """
+    import threading
+
+    wf = GraphWorkflow(name="test-raise-parallel", on_error="raise")
+
+    barrier = threading.Barrier(2)
+
+    def run_parallel_1(*args, **kwargs):
+        barrier.wait()
+        raise ValueError("Parallel 1 failed")
+
+    def run_parallel_2(*args, **kwargs):
+        barrier.wait()
+        return "Parallel 2 succeeded"
+
+    agent_p1 = _mock_agent("P1")
+    agent_p1.run.side_effect = run_parallel_1
+
+    agent_p2 = _mock_agent("P2")
+    agent_p2.run.side_effect = run_parallel_2
+
+    agent_downstream = _mock_agent("Downstream", "downstream-result")
+
+    for a in [agent_p1, agent_p2, agent_downstream]:
+        wf.add_node(a)
+
+    wf.add_edge("P1", "Downstream")
+    wf.add_edge("P2", "Downstream")
+
+    with pytest.raises(ValueError, match="Parallel 1 failed"):
+        wf.run("task")
+
+    assert not agent_downstream.run.called
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
