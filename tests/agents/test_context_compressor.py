@@ -5,6 +5,7 @@ All network calls (litellm.completion) are mocked.  Only the integration
 test at the bottom touches the filesystem, using pytest's tmp_path fixture.
 """
 
+import copy
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -16,6 +17,7 @@ from swarms.agents.context_compressor import (
     COMPRESSION_USER_TEMPLATE,
 )
 from swarms import Agent
+from swarms.structs.conversation import Conversation
 from swarms.utils.litellm_wrapper import empty_usage
 
 # ---------------------------------------------------------------------------
@@ -587,3 +589,68 @@ class TestUsageRatioReusesMessageCounts:
         )
         messages = len(conv.conversation_history)
         assert exact <= estimate <= exact + messages
+
+
+@pytest.mark.parametrize(
+    "part, kept",
+    [
+        (
+            {
+                "type": "file",
+                "file": {
+                    "file_data": "A" * 9000,
+                    "filename": "a.pdf",
+                },
+            },
+            "a.pdf",
+        ),
+        ({"type": "image_url", "image_url": "A" * 9000}, "image_url"),
+    ],
+)
+def test_attachment_data_is_not_compressed_as_text(part, kept):
+    message = SimpleNamespace(content="ok", tool_calls=None)
+    choice = SimpleNamespace(message=message, finish_reason="stop")
+    agent = Agent(
+        agent_name="attachment",
+        model_name="gpt-4o",
+        context_length=1000,
+        max_tokens=100,
+        print_on=False,
+    )
+    turn = {"role": "user", "content": [part]}
+
+    with (
+        patch(
+            "swarms.structs.conversation.count_tokens",
+            side_effect=lambda text, model: len(text),
+        ),
+        patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=SimpleNamespace(
+                choices=[choice], usage=None
+            ),
+        ) as model,
+        patch(
+            "swarms.agents.context_compressor.completion"
+        ) as summary,
+    ):
+        agent.run("Go", messages=[copy.deepcopy(turn)])
+        history = agent.short_memory.return_history_as_string()
+
+    summary.assert_not_called()
+    assert turn in model.call_args.kwargs["messages"]
+    assert "AAAA" not in history and kept in history
+
+
+def test_format_message_keeps_references_and_other_lists():
+    url = "https://a.example/b.png"
+    line = Conversation._format_message(
+        {
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": url}},
+                {"type": ["string", "null"]},
+            ],
+        }
+    )
+    assert url in line and "'type': ['string', 'null']" in line

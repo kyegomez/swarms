@@ -40,6 +40,10 @@ def generate_conversation_name() -> str:
     return f"conversation-{secrets.token_hex(4)}"
 
 
+_ATTACHMENT_PARTS = ("file", "image_url", "input_audio")
+_ATTACHMENT_DATA_KEYS = ("file_data", "url", "data")
+
+
 class Conversation:
     """
     A class to manage a conversation history, allowing for the addition, deletion,
@@ -951,8 +955,41 @@ class Conversation:
         return "\n\n".join(self._format_messages())
 
     @staticmethod
+    def _without_attachment_data(part: Any) -> Any:
+        """Replace a content part's embedded file data, keeping URLs, ids and names.
+
+        Args:
+            part (Any): One item of a message's list content.
+
+        Returns:
+            Any: The part, or a copy of it without the embedded data.
+        """
+        if not (
+            isinstance(part, dict)
+            and part.get("type") in _ATTACHMENT_PARTS
+        ):
+            return part
+        body = part.get(part["type"])
+        return {
+            **part,
+            part["type"]: {
+                key: (
+                    "<data>"
+                    if key in _ATTACHMENT_DATA_KEYS
+                    and not str(value).startswith(
+                        ("http://", "https://")
+                    )
+                    else value
+                )
+                for key, value in (
+                    body if isinstance(body, dict) else {"url": body}
+                ).items()
+            },
+        }
+
+    @staticmethod
     def _format_message(message: Dict[str, Any]) -> str:
-        """Format one message as a history line.
+        """Format one message as a history line, without embedded file data.
 
         Args:
             message (Dict[str, Any]): The message to format.
@@ -960,10 +997,16 @@ class Conversation:
         Returns:
             str: The history line.
         """
+        content = message["content"]
+        if isinstance(content, list):
+            content = [
+                Conversation._without_attachment_data(part)
+                for part in content
+            ]
         timestamp = message.get("timestamp")
         if timestamp:
-            return f"[{timestamp}] {message['role']}: {message['content']}"
-        return f"{message['role']}: {message['content']}"
+            return f"[{timestamp}] {message['role']}: {content}"
+        return f"{message['role']}: {content}"
 
     def _format_messages(self) -> List[str]:
         """Format each message as one history line.
