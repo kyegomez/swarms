@@ -52,6 +52,16 @@ def test_raw_base64_is_labelled_with_its_real_format(
         ("gpt-4o", "minutes.pdf", PDF_PART),
         ("gpt-4o", "https://a.example/b.pdf?sig=1", PDF_PART),
         ("anthropic/claude-sonnet-4-20250514", PDF_URI, PDF_PART),
+        (
+            "anthropic/claude-sonnet-4-20250514",
+            "data:application/pdf;name=a.pdf;base64,JVBERi0=",
+            PDF_PART,
+        ),
+        (
+            "anthropic/claude-sonnet-4-20250514",
+            "data:APPLICATION/PDF;base64,JVBERi0=",
+            PDF_PART,
+        ),
     ],
 )
 def test_pdf_input_is_sent_as_a_file_part(
@@ -86,3 +96,16 @@ def test_pdf_input_is_sent_as_a_file_part(
         {"type": "text", "text": "Read this"},
         part,
     ]
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "data:text/plain;base64,aGVsbG8=",
+        "data:application/octet-stream;base64,JVBERi0=",
+        "data:application/pdf,%25PDF-",
+    ],
+)
+def test_unsupported_data_uri_is_rejected(source):
+    with pytest.raises(ValueError, match="Unsupported data URI"):
+        get_image_base64(source)
