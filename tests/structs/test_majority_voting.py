@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from swarms.structs.agent import Agent
@@ -434,3 +436,28 @@ def test_consensus_agent_sees_its_own_prior_consensus_as_assistant():
             assert not any(
                 call["answer"] in content for content in assistant
             ), f"{name}'s vote arrived as the consensus agent's own turn"
+
+
+def test_arun_awaits_voters_within_max_concurrency_like_run():
+    names = ["Voter-A", "Voter-B", "Voter-C"]
+    sync_mv, sync_calls = _voting_system(names, max_loops=2)
+    expected = sync_mv.run("go")
+    mv, calls = _voting_system(names, max_loops=2)
+    live, peak = [], []
+
+    def awaitable(run):
+        async def arun(task=None, img=None, *args, **kwargs):
+            live.append(task)
+            peak.append(len(live))
+            await asyncio.sleep(0)
+            live.pop()
+            return run(task=task, **kwargs)
+
+        return arun
+
+    for agent in [*mv.agents, mv.consensus_agent]:
+        agent.arun = awaitable(agent.run)
+
+    assert asyncio.run(mv.arun("go", max_concurrency=2)) == expected
+    assert max(peak) == 2
+    assert sorted(calls, key=str) == sorted(sync_calls, key=str)
