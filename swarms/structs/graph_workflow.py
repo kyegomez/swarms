@@ -777,6 +777,9 @@ class GraphWorkflow:
         verbose (bool): Whether to enable verbose logging.
         usage (dict): Provider token usage summed over every distinct agent in
             the graph, subgraphs included. See :attr:`usage`.
+        on_error (str): Error handling policy when an agent raises an exception.
+            Must be one of "continue", "skip_descendants", or "raise".
+            Defaults to "continue".
     """
 
     def __init__(
@@ -799,10 +802,18 @@ class GraphWorkflow:
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
         channel: Optional[CommsChannel] = None,
+        on_error: str = "continue",
     ):
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
         self.on_node_complete = on_node_complete
+
+        valid_on_error = {"continue", "skip_descendants", "raise"}
+        if on_error not in valid_on_error:
+            raise ValueError(
+                f"Invalid on_error policy {on_error!r}. Must be one of {valid_on_error}"
+            )
+        self.on_error = on_error
 
         if self.verbose:
             logger.info("Initializing GraphWorkflow")
@@ -1561,6 +1572,7 @@ class GraphWorkflow:
         entry_points: Optional[List[str]] = None,
         end_points: Optional[List[str]] = None,
         task: Optional[str] = None,
+        on_error: str = "continue",
         **kwargs: Any,
     ) -> "GraphWorkflow":
         """
@@ -1572,6 +1584,8 @@ class GraphWorkflow:
             entry_points (Optional[List[str]]): List of entry point node IDs.
             end_points (Optional[List[str]]): List of end point node IDs.
             task (Optional[str]): Task to be executed by the workflow.
+            on_error (str): Error handling policy: "continue", "skip_descendants",
+                or "raise". Defaults to "continue".
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -1585,7 +1599,7 @@ class GraphWorkflow:
             )
 
         try:
-            wf = cls(task=task, **kwargs)
+            wf = cls(task=task, on_error=on_error, **kwargs)
             node_objs = []
 
             for i, agent in enumerate(agents):
@@ -1958,21 +1972,21 @@ class GraphWorkflow:
     @staticmethod
     def _safe_output(
         agent_name: str, produce: Callable[[], Any]
-    ) -> Tuple[bool, Any]:
+    ) -> Tuple[bool, Any, Optional[Exception]]:
         """
         Run ``produce``, turning a failure into an ``[ERROR]`` string.
 
         One node blowing up degrades that node's output rather than the whole
         layer, so downstream agents still receive something to work with.
-        Returns ``(succeeded, output)``.
+        Returns ``(succeeded, output, error)``.
         """
         try:
-            return True, produce()
+            return True, produce(), None
         except Exception as e:
             logger.exception(
                 f"Error in GraphWorkflow agent execution for {agent_name}: {e}"
             )
-            return False, f"[ERROR] Agent {agent_name} failed: {e}"
+            return False, f"[ERROR] Agent {agent_name} failed: {e}", e
 
     @trace_run(
         "GraphWorkflow.run",
@@ -2099,6 +2113,7 @@ class GraphWorkflow:
 
                 execution_results = {}
                 prev_outputs = {}
+                skipped_nodes: Set[str] = set()
 
                 # Deterministic key, not hash(): Python salts hashes, so they differ across runs.
                 task_key = (
@@ -2173,6 +2188,11 @@ class GraphWorkflow:
                         node_type,
                         agent_name,
                     ) in layer:
+                        if node_id in skipped_nodes:
+                            prev_outputs[node_id] = None
+                            execution_results[node_id] = None
+                            continue
+
                         try:
                             prompt, prior_messages = (
                                 self._build_prompt(
@@ -2319,7 +2339,11 @@ class GraphWorkflow:
                                     f"Error in on_node_complete callback for {agent_name}: {e}"
                                 )
 
-                    if len(layer_data) == 1:
+                    if len(layer_data) == 0:
+                        layer_execution_time = (
+                            time.time() - layer_start_time
+                        )
+                    elif len(layer_data) == 1:
                         # Single-node layer, a worker thread would only add latency
                         (
                             node_id,
@@ -2329,7 +2353,7 @@ class GraphWorkflow:
                             prompt,
                             prior_messages,
                         ) = layer_data[0]
-                        _, output = self._safe_output(
+                        ok, output, exc = self._safe_output(
                             agent_name,
                             _make_call(
                                 node_id,
@@ -2342,10 +2366,23 @@ class GraphWorkflow:
                         _record(
                             node_id, agent_name, node_type, output
                         )
+                        if not ok:
+                            if (
+                                self.on_error == "raise"
+                                and exc is not None
+                            ):
+                                raise exc
+                            elif self.on_error == "skip_descendants":
+                                skipped_nodes.update(
+                                    self.graph_backend.descendants(
+                                        node_id
+                                    )
+                                )
                     else:
                         # Parallel layer: dispatch onto the run-wide pool.
                         pool = _get_executor()
                         future_to_data = {}
+                        first_exception = None
 
                         for (
                             node_id,
@@ -2374,6 +2411,17 @@ class GraphWorkflow:
                                 logger.exception(
                                     f"Error submitting task for agent {agent_name}: {e}"
                                 )
+                                if first_exception is None:
+                                    first_exception = e
+                                if (
+                                    self.on_error
+                                    == "skip_descendants"
+                                ):
+                                    skipped_nodes.update(
+                                        self.graph_backend.descendants(
+                                            node_id
+                                        )
+                                    )
                                 error_output = f"[ERROR] Failed to submit task: {e}"
                                 prev_outputs[node_id] = error_output
                                 execution_results[node_id] = (
@@ -2389,7 +2437,7 @@ class GraphWorkflow:
                                 agent_name,
                                 node_type,
                             ) = future_to_data[future]
-                            ok, output = self._safe_output(
+                            ok, output, exc = self._safe_output(
                                 agent_name, future.result
                             )
                             if ok:
@@ -2399,10 +2447,31 @@ class GraphWorkflow:
                                         f"Agent {agent_name} completed successfully "
                                         f"({completed_count}/{len(layer_data)})"
                                     )
+                            else:
+                                if (
+                                    first_exception is None
+                                    and exc is not None
+                                ):
+                                    first_exception = exc
+                                if (
+                                    self.on_error
+                                    == "skip_descendants"
+                                ):
+                                    skipped_nodes.update(
+                                        self.graph_backend.descendants(
+                                            node_id
+                                        )
+                                    )
 
                             _record(
                                 node_id, agent_name, node_type, output
                             )
+
+                        if (
+                            self.on_error == "raise"
+                            and first_exception is not None
+                        ):
+                            raise first_exception
 
                     layer_execution_time = (
                         time.time() - layer_start_time

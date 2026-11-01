@@ -1800,5 +1800,193 @@ def test_graph_workflow_max_parallel_nodes_still_caps_the_pool():
     assert peak <= 3
 
 
+def test_graph_workflow_on_error_invalid_raises_value_error():
+    """Invalid on_error policy raises ValueError at construction."""
+    with pytest.raises(ValueError, match="Invalid on_error policy"):
+        GraphWorkflow(on_error="invalid_policy")
+
+    with pytest.raises(ValueError, match="Invalid on_error policy"):
+        GraphWorkflow.from_spec(
+            agents=[_mock_agent("A")],
+            edges=[],
+            on_error="not_a_valid_mode",
+        )
+
+
+@pytest.mark.parametrize(
+    "policy",
+    [None, "continue", "skip_descendants", "raise"],
+)
+def test_graph_workflow_on_error_policies(policy):
+    """
+    Table-driven test covering on_error policies with a stubbed failing node.
+    Graph structure:
+        A -> B -> D
+        A -> C -> E
+    Where:
+        - Layer 0: A (succeeds)
+        - Layer 1: B (fails with RuntimeError), C (succeeds)
+        - Layer 2: D (descendant of B), E (descendant of C)
+    """
+    agent_a = _mock_agent("A", "output-A")
+    agent_b = _mock_agent("B")
+    custom_err = RuntimeError("Node B blew up")
+    agent_b.run.side_effect = custom_err
+    agent_c = _mock_agent("C", "output-C")
+    agent_d = _mock_agent("D", "output-D")
+    agent_e = _mock_agent("E", "output-E")
+
+    kwargs = {}
+    if policy is not None:
+        kwargs["on_error"] = policy
+
+    wf = GraphWorkflow(name="test-on-error", **kwargs)
+    wf.add_node(agent_a)
+    wf.add_node(agent_b)
+    wf.add_node(agent_c)
+    wf.add_node(agent_d)
+    wf.add_node(agent_e)
+
+    wf.add_edge("A", "B")
+    wf.add_edge("A", "C")
+    wf.add_edge("B", "D")
+    wf.add_edge("C", "E")
+
+    effective_policy = policy if policy is not None else "continue"
+
+    if effective_policy == "raise":
+        with pytest.raises(RuntimeError) as exc_info:
+            wf.run("Execute workflow")
+        assert exc_info.value is custom_err
+        # Node A executed
+        assert agent_a.run.call_count == 1
+        # Node B executed and raised
+        assert agent_b.run.call_count == 1
+        # Node C was already running in Layer 1 parallel execution
+        assert agent_c.run.call_count == 1
+        # Nodes in Layer 2 never started
+        assert agent_d.run.call_count == 0
+        assert agent_e.run.call_count == 0
+
+    elif effective_policy == "skip_descendants":
+        results = wf.run("Execute workflow")
+        assert agent_a.run.call_count == 1
+        assert agent_b.run.call_count == 1
+        assert agent_c.run.call_count == 1
+        # Descendant D must be skipped completely
+        assert agent_d.run.call_count == 0
+        # Independent branch E must complete
+        assert agent_e.run.call_count == 1
+
+        assert results["A"] == "output-A"
+        assert "[ERROR] Agent B failed" in results["B"]
+        assert results["C"] == "output-C"
+        assert results["D"] is None
+        assert results["E"] == "output-E"
+
+        # Skipped node D is left out of conversation
+        conv_roles = [
+            (
+                m.get("role")
+                if isinstance(m, dict)
+                else getattr(m, "role", None)
+            )
+            for m in getattr(
+                wf.conversation, "conversation_history", []
+            )
+        ]
+        assert "D" not in conv_roles
+        assert "E" in conv_roles
+        assert "B" in conv_roles
+
+    elif effective_policy == "continue":
+        results = wf.run("Execute workflow")
+        assert agent_a.run.call_count == 1
+        assert agent_b.run.call_count == 1
+        assert agent_c.run.call_count == 1
+        assert agent_d.run.call_count == 1
+        assert agent_e.run.call_count == 1
+
+        assert results["A"] == "output-A"
+        assert "[ERROR] Agent B failed" in results["B"]
+        assert results["C"] == "output-C"
+        assert results["D"] == "output-D"
+        assert results["E"] == "output-E"
+
+        conv_roles = [
+            (
+                m.get("role")
+                if isinstance(m, dict)
+                else getattr(m, "role", None)
+            )
+            for m in getattr(
+                wf.conversation, "conversation_history", []
+            )
+        ]
+        assert "D" in conv_roles
+        assert "E" in conv_roles
+
+
+@pytest.mark.parametrize(
+    "policy",
+    ["continue", "skip_descendants", "raise"],
+)
+def test_graph_workflow_on_error_single_node_layer_failure(policy):
+    """
+    Test on_error when a failure occurs in a single-node layer.
+    Graph structure:
+        A -> B -> C
+    Where A (single-node layer 0) fails with RuntimeError.
+    """
+    agent_a = _mock_agent("A")
+    custom_err = RuntimeError("Root node A failed")
+    agent_a.run.side_effect = custom_err
+    agent_b = _mock_agent("B", "output-B")
+    agent_c = _mock_agent("C", "output-C")
+
+    wf = GraphWorkflow(name="single-fail", on_error=policy)
+    wf.add_node(agent_a)
+    wf.add_node(agent_b)
+    wf.add_node(agent_c)
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+
+    if policy == "raise":
+        with pytest.raises(RuntimeError) as exc_info:
+            wf.run("task")
+        assert exc_info.value is custom_err
+        assert agent_a.run.call_count == 1
+        assert agent_b.run.call_count == 0
+        assert agent_c.run.call_count == 0
+    elif policy == "skip_descendants":
+        results = wf.run("task")
+        assert agent_a.run.call_count == 1
+        assert agent_b.run.call_count == 0
+        assert agent_c.run.call_count == 0
+        assert "[ERROR] Agent A failed" in results["A"]
+        assert results["B"] is None
+        assert results["C"] is None
+        conv_roles = [
+            (
+                m.get("role")
+                if isinstance(m, dict)
+                else getattr(m, "role", None)
+            )
+            for m in getattr(
+                wf.conversation, "conversation_history", []
+            )
+        ]
+        assert "B" not in conv_roles
+        assert "C" not in conv_roles
+    elif policy == "continue":
+        results = wf.run("task")
+        assert agent_a.run.call_count == 1
+        assert agent_b.run.call_count == 1
+        assert agent_c.run.call_count == 1
+        assert "[ERROR] Agent A failed" in results["A"]
+        assert results["B"] == "output-B"
+        assert results["C"] == "output-C"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
