@@ -568,9 +568,6 @@ class Agent:
 
         # Initialize autonomous loop tracking structures
         self.autonomous_subtasks = []  # List of subtasks from plan
-        self.current_subtask_index = (
-            0  # Current subtask being executed
-        )
         self.subtask_status = {}  # Track status of each subtask
         self.plan_created = False  # Whether a plan has been created
         self.think_call_count = (
@@ -2022,7 +2019,6 @@ Subtask Breakdown:
         self.short_memory = self.short_memory_init()
         self.tool_manager.handle_tool_schema_ops()
         self.autonomous_subtasks = []
-        self.current_subtask_index = 0
         self.subtask_status = {}
         self.plan_created = False
         self.think_call_count = 0
