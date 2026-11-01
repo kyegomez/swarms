@@ -8,6 +8,7 @@ import os
 import time
 import traceback
 import uuid
+from dataclasses import dataclass, field
 from pathlib import Path
 from enum import Enum
 from typing import (
@@ -593,6 +594,19 @@ class NodeType(str, Enum):
     SUBGRAPH = "subgraph"
 
 
+@dataclass
+class GraphEvent:
+    type: str
+    run_id: str
+    node_id: str
+    agent_name: str
+    loop: int
+    output: Any = None
+    error: Optional[BaseException] = None
+    duration: Optional[float] = None
+    timestamp: float = field(default_factory=time.time)
+
+
 class Node:
     """
     Represents a node in a graph workflow.  A node can be either an Agent or
@@ -799,10 +813,12 @@ class GraphWorkflow:
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
         channel: Optional[CommsChannel] = None,
+        on_event: Optional[Callable[[GraphEvent], None]] = None,
     ):
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
         self.on_node_complete = on_node_complete
+        self.on_event = on_event
 
         if self.verbose:
             logger.info("Initializing GraphWorkflow")
@@ -1884,6 +1900,38 @@ class GraphWorkflow:
             logger.exception(f"Error in GraphWorkflow.arun: {e}")
             raise e
 
+    def _observed(self, on_event, run_id, loop, make_call):
+        if on_event is None:
+            return make_call
+
+        def make_observed_call(node_id, agent, *args):
+            call = make_call(node_id, agent, *args)
+            name = getattr(agent, "agent_name", node_id)
+            base = (run_id, node_id, name, loop)
+
+            def emit(type: str, **fields: Any) -> None:
+                try:
+                    on_event(GraphEvent(type, *base, **fields))
+                except Exception as e:
+                    logger.exception(f"on_event callback failed: {e}")
+
+            def observed() -> Any:
+                emit("node_started")
+                start = time.time()
+                try:
+                    out = call()
+                except Exception as e:
+                    elapsed = time.time() - start
+                    emit("node_failed", error=e, duration=elapsed)
+                    raise
+                elapsed = time.time() - start
+                emit("node_completed", output=out, duration=elapsed)
+                return out
+
+            return observed
+
+        return make_observed_call
+
     @property
     def usage(self) -> dict:
         """Provider token usage summed over every agent in the graph.
@@ -1987,6 +2035,7 @@ class GraphWorkflow:
             Callable[[str, str], None]
         ] = None,
         *args: Any,
+        on_event: Optional[Callable[[GraphEvent], None]] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
         """
@@ -2007,6 +2056,9 @@ class GraphWorkflow:
             streaming_callback (Optional[Callable[[str, str], None]]): Callback
                 fired for every token as agents generate output in real-time.
                 Receives ``(node_id, token)``.
+            on_event (Optional[Callable[[GraphEvent], None]]): Callback
+                fired with each node's ``node_started``, then its
+                ``node_completed`` or ``node_failed`` GraphEvent.
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
 
@@ -2020,6 +2072,8 @@ class GraphWorkflow:
         # Resolve callbacks: run-level overrides instance-level
         _on_node_complete = on_node_complete or self.on_node_complete
         _streaming_callback = streaming_callback
+        _on_event = on_event or self.on_event
+        run_id = generate_id("graph-run")
         run_start_time = time.time()
 
         if task is not None:
@@ -2283,6 +2337,10 @@ class GraphWorkflow:
                             )
 
                         return _run_agent_streaming
+
+                    _make_call = self._observed(
+                        _on_event, run_id, loop + 1, _make_call
+                    )
 
                     def _record(
                         node_id, agent_name, node_type, output
