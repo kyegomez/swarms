@@ -1,3 +1,5 @@
+import pytest
+
 from swarms.agents.i_agent import IterativeReflectiveExpansion
 
 
@@ -111,3 +113,20 @@ def test_ire_agent_steps_read_only_the_latest_reply():
 
     assert simulated == ["Approach A", "Approach B", "Approach A"]
     assert result == "Final plan"
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "1. Outcome: ok\n2. Score: 0.9\n3. Errors: none",
+        "**Outcome:** ok\n**Score:** 0.9\n**Errors:** none",
+        "Outcome: ok\nScore: 0.9/1.0\nErrors: none",
+        "### 1. **Outcome**\nok\n\n### 2. **Score**\n**0.9/1.0**\n\n### 3. **Errors**\nnone",
+        "### 1. 🎯 Outcome: ok\n### 2. 📊 Score: `0.9 / 1.0`\n### 3. ⚠️ Errors: none",
+    ],
+)
+def test_simulate_path_reads_the_format_its_prompt_asks_for(reply):
+    ire = IterativeReflectiveExpansion()
+    ire.agent.run = lambda prompt: reply
+
+    assert ire.simulate_path("Approach A") == ("ok", 0.9, "none")
