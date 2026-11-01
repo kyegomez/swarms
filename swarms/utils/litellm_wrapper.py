@@ -1452,8 +1452,6 @@ class LiteLLM:
         ):
             return self.output_for_reasoning(response)
 
-        if self.tools_list_dictionary is not None:
-            return self.output_for_tools(response)
         if self.return_all is True:
             return response.model_dump()
         if "gemini" in self.model_name.lower():

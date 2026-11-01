@@ -23,6 +23,9 @@ Still uncovered by any assertion, from the dropped script: streaming via
 image handling, and image message preparation.
 """
 
+from types import SimpleNamespace
+from unittest.mock import patch
+
 import pytest
 from dotenv import load_dotenv
 
@@ -606,3 +609,30 @@ class TestGeminiProvider:
         )
         result = agent.run(SIMPLE_TASK)
         assert result is not None
+
+
+@pytest.mark.parametrize("mcp_call", [False, True])
+def test_text_reply_survives_when_tools_are_configured(mcp_call):
+    tool = {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "parameters": {"type": "object", "properties": {}},
+        },
+    }
+    message = SimpleNamespace(
+        content="It is sunny in Paris.", tool_calls=None
+    )
+    response = SimpleNamespace(
+        choices=[SimpleNamespace(message=message)], usage=None
+    )
+    llm = LiteLLM(
+        model_name="gpt-4o",
+        tools_list_dictionary=[tool],
+        mcp_call=mcp_call,
+    )
+    with patch(
+        "swarms.utils.litellm_wrapper.completion",
+        return_value=response,
+    ):
+        assert llm.run("Weather in Paris?") == "It is sunny in Paris."
