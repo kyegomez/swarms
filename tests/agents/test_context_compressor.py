@@ -605,6 +605,26 @@ class TestUsageRatioReusesMessageCounts:
             "a.pdf",
         ),
         ({"type": "image_url", "image_url": "A" * 9000}, "image_url"),
+        (
+            {
+                "type": "video_url",
+                "video_url": {
+                    "url": "data:video/mp4;base64," + "A" * 9000
+                },
+            },
+            "video_url",
+        ),
+        (
+            {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": "application/pdf",
+                    "data": "A" * 9000,
+                },
+            },
+            "document",
+        ),
     ],
 )
 def test_attachment_data_is_not_compressed_as_text(part, kept):
@@ -643,14 +663,42 @@ def test_attachment_data_is_not_compressed_as_text(part, kept):
 
 
 def test_format_message_keeps_references_and_other_lists():
-    url = "https://a.example/b.png"
     line = Conversation._format_message(
         {
             "role": "user",
             "content": [
-                {"type": "image_url", "image_url": {"url": url}},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://a.example/b.png"},
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "gs://a/b.png"},
+                },
+                {"type": "image_url"},
                 {"type": ["string", "null"]},
             ],
         }
     )
-    assert url in line and "'type': ['string', 'null']" in line
+    assert (
+        "https://a.example/b.png" in line and "gs://a/b.png" in line
+    )
+    assert "'type': ['string', 'null']" in line
+    assert "<data>" not in line
+
+
+def test_memory_and_channel_do_not_receive_attachment_data(tmp_path):
+    path = tmp_path / "MEMORY.md"
+    channel = MagicMock()
+    conv = Conversation(memory_md_path=str(path), channel=channel)
+    part = {
+        "type": "file",
+        "file": {"file_data": "A" * 9000, "filename": "a.pdf"},
+    }
+
+    conv.add("user", [part])
+
+    assert conv.conversation_history[-1]["content"] == [part]
+    written = path.read_text(encoding="utf-8")
+    assert "AAAA" not in written and "a.pdf" in written
+    assert "AAAA" not in channel.post.call_args.args[1]

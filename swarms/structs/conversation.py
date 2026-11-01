@@ -40,8 +40,23 @@ def generate_conversation_name() -> str:
     return f"conversation-{secrets.token_hex(4)}"
 
 
-_ATTACHMENT_PARTS = ("file", "image_url", "input_audio")
-_ATTACHMENT_DATA_KEYS = ("file_data", "url", "data")
+_ATTACHMENT_PARTS = (
+    "file",
+    "image_url",
+    "input_audio",
+    "video_url",
+    "document",
+    "image",
+    "input_file",
+    "input_image",
+)
+_ATTACHMENT_DATA_KEYS = (
+    "file_data",
+    "url",
+    "data",
+    "image_url",
+    "video_url",
+)
 
 
 class Conversation:
@@ -466,11 +481,15 @@ class Conversation:
             and content is not None
             and role not in ("System", "system")
         ):
-            self.channel.post(role, str(content))
+            self.channel.post(
+                role, str(self._history_content(content))
+            )
 
         # Persist to MEMORY.md if enabled
         if self.memory_md_path:
-            self._append_to_memory_md(role, content)
+            self._append_to_memory_md(
+                role, self._history_content(content)
+            )
 
         # Counts the history line, so history reads reuse it instead of tokenizing again.
         if self.token_count is True:
@@ -955,6 +974,30 @@ class Conversation:
         return "\n\n".join(self._format_messages())
 
     @staticmethod
+    def _strip_embedded_data(value: Any, key: str = None) -> Any:
+        """Replace embedded data under an attachment's data keys, keeping references.
+
+        Args:
+            value (Any): An attachment part, or a value nested in one.
+            key (str, optional): The key `value` is stored under.
+
+        Returns:
+            Any: A copy of `value` without the embedded data.
+        """
+        if isinstance(value, dict):
+            return {
+                k: Conversation._strip_embedded_data(v, k)
+                for k, v in value.items()
+            }
+        if (
+            key in _ATTACHMENT_DATA_KEYS
+            and isinstance(value, str)
+            and (value.startswith("data:") or "://" not in value)
+        ):
+            return "<data>"
+        return value
+
+    @staticmethod
     def _without_attachment_data(part: Any) -> Any:
         """Replace a content part's embedded file data, keeping URLs, ids and names.
 
@@ -964,28 +1007,29 @@ class Conversation:
         Returns:
             Any: The part, or a copy of it without the embedded data.
         """
-        if not (
+        if (
             isinstance(part, dict)
             and part.get("type") in _ATTACHMENT_PARTS
         ):
-            return part
-        body = part.get(part["type"])
-        return {
-            **part,
-            part["type"]: {
-                key: (
-                    "<data>"
-                    if key in _ATTACHMENT_DATA_KEYS
-                    and not str(value).startswith(
-                        ("http://", "https://")
-                    )
-                    else value
-                )
-                for key, value in (
-                    body if isinstance(body, dict) else {"url": body}
-                ).items()
-            },
-        }
+            return Conversation._strip_embedded_data(part)
+        return part
+
+    @staticmethod
+    def _history_content(content: Any) -> Any:
+        """Return message content as history text should show it.
+
+        Args:
+            content (Any): A message's content.
+
+        Returns:
+            Any: The content without embedded attachment data.
+        """
+        if isinstance(content, list):
+            return [
+                Conversation._without_attachment_data(part)
+                for part in content
+            ]
+        return Conversation._without_attachment_data(content)
 
     @staticmethod
     def _format_message(message: Dict[str, Any]) -> str:
@@ -997,12 +1041,7 @@ class Conversation:
         Returns:
             str: The history line.
         """
-        content = message["content"]
-        if isinstance(content, list):
-            content = [
-                Conversation._without_attachment_data(part)
-                for part in content
-            ]
+        content = Conversation._history_content(message["content"])
         timestamp = message.get("timestamp")
         if timestamp:
             return f"[{timestamp}] {message['role']}: {content}"
