@@ -195,12 +195,10 @@ class LLMManager:
                 additional_args.update(agent.llm_args)
 
             if tools_list:
-                additional_args.update(
-                    {
-                        "tools_list_dictionary": tools_list,
-                        "tool_choice": "auto",
-                        "parallel_tool_calls": parallel_tool_calls,
-                    }
+                additional_args["tools_list_dictionary"] = tools_list
+                additional_args.setdefault("tool_choice", "auto")
+                additional_args.setdefault(
+                    "parallel_tool_calls", parallel_tool_calls
                 )
 
             if agent.mcp_enabled:
