@@ -11,7 +11,7 @@ import socket
 import uuid
 from functools import lru_cache
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 from loguru import logger
@@ -96,6 +96,9 @@ def _is_safe_url(url: str) -> bool:
         return False
 
 
+_MAX_REDIRECTS = 5
+
+
 @lru_cache(maxsize=32)
 def _fetch_image_url(url: str) -> bytes:
     """Fetch an image URL once per process; an agent re-sends the same img
@@ -105,14 +108,25 @@ def _fetch_image_url(url: str) -> bytes:
     The guard sits inside the cache on purpose -- a hit makes no request, and
     lru_cache does not memoize the raise, so a blocked URL fails every call.
     Entries are bounded by count, not bytes: 32 images retained at most.
+    Redirects are followed here rather than by requests, so every hop
+    passes the guard, up to _MAX_REDIRECTS hops.
     """
-    if not _is_safe_url(url):
-        raise ValueError(
-            f"Blocked URL '{url}': only external HTTP/HTTPS URLs are permitted."
+    target = url
+    for _ in range(_MAX_REDIRECTS + 1):
+        if not _is_safe_url(target):
+            raise ValueError(
+                f"Blocked URL '{target}': only external HTTP/HTTPS URLs are permitted."
+            )
+        response = requests.get(
+            target, timeout=30, allow_redirects=False
         )
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    return response.content
+        if not response.is_redirect:
+            response.raise_for_status()
+            return response.content
+        target = urljoin(target, response.headers["location"])
+    raise ValueError(
+        f"Too many redirects fetching '{url}' (limit {_MAX_REDIRECTS})."
+    )
 
 
 def get_media_base64(source: str) -> str:
