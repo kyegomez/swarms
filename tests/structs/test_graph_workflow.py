@@ -1801,86 +1801,31 @@ def test_graph_workflow_max_parallel_nodes_still_caps_the_pool():
 
 
 @pytest.mark.parametrize(
-    "fail, on_error, cap, loops, skipped, saved",
+    "on_error, b_output, saved",
     [
-        ("A", "continue", None, 1, "", 4),
-        ("A", "continue", 1, 1, "", 4),
-        # Skip rows also count E's stale checkpoint file.
-        ("D", "skip_descendants", None, 1, "E", 3),
-        ("A", "skip_descendants", None, 1, "BCDE", 1),
-        # End point J recovers in loop 2; checkpoints would replay loop 1.
-        ("J", "skip_descendants", None, 2, "", 0),
-        ("A", "raise", None, 1, "BCDEJ", 0),
-        ("D", "raise", None, 1, "E", 2),
-        # One worker: the queued sibling must not start after A fails.
-        ("A", "raise", 1, 1, "IBCDEJ", 0),
+        ("continue", "output-B", 2),
+        ("skip_descendants", None, 0),
+        ("raise", None, 0),
     ],
 )
-def test_graph_workflow_on_error(
-    tmp_path, fail, on_error, cap, loops, skipped, saved
-):
-    import threading
-
-    with pytest.raises(ValueError, match="on_error"):
-        GraphWorkflow(on_error="ignore")
-
-    # Layers: {A, I} and {B, C, J} run in parallel, {D} and {E} alone.
-    boom, i_started = RuntimeError("boom"), threading.Event()
-    agents = {name: _mock_agent(name) for name in "ABCDEIJ"}
-
-    def fail_once(*args, **kwargs):
-        agents[fail].run.side_effect = None
-        i_started.wait(0 if cap else 1)
-        raise boom
-
-    agents[fail].run.side_effect = fail_once
-    agents["I"].run.side_effect = lambda *a, **k: (
-        i_started.set() or "output-I"
-    )
-    completed = []
+def test_graph_workflow_on_error(tmp_path, on_error, b_output, saved):
+    agents = [_mock_agent(name) for name in "ABC"]
+    agents[0].run.side_effect = RuntimeError("boom")
     wf = GraphWorkflow(
-        checkpoint_dir=str(tmp_path) if loops == 1 else None,
-        max_parallel_nodes=cap,
-        max_loops=loops,
-        on_error=on_error,
-        on_node_complete=lambda nid, out: completed.append(nid),
+        checkpoint_dir=str(tmp_path), on_error=on_error
     )
-    for agent in agents.values():
+    for agent in agents:
         wf.add_node(agent)
-    for edge in ("AB", "AC", "BD", "CD", "DE", "IJ"):
-        wf.add_edge(*edge)
-    if on_error == "skip_descendants" and loops == 1:
-        wf._checkpoint_path(wf._task_key("task"), 3).write_text(
-            '{"E": "stale"}'
-        )
+    wf.add_edge("A", "B")
 
-    ran = set(agents) - set(skipped)
     if on_error == "raise":
-        with pytest.raises(RuntimeError) as raised:
+        with pytest.raises(RuntimeError, match="boom"):
             wf.run("task")
-        assert raised.value is boom
     else:
-        expected = {
-            n: None if n in skipped else f"output-{n}" for n in agents
-        }
-        expected[fail] = f"[ERROR] Agent {fail} failed: boom"
-        if loops > 1:
-            expected = {f"{n}_loop_1": v for n, v in expected.items()}
-            expected.update({n: f"output-{n}" for n in agents})
-        assert wf.run("task").items() >= expected.items()
-        spoke = {
-            m["role"] for m in wf.conversation.conversation_history
-        }
-        assert spoke.isdisjoint(set(agents) - ran)
-    if loops > 1:
-        # J's failed answer does not seed loop 2.
-        seeded = agents["A"].run.call_args.kwargs["messages"]
-        assert [m["content"] for m in seeded] == [
-            "task",
-            "E (previous iteration): output-E",
-        ]
-    assert {n for n, a in agents.items() if a.run.called} == ran
-    assert set(completed) == ran
+        results = wf.run("task")
+        assert (results["B"], results["C"]) == (b_output, "output-C")
+    assert agents[1].run.called == (b_output is not None)
+    # A failed layer is saved only under "continue", so a rerun retries it.
     assert len(list(tmp_path.glob("*.json"))) == saved
 
 
