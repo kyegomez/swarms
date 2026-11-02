@@ -239,3 +239,37 @@ def test_each_speaker_passes_on_only_its_latest_reply():
     assert moderator.tasks[-1].endswith(
         "Economist: Economist reply 2\n\nHistorian: Historian reply 2"
     )
+
+
+def test_default_output_keeps_the_moderators_opening():
+    moderator = _HistoryAgent("Moderator")
+    experts = [_HistoryAgent("Economist"), _HistoryAgent("Historian")]
+
+    output = ExpertPanelDiscussion(
+        agents=experts, moderator=moderator, max_rounds=1
+    ).run(task="Where do rates go?")
+
+    assert "Where do rates go?" not in output
+    assert output.index("Moderator reply 2") < output.index(
+        "Economist reply 2"
+    )
+
+
+def test_list_output_starts_with_the_task():
+    moderator = _HistoryAgent("Moderator")
+    experts = [_HistoryAgent("Economist"), _HistoryAgent("Historian")]
+
+    turns = ExpertPanelDiscussion(
+        agents=experts,
+        moderator=moderator,
+        max_rounds=1,
+        output_type="list",
+    ).run(task="Where do rates go?")
+
+    assert [(turn["role"], turn["content"]) for turn in turns] == [
+        ("user", "Where do rates go?"),
+        ("Moderator", "Moderator reply 2"),
+        ("Economist", "Economist reply 2"),
+        ("Historian", "Historian reply 2"),
+        ("Moderator", "Moderator reply 3"),
+    ]
