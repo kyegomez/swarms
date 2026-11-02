@@ -1,5 +1,11 @@
 import json
 import os
+import pytest
+
+pytestmark = pytest.mark.skipif(
+    not os.getenv("OPENAI_API_KEY"),
+    reason="OPENAI_API_KEY is not set; skipping live LLM integration tests",
+)
 from datetime import datetime
 from typing import Any, Callable, Dict, List
 
@@ -792,6 +798,12 @@ def test_complex_workflow_integration():
 def run_all_tests():
     """Run all tests and generate a comprehensive report"""
     logger.info("Starting Enhanced Swarms Comprehensive Test Suite")
+
+    if not os.getenv("OPENAI_API_KEY"):
+        logger.warning(
+            "OPENAI_API_KEY is not set. Skipping live LLM main features tests."
+        )
+        return
 
     tests_to_run = [
         # Basic Tests
