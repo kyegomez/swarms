@@ -2,7 +2,7 @@ import json
 from typing import Any, Callable, Dict, List, Optional, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
@@ -99,6 +99,34 @@ class BaseTool(BaseModel):
     )
     function_map: Optional[Dict[str, Callable]] = None
     list_of_dicts: Optional[List[Dict[str, Any]]] = None
+
+    @model_validator(mode="after")
+    def _validate_tools(self) -> "BaseTool":
+        """Validate tool configurations upon model initialization."""
+        self._validate_tool_names()
+        return self
+
+    def _validate_tool_names(self) -> None:
+        """Validate that no two different callables in tools share the same __name__."""
+        if not self.tools:
+            return
+        seen: Dict[str, Callable] = {}
+        for tool in self.tools:
+            name = getattr(tool, "__name__", None)
+            if (
+                name is None
+                and hasattr(tool, "func")
+                and hasattr(tool.func, "__name__")
+            ):
+                name = tool.func.__name__
+            if name is None:
+                continue
+            if name in seen and seen[name] != tool:
+                raise ValueError(
+                    f"Two different tools share the name '{name}': "
+                    f"{seen[name]} and {tool}. Tool names must be unique."
+                )
+            seen[name] = tool
 
     def _log_if_verbose(
         self, level: str, message: str, *args, **kwargs
@@ -503,6 +531,8 @@ class BaseTool(BaseModel):
             raise ToolValidationError(
                 "Tools must be a non-empty list"
             )
+
+        self._validate_tool_names()
 
         try:
             self._log_if_verbose(
@@ -1007,6 +1037,7 @@ class BaseTool(BaseModel):
 
             # Ensure function_map is available
             if self.function_map is None and self.tools is not None:
+                self._validate_tool_names()
                 self.function_map = {
                     tool.__name__: tool for tool in self.tools
                 }

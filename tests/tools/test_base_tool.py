@@ -354,6 +354,62 @@ def test_tool_call_objects_return_results_in_call_order(sequential):
     assert text[0] == "Function 'add_numbers' result:\n5"
 
 
+def test_duplicate_tool_names_raise_error():
+    class WebSearch:
+        def search(self, query: str) -> str:
+            """Search web."""
+            return f"web: {query}"
+
+    class CustomerDB:
+        def search(self, query: str) -> str:
+            """Search db."""
+            return f"db: {query}"
+
+    ws = WebSearch()
+    db = CustomerDB()
+
+    # Two different callables sharing the same name
+    with pytest.raises(ValueError) as exc_info:
+        BaseTool(tools=[ws.search, db.search])
+    assert "search" in str(exc_info.value)
+
+    # Two different free functions sharing the same name
+    def make_func(tag):
+        def query(x: str) -> str:
+            """Query doc."""
+            return tag + x
+
+        return query
+
+    f1 = make_func("1")
+    f2 = make_func("2")
+    with pytest.raises(ValueError) as exc_info:
+        BaseTool(tools=[f1, f2])
+    assert "query" in str(exc_info.value)
+
+    # Same callable twice is allowed
+    b_same = BaseTool(tools=[ws.search, ws.search])
+    assert b_same.tools == [ws.search, ws.search]
+
+    # convert_funcs_into_tools also checks
+    tool = BaseTool()
+    tool.tools = [ws.search, db.search]
+    with pytest.raises(ValueError) as exc_info:
+        tool.convert_funcs_into_tools()
+    assert "search" in str(exc_info.value)
+
+    from swarms import Agent
+
+    with pytest.raises(ValueError) as exc_info:
+        Agent(
+            agent_name="test-agent",
+            model_name="gpt-4o",
+            tools=[ws.search, db.search],
+            max_loops=1,
+        )
+    assert "search" in str(exc_info.value)
+
+
 def run_all_tests():
     print("Starting all tests")
 
