@@ -565,9 +565,13 @@ def test_graph_workflow_checkpoint_writes_and_resumes(tmp_path):
     task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
     cp_files = list(tmp_path.glob("checkpoints/*.json"))
     assert len(cp_files) == 3
-    assert any(f"{task_key}_layer_0" in f.name for f in cp_files)
-    assert any(f"{task_key}_layer_1" in f.name for f in cp_files)
-    assert any(f"{task_key}_layer_2" in f.name for f in cp_files)
+    assert any(
+        f"{task_key}_node_CP-Alpha" in f.name for f in cp_files
+    )
+    assert any(f"{task_key}_node_CP-Beta" in f.name for f in cp_files)
+    assert any(
+        f"{task_key}_node_CP-Gamma" in f.name for f in cp_files
+    )
 
     # Reset call counts, then run again — all layers should be skipped
     a1.run.reset_mock()
@@ -607,7 +611,9 @@ def test_graph_workflow_checkpoint_partial_resume(tmp_path):
 
     # Delete the last layer's checkpoint to simulate a crash after layer 2
     task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
-    (tmp_path / "checkpoints" / f"{task_key}_layer_2.json").unlink()
+    (
+        tmp_path / "checkpoints" / f"{task_key}_node_PR-Gamma.json"
+    ).unlink()
 
     a1.run.reset_mock()
     a2.run.reset_mock()
@@ -1798,6 +1804,44 @@ def test_graph_workflow_max_parallel_nodes_still_caps_the_pool():
     wf.run("task")
 
     assert peak <= 3
+
+
+def test_graph_workflow_ready_queue_fast_chain_finishes_before_slow_branch():
+    """A fast chain running beside a slow branch finishes before the slow branch does."""
+    import time
+
+    events = []
+
+    def make_agent(name, delay):
+        a = _mock_agent(name)
+
+        def run(*args, **kwargs):
+            events.append(f"{name}_start")
+            time.sleep(delay)
+            events.append(f"{name}_end")
+            return f"{name}_output"
+
+        a.run.side_effect = run
+        return a
+
+    # Chain A (fast): A1 (0.02s) -> A2 (0.02s) - total ~0.04s
+    # Branch B (slow): B1 (0.2s) - finishes after ~0.2s
+    # Both start at the same time.
+    # With a ready queue, A2 finishes around t=0.04s, well before B1 finishes at t=0.2s.
+    a1 = make_agent("A1", 0.02)
+    a2 = make_agent("A2", 0.02)
+    b1 = make_agent("B1", 0.2)
+
+    wf = GraphWorkflow(name="fast-chain-test", verbose=False)
+    wf.add_nodes([a1, a2, b1])
+    wf.add_edge("A1", "A2")
+    wf.compile()
+
+    wf.run("test task")
+
+    assert "A2_end" in events
+    assert "B1_end" in events
+    assert events.index("A2_end") < events.index("B1_end")
 
 
 if __name__ == "__main__":
