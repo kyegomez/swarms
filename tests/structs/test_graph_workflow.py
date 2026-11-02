@@ -1800,5 +1800,453 @@ def test_graph_workflow_max_parallel_nodes_still_caps_the_pool():
     assert peak <= 3
 
 
+# ---------------------------------------------------------------------------
+# on_error policy tests (continue, skip_descendants, raise)
+# ---------------------------------------------------------------------------
+
+
+def test_graph_workflow_invalid_on_error_raises_value_error():
+    """An invalid on_error value raises ValueError at construction."""
+    with pytest.raises(ValueError, match="on_error"):
+        GraphWorkflow(name="invalid", on_error="invalid_policy")
+
+
+@pytest.mark.parametrize(
+    "policy",
+    ["continue", None],
+)
+def test_graph_workflow_on_error_continue_and_default(policy):
+    """
+    on_error='continue' and default: the error string becomes the failed node's
+    output, and downstream nodes still execute.
+    """
+    kwargs = {"on_error": policy} if policy is not None else {}
+    wf = GraphWorkflow(name="test-continue", **kwargs)
+
+    agent_a = _mock_agent("A")
+    agent_a.run.side_effect = RuntimeError("Node A crashed")
+
+    agent_b = _mock_agent("B", "output-B")
+    agent_c = _mock_agent("C", "output-C")
+    agent_d = _mock_agent("D", "output-D")
+    agent_e = _mock_agent("E", "output-E")
+
+    for a in [agent_a, agent_b, agent_c, agent_d, agent_e]:
+        wf.add_node(a)
+
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+    wf.add_edge("D", "E")
+
+    results = wf.run("task")
+
+    assert "[ERROR]" in str(results["A"])
+    assert "Node A crashed" in str(results["A"])
+    assert agent_b.run.called
+    assert agent_c.run.called
+    assert agent_d.run.called
+    assert agent_e.run.called
+    assert results["B"] == "output-B"
+    assert results["C"] == "output-C"
+    assert results["D"] == "output-D"
+    assert results["E"] == "output-E"
+
+
+def test_graph_workflow_on_error_skip_descendants():
+    """
+    on_error='skip_descendants': none of the failed node's descendants are called,
+    while independent branches complete. Skipped nodes map to None in results and
+    are omitted from conversation.
+    """
+    wf = GraphWorkflow(name="test-skip", on_error="skip_descendants")
+
+    agent_a = _mock_agent("A")
+    agent_a.run.side_effect = RuntimeError("Node A crashed")
+
+    agent_b = _mock_agent("B", "output-B")
+    agent_c = _mock_agent("C", "output-C")
+    agent_d = _mock_agent("D", "output-D")
+    agent_e = _mock_agent("E", "output-E")
+
+    for a in [agent_a, agent_b, agent_c, agent_d, agent_e]:
+        wf.add_node(a)
+
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+    wf.add_edge("D", "E")
+
+    results = wf.run("task")
+
+    # A failed
+    assert "[ERROR]" in str(results["A"])
+    # B and C are descendants of A: never called, map to None
+    assert not agent_b.run.called
+    assert not agent_c.run.called
+    assert results["B"] is None
+    assert results["C"] is None
+
+    # D and E are independent: called and complete
+    assert agent_d.run.called
+    assert agent_e.run.called
+    assert results["D"] == "output-D"
+    assert results["E"] == "output-E"
+
+    # Skipped nodes are left out of the shared conversation
+    conv_str = wf.conversation.get_str()
+    assert "output-B" not in conv_str
+    assert "output-C" not in conv_str
+    assert "output-D" in conv_str
+    assert "output-E" in conv_str
+
+
+def test_graph_workflow_on_error_raise():
+    """
+    on_error='raise': run raises the original exception, and nodes that hadn't started
+    never run.
+    """
+    wf = GraphWorkflow(name="test-raise", on_error="raise")
+
+    agent_a = _mock_agent("A")
+    err = RuntimeError("Node A crashed fatally")
+    agent_a.run.side_effect = err
+
+    agent_b = _mock_agent("B", "output-B")
+    agent_c = _mock_agent("C", "output-C")
+
+    for a in [agent_a, agent_b, agent_c]:
+        wf.add_node(a)
+
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+
+    with pytest.raises(RuntimeError) as exc_info:
+        wf.run("task")
+
+    assert exc_info.value is err
+    assert not agent_b.run.called
+    assert not agent_c.run.called
+
+
+def test_graph_workflow_on_error_raise_parallel_layer():
+    """
+    In a parallel layer, already running nodes finish, but future layers do not run,
+    and run raises the original exception.
+    """
+    import threading
+
+    wf = GraphWorkflow(name="test-raise-parallel", on_error="raise")
+
+    barrier = threading.Barrier(2)
+
+    def run_parallel_1(*args, **kwargs):
+        barrier.wait()
+        raise ValueError("Parallel 1 failed")
+
+    def run_parallel_2(*args, **kwargs):
+        barrier.wait()
+        return "Parallel 2 succeeded"
+
+    agent_p1 = _mock_agent("P1")
+    agent_p1.run.side_effect = run_parallel_1
+
+    agent_p2 = _mock_agent("P2")
+    agent_p2.run.side_effect = run_parallel_2
+
+    agent_downstream = _mock_agent("Downstream", "downstream-result")
+
+    for a in [agent_p1, agent_p2, agent_downstream]:
+        wf.add_node(a)
+
+    wf.add_edge("P1", "Downstream")
+    wf.add_edge("P2", "Downstream")
+
+    with pytest.raises(ValueError, match="Parallel 1 failed"):
+        wf.run("task")
+
+    assert not agent_downstream.run.called
+
+
+# ---------------------------------------------------------------------------
+# run_stream / typed run events tests (#3103)
+# ---------------------------------------------------------------------------
+
+
+def test_graph_workflow_run_stream_event_sequence():
+    """
+    run_stream yields typed events in order:
+    run_started -> node_started -> node_completed -> run_completed.
+    Every event carries run_id, timestamp, and correct payload fields.
+    """
+    from swarms.structs.graph_workflow import WorkflowEvent
+
+    wf = GraphWorkflow(name="test-stream-seq")
+
+    agent_a = _mock_agent("A", "output-A")
+    agent_b = _mock_agent("B", "output-B")
+    agent_c = _mock_agent("C", "output-C")
+
+    for a in [agent_a, agent_b, agent_c]:
+        wf.add_node(a)
+
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+
+    events = list(wf.run_stream("task-stream"))
+
+    assert len(events) == 8  # run_started + 3*(node_started + node_completed) + run_completed
+
+    # All events are WorkflowEvent instances with run_id and timestamp
+    for evt in events:
+        assert isinstance(evt, WorkflowEvent)
+        assert evt.run_id == wf.id
+        assert evt.timestamp > 0
+        d = evt.to_dict()
+        assert isinstance(d, dict)
+
+    # 1. run_started
+    assert events[0].type == "run_started"
+    assert events[0].task == "task-stream"
+    assert events[0].loop == 1
+    assert events[0].loop_count == 1
+
+    # 2. Node A
+    assert events[1].type == "node_started"
+    assert events[1].node_id == "A"
+    assert events[1].agent_name == "A"
+    assert events[2].type == "node_completed"
+    assert events[2].node_id == "A"
+    assert events[2].output == "output-A"
+    assert events[2].duration >= 0
+
+    # 3. Node B
+    assert events[3].type == "node_started"
+    assert events[3].node_id == "B"
+    assert events[4].type == "node_completed"
+    assert events[4].node_id == "B"
+    assert events[4].output == "output-B"
+
+    # 4. Node C
+    assert events[5].type == "node_started"
+    assert events[5].node_id == "C"
+    assert events[6].type == "node_completed"
+    assert events[6].node_id == "C"
+    assert events[6].output == "output-C"
+
+    # 5. run_completed carries the final results dict
+    assert events[7].type == "run_completed"
+    assert events[7].results == {
+        "A": "output-A",
+        "B": "output-B",
+        "C": "output-C",
+    }
+    assert events[7].duration >= 0
+
+
+def test_graph_workflow_run_stream_node_failed_event():
+    """
+    A failing node yields node_failed with the original Exception object,
+    NOT node_completed.
+    """
+    wf = GraphWorkflow(name="test-fail-stream", on_error="continue")
+
+    err = RuntimeError("Agent A crashed fatally")
+    agent_a = _mock_agent("A")
+    agent_a.run.side_effect = err
+
+    agent_b = _mock_agent("B", "output-B")
+
+    wf.add_node(agent_a)
+    wf.add_node(agent_b)
+    wf.add_edge("A", "B")
+
+    events = list(wf.run_stream("task-fail"))
+
+    event_types = [e.type for e in events]
+    assert "node_failed" in event_types
+    assert "node_completed" in event_types  # B completed
+
+    fail_evt = next(e for e in events if e.type == "node_failed")
+    assert fail_evt.node_id == "A"
+    assert fail_evt.error is err
+    assert fail_evt.duration >= 0
+
+    # A must not have emitted node_completed
+    completed_nodes = [
+        e.node_id for e in events if e.type == "node_completed"
+    ]
+    assert "A" not in completed_nodes
+    assert "B" in completed_nodes
+
+
+def test_graph_workflow_run_stream_node_skipped_event():
+    """
+    When on_error='skip_descendants', descendants of a failed node
+    emit node_skipped with reason, while independent nodes complete.
+    """
+    wf = GraphWorkflow(name="test-skip-stream", on_error="skip_descendants")
+
+    agent_a = _mock_agent("A")
+    agent_a.run.side_effect = RuntimeError("Crash A")
+
+    agent_b = _mock_agent("B", "output-B")
+    agent_c = _mock_agent("C", "output-C")
+    agent_d = _mock_agent("D", "output-D")
+    agent_e = _mock_agent("E", "output-E")
+
+    for a in [agent_a, agent_b, agent_c, agent_d, agent_e]:
+        wf.add_node(a)
+
+    wf.add_edge("A", "B")
+    wf.add_edge("B", "C")
+    wf.add_edge("D", "E")
+
+    events = list(wf.run_stream("task-skip"))
+
+    skipped_evts = [e for e in events if e.type == "node_skipped"]
+    skipped_ids = {e.node_id for e in skipped_evts}
+    assert skipped_ids == {"B", "C"}
+    for se in skipped_evts:
+        assert se.reason is not None
+        assert "on_error" in se.reason
+
+    # D and E completed normally
+    completed_ids = {
+        e.node_id for e in events if e.type == "node_completed"
+    }
+    assert "D" in completed_ids
+    assert "E" in completed_ids
+    assert "B" not in completed_ids
+    assert "C" not in completed_ids
+
+
+def test_graph_workflow_run_stream_token_events():
+    """
+    Token events are yielded in real-time between node_started and node_completed.
+    """
+    wf = GraphWorkflow(name="test-token-stream")
+
+    def run_with_tokens(*args, **kwargs):
+        cb = kwargs.get("streaming_callback")
+        if cb:
+            cb("tok-1")
+            cb("tok-2")
+            cb("tok-3")
+        return "token-output"
+
+    agent_a = _mock_agent("A")
+    agent_a.run.side_effect = run_with_tokens
+    wf.add_node(agent_a)
+
+    events = list(wf.run_stream("task-token"))
+
+    types = [e.type for e in events]
+    assert types == [
+        "run_started",
+        "node_started",
+        "token",
+        "token",
+        "token",
+        "node_completed",
+        "run_completed",
+    ]
+
+    token_evts = [e for e in events if e.type == "token"]
+    assert [t.token for t in token_evts] == ["tok-1", "tok-2", "tok-3"]
+    assert all(t.node_id == "A" for t in token_evts)
+
+
+def test_graph_workflow_on_event_callback_on_run():
+    """
+    Passing on_event to run() dispatches the same events to the callback
+    during synchronous execution.
+    """
+    wf = GraphWorkflow(name="test-on-event")
+    agent_a = _mock_agent("A", "output-A")
+    wf.add_node(agent_a)
+
+    dispatched = []
+    results = wf.run("task-cb", on_event=dispatched.append)
+
+    assert len(dispatched) == 4  # run_started, node_started, node_completed, run_completed
+    assert dispatched[0].type == "run_started"
+    assert dispatched[1].type == "node_started"
+    assert dispatched[2].type == "node_completed"
+    assert dispatched[3].type == "run_completed"
+    assert dispatched[3].results == results
+
+
+@pytest.mark.asyncio
+async def test_graph_workflow_arun_stream_async():
+    """
+    arun_stream produces an asynchronous stream of events.
+    """
+    wf = GraphWorkflow(name="test-arun-stream")
+    agent_a = _mock_agent("A", "output-A")
+    wf.add_node(agent_a)
+
+    events = []
+    async for evt in wf.arun_stream("task-async"):
+        events.append(evt)
+
+    assert len(events) == 4
+    assert events[0].type == "run_started"
+    assert events[1].type == "node_started"
+    assert events[2].type == "node_completed"
+    assert events[3].type == "run_completed"
+    assert events[3].results == {"A": "output-A"}
+
+
+def test_graph_workflow_run_stream_on_error_raise():
+    """
+    on_error='raise' re-raises the original exception after yielding events up to failure.
+    """
+    wf = GraphWorkflow(name="test-raise-stream", on_error="raise")
+    err = RuntimeError("Fatal crash in stream")
+    agent_a = _mock_agent("A")
+    agent_a.run.side_effect = err
+    wf.add_node(agent_a)
+
+    collected = []
+    with pytest.raises(RuntimeError, match="Fatal crash in stream"):
+        for evt in wf.run_stream("task-raise"):
+            if evt is not None:
+                collected.append(evt)
+
+    assert len(collected) == 3
+    assert collected[0].type == "run_started"
+    assert collected[1].type == "node_started"
+    assert collected[2].type == "node_failed"
+    assert collected[2].error is err
+
+
+def test_graph_workflow_run_stream_multi_loops():
+    """
+    Multi-loop execution emits events with loop numbers and merges loop results in run_completed.
+    """
+    wf = GraphWorkflow(name="test-multi-loop-stream", max_loops=2)
+    agent_a = _mock_agent("A", "output-A")
+    wf.add_node(agent_a)
+
+    events = list(wf.run_stream("task-loops"))
+
+    assert events[0].type == "run_started"
+    assert events[0].loop == 2
+
+    # Loop 1
+    assert events[1].type == "node_started"
+    assert events[1].loop == 1
+    assert events[2].type == "node_completed"
+
+    # Loop 2
+    assert events[3].type == "node_started"
+    assert events[3].loop == 2
+    assert events[4].type == "node_completed"
+
+    # Final run_completed carries multi-loop accumulated results
+    assert events[5].type == "run_completed"
+    assert "A_loop_1" in events[5].results
+    assert "A" in events[5].results
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

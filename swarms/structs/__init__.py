@@ -40,6 +40,7 @@ from swarms.structs.graph_workflow import (
     GraphWorkflow,
     Node,
     NodeType,
+    WorkflowEvent,
 )
 from swarms.structs.groupchat import RESPOND_TOOL, GroupChat
 from swarms.structs.heavy_swarm import HeavySwarm
@@ -127,6 +128,7 @@ __all__ = [
     "Node",
     "NodeType",
     "Edge",
+    "WorkflowEvent",
     "broadcast",
     "circular_swarm",
     "grid_swarm",

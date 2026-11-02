@@ -9,6 +9,7 @@ import time
 import traceback
 import uuid
 from pathlib import Path
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import (
     Any,
@@ -760,6 +761,44 @@ class Edge:
         return cls(source=src, target=tgt, metadata=metadata)
 
 
+class ErrorOutput(str):
+    """An error string that preserves the original exception."""
+
+    def __new__(cls, msg: str, exc: Optional[Exception] = None):
+        obj = str.__new__(cls, msg)
+        obj.exception = exc
+        return obj
+
+
+@dataclass
+class WorkflowEvent:
+    """A typed event emitted during GraphWorkflow execution."""
+
+    type: str
+    run_id: str
+    timestamp: float = field(default_factory=time.time)
+    task: Optional[str] = None
+    loop: Optional[int] = None
+    node_id: Optional[str] = None
+    agent_name: Optional[str] = None
+    token: Optional[str] = None
+    output: Optional[Any] = None
+    error: Optional[Exception] = None
+    reason: Optional[str] = None
+    results: Optional[Dict[str, Any]] = None
+    duration: Optional[float] = None
+
+    @property
+    def loop_count(self) -> Optional[int]:
+        return self.loop
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = asdict(self)
+        if self.error is not None:
+            d["error"] = str(self.error)
+        return d
+
+
 class GraphWorkflow:
     """
     Represents a workflow graph where each node is an agent.
@@ -799,7 +838,15 @@ class GraphWorkflow:
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
         channel: Optional[CommsChannel] = None,
+        on_error: str = "continue",
+        on_event: Optional[Callable[[WorkflowEvent], None]] = None,
     ):
+        if on_error not in ("continue", "skip_descendants", "raise"):
+            raise ValueError(
+                f"Invalid on_error policy: {on_error}. Must be one of: 'continue', 'skip_descendants', 'raise'"
+            )
+        self.on_error = on_error
+        self.on_event = on_event
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
         self.on_node_complete = on_node_complete
@@ -1955,6 +2002,19 @@ class GraphWorkflow:
             / f"{task_key}_layer_{layer_idx}.json"
         )
 
+    def _get_descendants(self, node_id: str) -> Set[str]:
+        """
+        Return the set of all node IDs reachable downstream from `node_id`.
+        """
+        descendants: Set[str] = set()
+        queue = list(self._successors_map.get(node_id, []))
+        while queue:
+            curr = queue.pop(0)
+            if curr not in descendants:
+                descendants.add(curr)
+                queue.extend(self._successors_map.get(curr, []))
+        return descendants
+
     @staticmethod
     def _safe_output(
         agent_name: str, produce: Callable[[], Any]
@@ -1972,7 +2032,9 @@ class GraphWorkflow:
             logger.exception(
                 f"Error in GraphWorkflow agent execution for {agent_name}: {e}"
             )
-            return False, f"[ERROR] Agent {agent_name} failed: {e}"
+            return False, ErrorOutput(
+                f"[ERROR] Agent {agent_name} failed: {e}", exc=e
+            )
 
     @trace_run(
         "GraphWorkflow.run",
@@ -1986,6 +2048,7 @@ class GraphWorkflow:
         streaming_callback: Optional[
             Callable[[str, str], None]
         ] = None,
+        on_event: Optional[Callable[[WorkflowEvent], None]] = None,
         *args: Any,
         **kwargs: Any,
     ) -> Dict[str, Any]:
@@ -2020,12 +2083,29 @@ class GraphWorkflow:
         # Resolve callbacks: run-level overrides instance-level
         _on_node_complete = on_node_complete or self.on_node_complete
         _streaming_callback = streaming_callback
+        _on_event = on_event or self.on_event
         run_start_time = time.time()
+        node_start_times: Dict[str, float] = {}
+
+        def _emit(event_type: str, **evt_kwargs):
+            if _on_event is not None:
+                evt = WorkflowEvent(
+                    type=event_type,
+                    run_id=self.id,
+                    timestamp=time.time(),
+                    **evt_kwargs,
+                )
+                try:
+                    _on_event(evt)
+                except Exception as e:
+                    logger.exception(f"Error in on_event callback: {e}")
 
         if task is not None:
             self.task = task
         else:
             task = self.task
+
+        _emit("run_started", task=str(task), loop=self.max_loops)
 
         if self.verbose:
             logger.info(
@@ -2099,6 +2179,9 @@ class GraphWorkflow:
 
                 execution_results = {}
                 prev_outputs = {}
+                failed_nodes: Set[str] = set()
+                skipped_nodes: Set[str] = set()
+                first_exception: Optional[Exception] = None
 
                 # Deterministic key, not hash(): Python salts hashes, so they differ across runs.
                 task_key = (
@@ -2173,6 +2256,15 @@ class GraphWorkflow:
                         node_type,
                         agent_name,
                     ) in layer:
+                        if node_id in skipped_nodes:
+                            prev_outputs[node_id] = None
+                            execution_results[node_id] = None
+                            _emit(
+                                "node_skipped",
+                                node_id=node_id,
+                                reason=f"Predecessor node failed with on_error='{self.on_error}'",
+                            )
+                            continue
                         try:
                             prompt, prior_messages = (
                                 self._build_prompt(
@@ -2207,9 +2299,44 @@ class GraphWorkflow:
                         node_type,
                         prompt,
                         messages=None,
+                        agent_name=None,
                     ):
                         """Bind one node's invocation into a zero-arg callable."""
                         messages = messages or []
+                        effective_agent_name = (
+                            agent_name
+                            or getattr(agent, "agent_name", node_id)
+                        )
+
+                        def _before_run():
+                            _emit(
+                                "node_started",
+                                node_id=node_id,
+                                agent_name=effective_agent_name,
+                                loop=loop + 1 if self.max_loops > 1 else 1,
+                            )
+                            node_start_times[node_id] = time.time()
+
+                        call_kwargs = dict(kwargs)
+                        if (
+                            _streaming_callback is not None
+                            or _on_event is not None
+                        ):
+
+                            def _handle_token(token):
+                                if _on_event is not None:
+                                    _emit(
+                                        "token",
+                                        node_id=node_id,
+                                        token=token,
+                                    )
+                                if _streaming_callback is not None:
+                                    _streaming_callback(node_id, token)
+
+                            call_kwargs["streaming_callback"] = (
+                                _handle_token
+                            )
+
                         if node_type == NodeType.SUBGRAPH:
                             # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
                             inner: GraphWorkflow = agent
@@ -2233,47 +2360,25 @@ class GraphWorkflow:
                                 _prompt=flattened,
                                 _prev=_prev_cp,
                             ):
+                                _before_run()
                                 try:
                                     return _inner.run(
                                         _prompt,
                                         img=img,
                                         *args,
-                                        **kwargs,
+                                        **call_kwargs,
                                     )
                                 finally:
                                     _inner.checkpoint_dir = _prev
 
                             return _run_inner
 
-                        if _streaming_callback is None:
-                            # Common path: no per-node kwargs copy needed.
-                            def _run_agent(
-                                _agent=agent,
-                                _prompt=prompt,
-                                _messages=messages,
-                            ):
-                                return _agent.run(
-                                    task=_prompt,
-                                    img=img,
-                                    messages=_messages,
-                                    *args,
-                                    **kwargs,
-                                )
-
-                            return _run_agent
-
-                        def _run_agent_streaming(
+                        def _run_agent(
                             _agent=agent,
                             _prompt=prompt,
-                            _nid=node_id,
                             _messages=messages,
                         ):
-                            call_kwargs = dict(kwargs)
-                            call_kwargs["streaming_callback"] = (
-                                lambda token: _streaming_callback(
-                                    _nid, token
-                                )
-                            )
+                            _before_run()
                             return _agent.run(
                                 task=_prompt,
                                 img=img,
@@ -2282,7 +2387,7 @@ class GraphWorkflow:
                                 **call_kwargs,
                             )
 
-                        return _run_agent_streaming
+                        return _run_agent
 
                     def _record(
                         node_id, agent_name, node_type, output
@@ -2319,6 +2424,9 @@ class GraphWorkflow:
                                     f"Error in on_node_complete callback for {agent_name}: {e}"
                                 )
 
+                    if not layer_data:
+                        continue
+
                     if len(layer_data) == 1:
                         # Single-node layer, a worker thread would only add latency
                         (
@@ -2329,7 +2437,7 @@ class GraphWorkflow:
                             prompt,
                             prior_messages,
                         ) = layer_data[0]
-                        _, output = self._safe_output(
+                        ok, output = self._safe_output(
                             agent_name,
                             _make_call(
                                 node_id,
@@ -2337,11 +2445,43 @@ class GraphWorkflow:
                                 node_type,
                                 prompt,
                                 prior_messages,
+                                agent_name=agent_name,
                             ),
                         )
+                        duration = time.time() - node_start_times.get(
+                            node_id, time.time()
+                        )
+                        if ok:
+                            _emit(
+                                "node_completed",
+                                node_id=node_id,
+                                output=output,
+                                duration=duration,
+                            )
+                        else:
+                            exc = getattr(
+                                output, "exception", None
+                            ) or RuntimeError(str(output))
+                            _emit(
+                                "node_failed",
+                                node_id=node_id,
+                                error=exc,
+                                duration=duration,
+                            )
                         _record(
                             node_id, agent_name, node_type, output
                         )
+                        if not ok:
+                            failed_nodes.add(node_id)
+                            if self.on_error == "skip_descendants":
+                                skipped_nodes.update(
+                                    self._get_descendants(node_id)
+                                )
+                            elif self.on_error == "raise":
+                                if first_exception is None:
+                                    first_exception = getattr(
+                                        output, "exception", None
+                                    ) or RuntimeError(str(output))
                     else:
                         # Parallel layer: dispatch onto the run-wide pool.
                         pool = _get_executor()
@@ -2363,6 +2503,7 @@ class GraphWorkflow:
                                         node_type,
                                         prompt,
                                         prior_messages,
+                                        agent_name=agent_name,
                                     )
                                 )
                                 future_to_data[future] = (
@@ -2374,11 +2515,31 @@ class GraphWorkflow:
                                 logger.exception(
                                     f"Error submitting task for agent {agent_name}: {e}"
                                 )
-                                error_output = f"[ERROR] Failed to submit task: {e}"
+                                _emit(
+                                    "node_failed",
+                                    node_id=node_id,
+                                    error=e,
+                                    duration=0.0,
+                                )
+                                error_output = ErrorOutput(
+                                    f"[ERROR] Failed to submit task: {e}",
+                                    exc=e,
+                                )
                                 prev_outputs[node_id] = error_output
                                 execution_results[node_id] = (
                                     error_output
                                 )
+                                failed_nodes.add(node_id)
+                                if (
+                                    self.on_error
+                                    == "skip_descendants"
+                                ):
+                                    skipped_nodes.update(
+                                        self._get_descendants(node_id)
+                                    )
+                                elif self.on_error == "raise":
+                                    if first_exception is None:
+                                        first_exception = e
 
                         completed_count = 0
                         for future in concurrent.futures.as_completed(
@@ -2392,17 +2553,55 @@ class GraphWorkflow:
                             ok, output = self._safe_output(
                                 agent_name, future.result
                             )
+                            duration = time.time() - node_start_times.get(
+                                node_id, time.time()
+                            )
                             if ok:
+                                _emit(
+                                    "node_completed",
+                                    node_id=node_id,
+                                    output=output,
+                                    duration=duration,
+                                )
                                 completed_count += 1
                                 if self.verbose:
                                     logger.success(
                                         f"Agent {agent_name} completed successfully "
                                         f"({completed_count}/{len(layer_data)})"
                                     )
+                            else:
+                                exc = getattr(
+                                    output, "exception", None
+                                ) or RuntimeError(str(output))
+                                _emit(
+                                    "node_failed",
+                                    node_id=node_id,
+                                    error=exc,
+                                    duration=duration,
+                                )
+                                failed_nodes.add(node_id)
+                                if (
+                                    self.on_error
+                                    == "skip_descendants"
+                                ):
+                                    skipped_nodes.update(
+                                        self._get_descendants(node_id)
+                                    )
+                                elif self.on_error == "raise":
+                                    if first_exception is None:
+                                        first_exception = getattr(
+                                            output, "exception", None
+                                        ) or RuntimeError(str(output))
 
                             _record(
                                 node_id, agent_name, node_type, output
                             )
+
+                    if (
+                        self.on_error == "raise"
+                        and first_exception is not None
+                    ):
+                        raise first_exception
 
                     layer_execution_time = (
                         time.time() - layer_start_time
@@ -2479,6 +2678,16 @@ class GraphWorkflow:
                 )
 
             # Multi-loop merges per-loop history with the final results; single-loop returns them directly.
+            final_results = (
+                all_loop_results
+                if self.max_loops > 1
+                else execution_results
+            )
+            _emit(
+                "run_completed",
+                results=final_results,
+                duration=total_execution_time,
+            )
             if self.max_loops > 1:
                 all_loop_results.update(execution_results)
                 return all_loop_results
@@ -2495,6 +2704,141 @@ class GraphWorkflow:
         finally:
             if executor is not None:
                 executor.shutdown(wait=True)
+
+    def run_stream(
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Iterator[WorkflowEvent]:
+        """
+        Stream typed run events in real-time as the workflow executes.
+
+        Yields WorkflowEvent instances:
+        - run_started: task, loop count
+        - node_started: node_id, agent_name, loop
+        - token: node_id, token
+        - node_completed: node_id, output, duration
+        - node_failed: node_id, error (the exception), duration
+        - node_skipped: node_id, reason
+        - run_completed: results, duration
+
+        Args:
+            task: Task to execute.
+            img: Optional image path.
+            *args: Forwarded to run().
+            **kwargs: Forwarded to run().
+
+        Yields:
+            WorkflowEvent: Real-time execution events.
+        """
+        import queue
+        import threading
+
+        event_queue: queue.Queue = queue.Queue()
+        done_sentinel = object()
+        exc_holder: List[Optional[Exception]] = [None]
+
+        def _event_handler(event: WorkflowEvent):
+            event_queue.put(event)
+
+        user_on_event = kwargs.pop("on_event", None)
+
+        def _combined_on_event(event: WorkflowEvent):
+            _event_handler(event)
+            if user_on_event is not None:
+                try:
+                    user_on_event(event)
+                except Exception as e:
+                    logger.exception(f"Error in user on_event callback: {e}")
+
+        def _runner():
+            try:
+                self.run(
+                    task=task,
+                    img=img,
+                    on_event=_combined_on_event,
+                    *args,
+                    **kwargs,
+                )
+            except Exception as exc:
+                exc_holder[0] = exc
+            finally:
+                event_queue.put(done_sentinel)
+
+        t = threading.Thread(target=_runner, daemon=True)
+        t.start()
+
+        while True:
+            item = event_queue.get()
+            if item is done_sentinel:
+                break
+            yield item
+
+        t.join()
+        if exc_holder[0] is not None:
+            raise exc_holder[0]
+
+    async def arun_stream(
+        self,
+        task: Optional[str] = None,
+        img: Optional[str] = None,
+        *args: Any,
+        **kwargs: Any,
+    ):
+        """
+        Async generator version of run_stream for async runtimes.
+        """
+        import queue
+        import threading
+
+        event_queue: queue.Queue = queue.Queue()
+        done_sentinel = object()
+        exc_holder: List[Optional[Exception]] = [None]
+
+        def _event_handler(event: WorkflowEvent):
+            event_queue.put(event)
+
+        user_on_event = kwargs.pop("on_event", None)
+
+        def _combined_on_event(event: WorkflowEvent):
+            _event_handler(event)
+            if user_on_event is not None:
+                try:
+                    user_on_event(event)
+                except Exception as e:
+                    logger.exception(f"Error in user on_event callback: {e}")
+
+        def _runner():
+            try:
+                self.run(
+                    task=task,
+                    img=img,
+                    on_event=_combined_on_event,
+                    *args,
+                    **kwargs,
+                )
+            except Exception as exc:
+                exc_holder[0] = exc
+            finally:
+                event_queue.put(done_sentinel)
+
+        t = threading.Thread(target=_runner, daemon=True)
+        t.start()
+
+        while True:
+            try:
+                item = event_queue.get_nowait()
+                if item is done_sentinel:
+                    break
+                yield item
+            except queue.Empty:
+                await asyncio.sleep(0.005)
+
+        t.join()
+        if exc_holder[0] is not None:
+            raise exc_holder[0]
 
     def _fan_patterns(
         self,
