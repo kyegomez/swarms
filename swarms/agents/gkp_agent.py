@@ -1,3 +1,4 @@
+import re
 import time
 from typing import Any, Dict, List, Union
 
@@ -271,44 +272,21 @@ class Reasoner:
         )
 
         # Parse the response
-        result = {"explanation": "", "confidence": "", "answer": ""}
-
-        if "Explanation:" in response and "Answer:" in response:
-            # Get explanation
-            explanation_start = response.find("Explanation:") + len(
-                "Explanation:"
-            )
-
-            # Find the end of explanation (which is either Confidence: or Answer:)
-            confidence_pos = response.find("Confidence:")
-            answer_pos = response.find("Answer:")
-
-            explanation_end = min(
-                pos for pos in [confidence_pos, answer_pos] if pos > 0
-            )
-            result["explanation"] = response[
-                explanation_start:explanation_end
-            ].strip()
-
-            # Get confidence if present
-            if confidence_pos > 0:
-                confidence_start = confidence_pos + len("Confidence:")
-                confidence_end = (
-                    answer_pos
-                    if answer_pos > confidence_pos
-                    else len(response)
-                )
-                result["confidence"] = response[
-                    confidence_start:confidence_end
-                ].strip()
-
-            # Get answer
-            if answer_pos > 0:
-                answer_start = answer_pos + len("Answer:")
-                result["answer"] = response[answer_start:].strip()
-        else:
-            # Fallback parsing if not properly formatted
-            result["answer"] = response.strip()
+        parts = re.split(
+            r"^(?:[^\w\n]|_)*(?:final\s+)?(explanation|confidence|answer)[\s*_]*:[*_]*\s*",
+            response,
+            flags=re.IGNORECASE | re.MULTILINE,
+        )
+        fields = {
+            label.lower(): text.strip()
+            for label, text in zip(parts[1::2], parts[2::2])
+        }
+        if "answer" not in fields:
+            fields = {"answer": response.strip()}
+        result = {
+            key: fields.get(key, "")
+            for key in ("explanation", "confidence", "answer")
+        }
 
         return result
 
