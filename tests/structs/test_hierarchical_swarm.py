@@ -1128,6 +1128,23 @@ def test_second_run_does_not_carry_the_first_task():
     )
 
 
+def test_second_run_does_not_send_the_director_the_first_task():
+    seen = []
+    swarm = HierarchicalSwarm(
+        director=_scripted_hs_agent("Director", seen, director=True),
+        agents=[_scripted_hs_agent("W1", seen)],
+        max_loops=1,
+    )
+
+    swarm.run("first task")
+    swarm.run("second task")
+
+    second_run = [m for name, m in seen if name == "Director"][-1]
+    sent = " ".join(str(m.get("content")) for m in second_run)
+    assert "second task" in sent, sent
+    assert "first task" not in sent, sent
+
+
 def test_task_queue_pending_count_tracks_dependency_readiness():
     """get_pending_count only counts PENDING tasks whose dependencies are done."""
     queue = TaskQueue()
