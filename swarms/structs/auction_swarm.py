@@ -53,6 +53,7 @@ from typing import Any, Callable, List, Optional, Tuple, Union
 
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.structs.serialization import SerializableMixin
@@ -201,7 +202,12 @@ class _BidWrapper:
         prompt = BID_PROMPT.format(
             agent_name=self.agent.agent_name, task=task
         )
-        return self.agent.run(task=prompt)
+        output_type = self.agent.output_type
+        self.agent.output_type = "final"
+        try:
+            return self.agent.run(task=prompt)
+        finally:
+            self.agent.output_type = output_type
 
 
 class AuctionSwarm(SerializableMixin):
@@ -435,7 +441,7 @@ class AuctionSwarm(SerializableMixin):
                     f"{agent.agent_name} failed to execute: {response}",
                 )
                 continue
-            successful.append((agent, response))
+            successful.append((agent, agent_answer(agent, response)))
 
         for agent, response in successful[1:]:
             self.conversation.add(
