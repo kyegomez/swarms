@@ -903,7 +903,9 @@ class PlannerWorkerSwarm:
 
         self._original_task = task
         self.task_queue.clear()
-        self.conversation.clear()
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
         self.conversation.add(role="User", content=task)
 
         verdict = None

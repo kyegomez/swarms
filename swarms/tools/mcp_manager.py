@@ -663,7 +663,7 @@ class MCPManager:
         self, item: Union[str, MCPConnection, Dict]
     ) -> MCPConnection:
         if isinstance(item, MCPConnection):
-            connection = item
+            connection = item.model_copy()
         elif isinstance(item, dict):
             connection = MCPConnection(**item)
         elif isinstance(item, str):
@@ -1414,7 +1414,7 @@ class MCPManager:
             )
 
         provider_kwargs: Dict[str, Any] = {
-            "server_url": _server_origin(connection.url or ""),
+            "server_url": connection.url or "",
             "client_metadata": client_metadata,
             "storage": storage,
             "redirect_handler": redirect_handler,

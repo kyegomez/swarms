@@ -28,7 +28,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [groupchat/](multi_agent/groupchat/) | Asynchronous self-selecting group chat examples where agents independently decide whether to respond |
 | [heavy_swarm_examples/](multi_agent/heavy_swarm_examples/) | Heavy swarm implementations for complex tasks |
 | [hiearchical_swarm/](multi_agent/hiearchical_swarm/) | Hierarchical swarm structures and patterns |
-| [hscf/](multi_agent/hscf/) | Hierarchical Swarm Control Framework examples |
 | [council/llm_council/](multi_agent/council/llm_council/) | LLM Council collaboration patterns |
 | [majority_voting/](multi_agent/majority_voting/) | Majority voting and consensus examples |
 | [mar/](multi_agent/mar/) | Multi-agent rearrangement examples |

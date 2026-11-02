@@ -4,6 +4,7 @@ import os
 import threading
 import time
 from contextlib import nullcontext
+from functools import lru_cache
 from typing import (
     Any,
     Callable,
@@ -15,8 +16,6 @@ from typing import (
     Union,
 )
 
-import toml
-import yaml
 from loguru import logger
 from pydantic import BaseModel
 
@@ -29,9 +28,6 @@ from swarms.agents.context_compressor import ContextCompressor
 from swarms.agents.llm_manager import LLMManager
 from swarms.agents.skills_manager import SkillsManager
 from swarms.agents.tool_manager import ToolManager
-from swarms.prompts.agent_system_prompts import (
-    build_agent_system_prompt,
-)
 from swarms.prompts.autonomous_agent_prompt import (
     get_autonomous_agent_prompt,
 )
@@ -98,6 +94,14 @@ from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
 
 
+@lru_cache(maxsize=None)
+def _model_info(model_name: str) -> Dict[str, Any]:
+    try:
+        return llm_backend.get_model_info(model_name)
+    except Exception:
+        return {}
+
+
 def stop_when_repeats(response: str) -> bool:
     # Stop if the word stop appears in the response
     return "stop" in response.lower()
@@ -105,10 +109,6 @@ def stop_when_repeats(response: str) -> bool:
 
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
-
-
-# Identity marks "not passed": None means no system prompt, any other string is the caller's own.
-DEFAULT_SYSTEM_PROMPT = build_agent_system_prompt()
 
 
 class Agent:
@@ -128,7 +128,7 @@ class Agent:
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
-        system_prompt (Optional[str]): The system prompt. Defaults to the built-in agent prompt; None sends no system prompt. With max_loops="auto" the default is replaced by the autonomous loop prompt, and a custom prompt has it appended.
+        system_prompt (Optional[str]): The system prompt. Defaults to None, which sends no system prompt. With max_loops="auto" the autonomous loop prompt is used, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
         saved_state_path (str): The path to the saved state
@@ -229,7 +229,6 @@ class Agent:
     Methods:
         run: Run the agent
         run_concurrent: Run the agent concurrently
-        bulk_run: Run the agent in bulk
         save: Save the agent
         load: Load the agent
         validate_response: Validate the response
@@ -293,7 +292,7 @@ class Agent:
         agent_description: Optional[
             str
         ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
-        system_prompt: Optional[str] = DEFAULT_SYSTEM_PROMPT,
+        system_prompt: Optional[str] = None,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
         stopping_condition: Optional[Callable[[str], bool]] = None,
@@ -407,13 +406,6 @@ class Agent:
         self.user_name = user_name
         self.context_length = context_length
         self.tools = tools
-        if system_prompt is DEFAULT_SYSTEM_PROMPT:
-            # The constant is rendered once at import; re-render so its Time line is current.
-            system_prompt = (
-                None
-                if max_loops == "auto"
-                else build_agent_system_prompt()
-            )
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -620,6 +612,9 @@ class Agent:
 
         self.setup_config()
 
+        if self.safety_prompt_on is True:
+            self.system_prompt += f"\n\n{SAFETY_PROMPT}"
+
         # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
         self.short_memory = self.short_memory_init()
 
@@ -629,9 +624,10 @@ class Agent:
         if self.interactive is True:
             self.reasoning_prompt_on = False
 
-        if self.reasoning_prompt_on is True and (
-            (isinstance(self.max_loops, int) and self.max_loops >= 2)
-            or self.max_loops == "auto"
+        if (
+            self.reasoning_prompt_on is True
+            and isinstance(self.max_loops, int)
+            and self.max_loops >= 2
         ):
             self.system_prompt += generate_reasoning_prompt(
                 self.max_loops
@@ -733,13 +729,6 @@ class Agent:
         return self.workspace.dir
 
     def short_memory_init(self):
-        # Compactly assemble initial prompt as a string with available fields
-        prompt = self.system_prompt
-
-        if self.safety_prompt_on is True:
-            prompt += "\n\n"
-            prompt += SAFETY_PROMPT
-
         # Keyed on agent_name, not self.id, which is a fresh uuid per run and would orphan MEMORY.md.
         memory_md_path = None
         if self.persistent_memory:
@@ -756,7 +745,7 @@ class Agent:
         # Initialize the short term memory
         memory = Conversation(
             name=f"{self.agent_name}_id_{self.id}_conversation",
-            system_prompt=prompt,
+            system_prompt=self.system_prompt,
             user=self.user_name,
             rules=self.rules,
             token_count=False,
@@ -954,7 +943,6 @@ class Agent:
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
-        stored_messages: Optional[List[Dict[str, Any]]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -1021,10 +1009,6 @@ class Agent:
             streaming_callback (Optional[Callable[[str], None]]): Optional callback function
                 to receive streaming tokens in real-time. Useful for dashboard integration
                 or real-time UI updates. Defaults to None.
-            stored_messages (Optional[List[Dict[str, Any]]]): Shared by the n samples
-                of one run. The first sample stores messages and fills it with the
-                stored rows, and later samples send those rows instead of storing
-                messages again.
             *args: Additional positional arguments passed to LLM calls. Used for extensibility.
             **kwargs: Additional keyword arguments passed to LLM calls. Used for extensibility.
 
@@ -1071,12 +1055,8 @@ class Agent:
         """
         history_start = len(self.short_memory.conversation_history)
         try:
-            # A later sample sends the copy the first one stored instead of storing another.
-            prefix = stored_messages or ()
-            if messages and not prefix:
-                added = self.short_memory.add_messages(messages)
-                if stored_messages is not None:
-                    stored_messages.extend(added)
+            if messages:
+                self.short_memory.add_messages(messages)
 
             self.check_if_no_prompt_then_autogenerate(task)
 
@@ -1114,7 +1094,6 @@ class Agent:
                 ):
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
-                    prefix = ()
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
@@ -1158,7 +1137,6 @@ class Agent:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
-                                    prefix,
                                 )
                             )
 
@@ -1339,8 +1317,9 @@ class Agent:
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
-        logger.error(
-            f"{self.agent_name} error: {error}", exc_info=True
+        # Lazy args: an f-string with exc_info makes loguru str.format provider JSON and raise KeyError.
+        logger.opt(exception=True).error(
+            "{} error: {}", self.agent_name, error
         )
         raise error
 
@@ -1645,23 +1624,6 @@ Subtask Breakdown:
             logger.error(f"Error running concurrent tasks: {error}")
             raise
 
-    def bulk_run(self, inputs: List[Dict[str, Any]]) -> List[str]:
-        """
-        Generate responses for multiple input sets.
-
-        Args:
-            inputs (List[Dict[str, Any]]): A list of input dictionaries containing the necessary data for each run.
-
-        Returns:
-            List[str]: A list of response strings generated for each input set.
-
-        Raises:
-            Exception: Whatever ``run`` raises for the first input that
-                fails. Inputs after it are not run.
-        """
-        logger.debug(f"Running {len(inputs)} bulk tasks")
-        return [self.run(**input_data) for input_data in inputs]
-
     def _default_context_length(self) -> int:
         """
         Returns the maximum input token window for the agent's underlying model.
@@ -1678,15 +1640,10 @@ Subtask Breakdown:
               which may not correspond to available context for input (e.g., 32768 for gpt-4.1 output, but
               over a million for certain input windows).
         """
-        try:
-            return (
-                llm_backend.get_model_info(self.model_name).get(
-                    "max_input_tokens"
-                )
-                or 16000
-            )
-        except Exception:
-            return 16000
+        return (
+            _model_info(self.model_name).get("max_input_tokens")
+            or 16000
+        )
 
     def _default_max_tokens(self) -> int:
         """
@@ -1699,23 +1656,12 @@ Subtask Breakdown:
         Returns:
             int: The maximum number of output tokens for the model. Returns 16000 if undetermined.
         """
-        # get_model_info raises for unmapped ids, which would otherwise take down __init__ for custom models.
-        try:
-            return (
-                llm_backend.get_model_info(self.model_name).get(
-                    "max_output_tokens"
-                )
-                or 16000
-            )
-        except Exception:
-            return 16000
+        return (
+            _model_info(self.model_name).get("max_output_tokens")
+            or 16000
+        )
 
     def reliability_check(self):
-
-        if self.system_prompt is None:
-            logger.warning(
-                "The system prompt is not set. Please set a system prompt for the agent to improve reliability."
-            )
 
         if self.agent_name is None:
             logger.warning(
@@ -1747,6 +1693,12 @@ Subtask Breakdown:
             raise AgentInitializationError(
                 "Context length is not provided. Please set a valid context length."
             )
+
+        if (
+            os.getenv("SWARMS_STRICT_MODEL_CHECK", "").lower()
+            != "true"
+        ):
+            return
 
         # Truthiness, not "is not None": tools is normalised to [], so the None check never matched.
         if self.tools_list_dictionary:
@@ -2033,6 +1985,8 @@ Subtask Breakdown:
         Args:
             file_path (str): The path to the YAML file
         """
+        import yaml
+
         try:
             logger.info(f"Saving agent to YAML file: {file_path}")
             with open(file_path, "w") as f:
@@ -2171,20 +2125,6 @@ Subtask Breakdown:
         except Exception:
             pass
 
-    def check_available_tokens(self):
-        tokens_used = count_tokens(
-            self.short_memory.return_history_as_string(),
-            model=self.model_name,
-        )
-
-        limit = self.context_length - tokens_used
-
-        if self.verbose:
-            logger.info(
-                f"Tokens available: {limit} You have {tokens_used} tokens used"
-            )
-        return limit
-
     def _serialize_callable(
         self, attr_value: Callable
     ) -> Dict[str, Any]:
@@ -2254,11 +2194,15 @@ Subtask Breakdown:
         )
 
     def to_yaml(self, indent: int = 4, *args, **kwargs):
+        import yaml
+
         return yaml.dump(
             self.to_dict(), indent=indent, *args, **kwargs
         )
 
     def to_toml(self, *args, **kwargs):
+        import toml
+
         return toml.dumps(self.to_dict(), *args, **kwargs)
 
     def model_dump_json(self):
@@ -2445,9 +2389,7 @@ Subtask Breakdown:
         task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
-        correct_answer: Optional[str] = None,
         streaming_callback: Optional[Callable[[str], None]] = None,
-        n: int = 1,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
@@ -2461,8 +2403,6 @@ Subtask Breakdown:
             - Handles both interactive (asks user) and autonomous (auto-plan/execute) operation modes.
             - Supports passing a single image or batch of images.
             - Supports streaming outputs via a callback for real-time token generation.
-            - Runs multiple outputs (n > 1), single or batched.
-            - Accepts an optional ground truth (correct_answer) for evals.
             - Merges configuration and per-call streaming callback.
             - Handles errors and device selection internally (but device_id is not used directly by this method).
 
@@ -2473,9 +2413,7 @@ Subtask Breakdown:
                 data URIs (e.g., "data:image/jpeg;base64,..."), or raw base64 strings. Defaults to None.
             imgs (Optional[List[str]]): List of multiple images if processing a batch. Each image can be a path,
                 URL, data URI, or raw base64 string. Defaults to None.
-            correct_answer (Optional[str]): Ground truth answer for evaluation comparisons. Defaults to None.
             streaming_callback (Optional[Callable[[str], None]]): Function to receive streamed tokens as output is generated (real-time). If not given, uses self.streaming_callback if available. Defaults to None.
-            n (int): How many outputs to generate (number of runs). Defaults to 1.
             messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format,
                 e.g. ``[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]``.
                 They are added to the agent's conversation and sent as the context
@@ -2487,7 +2425,7 @@ Subtask Breakdown:
         Returns:
             Any: The agent's output. This can be:
                 - A string or structured dict (for single response).
-                - A list (if running multiple outputs/images).
+                - A list (if running with multiple images).
                 - The final agent answer, streaming response, or summary (for autonomous "auto" mode).
 
         Raises:
@@ -2582,7 +2520,6 @@ Subtask Breakdown:
                         task,
                         img,
                         imgs,
-                        n,
                         streaming_callback,
                         messages,
                         *args,
@@ -2625,24 +2562,22 @@ Subtask Breakdown:
         task,
         img,
         imgs,
-        n,
         streaming_callback,
         messages,
         *args,
         **kwargs,
     ):
-        """Run the task on the current model: the autonomous loop, n samples, or a single pass.
+        """Run the task on the current model: the autonomous loop or a single pass.
 
         Args:
             task: The task to run.
             img: A single image input.
             imgs: Several image inputs.
-            n: How many samples to draw on the integer-loop path.
             streaming_callback: Receives streamed tokens.
             messages: Prior turns the task continues from.
 
         Returns:
-            Any: The run's output, or a list of n outputs.
+            Any: The run's output.
         """
         if self.max_loops == "auto":
             # Constructor messages are already in short_memory; per-call ones are not.
@@ -2656,21 +2591,6 @@ Subtask Breakdown:
                 *args,
                 **kwargs,
             )
-        if n > 1:
-            stored_messages = []
-            return [
-                self._run(
-                    task=task,
-                    img=img,
-                    imgs=imgs,
-                    streaming_callback=streaming_callback,
-                    messages=messages,
-                    *args,
-                    stored_messages=stored_messages,
-                    **kwargs,
-                )
-                for _ in range(n)
-            ]
         return self._run(
             task=task,
             img=img,

@@ -16,8 +16,6 @@ from typing import (
     Union,
 )
 
-import yaml
-
 from swarms.structs.comms_channel import CommsChannel
 from swarms.utils.litellm_tokenizer import count_tokens
 
@@ -90,7 +88,6 @@ class Conversation:
         export_method: str = "json",
         dynamic_context_window: bool = True,
         cache_enabled: bool = False,
-        output_metadata: bool = False,
         memory_md_path: Optional[str] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         channel: Optional[CommsChannel] = None,
@@ -124,7 +121,6 @@ class Conversation:
         self.export_method = export_method
         self.dynamic_context_window = dynamic_context_window
         self.caching = cache_enabled
-        self.output_metadata = output_metadata
         self.memory_md_path = memory_md_path
         self._memory_md_lock = threading.Lock()
 
@@ -228,7 +224,7 @@ class Conversation:
 
     def _initialize_new_conversation(self):
         """Initialize a new conversation with system prompt and rules."""
-        if self.system_prompt is not None:
+        if self.system_prompt:
             self.add("System", self.system_prompt)
 
         if self.rules is not None:
@@ -320,7 +316,7 @@ class Conversation:
         try:
             self.conversation_history = []
             self._str_cache = None
-            if self.system_prompt is not None:
+            if self.system_prompt:
                 self.conversation_history.append(
                     {
                         "role": "System",
@@ -1126,6 +1122,8 @@ class Conversation:
         Args:
             force (bool, optional): If True, saves regardless of autosave setting. Defaults to True.
         """
+        import yaml
+
         try:
             # Check if saving is allowed
             if not self.autosave and not force:
@@ -1263,6 +1261,8 @@ class Conversation:
         Args:
             filename (str): Filename to load from.
         """
+        import yaml
+
         if filename is not None and os.path.exists(filename):
             try:
                 with open(filename, "r", encoding="utf-8") as f:
@@ -1462,6 +1462,8 @@ class Conversation:
         Returns:
             str: The conversation history as a YAML string.
         """
+        import yaml
+
         return yaml.dump(self.conversation_history)
 
     def to_list(self):
@@ -1593,10 +1595,11 @@ class Conversation:
         """Index of the first message after the system prompt and the input.
 
         Neither fixed offset is right for both shapes. ``Agent.short_memory``
-        begins ``[System, User, ...]``, so a slice of 1 echoes the task back
-        in the agent's own output. Swarms like ``ConcurrentWorkflow`` begin
-        ``[User, agent, agent, ...]`` with no system row, so a slice of 2
-        drops the first agent's answer. Read the history instead of guessing.
+        with a system prompt begins ``[System, User, ...]``, so a slice of
+        1 echoes the task back in the agent's own output. Swarms like
+        ``ConcurrentWorkflow`` begin ``[User, agent, agent, ...]`` with no
+        system row, so a slice of 2 drops the first agent's answer. Read
+        the history instead of guessing.
         """
         history = self.conversation_history
         start = (

@@ -228,7 +228,7 @@ def get_param_annotations(
     }
 
 
-class Parameters(BaseModel):
+class Parameters(BaseModel, defer_build=True):
     """Parameters of a function as defined by the OpenAI API"""
 
     type: Literal["object"] = "object"
@@ -236,7 +236,7 @@ class Parameters(BaseModel):
     required: List[str]
 
 
-class Function(BaseModel):
+class Function(BaseModel, defer_build=True):
     """A function as defined by the OpenAI API"""
 
     name: Annotated[str, Field(description="Name of the function")]
@@ -248,7 +248,7 @@ class Function(BaseModel):
     ]
 
 
-class ToolFunction(BaseModel):
+class ToolFunction(BaseModel, defer_build=True):
     """A function under tool as defined by the OpenAI API."""
 
     type: Literal["function"] = "function"

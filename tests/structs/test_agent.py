@@ -144,30 +144,24 @@ class TestBasicAgent:
         history = agent.short_memory.conversation_history
         contents = [str(row["content"]) for row in history]
         assert agent.autonomous_subtasks == []
-        assert history[0]["role"] == "System"
+        assert not any(row["role"] == "System" for row in history)
         assert any("Weather" in c for c in contents)
         assert not any("first task" in c for c in contents)
         assert any("second task" in c for c in contents)
 
-    def test_bulk_run(self, basic_flow):
-        inputs = [{"task": "Test1"}, {"task": "Test2"}]
-        assert len(basic_flow.bulk_run(inputs)) == len(inputs)
+    def test_no_system_prompt_seeds_no_system_row(
+        self, mocked_llm, tmp_path
+    ):
+        agent = _flow("blank-flow", mocked_llm, tmp_path)
+        agent.run("the task")
 
-    def test_bulk_run_raises_the_failing_runs_error(self, basic_flow):
-        inputs = [
-            {"task": "Test1"},
-            {"task": "Test2"},
-            {"task": "Test3"},
+        history = agent.short_memory.conversation_history
+
+        assert [row["role"] for row in history] == [
+            agent.user_name,
+            "blank-flow",
         ]
-        with patch.object(
-            basic_flow,
-            "run",
-            autospec=True,
-            side_effect=["first", ValueError("second failed")],
-        ) as run:
-            with pytest.raises(ValueError, match="second failed"):
-                basic_flow.bulk_run(inputs)
-        assert run.call_count == 2
+        assert str(history[0]["content"]) == "the task"
 
     def test_save_and_load(self, basic_flow, mocked_llm, tmp_path):
         """State written by save() comes back through load().
@@ -294,7 +288,7 @@ class TestAgentFeatures:
             {"task": "Say hello"},
             {"task": "Tell a short joke"},
         ]
-        responses = agent.bulk_run(tasks)
+        responses = [agent.run(**task) for task in tasks]
         assert len(responses) == len(tasks)
         assert all(r is not None for r in responses)
 
@@ -872,6 +866,23 @@ class TestConstructorWindows:
         assert agent.context_length == 16000
         assert agent.max_tokens == 16000
 
+    def test_model_info_is_looked_up_once_per_model(self):
+        info = {"max_input_tokens": 90000, "max_output_tokens": 9000}
+        with patch(
+            "swarms.utils.llm_backend.get_model_info",
+            return_value=info,
+        ) as lookup:
+            agents = [
+                self._agent(model_name="model-info-cache-probe")
+                for _ in range(2)
+            ]
+
+        assert lookup.call_count == 1
+        assert [(a.context_length, a.max_tokens) for a in agents] == [
+            (90000, 9000),
+            (90000, 9000),
+        ]
+
 
 class TestFunctionCallingWarning:
     """The function-calling warning is for agents that actually have tools."""
@@ -940,6 +951,68 @@ def test_list_base_models_schema_reaches_short_memory():
 
     schema = agent.short_memory.conversation_history[-1]["content"]
     assert "Order" in schema and "item" in schema and "qty" in schema
+
+
+def test_safety_prompt_on_reaches_the_model():
+    from swarms.prompts.safety_prompt import SAFETY_PROMPT
+
+    agent = Agent(
+        agent_name="Safety-Agent",
+        model_name="gpt-5.4-mini",
+        system_prompt="Be terse.",
+        safety_prompt_on=True,
+        max_loops=1,
+        print_on=False,
+        persistent_memory=False,
+    )
+    response = SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(content="ok", tool_calls=None)
+            )
+        ],
+        usage=None,
+    )
+    with patch(
+        "swarms.utils.litellm_wrapper.completion",
+        return_value=response,
+    ) as completion:
+        agent.run("hi")
+
+    system = [
+        m["content"]
+        for m in completion.call_args.kwargs["messages"]
+        if m["role"] == "system"
+    ]
+    assert system == [f"Be terse.\n\n{SAFETY_PROMPT}".strip()]
+
+
+def test_system_prompt_defaults_follow_max_loops():
+    from swarms.prompts.autonomous_agent_prompt import (
+        get_autonomous_agent_prompt,
+    )
+    from swarms.prompts.max_loop_prompt import (
+        generate_reasoning_prompt,
+    )
+
+    auto = get_autonomous_agent_prompt(include_think_tool=False)
+    for options, expected in (
+        ({"max_loops": 1}, ""),
+        ({"max_loops": 3}, generate_reasoning_prompt(3)),
+        ({"max_loops": "auto"}, auto),
+        (
+            {"system_prompt": "Be terse.", "max_loops": "auto"},
+            f"Be terse.\n\n{auto}",
+        ),
+    ):
+        agent = Agent(
+            agent_name="Prompt-Agent",
+            model_name="gpt-5.4-mini",
+            print_on=False,
+            persistent_memory=False,
+            **options,
+        )
+        assert agent.system_prompt == expected
 
 
 class TestAutonomousAgentLoop:
@@ -1152,6 +1225,18 @@ class TestArunForwarding:
         # The original error surfaces — not a TypeError from awaiting None.
         with pytest.raises(ValueError, match="boom"):
             asyncio.run(Agent.arun(agent, "T"))
+
+    def test_handle_run_error_tolerates_braces_in_provider_message(
+        self,
+    ):
+        """Provider JSON bodies contain braces; logging must not KeyError (#2861)."""
+        agent = self._bare_agent()
+        agent.autosave = False
+        err = ValueError(
+            "Error code: 404 - [{'error': {'code': 404, 'message': 'missing'}}]"
+        )
+        with pytest.raises(ValueError, match="Error code: 404"):
+            agent._handle_run_error(err)
 
 
 class TestEmptyTaskGuard:
@@ -2143,41 +2228,6 @@ class TestSeededMessages:
         assert "Noted: Helios." in recorded
 
 
-class TestRunSamples:
-    """Each of the ``n`` samples gets the same inputs as a single run."""
-
-    def test_every_sample_receives_the_image_and_callback(self):
-        agent = _patched_agent("Vision")
-        calls = []
-
-        def fake_call_llm(
-            task=None,
-            img=None,
-            imgs=None,
-            current_loop=0,
-            streaming_callback=None,
-            *args,
-            **kwargs,
-        ):
-            calls.append((img, streaming_callback))
-            return "A bar chart."
-
-        def on_token(token):
-            return None
-
-        agent.call_llm = fake_call_llm
-        agent.run(
-            "Describe the chart.",
-            img="https://example.com/chart.png",
-            streaming_callback=on_token,
-            n=2,
-        )
-
-        assert (
-            calls == [("https://example.com/chart.png", on_token)] * 2
-        )
-
-
 class TestLLMFailureRaises:
     """#2408: once its retries ran out, _run broke out of the loop and
     returned the formatted history, so run() returned '' with no error and
@@ -2606,51 +2656,6 @@ class TestIntegerLoopRequest:
         agent.run("task", messages=[{"role": "user", "content": "x"}])
 
         assert sent[1][1] == [{"role": "user", "content": "SUMMARY"}]
-
-    def test_each_sample_starts_at_the_callers_messages(
-        self, monkeypatch
-    ):
-        agent = self._agent(max_loops=1)
-        sent = self._capture(monkeypatch, agent, ["one", "two"])
-
-        agent.run(
-            "task",
-            messages=[{"role": "user", "content": "context"}],
-            n=2,
-        )
-
-        expected = [
-            {"role": "user", "content": "context"},
-            {"role": "user", "content": "task"},
-        ]
-        assert [messages for _, messages in sent] == [
-            expected,
-            expected,
-        ]
-
-    def test_samples_store_the_callers_messages_once(
-        self, monkeypatch
-    ):
-        agent = self._agent(max_loops=1)
-        sent = self._capture(
-            monkeypatch, agent, ["one", "two", "three", "four"]
-        )
-
-        agent.run(
-            "task",
-            messages=[{"role": "user", "content": "context"}],
-            n=3,
-        )
-        agent.run("next")
-
-        stored = [
-            row["content"]
-            for row in agent.short_memory.conversation_history
-        ]
-        assert stored.count("context") == 1
-        assert [m["content"] for m in sent[-1][1]].count(
-            "context"
-        ) == 1
 
 
 class TestAgentOutputCleanerRemoval:

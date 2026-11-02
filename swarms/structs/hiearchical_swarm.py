@@ -600,8 +600,18 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
-            self.conversation.clear()
+            self.conversation = Conversation(
+                time_enabled=False, channel=self.channel
+            )
             self._delivered = {}
+            for agent in (
+                self.director,
+                self._planning_director,
+                self._feedback_director,
+                self._judge_agent,
+            ):
+                if isinstance(agent, Agent):
+                    agent.reset()
             self.add_context_to_director()
 
             if task is not None:
