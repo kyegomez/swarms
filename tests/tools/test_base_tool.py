@@ -204,6 +204,28 @@ def test_find_function_name():
     assert tool.find_function_name("missing") is None
 
 
+def test_func_to_dict_reads_annotated_field_metadata():
+    from typing import Annotated
+
+    from pydantic import Field
+
+    def get_forecast(
+        city: Annotated[str, Field(description="City name")],
+        days: Annotated[int, Field(ge=1, le=7)] = 1,
+        unit: Annotated[str, "celsius or fahrenheit"] = "celsius",
+    ) -> str:
+        """Get the forecast."""
+        return city
+
+    props = BaseTool().func_to_dict(get_forecast)["function"][
+        "parameters"
+    ]["properties"]
+
+    assert props["city"]["description"] == "City name"
+    assert props["days"]["maximum"] == 7
+    assert props["unit"]["description"] == "celsius or fahrenheit"
+
+
 def test_function_to_dict():
     result = BaseTool().function_to_dict(add_numbers)
 
