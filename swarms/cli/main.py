@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import traceback
+from dotenv import set_key
 from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -1953,7 +1954,14 @@ def handle_init(args: argparse.Namespace) -> None:
         "# SWARMS_LOG_LEVEL=INFO",
     ]
 
-    env_path.write_text("\n".join(env_lines) + "\n")
+    if env_path.exists():
+        for env_var, value in {
+            "WORKSPACE_DIR": str(workspace_dir),
+            **collected_keys,
+        }.items():
+            set_key(env_path, env_var, value, quote_mode="never")
+    else:
+        env_path.write_text("\n".join(env_lines) + "\n")
     console.print(f"  [white]✓ .env[/white]               {env_path}")
     console.print(
         f"  [white]✓ workspace/[/white]         {workspace_dir}"

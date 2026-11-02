@@ -622,6 +622,23 @@ def test_common_words_do_not_route_every_task_to_the_first_agent(
     assert tree.find_relevant_agent("Can you write a poem?") is None
 
 
+def test_a_tree_agent_built_with_name_can_run_a_task(monkeypatch):
+    def offline(**kwargs):
+        raise ConnectionError("offline")
+
+    monkeypatch.setattr(tree_swarm, "embedding", offline)
+    agent = TreeAgent(
+        name="Stock Analyst",
+        description="Analyses stocks",
+        system_prompt="You analyse stocks and pick equities.",
+    )
+    agent.run = lambda *args, **kwargs: "ANSWER"
+
+    assert agent.run_task("Which equities should I pick?") == "ANSWER"
+    assert agent.agent_name == "Stock Analyst"
+    assert agent.agent_description == "Analyses stocks"
+
+
 def run_all_tests():
     """Run all unit tests and display results."""
     print("🚀 Starting ForestSwarm Unit Tests...")

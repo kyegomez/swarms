@@ -18,8 +18,6 @@ from typing import (
     Sequence,
 )
 
-from opentelemetry import context, trace
-from opentelemetry.trace import Status, StatusCode
 from loguru import logger
 from pydantic import BaseModel
 
@@ -319,6 +317,8 @@ class _SpanHandle:
         if self._span is None or self._done:
             return
         try:
+            from opentelemetry.trace import Status, StatusCode
+
             self._span.set_attribute("swarms.status", "completed")
             self._span.set_status(Status(StatusCode.OK))
             self._done = True
@@ -399,6 +399,8 @@ class _SpanHandle:
         if self._span is None or self._done:
             return
         try:
+            from opentelemetry.trace import Status, StatusCode
+
             self._span.set_attribute("swarms.status", "error")
             self._span.set_attribute(
                 "swarms.error.type", type(exc).__name__
@@ -435,6 +437,8 @@ def _current_span(span: Optional["Span"]) -> Iterator[None]:
         return
 
     try:
+        from opentelemetry import trace
+
         # The caller ends the span and _SpanHandle records errors, so neither is done twice
         with trace.use_span(
             span,
@@ -463,7 +467,12 @@ def bind_context(func: Callable) -> Callable:
     Returns:
         Callable: ``func`` wrapped so it runs under the captured context.
     """
+    if not swarm_telemetry().ready:
+        return func
+
     import functools
+
+    from opentelemetry import context
 
     try:
         ctx = context.get_current()
@@ -588,6 +597,7 @@ class SwarmTelemetry:
             from swarms.telemetry.compression import (
                 CompressingSession,
             )
+            from opentelemetry import trace
             from opentelemetry.sdk.resources import Resource
             from opentelemetry.sdk.trace import TracerProvider
             from opentelemetry.sdk.trace.export import (
@@ -799,6 +809,8 @@ class SwarmTelemetry:
         if not self.ready:
             return
         try:
+            from opentelemetry.trace import Status, StatusCode
+
             component = (
                 type(obj).__name__ if obj is not None else "swarms"
             )

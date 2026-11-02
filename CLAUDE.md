@@ -789,17 +789,12 @@ for task in tasks:
 
 ### PlannerWorkerSwarm
 
-A planner agent generates a structured plan; worker agents execute each step.
+A planner–worker–judge loop: the swarm builds its own planner and judge from
+`planner_model_name` / `judge_model_name`, while `agents` are the workers that
+claim and execute plan steps.
 
 ```python
 from swarms import Agent, PlannerWorkerSwarm
-
-planner = Agent(
-    agent_name="Planner",
-    system_prompt="You create detailed, step-by-step execution plans.",
-    model_name="gpt-5.4",
-    max_loops=1,
-)
 
 workers = [
     Agent(agent_name=f"Worker-{i}", model_name="gpt-5.4-mini", max_loops=2)
@@ -807,8 +802,9 @@ workers = [
 ]
 
 swarm = PlannerWorkerSwarm(
-    planner_agent=planner,
-    worker_agents=workers,
+    agents=workers,
+    planner_model_name="gpt-5.4",
+    judge_model_name="gpt-5.4",
     max_loops=1,
 )
 result = swarm.run("Build a complete go-to-market strategy for a B2B SaaS product.")
@@ -1159,6 +1155,20 @@ The docs are a Mintlify site: pages are `.mdx` files and the navigation is in `d
 
 ---
 
+## Tests: only where they earn their place
+
+Not every change needs a unit test. Add one when it pins behaviour a user relies on that a later change could break: a bug fix, a new feature or a changed default. Renames, formatting, comments and docs need none, and neither does removing unused code (see below).
+
+When you do add a test, keep it small, compact and fast:
+
+- One test per behaviour. Put several cases in one table-driven test, not in near-copies.
+- Stub the model and the network. No live API calls, sleeps or real servers unless the behaviour is about them.
+- Reuse the stubs and helpers already in the test file instead of writing new ones.
+- Assert what a caller sees, not private state the change did not touch.
+- It must fail on the unpatched code and run in well under a second.
+
+---
+
 ## Comments: one line, only when needed
 
 A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.
@@ -1179,6 +1189,16 @@ return [agent.run(task) for agent in agents]
 ```
 
 Multi-line comment blocks keep arriving in PRs and keep getting removed. Write them short the first time.
+
+---
+
+## Tests: none for removing unused code
+
+When a change only deletes code nothing uses (a method, a parameter, an attribute, a branch or a line), do not add a unit test for it. A test that the old name is gone, that a signature lacks the parameter, or that passing it raises `TypeError` checks that the deletion happened, which the diff already shows, and it guards nothing a user relies on.
+
+- Delete tests that only exercised the removed code.
+- Run the existing tests for the module to show nothing else broke.
+- If the removal changes behaviour a caller can see, it was not unused: test that behaviour as for any other change.
 
 ---
 

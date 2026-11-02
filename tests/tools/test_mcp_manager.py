@@ -202,6 +202,32 @@ class TestConnectionNormalization:
         )
         assert manager.connections[0].api_key == "specific"
 
+    def test_shared_connection_keeps_each_managers_defaults(self):
+        shared = MCPConnection(url="http://localhost:1/mcp")
+        alice = MCPManager(
+            mcp_config=shared,
+            authorization_token="alice-token",
+            headers={"X-User": "alice"},
+        )
+        bob = MCPManager(
+            mcp_config=shared,
+            authorization_token="bob-token",
+            headers={"X-User": "bob"},
+        )
+
+        assert run_async(bob._build_headers(bob.connections[0])) == {
+            "X-User": "bob",
+            "Authorization": "Bearer bob-token",
+        }
+        assert run_async(
+            alice._build_headers(alice.connections[0])
+        ) == {
+            "X-User": "alice",
+            "Authorization": "Bearer alice-token",
+        }
+        assert shared.authorization_token is None
+        assert shared.headers is None
+
     def test_invalid_server_type_rejected(self):
         with pytest.raises(AgentMCPConnectionError):
             MCPManager(mcp_url=12345)

@@ -803,6 +803,33 @@ class TestUsage:
         assert swarm.usage["input_tokens"] == 30 + 100 * 5
 
 
+def test_the_synthesis_row_is_the_answer(monkeypatch):
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+        output_type="final",
+        max_loops=2,
+    )
+    roles = ["research", "analysis", "alternatives", "verification"]
+    monkeypatch.setattr(
+        swarm,
+        "execute_question_generation",
+        lambda task, img=None: {f"{r}_question": r for r in roles},
+    )
+    for role in roles:
+        swarm.agents[role].run = (
+            lambda *a, _r=role, **kw: f"{_r} found"
+        )
+    swarm.agents["synthesis"].call_llm = lambda *a, **kw: "SYNTHESIS"
+
+    assert swarm.run("task") == "SYNTHESIS"
+    assert [
+        m["content"]
+        for m in swarm.conversation.conversation_history
+        if m["role"] == "Synthesis Agent"
+    ] == ["SYNTHESIS", "SYNTHESIS"]
+
+
 def test_second_run_carries_nothing_from_the_first(monkeypatch):
     swarm = HeavySwarm(
         worker_model_name=MODEL,

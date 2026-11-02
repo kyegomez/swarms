@@ -43,10 +43,8 @@ class ConcurrentWorkflow:
         auto_save (bool): Whether to automatically save workflow metadata
         output_type (str): Format for output formatting (e.g., "dict-all-except-first")
         max_loops (int): Maximum number of execution loops (currently unused)
-        auto_generate_prompts (bool): Whether to enable automatic prompt engineering
         show_dashboard (bool): Whether to display real-time dashboard during execution
         agent_statuses (dict): Dictionary tracking status and output of each agent
-        metadata_output_path (str): Path for saving workflow metadata
         autosave (bool): Whether to persist conversation history to the workflow
             workspace directory after each run. Defaults to False
         verbose (bool): Whether to emit debug-level logging for workspace and
@@ -96,7 +94,6 @@ class ConcurrentWorkflow:
         auto_save: bool = True,
         output_type: str = "dict-all-except-first",
         max_loops: int = 1,
-        auto_generate_prompts: bool = False,
         show_dashboard: bool = False,
         autosave: bool = False,
         verbose: bool = False,
@@ -119,8 +116,6 @@ class ConcurrentWorkflow:
             output_type (str): Output formatting mode passed to
                 ``history_output_formatter`` (e.g. ``"dict-all-except-first"``).
             max_loops (int): Maximum number of execution loops. Currently unused.
-            auto_generate_prompts (bool): Whether to enable automatic prompt
-                engineering for the configured agents.
             show_dashboard (bool): Whether to display a real-time dashboard during
                 execution. Enabling this disables per-agent stdout printing to
                 avoid conflicting with the dashboard.
@@ -147,15 +142,11 @@ class ConcurrentWorkflow:
         self.agents = agents
         self.auto_save = auto_save
         self.max_loops = max_loops
-        self.auto_generate_prompts = auto_generate_prompts
         self.output_type = output_type
         self.show_dashboard = show_dashboard
         self.autosave = autosave
         self.verbose = verbose
         self.on_error = on_error
-        self.metadata_output_path = (
-            f"concurrent_workflow_name_{name}_id_{self.id}.json"
-        )
         self.max_workers = max_workers
 
         # Initialize agent statuses if agents are provided
@@ -646,12 +637,9 @@ class ConcurrentWorkflow:
                     task, img, imgs, streaming_callback
                 )
 
-            self.workspace.save_conversation()
-
             return result
-        except Exception:
+        finally:
             self.workspace.save_conversation()
-            raise
 
     def batch_run(
         self,

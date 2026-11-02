@@ -1,4 +1,5 @@
 import re
+import pytest
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.agent import Agent
 
@@ -532,3 +533,19 @@ def test_aggregator_can_tell_which_layer_produced_each_answer():
         assert (
             f"layer {layer}/3" in contents
         ), f"layer {layer} not attributed: {contents}"
+
+
+def test_run_raises_when_the_aggregator_fails():
+    agents, _ = _recording_agents(["W1", "W2"])
+    aggregator, _ = _recording_agents(["Agg"])
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("aggregator provider returned 503")
+
+    aggregator[0].run = fail
+    moa = MixtureOfAgents(
+        agents=agents, aggregator_agent=aggregator[0]
+    )
+
+    with pytest.raises(RuntimeError, match="returned 503"):
+        moa.run("Question?")

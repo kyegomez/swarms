@@ -154,13 +154,12 @@ class TreeAgent(Agent):
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
         """
-        agent_name = agent_name
+        if description is not None:
+            kwargs.setdefault("agent_description", description)
         super().__init__(
-            name=name,
-            description=description,
             system_prompt=system_prompt,
             model_name=model_name,
-            agent_name=agent_name,
+            agent_name=agent_name or name,
             *args,
             **kwargs,
         )
@@ -420,7 +419,6 @@ class ForestSwarm:
         name: str = "default-forest-swarm",
         description: str = "Standard forest swarm",
         trees: List[Tree] = [],
-        shared_memory: Any = None,
         rules: str = None,
         verbose: bool = False,
         *args,
@@ -433,7 +431,6 @@ class ForestSwarm:
             name (str): Name of the forest swarm
             description (str): Description of the forest swarm
             trees (List[Tree]): A list of trees in the structure
-            shared_memory (Any): Shared memory object for inter-tree communication
             rules (str): Rules governing the forest swarm behavior
             verbose (bool): Whether to enable verbose logging
             *args: Additional positional arguments
@@ -442,7 +439,6 @@ class ForestSwarm:
         self.name = name
         self.description = description
         self.trees = trees
-        self.shared_memory = shared_memory
         self.verbose = verbose
         # Pass verbose to all trees
         for tree in self.trees:

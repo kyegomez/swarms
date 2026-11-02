@@ -17,6 +17,7 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Optional,
     Set,
     Tuple,
@@ -40,6 +41,8 @@ from swarms.utils.generate_id import generate_id
 from swarms.utils.litellm_wrapper import empty_usage
 
 logger = initialize_logger(log_folder="graph_workflow")
+
+_NOT_STARTED = object()
 
 
 class _LazyModule:
@@ -775,6 +778,7 @@ class GraphWorkflow(ReusableExecutorMixin):
         _compiled (bool): Whether the graph has been compiled for optimization.
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
         _max_workers (Optional[int]): Maximum nodes executed concurrently, set from max_parallel_nodes. None means no cap, so every node in the widest layer runs at once.
+        on_error (str): What a failed node does to the run. "continue" passes its error string downstream, "skip_descendants" skips the nodes that depend on it, and "raise" starts no new nodes, lets running ones finish and raises its exception.
         verbose (bool): Whether to enable verbose logging.
         usage (dict): Provider token usage summed over every distinct agent in
             the graph, subgraphs included. See :attr:`usage`.
@@ -800,7 +804,16 @@ class GraphWorkflow(ReusableExecutorMixin):
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
         channel: Optional[CommsChannel] = None,
+        on_error: Literal[
+            "continue", "skip_descendants", "raise"
+        ] = "continue",
     ):
+        if on_error not in ("continue", "skip_descendants", "raise"):
+            raise ValueError(
+                "on_error must be 'continue', 'skip_descendants' or "
+                f"'raise', got {on_error!r}"
+            )
+        self.on_error = on_error
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
         self.on_node_complete = on_node_complete
@@ -1959,21 +1972,21 @@ class GraphWorkflow(ReusableExecutorMixin):
     @staticmethod
     def _safe_output(
         agent_name: str, produce: Callable[[], Any]
-    ) -> Tuple[bool, Any]:
+    ) -> Tuple[Optional[Exception], Any]:
         """
         Run ``produce``, turning a failure into an ``[ERROR]`` string.
 
         One node blowing up degrades that node's output rather than the whole
         layer, so downstream agents still receive something to work with.
-        Returns ``(succeeded, output)``.
+        Returns ``(error, output)``, where ``error`` is ``None`` on success.
         """
         try:
-            return True, produce()
+            return None, produce()
         except Exception as e:
             logger.exception(
                 f"Error in GraphWorkflow agent execution for {agent_name}: {e}"
             )
-            return False, f"[ERROR] Agent {agent_name} failed: {e}"
+            return e, f"[ERROR] Agent {agent_name} failed: {e}"
 
     @trace_run(
         "GraphWorkflow.run",
@@ -2017,6 +2030,11 @@ class GraphWorkflow(ReusableExecutorMixin):
                 When max_loops > 1, returns a dict with per-loop results
                 keyed as ``{node_id}_loop_{loop_number}`` plus the final
                 loop's results under the plain ``node_id`` keys.
+                Nodes skipped under ``on_error="skip_descendants"`` map to
+                ``None``.
+
+        Raises:
+            Exception: The failed node's exception, under ``on_error="raise"``.
         """
         # Resolve callbacks: run-level overrides instance-level
         _on_node_complete = on_node_complete or self.on_node_complete
@@ -2084,6 +2102,8 @@ class GraphWorkflow(ReusableExecutorMixin):
 
                 execution_results = {}
                 prev_outputs = {}
+                # Failed under skip_descendants, or downstream of one; their layers stay unsaved so a rerun retries them.
+                no_answer: Set[str] = set()
 
                 # Deterministic key, not hash(): Python salts hashes, so they differ across runs.
                 task_key = (
@@ -2102,7 +2122,9 @@ class GraphWorkflow(ReusableExecutorMixin):
                     layer_start_time = time.time()
 
                     # Resume: skip any layer already checkpointed for this task.
-                    if self.checkpoint_dir:
+                    if self.checkpoint_dir and no_answer.isdisjoint(
+                        entry[0] for entry in layer
+                    ):
                         checkpoint_path = self._checkpoint_path(
                             task_key, layer_idx
                         )
@@ -2150,6 +2172,8 @@ class GraphWorkflow(ReusableExecutorMixin):
                             f"with {len(layer)} nodes: {[n[0] for n in layer]}"
                         )
 
+                    layer_errors: Dict[str, Exception] = {}
+
                     # Pre-build all prompts for this layer
                     layer_data = []
                     for (
@@ -2158,6 +2182,9 @@ class GraphWorkflow(ReusableExecutorMixin):
                         node_type,
                         agent_name,
                     ) in layer:
+                        if node_id in no_answer:
+                            execution_results[node_id] = None
+                            continue
                         try:
                             prompt, prior_messages = (
                                 self._build_prompt(
@@ -2198,15 +2225,6 @@ class GraphWorkflow(ReusableExecutorMixin):
                         if node_type == NodeType.SUBGRAPH:
                             # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
                             inner: GraphWorkflow = agent
-                            _prev_cp = inner.checkpoint_dir
-                            if (
-                                self.checkpoint_dir
-                                and not inner.checkpoint_dir
-                            ):
-                                inner.checkpoint_dir = str(
-                                    Path(self.checkpoint_dir)
-                                    / node_id
-                                )
 
                             flattened = "\n\n".join(
                                 [m["content"] for m in messages]
@@ -2216,8 +2234,13 @@ class GraphWorkflow(ReusableExecutorMixin):
                             def _run_inner(
                                 _inner=inner,
                                 _prompt=flattened,
-                                _prev=_prev_cp,
                             ):
+                                _prev = _inner.checkpoint_dir
+                                if self.checkpoint_dir and not _prev:
+                                    _inner.checkpoint_dir = str(
+                                        Path(self.checkpoint_dir)
+                                        / node_id
+                                    )
                                 try:
                                     return _inner.run(
                                         _prompt,
@@ -2314,7 +2337,7 @@ class GraphWorkflow(ReusableExecutorMixin):
                             prompt,
                             prior_messages,
                         ) = layer_data[0]
-                        _, output = self._safe_output(
+                        error, output = self._safe_output(
                             agent_name,
                             _make_call(
                                 node_id,
@@ -2324,12 +2347,25 @@ class GraphWorkflow(ReusableExecutorMixin):
                                 prior_messages,
                             ),
                         )
+                        if error is not None:
+                            layer_errors[node_id] = error
                         _record(
                             node_id, agent_name, node_type, output
                         )
                     else:
                         pool = self._get_executor(pool_size)
                         future_to_data = {}
+                        stop_on_error = self.on_error == "raise"
+
+                        def _unless_stopped(node_id, call):
+                            """Under "raise", hold queued nodes back once one has failed."""
+                            if stop_on_error and layer_errors:
+                                return _NOT_STARTED
+                            try:
+                                return call()
+                            except Exception as e:
+                                layer_errors[node_id] = e
+                                raise
 
                         for (
                             node_id,
@@ -2341,13 +2377,15 @@ class GraphWorkflow(ReusableExecutorMixin):
                         ) in layer_data:
                             try:
                                 future = pool.submit(
+                                    _unless_stopped,
+                                    node_id,
                                     _make_call(
                                         node_id,
                                         agent,
                                         node_type,
                                         prompt,
                                         prior_messages,
-                                    )
+                                    ),
                                 )
                                 future_to_data[future] = (
                                     node_id,
@@ -2363,6 +2401,7 @@ class GraphWorkflow(ReusableExecutorMixin):
                                 execution_results[node_id] = (
                                     error_output
                                 )
+                                layer_errors[node_id] = e
 
                         completed_count = 0
                         for future in concurrent.futures.as_completed(
@@ -2373,10 +2412,12 @@ class GraphWorkflow(ReusableExecutorMixin):
                                 agent_name,
                                 node_type,
                             ) = future_to_data[future]
-                            ok, output = self._safe_output(
+                            error, output = self._safe_output(
                                 agent_name, future.result
                             )
-                            if ok:
+                            if output is _NOT_STARTED:
+                                continue
+                            if error is None:
                                 completed_count += 1
                                 if self.verbose:
                                     logger.success(
@@ -2392,8 +2433,20 @@ class GraphWorkflow(ReusableExecutorMixin):
                         time.time() - layer_start_time
                     )
 
+                    # Raised before the save below, so a rerun retries this layer.
+                    if layer_errors and self.on_error == "raise":
+                        raise next(iter(layer_errors.values()))
+                    if self.on_error == "skip_descendants":
+                        for failed in layer_errors:
+                            no_answer.add(failed)
+                            no_answer |= (
+                                self.graph_backend.descendants(failed)
+                            )
+
                     # Save now so a crash on a later layer does not force re-running this one.
-                    if self.checkpoint_dir:
+                    if self.checkpoint_dir and no_answer.isdisjoint(
+                        entry[0] for entry in layer
+                    ):
                         try:
                             Path(self.checkpoint_dir).mkdir(
                                 parents=True, exist_ok=True
@@ -2441,6 +2494,7 @@ class GraphWorkflow(ReusableExecutorMixin):
                     node_id: execution_results[node_id]
                     for node_id in self.end_points
                     if node_id in execution_results
+                    and node_id not in no_answer
                 }
 
                 # Accumulate per-loop results (keyed to avoid overwriting)

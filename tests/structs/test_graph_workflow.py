@@ -1825,5 +1825,34 @@ def test_graph_workflow_reuses_its_pool_until_closed():
     assert len(threads) == 4
 
 
+@pytest.mark.parametrize(
+    "on_error, b_output, saved",
+    [
+        ("continue", "output-B", 2),
+        ("skip_descendants", None, 0),
+        ("raise", None, 0),
+    ],
+)
+def test_graph_workflow_on_error(tmp_path, on_error, b_output, saved):
+    agents = [_mock_agent(name) for name in "ABC"]
+    agents[0].run.side_effect = RuntimeError("boom")
+    wf = GraphWorkflow(
+        checkpoint_dir=str(tmp_path), on_error=on_error
+    )
+    for agent in agents:
+        wf.add_node(agent)
+    wf.add_edge("A", "B")
+
+    if on_error == "raise":
+        with pytest.raises(RuntimeError, match="boom"):
+            wf.run("task")
+    else:
+        results = wf.run("task")
+        assert (results["B"], results["C"]) == (b_output, "output-C")
+    assert agents[1].run.called == (b_output is not None)
+    # A failed layer is saved only under "continue", so a rerun retries it.
+    assert len(list(tmp_path.glob("*.json"))) == saved
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

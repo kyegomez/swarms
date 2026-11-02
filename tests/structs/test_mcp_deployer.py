@@ -1,5 +1,7 @@
 import asyncio
 import socket
+import subprocess
+import sys
 import threading
 import time
 
@@ -387,6 +389,34 @@ def test_mcp_client_with_bad_key_fails(live):
         manager.get_tools()
 
 
+def test_start_again_after_a_failed_start_and_after_stop():
+    from swarms.tools.mcp_manager import MCPManager
+
+    def shout(task: str) -> str:
+        return task.upper()
+
+    blocker = socket.socket()
+    blocker.bind(("127.0.0.1", 0))
+    blocker.listen()
+    deployer = MCPDeployer(
+        shout,
+        api_keys=["secret-key"],
+        port=blocker.getsockname()[1],
+        show_banner=False,
+    )
+    with pytest.raises(RuntimeError):
+        deployer.start(wait=3)
+    blocker.close()
+
+    for _ in range(2):
+        with deployer:
+            manager = MCPManager(
+                mcp_url=deployer.url, api_key="secret-key"
+            )
+            result = manager.call_tool("shout", {"task": "hi"})
+            assert result["result"] == "HI"
+
+
 def test_banner_renders_for_every_auth_mode():
     from io import StringIO
     from rich.console import Console
@@ -414,6 +444,21 @@ def test_banner_renders_for_every_auth_mode():
         )
     )
     assert "anonymous (open)" in open_ and "stdin/stdout" in open_
+
+
+def test_importing_swarms_does_not_load_the_server_stack():
+    probe = (
+        "import sys\n"
+        "from swarms import Agent, MCPDeployer\n"
+        "print(sorted({'anyio', 'starlette'} & set(sys.modules)))"
+    )
+    out = subprocess.run(
+        [sys.executable, "-c", probe],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert out.stdout.strip().splitlines()[-1] == "[]"
 
 
 if __name__ == "__main__":
