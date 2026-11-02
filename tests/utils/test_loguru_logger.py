@@ -83,6 +83,32 @@ def test_logs_land_under_workspace_dir(monkeypatch, tmp_path):
     assert "hello" in combined[0].read_text()
 
 
+@pytest.mark.parametrize("verbose", ["False", "True"])
+def test_traceback_locals_only_reach_a_verbose_console(
+    monkeypatch, tmp_path, capsys, verbose
+):
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    monkeypatch.setenv("SWARMS_VERBOSE_GLOBAL", verbose)
+    initialize_logger("mod")
+
+    api_key = "sk-test"
+    try:
+        raise ValueError(f"rejected {len(api_key)} chars")
+    except ValueError:
+        # The router only keeps records named after a swarms module.
+        logger.patch(
+            lambda r: r.update(name="swarms.fake")
+        ).exception("x")
+    logger.remove()  # flush the enqueued sinks
+
+    logs = tmp_path / "logs"
+    for path in (next(logs.glob("swarms_*.log")), logs / "fake.log"):
+        text = path.read_text()
+        assert "ValueError" in text and "sk-test" not in text
+    console = capsys.readouterr().out
+    assert ("sk-test" in console) == (verbose == "True")
+
+
 # ---------------------------------------------------------------------------
 # initialize_logger: configured once, but rebuilt when the directory moves
 # ---------------------------------------------------------------------------
