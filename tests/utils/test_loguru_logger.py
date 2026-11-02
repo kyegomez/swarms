@@ -93,7 +93,7 @@ def test_traceback_locals_only_reach_a_verbose_console(
 
     api_key = "sk-test"
     try:
-        raise ValueError(f"rejected {len(api_key)} chars")
+        raise ValueError("rejected", len(api_key))
     except ValueError:
         # The router only keeps records named after a swarms module.
         logger.patch(
