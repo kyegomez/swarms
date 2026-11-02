@@ -1305,3 +1305,48 @@ def test_harness_result_reflects_conversation_state(tmp_path):
     assert after["conversation"][-1]["role"] == "System"
     assert after["conversation"][-1]["content"] == "step one passed"
     assert after["id"] == before["id"]
+
+
+def test_hierarchical_swarm_reused_director_starts_with_fresh_memory():
+    """A reused swarm's director does not send the previous run's
+    task and orders to the model.
+    """
+    import json
+
+    worker = Agent(
+        agent_name="Writer",
+        model_name="gpt-4o-mini",
+        max_loops=1,
+        print_on=False,
+    )
+    worker.call_llm = lambda task=None, img=None, **kw: "done"
+
+    swarm = HierarchicalSwarm(
+        agents=[worker], print_on=False, output_type="final"
+    )
+    sent = []
+
+    def fake_director_llm(task=None, img=None, **kw):
+        sent.append(kw.get("messages") or [])
+        return json.dumps(
+            {
+                "plan": "p",
+                "orders": [{"agent_name": "Writer", "task": "go"}],
+            }
+        )
+
+    swarm.director.call_llm = fake_director_llm
+
+    swarm.run("TASK-ONE: summarise Q1 sales")
+    swarm.run("TASK-TWO: draft a hiring plan")
+
+    assert len(sent) == 2
+
+    run1_text = " ".join(str(m.get("content")) for m in sent[0])
+    assert "TASK-ONE" in run1_text
+    assert "TASK-TWO" not in run1_text
+
+    run2_text = " ".join(str(m.get("content")) for m in sent[1])
+    assert "TASK-TWO" in run2_text
+    assert "TASK-ONE" not in run2_text
+    assert [m.get("role") for m in sent[1]] == ["user"]

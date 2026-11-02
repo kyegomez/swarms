@@ -604,6 +604,17 @@ class HierarchicalSwarm:
                 time_enabled=False, channel=self.channel
             )
             self._delivered = {}
+            for agent in (
+                self.director,
+                self._planning_director,
+                self._feedback_director,
+                self._judge_agent,
+            ):
+                if agent is not None and callable(
+                    getattr(agent, "reset", None)
+                ):
+                    agent.reset()
+
             self.add_context_to_director()
 
             if task is not None:
