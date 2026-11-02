@@ -1,4 +1,5 @@
 import asyncio
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -497,3 +498,34 @@ def test_consensus_agent_defaults_and_kwargs_passthrough(
     )
     for attr, value in expected.items():
         assert getattr(mv.consensus_agent, attr) == value
+
+
+@pytest.mark.parametrize(
+    "verbose, consensus_kwargs, panels",
+    [
+        (False, {}, 0),
+        (True, {}, 2),
+        (False, {"print_on": True}, 1),
+        (True, {"print_on": False}, 1),
+    ],
+)
+def test_panels_follow_verbose_unless_caller_sets_print_on(
+    verbose, consensus_kwargs, panels
+):
+    agents, _ = _recording_agents(["Voter-A", "Voter-B"])
+    llm = MagicMock()
+    llm.run.return_value = "the consensus"
+
+    with patch(
+        "swarms.structs.majority_voting.formatter.print_panel"
+    ) as print_panel:
+        MajorityVoting(
+            agents=agents,
+            verbose=verbose,
+            additional_consensus_agent_kwargs={
+                "llm": llm,
+                **consensus_kwargs,
+            },
+        ).run("go")
+
+    assert print_panel.call_count == panels
