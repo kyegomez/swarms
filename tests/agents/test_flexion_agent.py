@@ -1,3 +1,5 @@
+import pytest
+
 from swarms.agents.flexion_agent import ReflexionAgent
 from swarms.structs.agent import Agent
 
@@ -31,3 +33,20 @@ def test_each_iteration_records_only_the_latest_replies(monkeypatch):
         ("answer 1", "Final score: 3", "reflection 1"),
         ("answer 2", "Final score: 8", "reflection 2"),
     ]
+
+
+@pytest.mark.parametrize(
+    "evaluation",
+    [
+        "Final Score: 8/10",
+        "**Final Score:** 8/10",
+        "Final score: **8**/10",
+        "## Overall Score\n8 / 10",
+        "**Final Score**: `8`",
+    ],
+)
+def test_evaluate_reads_a_markdown_final_score(evaluation):
+    agent = ReflexionAgent(agent_name="rx", model_name="gpt-5.4")
+    agent.evaluator.run = lambda task: evaluation
+
+    assert agent.evaluate("task", "response") == (evaluation, 0.8)
