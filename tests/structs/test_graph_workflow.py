@@ -1800,5 +1800,112 @@ def test_graph_workflow_max_parallel_nodes_still_caps_the_pool():
     assert peak <= 3
 
 
+@pytest.mark.parametrize(
+    "fail, on_error, cap, not_called, saved_layers",
+    [
+        ("A", "continue", None, "", 4),
+        ("D", "continue", None, "", 4),
+        ("A", "continue", 1, "", 4),
+        ("A", "skip_descendants", None, "BCDE", 0),
+        ("D", "skip_descendants", None, "E", 2),
+        ("A", "raise", None, "BCDEJ", 0),
+        ("D", "raise", None, "E", 2),
+        # One worker: the queued sibling must not start after A fails.
+        ("A", "raise", 1, "IBCDEJ", 0),
+    ],
+)
+def test_graph_workflow_on_error_policies(
+    tmp_path, fail, on_error, cap, not_called, saved_layers
+):
+    import threading
+
+    # Layers: {A, I} and {B, C, J} run in parallel, {D} and {E} alone.
+    boom = RuntimeError("boom")
+    i_started = threading.Event()
+    agents = {name: _mock_agent(name) for name in "ABCDEIJ"}
+
+    def fail_with_i_running(*args, **kwargs):
+        i_started.wait(0 if cap else 1)
+        raise boom
+
+    def i_run(*args, **kwargs):
+        i_started.set()
+        return "output-I"
+
+    agents[fail].run.side_effect = fail_with_i_running
+    agents["I"].run.side_effect = i_run
+    completed = []
+    wf = GraphWorkflow(
+        checkpoint_dir=str(tmp_path),
+        max_parallel_nodes=cap,
+        on_error=on_error,
+        on_node_complete=lambda nid, out: completed.append(nid),
+    )
+    for agent in agents.values():
+        wf.add_node(agent)
+    for edge in ("AB", "AC", "BD", "CD", "DE", "IJ"):
+        wf.add_edge(*edge)
+
+    if on_error == "raise":
+        with pytest.raises(RuntimeError) as raised:
+            wf.run("task")
+        assert raised.value is boom
+    else:
+        expected = {
+            name: None if name in not_called else f"output-{name}"
+            for name in agents
+        }
+        expected[fail] = f"[ERROR] Agent {fail} failed: boom"
+        assert wf.run("task") == expected
+        spoke = {
+            m["role"] for m in wf.conversation.conversation_history
+        }
+        assert spoke.isdisjoint(not_called)
+
+    ran = set(agents) - set(not_called)
+    assert {n for n, a in agents.items() if a.run.called} == ran
+    assert set(completed) == ran
+    assert len(list(tmp_path.glob("*.json"))) == saved_layers
+
+
+def test_graph_workflow_skip_descendants_resets_each_loop():
+    first, last = _mock_agent("A"), _mock_agent("B")
+    first.run.side_effect = [RuntimeError("boom"), "recovered"]
+    wf = GraphWorkflow(max_loops=2, on_error="skip_descendants")
+    wf.add_node(first)
+    wf.add_node(last)
+    wf.add_edge("A", "B")
+
+    results = wf.run("task")
+
+    assert results["B_loop_1"] is None
+    assert results["B"] == "output-B"
+    # Neither the error nor the skipped node seeds the next loop.
+    assert first.run.call_args.kwargs["messages"] == []
+
+
+def test_graph_workflow_skip_descendants_ignores_stale_checkpoint(
+    tmp_path,
+):
+    first, last = _mock_agent("A"), _mock_agent("B")
+    first.run.side_effect = RuntimeError("boom")
+    wf = GraphWorkflow(
+        checkpoint_dir=str(tmp_path), on_error="skip_descendants"
+    )
+    wf.add_node(first)
+    wf.add_node(last)
+    wf.add_edge("A", "B")
+    wf._checkpoint_path(wf._task_key("task"), 1).write_text(
+        '{"B": "stale"}'
+    )
+
+    assert wf.run("task")["B"] is None
+
+
+def test_graph_workflow_invalid_on_error_raises():
+    with pytest.raises(ValueError, match="on_error"):
+        GraphWorkflow(on_error="ignore")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
