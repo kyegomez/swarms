@@ -37,12 +37,6 @@ class DimensionEvaluationError(EvaluationError):
     pass
 
 
-class AggregationError(EvaluationError):
-    """Exception raised when aggregation of evaluations fails."""
-
-    pass
-
-
 # Define evaluation dimensions and their evaluation goals
 EVAL_DIMENSIONS: Dict[str, str] = {
     "accuracy": """Conduct a rigorous factual accuracy assessment of the model's response:
