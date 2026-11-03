@@ -192,6 +192,34 @@ class TestSummarize:
         _, kwargs = mock_comp.call_args
         assert kwargs["model"] == "claude-sonnet-4-5"
 
+    def test_sends_the_agents_endpoint_and_key_with_its_model(self):
+        cc = ContextCompressor()
+        agent = _make_agent(model_name="openai/local-model")
+        agent.llm_base_url = "http://localhost:8000/v1"
+        agent.llm_api_key = "sk-local"
+        with patch(
+            "swarms.agents.context_compressor.completion",
+            return_value=_make_completion_response(),
+        ) as mock_comp:
+            cc._summarize(agent, "history")
+        _, kwargs = mock_comp.call_args
+        assert kwargs["base_url"] == "http://localhost:8000/v1"
+        assert kwargs["api_key"] == "sk-local"
+
+    def test_a_separate_summarizer_model_keeps_its_own_endpoint(self):
+        cc = ContextCompressor(summarizer_model="gpt-4o")
+        agent = _make_agent(model_name="openai/local-model")
+        agent.llm_base_url = "http://localhost:8000/v1"
+        agent.llm_api_key = "sk-local"
+        with patch(
+            "swarms.agents.context_compressor.completion",
+            return_value=_make_completion_response(),
+        ) as mock_comp:
+            cc._summarize(agent, "history")
+        _, kwargs = mock_comp.call_args
+        assert "base_url" not in kwargs
+        assert "api_key" not in kwargs
+
     def test_passes_temperature_and_max_tokens(self):
         cc = ContextCompressor(
             summarizer_model="gpt-4o",
