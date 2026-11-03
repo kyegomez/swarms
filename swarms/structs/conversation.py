@@ -728,7 +728,7 @@ class Conversation:
             role (str): The role to record the turn under.
 
         Returns:
-            List[Dict[str, Any]]: Each call's id, name and arguments; empty for a text turn.
+            List[Dict[str, Any]]: Each call's id, name, arguments and any extra_content; empty for a text turn.
         """
         calls = []
         if isinstance(parsed, list):
