@@ -12,7 +12,6 @@ Covers:
 """
 
 import os
-from types import SimpleNamespace
 
 import pytest
 from dotenv import load_dotenv
@@ -608,24 +607,21 @@ class TestQuestionAgentPerVariant:
         assert "presence_penalty" not in seen
 
     @pytest.mark.parametrize(
-        "reply",
-        [
-            None,
-            [
-                SimpleNamespace(
-                    id="call-1",
-                    function=SimpleNamespace(
-                        name="generate_specialized_questions",
-                        arguments='{"research_question": "r?"}',
-                    ),
-                )
-            ],
-        ],
+        "arguments", [None, '{"research_question": "r?"}']
     )
     def test_run_raises_when_questions_are_missing(
-        self, monkeypatch, reply
+        self, monkeypatch, arguments
     ):
-        self._capture(monkeypatch, reply)
+        from types import SimpleNamespace
+
+        call = SimpleNamespace(
+            id="call-1",
+            function=SimpleNamespace(
+                name="generate_specialized_questions",
+                arguments=arguments,
+            ),
+        )
+        self._capture(monkeypatch, [call] if arguments else None)
         swarm = HeavySwarm(
             worker_model_name=MODEL,
             question_agent_model_name=MODEL,
