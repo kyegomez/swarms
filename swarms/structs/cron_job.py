@@ -19,12 +19,6 @@ class CronJobConfigError(CronJobError):
     pass
 
 
-class CronJobScheduleError(CronJobError):
-    """Exception raised for scheduling related errors in CronJob."""
-
-    pass
-
-
 class CronJobExecutionError(CronJobError):
     """Exception raised for execution related errors in CronJob."""
 
