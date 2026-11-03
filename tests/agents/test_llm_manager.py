@@ -37,6 +37,7 @@ from loguru import logger
 
 import swarms.agents.llm_manager as llm_manager
 from swarms import Agent
+from swarms.structs.conversation import Conversation
 from swarms.utils.litellm_wrapper import LiteLLM
 
 ########################################################
@@ -456,6 +457,30 @@ class TestStreamWithToolCollection:
             collected.append(c)
         assert collected == chunks
         assert out == []
+
+    def test_thought_signature_survives_into_the_next_request(
+        self, agent
+    ):
+        extra_content = {"google": {"thought_signature": "sig"}}
+        fragment = FakeToolCallDelta(0, id="call_1", name="get_time")
+        fragment.extra_content = extra_content
+        chunk = FakeChunk(
+            choices=[FakeChoice(FakeDelta(tool_calls=[fragment]))]
+        )
+        streamed = []
+        list(
+            agent.llm_manager.stream_with_tool_collection(
+                iter([chunk]), streamed
+            )
+        )
+        plain = {"id": "call_2", "function": {"name": "get_time"}}
+
+        conversation = Conversation()
+        conversation.record_assistant([*streamed, plain])
+
+        sent = conversation.to_messages()[0]["tool_calls"]
+        assert sent[0]["extra_content"] == extra_content
+        assert "extra_content" not in sent[1]
 
     def test_assembles_fragmented_name_and_arguments(self, agent):
         chunks = [
