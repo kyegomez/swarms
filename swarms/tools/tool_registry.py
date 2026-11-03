@@ -77,13 +77,12 @@ class ToolStorage:
             name = func.__name__
             docs = func.__doc__
 
-            self.add_tool_to_log(name, docs)
-
             logger.info(f"Adding tool: {name}")
             if name in self._tools:
                 raise ValueError(
                     f"Tool with name {name} already exists."
                 )
+            self.add_tool_to_log(name, docs)
             self._tools[name] = func
             logger.info(f"Added tool: {name}")
         except ValueError as e:
