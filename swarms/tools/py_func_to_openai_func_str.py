@@ -1,6 +1,5 @@
 import functools
 import inspect
-import json
 from logging import getLogger
 from typing import (
     Any,
@@ -578,12 +577,3 @@ def load_basemodels_if_needed(
         return _a_load_parameters_if_needed
     else:
         return _load_parameters_if_needed
-
-
-def serialize_to_str(x: Any) -> str:
-    if isinstance(x, str):
-        return x
-    elif isinstance(x, BaseModel):
-        return model_dump_json(x)
-    else:
-        return json.dumps(x)
