@@ -232,37 +232,6 @@ class MixtureOfAgents:
             agents=self.agents, agent_outputs=agent_outputs
         )
 
-    def _begin_run(self, task: str) -> None:
-        """Clear per-run state and record the task in the conversation."""
-        self._reset_conversation()
-        for agent in self.agents:
-            agent.reset()
-
-        self.conversation.add(role="User", content=task)
-
-    def _record_layer(
-        self, task: str, layer: int, step_output: Dict[str, Any]
-    ) -> str:
-        """Record a layer's answers and return the next layer's input."""
-        for agent_name, agent_output in step_output.items():
-            self.conversation.add(
-                role=(
-                    f"{agent_name} (layer {layer + 1}/{self.layers})"
-                    if self.layers > 1
-                    else agent_name
-                ),
-                content=agent_output,
-            )
-
-        # Task plus this layer's outputs, rather than the full growing transcript.
-        layer_output = "\n\n".join(
-            f"{name}: {out}" for name, out in step_output.items()
-        )
-        return (
-            f"Original task: {task}\n\n"
-            f"Previous layer synthesis:\n{layer_output}"
-        )
-
     def _run(
         self,
         task: str,
@@ -278,12 +247,39 @@ class MixtureOfAgents:
             The conversation formatted according to ``self.output_type``.
         """
 
-        self._begin_run(task)
+        self._reset_conversation()
+        for agent in self.agents:
+            agent.reset()
 
+        self.conversation.add(role="User", content=task)
+
+        # Task plus the previous layer's synthesis, rather than the full growing transcript.
         worker_input = task
+        prev_layer_output: Optional[str] = None
+
         for i in range(self.layers):
+            if prev_layer_output is not None:
+                worker_input = (
+                    f"Original task: {task}\n\n"
+                    f"Previous layer synthesis:\n{prev_layer_output}"
+                )
+
             step_output = self.step(task=worker_input, img=img)
-            worker_input = self._record_layer(task, i, step_output)
+
+            for agent_name, agent_output in step_output.items():
+                self.conversation.add(
+                    role=(
+                        f"{agent_name} (layer {i + 1}/{self.layers})"
+                        if self.layers > 1
+                        else agent_name
+                    ),
+                    content=agent_output,
+                )
+
+            # Summarize this layer by concatenating worker outputs for the next layer's input.
+            prev_layer_output = "\n\n".join(
+                f"{name}: {out}" for name, out in step_output.items()
+            )
 
         prior, aggregator_task = split_last_turn(
             messages_for(
@@ -293,10 +289,6 @@ class MixtureOfAgents:
         aggregator_output = self.aggregator_agent.run(
             task=aggregator_task, messages=prior
         )
-        return self._finish_run(aggregator_output)
-
-    def _finish_run(self, aggregator_output: Any):
-        """Record the aggregator's answer and format the conversation."""
         aggregator_output = agent_answer(
             self.aggregator_agent, fallback=aggregator_output
         )
@@ -372,24 +364,55 @@ class MixtureOfAgents:
                     output = error
             return agent.agent_name, agent_answer(agent, output)
 
-        self._begin_run(task)
+        self._reset_conversation()
+        for agent in self.agents:
+            agent.reset()
+
+        self.conversation.add(role="User", content=task)
 
         worker_input = task
         for i in range(self.layers):
-            answers = await asyncio.gather(
-                *(_answer(a, worker_input) for a in self.agents)
+            step_output = dict(
+                await asyncio.gather(
+                    *(_answer(a, worker_input) for a in self.agents)
+                )
             )
-            worker_input = self._record_layer(task, i, dict(answers))
+
+            for agent_name, agent_output in step_output.items():
+                self.conversation.add(
+                    role=(
+                        f"{agent_name} (layer {i + 1}/{self.layers})"
+                        if self.layers > 1
+                        else agent_name
+                    ),
+                    content=agent_output,
+                )
+
+            layer_output = "\n\n".join(
+                f"{name}: {out}" for name, out in step_output.items()
+            )
+            worker_input = (
+                f"Original task: {task}\n\n"
+                f"Previous layer synthesis:\n{layer_output}"
+            )
 
         prior, aggregator_task = split_last_turn(
             messages_for(
                 self.aggregator_agent.agent_name, self.conversation
             )
         )
-        return self._finish_run(
-            await self.aggregator_agent.arun(
-                task=aggregator_task, messages=prior
-            )
+        aggregator_output = await self.aggregator_agent.arun(
+            task=aggregator_task, messages=prior
+        )
+        self.conversation.add(
+            role=self.aggregator_agent.agent_name,
+            content=agent_answer(
+                self.aggregator_agent, fallback=aggregator_output
+            ),
+        )
+
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
         )
 
     def run_batched(self, tasks: List[str]) -> List[str]:
