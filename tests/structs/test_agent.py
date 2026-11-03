@@ -2636,6 +2636,20 @@ class TestIntegerLoopRequest:
             for m in messages
         )
 
+    def test_a_later_loop_never_ends_on_the_models_own_turn(
+        self, monkeypatch
+    ):
+        # Gemini 3.5+ rejects "Requests ending with a model turn".
+        agent = self._agent(max_loops=3)
+        sent = self._capture(monkeypatch, agent, ["a", "b", "c"])
+
+        output = agent.run("Plan a trip")
+
+        assert [messages[-1]["role"] for _, messages in sent] == [
+            "user"
+        ] * 3
+        assert "Continue" not in output
+
     def test_a_compressed_history_is_sent_as_its_summary(
         self, monkeypatch
     ):

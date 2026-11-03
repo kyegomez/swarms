@@ -1133,12 +1133,21 @@ class Agent:
                     with loading_ctx:
                         llm_kwargs = dict(kwargs)
                         if self.transforms is None:
-                            llm_kwargs["messages"] = (
-                                self.short_memory.to_messages(
-                                    self.agent_name,
-                                    request_start,
-                                )
+                            request = self.short_memory.to_messages(
+                                self.agent_name, request_start
                             )
+                            # Gemini 3.5+ rejects a request that ends with the model's own turn.
+                            if (
+                                request
+                                and request[-1]["role"] == "assistant"
+                            ):
+                                request.append(
+                                    {
+                                        "role": "user",
+                                        "content": "Continue.",
+                                    }
+                                )
+                            llm_kwargs["messages"] = request
 
                         response = self.call_llm(
                             task=task_prompt,
