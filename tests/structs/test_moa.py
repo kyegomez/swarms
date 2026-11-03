@@ -1,3 +1,4 @@
+import asyncio
 import re
 import threading
 import pytest
@@ -592,3 +593,54 @@ def test_run_raises_when_the_aggregator_fails():
 
     with pytest.raises(RuntimeError, match="returned 503"):
         moa.run("Question?")
+
+
+@pytest.mark.parametrize(
+    "max_workers, limit, peak", [(None, 2, 2), (1, None, 1)]
+)
+def test_arun_matches_run_under_max_concurrency_keeping_failed_workers(
+    max_workers, limit, peak
+):
+    def mixture():
+        agents, calls = _recording_agents(["W1", "W2", "W3", "Agg"])
+        agents[1].run = lambda **kwargs: 1 / 0
+        return (
+            MixtureOfAgents(
+                agents=agents[:3],
+                aggregator_agent=agents[3],
+                layers=2,
+                max_workers=max_workers,
+            ),
+            calls,
+        )
+
+    sync_moa, sync_calls = mixture()
+    expected = sync_moa.run("Question?", img="chart.png")
+    moa, calls = mixture()
+    live, peaks, imgs = [], [], []
+
+    def awaitable(run):
+        async def arun(task=None, img=None, **kwargs):
+            live.append(task)
+            peaks.append(len(live))
+            imgs.append(img)
+            await asyncio.sleep(0)
+            live.pop()
+            return run(task=task, **kwargs)
+
+        return arun
+
+    for agent in [*moa.agents, moa.aggregator_agent]:
+        agent.arun = awaitable(agent.run)
+
+    with pytest.raises(ValueError, match="at least 1"):
+        asyncio.run(moa.arun("Question?", max_concurrency=0))
+
+    assert (
+        asyncio.run(moa.arun("Question?", "chart.png", limit))
+        == expected
+    )
+    assert max(peaks) == peak
+    assert imgs.count("chart.png") == 6
+    assert sorted(calls, key=str) == sorted(sync_calls, key=str)
+    assert "W2 (layer 1/2): Error: division by zero" in str(calls)

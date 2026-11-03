@@ -1,3 +1,4 @@
+import asyncio
 import copy
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -231,13 +232,8 @@ class MajorityVoting:
 
             for future in as_completed(future_to_agent):
                 agent = future_to_agent[future]
-                try:
-                    result = future.result()
-                except Exception as error:
-                    answers[agent.agent_name] = error
-                    continue
                 answers[agent.agent_name] = agent_answer(
-                    agent, fallback=result
+                    agent, fallback=future.result()
                 )
 
         return answers
@@ -385,4 +381,60 @@ class MajorityVoting:
             tasks,
             *args,
             **kwargs,
+        )
+
+    async def arun(
+        self, task: str, max_concurrency: Optional[int] = None
+    ) -> Any:
+        """
+        Run the vote on the event loop, awaiting each agent's arun.
+
+        Args:
+            task (str): The task to be performed by the agents.
+            max_concurrency (Optional[int]): Most voters running at once.
+                Defaults to None, which runs every voter at once.
+
+        Returns:
+            Any: The conversation formatted by output_type, as run returns.
+
+        Raises:
+            ValueError: If max_concurrency is less than 1.
+        """
+        if max_concurrency is not None and max_concurrency < 1:
+            raise ValueError("max_concurrency must be at least 1")
+        semaphore = asyncio.Semaphore(
+            max_concurrency or len(self.agents)
+        )
+
+        async def _answer(agent: Agent) -> Any:
+            prior, turn = split_last_turn(
+                messages_for(agent.agent_name, self.conversation)
+            )
+            async with semaphore:
+                result = await agent.arun(task=turn, messages=prior)
+            return agent_answer(agent, fallback=result)
+
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
+        self.conversation.add(role="user", content=task)
+
+        for _ in range(self.max_loops):
+            votes = await asyncio.gather(
+                *(_answer(agent) for agent in self.agents)
+            )
+            for agent, vote in zip(self.agents, votes):
+                self.conversation.add(
+                    role=agent.agent_name, content=vote
+                )
+
+            self.consensus_agent.streaming_on = False
+            self.conversation.add(
+                role=self.consensus_agent.agent_name,
+                content=await _answer(self.consensus_agent),
+            )
+
+        self.workspace.save_conversation(self.conversation)
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
         )
