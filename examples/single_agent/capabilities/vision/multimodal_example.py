@@ -71,7 +71,6 @@ quality_control_agent = Agent(
     # model_name="anthropic/claude-3-opus-20240229",
     model_name="gpt-5.4",
     system_prompt=custom_system_prompt,
-    multi_modal=True,
     max_loops=1,
     output_type="str-all-except-first",
     # tools_list_dictionary=[schema],

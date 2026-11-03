@@ -5,13 +5,13 @@ This example demonstrates using the LLM Council to analyze and develop
 comprehensive marketing strategies by leveraging multiple AI perspectives.
 """
 
-from swarms.structs.llm_council import LLMCouncil
+from swarms import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
-# Marketing strategy query
-query = """
+# Marketing strategy task
+task = """
 Analyze the marketing strategy for a new sustainable energy startup launching 
 a solar panel subscription service. Provide recommendations on:
 1. Target audience segmentation
@@ -22,7 +22,7 @@ a solar panel subscription service. Provide recommendations on:
 """
 
 # Run the council
-result = council.run(query)
+result = council.run(task=task)
 
 # Print final response
-print(result["final_response"])
+print(result)

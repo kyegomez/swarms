@@ -1,6 +1,4 @@
-import yaml
 from typing import Any
-from swarms.utils.xml_utils import to_xml_string
 from swarms.utils.output_types import HistoryOutputType
 
 
@@ -16,7 +14,8 @@ def history_output_formatter(
             Supported values:
                 - "list": Returns the conversation as a list of message dicts.
                 - "dict" or "dictionary": Returns the conversation as a dictionary.
-                - "string" or "str": Returns the conversation as a string.
+                - "string" or "str": Returns the whole conversation as a
+                  string, even past the conversation's context window.
                 - "final" or "last": Returns the content of the final message.
                 - "json": Returns the conversation as a JSON string.
                 - "all": Returns the conversation as a string (same as "string").
@@ -25,7 +24,6 @@ def history_output_formatter(
                 - "list-final": Returns the final message as a list.
                 - "str-all-except-first": Returns all messages except the first as a string.
                 - "dict-final": Returns the final message as a dictionary.
-                - "xml": Returns the conversation as an XML string.
             Defaults to "list".
 
     Returns:
@@ -38,15 +36,15 @@ def history_output_formatter(
         return conversation.return_messages_as_list()
     elif type in ["dict", "dictionary"]:
         return conversation.to_dict()
-    elif type in ["string", "str"]:
-        return conversation.get_str()
+    elif type in ["string", "str", "all"]:
+        return conversation._return_history_as_string_worker()
     elif type in ["final", "last"]:
         return conversation.get_final_message_content()
     elif type == "json":
         return conversation.to_json()
-    elif type == "all":
-        return conversation.get_str()
     elif type == "yaml":
+        import yaml
+
         return yaml.safe_dump(conversation.to_dict(), sort_keys=False)
     elif type == "dict-all-except-first":
         return conversation.return_all_except_first()
@@ -56,8 +54,5 @@ def history_output_formatter(
         return conversation.return_all_except_first_string()
     elif type == "dict-final":
         return conversation.return_dict_final()
-    elif type == "xml":
-        data = conversation.to_dict()
-        return to_xml_string(data, root_tag="conversation")
     else:
         raise ValueError(f"Invalid type: {type}")

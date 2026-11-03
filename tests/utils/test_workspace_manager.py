@@ -72,6 +72,11 @@ class TestSanitizeName:
     def test_name_of_only_dots_does_not_become_empty(self):
         """'..' would otherwise strip to '' and yield a bare path."""
         assert sanitize_name("..") == "unnamed"
+        assert sanitize_name("...") == "unnamed"
+        assert sanitize_name(". .") == "unnamed"
+
+    def test_non_string_name_is_stringified(self):
+        assert sanitize_name(123) == "123"
 
 
 class TestEnsureWorkspaceEnv:
@@ -85,6 +90,17 @@ class TestEnsureWorkspaceEnv:
         resolved = ensure_workspace_env()
         assert resolved.endswith("agent_workspace")
         assert os.environ["WORKSPACE_DIR"] == resolved
+
+    def test_a_later_change_to_the_variable_takes_effect(
+        self, monkeypatch, tmp_path
+    ):
+        monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "first"))
+        assert get_workspace_dir() == str(tmp_path / "first")
+
+        monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "second"))
+
+        assert get_workspace_dir() == str(tmp_path / "second")
+        assert ensure_workspace_env() == str(tmp_path / "second")
 
 
 class TestConversationToData:

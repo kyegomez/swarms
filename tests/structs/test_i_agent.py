@@ -82,3 +82,32 @@ def test_ire_agent_workflow():
 
     # Check that conversation was populated during execution
     assert agent.conversation is not None
+
+
+def test_ire_agent_steps_read_only_the_latest_reply():
+    from unittest.mock import patch
+
+    from swarms.structs.agent import Agent
+
+    simulated = []
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        prompt = kwargs["messages"][-1]["content"]
+        if "possible approaches" in prompt:
+            return "Approach A\nApproach B"
+        if prompt.startswith("Simulate"):
+            simulated.append(prompt.rsplit("Reasoning Path: ", 1)[1])
+            return "Outcome: ok\nScore: 0.9\nErrors: none"
+        if "most promising" in prompt:
+            return "Approach A"
+        return "Final plan"
+
+    agent = IterativeReflectiveExpansion(
+        max_loops=2, output_type="final"
+    )
+
+    with patch.object(Agent, "call_llm", fake_call_llm):
+        result = agent.run("Plan a picnic")
+
+    assert simulated == ["Approach A", "Approach B", "Approach A"]
+    assert result == "Final plan"

@@ -1,6 +1,5 @@
 import concurrent.futures
 import json
-import os
 import traceback
 from typing import Dict, List, Optional
 
@@ -18,11 +17,12 @@ from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
+from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.heavy_swarm_dashboard import HeavySwarmDashboard
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
@@ -74,6 +74,9 @@ class HeavySwarm(SerializableMixin):
             max_loops (int): Maximum number of execution loops for iterative refinement
             conversation (Conversation): Conversation history tracker
             console (Console): Rich console for dashboard output
+            usage (dict): Provider token usage summed over question
+                generation and every worker and synthesis agent. See
+                :attr:`usage`.
 
         Example:
             >>> swarm = HeavySwarm(
@@ -120,8 +123,6 @@ class HeavySwarm(SerializableMixin):
             name (str, optional): Identifier name for the swarm instance. Defaults to "HeavySwarm".
             description (str, optional): Description of the swarm's purpose and capabilities.
                 Defaults to standard description.
-            agents (List[Agent], optional): Pre-configured agent list (currently unused as agents
-                are created internally). Defaults to None.
             timeout (int, optional): Maximum execution time per agent in seconds. Defaults to 300.
             question_agent_model_name (str, optional): Language model for
                 question generation. Defaults to "gpt-5.4".
@@ -162,7 +163,7 @@ class HeavySwarm(SerializableMixin):
         self.question_agent_model_name = question_agent_model_name
         self.worker_model_name = worker_model_name
         self.verbose = verbose
-        self.max_workers = int(os.cpu_count() * 0.9)
+        self.max_workers = max_workers_95_percent()
         self.show_dashboard = show_dashboard
         self.agent_prints_on = agent_prints_on
         self.output_type = output_type
@@ -174,6 +175,7 @@ class HeavySwarm(SerializableMixin):
             time_enabled=True, message_id_on=True
         )
         self.dashboard = HeavySwarmDashboard()
+        self._question_usage = empty_usage()
 
         self.agents = self.create_agents()
 
@@ -318,6 +320,8 @@ class HeavySwarm(SerializableMixin):
             self.dashboard.show_task_init(task)
 
         self.conversation.clear()
+        for agent in self.agents.values():
+            agent.short_memory = agent.short_memory_init()
 
         # Add initial task to conversation
         self.conversation.add(
@@ -385,7 +389,7 @@ class HeavySwarm(SerializableMixin):
                         if "error" in questions:
                             error_msg = f"Error in question generation: {questions['error']}"
                             self._log("ERROR", error_msg)
-                            return error_msg
+                            raise RuntimeError(error_msg)
 
                     except Exception as e:
                         error_msg = f"Failed to generate questions in loop {current_loop + 1}: {str(e)}"
@@ -394,7 +398,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Agent execution phase
                     try:
@@ -435,7 +439,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Synthesis phase
                     try:
@@ -484,7 +488,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Store the result for next loop context
                     last_output = final_result
@@ -502,7 +506,7 @@ class HeavySwarm(SerializableMixin):
                         "ERROR",
                         f"Traceback: {traceback.format_exc()}",
                     )
-                    return error_msg
+                    raise
 
         except Exception as e:
             error_msg = (
@@ -510,7 +514,7 @@ class HeavySwarm(SerializableMixin):
             )
             self._log("ERROR", error_msg)
             self._log("ERROR", f"Traceback: {traceback.format_exc()}")
-            return error_msg
+            raise
 
         # Final completion message
         if self.show_dashboard:
@@ -522,6 +526,45 @@ class HeavySwarm(SerializableMixin):
             conversation=self.conversation,
             type=self.output_type,
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over everything this swarm has run.
+
+        Adds the question-generation calls, which go through a bare
+        ``LiteLLM`` rather than an ``Agent``, to :attr:`Agent.usage` for every
+        distinct agent in ``self.agents``: the workers plus the synthesis agent
+        or captain, whichever the variant builds. Keys: ``input_tokens``,
+        ``output_tokens``, ``cached_tokens``, ``reasoning_tokens``,
+        ``total_tokens``.
+
+        The value grows across ``run()`` calls and across ``max_loops``.
+        Streamed calls count once their stream has been consumed, the same
+        rule as :attr:`Agent.usage`.
+
+        Returns:
+            dict: A new usage dict; mutating it does not affect the swarm.
+        """
+        total = dict(self._question_usage)
+        agents = {}
+        for agent in (self.agents or {}).values():
+            if isinstance(getattr(agent, "usage", None), dict):
+                agents.setdefault(id(agent), agent)
+        for agent in agents.values():
+            for key, value in agent.usage.items():
+                if key in total:
+                    total[key] += value
+        return total
+
+    def _add_question_usage(self, call_usage: dict) -> None:
+        """Fold one question-generation call's usage into the swarm total.
+
+        Args:
+            call_usage (dict): The per-call usage ``LiteLLM`` passes to its
+                ``usage_hook``.
+        """
+        for key in self._question_usage:
+            self._question_usage[key] += call_usage.get(key, 0)
 
     def create_agents(self):
         """Build the swarm's agents.
@@ -1403,6 +1446,7 @@ class HeavySwarm(SerializableMixin):
             max_tokens=max_tokens,
             top_p=None,  # Anthropic rejects temperature and top_p together
             tool_choice="auto",
+            usage_hook=self._add_question_usage,
         )
 
         # Get raw tool calls from LiteLLM

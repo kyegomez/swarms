@@ -1,4 +1,5 @@
 import re
+import pytest
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.agent import Agent
 
@@ -340,6 +341,30 @@ class TestWorkerContributions:
             for c in worker_messages
         ), "a worker echoed the task back into the shared conversation"
 
+    def test_a_reused_mixture_starts_workers_from_a_clean_memory(
+        self,
+    ):
+        from swarms import MixtureOfAgents
+
+        workers = [_scripted_agent("W1"), _scripted_agent("W2")]
+        moa = MixtureOfAgents(
+            agents=workers,
+            aggregator_agent=_scripted_agent("Agg"),
+            layers=2,
+        )
+        moa.run("FIRST-TASK-alpha")
+        moa.run("SECOND-TASK-beta")
+
+        for worker in workers:
+            request = "\n\n".join(
+                str(m["content"])
+                for m in worker.short_memory.conversation_history
+            )
+            assert (
+                "FIRST-TASK-alpha" not in request
+            ), f"{worker.agent_name} still holds the first task"
+            assert "Previous layer synthesis" in request
+
     def test_the_conversation_starts_clean(self):
         """
         Conversation used to auto-load a default-named file from disk, so
@@ -508,3 +533,19 @@ def test_aggregator_can_tell_which_layer_produced_each_answer():
         assert (
             f"layer {layer}/3" in contents
         ), f"layer {layer} not attributed: {contents}"
+
+
+def test_run_raises_when_the_aggregator_fails():
+    agents, _ = _recording_agents(["W1", "W2"])
+    aggregator, _ = _recording_agents(["Agg"])
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("aggregator provider returned 503")
+
+    aggregator[0].run = fail
+    moa = MixtureOfAgents(
+        agents=agents, aggregator_agent=aggregator[0]
+    )
+
+    with pytest.raises(RuntimeError, match="returned 503"):
+        moa.run("Question?")

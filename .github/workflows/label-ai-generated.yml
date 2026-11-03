@@ -1,0 +1,95 @@
+---
+# Labels PRs and issues opened by, or written with, an AI coding agent.
+name: Label AI-generated
+on:
+  pull_request_target:
+    types: [opened, reopened, edited, synchronize]
+  issues:
+    types: [opened, reopened, edited]
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      # Reads only the event payload and the API; PR code is never checked out.
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const LABEL = "ai-generated";
+            const AGENT_LOGINS = {
+              "claude[bot]": "Claude",
+              "copilot": "Copilot",
+              "copilot-swe-agent[bot]": "Copilot",
+              "chatgpt-codex-connector[bot]": "Codex",
+              "cursor[bot]": "Cursor",
+              "devin-ai-integration[bot]": "Devin",
+              "google-labs-jules[bot]": "Jules",
+              "amazon-q-developer[bot]": "Amazon Q",
+              "sweep-ai[bot]": "Sweep",
+              "openhands-agent": "OpenHands",
+            };
+            const AGENT_BRANCHES = {
+              claude: "Claude", codex: "Codex", copilot: "Copilot", cursor: "Cursor",
+              devin: "Devin", jules: "Jules", openhands: "OpenHands",
+            };
+            const AGENT_TEXT = [
+              ["Claude", /generated with \[?claude code|claude\.(?:ai|com)\/(?:code|claude-code)|co-authored-by:\s*claude|noreply@anthropic\.com/i],
+              ["Codex", /chatgpt\.com\/codex/i],
+              ["Copilot", /co-authored-by:\s*copilot|copilot-swe-agent/i],
+              ["Cursor", /co-authored-by:\s*cursor|cursoragent@cursor\.com/i],
+              ["Devin", /app\.devin\.ai|devin-ai-integration/i],
+              ["Jules", /jules\.google/i],
+              ["Aider", /co-authored-by:\s*aider|^aider: /im],
+              ["Gemini", /co-authored-by:\s*gemini/i],
+            ];
+
+            const { owner, repo } = context.repo;
+            const item = context.payload.pull_request || context.payload.issue;
+            const found = new Set();
+            const addLogin = (login) => {
+              const agent = AGENT_LOGINS[(login || "").toLowerCase()];
+              if (agent) found.add(agent);
+            };
+
+            addLogin(item.user && item.user.login);
+            const texts = [item.title, item.body];
+
+            if (context.payload.pull_request) {
+              const [prefix, rest] = item.head.ref.split("/");
+              const branchAgent = rest && AGENT_BRANCHES[prefix.toLowerCase()];
+              if (branchAgent) found.add(branchAgent);
+              const commits = await github.paginate(github.rest.pulls.listCommits, {
+                owner, repo, pull_number: item.number, per_page: 100,
+              });
+              for (const { author, commit } of commits) {
+                addLogin(author && author.login);
+                texts.push(commit.message, commit.author && commit.author.email);
+              }
+            }
+
+            const text = texts.filter(Boolean).join("\n");
+            for (const [agent, pattern] of AGENT_TEXT) {
+              if (pattern.test(text)) found.add(agent);
+            }
+
+            if (found.size === 0) {
+              core.info("No AI coding agent found.");
+              return;
+            }
+
+            try {
+              await github.rest.issues.createLabel({
+                owner, repo, name: LABEL, color: "8b5cf6",
+                description: "Opened by or written with an AI coding agent",
+              });
+            } catch (error) {
+              // 422 means the label already exists.
+              if (error.status !== 422) throw error;
+            }
+            await github.rest.issues.addLabels({
+              owner, repo, issue_number: item.number, labels: [LABEL],
+            });
+            core.notice(`Labelled #${item.number} ${LABEL}: ${[...found].join(", ")}`);

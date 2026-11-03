@@ -203,6 +203,10 @@ class AdvisorSwarm:
         self.conversation.clear()
         self.conversation.add(role="User", content=task)
         advisor_uses = 0
+        advisor_name = self.advisor_agent.agent_name or "Advisor"
+        executor_name = self.executor_agent.agent_name or "Executor"
+        if advisor_name == executor_name:
+            advisor_name, executor_name = "Advisor", "Executor"
 
         for turn in range(self.max_loops):
             if self.verbose:
@@ -220,13 +224,12 @@ class AdvisorSwarm:
                 advice = self.advisor_agent.run(
                     task=advisor_prompt,
                     messages=messages_for(
-                        self.advisor_agent.agent_name or "Advisor",
-                        self.conversation,
+                        advisor_name, self.conversation
                     ),
                 )
                 advisor_uses += 1
                 self.conversation.add(
-                    role="Advisor",
+                    role=advisor_name,
                     content=agent_answer(self.advisor_agent, advice),
                 )
 
@@ -247,12 +250,11 @@ class AdvisorSwarm:
                 img=img,
                 imgs=imgs,
                 messages=messages_for(
-                    self.executor_agent.agent_name or "Executor",
-                    self.conversation,
+                    executor_name, self.conversation
                 ),
             )
             self.conversation.add(
-                role="Executor",
+                role=executor_name,
                 content=agent_answer(self.executor_agent, output),
             )
 

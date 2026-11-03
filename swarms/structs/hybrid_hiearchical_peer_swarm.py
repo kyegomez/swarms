@@ -1,3 +1,4 @@
+import copy
 import os
 from typing import List
 from swarms.structs.execution_utils import run_concurrently
@@ -146,6 +147,7 @@ class HybridHierarchicalClusterSwarm:
         if not task:
             raise ValueError("Task cannot be empty.")
 
+        self.conversation = Conversation()
         self.conversation.add(role="User", content=task)
 
         response = self.router_agent.run(task=task)
@@ -224,7 +226,7 @@ class HybridHierarchicalClusterSwarm:
             raise ValueError("Task list cannot be empty.")
 
         results = run_concurrently(
-            self.run,
+            lambda task: copy.copy(self).run(task),
             tasks,
             max_workers=os.cpu_count() * 2,
             return_exceptions=True,
