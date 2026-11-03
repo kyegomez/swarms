@@ -759,6 +759,9 @@ class Conversation:
                         "arguments": function.get("arguments", "{}"),
                     }
                 )
+                # Gemini 3 rejects the next request unless its thought signature comes back.
+                if item.get("extra_content"):
+                    calls[-1]["extra_content"] = item["extra_content"]
 
         # A chat-form assistant turn must carry text; other roles keep the raw response.
         message = self.add(
@@ -775,6 +778,11 @@ class Conversation:
                         "name": call["name"],
                         "arguments": call["arguments"],
                     },
+                    **(
+                        {"extra_content": call["extra_content"]}
+                        if "extra_content" in call
+                        else {}
+                    ),
                 }
                 for call in calls
             ]
