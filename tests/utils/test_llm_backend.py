@@ -122,7 +122,7 @@ class TestOptionsPerCall:
         sent = self._sent()
         assert {name: sent[name] for name in BACKEND_OPTIONS} == {
             "set_verbose": False,
-            "ssl_verify": False,
+            "ssl_verify": True,
             "drop_params": True,
         }
 
@@ -140,6 +140,26 @@ class TestOptionsPerCall:
         """litellm clears its module-level count after the first retried call, so each request carries it."""
         _use_backend(monkeypatch, backend)
         assert self._sent()["num_retries"] == 5
+
+
+class TestCertificateChecks:
+    def test_a_default_llm_keeps_litellm_verifying_certificates(
+        self, monkeypatch
+    ):
+        _use_backend(monkeypatch, "litellm")
+        litellm = llm_backend.backend_module()
+
+        LiteLLM(model_name="gpt-5.4-mini")
+
+        assert litellm.ssl_verify is True
+
+    def test_ssl_verify_false_still_turns_them_off(self, monkeypatch):
+        _use_backend(monkeypatch, "litellm")
+        litellm = llm_backend.backend_module()
+
+        LiteLLM(model_name="gpt-5.4-mini", ssl_verify=False)
+
+        assert litellm.ssl_verify is False
 
 
 class TestVisionCheck:
