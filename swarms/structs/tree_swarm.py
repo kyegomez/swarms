@@ -303,11 +303,7 @@ class TreeAgent(Agent):
             bool: True if the agent is relevant, False otherwise.
         """
         # Check if any of the relevant keywords are present in the task (case-insensitive)
-        task_words = set(_tokenize(task))
-        keyword_match = any(
-            keyword.lower() in task_words
-            for keyword in self.relevant_keywords
-        )
+        keyword_match = self._keyword_hits(task) > 0
 
         # Perform embedding similarity match if keyword match is not found
         if not keyword_match and self.system_prompt_embedding:
@@ -322,6 +318,13 @@ class TreeAgent(Agent):
             return similarity >= threshold
 
         return True  # Return True if keyword match is found
+
+    def _keyword_hits(self, task: str) -> int:
+        task_words = set(_tokenize(task))
+        return sum(
+            keyword.lower() in task_words
+            for keyword in self.relevant_keywords
+        )
 
 
 class Tree:
@@ -384,6 +387,13 @@ class Tree:
             logger.info(
                 f"Searching relevant agent in tree '{self.tree_name}' for task: {task}"
             )
+        best = max(
+            self.agents,
+            key=lambda agent: agent._keyword_hits(task),
+            default=None,
+        )
+        if best is not None and best._keyword_hits(task):
+            return best
         for agent in self.agents:
             if agent.is_relevant_for_task(task):
                 return agent
@@ -464,6 +474,17 @@ class ForestSwarm:
             logger.info(
                 f"Searching for the most relevant tree for task: {task}"
             )
+        best_tree, best_agent = max(
+            (
+                (tree, agent)
+                for tree in self.trees
+                for agent in tree.agents
+            ),
+            key=lambda pair: pair[1]._keyword_hits(task),
+            default=(None, None),
+        )
+        if best_agent is not None and best_agent._keyword_hits(task):
+            return best_tree
         for tree in self.trees:
             if tree.find_relevant_agent(task):
                 return tree

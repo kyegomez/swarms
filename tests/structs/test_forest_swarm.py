@@ -622,6 +622,31 @@ def test_common_words_do_not_route_every_task_to_the_first_agent(
     assert tree.find_relevant_agent("Can you write a poem?") is None
 
 
+def test_the_agent_with_the_most_keyword_hits_wins(monkeypatch):
+    def offline(**kwargs):
+        raise ConnectionError("offline")
+
+    monkeypatch.setattr(tree_swarm, "embedding", offline)
+    general = TreeAgent(
+        agent_name="general",
+        system_prompt="You answer finance questions about budgets and savings.",
+    )
+    tax = TreeAgent(
+        agent_name="tax",
+        system_prompt="You file corporate tax returns and tax deductions.",
+    )
+    task = "Which corporate tax deductions apply this finance year?"
+
+    assert (
+        Tree("Finance", [general, tax]).find_relevant_agent(task)
+        is tax
+    )
+    forest = ForestSwarm(
+        trees=[Tree("General", [general]), Tree("Tax", [tax])]
+    )
+    assert forest.find_relevant_tree(task).tree_name == "Tax"
+
+
 def test_a_tree_agent_built_with_name_can_run_a_task(monkeypatch):
     def offline(**kwargs):
         raise ConnectionError("offline")
