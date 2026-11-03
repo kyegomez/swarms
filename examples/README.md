@@ -89,9 +89,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [2_stagehand_tools_agent.py](tools/stagehand/2_stagehand_tools_agent.py) | Stagehand tools agent |
 | [3_stagehand_mcp_agent.py](tools/stagehand/3_stagehand_mcp_agent.py) | Stagehand MCP agent |
 | [4_stagehand_multi_agent_workflow.py](tools/stagehand/4_stagehand_multi_agent_workflow.py) | Stagehand multi-agent workflow |
-| [tests/](tools/stagehand/tests/) | Stagehand tests |
-| [test_stagehand_integration.py](tools/stagehand/tests/test_stagehand_integration.py) | Stagehand integration test |
-| [test_stagehand_simple.py](tools/stagehand/tests/test_stagehand_simple.py) | Simple Stagehand test |
 
 ### API & Protocols
 
