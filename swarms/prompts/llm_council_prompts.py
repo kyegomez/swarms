@@ -177,8 +177,6 @@ Remember: The goal is honest, objective evaluation. If another model's response 
 
 def get_synthesis_prompt(
     query: str,
-    original_responses: Dict[str, str],
-    evaluations: Dict[str, str],
     id_to_member: Dict[str, str],
 ) -> str:
     """
@@ -186,37 +184,15 @@ def get_synthesis_prompt(
 
     Args:
         query: Original user query
-        original_responses: Dict mapping member names to their responses
-        evaluations: Dict mapping evaluator names to their evaluation texts
         id_to_member: Mapping from anonymous IDs to member names
 
     Returns:
         Formatted synthesis prompt
     """
-    responses_section = "\n\n".join(
-        [
-            f"=== {name} ===\n{response}"
-            for name, response in original_responses.items()
-        ]
-    )
-
-    evaluations_section = "\n\n".join(
-        [
-            f"=== Evaluation by {name} ===\n{evaluation}"
-            for name, evaluation in evaluations.items()
-        ]
-    )
-
-    return f"""As the Chairman of the LLM Council, synthesize the following information into a final, comprehensive answer.
+    return f"""As the Chairman of the LLM Council, synthesize the council's responses and evaluations above into a final, comprehensive answer.
 
 ORIGINAL QUERY:
 {query}
-
-COUNCIL MEMBER RESPONSES:
-{responses_section}
-
-COUNCIL MEMBER EVALUATIONS AND RANKINGS:
-{evaluations_section}
 
 ANONYMOUS ID MAPPING (for reference):
 {chr(10).join([f"  {aid} = {name}" for aid, name in id_to_member.items()])}
