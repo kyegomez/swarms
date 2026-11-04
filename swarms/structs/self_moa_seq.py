@@ -40,10 +40,11 @@ class SelfMoASeq(SerializableMixin):
         retry_delay: float = 1.0,
         retry_backoff_multiplier: float = 2.0,
         retry_max_delay: float = 60.0,
-        additional_kwargs: Dict[str, Any] = {},
         top_p: Optional[float] = None,
     ):
         # Store parameters
+        self.name = name
+        self.description = description
         self.model_name = model_name
         self.temperature = temperature
         self.window_size = window_size

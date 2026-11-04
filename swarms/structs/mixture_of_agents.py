@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict, List, Optional
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
@@ -325,6 +326,94 @@ class MixtureOfAgents:
                 raise; its error is recorded as that worker's answer.
         """
         return self._run(task=task, img=img)
+
+    async def arun(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        max_concurrency: Optional[int] = None,
+    ):
+        """Run the mixture on the event loop, awaiting each agent's arun.
+
+        Args:
+            task: User task for the mixture.
+            img: Optional image input forwarded to worker agents.
+            max_concurrency: Most workers running at once in a layer.
+                Defaults to ``max_workers``, or every worker if unset.
+
+        Returns:
+            The formatted mixture output, as ``run`` returns.
+
+        Raises:
+            ValueError: If max_concurrency is less than 1.
+            Exception: Whatever the aggregator raised, as ``run`` does.
+        """
+        if max_concurrency is None:
+            max_concurrency = self.max_workers
+        if max_concurrency is not None and max_concurrency < 1:
+            raise ValueError("max_concurrency must be at least 1")
+        semaphore = asyncio.Semaphore(
+            max_concurrency or len(self.agents)
+        )
+
+        async def _answer(agent: Agent, prompt: str) -> tuple:
+            async with semaphore:
+                try:
+                    output = await agent.arun(task=prompt, img=img)
+                except Exception as error:
+                    output = error
+            return agent.agent_name, agent_answer(agent, output)
+
+        self._reset_conversation()
+        for agent in self.agents:
+            agent.reset()
+
+        self.conversation.add(role="User", content=task)
+
+        worker_input = task
+        for i in range(self.layers):
+            step_output = dict(
+                await asyncio.gather(
+                    *(_answer(a, worker_input) for a in self.agents)
+                )
+            )
+
+            for agent_name, agent_output in step_output.items():
+                self.conversation.add(
+                    role=(
+                        f"{agent_name} (layer {i + 1}/{self.layers})"
+                        if self.layers > 1
+                        else agent_name
+                    ),
+                    content=agent_output,
+                )
+
+            layer_output = "\n\n".join(
+                f"{name}: {out}" for name, out in step_output.items()
+            )
+            worker_input = (
+                f"Original task: {task}\n\n"
+                f"Previous layer synthesis:\n{layer_output}"
+            )
+
+        prior, aggregator_task = split_last_turn(
+            messages_for(
+                self.aggregator_agent.agent_name, self.conversation
+            )
+        )
+        aggregator_output = await self.aggregator_agent.arun(
+            task=aggregator_task, messages=prior
+        )
+        self.conversation.add(
+            role=self.aggregator_agent.agent_name,
+            content=agent_answer(
+                self.aggregator_agent, fallback=aggregator_output
+            ),
+        )
+
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )
 
     def run_batched(self, tasks: List[str]) -> List[str]:
         """Run tasks sequentially through the same mixture instance.

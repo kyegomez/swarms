@@ -68,7 +68,6 @@ Feature-specific examples — what an agent can do.
 - [streaming_example.py](capabilities/streaming/streaming_example.py) — Token streaming
 - [agent_streaming.py](capabilities/streaming/agent_streaming.py) — Streaming agent
 - [example_streaming_tools.py](capabilities/streaming/example_streaming_tools.py) — Streaming with tools
-- [test_agent_streaming_and_loop.py](capabilities/streaming/test_agent_streaming_and_loop.py) — Streaming + loops
 
 ### prompt_caching/
 - [prompt_caching_example.py](capabilities/prompt_caching/prompt_caching_example.py) — Overview

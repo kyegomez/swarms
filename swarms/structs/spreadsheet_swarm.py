@@ -355,9 +355,14 @@ class SpreadSheetSwarm:
         Args:
             agent_name (str): The name of the agent that completed the task.
             task (str): The task that was completed.
-            result (str): The result of the completed task.
+            result (str): The result of the completed task, or the
+                exception the agent raised, recorded as "Error: ...".
         """
-        self.tasks_completed += 1
+        if isinstance(result, Exception):
+            logger.error(f"Agent {agent_name} failed: {result}")
+            result = f"Error: {result}"
+        else:
+            self.tasks_completed += 1
         self.conversation.add(role=agent_name, content=result)
         self.outputs.append(
             {
