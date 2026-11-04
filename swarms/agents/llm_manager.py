@@ -677,7 +677,7 @@ class LLMManager:
         streaming_response,
         streaming_callback: Optional[Callable[[dict], None]],
     ) -> Any:
-        """Print and forward a token_info dict for every streamed part.
+        """Forward a token_info dict for every streamed part, and print it when print_on is set.
 
         Args:
             streaming_response: The raw chunk stream from the model.
@@ -706,13 +706,15 @@ class LLMManager:
                 chunk or last_chunk[0], text, token_count, kind
             )
 
-            print(f"ResponseStream {token_info}")
+            if self.agent.print_on:
+                print(f"ResponseStream {token_info}")
 
             if streaming_callback is not None:
                 streaming_callback(token_info)
 
         complete_response = "".join(content_out)
-        print(self._format_final_chunk(last_chunk[0]))
+        if self.agent.print_on:
+            print(last_chunk[0])
 
         return tool_calls_out if tool_calls_out else complete_response
 
@@ -753,47 +755,6 @@ class LLMManager:
             "logprobs": getattr(choice, "logprobs", None),
             "timestamp": time.time(),
         }
-
-    def _format_final_chunk(self, final_chunk: Any) -> str:
-        """Render the trailing ModelResponseStream summary line."""
-        header = (
-            f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
-            f"created={getattr(final_chunk, 'created', 'N/A')}, "
-            f"model='{getattr(final_chunk, 'model', self.agent.model_name)}', "
-            f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
-            f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
-            f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
-            f"index=0, delta=Delta(provider_specific_fields=None, content=None, role=None, "
-            f"function_call=None, tool_calls=None, audio=None), logprobs=None)], "
-            f"provider_specific_fields=None"
-        )
-
-        if not (
-            final_chunk
-            and hasattr(final_chunk, "usage")
-            and final_chunk.usage
-        ):
-            return f"{header})"
-
-        usage = final_chunk.usage
-
-        return (
-            f"{header}, "
-            f"usage=Usage(completion_tokens={usage.completion_tokens}, "
-            f"prompt_tokens={usage.prompt_tokens}, "
-            f"total_tokens={usage.total_tokens}, "
-            f"completion_tokens_details=CompletionTokensDetailsWrapper("
-            f"accepted_prediction_tokens={usage.completion_tokens_details.accepted_prediction_tokens}, "
-            f"audio_tokens={usage.completion_tokens_details.audio_tokens}, "
-            f"reasoning_tokens={usage.completion_tokens_details.reasoning_tokens}, "
-            f"rejected_prediction_tokens={usage.completion_tokens_details.rejected_prediction_tokens}, "
-            f"text_tokens={usage.completion_tokens_details.text_tokens}), "
-            f"prompt_tokens_details=PromptTokensDetailsWrapper("
-            f"audio_tokens={usage.prompt_tokens_details.audio_tokens}, "
-            f"cached_tokens={usage.prompt_tokens_details.cached_tokens}, "
-            f"text_tokens={usage.prompt_tokens_details.text_tokens}, "
-            f"image_tokens={usage.prompt_tokens_details.image_tokens})))"
-        )
 
     def _call_panel_streaming(
         self,

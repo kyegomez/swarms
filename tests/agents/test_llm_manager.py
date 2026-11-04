@@ -33,6 +33,7 @@ No test makes a network call or requires an API key. Run with:
 from unittest.mock import Mock
 
 import pytest
+from litellm.types.utils import Usage
 from loguru import logger
 
 import swarms.agents.llm_manager as llm_manager
@@ -826,6 +827,29 @@ class TestCallDetailedStreaming:
         assert tokens[1]["token"] == "world"
         assert tokens[1]["token_index"] == 2
         assert "timestamp" in tokens[0]
+
+    @pytest.mark.parametrize("print_on", [False, True])
+    def test_usage_without_token_details_prints_only_when_print_on(
+        self, agent, fake_llm, capsys, print_on
+    ):
+        fake_llm.stream_return = [
+            content_chunk("hi", finish_reason="stop"),
+            FakeChunk(
+                choices=[FakeChoice(FakeDelta())],
+                usage=Usage(
+                    prompt_tokens=3,
+                    completion_tokens=1,
+                    total_tokens=4,
+                ),
+            ),
+        ]
+        agent.stream = True
+        agent.print_on = print_on
+
+        result = agent.llm_manager.call("hi", current_loop=0)
+
+        assert result == "hi"
+        assert bool(capsys.readouterr().out) is print_on
 
     def test_restores_llm_stream_flag_afterward(
         self, agent, fake_llm
