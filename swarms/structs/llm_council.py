@@ -198,6 +198,9 @@ class LLMCouncil:
                 f"[{self.name}] Collecting responses from {len(self.council_members)} members"
             )
 
+        for member in self.council_members:
+            member.reset()
+
         results_dict = run_agents_concurrently(
             self.council_members,
             task=task,
@@ -249,6 +252,9 @@ class LLMCouncil:
             )
             for member in self.council_members
         ]
+
+        for member in self.council_members:
+            member.reset()
 
         # Run evaluations concurrently using batched_grid_agent_execution
         evaluation_results = batched_grid_agent_execution(
