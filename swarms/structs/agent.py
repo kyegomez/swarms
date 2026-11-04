@@ -661,6 +661,7 @@ class Agent:
 
         Requires `use_cases` to be set and SWARMS_API_KEY to be present.
         """
+        self._sync_model_limits()
         return self.marketplace.publish()
 
     @property
@@ -2909,6 +2910,7 @@ Subtask Breakdown:
         included — so it runs a little above what the provider bills. For the
         billed figure, summed over past calls, see :attr:`usage`.
         """
+        self._sync_model_limits()
         parts = [self.short_memory.return_history_as_string()]
         if self.tools_list_dictionary:
             parts.append(json.dumps(self.tools_list_dictionary))
