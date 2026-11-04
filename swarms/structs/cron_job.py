@@ -684,9 +684,14 @@ class CronJob:
                     "max_consecutive_errors"
                 ),
             )
-            # _run starts the job's own thread without blocking
-            job._run(spec["task"], **(spec.get("kwargs") or {}))
             jobs.append(job)
+
+        try:
+            for job, spec in zip(jobs, schedules):
+                job._run(spec["task"], **(spec.get("kwargs") or {}))
+        except Exception:
+            cls.stop_many(jobs)
+            raise
 
         logger.info(
             f"run_many started {len(jobs)} job(s): "
