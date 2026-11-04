@@ -35,6 +35,13 @@ def test_the_two_agents_have_distinct_names(monkeypatch):
     ), "both agents answer to one name, so neither can be attributed"
 
 
+def test_both_agents_carry_the_duo_description():
+    duo = ReasoningDuo(agent_description="Checks tax math.")
+
+    assert duo.reasoning_agent.agent_description == "Checks tax math."
+    assert duo.main_agent.agent_description == "Checks tax math."
+
+
 def test_the_main_agent_sees_the_reasoner_as_a_labelled_turn(
     monkeypatch,
 ):

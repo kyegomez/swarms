@@ -65,7 +65,7 @@ class ReasoningDuo:
         # Distinct names: a shared one made both agents the same speaker.
         self.reasoning_agent = Agent(
             agent_name=f"{self.agent_name}-reasoning",
-            description=self.agent_description,
+            agent_description=self.agent_description,
             system_prompt=REASONING_PROMPT,
             max_loops=1,
             model_name=self.reasoning_model_name,
@@ -75,7 +75,7 @@ class ReasoningDuo:
 
         self.main_agent = Agent(
             agent_name=f"{self.agent_name}-main",
-            description=self.agent_description,
+            agent_description=self.agent_description,
             system_prompt=system_prompt,
             max_loops=1,
             model_name=model_names[1],
