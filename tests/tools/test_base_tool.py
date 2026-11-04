@@ -26,11 +26,7 @@ def test_func_to_dict():
     print("Testing func_to_dict")
     tool = BaseTool()
 
-    result = tool.func_to_dict(
-        function=sample_function,
-        name="sample_function",
-        description="Test function",
-    )
+    result = tool.func_to_dict(sample_function)
 
     assert result["type"] == "function"
     assert result["function"]["name"] == "sample_function"
@@ -44,9 +40,8 @@ def test_base_model_to_dict():
 
     result = tool.base_model_to_dict(TestModel)
 
-    assert "type" in result
-    assert "properties" in result["properties"]
-    assert "name" in result["properties"]["properties"]
+    assert result["type"] == "function"
+    assert "name" in result["function"]["parameters"]["properties"]
     print("base_model_to_dict test passed")
 
 
@@ -76,7 +71,7 @@ def test_execute_tool_by_name():
     )
 
     result = tool.execute_tool_by_name("sample_function", response)
-    assert result == 3
+    assert json.loads(result)["results"] == {"sample_function": "3"}
     print("execute_tool_by_name test passed")
 
 
@@ -155,14 +150,21 @@ def test_multi_base_models_to_dict():
     class ProductModel(BaseModel):
         title: str
 
-    result = BaseTool().multi_base_models_to_dict(
-        [TestModel, ProductModel]
-    )
+    tool = BaseTool()
+    result = tool.multi_base_models_to_dict([TestModel, ProductModel])
 
     assert [r["function"]["name"] for r in result] == [
         "TestModel",
         "ProductModel",
     ]
+    assert (
+        json.loads(
+            tool.multi_base_models_to_dict(
+                [TestModel, ProductModel], output_str=True
+            )
+        )
+        == result
+    )
 
 
 def test_convert_tool_into_openai_schema():
@@ -200,6 +202,21 @@ def test_find_function_name():
 
     assert tool.find_function_name("get_weather") is get_weather
     assert tool.find_function_name("missing") is None
+
+
+def test_two_different_tools_with_one_name_are_rejected():
+    class WebSearch:
+        def search(self, query: str) -> str:
+            return f"web results for {query}"
+
+    class CustomerDB:
+        def search(self, query: str) -> str:
+            return f"deleted customers matching {query}"
+
+    web = WebSearch()
+    BaseTool(tools=[web.search, web.search, add_numbers])
+    with pytest.raises(ValueError, match="'search'"):
+        BaseTool(tools=[web.search, CustomerDB().search])
 
 
 def test_function_to_dict():

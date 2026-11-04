@@ -1,3 +1,4 @@
+import asyncio
 import copy
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -7,6 +8,10 @@ from swarms.structs.execution_utils import (
     run_concurrently,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -88,10 +93,7 @@ def default_consensus_agent(
         agent_name=name,
         agent_description=description,
         model_name=model_name,
-        max_loops=1,
         system_prompt=system_prompt,
-        dynamic_context_window=True,
-        dynamic_temperature_enabled=True,
         streaming_on=streaming_on_value,
         *args,
         **kwargs,
@@ -130,6 +132,7 @@ class MajorityVoting:
         consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
         consensus_agent_model_name: str = "gpt-5.4",
         additional_consensus_agent_kwargs: dict = {},
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -150,8 +153,12 @@ class MajorityVoting:
         self.output_type = output_type
         self.consensus_agent_prompt = consensus_agent_prompt
 
+        self.channel = channel
         self.conversation = Conversation(
-            time_enabled=False, *args, **kwargs
+            time_enabled=False,
+            channel=channel,
+            *args,
+            **kwargs,
         )
 
         self.consensus_agent = default_consensus_agent(
@@ -163,6 +170,11 @@ class MajorityVoting:
         )
 
         self.reliability_check()
+        claim_agents(
+            [*(self.agents or []), self.consensus_agent],
+            channel,
+            self.name,
+        )
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -217,13 +229,8 @@ class MajorityVoting:
 
             for future in as_completed(future_to_agent):
                 agent = future_to_agent[future]
-                try:
-                    result = future.result()
-                except Exception as error:
-                    answers[agent.agent_name] = error
-                    continue
                 answers[agent.agent_name] = agent_answer(
-                    agent, fallback=result
+                    agent, fallback=future.result()
                 )
 
         return answers
@@ -255,7 +262,9 @@ class MajorityVoting:
         """
 
         # A reused instance would otherwise carry the previous task's votes
-        self.conversation = Conversation(time_enabled=False)
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
 
         self.conversation.add(
             role="user",
@@ -369,4 +378,60 @@ class MajorityVoting:
             tasks,
             *args,
             **kwargs,
+        )
+
+    async def arun(
+        self, task: str, max_concurrency: Optional[int] = None
+    ) -> Any:
+        """
+        Run the vote on the event loop, awaiting each agent's arun.
+
+        Args:
+            task (str): The task to be performed by the agents.
+            max_concurrency (Optional[int]): Most voters running at once.
+                Defaults to None, which runs every voter at once.
+
+        Returns:
+            Any: The conversation formatted by output_type, as run returns.
+
+        Raises:
+            ValueError: If max_concurrency is less than 1.
+        """
+        if max_concurrency is not None and max_concurrency < 1:
+            raise ValueError("max_concurrency must be at least 1")
+        semaphore = asyncio.Semaphore(
+            max_concurrency or len(self.agents)
+        )
+
+        async def _answer(agent: Agent) -> Any:
+            prior, turn = split_last_turn(
+                messages_for(agent.agent_name, self.conversation)
+            )
+            async with semaphore:
+                result = await agent.arun(task=turn, messages=prior)
+            return agent_answer(agent, fallback=result)
+
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
+        self.conversation.add(role="user", content=task)
+
+        for _ in range(self.max_loops):
+            votes = await asyncio.gather(
+                *(_answer(agent) for agent in self.agents)
+            )
+            for agent, vote in zip(self.agents, votes):
+                self.conversation.add(
+                    role=agent.agent_name, content=vote
+                )
+
+            self.consensus_agent.streaming_on = False
+            self.conversation.add(
+                role=self.consensus_agent.agent_name,
+                content=await _answer(self.consensus_agent),
+            )
+
+        self.workspace.save_conversation(self.conversation)
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
         )

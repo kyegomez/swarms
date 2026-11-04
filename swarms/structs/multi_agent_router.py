@@ -114,7 +114,6 @@ class MultiAgentRouter:
         agents (List[Callable]): List of agents managed by the router. Name lookups go through `find_agent_by_name`.
         model (str): The model to use for the boss agent.
         temperature (float): The temperature for the boss agent's model.
-        shared_memory_system (callable): A shared memory system for agents to query.
         output_type (OutputType): The type of output expected from the agents.
         print_on (bool): Whether to print the boss agent's decision.
         system_prompt (str): Custom system prompt for the router.
@@ -131,7 +130,6 @@ class MultiAgentRouter:
         agents: List[Callable] = None,
         model: str = "gpt-5.4",
         temperature: Optional[float] = None,
-        shared_memory_system: callable = None,
         output_type: OutputType = "dict",
         print_on: bool = True,
         system_prompt: str = None,
@@ -148,7 +146,6 @@ class MultiAgentRouter:
             agents (List[Agent], optional): A list of agents to be managed by the router. Defaults to an empty list.
             model (str, optional): The model to use for the boss agent. Defaults to "gpt-5.4".
             temperature (float, optional): The temperature for the boss agent's model. Defaults to None.
-            shared_memory_system (callable, optional): A shared memory system for agents to query. Defaults to None.
             output_type (OutputType, optional): The type of output expected from the agents. Defaults to "dict".
             print_on (bool, optional): Whether to print the boss agent's decision. Defaults to True.
             system_prompt (str, optional): Custom system prompt for the router. Defaults to None.
@@ -157,7 +154,6 @@ class MultiAgentRouter:
         self.id = id or generate_id("multi-agent-router")
         self.name = name
         self.description = description
-        self.shared_memory_system = shared_memory_system
         self.output_type = output_type
         self.model = model
         self.temperature = temperature

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.tools.dynamic_tool_loader import _tokenize
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger(log_folder="tree_swarm")
@@ -25,9 +26,7 @@ def extract_keywords(prompt: str, top_n: int = 5) -> List[str]:
     Returns:
         List[str]: List of extracted keywords
     """
-    words = prompt.lower().split()
-    filtered_words = [word for word in words if word.isalnum()]
-    word_counts = Counter(filtered_words)
+    word_counts = Counter(_tokenize(prompt))
     return [word for word, _ in word_counts.most_common(top_n)]
 
 
@@ -155,13 +154,12 @@ class TreeAgent(Agent):
             *args: Additional positional arguments
             **kwargs: Additional keyword arguments
         """
-        agent_name = agent_name
+        if description is not None:
+            kwargs.setdefault("agent_description", description)
         super().__init__(
-            name=name,
-            description=description,
             system_prompt=system_prompt,
             model_name=model_name,
-            agent_name=agent_name,
+            agent_name=agent_name or name,
             *args,
             **kwargs,
         )
@@ -305,8 +303,9 @@ class TreeAgent(Agent):
             bool: True if the agent is relevant, False otherwise.
         """
         # Check if any of the relevant keywords are present in the task (case-insensitive)
+        task_words = set(_tokenize(task))
         keyword_match = any(
-            keyword.lower() in task.lower()
+            keyword.lower() in task_words
             for keyword in self.relevant_keywords
         )
 
@@ -420,7 +419,6 @@ class ForestSwarm:
         name: str = "default-forest-swarm",
         description: str = "Standard forest swarm",
         trees: List[Tree] = [],
-        shared_memory: Any = None,
         rules: str = None,
         verbose: bool = False,
         *args,
@@ -433,7 +431,6 @@ class ForestSwarm:
             name (str): Name of the forest swarm
             description (str): Description of the forest swarm
             trees (List[Tree]): A list of trees in the structure
-            shared_memory (Any): Shared memory object for inter-tree communication
             rules (str): Rules governing the forest swarm behavior
             verbose (bool): Whether to enable verbose logging
             *args: Additional positional arguments
@@ -442,7 +439,6 @@ class ForestSwarm:
         self.name = name
         self.description = description
         self.trees = trees
-        self.shared_memory = shared_memory
         self.verbose = verbose
         # Pass verbose to all trees
         for tree in self.trees:

@@ -180,16 +180,6 @@ class ToolStorage:
 
         self.tool_storage_schema.tools.append(log)
 
-    def add_multiple_tools_to_log(
-        self,
-        names: List[str],
-        docs: List[str],
-        *args,
-        **kwargs,
-    ):
-        for name, docs in zip(names, docs):
-            self.add_tool_to_log(name, docs)
-
 
 # Decorator
 def tool_registry(storage: ToolStorage = None) -> Callable:

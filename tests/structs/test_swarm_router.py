@@ -1,3 +1,5 @@
+import json
+from collections import Counter
 from unittest.mock import patch
 
 import pytest
@@ -76,6 +78,25 @@ def test_initialization_with_agent_rearrange_config():
 
     assert router.swarm_type == "AgentRearrange"
     assert router.rearrange_flow == "ResearchAgent -> CodeAgent"
+
+
+def test_round_robin_returns_the_router_output_type():
+    """RoundRobin formats its result with the router's output_type."""
+    router = SwarmRouter(
+        agents=create_sample_agents(),
+        swarm_type="RoundRobin",
+        output_type="list",
+    )
+
+    with patch.object(Agent, "run", return_value="2"):
+        result = router.run("What is 1+1?")
+
+    assert router.swarm.output_type == "list"
+    assert [message["role"] for message in result] == [
+        "User",
+        "ResearchAgent",
+        "CodeAgent",
+    ]
 
 
 # ============================================================================
@@ -402,6 +423,31 @@ def test_run_with_mixture_of_agents():
     assert result is not None
 
 
+def test_mixture_of_agents_keeps_the_aggregator_out_of_the_workers():
+    """The last agent only aggregates; it does not also answer as a worker."""
+    router = SwarmRouter(
+        agents=create_sample_agents(),
+        swarm_type="MixtureOfAgents",
+        max_loops=1,
+    )
+    calls = Counter()
+
+    def fake_run(agent, task=None, *args, **kwargs):
+        calls[agent.agent_name] += 1
+        return f"{agent.agent_name} answer"
+
+    with patch.object(
+        Agent, "run", autospec=True, side_effect=fake_run
+    ):
+        router.run("What is 1+1?")
+
+    assert calls == {"ResearchAgent": 1, "CodeAgent": 1}
+    assert [a.agent_name for a in router.swarm.agents] == [
+        "ResearchAgent"
+    ]
+    assert router.swarm.aggregator_agent.agent_name == "CodeAgent"
+
+
 def test_run_with_sequential_workflow_type():
     """SwarmRouter dispatches to SequentialWorkflow."""
     sample_agents = create_sample_agents()
@@ -445,6 +491,35 @@ def test_run_with_group_chat():
 
     result = router.run("What is 1+1?")
     assert result is not None
+
+
+def test_group_chat_lets_an_agent_speak_at_the_default_max_loops():
+    """max_loops=1 gives the chat one agent turn, not zero."""
+    router = SwarmRouter(
+        agents=create_sample_agents(), swarm_type="GroupChat"
+    )
+
+    def fake_run(agent, task=None, *args, **kwargs):
+        score = 0.9 if agent.agent_name == "ResearchAgent" else 0.0
+        arguments = {"score": score, "message": "1+1 is 2."}
+        return [
+            {
+                "function": {
+                    "name": "respond",
+                    "arguments": json.dumps(arguments),
+                }
+            }
+        ]
+
+    with patch.object(
+        Agent, "run", autospec=True, side_effect=fake_run
+    ):
+        result = router.run("What is 1+1?")
+
+    assert [message["role"] for message in result] == [
+        "User",
+        "ResearchAgent",
+    ]
 
 
 def test_run_with_multi_agent_router():
@@ -654,6 +729,32 @@ class TestConcurrentRun:
         r = self._router(boom)
         with pytest.raises(ValueError, match="nope"):
             r.concurrent_run(["a"])
+
+
+def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
+    from swarms import Agent
+    from swarms.structs.file_channel import FileChannel
+
+    channel = FileChannel(tmp_path / "run.md")
+    agents = [
+        Agent(
+            agent_name="A",
+            model_name="gpt-4o",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+    ]
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        channel=channel,
+    )
+
+    swarm = router._create_swarm()
+
+    assert swarm.channel is channel
+    assert swarm.agent_rearrange.conversation.channel is channel
 
 
 if __name__ == "__main__":
@@ -1151,6 +1252,30 @@ def test_usage_counts_a_shared_agent_once():
     router._swarm_cache["fake"] = type("S", (), {"agents": [agent]})()
 
     assert router.usage["input_tokens"] == 100
+
+
+@pytest.mark.parametrize(
+    "swarm_type, attribute",
+    [("HeavySwarm", "agents"), ("CouncilAsAJudge", "judge_agents")],
+)
+def test_usage_includes_agents_a_swarm_holds_in_a_dict(
+    swarm_type, attribute
+):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        router = SwarmRouter(
+            name="usage-router",
+            agents=[_agent_with_usage("A", 0, 0)],
+            swarm_type=swarm_type,
+            autosave=False,
+        )
+        held = list(
+            getattr(router._create_swarm(), attribute).values()
+        )
+    assert held
+    for agent in held:
+        agent._add_usage({"input_tokens": 10, "total_tokens": 10})
+
+    assert router.usage["input_tokens"] == 10 * len(held)
 
 
 def _stub_council_run(agent, reply, calls):

@@ -40,7 +40,6 @@ if __name__ == "__main__":
         agents=agents,
         max_loops=10,
         threshold=0.5,
-        idle_timeout=8.0,
     )
 
     history = chat.run(

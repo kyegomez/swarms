@@ -458,6 +458,31 @@ def test_run_basic():
     assert result is not None
 
 
+def test_saved_conversation_does_not_leak_into_later_runs(
+    monkeypatch, tmp_path
+):
+    """A saved transcript must not seed the next run or a new pipeline."""
+    monkeypatch.chdir(tmp_path)
+    pipeline = _make_pipeline("A", "B")
+    pipeline.output_type = "dict"
+
+    pipeline.run("first task")
+    pipeline.conversation.save_as_json()
+
+    second = pipeline.run("second task")
+    fresh = _make_pipeline("A", "B")
+    fresh.output_type = "dict"
+    third = fresh.run("third task")
+
+    for messages, task in (
+        (second, "second task"),
+        (third, "third task"),
+    ):
+        contents = " ".join(str(m["content"]) for m in messages)
+        assert task in contents
+        assert "first task" not in contents
+
+
 def test_run_with_different_output_types():
     """Test run with different output types."""
     agents = create_sample_agents()
@@ -1628,3 +1653,87 @@ def test_concurrent_step_records_answers_not_transcripts():
     }
     assert recorded["B"] == "B-answer"
     assert recorded["C"] == "C-answer"
+
+
+class _RecordingSwarm:
+    """A swarm stand-in that records each task it is given."""
+
+    def __init__(self, name):
+        self.name = name
+        self.tasks = []
+
+    def run(self, task, img=None):
+        self.tasks.append(task)
+        return f"{self.name}-answer"
+
+
+def test_nested_swarm_runs_as_a_sequential_step():
+    """A swarm in the flow reads the conversation so far and records its answer."""
+    agents, calls = _recording_agents(["A", "B"])
+    swarm = _RecordingSwarm("Team")
+    rearrange = AgentRearrange(
+        agents=[agents[0], swarm, agents[1]],
+        flow="A -> Team -> B",
+        max_loops=1,
+    )
+    rearrange.run("plan the launch")
+
+    assert len(swarm.tasks) == 1
+    assert "plan the launch" in swarm.tasks[0]
+    assert "A: A-answer" in swarm.tasks[0]
+    recorded = {
+        m["role"]: m["content"]
+        for m in rearrange.conversation.conversation_history
+    }
+    assert recorded["Team"] == "Team-answer"
+    assert calls[-1]["task"] == "Team: Team-answer"
+    assert rearrange.agents[1].swarm is swarm
+
+
+def test_nested_swarm_runs_in_a_parallel_step():
+    """A swarm can share a parallel step with an agent."""
+    agents, _ = _recording_agents(["A", "B"])
+    swarm = _RecordingSwarm("Team")
+    rearrange = AgentRearrange(
+        agents=agents + [swarm], flow="A -> Team, B", max_loops=1
+    )
+    rearrange.run("go")
+
+    assert "A: A-answer" in swarm.tasks[0]
+    recorded = {
+        m["role"]: m["content"]
+        for m in rearrange.conversation.conversation_history
+    }
+    assert recorded["Team"] == "Team-answer"
+    assert recorded["B"] == "B-answer"
+
+
+def test_nested_swarm_can_repeat_in_the_flow():
+    """A swarm can run in more than one step and sees its earlier answer."""
+    agents, _ = _recording_agents(["A"])
+    swarm = _RecordingSwarm("Team")
+    rearrange = AgentRearrange(
+        agents=[swarm] + agents, flow="Team -> A -> Team", max_loops=1
+    )
+    rearrange.run("go")
+
+    assert len(swarm.tasks) == 2
+    assert "Team: Team-answer" in swarm.tasks[1]
+    assert "A: A-answer" in swarm.tasks[1]
+
+
+def test_nested_swarm_streams_its_output_as_one_chunk():
+    """Streaming a flow yields a swarm's whole output at once."""
+    rearrange = AgentRearrange(
+        agents=[_RecordingSwarm("Team")], flow="Team", max_loops=1
+    )
+
+    assert list(rearrange.run_stream("go")) == [
+        ("Team", "Team-answer")
+    ]
+
+
+def test_nested_swarm_without_a_name_is_rejected():
+    """A swarm needs a name for the flow to reference it."""
+    with pytest.raises(ValueError, match="needs a name"):
+        AgentRearrange(agents=[_RecordingSwarm("")], flow="x")

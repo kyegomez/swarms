@@ -195,150 +195,6 @@ def fake_llm(agent):
 
 
 ########################################################
-# Model selection & fallback rotation
-########################################################
-
-
-class TestGetAvailableModels:
-    def test_uses_fallback_models_list_verbatim(self, agent):
-        agent.fallback_models = ["m1", "m2", "m3"]
-        result = agent.llm_manager.get_available_models()
-        assert result == ["m1", "m2", "m3"]
-        # It's a copy, not the same list object.
-        assert result is not agent.fallback_models
-
-    def test_builds_from_model_name_and_fallback_name(self, agent):
-        agent.fallback_models = []
-        agent.model_name = "primary"
-        agent.fallback_model_name = "secondary"
-        assert agent.llm_manager.get_available_models() == [
-            "primary",
-            "secondary",
-        ]
-
-    def test_deduplicates_identical_fallback_name(self, agent):
-        agent.fallback_models = []
-        agent.model_name = "same-model"
-        agent.fallback_model_name = "same-model"
-        assert agent.llm_manager.get_available_models() == [
-            "same-model"
-        ]
-
-    def test_no_model_name_only_fallback(self, agent):
-        agent.fallback_models = []
-        agent.model_name = None
-        agent.fallback_model_name = "only-fallback"
-        assert agent.llm_manager.get_available_models() == [
-            "only-fallback"
-        ]
-
-    def test_nothing_configured_returns_empty(self, agent):
-        agent.fallback_models = []
-        agent.model_name = None
-        agent.fallback_model_name = None
-        assert agent.llm_manager.get_available_models() == []
-
-
-class TestGetCurrentModel:
-    def test_returns_model_at_index(self, agent):
-        agent.fallback_models = ["a", "b"]
-        agent.current_model_index = 0
-        assert agent.llm_manager.get_current_model() == "a"
-        agent.current_model_index = 1
-        assert agent.llm_manager.get_current_model() == "b"
-
-    def test_out_of_range_falls_back_to_first_model(self, agent):
-        agent.fallback_models = ["a", "b"]
-        agent.current_model_index = 5
-        assert agent.llm_manager.get_current_model() == "a"
-
-    def test_out_of_range_with_no_models_uses_default(self, agent):
-        agent.fallback_models = []
-        agent.model_name = None
-        agent.fallback_model_name = None
-        agent.current_model_index = 0
-        assert agent.llm_manager.get_current_model() == "gpt-5.4"
-
-
-class TestSwitchToNextModel:
-    def test_advances_index_updates_model_and_rebuilds_llm(
-        self, agent, fake_llm
-    ):
-        agent.fallback_models = ["gpt-4o-mini", "gpt-4o"]
-        agent.current_model_index = 0
-        agent.model_name = "gpt-4o-mini"
-
-        result = agent.llm_manager.switch_to_next_model()
-
-        assert result is True
-        assert agent.current_model_index == 1
-        assert agent.model_name == "gpt-4o"
-        # llm was rebuilt into a real LiteLLM instance, no longer the fake.
-        assert isinstance(agent.llm, LiteLLM)
-        assert agent.llm.model_name == "gpt-4o"
-
-    def test_returns_false_when_models_are_exhausted(
-        self, agent, fake_llm
-    ):
-        agent.fallback_models = ["gpt-4o-mini", "gpt-4o"]
-        agent.current_model_index = 1
-        agent.model_name = "gpt-4o"
-
-        result = agent.llm_manager.switch_to_next_model()
-
-        assert result is False
-        # Nothing changed.
-        assert agent.current_model_index == 1
-        assert agent.model_name == "gpt-4o"
-        assert agent.llm is fake_llm
-
-
-class TestResetModelIndex:
-    def test_returns_to_primary_model(self, agent, fake_llm):
-        agent.fallback_models = ["gpt-4o-mini", "gpt-4o"]
-        agent.current_model_index = 1
-        agent.model_name = "gpt-4o"
-
-        agent.llm_manager.reset_model_index()
-
-        assert agent.current_model_index == 0
-        assert agent.model_name == "gpt-4o-mini"
-        assert isinstance(agent.llm, LiteLLM)
-        assert agent.llm.model_name == "gpt-4o-mini"
-
-    def test_returns_to_primary_after_fallback_model_name_switch(
-        self, agent, fake_llm
-    ):
-        agent.fallback_models = []
-        agent.current_model_index = 0
-        agent.model_name = "gpt-4o-mini"
-        agent.fallback_model_name = "gpt-4o"
-
-        assert agent.llm_manager.switch_to_next_model() is True
-        assert agent.fallback_models == ["gpt-4o-mini", "gpt-4o"]
-        assert agent.current_model_index == 1
-        assert agent.llm.model_name == "gpt-4o"
-        assert agent.llm_manager.is_fallback_available() is True
-
-        agent.llm_manager.reset_model_index()
-
-        assert agent.model_name == "gpt-4o-mini"
-        assert agent.llm.model_name == "gpt-4o-mini"
-
-
-class TestIsFallbackAvailable:
-    def test_true_with_multiple_models(self, agent):
-        agent.fallback_models = ["a", "b"]
-        assert agent.llm_manager.is_fallback_available() is True
-
-    def test_false_with_a_single_model(self, agent):
-        agent.fallback_models = []
-        agent.model_name = "only-one"
-        agent.fallback_model_name = None
-        assert agent.llm_manager.is_fallback_available() is False
-
-
-########################################################
 # Construction: build()
 ########################################################
 
@@ -415,6 +271,45 @@ class TestBuild:
         agent.tools_list_dictionary = []
         result = agent.llm_manager.build()
         assert result.tools_list_dictionary is None
+
+    def test_stopping_token_is_sent_as_a_stop_sequence(self, agent):
+        agent.stopping_token = "<END>"
+        result = agent.llm_manager.build()
+        assert result.init_kwargs == {"stop": ["<END>"]}
+
+    def test_no_stopping_token_sends_no_stop(self, agent):
+        assert agent.stopping_token is None
+        result = agent.llm_manager.build()
+        assert "stop" not in result.init_kwargs
+
+    def test_stopping_token_is_not_added_to_the_system_prompt(
+        self, agent
+    ):
+        agent.stopping_token = "<END>"
+        result = agent.llm_manager.build()
+        assert "<END>" not in (result.system_prompt or "")
+
+    def test_llm_args_stop_overrides_stopping_token(self, agent):
+        agent.stopping_token = "<END>"
+        agent.llm_args = {"stop": ["###"]}
+        result = agent.llm_manager.build()
+        assert result.init_kwargs == {"stop": ["###"]}
+
+    def test_preset_stopping_token_applies_only_when_enabled(self):
+        def make(**kwargs):
+            return Agent(
+                agent_name="TestAgent",
+                model_name="gpt-4o-mini",
+                persistent_memory=False,
+                print_on=False,
+                max_loops=1,
+                **kwargs,
+            )
+
+        assert make().stopping_token is None
+        preset = make(preset_stopping_token=True)
+        assert preset.stopping_token == "<DONE>"
+        assert preset.llm.init_kwargs["stop"] == ["<DONE>"]
 
 
 ########################################################
@@ -678,6 +573,162 @@ class TestStreamWithToolCollection:
 
 
 ########################################################
+# stream_parts()
+########################################################
+
+
+def tool_chunk(*fragments):
+    return FakeChunk(
+        choices=[FakeChoice(FakeDelta(tool_calls=list(fragments)))]
+    )
+
+
+def streamed(agent, chunks):
+    tool_calls, content = [], []
+    parts = list(
+        agent.llm_manager.stream_parts(
+            iter(chunks), tool_calls, content
+        )
+    )
+    text = "".join(t for _, t, _ in parts)
+    return parts, text, tool_calls, "".join(content)
+
+
+class TestStreamParts:
+    def test_plain_text_passes_through_unchanged(self, agent):
+        parts, text, tool_calls, content = streamed(
+            agent, [content_chunk("hel"), content_chunk("lo")]
+        )
+        assert [t for _, t, _ in parts] == ["hel", "lo"]
+        assert text == content == "hello"
+        assert tool_calls == []
+
+    def test_text_then_tool_call_streams_both(self, agent):
+        _, text, tool_calls, content = streamed(
+            agent,
+            [
+                content_chunk("Checking."),
+                tool_chunk(
+                    FakeToolCallDelta(0, id="c0", name="get_")
+                ),
+                tool_chunk(
+                    FakeToolCallDelta(
+                        0, name="weather", arguments='{"city":'
+                    )
+                ),
+                tool_chunk(FakeToolCallDelta(0, arguments='"NYC"}')),
+            ],
+        )
+        assert text == (
+            'Checking.\n[tool call] get_weather {"city":"NYC"}\n'
+        )
+        assert content == "Checking."
+        assert tool_calls[0]["function"]["name"] == "get_weather"
+
+    def test_parallel_tool_calls_each_get_a_header(self, agent):
+        _, text, tool_calls, _ = streamed(
+            agent,
+            [
+                tool_chunk(FakeToolCallDelta(0, id="c0", name="add")),
+                tool_chunk(FakeToolCallDelta(0, arguments="{}")),
+                tool_chunk(FakeToolCallDelta(1, id="c1", name="sub")),
+                tool_chunk(FakeToolCallDelta(1, arguments="{}")),
+            ],
+        )
+        assert text == "[tool call] add {}\n[tool call] sub {}\n"
+        assert [c["id"] for c in tool_calls] == ["c0", "c1"]
+
+    def test_returning_to_a_tool_call_repeats_its_name(self, agent):
+        _, text, _, _ = streamed(
+            agent,
+            [
+                tool_chunk(
+                    FakeToolCallDelta(0, id="c0", name="add"),
+                    FakeToolCallDelta(1, id="c1", name="sub"),
+                ),
+                tool_chunk(
+                    FakeToolCallDelta(0, arguments="{}"),
+                    FakeToolCallDelta(1, arguments="{}"),
+                ),
+            ],
+        )
+        assert text == (
+            "[tool call] add\n[tool call] sub\n"
+            "[tool call] add {}\n[tool call] sub {}\n"
+        )
+
+    def test_skips_chunks_without_choices(self, agent):
+        _, text, _, content = streamed(
+            agent,
+            [
+                FakeNoChoices(),
+                FakeChunk(choices=[]),
+                content_chunk("hi"),
+            ],
+        )
+        assert text == content == "hi"
+
+    def test_next_call_starts_on_a_new_line_after_text(self, agent):
+        streamed(agent, [content_chunk("first")])
+        _, text, _, content = streamed(
+            agent,
+            [
+                tool_chunk(
+                    FakeToolCallDelta(
+                        0, id="c0", name="f", arguments="{}"
+                    )
+                )
+            ],
+        )
+        assert text == "\n[tool call] f {}\n"
+
+        _, text, _, content = streamed(
+            agent, [content_chunk("again")]
+        )
+        assert (text, content) == ("again", "again")
+
+
+class TestRunSideCall:
+    def test_runs_plainly_when_streaming_is_off(self, agent):
+        side = FakeLLM(non_stream_return="summary")
+
+        assert (
+            agent.llm_manager.run_side_call(side, "sum") == "summary"
+        )
+        assert side.stream is False
+
+    def test_streams_to_the_callback_of_the_run_in_progress(
+        self, agent
+    ):
+        side = FakeLLM(
+            stream_return=[content_chunk("su"), content_chunk("m")]
+        )
+        tokens = []
+        agent._run_streaming_callback = tokens.append
+
+        result = agent.llm_manager.run_side_call(side, "sum")
+
+        assert result == "sum"
+        assert tokens == ["su", "m"]
+
+    def test_streams_detailed_token_info_when_stream_is_on(
+        self, agent
+    ):
+        side = FakeLLM(stream_return=[content_chunk("ok")])
+        agent.stream = True
+        tokens = []
+
+        result = agent.llm_manager.run_side_call(
+            side, "sum", streaming_callback=tokens.append
+        )
+
+        assert result == "ok"
+        assert [(t["type"], t["token"]) for t in tokens] == [
+            ("content", "ok")
+        ]
+
+
+########################################################
 # extract_thinking_from_stream()
 ########################################################
 
@@ -839,8 +890,10 @@ class TestCallDetailedStreaming:
                 },
             }
         ]
-        # No content chunks -> the callback never fired.
-        assert tokens == []
+        assert "".join(t["token"] for t in tokens) == (
+            '[tool call] get_weather {"city":"NYC"}\n'
+        )
+        assert {t["type"] for t in tokens} == {"tool_call"}
 
     def test_non_iterable_string_response_falls_through(
         self, agent, fake_llm
@@ -867,7 +920,7 @@ class TestCallPanelStreaming:
             content_chunk("B", finish_reason="stop"),
         ]
 
-    def test_callback_path_forwards_content_and_swallows_thinking(
+    def test_callback_path_forwards_thinking_then_content(
         self, agent, fake_llm
     ):
         fake_llm.stream_return = self._chunks()
@@ -882,7 +935,7 @@ class TestCallPanelStreaming:
         )
 
         assert result == "AB"
-        assert tokens == ["A", "B"]
+        assert "".join(tokens) == "[thinking] hmm let me think\nAB"
 
     def test_callback_streams_without_streaming_on(
         self, agent, fake_llm
@@ -895,7 +948,7 @@ class TestCallPanelStreaming:
         )
 
         assert result == "AB"
-        assert tokens == ["A", "B"]
+        assert "".join(tokens) == "[thinking] hmm let me think\nAB"
         assert "imgs" not in fake_llm.calls[-1]["kwargs"]
 
         agent.llm_manager.call(
@@ -985,114 +1038,11 @@ class TestCallPanelStreaming:
 
 
 ########################################################
-# handle_fallback_execution()
-########################################################
-
-
-class TestHandleFallbackExecution:
-    def test_no_fallbacks_calls_handle_run_error_and_returns_none(
-        self, agent
-    ):
-        agent.fallback_models = []
-        agent.fallback_model_name = None
-        agent._handle_run_error = Mock()
-        original_error = RuntimeError("boom")
-
-        result = agent.llm_manager.handle_fallback_execution(
-            task="t", original_error=original_error
-        )
-
-        assert result is None
-        agent._handle_run_error.assert_called_once_with(
-            original_error
-        )
-
-    def test_switches_model_and_reruns_on_success(self, agent):
-        agent.fallback_model_name = "gpt-4o"
-        agent.run = Mock(return_value="fallback result")
-
-        result = agent.llm_manager.handle_fallback_execution(
-            task="t", original_error=RuntimeError("boom")
-        )
-
-        assert result == "fallback result"
-        assert agent.model_name == "gpt-4o"
-        assert agent.current_model_index == 1
-        agent.run.assert_called_once()
-
-    def test_recurses_to_next_model_when_fallback_also_fails(
-        self, agent
-    ):
-        agent.fallback_models = ["m1", "m2", "m3"]
-        agent.model_name = "m1"
-        agent.run = Mock(
-            side_effect=[Exception("fallback 1 also failed"), "ok"]
-        )
-
-        result = agent.llm_manager.handle_fallback_execution(
-            task="t", original_error=RuntimeError("boom")
-        )
-
-        assert result == "ok"
-        assert agent.model_name == "m3"
-        assert agent.current_model_index == 2
-        assert agent.run.call_count == 2
-
-    def test_exhausted_after_no_switch_calls_handle_run_error(
-        self, agent
-    ):
-        agent.fallback_models = ["m1", "m2"]
-        agent.model_name = "m2"
-        agent.current_model_index = 1  # already at the last model
-        agent._handle_run_error = Mock()
-        original_error = RuntimeError("boom")
-
-        result = agent.llm_manager.handle_fallback_execution(
-            task="t", original_error=original_error
-        )
-
-        assert result is None
-        agent._handle_run_error.assert_called_once_with(
-            original_error
-        )
-
-
-########################################################
 # Agent.* thin wrapper delegation
 ########################################################
 
 
 class TestAgentWrapperDelegation:
-    def test_get_available_models_delegates(self, agent):
-        agent.llm_manager.get_available_models = Mock(
-            return_value=["x"]
-        )
-        assert agent.get_available_models() == ["x"]
-        agent.llm_manager.get_available_models.assert_called_once()
-
-    def test_get_current_model_delegates(self, agent):
-        agent.llm_manager.get_current_model = Mock(
-            return_value="model-x"
-        )
-        assert agent.get_current_model() == "model-x"
-
-    def test_switch_to_next_model_delegates(self, agent):
-        agent.llm_manager.switch_to_next_model = Mock(
-            return_value=True
-        )
-        assert agent.switch_to_next_model() is True
-
-    def test_reset_model_index_delegates(self, agent):
-        agent.llm_manager.reset_model_index = Mock()
-        agent.reset_model_index()
-        agent.llm_manager.reset_model_index.assert_called_once()
-
-    def test_is_fallback_available_delegates(self, agent):
-        agent.llm_manager.is_fallback_available = Mock(
-            return_value=True
-        )
-        assert agent.is_fallback_available() is True
-
     def test_check_model_supports_utilities_delegates(self, agent):
         agent.llm_manager.check_model_supports_utilities = Mock(
             return_value=None
@@ -1123,16 +1073,6 @@ class TestAgentWrapperDelegation:
             current_loop=2,
             streaming_callback=None,
         )
-
-    def test_handle_fallback_execution_delegates(self, agent):
-        agent.llm_manager.handle_fallback_execution = Mock(
-            return_value="fb-result"
-        )
-        result = agent._handle_fallback_execution(
-            task="t", original_error=ValueError("x")
-        )
-        assert result == "fb-result"
-        agent.llm_manager.handle_fallback_execution.assert_called_once()
 
     def test_stream_with_tool_collection_delegates(self, agent):
         agent.llm_manager.stream_with_tool_collection = Mock(
@@ -1177,17 +1117,14 @@ class TestChunksWithNothingToShow:
         )
         assert agent.llm_manager._collect_stream(stream) == "hi"
 
-    def test_panel_shows_thinking_after_a_role_only_chunk(
+    def test_panel_streams_thinking_after_a_role_only_chunk(
         self, agent, monkeypatch
     ):
-        panels = Mock()
-        monkeypatch.setattr(
-            llm_manager.formatter, "print_thinking_panel", panels
-        )
+        shown = []
         monkeypatch.setattr(
             llm_manager.formatter,
             "print_streaming_panel",
-            lambda chunks, **kwargs: "".join(map(str, chunks)),
+            lambda parts, **kwargs: shown.extend(t for t, _ in parts),
         )
         stream = iter(
             [
@@ -1199,6 +1136,9 @@ class TestChunksWithNothingToShow:
             ]
         )
 
-        agent.llm_manager._stream_to_panel(stream, [], current_loop=1)
+        result = agent.llm_manager._stream_to_panel(
+            stream, [], current_loop=1
+        )
 
-        assert panels.call_args.args[0] == "hmm"
+        assert "".join(shown) == "[thinking] hmm\nanswer"
+        assert result == "answer"

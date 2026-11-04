@@ -8,7 +8,6 @@ This directory contains examples demonstrating various tool integrations and usa
 ## Base Tool Examples
 - [base_tool_examples.py](base_tool_examples/base_tool_examples.py) - Core base tool functionality
 - [conver_funcs_to_schema.py](base_tool_examples/conver_funcs_to_schema.py) - Function to schema conversion
-- [exa_search_test.py](base_tool_examples/exa_search_test.py) - Exa search testing
 - [example_usage.py](base_tool_examples/example_usage.py) - Basic usage examples
 
 ## Browser Integration
@@ -19,7 +18,7 @@ This directory contains examples demonstrating various tool integrations and usa
 - [claude_as_a_tool.py](claude_as_a_tool.py) - Using Claude as a tool
 
 ## Exa Search
-- [exa_search_agent.py](exa_search_agent.py) - Exa search agent implementation
+- [exa_search_agent.py](exa_search/exa_search_agent.py) - Exa search agent implementation
 
 ## Firecrawl Integration
 - [firecrawl_agents_example.py](firecrawl_agents_example.py) - Firecrawl web scraping agents
@@ -35,4 +34,3 @@ This directory contains examples demonstrating various tool integrations and usa
 - [4_stagehand_multi_agent_workflow.py](stagehand/4_stagehand_multi_agent_workflow.py) - Multi-agent workflow
 - [README.md](stagehand/README.md) - Stagehand documentation
 - [requirements.txt](stagehand/requirements.txt) - Stagehand dependencies
-- [tests/](stagehand/tests/) - Stagehand testing suite

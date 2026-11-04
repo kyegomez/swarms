@@ -181,19 +181,17 @@ class AgentRouter:
         Args:
             agent_name (str): The name of the agent to update.
         """
-        agent = find_agent_by_name(self.agents, agent_name)
-
-        history = agent.short_memory.return_history_as_string()
-        history_text = " ".join(history)
-        updated_text = f"{agent.name} {agent.description} {agent.system_prompt} {history_text}"
-
         try:
-            agent_index = self.agents.index(agent)
+            agent = find_agent_by_name(self.agents, agent_name)
         except ValueError:
             logger.warning(
                 f"Agent {agent_name} not found in the agents list."
             )
             return
+
+        history_text = agent.short_memory.return_history_as_string()
+        updated_text = f"{agent.name} {agent.description} {agent.system_prompt} {history_text}"
+        agent_index = self.agents.index(agent)
 
         updated_embedding = self._generate_embedding(updated_text)
         self.agent_embeddings[agent_index] = updated_embedding
