@@ -1104,6 +1104,70 @@ def test_the_run_payload_reaches_the_fallback_swarm():
     ]
 
 
+@pytest.mark.parametrize(
+    "swarm_type, fallbacks, factory_kwargs, falls_back",
+    [
+        ("ConcurrentWorkflow", ["SequentialWorkflow"], {}, True),
+        ("ConcurrentWorkflow", None, {}, False),
+        (
+            "ConcurrentWorkflow",
+            ["SequentialWorkflow"],
+            {"on_error": "store"},
+            False,
+        ),
+        ("MixtureOfAgents", ["ConcurrentWorkflow"], {}, False),
+    ],
+)
+def test_concurrent_agent_failures_reach_the_fallback(
+    swarm_type, fallbacks, factory_kwargs, falls_back
+):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        agents = [
+            Agent(
+                agent_name=name,
+                model_name="gpt-5.4",
+                max_loops=1,
+                autosave=False,
+                print_on=False,
+            )
+            for name in ("A", "B")
+        ]
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("provider down")
+
+    for agent in agents:
+        agent.run = _boom
+
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type=swarm_type,
+        fallback_swarms=fallbacks,
+        autosave=False,
+    )
+    build = router._create_concurrent_workflow
+    router._swarm_factory["ConcurrentWorkflow"] = (
+        lambda *a, **k: build(*a, **factory_kwargs, **k)
+    )
+    router._swarm_factory["SequentialWorkflow"] = lambda *a, **k: (
+        _FakeSwarm("SequentialWorkflow")
+    )
+    router._swarm_factory["MixtureOfAgents"] = lambda *a, **k: (
+        _FakeSwarm("MixtureOfAgents", RuntimeError("moa down"))
+    )
+
+    result = router.run("go")
+
+    if falls_back:
+        assert result == "SequentialWorkflow-result"
+        assert router.fallback_attempts[0]["swarm_type"] == (
+            "ConcurrentWorkflow"
+        )
+    else:
+        assert "Error: provider down" in str(result)
+        assert router.active_swarm_type == "ConcurrentWorkflow"
+
+
 def test_each_swarm_type_is_cached_under_its_own_key():
     router, built = _fallback_router(
         primary_error=RuntimeError("x"),
