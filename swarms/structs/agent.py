@@ -2430,6 +2430,7 @@ Subtask Breakdown:
 
         Raises:
             ValueError: If required arguments are invalid or missing (e.g. image input without actual image).
+            TypeError: If ``n`` is passed. Loop over ``run`` instead.
             Exception: For any error that occurs during agent execution, LLM/tool call, or planning.
 
         Examples:
@@ -2447,6 +2448,11 @@ Subtask Breakdown:
             ...     messages=[{"role": "user", "content": "Name three primes."}],
             ... )
         """
+        if "n" in kwargs:
+            raise TypeError(
+                "Agent.run() no longer takes n. For n independent "
+                "runs, loop: [agent.run(task) for _ in range(n)]."
+            )
 
         # Outside interactive mode, fail fast instead of blocking on stdin
         if task is None or (

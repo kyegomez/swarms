@@ -711,6 +711,47 @@ class TestLLMArgsAndHandling:
 
         return captured
 
+    @pytest.mark.parametrize(
+        "call",
+        [
+            lambda agent, **kw: agent.run("hello", **kw),
+            lambda agent, **kw: agent("hello", **kw),
+            lambda agent, **kw: asyncio.run(
+                agent.arun("hello", **kw)
+            ),
+        ],
+        ids=["run", "__call__", "arun"],
+    )
+    def test_n_raises_before_the_provider_call(self, call):
+        agent = Agent(
+            agent_name="n-probe",
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+        )
+        requests = []
+        message = SimpleNamespace(content="ok", tool_calls=None)
+        response = SimpleNamespace(
+            choices=[SimpleNamespace(message=message)]
+        )
+
+        def fake_completion(**kwargs):
+            requests.append(kwargs)
+            return response
+
+        with patch.object(
+            litellm_wrapper, "completion", side_effect=fake_completion
+        ):
+            with pytest.raises(
+                TypeError, match=r"for _ in range\(n\)"
+            ):
+                call(agent, n=3)
+            assert requests == []
+            call(agent, top_p=0.5)
+
+        assert requests[-1]["top_p"] == 0.5
+
     def test_reasoning_effort_is_absent_by_default(self):
         """It defaulted to "medium" and rode along on every request. OpenAI
         rejects reasoning_effort alongside function tools on
