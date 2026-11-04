@@ -17,6 +17,7 @@ from swarms.structs.file_channel import FileChannel
 from swarms import Agent
 from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.structs.agent import DEFAULT_AGENT_DESCRIPTION
 from swarms.schemas.agent_errors import (
     AgentLLMError,
     AgentToolExecutionError,
@@ -935,6 +936,31 @@ class TestToolsListIsolation:
                 "Fourth", tools_list_dictionary=given
             ).tools_list_dictionary
             == given
+        )
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({}, DEFAULT_AGENT_DESCRIPTION),
+        ({"agent_description": "x"}, "x"),
+        ({"description": "Checks tax math."}, "Checks tax math."),
+        ({"agent_description": None, "description": "y"}, "y"),
+        ({"agent_description": "x", "description": "x"}, "x"),
+        ({"agent_description": "x", "description": "y"}, ValueError),
+    ],
+)
+def test_description_is_another_name_for_agent_description(
+    kwargs, expected
+):
+    if expected is ValueError:
+        with pytest.raises(ValueError, match="pass only one"):
+            _patched_agent("described", **kwargs)
+    else:
+        agent = _patched_agent("described", **kwargs)
+        assert (agent.agent_description, agent.description) == (
+            expected,
+            expected,
         )
 
 

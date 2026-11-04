@@ -110,6 +110,8 @@ def stop_when_repeats(response: str) -> bool:
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
+DEFAULT_AGENT_DESCRIPTION = "An autonomous agent that can perform tasks and learn from experience powered by Swarms"
+
 
 class Agent:
     """
@@ -128,6 +130,7 @@ class Agent:
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
+        description (Optional[str]): Another name for agent_description. Passing both with different values raises ValueError.
         system_prompt (Optional[str]): The system prompt. Defaults to None, which sends no system prompt. With max_loops="auto" the autonomous loop prompt is used, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
@@ -289,9 +292,7 @@ class Agent:
         self,
         id: Optional[str] = None,
         agent_name: Optional[str] = "swarm-worker-01",
-        agent_description: Optional[
-            str
-        ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
+        agent_description: Optional[str] = DEFAULT_AGENT_DESCRIPTION,
         system_prompt: Optional[str] = None,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
@@ -384,6 +385,7 @@ class Agent:
         context_compression: bool = True,
         persistent_memory: bool = False,
         messages: Optional[List[Dict[str, Any]]] = None,
+        description: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -408,6 +410,18 @@ class Agent:
         self.tools = tools
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
+        if description is not None:
+            if agent_description not in (
+                None,
+                description,
+                DEFAULT_AGENT_DESCRIPTION,
+            ):
+                raise ValueError(
+                    f"Agent got description={description!r} and "
+                    f"agent_description={agent_description!r}. They "
+                    "are the same setting, so pass only one."
+                )
+            agent_description = description
         self.agent_description = agent_description
         # Fallback: this once overwrote the caller's own path.
         self.saved_state_path = saved_state_path or (
