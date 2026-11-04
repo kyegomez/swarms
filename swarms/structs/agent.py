@@ -130,7 +130,7 @@ class Agent:
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
-        description (Optional[str]): Another name for agent_description. Passing both with different values raises ValueError.
+        description (Optional[str]): Another name for agent_description, used when agent_description is left unset. If both are set, agent_description wins.
         system_prompt (Optional[str]): The system prompt. Defaults to None, which sends no system prompt. With max_loops="auto" the autonomous loop prompt is used, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
@@ -410,17 +410,10 @@ class Agent:
         self.tools = tools
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
-        if description is not None:
-            if agent_description not in (
-                None,
-                description,
-                DEFAULT_AGENT_DESCRIPTION,
-            ):
-                raise ValueError(
-                    f"Agent got description={description!r} and "
-                    f"agent_description={agent_description!r}. They "
-                    "are the same setting, so pass only one."
-                )
+        if description is not None and agent_description in (
+            None,
+            DEFAULT_AGENT_DESCRIPTION,
+        ):
             agent_description = description
         self.agent_description = agent_description
         # Fallback: this once overwrote the caller's own path.

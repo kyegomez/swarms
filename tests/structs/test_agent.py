@@ -946,22 +946,17 @@ class TestToolsListIsolation:
         ({"agent_description": "x"}, "x"),
         ({"description": "Checks tax math."}, "Checks tax math."),
         ({"agent_description": None, "description": "y"}, "y"),
-        ({"agent_description": "x", "description": "x"}, "x"),
-        ({"agent_description": "x", "description": "y"}, ValueError),
+        ({"agent_description": "x", "description": "y"}, "x"),
     ],
 )
 def test_description_is_another_name_for_agent_description(
     kwargs, expected
 ):
-    if expected is ValueError:
-        with pytest.raises(ValueError, match="pass only one"):
-            _patched_agent("described", **kwargs)
-    else:
-        agent = _patched_agent("described", **kwargs)
-        assert (agent.agent_description, agent.description) == (
-            expected,
-            expected,
-        )
+    agent = _patched_agent("described", **kwargs)
+    assert (agent.agent_description, agent.description) == (
+        expected,
+        expected,
+    )
 
 
 def test_list_base_models_schema_reaches_short_memory():
