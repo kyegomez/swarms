@@ -1557,6 +1557,7 @@ Subtask Breakdown:
         Raises:
             Exception: If planning fails, the original exception is re-raised
         """
+        self._sync_model_limits()
         try:
             # Get the current conversation history
             history = self.short_memory.get_str()
