@@ -17,6 +17,7 @@ from swarms.structs.file_channel import FileChannel
 from swarms import Agent
 from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.structs.agent import DEFAULT_AGENT_DESCRIPTION
 from swarms.schemas.agent_errors import (
     AgentLLMError,
     AgentToolExecutionError,
@@ -936,6 +937,26 @@ class TestToolsListIsolation:
             ).tools_list_dictionary
             == given
         )
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({}, DEFAULT_AGENT_DESCRIPTION),
+        ({"agent_description": "x"}, "x"),
+        ({"description": "Checks tax math."}, "Checks tax math."),
+        ({"agent_description": None, "description": "y"}, "y"),
+        ({"agent_description": "x", "description": "y"}, "x"),
+    ],
+)
+def test_description_is_another_name_for_agent_description(
+    kwargs, expected
+):
+    agent = _patched_agent("described", **kwargs)
+    assert (agent.agent_description, agent.description) == (
+        expected,
+        expected,
+    )
 
 
 def test_list_base_models_schema_reaches_short_memory():
