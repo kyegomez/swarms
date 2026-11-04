@@ -117,14 +117,6 @@ Output(s) to evaluate:
 # Exception classes.
 
 
-class AgentJudgeInitializationError(Exception):
-    """
-    Exception raised when there is an error initializing the AgentJudge.
-    """
-
-    pass
-
-
 class AgentJudgeExecutionError(Exception):
     """
     Exception raised when there is an error executing the AgentJudge.
