@@ -1,10 +1,12 @@
 import asyncio
+import contextvars
 import json
 import os
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
-from functools import lru_cache
+from functools import lru_cache, partial
 from typing import (
     Any,
     Callable,
@@ -100,6 +102,19 @@ def _model_info(model_name: str) -> Dict[str, Any]:
         return llm_backend.get_model_info(model_name)
     except Exception:
         return {}
+
+
+async def to_new_thread(func: Callable, *args, **kwargs) -> Any:
+    pool = ThreadPoolExecutor(max_workers=1)
+    try:
+        return await asyncio.get_running_loop().run_in_executor(
+            pool,
+            partial(
+                contextvars.copy_context().run, func, *args, **kwargs
+            ),
+        )
+    finally:
+        pool.shutdown(wait=False)
 
 
 def stop_when_repeats(response: str) -> bool:
@@ -1484,7 +1499,7 @@ Subtask Breakdown:
         """
         try:
             # Positional, in run()'s order: keywords plus *args made every extra positional collide with task.
-            return await asyncio.to_thread(
+            return await to_new_thread(
                 self.run,
                 task,
                 img,

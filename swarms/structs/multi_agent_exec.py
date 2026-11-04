@@ -5,7 +5,7 @@ from typing import Any, Callable, List, Optional, Union
 
 from loguru import logger
 
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, to_new_thread
 from swarms.structs.omni_agent_types import AgentType
 from swarms.telemetry.otel import ContextThreadPoolExecutor
 from swarms.utils.get_cpu_cores import max_workers_95_percent
@@ -61,7 +61,7 @@ async def run_agent_async(agent: AgentType, task: str) -> Any:
     """
     arun = getattr(agent, "arun", None)
     if arun is None:
-        return await asyncio.to_thread(run_single_agent, agent, task)
+        return await to_new_thread(run_single_agent, agent, task)
     return await arun(task)
 
 
