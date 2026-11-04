@@ -2636,16 +2636,26 @@ class TestIntegerLoopRequest:
             for m in messages
         )
 
-    def test_a_later_loop_never_ends_on_the_models_own_turn(
-        self, monkeypatch
-    ):
+    def test_a_later_loop_never_ends_on_the_models_own_turn(self):
         # Gemini 3.5+ rejects "Requests ending with a model turn".
         agent = self._agent(max_loops=3)
-        sent = self._capture(monkeypatch, agent, ["a", "b", "c"])
+        sent = []
 
-        output = agent.run("Plan a trip")
+        def fake_completion(**kwargs):
+            sent.append(kwargs["messages"])
+            message = SimpleNamespace(
+                content=f"answer {len(sent)}", tool_calls=None
+            )
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=message)]
+            )
 
-        assert [messages[-1]["role"] for _, messages in sent] == [
+        with patch.object(
+            litellm_wrapper, "completion", side_effect=fake_completion
+        ):
+            output = agent.run("Plan a trip")
+
+        assert [messages[-1]["role"] for messages in sent] == [
             "user"
         ] * 3
         assert "Continue" not in output
