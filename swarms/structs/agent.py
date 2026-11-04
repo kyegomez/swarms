@@ -524,12 +524,6 @@ class Agent:
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
 
-        if self.context_length is None:
-            self.context_length = self._default_context_length()
-
-        if self.max_tokens is None or self.max_tokens <= 0:
-            self.max_tokens = self._default_max_tokens() or 16000
-
         if self.max_loops == "auto":
             # Without this the prompt tells the model to call a think tool it lacks
             autonomous_prompt = get_autonomous_agent_prompt(
@@ -753,7 +747,7 @@ class Agent:
             time_enabled=True,
             dynamic_context_window=self.dynamic_context_window,
             tokenizer_model_name=self.model_name,
-            context_length=self.context_length,
+            context_length=self.__dict__["context_length"],
             memory_md_path=memory_md_path,
             messages=self.messages,
         )
@@ -1624,6 +1618,31 @@ Subtask Breakdown:
             logger.error(f"Error running concurrent tasks: {error}")
             raise
 
+    @property
+    def context_length(self) -> int:
+        if self.__dict__.get("context_length") is None:
+            self.context_length = self._default_context_length()
+        return self.__dict__["context_length"]
+
+    @context_length.setter
+    def context_length(self, value: Optional[int]) -> None:
+        self.__dict__["context_length"] = value
+
+    @property
+    def max_tokens(self) -> int:
+        if self.__dict__.get("max_tokens") is None:
+            self.max_tokens = self._default_max_tokens()
+        return self.__dict__["max_tokens"]
+
+    @max_tokens.setter
+    def max_tokens(self, value: Optional[int]) -> None:
+        self.__dict__["max_tokens"] = max(value or 0, 0) or None
+
+    def _sync_model_limits(self) -> None:
+        self.short_memory.context_length = self.context_length
+        if getattr(self.llm, "max_tokens", 0) is None:
+            self.llm.max_tokens = self.max_tokens
+
     def _default_context_length(self) -> int:
         """
         Returns the maximum input token window for the agent's underlying model.
@@ -1676,20 +1695,7 @@ Subtask Breakdown:
                 f"got {self.max_loops!r}."
             )
 
-        # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
-        if self.max_tokens is None or self.max_tokens <= 0:
-            suggested_tokens = llm_backend.get_max_tokens(
-                self.model_name
-            )
-            if suggested_tokens is not None and suggested_tokens > 0:
-                self.max_tokens = suggested_tokens
-            else:
-                logger.warning(
-                    f"Could not determine max_tokens for model '{self.model_name}'. Falling back to default value of 8192."
-                )
-                self.max_tokens = 8192
-
-        if self.context_length is None or self.context_length == 0:
+        if self.__dict__["context_length"] == 0:
             raise AgentInitializationError(
                 "Context length is not provided. Please set a valid context length."
             )
@@ -2317,6 +2323,7 @@ Subtask Breakdown:
                 # Not converted to messages: that path drops img and imgs.
                 task = f"{skills}\n\n{task}"
 
+        self._sync_model_limits()
         try:
             return self.llm_manager.call(
                 task=task,
@@ -2508,6 +2515,7 @@ Subtask Breakdown:
                 if m != task_row
             ]
 
+        self._sync_model_limits()
         models = self.fallback_models or [self.model_name]
         try:
             for i, model in enumerate(models):

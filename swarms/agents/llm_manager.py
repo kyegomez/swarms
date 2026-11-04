@@ -135,7 +135,7 @@ class LLMManager:
             common_args = {
                 "model_name": agent.model_name,
                 "temperature": agent.temperature,
-                "max_tokens": agent.max_tokens,
+                "max_tokens": agent.__dict__["max_tokens"],
                 "system_prompt": agent.system_prompt,
                 "stream": agent.streaming_on,
                 "top_p": agent.top_p,

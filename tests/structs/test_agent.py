@@ -868,16 +868,36 @@ class TestConstructorWindows:
 
     def test_model_info_is_looked_up_once_per_model(self):
         info = {"max_input_tokens": 90000, "max_output_tokens": 9000}
+        requests = []
+
+        def completion(**params):
+            requests.append(params)
+            return TestLLMFailureRaises._completion([], set())(
+                **params
+            )
+
         with patch(
             "swarms.utils.llm_backend.get_model_info",
             return_value=info,
-        ) as lookup:
+        ) as lookup, patch.object(
+            litellm_wrapper, "completion", side_effect=completion
+        ):
             agents = [
                 self._agent(model_name="model-info-cache-probe")
                 for _ in range(2)
             ]
+            explicit = self._agent(
+                model_name="model-info-explicit-probe",
+                context_length=50000,
+                max_tokens=500,
+            )
+            assert lookup.call_count == 0
+            agents[0].run("What is 2+2?")
+            explicit.run("What is 2+2?")
 
         assert lookup.call_count == 1
+        assert [r["max_tokens"] for r in requests] == [9000, 500]
+        assert agents[0].short_memory.context_length == 90000
         assert [(a.context_length, a.max_tokens) for a in agents] == [
             (90000, 9000),
             (90000, 9000),

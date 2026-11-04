@@ -227,9 +227,14 @@ def init_config(obj: Any) -> str:
     except (TypeError, ValueError):
         params = {}
 
+    attrs = getattr(obj, "__dict__", {})
     config = _sanitize(
         {
-            name: getattr(obj, name, None)
+            name: (
+                attrs[name]
+                if name in attrs
+                else getattr(obj, name, None)
+            )
             for name in params
             if name not in ("self", "args", "kwargs")
         }
