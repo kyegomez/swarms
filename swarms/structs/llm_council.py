@@ -37,6 +37,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.generate_id import generate_id
+from swarms.utils.litellm_wrapper import empty_usage
 
 
 class LLMCouncil:
@@ -301,3 +302,23 @@ class LLMCouncil:
             List of formatted outputs based on output_type
         """
         return batched_run(self.run, tasks)
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every council member and the chairman.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        agents = {
+            id(agent): agent
+            for agent in [*self.council_members, self.chairman]
+        }
+        total = empty_usage()
+        for agent in agents.values():
+            for key, value in agent.usage.items():
+                if key in total:
+                    total[key] += value
+        return total

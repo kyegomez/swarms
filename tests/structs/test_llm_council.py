@@ -314,5 +314,43 @@ def test_llm_council_output_types():
         raise
 
 
+def test_llm_council_usage_sums_members_and_chairman():
+    """Usage adds up every member's and the chairman's provider tokens."""
+
+    def stub_run(agent, input_tokens, output_tokens):
+        def run(task=None, *args, **kwargs):
+            agent._add_usage(
+                {
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": input_tokens + output_tokens,
+                }
+            )
+            return "ok"
+
+        agent.run = run
+
+    members = [
+        Agent(agent_name=f"Member-{i}", max_loops=1, print_on=False)
+        for i in range(2)
+    ]
+    council = LLMCouncil(council_members=members, verbose=False)
+    for agent, tokens in zip(
+        [*members, council.chairman], [(100, 10), (50, 5), (7, 3)]
+    ):
+        stub_run(agent, *tokens)
+
+    council.run("Pick a database.")
+
+    # Each member answers and ranks, so it is called twice.
+    assert council.usage == {
+        "input_tokens": 307,
+        "output_tokens": 33,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 340,
+    }
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
