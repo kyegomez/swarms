@@ -132,6 +132,7 @@ class ExpertPanelDiscussion:
             list: Formatted conversation history.
         """
         conversation = Conversation()
+        conversation.add("user", task)
 
         if not self.agents or len(self.agents) < 2:
             raise ValueError(
