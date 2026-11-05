@@ -179,6 +179,39 @@ def test_convert_tool_into_openai_schema():
     ]
 
 
+def search(query: str, **kwargs) -> str:
+    """Search the web."""
+    return query
+
+
+def search_with_options(
+    query: str, *args: str, **options: str
+) -> str:
+    """Search the web."""
+    return query
+
+
+@pytest.mark.parametrize("func", [search, search_with_options])
+def test_variadic_parameters_stay_out_of_the_tool_schema(func):
+    params = BaseTool().func_to_dict(func)["function"]["parameters"]
+
+    assert params["required"] == ["query"]
+    assert list(params["properties"]) == ["query"]
+    call = {
+        "id": "1",
+        "type": "function",
+        "function": {
+            "name": func.__name__,
+            "arguments": json.dumps({"query": "cats"}),
+        },
+    }
+    assert BaseTool(
+        tools=[func]
+    ).execute_function_calls_from_api_response([call]) == [
+        f"Function '{func.__name__}' result:\ncats"
+    ]
+
+
 def test_tools_must_have_docs_and_type_hints():
     def undocumented(x: int) -> int:
         return x
