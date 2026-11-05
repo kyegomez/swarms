@@ -1651,6 +1651,35 @@ def test_export_conversation_writes_the_named_json_file(tmp_path):
     assert fresh.conversation_history == conv.conversation_history
 
 
+def test_load_conversation_resumes_a_yaml_save_in_place(tmp_path):
+    conv = Conversation(
+        name="beta",
+        conversations_dir=str(tmp_path),
+        export_method="yaml",
+    )
+    conv.add("User", "yo")
+    conv.export()
+
+    loaded = Conversation.load_conversation(
+        "beta", conversations_dir=str(tmp_path)
+    )
+    assert [m["content"] for m in loaded.conversation_history] == [
+        "yo"
+    ]
+
+    loaded.add("Assistant", "hey")
+    loaded.export()
+    assert os.listdir(tmp_path) == ["conversation_beta.yaml"]
+
+    again = Conversation.load_conversation(
+        "beta", conversations_dir=str(tmp_path)
+    )
+    assert [m["content"] for m in again.conversation_history] == [
+        "yo",
+        "hey",
+    ]
+
+
 class TestCommsChannelMirror:
     def test_adds_are_posted_and_system_rows_are_not(self, tmp_path):
         from swarms.structs.file_channel import FileChannel
