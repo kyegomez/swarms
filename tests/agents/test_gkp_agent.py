@@ -1,4 +1,6 @@
-from swarms.agents.gkp_agent import GKPAgent
+import pytest
+
+from swarms.agents.gkp_agent import GKPAgent, Reasoner
 from swarms.structs.agent import Agent
 
 
@@ -62,3 +64,25 @@ def test_each_call_sees_only_its_own_prompt(monkeypatch):
     assert len(requests) == 8
     for name, prompts in requests:
         assert len(prompts) == 1, f"{name} also saw {prompts[:-1]}"
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Explanation: It is the seat of government.\nConfidence: high\nAnswer: Paris",
+        "**Explanation:** It is the seat of government.\n**Confidence:** high\n**Answer:** Paris",
+        "Answer: Paris\nExplanation: It is the seat of government.\nConfidence: high",
+        '"Explanation: It is the seat of government.\n- Confidence: high\n> **Final Answer:** Paris',
+    ],
+)
+def test_reason_and_answer_reads_each_labelled_field(reply):
+    reasoner = Reasoner(model_name="gpt-5.4")
+    reasoner.agent.run = lambda task: reply
+
+    result = reasoner.reason_and_answer("Capital of France?", "")
+
+    assert result == {
+        "explanation": "It is the seat of government.",
+        "confidence": "high",
+        "answer": "Paris",
+    }
