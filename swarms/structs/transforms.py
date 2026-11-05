@@ -173,44 +173,21 @@ class MessageTransforms:
             # If we can't fit any non-system messages, just return system messages
             return system_messages[:max_messages]
 
-        # Preserve recent messages
         preserve_recent = min(
-            self.config.preserve_recent_messages, len(other_messages)
+            self.config.preserve_recent_messages, available_slots
         )
         recent_messages = (
             other_messages[-preserve_recent:]
             if preserve_recent > 0
             else []
         )
-
-        # Calculate remaining slots for middle messages
-        remaining_slots = available_slots - len(recent_messages)
-        if remaining_slots <= 0:
-            # Only keep system messages and recent messages
-            result = system_messages + recent_messages
-            return result[:max_messages]
-
-        # Get messages from the beginning (excluding recent ones)
-        early_messages = (
-            other_messages[:-preserve_recent]
-            if preserve_recent > 0
-            else other_messages
-        )
-
-        # If we have enough slots for all early messages
-        if len(early_messages) <= remaining_slots:
-            result = (
-                system_messages + early_messages + recent_messages
-            )
-            return result[:max_messages]
-
-        # Apply middle-out compression to early messages
+        early_messages = other_messages[
+            : len(other_messages) - len(recent_messages)
+        ]
         compressed_early = self._middle_out_compress(
-            early_messages, remaining_slots
+            early_messages, available_slots - len(recent_messages)
         )
-
-        result = system_messages + compressed_early + recent_messages
-        return result[:max_messages]
+        return system_messages + compressed_early + recent_messages
 
     def _compress_tokens(
         self, messages: List[Dict[str, Any]], max_tokens: int
