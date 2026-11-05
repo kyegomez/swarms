@@ -222,7 +222,7 @@ class LiteLLM:
         stream: bool = False,
         temperature: Optional[float] = None,
         max_tokens: int = 4000,
-        ssl_verify: bool = False,
+        ssl_verify: bool = True,
         tools_list_dictionary: List[dict] = None,
         tool_choice: str = "auto",
         parallel_tool_calls: bool = False,
@@ -265,7 +265,7 @@ class LiteLLM:
             max_tokens (int, optional): The maximum number of tokens to generate in the
                 response. Defaults to 4000.
             ssl_verify (bool, optional): Whether to verify SSL certificates when making
-                API requests. Set to False for self-signed certificates. Defaults to False.
+                API requests. Set to False for self-signed certificates. Defaults to True.
             tools_list_dictionary (List[dict], optional): List of tool/function definitions
                 for function calling. Each dict should follow the OpenAI function calling
                 format. Defaults to None.
