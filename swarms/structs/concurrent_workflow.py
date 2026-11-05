@@ -22,6 +22,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -689,3 +690,14 @@ class ConcurrentWorkflow:
         finally:
             self.conversation = workflow_conversation
         return results
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)
