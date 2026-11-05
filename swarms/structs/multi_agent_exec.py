@@ -1,5 +1,4 @@
 import asyncio
-import concurrent.futures
 import os
 from typing import Any, Callable, List, Optional, Union
 
@@ -301,21 +300,23 @@ def batched_grid_agent_execution(
         )
 
     results = [None] * len(agents)
+    indices_by_agent = {}
+    for idx, agent in enumerate(agents):
+        indices_by_agent.setdefault(id(agent), []).append(idx)
+
+    def run_in_order(indices):
+        for idx in indices:
+            try:
+                results[idx] = run_single_agent(
+                    agents[idx], tasks[idx]
+                )
+            except Exception as e:
+                results[idx] = e
+
     with ContextThreadPoolExecutor(
         max_workers=max_workers
     ) as executor:
-        future_to_index = {
-            executor.submit(run_single_agent, agent, task): idx
-            for idx, (agent, task) in enumerate(zip(agents, tasks))
-        }
-        for future in concurrent.futures.as_completed(
-            future_to_index
-        ):
-            idx = future_to_index[future]
-            try:
-                results[idx] = future.result()
-            except Exception as e:
-                results[idx] = e
+        list(executor.map(run_in_order, indices_by_agent.values()))
 
     return results
 
