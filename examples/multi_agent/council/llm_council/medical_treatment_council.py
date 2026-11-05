@@ -5,13 +5,13 @@ This example demonstrates using the LLM Council to analyze medical treatments
 and provide comprehensive treatment recommendations.
 """
 
-from swarms.structs.llm_council import LLMCouncil
+from swarms import LLMCouncil
 
 # Create the council
-council = LLMCouncil(verbose=True)
+council = LLMCouncil(verbose=True, output_type="final")
 
-# Medical treatment query
-query = """
+# Medical treatment task
+task = """
 A 45-year-old patient with Type 2 diabetes, hypertension, and early-stage 
 kidney disease needs treatment recommendations. Provide:
 1. Comprehensive treatment plan addressing all conditions
@@ -24,7 +24,7 @@ kidney disease needs treatment recommendations. Provide:
 """
 
 # Run the council
-result = council.run(query)
+result = council.run(task=task)
 
 # Print final response
-print(result["final_response"])
+print(result)

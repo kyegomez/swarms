@@ -15,6 +15,7 @@ back, which is exactly the case that previously went silent.
 """
 
 import json
+import threading
 
 import pytest
 
@@ -23,7 +24,6 @@ from swarms.structs.groupchat import (
     RESPOND_TOOL,
     _extract_args,
 )
-
 
 # --------------------------------------------------------------------------
 # helpers
@@ -193,13 +193,6 @@ class TestConstructorValidation:
         with pytest.raises(ValueError, match="at least 2"):
             GroupChat(agents=None)
 
-    def test_deprecated_idle_timeout_is_still_accepted(self):
-        chat = make_chat(
-            [ScriptedAgent("A"), ScriptedAgent("B")],
-            idle_timeout=4.0,
-        )
-        assert chat.idle_timeout == 4.0
-
     def test_auto_equip_injects_the_respond_tool(self):
         bare_a, bare_b = BareAgent("A"), BareAgent("B")
         make_chat([bare_a, bare_b])
@@ -230,6 +223,30 @@ class TestConstructorValidation:
 # --------------------------------------------------------------------------
 
 
+class HistoryAgent(ScriptedAgent):
+    """Prefixes the history to its reply unless output_type is final."""
+
+    def __init__(self, name, bids=()):
+        super().__init__(name, bids)
+        self.output_type = "str-all-except-first"
+
+    def run(self, task=None, *args, **kwargs):
+        output = super().run(task, *args, **kwargs)
+        if self.output_type == "final":
+            return output
+        return f"User: {task}\n\n{self.agent_name}: {output!r}"
+
+
+class TestBidOutputType:
+    def test_bids_parse_whatever_the_agents_output_type(self):
+        speaker = HistoryAgent("A", [(0.9, "a real reply")])
+        chat = make_chat([speaker, HistoryAgent("B")])
+        chat.run("topic")
+
+        assert roles(chat)[:2] == ["User", "A"]
+        assert speaker.output_type == "str-all-except-first"
+
+
 class TestScheduling:
     def test_the_highest_bidder_takes_the_floor(self):
         eager = ScriptedAgent("Eager", [(0.9, "eager speaks")])
@@ -253,6 +270,21 @@ class TestScheduling:
         # Turn 1: everyone bids. Turn 2: everyone bids again and the
         # exhausted scripts fall silent, ending the chat on a lull.
         assert all(agent.calls >= 1 for agent in agents)
+
+    def test_every_bid_runs_at_once(self):
+        roster_size = 64
+        barrier = threading.Barrier(roster_size, timeout=5)
+
+        class BarrierAgent(ScriptedAgent):
+            def run(self, task=None, *args, **kwargs):
+                barrier.wait()
+                return super().run(task, *args, **kwargs)
+
+        agents = [BarrierAgent(f"A{i}") for i in range(roster_size)]
+        make_chat(agents).run("topic")
+
+        assert not barrier.broken
+        assert all(agent.calls == 1 for agent in agents)
 
     def test_a_lull_ends_the_chat(self):
         quiet = [

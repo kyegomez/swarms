@@ -1,7 +1,5 @@
 from swarms import Agent
-from swarms.structs.image_batch_processor import (
-    ImageAgentBatchProcessor,
-)
+from image_batch_processor import ImageAgentBatchProcessor
 from pathlib import Path
 
 # Initialize agent and processor

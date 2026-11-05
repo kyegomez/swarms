@@ -13,9 +13,6 @@ from swarms.prompts.agent_conversation_aggregator import (
     AGGREGATOR_SYSTEM_PROMPT,
 )
 
-_FIND_AGENT_INDEX_CACHE: dict = {}
-_FIND_AGENT_INDEX_CACHE_MAX = 256
-
 
 def aggregator_agent_task_prompt(
     task: str, workers: List[Agent], conversation: Conversation
@@ -138,10 +135,6 @@ def find_agent_by_name(
 ) -> Agent:
     """
     Find an agent by its name in a list of agents.
-
-    Builds a name -> agent index on first call for a given list and
-    reuses it on subsequent calls, turning repeated lookups from O(n)
-    into O(1).
 
     Args:
         agents (List[Union[Agent, Callable]]): List of agents to search through

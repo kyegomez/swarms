@@ -61,6 +61,7 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
+from swarms.structs.usage_utils import total_usage
 
 BID_TOOL = {
     # Forced tool call, so every bid is a structured (confidence, estimated_cost) pair
@@ -375,6 +376,9 @@ class AuctionSwarm(SerializableMixin):
 
         Returns:
             Formatted conversation output from ``history_output_formatter``.
+
+        Raises:
+            RuntimeError: If every winning agent fails.
         """
         self._log("info", f"[{self.name}] auctioning task: {task}")
 
@@ -449,6 +453,10 @@ class AuctionSwarm(SerializableMixin):
                     f"Awarded to {best_agent.agent_name}",
                     title=f"{self.name} - Award",
                 )
+        else:
+            raise RuntimeError(
+                f"[{self.name}] every winning agent failed"
+            ) from results.get(winners[0][0].agent_name)
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
@@ -470,3 +478,14 @@ class AuctionSwarm(SerializableMixin):
             List of formatted conversation outputs from :meth:`run`.
         """
         return batched_run(self.run, tasks)
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

@@ -13,7 +13,6 @@ quality_control_agent = Agent(
     agent_description="A quality control agent that analyzes images and provides a detailed report on the quality of the product in the image.",
     model_name="gpt-5.4-mini",
     system_prompt=Quality_Control_Agent_Prompt,
-    # multi_modal=True,
     max_loops=1,
     output_type="str-all-except-first",
 )

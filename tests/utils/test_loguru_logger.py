@@ -15,6 +15,7 @@ def reset_logger_state(monkeypatch):
     """Give each test a logger that has not been configured yet."""
     monkeypatch.setattr(mod, "_CONFIGURED", False, raising=False)
     monkeypatch.setattr(mod, "_CONFIGURED_DIR", None, raising=False)
+    monkeypatch.setenv("SWARMS_LOG_FILES", "True")
     yield
     # Close any file handlers pointed at a tmp_path that is about to vanish,
     # then leave a plain console handler so later test modules still log.
@@ -80,6 +81,32 @@ def test_logs_land_under_workspace_dir(monkeypatch, tmp_path):
     combined = list((tmp_path / "ws" / "logs").glob("swarms_*.log"))
     assert len(combined) == 1
     assert "hello" in combined[0].read_text()
+
+
+@pytest.mark.parametrize("verbose", ["False", "True"])
+def test_traceback_locals_only_reach_a_verbose_console(
+    monkeypatch, tmp_path, capsys, verbose
+):
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    monkeypatch.setenv("SWARMS_VERBOSE_GLOBAL", verbose)
+    initialize_logger("mod")
+
+    api_key = "sk-test"
+    try:
+        raise ValueError("rejected", len(api_key))
+    except ValueError:
+        # The router only keeps records named after a swarms module.
+        logger.patch(
+            lambda r: r.update(name="swarms.fake")
+        ).exception("x")
+    logger.remove()  # flush the enqueued sinks
+
+    logs = tmp_path / "logs"
+    for path in (next(logs.glob("swarms_*.log")), logs / "fake.log"):
+        text = path.read_text()
+        assert "ValueError" in text and "sk-test" not in text
+    console = capsys.readouterr().out
+    assert ("sk-test" in console) == (verbose == "True")
 
 
 # ---------------------------------------------------------------------------
@@ -211,6 +238,53 @@ def test_router_survives_an_unwritable_directory(
     mod._module_log_router(
         FakeMessage("line\n", "swarms.structs.agent")
     )  # no exception
+
+
+# ---------------------------------------------------------------------------
+# SWARMS_LOG_FILES
+# ---------------------------------------------------------------------------
+
+
+def test_no_log_files_by_default(monkeypatch, tmp_path):
+    monkeypatch.delenv("SWARMS_LOG_FILES", raising=False)
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "ws"))
+
+    initialize_logger("mod")
+    logger.info("console only")
+    logger.remove()
+
+    assert not (tmp_path / "ws" / "logs").exists()
+
+
+def test_false_writes_no_log_files(monkeypatch, tmp_path):
+    monkeypatch.setenv("SWARMS_LOG_FILES", "False")
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "ws"))
+
+    initialize_logger("mod")
+    logger.info("console only")
+    logger.remove()
+
+    assert not (tmp_path / "ws" / "logs").exists()
+
+
+def test_turning_log_files_on_rebuilds_handlers(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "ws"))
+    monkeypatch.setenv("SWARMS_LOG_FILES", "False")
+    initialize_logger("mod")
+    logger.info("while off")
+
+    monkeypatch.setenv("SWARMS_LOG_FILES", "True")
+    initialize_logger("mod")
+    logger.info("after turning on")
+    logger.remove()
+
+    written = next(
+        (tmp_path / "ws" / "logs").glob("swarms_*.log")
+    ).read_text()
+    assert "after turning on" in written
+    assert "while off" not in written
 
 
 if __name__ == "__main__":
