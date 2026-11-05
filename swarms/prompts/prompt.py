@@ -2,7 +2,7 @@ import json
 import os
 import time
 import uuid
-from typing import Any, Callable, List
+from typing import Callable, List
 
 from pydantic import (
     BaseModel,
@@ -73,15 +73,6 @@ class Prompt(BaseModel):
         default="prompts",
         description="The folder path within WORKSPACE_DIR where the prompt will be autosaved",
     )
-    auto_generate_prompt: bool = Field(
-        default=False,
-        description="Flag to enable or disable auto-generating the prompt",
-    )
-    parent_folder: str = Field(
-        default_factory=get_workspace_dir,
-        description="The folder where the autosave folder is in",
-    )
-    llm: Any = None
 
     @model_validator(mode="after")
     def initialize_history(self):
@@ -164,35 +155,6 @@ class Prompt(BaseModel):
             str: The current prompt content.
         """
         return self.content
-
-    def save_to_storage(self) -> None:
-        """
-        Placeholder method for saving the prompt to persistent storage.
-        In a production environment, this would integrate with a database or file system.
-
-        Raises:
-            NotImplementedError: This method is a placeholder for storage integration.
-        """
-        raise NotImplementedError(
-            "Persistent storage integration is required."
-        )
-
-    def load_from_storage(
-        self, prompt_id: str = uuid.uuid4().hex
-    ) -> None:
-        """
-        Placeholder method for loading the prompt from persistent storage by its ID.
-        In a production environment, this would integrate with a database or file system.
-
-        Args:
-            prompt_id (UUID): The unique identifier of the prompt to load.
-
-        Raises:
-            NotImplementedError: This method is a placeholder for storage integration.
-        """
-        raise NotImplementedError(
-            "Persistent storage integration is required."
-        )
 
     def add_tools(self, tools: List[Callable]) -> str:
         tools_prompt = BaseTool(
