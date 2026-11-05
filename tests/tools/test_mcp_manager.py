@@ -1034,6 +1034,33 @@ class TestOAuthPlumbing:
         storage.clear()
         assert run_async(storage.get_tokens()) is None
 
+    def test_shared_token_cache_is_not_read_by_another_server(
+        self, tmp_path
+    ):
+        from mcp.shared.auth import OAuthToken
+
+        manager = MCPManager(
+            mcp_urls=[
+                "https://alpha.example.com/mcp",
+                "https://beta.example.com/mcp",
+            ],
+            oauth=MCPOAuthConfig(
+                token_storage_path=str(tmp_path / "tokens.json")
+            ),
+        )
+        alpha, beta = (
+            manager._build_oauth_provider(c).context.storage
+            for c in manager.connections
+        )
+        run_async(
+            alpha.set_tokens(
+                OAuthToken(access_token="alpha", token_type="Bearer")
+            )
+        )
+
+        assert run_async(beta.get_tokens()) is None
+        assert run_async(alpha.get_tokens()).access_token == "alpha"
+
     def test_default_storage_path_is_per_server(self):
         a = MCPFileTokenStorage("https://alpha.example.com/mcp")
         b = MCPFileTokenStorage("https://beta.example.com/mcp")

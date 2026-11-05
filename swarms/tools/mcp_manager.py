@@ -233,12 +233,20 @@ class MCPFileTokenStorage:
             try:
                 if not self.path.exists():
                     return {}
-                return json.loads(self.path.read_text())
+                data = json.loads(self.path.read_text())
             except Exception as e:
                 logger.warning(
                     f"MCP: could not read OAuth token cache {self.path}: {e}"
                 )
                 return {}
+        owner = data.get("server_url")
+        if owner != self.server_url:
+            logger.warning(
+                f"MCP: OAuth token cache {self.path} belongs to {owner}, "
+                f"not {self.server_url}; ignoring it."
+            )
+            return {}
+        return data
 
     def _write(self, data: Dict[str, Any]) -> None:
         with self._lock:
