@@ -43,6 +43,23 @@ def test_string_aliases_include_every_message(
     assert "assistant: 4." in result
 
 
+@pytest.mark.parametrize("output_type", ["string", "str", "all"])
+def test_string_aliases_keep_history_past_the_context_window(
+    tmp_path, monkeypatch, output_type
+):
+    monkeypatch.chdir(tmp_path)
+    conv = Conversation(context_length=50)
+    conv.add("user", "first question " + "word " * 100)
+    conv.add("assistant", "last answer " + "word " * 100)
+
+    result = history_output_formatter(conv, output_type)
+
+    assert result == "\n\n".join(
+        f"{m['role']}: {m['content']}"
+        for m in conv.conversation_history
+    )
+
+
 @pytest.mark.parametrize("output_type", ["final", "last"])
 def test_final_aliases_return_last_content(conversation, output_type):
     assert history_output_formatter(conversation, output_type) == "4."

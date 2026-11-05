@@ -2692,7 +2692,7 @@ class TestMajorityVotingTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 3
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_propagates(self, spans):
         voters = [
             fake_agent("MV-Ok"),
             fake_agent("MV-Bad", raise_exc=True),
@@ -2700,15 +2700,14 @@ class TestMajorityVotingTelemetry:
         mv = MajorityVoting(agents=voters, max_loops=1)
         mv.consensus_agent.llm = FakeLLM("consensus reached")
 
-        result = mv.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            mv.run(task="hello")
 
-        top = _by_name(spans, "MajorityVoting.run")
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "Agent.llm_error") is not None
+        _assert_llm_failure_recorded(
+            spans, "MajorityVoting.run", "MV-Bad"
+        )
 
-    def test_error_member_failure_silently_swallowed(self, spans):
-        """Voters run via run_agents_concurrently: swallowed with no span."""
+    def test_error_member_failure_propagates(self, spans):
         voters = [
             fake_agent("MV-A3"),
             break_member_run(fake_agent("MV-B3")),
@@ -2716,14 +2715,16 @@ class TestMajorityVotingTelemetry:
         mv = MajorityVoting(agents=voters, max_loops=1)
         mv.consensus_agent.llm = FakeLLM("consensus reached")
 
-        result = mv.run(task="hello")  # does not raise
-        assert result is not None
+        with pytest.raises(
+            RuntimeError, match="member agent blew up"
+        ):
+            mv.run(task="hello")
 
         top = _by_name(spans, "MajorityVoting.run")
-        assert top.status.status_code.name == "OK"
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "MajorityVoting.error") is None
-        assert _by_name(spans, "Agent.llm_error") is None
+        assert top.status.status_code.name == "ERROR"
+        a_ = _attrs(top)
+        assert a_["swarms.status"] == "error"
+        assert a_["swarms.error.type"] == "RuntimeError"
 
 
 # ===========================================================================

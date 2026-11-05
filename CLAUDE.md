@@ -143,11 +143,11 @@ print(result)
 | `tools` | list[Callable] | `None` | Python functions the agent can call |
 | `streaming_on` | bool | `False` | Stream tokens to stdout |
 | `interactive` | bool | `False` | REPL mode — prompt user for input each loop |
-| `context_length` | int | `None` | Token budget; triggers compression at 90 % |
+| `context_length` | int | `128000` | Token budget; triggers compression at 90 %. `None` looks up the model's input window |
 | `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
 | `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
 | `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
-| `max_tokens` | int | model's max output | Max tokens per LLM call. Unset resolves to the model's own output limit |
+| `max_tokens` | int | `16384` | Max tokens per LLM call. `None` looks up the model's own output limit |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
 | `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
 | `output_type` | str | `"str-all-except-first"` | How to format returned output |

@@ -8,9 +8,6 @@ This directory contains examples demonstrating graph-based workflow patterns for
 - [graph_workflow_basic.py](graph_workflow_basic.py) - Basic graph workflow
 - [graph_workflow_example.py](graph_workflow_example.py) - Complete graph workflow example
 - [graph_workflow_validation.py](graph_workflow_validation.py) - Workflow validation
-- [test_enhanced_json_export.py](test_enhanced_json_export.py) - JSON export testing
-- [test_graph_workflow_caching.py](test_graph_workflow_caching.py) - Caching tests
-- [test_graphviz_visualization.py](test_graphviz_visualization.py) - Visualization tests
 - [test_parallel_processing_example.py](test_parallel_processing_example.py) - Parallel processing tests
 
 ## Subdirectories

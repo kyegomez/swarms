@@ -12,6 +12,7 @@ from pydantic import (
 )
 
 from swarms.tools.base_tool import BaseTool
+from swarms.utils.generate_id import generate_id
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -36,7 +37,7 @@ class Prompt(BaseModel):
     """
 
     id: str = Field(
-        default=uuid.uuid4().hex,
+        default_factory=lambda: generate_id("prompt"),
         description="Unique identifier for the prompt",
     )
     name: str = Field(
