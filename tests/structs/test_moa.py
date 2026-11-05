@@ -579,6 +579,41 @@ def test_concurrent_tasks_do_not_share_agent_memory():
         ), memory
 
 
+def test_run_concurrently_counts_the_usage_of_its_clones():
+    class Billed(Agent):
+        def call_llm(
+            self,
+            task,
+            img=None,
+            imgs=None,
+            current_loop=0,
+            streaming_callback=None,
+            *args,
+            **kwargs,
+        ):
+            self._add_usage({"input_tokens": 10, "total_tokens": 10})
+            return f"{self.agent_name} answer"
+
+    def agent(name):
+        return Billed(
+            agent_name=name,
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+            autosave=False,
+        )
+
+    moa = MixtureOfAgents(
+        agents=[agent("W1")],
+        aggregator_agent=agent("Agg"),
+        layers=1,
+    )
+    moa.run_concurrently(["task-alpha", "task-beta"])
+
+    assert moa.usage["total_tokens"] == 40
+
+
 def test_run_raises_when_the_aggregator_fails():
     agents, _ = _recording_agents(["W1", "W2"])
     aggregator, _ = _recording_agents(["Agg"])
