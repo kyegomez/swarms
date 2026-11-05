@@ -206,17 +206,8 @@ class Conversation:
             logger.debug(
                 f"Found existing conversation file at: {path}"
             )
-            try:
-                self.load(path)
-                logger.info(
-                    f"Loaded existing conversation from {path}"
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to load existing conversation from {path}: {str(e)}"
-                )
-                # Keep the empty conversation_history initialized in __init__
-
+            self.load(path)
+            logger.info(f"Loaded existing conversation from {path}")
         else:
             logger.debug(
                 f"No existing conversation file found at: {path}"
