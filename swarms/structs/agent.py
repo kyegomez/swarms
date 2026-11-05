@@ -136,7 +136,7 @@ class Agent:
         dynamic_temperature_enabled (bool): Enable dynamic temperature
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
-        context_length (int): The context length
+        context_length (Optional[int]): The model's input window in tokens. Defaults to 128000. None looks it up from the model.
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         long_term_memory (BaseVectorDatabase): The long term memory
@@ -154,7 +154,7 @@ class Agent:
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
         planning_prompt (str): The planning prompt
-        max_tokens (int): The maximum number of tokens
+        max_tokens (Optional[int]): The most tokens per response. Defaults to 16384. None looks up the model's own output limit.
         temperature (float): The temperature
         workspace_dir (str, optional): Ignored - workspace directory is always read from
             the 'workspace_dir' environment variable. Defaults to 'agent_workspace' if
@@ -307,7 +307,7 @@ class Agent:
         dynamic_temperature_enabled: Optional[bool] = False,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
-        context_length: Optional[int] = None,
+        context_length: Optional[int] = 128000,
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
         long_term_memory: Optional[Union[Callable, Any]] = None,
@@ -325,7 +325,7 @@ class Agent:
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
-        max_tokens: Optional[int] = None,
+        max_tokens: Optional[int] = 16384,
         temperature: Optional[float] = None,
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
@@ -534,8 +534,8 @@ class Agent:
         if self.context_length is None:
             self.context_length = self._default_context_length()
 
-        if self.max_tokens is None or self.max_tokens <= 0:
-            self.max_tokens = self._default_max_tokens() or 16000
+        if self.max_tokens is None:
+            self.max_tokens = self._default_max_tokens()
 
         if self.max_loops == "auto":
             # Without this the prompt tells the model to call a think tool it lacks
@@ -1683,23 +1683,13 @@ Subtask Breakdown:
                 f"got {self.max_loops!r}."
             )
 
-        # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
-        if self.max_tokens is None or self.max_tokens <= 0:
-            suggested_tokens = llm_backend.get_max_tokens(
-                self.model_name
-            )
-            if suggested_tokens is not None and suggested_tokens > 0:
-                self.max_tokens = suggested_tokens
-            else:
-                logger.warning(
-                    f"Could not determine max_tokens for model '{self.model_name}'. Falling back to default value of 8192."
+        for name in ("max_tokens", "context_length"):
+            value = getattr(self, name)
+            if value <= 0:
+                raise AgentInitializationError(
+                    f"{name} must be a positive integer, or None to "
+                    f"look it up from the model, got {value!r}."
                 )
-                self.max_tokens = 8192
-
-        if self.context_length is None or self.context_length == 0:
-            raise AgentInitializationError(
-                "Context length is not provided. Please set a valid context length."
-            )
 
         if (
             os.getenv("SWARMS_STRICT_MODEL_CHECK", "").lower()
