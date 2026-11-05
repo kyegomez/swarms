@@ -266,6 +266,29 @@ class TestBuild:
         result = agent.llm_manager.build()
         assert result.parallel_tool_calls is False
 
+    def test_llm_args_tool_choice_and_parallel_calls_win(self, agent):
+        def f1(x: int) -> int:
+            """doc"""
+            return x
+
+        def f2(x: int) -> int:
+            """doc"""
+            return x
+
+        forced = {"type": "function", "function": {"name": "f1"}}
+        agent.tools = [f1, f2]
+        agent.tools_list_dictionary = [
+            {"type": "function", "function": {"name": "f1"}},
+            {"type": "function", "function": {"name": "f2"}},
+        ]
+        agent.llm_args = {
+            "tool_choice": forced,
+            "parallel_tool_calls": False,
+        }
+        result = agent.llm_manager.build()
+        assert result.tool_choice == forced
+        assert result.parallel_tool_calls is False
+
     def test_no_tools_list_omits_tool_keys(self, agent):
         agent.tools = None
         agent.tools_list_dictionary = []
