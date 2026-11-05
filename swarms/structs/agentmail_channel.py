@@ -1,6 +1,7 @@
 """A CommsChannel kept as an AgentMail email thread that people can reply to."""
 
 import os
+import threading
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import quote
 
@@ -65,6 +66,7 @@ class AgentMailChannel(CommsChannel):
         self.subject = subject
         self.thread_id = thread_id
         self._reply_to: Optional[str] = None
+        self._lock = threading.Lock()
         self.client = httpx.Client(
             base_url=f"{base_url.rstrip('/')}/v0/inboxes/"
             f"{_segment(inbox_id)}",
@@ -89,20 +91,21 @@ class AgentMailChannel(CommsChannel):
                 self.LENGTH_HEADER: str(len(text)),
             },
         }
-        if self.thread_id is None:
-            path = "/messages/send"
-            body["subject"] = self.subject
-        else:
-            # A joined thread has no post of ours yet: answer its newest.
-            reply_to = (
-                self._reply_to or self._thread()["last_message_id"]
-            )
-            path = f"/messages/{_segment(reply_to)}/reply"
-        response = self.client.post(path, json=body)
-        response.raise_for_status()
-        sent = response.json()
-        self.thread_id = sent["thread_id"]
-        self._reply_to = sent["message_id"]
+        with self._lock:
+            if self.thread_id is None:
+                path = "/messages/send"
+                body["subject"] = self.subject
+            else:
+                reply_to = (
+                    self._reply_to
+                    or self._thread()["last_message_id"]
+                )
+                path = f"/messages/{_segment(reply_to)}/reply"
+            response = self.client.post(path, json=body)
+            response.raise_for_status()
+            sent = response.json()
+            self.thread_id = sent["thread_id"]
+            self._reply_to = sent["message_id"]
 
     def messages(self) -> List[Dict[str, Any]]:
         """
@@ -128,12 +131,13 @@ class AgentMailChannel(CommsChannel):
         Delete the thread from the inbox, so the next post starts a new
         one. Emails already delivered stay in the recipients' mailboxes.
         """
-        if self.thread_id is not None:
-            self.client.delete(
-                f"/threads/{_segment(self.thread_id)}"
-            ).raise_for_status()
-        self.thread_id = None
-        self._reply_to = None
+        with self._lock:
+            if self.thread_id is not None:
+                self.client.delete(
+                    f"/threads/{_segment(self.thread_id)}"
+                ).raise_for_status()
+            self.thread_id = None
+            self._reply_to = None
 
     def close(self) -> None:
         """
