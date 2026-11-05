@@ -461,3 +461,39 @@ def test_arun_awaits_voters_within_max_concurrency_like_run():
     assert asyncio.run(mv.arun("go", max_concurrency=2)) == expected
     assert max(peak) == 2
     assert sorted(calls, key=str) == sorted(sync_calls, key=str)
+
+
+@pytest.mark.parametrize(
+    "extra, expected",
+    [
+        (
+            {},
+            {
+                "dynamic_temperature_enabled": False,
+                "temperature": None,
+            },
+        ),
+        (
+            {"dynamic_temperature_enabled": True},
+            {"dynamic_temperature_enabled": True},
+        ),
+        (
+            {"dynamic_temperature_enabled": False},
+            {"dynamic_temperature_enabled": False},
+        ),
+        (
+            {"dynamic_context_window": False},
+            {"dynamic_context_window": False},
+        ),
+        ({"max_loops": 2}, {"max_loops": 2}),
+    ],
+)
+def test_consensus_agent_defaults_and_kwargs_passthrough(
+    extra, expected
+):
+    mv = MajorityVoting(
+        agents=[Agent(agent_name="Voter-A", max_loops=1)],
+        additional_consensus_agent_kwargs=extra,
+    )
+    for attr, value in expected.items():
+        assert getattr(mv.consensus_agent, attr) == value

@@ -3,20 +3,6 @@ from functools import lru_cache
 from loguru import logger
 
 
-def check_if_workspace_dir_exists():
-    """
-    Check if the workspace directory exists.
-
-    Returns:
-        bool: True if the workspace directory exists, False otherwise.
-
-    Raises:
-        ValueError: If the workspace directory environment variable is not set.
-    """
-    workspace_dir = get_workspace_dir()
-    return os.path.exists(workspace_dir)
-
-
 @lru_cache(maxsize=8)
 def _resolve_workspace_dir(workspace_dir):
     """

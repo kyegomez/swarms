@@ -194,7 +194,6 @@ class ModelRouter:
         max_tokens (int): Maximum tokens for model outputs
         temperature (float): Temperature parameter for model randomness
         max_workers (int): Maximum concurrent workers for batch processing
-        model_output (ModelOutput): Pydantic model for structured outputs
         model_caller (LiteLLM): Function calling interface
     """
 
@@ -227,7 +226,6 @@ class ModelRouter:
             self.max_tokens = max_tokens
             self.temperature = temperature
             self.max_workers = max_workers
-            self.model_output = ModelOutput
             self.max_loops = max_loops
 
             if self.max_workers == "auto":

@@ -1455,6 +1455,20 @@ class HeavySwarm(SerializableMixin):
         # Parse the tool calls and return clean data
         out = self._parse_tool_calls(raw_output)
 
+        required = active_schema[0]["function"]["parameters"][
+            "required"
+        ]
+        missing = [
+            key
+            for key in required
+            if key.endswith("_question") and not out.get(key)
+        ]
+        if missing and "error" not in out:
+            out = {
+                "error": "Question generator returned no "
+                + ", ".join(missing)
+            }
+
         self._log(
             "INFO",
             f"🔍 Question Generation Output: {out} and type: {type(out)}",

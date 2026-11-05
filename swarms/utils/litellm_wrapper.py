@@ -1112,20 +1112,6 @@ class LiteLLM:
                     f"Model {self.model_name} does not support vision"
                 )
 
-    @staticmethod
-    def check_if_model_name_uses_anthropic(model_name: str) -> bool:
-        """
-        Check if the model name indicates an Anthropic (Claude) model.
-
-        Example:
-            >>> LiteLLM.check_if_model_name_uses_anthropic("claude-3-opus")
-            True
-            >>> LiteLLM.check_if_model_name_uses_anthropic("gpt-4")
-            False
-        """
-        name = (model_name or "").lower()
-        return "claude" in name or "anthropic" in name
-
     def _build_completion_params(
         self,
         task: str,

@@ -298,7 +298,6 @@ class AutoSwarmBuilder:
         self.max_json_repair_attempts = 1
         self.auto_execute = auto_execute
         self.conversation = Conversation()
-        self.agents_pool = []
         self._usage_sources = []
 
         self.reliability_check()

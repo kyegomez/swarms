@@ -93,33 +93,6 @@ def test_base_tool_methods():
     print(f"✓ String result preview: {result_str[:100]}...")
 
 
-def test_agent_integration():
-    """Test that the Agent class can use the fixed methods without errors."""
-    print("\nTesting Agent integration...")
-    try:
-        from swarms import Agent
-
-        # Create a simple agent with a tool schema
-        agent = Agent(
-            model_name="gpt-5.4",
-            tool_schema=TestModel,
-            max_loops=1,
-            verbose=True,
-        )
-
-        # This should not raise an error anymore
-        agent.tool_manager.handle_tool_schema_ops()
-        print(
-            "✓ ToolManager.handle_tool_schema_ops() completed successfully"
-        )
-
-    except Exception as e:
-        print(f"✗ Agent integration failed: {e}")
-        return False
-
-    return True
-
-
 def test_function_name_is_the_model_name():
     """The emitted schema must name the model, not the metaclass or a field.
 
@@ -181,33 +154,3 @@ def test_a_field_named_title_survives_next_to_a_field_named_type():
         assert list(schema["properties"]) == ["title", "type", "body"]
         assert "title" not in schema["properties"]["title"]
     assert "title" not in ticket
-
-
-if __name__ == "__main__":
-    print("=" * 60)
-    print("Testing output_str parameter fix")
-    print("=" * 60)
-
-    try:
-        test_base_model_to_openai_function()
-        test_multi_base_model_to_openai_function()
-        test_base_tool_methods()
-
-        if test_agent_integration():
-            print("\n" + "=" * 60)
-            print(
-                "✅ All tests passed! The output_str parameter fix is working correctly."
-            )
-            print("=" * 60)
-        else:
-            print("\n" + "=" * 60)
-            print(
-                "❌ Some tests failed. Please check the implementation."
-            )
-            print("=" * 60)
-
-    except Exception as e:
-        print(f"\n❌ Test failed with error: {e}")
-        import traceback
-
-        traceback.print_exc()

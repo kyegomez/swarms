@@ -23,6 +23,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.structs.usage_utils import total_usage
 
 
 class EvaluationError(Exception):
@@ -33,12 +34,6 @@ class EvaluationError(Exception):
 
 class DimensionEvaluationError(EvaluationError):
     """Exception raised when a specific dimension evaluation fails."""
-
-    pass
-
-
-class AggregationError(EvaluationError):
-    """Exception raised when aggregation of evaluations fails."""
 
     pass
 
@@ -559,3 +554,14 @@ class CouncilAsAJudge:
             raise EvaluationError(
                 f"Evaluation process failed: {str(e)}"
             ) from e
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

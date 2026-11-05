@@ -30,6 +30,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.structs.usage_utils import total_usage
 
 CONSENSUS_AGENT_PROMPT = """
 You are the Consensus Agent, responsible for synthesizing and evaluating the responses from a panel of expert agents. Your task is to deliver a rigorous, insightful, and actionable consensus based on their outputs.
@@ -93,10 +94,7 @@ def default_consensus_agent(
         agent_name=name,
         agent_description=description,
         model_name=model_name,
-        max_loops=1,
         system_prompt=system_prompt,
-        dynamic_context_window=True,
-        dynamic_temperature_enabled=True,
         streaming_on=streaming_on_value,
         *args,
         **kwargs,
@@ -438,3 +436,14 @@ class MajorityVoting:
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
         )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

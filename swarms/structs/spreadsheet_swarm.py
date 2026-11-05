@@ -14,6 +14,7 @@ from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
@@ -355,9 +356,14 @@ class SpreadSheetSwarm:
         Args:
             agent_name (str): The name of the agent that completed the task.
             task (str): The task that was completed.
-            result (str): The result of the completed task.
+            result (str): The result of the completed task, or the
+                exception the agent raised, recorded as "Error: ...".
         """
-        self.tasks_completed += 1
+        if isinstance(result, Exception):
+            logger.error(f"Agent {agent_name} failed: {result}")
+            result = f"Error: {result}"
+        else:
+            self.tasks_completed += 1
         self.conversation.add(role=agent_name, content=result)
         self.outputs.append(
             {
@@ -440,3 +446,14 @@ class SpreadSheetSwarm:
                         output["timestamp"],
                     ]
                 )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)
