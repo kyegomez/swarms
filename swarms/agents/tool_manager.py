@@ -11,7 +11,6 @@ from swarms.schemas.agent_errors import AgentToolExecutionError
 from swarms.structs.autonomous_loop_utils import (
     get_autonomous_loop_tool_names,
 )
-from swarms.structs.transcript import Transcript
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.dynamic_tool_loader import (
     DYNAMIC_TOOLS_NOTICE,
@@ -492,24 +491,23 @@ class ToolManager:
         self,
         response: Any,
         loop_count: int,
-        transcript: Optional[Transcript] = None,
         turn_calls: Optional[list] = None,
         turn_results: Optional[dict] = None,
     ) -> None:
         """
-        Run every tool call in one model response and answer each in the transcript.
+        Run every tool call in one model response and answer each in short_memory.
 
         Args:
             response: The parsed model response.
             loop_count: The current loop number.
-            transcript: The run's transcript, or None when transforms are on.
-            turn_calls: Tool calls recorded in the transcript this turn.
+            turn_calls: Tool calls recorded this turn.
             turn_results: Results keyed by tool call id, updated in place.
 
         Raises:
             AgentToolExecutionError: If the callable tools fail every retry.
         """
         agent = self.agent
+        turn_calls = turn_calls or []
         turn_results = {} if turn_results is None else turn_results
 
         if isinstance(response, list):
@@ -519,8 +517,8 @@ class ToolManager:
                 )
                 # Falling through with nothing left would log a misleading "no function calls found".
                 if not response:
-                    return self._flush(
-                        transcript, turn_calls, turn_results
+                    return agent.short_memory.flush_tool_results(
+                        turn_calls, turn_results
                     )
             self._run_handoff_calls(
                 response, turn_results, loop_count
@@ -528,13 +526,12 @@ class ToolManager:
 
         if exists(agent.tools):
             output = self.tool_execution_retry(response, loop_count)
-            if transcript is not None and turn_calls:
-                transcript.map_batch_results(
-                    [{"id": call["id"]} for call in turn_calls],
-                    output,
-                    turn_results,
-                    formatter=format_data_structure,
-                )
+            agent.short_memory.map_batch_results(
+                turn_calls,
+                output,
+                turn_results,
+                formatter=format_data_structure,
+            )
 
         if agent.mcp_enabled:
             if response is None:
@@ -546,17 +543,9 @@ class ToolManager:
                     response=response, current_loop=loop_count
                 )
 
-        self._flush(transcript, turn_calls, turn_results)
-
-    def _flush(
-        self,
-        transcript: Optional[Transcript],
-        turn_calls: Optional[list],
-        turn_results: dict,
-    ) -> None:
-        """Answer every recorded tool call; a gap makes the next request invalid."""
-        if transcript is not None and turn_calls:
-            transcript.flush_tool_results(turn_calls, turn_results)
+        agent.short_memory.flush_tool_results(
+            turn_calls, turn_results
+        )
 
     def _run_tool_search_calls(
         self, response: list, turn_results: dict
@@ -794,8 +783,10 @@ class ToolManager:
 
         # A temporary LLM instead of mutating the cached one.
         if agent.tool_call_summary is True:
-            summary = self.temp_llm_instance_for_tool_summary().run(
-                TOOL_SUMMARY_PROMPT.format(output=output)
+            summary = agent.llm_manager.run_side_call(
+                self.temp_llm_instance_for_tool_summary(),
+                TOOL_SUMMARY_PROMPT.format(output=output),
+                current_loop=loop_count,
             )
             agent.short_memory.add(
                 role=agent.agent_name, content=summary
@@ -885,10 +876,10 @@ class ToolManager:
             agent.short_memory.add(role="Tool Executor", content=text)
 
             try:
-                summary = (
-                    self.temp_llm_instance_for_tool_summary().run(
-                        task=agent.short_memory.get_str()
-                    )
+                summary = agent.llm_manager.run_side_call(
+                    self.temp_llm_instance_for_tool_summary(),
+                    agent.short_memory.get_str(),
+                    current_loop=current_loop,
                 )
             except Exception as e:
                 logger.error(

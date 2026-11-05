@@ -663,7 +663,7 @@ class MCPManager:
         self, item: Union[str, MCPConnection, Dict]
     ) -> MCPConnection:
         if isinstance(item, MCPConnection):
-            connection = item
+            connection = item.model_copy()
         elif isinstance(item, dict):
             connection = MCPConnection(**item)
         elif isinstance(item, str):
@@ -1269,16 +1269,11 @@ class MCPManager:
             return transport
 
         url = connection.url or ""
-        parsed = urlparse(url)
-        if parsed.scheme in ("http", "https"):
-            if any(
-                url.rstrip("/").endswith(hint.rstrip("/"))
-                for hint in _SSE_URL_HINTS
-            ):
-                return "sse"
-            return "streamable_http"
-        if not parsed.scheme:
-            return "stdio"
+        if urlparse(url).scheme in ("http", "https") and any(
+            url.rstrip("/").endswith(hint.rstrip("/"))
+            for hint in _SSE_URL_HINTS
+        ):
+            return "sse"
         return "streamable_http"
 
     def _resolve_auth_type(self, connection: MCPConnection) -> str:
@@ -1419,7 +1414,7 @@ class MCPManager:
             )
 
         provider_kwargs: Dict[str, Any] = {
-            "server_url": _server_origin(connection.url or ""),
+            "server_url": connection.url or "",
             "client_metadata": client_metadata,
             "storage": storage,
             "redirect_handler": redirect_handler,
@@ -1446,6 +1441,7 @@ class MCPManager:
             try:
                 from mcp.client.stdio import (
                     StdioServerParameters,
+                    get_default_environment,
                     stdio_client,
                 )
             except ImportError as e:
@@ -1453,18 +1449,18 @@ class MCPManager:
                     f"stdio transport is unavailable in this MCP SDK: {e}"
                 )
 
+            # Never derive a command from `url`: a URL string must not start a process.
+            if not connection.command:
+                raise AgentMCPConnectionError(
+                    "stdio transport requires an explicit `command` (and "
+                    "optionally `args`) in the MCP config; `url` is never "
+                    "run as a command."
+                )
             command = connection.command
             args = list(connection.args or [])
-            if not command:
-                # Allow "python server.py" style strings in `url`.
-                parts = (connection.url or "").split()
-                if not parts:
-                    raise AgentMCPConnectionError(
-                        "stdio transport requires `command` (and optionally `args`)."
-                    )
-                command, args = parts[0], parts[1:]
 
-            env = dict(os.environ)
+            # The server gets the SDK's minimal environment plus `env`, not this process's secrets.
+            env = get_default_environment()
             for name, value in (connection.env or {}).items():
                 resolved = _resolve_secret(value)
                 if resolved is not None:
@@ -1479,6 +1475,12 @@ class MCPManager:
         if not connection.url:
             raise AgentMCPConnectionError(
                 "An MCP server URL is required for HTTP transports."
+            )
+        if urlparse(connection.url).scheme not in ("http", "https"):
+            raise AgentMCPConnectionError(
+                f"MCP server URL {connection.url!r} must start with "
+                "http:// or https://. To launch a local server, pass "
+                "`command` and `args` in the MCP config instead."
             )
 
         if transport == "sse":

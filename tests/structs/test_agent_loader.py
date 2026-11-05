@@ -1,10 +1,7 @@
 import os
 import tempfile
-
-try:
-    import pytest
-except ImportError:
-    pytest = None
+import threading
+from types import SimpleNamespace
 
 from loguru import logger
 
@@ -371,6 +368,105 @@ def test_load_agents_from_csv():
         logger.warning("CSV test skipped due to validation issues")
 
 
+def test_load_agents_from_csv_keeps_file_order():
+    """Agents come back in file order even when a later row builds first."""
+    from swarms.structs.agent_loader import AgentLoader
+
+    second_built = threading.Event()
+
+    class FirstRowBuildsLast(AgentLoader):
+        def _create_agent(self, validated_config):
+            name = validated_config["agent_name"]
+            if name == "Test-CSV-Agent-1":
+                assert second_built.wait(timeout=10)
+            else:
+                second_built.set()
+            return SimpleNamespace(agent_name=name)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        csv_file = create_test_csv_file(
+            os.path.join(tmpdir, "test_agents.csv")
+        )
+        agents = FirstRowBuildsLast().load_agents_from_csv(csv_file)
+
+    assert [agent.agent_name for agent in agents] == [
+        "Test-CSV-Agent-1",
+        "Test-CSV-Agent-2",
+    ]
+
+
+def test_load_agents_from_markdown_keeps_file_order():
+    """A directory loads in name order even when a later file builds first."""
+    second_built = threading.Event()
+
+    class FirstFileBuildsLast(AgentLoader):
+        def load_agent_from_markdown(self, file_path, **kwargs):
+            name = os.path.basename(file_path)
+            if name == "a.md":
+                assert second_built.wait(timeout=10)
+            else:
+                second_built.set()
+            return SimpleNamespace(agent_name=name)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for name in ("b.md", "a.md"):
+            create_test_markdown_file(
+                os.path.join(tmpdir, name), name
+            )
+        agents = FirstFileBuildsLast().load_agents_from_markdown(
+            tmpdir
+        )
+
+    assert [agent.agent_name for agent in agents] == ["a.md", "b.md"]
+
+
+def test_loader_concurrent_false_loads_in_the_calling_thread():
+    """AgentLoader(concurrent=False) is honoured when the call does not override it."""
+    threads = []
+
+    class Recording(AgentLoader):
+        def load_agent_from_markdown(self, file_path, **kwargs):
+            threads.append(threading.current_thread())
+            return SimpleNamespace(agent_name=file_path)
+
+    Recording(concurrent=False).load_agents_from_markdown(
+        ["one.md", "two.md"]
+    )
+
+    assert threads == [threading.current_thread()] * 2
+
+
+def test_agent_files_accept_max_loops_auto():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        md_file = os.path.join(tmpdir, "researcher.md")
+        with open(md_file, "w", encoding="utf-8") as f:
+            f.write(
+                "---\nname: Researcher\nmax_loops: auto\n---\nResearch.\n"
+            )
+        csv_file = os.path.join(tmpdir, "agents.csv")
+        with open(csv_file, "w", encoding="utf-8", newline="") as f:
+            f.write(
+                "agent_name,max_loops\nResearcher,auto\nWriter,2\n"
+            )
+        yaml_file = os.path.join(tmpdir, "agents.yaml")
+        with open(yaml_file, "w", encoding="utf-8") as f:
+            f.write(
+                "agents:\n  - agent_name: Researcher\n"
+                "    system_prompt: Research.\n    max_loops: auto\n"
+            )
+
+        loader = AgentLoader()
+        markdown = loader.load_agents_from_markdown([md_file])
+        csv_rows = loader.load_agents_from_csv(csv_file)
+        yaml_agent = loader.load_agents_from_yaml(
+            yaml_file, return_type="agents"
+        )
+
+    assert [a.max_loops for a in markdown] == ["auto"]
+    assert [a.max_loops for a in csv_rows] == ["auto", 2]
+    assert yaml_agent.max_loops == "auto"
+
+
 def test_auto_detect_markdown():
     """Test auto-detection of markdown file type."""
     try:
@@ -496,6 +592,23 @@ def test_auto_unsupported_file_type():
         raise
 
 
+def test_auto_loads_every_format_create_agent_file_writes():
+    rows = [
+        {"agent_name": "Alpha", "system_prompt": "You are Alpha."},
+        {"agent_name": "Beta", "system_prompt": "You are Beta."},
+    ]
+    loader = AgentLoader()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for ext in ("csv", "json", "yaml", "yml"):
+            path = os.path.join(tmpdir, f"agents.{ext}")
+            loader.create_agent_file(path, rows)
+            agents = loader.auto(path)
+            assert [a.agent_name for a in agents] == [
+                "Alpha",
+                "Beta",
+            ], ext
+
+
 def test_load_single_agent():
     """Test load_single_agent method."""
     try:
@@ -566,17 +679,17 @@ def test_parse_markdown_file():
                 agent_config is not None
             ), "Agent config should not be None"
             assert hasattr(
-                agent_config, "name"
-            ), "Config should have name attribute"
+                agent_config, "agent_name"
+            ), "Config should have agent_name attribute"
             assert hasattr(
                 agent_config, "model_name"
             ), "Config should have model_name attribute"
             assert (
-                agent_config.name == "ParseTestAgent"
+                agent_config.agent_name == "ParseTestAgent"
             ), "Agent name should match"
 
             logger.info(
-                f"✓ Parse markdown file test passed: {agent_config.name}"
+                f"✓ Parse markdown file test passed: {agent_config.agent_name}"
             )
 
     except Exception as e:
@@ -671,85 +784,3 @@ def test_error_handling_nonexistent_file():
             f"Error in test_error_handling_nonexistent_file: {str(e)}"
         )
         raise
-
-
-if __name__ == "__main__":
-    import sys
-
-    test_dict = {
-        "test_agent_loader_initialization": test_agent_loader_initialization,
-        "test_load_agent_from_markdown": test_load_agent_from_markdown,
-        "test_load_agents_from_markdown_single_file": test_load_agents_from_markdown_single_file,
-        "test_load_agents_from_markdown_multiple_files": test_load_agents_from_markdown_multiple_files,
-        "test_load_agents_from_yaml": test_load_agents_from_yaml,
-        "test_load_many_agents_from_yaml": test_load_many_agents_from_yaml,
-        "test_load_agents_from_csv": test_load_agents_from_csv,
-        "test_auto_detect_markdown": test_auto_detect_markdown,
-        "test_auto_detect_yaml": test_auto_detect_yaml,
-        "test_auto_detect_csv": test_auto_detect_csv,
-        "test_auto_unsupported_file_type": test_auto_unsupported_file_type,
-        "test_load_single_agent": test_load_single_agent,
-        "test_load_multiple_agents": test_load_multiple_agents,
-        "test_parse_markdown_file": test_parse_markdown_file,
-        "test_loaded_agents_can_run": test_loaded_agents_can_run,
-        "test_load_agents_with_streaming": test_load_agents_with_streaming,
-        "test_error_handling_nonexistent_file": test_error_handling_nonexistent_file,
-    }
-
-    if len(sys.argv) > 1:
-        requested_tests = []
-        for test_name in sys.argv[1:]:
-            if test_name in test_dict:
-                requested_tests.append(test_dict[test_name])
-            elif test_name == "all" or test_name == "--all":
-                requested_tests = list(test_dict.values())
-                break
-            else:
-                print(f"⚠ Warning: Test '{test_name}' not found.")
-                print(
-                    f"Available tests: {', '.join(test_dict.keys())}"
-                )
-                sys.exit(1)
-
-        tests_to_run = requested_tests
-    else:
-        tests_to_run = list(test_dict.values())
-
-    if len(tests_to_run) == 1:
-        print(f"Running: {tests_to_run[0].__name__}")
-    else:
-        print(f"Running {len(tests_to_run)} test(s)...")
-
-    passed = 0
-    failed = 0
-
-    for test_func in tests_to_run:
-        try:
-            print(f"\n{'='*60}")
-            print(f"Running: {test_func.__name__}")
-            print(f"{'='*60}")
-            test_func()
-            print(f"✓ PASSED: {test_func.__name__}")
-            passed += 1
-        except Exception as e:
-            print(f"✗ FAILED: {test_func.__name__}")
-            print(f"  Error: {str(e)}")
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"Test Summary: {passed} passed, {failed} failed")
-    print(f"{'='*60}")
-
-    if len(sys.argv) == 1:
-        print("\n💡 Tip: Run a specific test with:")
-        print(
-            "   python test_agent_loader.py test_load_agent_from_markdown"
-        )
-        print("\n   Or use pytest:")
-        print("   pytest test_agent_loader.py")
-        print(
-            "   pytest test_agent_loader.py::test_load_agent_from_markdown"
-        )

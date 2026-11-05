@@ -4,8 +4,12 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
+
+from swarms.utils import llm_backend
 from swarms.utils.litellm_wrapper import (
     LiteLLM,
+    NetworkConnectionError,
     empty_usage,
     usage_from_response,
 )
@@ -315,3 +319,35 @@ class TestLastResponseDetails:
 
         assert "doomed" in str(llm.last_request["messages"])
         assert llm.last_response is None
+
+
+def test_run_raises_network_connection_error():
+    error = llm_backend.APIConnectionError(
+        message="Connection error.",
+        llm_provider="openai",
+        model="gpt-5.4-mini",
+    )
+    llm = LiteLLM(model_name="gpt-5.4-mini")
+    with patch(
+        "swarms.utils.litellm_wrapper.completion",
+        side_effect=error,
+    ):
+        with pytest.raises(NetworkConnectionError) as exc_info:
+            llm.run("hi")
+    assert exc_info.value.__cause__ is error
+
+
+def test_arun_raises_network_connection_error():
+    error = llm_backend.Timeout(
+        message="Request timed out.",
+        llm_provider="openai",
+        model="gpt-5.4-mini",
+    )
+    llm = LiteLLM(model_name="gpt-5.4-mini")
+    with patch(
+        "swarms.utils.litellm_wrapper.acompletion",
+        side_effect=error,
+    ):
+        with pytest.raises(NetworkConnectionError) as exc_info:
+            asyncio.run(llm.arun("hi"))
+    assert exc_info.value.__cause__ is error
