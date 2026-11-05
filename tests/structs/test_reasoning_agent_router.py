@@ -18,10 +18,7 @@ def test_router_init_default():
         == "A reasoning agent that can answer questions and help with tasks."
     )
     assert router.model_name == "gpt-5.4"
-    assert (
-        router.system_prompt
-        == "You are a helpful assistant that can answer questions and help with tasks."
-    )
+    assert router.system_prompt is None
     assert router.max_loops == 1
     assert router.swarm_type == "reasoning-duo"
     assert router.num_samples == 1
@@ -472,3 +469,23 @@ def test_self_consistency_samples_get_distinct_agents():
         router.run("What is 2 + 2?")
 
     assert len(set(agent_ids[:3])) == 3
+
+
+@pytest.mark.parametrize(
+    "swarm_type, prompt_of",
+    [
+        ("self-consistency", lambda a: a.system_prompt),
+        ("ire", lambda a: a.system_prompt),
+        ("AgentJudge", lambda a: a.agent.system_prompt),
+        ("ReflexionAgent", lambda a: a.actor.system_prompt),
+    ],
+)
+def test_default_router_keeps_each_agents_own_prompt(
+    swarm_type, prompt_of
+):
+    routed = ReasoningAgentRouter(
+        swarm_type=swarm_type
+    ).select_swarm()
+    direct = type(routed)()
+
+    assert prompt_of(routed) == prompt_of(direct)

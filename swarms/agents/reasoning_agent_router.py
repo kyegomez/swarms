@@ -57,7 +57,7 @@ class ReasoningAgentRouter:
         agent_name (str): Name identifier for the agent instance.
         description (str): Description of the agent's capabilities.
         model_name (str): The underlying language model to use.
-        system_prompt (str): System prompt for the agent.
+        system_prompt (Optional[str]): System prompt for the agent. Defaults to None, which keeps each reasoning agent's own prompt.
         max_loops (int): Maximum number of reasoning loops.
         swarm_type (agent_types): Type of reasoning swarm to use.
         num_samples (int): Number of samples for self-consistency or iterations.
@@ -80,7 +80,7 @@ class ReasoningAgentRouter:
         agent_name: str = "reasoning_agent",
         description: str = "A reasoning agent that can answer questions and help with tasks.",
         model_name: str = "gpt-5.4",
-        system_prompt: str = "You are a helpful assistant that can answer questions and help with tasks.",
+        system_prompt: Optional[str] = None,
         max_loops: int = 1,
         swarm_type: agent_types = "reasoning-duo",
         num_samples: int = 1,
@@ -154,6 +154,11 @@ class ReasoningAgentRouter:
 
         return agent_factories
 
+    def _system_prompt_kwargs(self) -> dict:
+        if self.system_prompt is None:
+            return {}
+        return {"system_prompt": self.system_prompt}
+
     def _create_reasoning_duo(self):
         """
         Create an agent instance for the ReasoningDuo type.
@@ -165,7 +170,7 @@ class ReasoningAgentRouter:
             agent_name=self.agent_name,
             agent_description=self.description,
             model_name=self.model_name,
-            system_prompt=self.system_prompt,
+            **self._system_prompt_kwargs(),
             output_type=self.output_type,
             reasoning_model_name=self.reasoning_model_name,
             max_loops=self.max_loops,
@@ -182,7 +187,7 @@ class ReasoningAgentRouter:
             name=self.agent_name,
             description=self.description,
             model_name=self.model_name,
-            system_prompt=self.system_prompt,
+            **self._system_prompt_kwargs(),
             max_loops=self.max_loops,
             num_samples=self.num_samples,
             output_type=self.output_type,
@@ -202,7 +207,7 @@ class ReasoningAgentRouter:
             agent_name=self.agent_name,
             description=self.description,
             model_name=self.model_name,
-            system_prompt=self.system_prompt,
+            **self._system_prompt_kwargs(),
             max_loops=self.num_samples,
             output_type=self.output_type,
         )
@@ -217,7 +222,7 @@ class ReasoningAgentRouter:
         return AgentJudge(
             agent_name=self.agent_name,
             model_name=self.model_name,
-            system_prompt=self.system_prompt,
+            **self._system_prompt_kwargs(),
             max_loops=self.max_loops,
         )
 
@@ -230,7 +235,7 @@ class ReasoningAgentRouter:
         """
         return ReflexionAgent(
             agent_name=self.agent_name,
-            system_prompt=self.system_prompt,
+            **self._system_prompt_kwargs(),
             model_name=self.model_name,
             max_loops=self.max_loops,
             memory_capacity=self.memory_capacity,
