@@ -6,6 +6,7 @@ from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.structs.usage_utils import total_usage
 
 
 class OneOnOneDebate:
@@ -81,6 +82,17 @@ class OneOnOneDebate:
         return history_output_formatter(
             conversation=conversation, type=self.output_type
         )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)
 
 
 class ExpertPanelDiscussion:
@@ -192,3 +204,14 @@ class ExpertPanelDiscussion:
         return history_output_formatter(
             conversation=conversation, type=self.output_type
         )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

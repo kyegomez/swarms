@@ -55,6 +55,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.structs.usage_utils import total_usage
 
 _ORDER_BATCH_SCHEMA = BaseTool().base_model_to_dict(OrderBatch)
 _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
@@ -600,8 +601,18 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
-            self.conversation.clear()
+            self.conversation = Conversation(
+                time_enabled=False, channel=self.channel
+            )
             self._delivered = {}
+            for agent in (
+                self.director,
+                self._planning_director,
+                self._feedback_director,
+                self._judge_agent,
+            ):
+                if isinstance(agent, Agent):
+                    agent.reset()
             self.add_context_to_director()
 
             if task is not None:
@@ -1140,3 +1151,14 @@ class HierarchicalSwarm:
             return_exceptions=return_exceptions,
             **kwargs,
         )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

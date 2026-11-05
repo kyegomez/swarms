@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict, List, Optional
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
@@ -29,6 +30,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="mixture_of_agents")
 
@@ -47,7 +49,9 @@ class MixtureOfAgents:
     The aggregator always receives the full conversation transcript.
 
     Args:
-        id: Optional identifier accepted for API compatibility.
+        id: Unique identifier for this mixture instance. Used for
+            OpenTelemetry spans (``swarms.id``). Auto-generated when
+            omitted.
         name: Human-readable name for this mixture.
         description: Description added to the conversation metadata when
             listing the worker agents.
@@ -92,7 +96,9 @@ class MixtureOfAgents:
         """Initialize the mixture with worker and aggregator configuration.
 
         Args:
-            id: Optional identifier accepted for API compatibility.
+            id: Unique identifier for this mixture instance. Used for
+            OpenTelemetry spans (``swarms.id``). Auto-generated when
+            omitted.
             name: Human-readable name for this mixture.
             description: Description of this mixture's purpose.
             agents: Worker agents to run concurrently on each layer.
@@ -313,14 +319,102 @@ class MixtureOfAgents:
             img: Optional image input forwarded to worker agents.
 
         Returns:
-            The formatted mixture output, or an error string if execution
-            fails.
+            The formatted mixture output.
+
+        Raises:
+            Exception: Whatever the aggregator raised, so a failed run is
+                not mistaken for an answer. A failing worker does not
+                raise; its error is recorded as that worker's answer.
         """
-        try:
-            return self._run(task=task, img=img)
-        except Exception as e:
-            logger.error(f"Error running Mixture of Agents: {e}")
-            return f"Error: {e}"
+        return self._run(task=task, img=img)
+
+    async def arun(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        max_concurrency: Optional[int] = None,
+    ):
+        """Run the mixture on the event loop, awaiting each agent's arun.
+
+        Args:
+            task: User task for the mixture.
+            img: Optional image input forwarded to worker agents.
+            max_concurrency: Most workers running at once in a layer.
+                Defaults to ``max_workers``, or every worker if unset.
+
+        Returns:
+            The formatted mixture output, as ``run`` returns.
+
+        Raises:
+            ValueError: If max_concurrency is less than 1.
+            Exception: Whatever the aggregator raised, as ``run`` does.
+        """
+        if max_concurrency is None:
+            max_concurrency = self.max_workers
+        if max_concurrency is not None and max_concurrency < 1:
+            raise ValueError("max_concurrency must be at least 1")
+        semaphore = asyncio.Semaphore(
+            max_concurrency or len(self.agents)
+        )
+
+        async def _answer(agent: Agent, prompt: str) -> tuple:
+            async with semaphore:
+                try:
+                    output = await agent.arun(task=prompt, img=img)
+                except Exception as error:
+                    output = error
+            return agent.agent_name, agent_answer(agent, output)
+
+        self._reset_conversation()
+        for agent in self.agents:
+            agent.reset()
+
+        self.conversation.add(role="User", content=task)
+
+        worker_input = task
+        for i in range(self.layers):
+            step_output = dict(
+                await asyncio.gather(
+                    *(_answer(a, worker_input) for a in self.agents)
+                )
+            )
+
+            for agent_name, agent_output in step_output.items():
+                self.conversation.add(
+                    role=(
+                        f"{agent_name} (layer {i + 1}/{self.layers})"
+                        if self.layers > 1
+                        else agent_name
+                    ),
+                    content=agent_output,
+                )
+
+            layer_output = "\n\n".join(
+                f"{name}: {out}" for name, out in step_output.items()
+            )
+            worker_input = (
+                f"Original task: {task}\n\n"
+                f"Previous layer synthesis:\n{layer_output}"
+            )
+
+        prior, aggregator_task = split_last_turn(
+            messages_for(
+                self.aggregator_agent.agent_name, self.conversation
+            )
+        )
+        aggregator_output = await self.aggregator_agent.arun(
+            task=aggregator_task, messages=prior
+        )
+        self.conversation.add(
+            role=self.aggregator_agent.agent_name,
+            content=agent_answer(
+                self.aggregator_agent, fallback=aggregator_output
+            ),
+        )
+
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )
 
     def run_batched(self, tasks: List[str]) -> List[str]:
         """Run tasks sequentially through the same mixture instance.
@@ -344,3 +438,14 @@ class MixtureOfAgents:
             tasks were given.
         """
         return run_concurrently(self.run, tasks)
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)
