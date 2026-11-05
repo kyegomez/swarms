@@ -18,6 +18,7 @@ Workflow:
 
 """
 
+import re
 from typing import List, Tuple
 from loguru import logger
 from swarms.structs.agent import Agent
@@ -122,20 +123,19 @@ class IterativeReflectiveExpansion:
         self.conversation.add(
             role=self.agent.agent_name, content=response
         )
-        outcome = ""
-        score = 0.0
-        error_info = ""
-        try:
-            # Expecting a response with lines starting with "Outcome:", "Score:", and "Errors:"
-            for line in response.splitlines():
-                if line.startswith("Outcome:"):
-                    outcome = line[len("Outcome:") :].strip()
-                elif line.startswith("Score:"):
-                    score = float(line[len("Score:") :].strip())
-                elif line.startswith("Errors:"):
-                    error_info = line[len("Errors:") :].strip()
-        except Exception as e:
-            logger.error(f"Error parsing simulation response: {e}")
+        sections = re.split(
+            r"^[^\w\n]*(?:\d+[^\w\n]*)?(outcome|score|errors)\b\W*",
+            response,
+            flags=re.I | re.M,
+        )
+        fields = {
+            label.lower(): text.strip(" \n*`-")
+            for label, text in zip(sections[1::2], sections[2::2])
+        }
+        outcome = fields.get("outcome", "")
+        number = re.search(r"\d*\.?\d+", fields.get("score", ""))
+        score = float(number.group()) if number else 0.0
+        error_info = fields.get("errors", "")
         logger.debug(
             f"Simulated outcome: {outcome}, Score: {score}, Errors: {error_info}"
         )
