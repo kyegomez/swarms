@@ -1,3 +1,4 @@
+import re
 from typing import List, Dict, Any, Tuple
 import time
 from datetime import datetime
@@ -311,21 +312,13 @@ class ReflexionAgent:
         self.evaluator.reset()
         evaluation = self.evaluator.run(task=prompt)
 
-        # Regex over prose stands in for structured output
-        try:
-            # Look for a final score in the format "Final Score: X/10" or similar
-            import re
-
-            score_matches = re.findall(
-                r"(?:final|overall)\s+score:?\s*(\d+(?:\.\d+)?)",
-                evaluation.lower(),
-            )
-            score = float(score_matches[-1]) if score_matches else 5.0
-            # Normalize to 0-1 range
-            normalized_score = score / 10.0
-        except Exception as e:
-            logger.error(f"Failed to extract score: {e}")
-            normalized_score = 0.5  # Default mid-range score
+        score_matches = re.findall(
+            r"(?:final|overall)\s+score[\s:*_#`]*(\d+(?:\.\d+)?)",
+            evaluation.lower(),
+        )
+        normalized_score = (
+            float(score_matches[-1]) / 10.0 if score_matches else 0.5
+        )
 
         logger.debug(
             f"Evaluation complete. Score: {normalized_score:.2f}"

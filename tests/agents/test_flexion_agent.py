@@ -1,3 +1,5 @@
+import pytest
+
 from swarms.agents.flexion_agent import ReflexionAgent
 from swarms.structs.agent import Agent
 
@@ -57,3 +59,20 @@ def test_each_call_sees_only_its_own_prompt(monkeypatch):
     assert len(requests) == 12
     for name, prompts in requests:
         assert len(prompts) == 1, f"{name} also saw {prompts[:-1]}"
+
+
+@pytest.mark.parametrize(
+    "evaluation",
+    [
+        "Final Score: 8/10",
+        "**Final Score:** 8/10",
+        "Final score: **8**/10",
+        "## Overall Score\n8 / 10",
+        "**Final Score**: `8`",
+    ],
+)
+def test_evaluate_reads_a_markdown_final_score(evaluation):
+    agent = ReflexionAgent(agent_name="rx", model_name="gpt-5.4")
+    agent.evaluator.run = lambda task: evaluation
+
+    assert agent.evaluate("task", "response") == (evaluation, 0.8)
