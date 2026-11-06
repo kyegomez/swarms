@@ -1,6 +1,6 @@
 toml
 loguru
-pydantic==2.12.5
+pydantic==2.13.5
 tenacity
 rich
 psutil
