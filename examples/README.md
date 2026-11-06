@@ -233,9 +233,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [conversation_test.py](utils/misc/conversation_test.py) | Conversation test |
 | [csvagent_example.py](utils/misc/csvagent_example.py) | CSV agent example |
 | [dict_to_table.py](utils/misc/dict_to_table.py) | Dictionary to table conversion |
-| [swarm_matcher_example.py](utils/misc/swarm_matcher_example.py) | Swarm matcher example |
 | [test_load_conversation.py](utils/misc/test_load_conversation.py) | Load conversation test |
-| [visualizer_test.py](utils/misc/visualizer_test.py) | Visualizer test |
 | [telemetry/](utils/telemetry/) | Telemetry and monitoring utilities |
 
 ### User Interface
