@@ -520,9 +520,6 @@ class PhasedFanOutWorkflow:
 
         Returns:
             list: The items, flattened across a fan-out source's slots.
-
-        Raises:
-            PhasedFanOutWorkflowError: If the field is missing or not a list.
         """
         source, _, field = step.for_each.partition(".")
         value = outputs.get(source)
@@ -531,12 +528,6 @@ class PhasedFanOutWorkflow:
         for slot in slots:
             if slot is None:
                 continue
-            if not isinstance(slot, dict) or not isinstance(
-                slot.get(field), list
-            ):
-                raise PhasedFanOutWorkflowError(
-                    f"Step '{step.id}' needs a list at '{step.for_each}', got {type(slot).__name__}."
-                )
             items.extend(slot[field])
         return items
 
@@ -561,15 +552,33 @@ class PhasedFanOutWorkflow:
                 "\n\nReturn ONLY JSON matching this schema, with no other text:\n"
                 + json.dumps(step.output_schema)
             )
+        fields = [
+            other.for_each.partition(".")[2]
+            for phase in plan.phases
+            for other in phase.steps
+            if other.for_each
+            and other.for_each.partition(".")[0] == step.id
+        ]
         used = []
         for attempt in range(self.max_retries + 1):
             agent = self._build_agent(step.agent, plan)
             used.append(agent)
             try:
                 raw = agent.run(prompt)
-                if step.output_schema:
-                    return _parse_json(raw), used
-                return raw, used
+                if not step.output_schema:
+                    return raw, used
+                output = _parse_json(raw)
+                missing = [
+                    f"{step.id}.{field}"
+                    for field in fields
+                    if not isinstance(output, dict)
+                    or not isinstance(output.get(field), list)
+                ]
+                if missing:
+                    raise ValueError(
+                        f"Output has no list at {missing}, which a later for_each runs over."
+                    )
+                return output, used
             except Exception as error:
                 logger.warning(
                     f"{self.name}: step '{step.id}' attempt {attempt + 1} failed: {error}"
