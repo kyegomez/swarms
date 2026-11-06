@@ -512,17 +512,19 @@ class ContextThreadPoolExecutor(ThreadPoolExecutor):
 
 
 def _warm_connection(
-    session: Any, timeout: float
+    session: Any, timeout: float, exporter: Any
 ) -> threading.Thread:
     """Open the collector connection in the background.
 
     The first export then reuses the pooled connection instead of paying
     the TLS handshake, which would otherwise land in the exit flush of a
-    short script.
+    short script. A connection that cannot be opened marks the exporter
+    unhealthy, so the exit flush is skipped.
 
     Args:
         session (Any): The exporter's requests session.
         timeout (float): Seconds to wait for the connection.
+        exporter (Any): The span exporter whose health to record.
 
     Returns:
         threading.Thread: The started daemon thread.
@@ -532,7 +534,7 @@ def _warm_connection(
         try:
             session.head(TELEMETRY_BASE_URL, timeout=timeout)
         except Exception:
-            pass
+            exporter.healthy = False
 
     thread = threading.Thread(
         target=connect, daemon=True, name="swarms-telemetry-warm"
@@ -541,15 +543,25 @@ def _warm_connection(
     return thread
 
 
-def _flush_on_exit(provider: Any) -> None:
+def _flush_on_exit(
+    provider: Any, exporter: Any, warm_thread: threading.Thread
+) -> None:
     """Flush queued spans at exit, waiting at most EXIT_FLUSH_TIMEOUT seconds.
+
+    Nothing is sent when the collector is known to be unreachable: an
+    export already failed, the warm-up connection failed, or it has not
+    completed yet. The queued spans are dropped and exit is immediate.
 
     Args:
         provider (Any): The tracer provider whose spans to flush.
+        exporter (Any): The span exporter whose health gates the flush.
+        warm_thread (threading.Thread): The connection warm-up thread.
 
     Returns:
         None
     """
+    if not exporter.healthy or warm_thread.is_alive():
+        return
     # A daemon thread, since newer SDKs ignore force_flush's timeout and export inline
     flusher = threading.Thread(
         target=provider.force_flush, daemon=True
@@ -582,6 +594,7 @@ class SwarmTelemetry:
         self._tracer: Optional[Any] = None
         self._provider: Optional[Any] = None
         self._warm_thread: Optional[threading.Thread] = None
+        self._exporter: Optional[Any] = None
 
         if not telemetry_on():
             return
@@ -606,11 +619,16 @@ class SwarmTelemetry:
             )
 
             class QuietExporter(OTLPSpanExporter):
+                healthy = True
+
                 def export(self, spans):
                     try:
-                        return super().export(spans)
+                        result = super().export(spans)
                     except Exception:
-                        return SpanExportResult.FAILURE
+                        result = SpanExportResult.FAILURE
+                    if result is SpanExportResult.FAILURE:
+                        self.healthy = False
+                    return result
 
             provider = TracerProvider(
                 resource=Resource.create(
@@ -627,21 +645,22 @@ class SwarmTelemetry:
                 os.getenv("SWARMS_OTEL_TIMEOUT", "8")
             )
             session = CompressingSession()
+            # http/protobuf exporter, full signal URL, NO auth header.
+            exporter = QuietExporter(
+                endpoint=f"{TELEMETRY_BASE_URL}/v1/traces",
+                timeout=export_timeout,
+                # The session compresses with zstd, so the exporter must send bodies as they are.
+                compression=Compression.NoCompression,
+                session=session,
+            )
             provider.add_span_processor(
                 BatchSpanProcessor(
-                    # http/protobuf exporter, full signal URL, NO auth header.
-                    QuietExporter(
-                        endpoint=f"{TELEMETRY_BASE_URL}/v1/traces",
-                        timeout=export_timeout,
-                        # The session compresses with zstd, so the exporter must send bodies as they are.
-                        compression=Compression.NoCompression,
-                        session=session,
-                    ),
-                    schedule_delay_millis=EXPORT_DELAY_MS,
+                    exporter, schedule_delay_millis=EXPORT_DELAY_MS
                 )
             )
+            self._exporter = exporter
             self._warm_thread = _warm_connection(
-                session, export_timeout
+                session, export_timeout, exporter
             )
             # OpenTelemetry's own stdlib loggers, which loguru cannot mute, so this one call stays on stdlib.
             for _name in (
@@ -650,7 +669,12 @@ class SwarmTelemetry:
             ):
                 logging.getLogger(_name).setLevel(logging.CRITICAL)
 
-            atexit.register(_flush_on_exit, provider)
+            atexit.register(
+                _flush_on_exit,
+                provider,
+                exporter,
+                self._warm_thread,
+            )
 
             self._provider = provider
             self._tracer = trace.get_tracer(
