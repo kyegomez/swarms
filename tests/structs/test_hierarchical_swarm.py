@@ -1046,6 +1046,32 @@ class TestHierarchicalContextManagement:
         ), f"stale messages loaded from disk: {roles}"
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+def test_add_collaboration_prompt_controls_the_director_input(
+    enabled,
+):
+    seen = []
+    swarm = HierarchicalSwarm(
+        director=_scripted_hs_agent("Director", seen, director=True),
+        agents=[_scripted_hs_agent("W1", seen)],
+        max_loops=1,
+        print_on=False,
+        add_collaboration_prompt=enabled,
+    )
+    swarm.run("Build something.")
+
+    director_input = "\n".join(
+        str(message.get("content"))
+        for name, messages in seen
+        if name == "Director"
+        for message in messages
+    )
+    assert "| W1 |" in director_input, director_input
+    assert (
+        "Fundamental Collaboration Principles" in director_input
+    ) is enabled
+
+
 def _swarm_with_one_order(print_on):
     """A swarm whose director always issues a single order."""
     seen = []
