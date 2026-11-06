@@ -1,7 +1,7 @@
 import json
 import time
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from loguru import logger
 from pydantic import BaseModel
@@ -67,6 +67,7 @@ class ToolManager:
 
     def __init__(self, agent: Any):
         self.agent = agent
+        self._tool_schema_message = None
 
     def setup_tools(self) -> BaseTool:
         """
@@ -141,6 +142,23 @@ class ToolManager:
         elif agent.tools:
             self.tool_handling()
 
+    def reload_tools(self, removed: Iterable[str] = ()) -> None:
+        agent = self.agent
+        agent.tools_list_dictionary = [
+            schema
+            for schema in agent.tools_list_dictionary or []
+            if _name(schema) not in removed
+        ]
+        if agent.tool_loader is not None:
+            self.setup_dynamic_tools()
+        elif agent.tools:
+            self.tool_handling()
+        agent.tool_struct = BaseTool(
+            tools=agent.tools, verbose=agent.verbose
+        )
+        if isinstance(agent.llm, LiteLLM):
+            agent.llm = agent.llm_handling()
+
     def tool_handling(self) -> None:
         """
         Add the agent's callable tools to its schema list and memory.
@@ -164,9 +182,24 @@ class ToolManager:
                 seen.add(name)
                 agent.tools_list_dictionary.append(schema)
 
-        agent.short_memory.add(
-            role=agent.agent_name, content=agent.tools_list_dictionary
+        history = agent.short_memory.conversation_history
+        row = next(
+            (
+                index
+                for index, message in enumerate(history)
+                if message is self._tool_schema_message
+            ),
+            None,
         )
+        if row is None:
+            self._tool_schema_message = agent.short_memory.add(
+                role=agent.agent_name,
+                content=agent.tools_list_dictionary,
+            )
+        else:
+            agent.short_memory.update(
+                row, agent.agent_name, agent.tools_list_dictionary
+            )
 
     def get_agent_registry(self) -> Dict[str, Any]:
         """
