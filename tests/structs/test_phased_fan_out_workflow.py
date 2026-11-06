@@ -616,3 +616,81 @@ def test_identical_steps_in_a_phase_are_rejected():
         )
     )
     assert any("Steps 'a' and 'b'" in e for e in errors)
+
+
+def test_plan_works_before_any_run():
+    lead = FakeLead([fan_out_plan()])
+    workflow = PhasedFanOutWorkflow(lead_agent=lead)
+
+    result = workflow.plan("Summarise three contracts")
+
+    assert result.phases[0].title == "Scan"
+
+
+class CopyingLead(FakeLead):
+    """Lead whose copies are distinct and record the task each one handled."""
+
+    copies = []
+
+    def __init__(self, plans, answer="FINAL", gate=None):
+        super().__init__(plans, answer)
+        self.gate = gate
+        self.planned = None
+        self.combined = None
+
+    def run(self, task, img=None):
+        for name in ("task-A", "task-B"):
+            if name in task:
+                break
+        if task.startswith("Task:") and "Outputs:" in task:
+            self.combined = name
+            return self.answer
+        self.planned = name
+        if self.gate:
+            self.gate(name)
+        return json.dumps(self.plans.pop(0))
+
+    def __deepcopy__(self, memo):
+        copy = CopyingLead(self.plans, self.answer, self.gate)
+        CopyingLead.copies.append(copy)
+        return copy
+
+
+def test_overlapping_runs_each_keep_their_own_lead():
+    a_planned, b_planned = threading.Event(), threading.Event()
+
+    def gate(name):
+        # Run A pauses after planning until run B has planned, so B's lead lands last.
+        if name == "task-A":
+            a_planned.set()
+            assert b_planned.wait(5), "run B never planned"
+        else:
+            b_planned.set()
+
+    one_step = plan(
+        [
+            {
+                "title": "P",
+                "steps": [
+                    {"id": "a", "agent": "worker", "prompt": "x {task}"}
+                ],
+            }
+        ],
+        ["a"],
+    )
+    CopyingLead.copies = []
+    lead = CopyingLead([one_step, one_step], gate=gate)
+    workflow = PhasedFanOutWorkflow(lead_agent=lead)
+
+    run_a = threading.Thread(target=workflow.run, args=("task-A",))
+    run_a.start()
+    assert a_planned.wait(5), "run A never planned"
+    run_b = threading.Thread(target=workflow.run, args=("task-B",))
+    run_b.start()
+    run_a.join(10)
+    run_b.join(10)
+    assert not run_a.is_alive() and not run_b.is_alive()
+
+    assert len(CopyingLead.copies) == 2
+    for copy in CopyingLead.copies:
+        assert copy.combined == copy.planned
