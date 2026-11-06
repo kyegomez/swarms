@@ -2392,6 +2392,7 @@ Subtask Breakdown:
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         *args,
+        fresh: bool = False,
         **kwargs,
     ) -> Any:
         """
@@ -2447,6 +2448,22 @@ Subtask Breakdown:
             ...     messages=[{"role": "user", "content": "Name three primes."}],
             ... )
         """
+        if fresh:
+            stored_memory = self.short_memory
+            self.short_memory = self.short_memory_init()
+            self.tool_manager.handle_tool_schema_ops()
+            try:
+                return self.run(
+                    task,
+                    img,
+                    imgs,
+                    streaming_callback,
+                    messages,
+                    *args,
+                    **kwargs,
+                )
+            finally:
+                self.short_memory = stored_memory
 
         # Outside interactive mode, fail fast instead of blocking on stdin
         if task is None or (
