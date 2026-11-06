@@ -1371,6 +1371,7 @@ class Agent:
         self,
         streaming_callback: Optional[Callable[[str], None]] = None,
         messages: Optional[List[dict]] = None,
+        task: Optional[str] = None,
     ) -> Any:
         """
         Generate a comprehensive final summary of the autonomous task execution.
@@ -1381,6 +1382,7 @@ class Agent:
                 the summary is requested against the real conversation - with
                 its tool calls and tool results intact - rather than against a
                 flattened string rendering of it.
+            task: The task the run was given, named in the summary.
 
         Returns:
             Any: The conversation shaped by ``output_type``, on every path.
@@ -1426,7 +1428,7 @@ class Agent:
             # If complete_task wasn't called, generate summary manually
             comprehensive_summary = f"""Task Execution Summary
 
-Original Task: {self.short_memory.conversation_history[0].get('content', 'N/A') if self.short_memory.conversation_history else 'N/A'}
+Original Task: {task or 'N/A'}
 
 Subtask Breakdown:
 """
