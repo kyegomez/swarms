@@ -222,6 +222,7 @@ class AdvisorSwarm:
                     "strategic guidance for the Executor."
                 )
 
+                self.advisor_agent.reset()
                 advice = self.advisor_agent.run(
                     task=advisor_prompt,
                     messages=messages_for(
@@ -246,6 +247,7 @@ class AdvisorSwarm:
                 "task and any Advisor guidance, then produce your output."
             )
 
+            self.executor_agent.reset()
             output = self.executor_agent.run(
                 task=executor_prompt,
                 img=img,
