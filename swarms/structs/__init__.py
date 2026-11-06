@@ -79,6 +79,7 @@ from swarms.structs.planner_generator_evaluator import (
     PlannerGeneratorEvaluator,
     StepContract,
 )
+from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.sequential_workflow import SequentialWorkflow
@@ -121,6 +122,7 @@ __all__ = [
     "AgentRearrange",
     "rearrange",
     "RoundRobinSwarm",
+    "PlannerWorkerSwarm",
     "SequentialWorkflow",
     "MixtureOfAgents",
     "GraphWorkflow",
