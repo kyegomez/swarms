@@ -1,4 +1,5 @@
 from swarms.utils.formatter import Formatter
+import pytest
 
 
 def test_formatter():
@@ -186,3 +187,56 @@ def test_director_panel_does_not_parse_markup_in_a_task():
 
 if __name__ == "__main__":
     test_formatter()
+
+
+@pytest.mark.parametrize(
+    "level",
+    [
+        "INFO",
+        "DEBUG",
+        "WARNING",
+        "ERROR",
+        "SUCCESS",
+        "TRACE",
+        "CRITICAL",
+    ],
+)
+def test_clean_output_strips_every_log_level(level):
+    """_clean_output's level alternation must cover every loguru level,
+    not just the four (INFO/DEBUG/WARNING/ERROR) originally hardcoded.
+    SUCCESS in particular is used throughout swarms (e.g. graph_workflow.py)
+    and previously passed through _clean_output untouched."""
+    handler = Formatter(md=True).markdown_handler
+    line = (
+        f"2026-08-09 12:00:00 | {level} | mymodule:myfunc:42 | "
+        "some log line"
+    )
+    content = line + "\nActual content that should survive"
+    cleaned = handler._clean_output(content)
+    assert level not in cleaned
+    assert "Actual content that should survive" in cleaned
+
+
+def test_clean_output_handles_empty_string():
+    handler = Formatter(md=True).markdown_handler
+    assert handler._clean_output("") == ""
+
+
+def test_dead_print_methods_are_removed():
+    """print_progress, print_panel_token_by_token, and print_plan_tree had
+    zero callers anywhere in the codebase and are removed as dead code.
+    """
+    formatter = Formatter(md=True)
+    assert not hasattr(formatter, "print_progress")
+    assert not hasattr(formatter, "print_panel_token_by_token")
+    assert not hasattr(formatter, "print_plan_tree")
+
+
+def test_print_markdown_still_works_as_alias():
+    """print_markdown now forwards to print_panel instead of duplicating
+    its markdown-rendering branch; it must still be callable with the same
+    signature and not raise."""
+    formatter = Formatter(md=True)
+    formatter.print_markdown(
+        "# Title\n\nBody", title="t", border_style="cyan"
+    )
