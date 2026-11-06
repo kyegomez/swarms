@@ -945,7 +945,7 @@ class BaseTool(BaseModel):
                 "warning",
                 "API response is None, returning empty results. This may indicate the LLM did not return a valid response.",
             )
-            return [] if not return_as_string else []
+            return "" if return_as_string else []
 
         # Handle direct list of tool call objects (e.g., from OpenAI ChatCompletionMessageToolCall or Anthropic BaseModels)
         if isinstance(api_response, list):
