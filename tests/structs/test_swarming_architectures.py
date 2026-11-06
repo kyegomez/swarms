@@ -8,6 +8,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.broadcast import broadcast
 from swarms.structs.swarming_architectures import (
     circular_swarm,
+    mesh_swarm,
     star_swarm,
 )
 
@@ -134,6 +135,37 @@ def test_nothing_is_handed_a_flattened_role_colon_blob():
         assert "User: " not in str(
             call["task"]
         ), f"{call['agent']} received flattened prose: {call['task']}"
+
+
+def test_star_and_mesh_record_each_answer_not_the_whole_transcript(
+    monkeypatch,
+):
+    replies = iter(range(100))
+    monkeypatch.setattr(
+        Agent,
+        "call_llm",
+        lambda self, *a, **k: f"{self.agent_name}-{next(replies)}",
+    )
+
+    def agents(*names):
+        return [
+            Agent(
+                agent_name=n, model_name="gpt-4o-mini", print_on=False
+            )
+            for n in names
+        ]
+
+    star = star_swarm(agents("Centre", "X"), ["one", "two"])
+    mesh = mesh_swarm(agents("A", "B"), ["t1", "t2", "t3", "t4"])
+
+    assert [m["content"] for m in star if m["role"] == "X"] == [
+        "X-1",
+        "X-3",
+    ]
+    assert [m["content"] for m in mesh if m["role"] == "A"] == [
+        "A-4",
+        "A-6",
+    ]
 
 
 if __name__ == "__main__":
