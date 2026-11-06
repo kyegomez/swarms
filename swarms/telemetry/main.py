@@ -53,7 +53,7 @@ def get_comprehensive_system_info() -> Dict[str, Any]:
         system_data["mac_address"] = ":".join(
             [
                 f"{(uuid.getnode() >> elements) & 0xFF:02x}"
-                for elements in range(0, 2 * 6, 8)
+                for elements in range(0, 8 * 6, 8)
             ][::-1]
         )
     except Exception as e:
@@ -72,15 +72,7 @@ def get_comprehensive_system_info() -> Dict[str, Any]:
     free_ram_gb = vm.free / (1024**3)
     available_ram_gb = vm.available / (1024**3)
 
-    system_data.update(
-        {
-            "memory_total_gb": f"{total_ram_gb:.2f}",
-            "memory_used_gb": f"{used_ram_gb:.2f}",
-            "memory_free_gb": f"{free_ram_gb:.2f}",
-            "memory_available_gb": f"{available_ram_gb:.2f}",
-            "memory_summary": f"Total: {total_ram_gb:.2f} GB, Used: {used_ram_gb:.2f} GB, Free: {free_ram_gb:.2f} GB, Available: {available_ram_gb:.2f} GB",
-        }
-    )
+    system_data["memory_total_gb"] = f"{total_ram_gb:.2f}"
 
     # Python version
     system_data["python_version"] = platform.python_version()
@@ -91,5 +83,14 @@ def get_comprehensive_system_info() -> Dict[str, Any]:
         system_data["unique_identifier"] = str(unique_id)
     except Exception as e:
         system_data["unique_identifier"] = f"Error: {str(e)}"
+
+    system_data.update(
+        {
+            "memory_used_gb": f"{used_ram_gb:.2f}",
+            "memory_free_gb": f"{free_ram_gb:.2f}",
+            "memory_available_gb": f"{available_ram_gb:.2f}",
+            "memory_summary": f"Total: {total_ram_gb:.2f} GB, Used: {used_ram_gb:.2f} GB, Free: {free_ram_gb:.2f} GB, Available: {available_ram_gb:.2f} GB",
+        }
+    )
 
     return system_data

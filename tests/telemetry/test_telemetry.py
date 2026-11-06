@@ -101,6 +101,7 @@ from swarms.structs.planner_worker_swarm import (  # noqa: E402
 )
 from swarms.telemetry.main import (  # noqa: E402
     generate_user_id,
+    get_comprehensive_system_info,
     get_machine_id,
 )
 from swarms.telemetry.otel import (  # noqa: E402
@@ -3664,6 +3665,38 @@ class TestUserIdentity:
 
     def test_machine_id_is_stable_across_calls(self):
         assert len({get_machine_id() for _ in range(100)}) == 1
+
+    def test_system_info_reports_the_whole_mac_and_a_stable_id(
+        self, monkeypatch
+    ):
+        def reading(used_bytes):
+            total = 16 * 1024**3
+            memory = SimpleNamespace(
+                total=total,
+                used=used_bytes,
+                free=total - used_bytes,
+                available=total - used_bytes,
+            )
+            monkeypatch.setattr(
+                "swarms.telemetry.main.psutil.virtual_memory",
+                lambda: memory,
+            )
+            get_comprehensive_system_info.cache_clear()
+            return get_comprehensive_system_info()
+
+        first = reading(4 * 1024**3)
+        second = reading(9 * 1024**3)
+        get_comprehensive_system_info.cache_clear()
+
+        node = uuid.getnode()
+        assert first["mac_address"] == ":".join(
+            f"{(node >> shift) & 0xFF:02x}"
+            for shift in range(40, -8, -8)
+        )
+        assert first["memory_used_gb"] != second["memory_used_gb"]
+        assert (
+            first["unique_identifier"] == second["unique_identifier"]
+        )
 
 
 # ===========================================================================
