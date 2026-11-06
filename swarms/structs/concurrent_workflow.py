@@ -628,6 +628,8 @@ class ConcurrentWorkflow:
             >>> result = workflow.run("Analyze this data")
         """
         self.conversation = self._new_conversation()
+        for agent in self.agents:
+            agent.reset()
         try:
             if self.show_dashboard:
                 result = self.run_with_dashboard(

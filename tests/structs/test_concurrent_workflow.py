@@ -502,6 +502,9 @@ class _EchoAgent:
     def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
         return f"{self.agent_name} answered: {task}"
 
+    def reset(self) -> None:
+        pass
+
 
 def test_concurrent_workflow_batch_run_scopes_each_task():
     """batch_run must not carry an earlier task's messages into a later result (#2041)."""
@@ -592,6 +595,39 @@ def test_concurrent_workflow_run_twice_returns_only_each_task():
         "Alpha answered: second filing",
         "Beta answered: second filing",
     ]
+
+
+def test_concurrent_workflow_agents_do_not_see_an_earlier_task():
+    requests = {}
+
+    def stub(name):
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-4o-mini",
+            max_loops=1,
+            persistent_memory=False,
+            print_on=False,
+            autosave=False,
+        )
+
+        def call_llm(task=None, *args, **kwargs):
+            requests.setdefault(name, []).append(
+                [m["content"] for m in kwargs["messages"]]
+            )
+            return f"{name} answer"
+
+        agent.call_llm = call_llm
+        return agent
+
+    workflow = ConcurrentWorkflow(
+        agents=[stub("Alpha"), stub("Beta")], autosave=False
+    )
+    workflow.batch_run(["summarise filing A", "summarise filing B"])
+
+    for name in ("Alpha", "Beta"):
+        second = requests[name][1]
+        assert "summarise filing B" in second
+        assert "summarise filing A" not in second, second
 
 
 class _SlowEchoAgent(_EchoAgent):
