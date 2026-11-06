@@ -102,8 +102,7 @@ class MarkdownOutputHandler:
                     ("**", "#", "-", "*", ">", "```")
                 )
                 and len(first_line) < 100  # Reasonable title length
-                and not first_line.endswith((",", ".", ":", ";"))
-                or first_line.endswith(":")
+                and not first_line.endswith((",", ".", ";"))
             ):
                 # Make it a header
                 output = f"## {first_line}\n\n" + "\n".join(lines[1:])
