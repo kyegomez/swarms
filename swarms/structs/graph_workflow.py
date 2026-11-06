@@ -1864,6 +1864,7 @@ class GraphWorkflow:
     async def arun(
         self,
         task: Optional[str] = None,
+        run_id: Optional[str] = None,
         *args: Any,
         **kwargs: Any,
     ) -> Dict[str, Any]:
@@ -1883,7 +1884,7 @@ class GraphWorkflow:
 
         try:
             result = await asyncio.to_thread(
-                self.run, task, *args, **kwargs
+                self.run, task, *args, run_id=run_id, **kwargs
             )
 
             if self.verbose:
@@ -1999,6 +2000,7 @@ class GraphWorkflow:
         streaming_callback: Optional[
             Callable[[str, str], None]
         ] = None,
+        run_id: Optional[str] = None,
         *args: Any,
         **kwargs: Any,
     ) -> Dict[str, Any]:
@@ -2044,6 +2046,8 @@ class GraphWorkflow:
             self.task = task
         else:
             task = self.task
+
+        run_id = run_id or uuid.uuid4().hex[:16]
 
         if self.verbose:
             logger.info(
@@ -2122,7 +2126,7 @@ class GraphWorkflow:
 
                 # Deterministic key, not hash(): Python salts hashes, so they differ across runs.
                 task_key = (
-                    self._task_key(task)
+                    self._task_key(run_id)
                     if self.checkpoint_dir
                     else None
                 )
@@ -2260,6 +2264,7 @@ class GraphWorkflow:
                                     return _inner.run(
                                         _prompt,
                                         img=img,
+                                        run_id=run_id,
                                         *args,
                                         **kwargs,
                                     )
@@ -2911,17 +2916,17 @@ class GraphWorkflow:
             )
             raise e
 
-    def clear_checkpoints(self, task: str) -> int:
+    def clear_checkpoints(self, run_id: str) -> int:
         """
-        Delete all checkpoint files written for a specific task.
+        Delete all checkpoint files written for a specific run.
 
         Call this after a workflow run completes successfully to reclaim disk
-        space and prevent stale checkpoints from being picked up on future runs
-        with the same task string.
+        space and prevent stale checkpoints from being picked up if the same
+        run_id is reused.
 
         Args:
-            task (str): The task string whose checkpoints should be removed.
-                Must match the string passed to :meth:`run` exactly.
+            run_id (str): The run identity whose checkpoints should be removed.
+                Must match the ``run_id`` passed to :meth:`run` exactly.
 
         Returns:
             int: Number of checkpoint files deleted.
@@ -2931,8 +2936,8 @@ class GraphWorkflow:
 
         Example::
 
-            workflow.run("Analyse quarterly earnings")
-            workflow.clear_checkpoints("Analyse quarterly earnings")
+            results = workflow.run("Analyse quarterly earnings", run_id="run-1")
+            workflow.clear_checkpoints("run-1")
         """
         if not self.checkpoint_dir:
             raise ValueError(
@@ -2941,7 +2946,7 @@ class GraphWorkflow:
         cp_dir = Path(self.checkpoint_dir)
         if not cp_dir.exists():
             return 0
-        task_key = self._task_key(task)
+        task_key = self._task_key(run_id)
         prefix = f"{task_key}_layer_"
         deleted = 0
         for cp_file in cp_dir.glob(f"{prefix}*.json"):
@@ -2954,7 +2959,7 @@ class GraphWorkflow:
                 )
         if self.verbose:
             logger.info(
-                f"Cleared {deleted} checkpoint file(s) for task key {task_key}"
+                f"Cleared {deleted} checkpoint file(s) for run {run_id}"
             )
         return deleted
 
