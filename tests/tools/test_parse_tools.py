@@ -1,3 +1,5 @@
+import json
+
 from swarms.tools.tool_parse_exec import parse_and_execute_json
 
 
@@ -29,9 +31,14 @@ def test_parse_and_execute_json_success():
     functions = [mock_function_a, mock_function_b]
     json_string = '{"functions": [{"name": "mock_function_a", "parameters": {"param1": 1, "param2": 2}}, {"name": "mock_function_b", "parameters": {"param1": 3}}]}'
 
-    result = parse_and_execute_json(functions, json_string)
+    result = json.loads(
+        parse_and_execute_json(functions, json_string)
+    )
     expected_result = {
-        "results": {"mock_function_a": "3", "mock_function_b": "6"},
+        "results": [
+            {"name": "mock_function_a", "result": "3"},
+            {"name": "mock_function_b", "result": "6"},
+        ],
         "summary": "mock_function_a: 3\nmock_function_b: 6",
     }
 
@@ -44,12 +51,17 @@ def test_parse_and_execute_json_function_not_found():
     functions = [mock_function_a]
     json_string = '{"functions": [{"name": "non_existent_function", "parameters": {}}]}'
 
-    result = parse_and_execute_json(functions, json_string)
+    result = json.loads(
+        parse_and_execute_json(functions, json_string)
+    )
     expected_result = {
-        "results": {
-            "non_existent_function": "Error: Function non_existent_function not found"
-        },
-        "summary": "non_existent_function: Error: Function non_existent_function not found",
+        "results": [
+            {
+                "name": "non_existent_function",
+                "result": "Error: Function not found",
+            }
+        ],
+        "summary": "non_existent_function: Error: Function not found",
     }
 
     assert (
@@ -57,16 +69,51 @@ def test_parse_and_execute_json_function_not_found():
     ), f"Expected {expected_result}, but got {result}"
 
 
+def test_parse_and_execute_json_keeps_every_call_to_one_function():
+    functions = [mock_function_b]
+    json_string = json.dumps(
+        {
+            "functions": [
+                {
+                    "name": "mock_function_b",
+                    "parameters": {"param1": 2},
+                },
+                {
+                    "name": "mock_function_b",
+                    "parameters": {"param1": 5},
+                },
+            ]
+        }
+    )
+
+    result = json.loads(
+        parse_and_execute_json(functions, json_string)
+    )
+
+    assert result["results"] == [
+        {"name": "mock_function_b", "result": "4"},
+        {"name": "mock_function_b", "result": "10"},
+    ]
+    assert (
+        result["summary"] == "mock_function_b: 4\nmock_function_b: 10"
+    )
+
+
 def test_parse_and_execute_json_error_handling():
     functions = [mock_function_b]
     json_string = '{"functions": [{"name": "mock_function_b", "parameters": {"param1": -1}}]}'
 
-    result = parse_and_execute_json(functions, json_string)
+    result = json.loads(
+        parse_and_execute_json(functions, json_string, max_retries=1)
+    )
     expected_result = {
-        "results": {
-            "mock_function_b": "Error: Negative value not allowed"
-        },
-        "summary": "mock_function_b: Error: Negative value not allowed",
+        "results": [
+            {
+                "name": "mock_function_b",
+                "result": "Error after 1 attempts: Negative value not allowed",
+            }
+        ],
+        "summary": "mock_function_b: Error after 1 attempts: Negative value not allowed",
     }
 
     assert (
