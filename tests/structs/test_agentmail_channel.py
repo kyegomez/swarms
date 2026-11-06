@@ -2,6 +2,7 @@ import json
 import threading
 
 import httpx
+import pytest
 
 from swarms.structs import agentmail_channel
 from swarms.structs.agentmail_channel import AgentMailChannel
@@ -156,3 +157,122 @@ def test_messages_reads_every_page_oldest_first(monkeypatch):
         },
         {"agent_name": "bo@example.com", "content": "Fine."},
     ]
+
+
+@pytest.mark.parametrize(
+    "backend, error",
+    [
+        ("agentmail", "AGENTMAIL_API_KEY"),
+        ("resend", "RESEND_API_KEY"),
+        ("smtp", "backend"),
+    ],
+)
+def test_a_missing_key_names_the_backends_variable(
+    monkeypatch, backend, error
+):
+    monkeypatch.delenv("AGENTMAIL_API_KEY", raising=False)
+    monkeypatch.delenv("RESEND_API_KEY", raising=False)
+    with pytest.raises(ValueError, match=error):
+        AgentMailChannel(
+            "a@agents.example.com", "you@example.com", backend=backend
+        )
+
+
+def test_resend_posts_thread_onto_the_first(monkeypatch):
+    seen = []
+
+    def handler(request):
+        seen.append(request)
+        return httpx.Response(200, json={"id": "e1", "data": []})
+
+    channel = channel_with(monkeypatch, handler, backend="resend")
+    for post in ["Report on EVs.", "Growth was 31%."]:
+        channel.post("Researcher", post)
+    channel.clear()
+    channel.post("Writer", "New thread.")
+    assert channel.messages() == [
+        {"agent_name": "Writer", "content": "New thread."}
+    ]
+
+    bodies = [json.loads(r.content) for r in seen[:3]]
+    assert bodies[0] == {
+        "from": "Researcher <research@agentmail.to>",
+        "to": "you@example.com",
+        "subject": "EV report",
+        "text": "Report on EVs.",
+        "headers": {
+            "X-Swarms-Agent": "Researcher",
+            "References": bodies[0]["headers"]["References"],
+        },
+    }
+    roots = [body["headers"]["References"] for body in bodies]
+    assert roots[0] == roots[1] != roots[2] == channel.thread_id
+    keys = {r.headers["Idempotency-Key"] for r in seen[:3]}
+    assert len(keys) == 3
+    assert {str(r.url) for r in seen[:3]} == {
+        "https://api.resend.com/emails"
+    }
+
+
+def test_resend_reads_a_reply_without_its_quote_or_a_spoofed_name(
+    monkeypatch,
+):
+    fetched = []
+    pages = {
+        None: {
+            "has_more": True,
+            "data": [
+                {"id": "r1", "to": ["RESEARCH@agentmail.to"]},
+                {"id": "r2", "to": ["research@agentmail.to"]},
+            ],
+        },
+        "r2": {
+            "data": [
+                {"id": "r3", "to": ["otherresearch@agentmail.to"]},
+                # A copy of the channel's own post.
+                {
+                    "id": "r4",
+                    "to": ["research@agentmail.to"],
+                    "from": "Researcher <research@agentmail.to>",
+                },
+            ]
+        },
+    }
+
+    def handler(request):
+        if request.method == "POST":
+            return httpx.Response(200, json={"id": "e1"})
+        if request.url.path == "/emails/receiving":
+            after = request.url.params.get("after")
+            return httpx.Response(200, json=pages[after])
+        fetched.append(request.url.path)
+        # r1 answers this thread, r2 another one.
+        answered = "<a@x>" if request.url.path.endswith("r2") else ""
+        return httpx.Response(
+            200,
+            json={
+                "from": "ana@example.com",
+                "created_at": "2100-01-01T00:00:00.000Z",
+                # A person's email can carry the agent header too.
+                "headers": {
+                    "x-swarms-agent": "Writer",
+                    # Resend returns References as a JSON array in a string.
+                    "references": f'["{answered or channel.thread_id}"]',
+                },
+                "text": "Add a chart.\n\nOn Thu, Bot wrote:\n> Up 31%.",
+            },
+        )
+
+    channel = channel_with(monkeypatch, handler, backend="resend")
+    post = "Up 31%.\n\nOn Thu, Bot wrote:\n> earlier"
+    channel.post("Researcher", post)
+
+    for _ in range(2):
+        assert channel.messages() == [
+            {"agent_name": "Researcher", "content": post},
+            {
+                "agent_name": "ana@example.com",
+                "content": "Add a chart.",
+            },
+        ]
+    assert fetched == ["/emails/receiving/r1", "/emails/receiving/r2"]

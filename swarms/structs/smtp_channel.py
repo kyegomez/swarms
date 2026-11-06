@@ -231,6 +231,14 @@ def _quote(value: str) -> str:
     return f'"{escaped}"'
 
 
+def strip_quoted(text: str) -> str:
+    """Remove the history a person's reply quotes below its new text."""
+    lines = _QUOTED.sub("", text.replace("\r\n", "\n")).split("\n")
+    while lines and lines[-1].lstrip()[:1] in ("", ">"):
+        lines.pop()
+    return "\n".join(lines).strip()
+
+
 def _row(raw: bytes, n: int) -> tuple:
     msg = message_from_bytes(raw, policy=policy.default)
     date = getattr(msg["Date"], "datetime", None) or _EPOCH
@@ -240,11 +248,6 @@ def _row(raw: bytes, n: int) -> tuple:
     agent = msg["X-Swarms-Agent"]
     if agent is None:
         agent = parseaddr(str(msg["From"]))[1]
-        lines = _QUOTED.sub("", text.replace("\r\n", "\n")).split(
-            "\n"
-        )
-        while lines and lines[-1].lstrip()[:1] in ("", ">"):
-            lines.pop()
-        text = "\n".join(lines).strip()
+        text = strip_quoted(text)
     key = str(msg["Message-ID"] or n).strip()
     return key, (date, 1, n, str(agent), text)
