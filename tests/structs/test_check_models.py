@@ -1,5 +1,6 @@
 import asyncio
 
+import httpx
 import pytest
 
 from swarms.structs import check_models
@@ -71,10 +72,8 @@ def fake_openrouter(monkeypatch):
     monkeypatch.setattr(
         check_models, "_base_models", lambda: BASE_MODELS
     )
-    monkeypatch.setattr(check_models.httpx, "Client", _Client)
-    monkeypatch.setattr(
-        check_models.httpx, "AsyncClient", _AsyncClient
-    )
+    monkeypatch.setattr(httpx, "Client", _Client)
+    monkeypatch.setattr(httpx, "AsyncClient", _AsyncClient)
     clear_openrouter_cache()
     yield
     clear_openrouter_cache()
