@@ -423,7 +423,7 @@ class MultiAgentRouter:
         """
         return self.route_task(task)
 
-    def batch_run(self, tasks: List[str] = []):
+    def batch_run(self, tasks: Optional[List[str]] = None):
         """
         Route a batch of tasks sequentially.
 
@@ -438,6 +438,7 @@ class MultiAgentRouter:
             List[Any]: Routed results for the tasks that succeeded, in input
             order.
         """
+        tasks = tasks or []
         results = []
         for task in tasks:
             try:
@@ -446,7 +447,7 @@ class MultiAgentRouter:
                 logger.error(f"Error routing task {task!r}: {e}")
         return results
 
-    def concurrent_batch_run(self, tasks: List[str] = []):
+    def concurrent_batch_run(self, tasks: Optional[List[str]] = None):
         """
         Route a batch of tasks in parallel using a thread pool.
 
@@ -465,6 +466,7 @@ class MultiAgentRouter:
             List[Any]: Routed results for the tasks that succeeded, in input
             order.
         """
+        tasks = tasks or []
         results = []
         with ContextThreadPoolExecutor() as executor:
             futures = [
