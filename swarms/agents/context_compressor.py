@@ -166,7 +166,16 @@ class ContextCompressor:
         add_usage = getattr(agent, "_add_usage", None)
         if add_usage is not None and call_usage is not None:
             add_usage(call_usage)
-        return response.choices[0].message.content
+        choice = response.choices[0]
+        summary = choice.message.content
+        if not summary or not summary.strip():
+            raise ValueError(
+                f"Summarizer {model} returned no text "
+                f"(finish_reason="
+                f"{getattr(choice, 'finish_reason', None)}), "
+                f"keeping the uncompressed history"
+            )
+        return summary
 
     def compress(self, agent: Any) -> Optional[str]:
         """
