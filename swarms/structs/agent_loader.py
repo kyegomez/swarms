@@ -425,7 +425,7 @@ class AgentLoader:
     def load_many_agents_from_yaml(
         self,
         yaml_files: List[str],
-        return_types: List[ReturnTypes] = ["auto"],
+        return_types: Optional[List[ReturnTypes]] = None,
         **kwargs,
     ) -> List[Agent]:
         """
@@ -433,7 +433,7 @@ class AgentLoader:
 
         Args:
             yaml_files (List[str]): List of YAML file paths containing agent definitions.
-            return_types (List[ReturnTypes], optional): List of return types for each YAML file. Defaults to ["auto"].
+            return_types (Optional[List[ReturnTypes]]): List of return types for each YAML file. Defaults to "auto".
             **kwargs: Additional keyword arguments passed to the underlying loader.
 
         Returns:
@@ -442,7 +442,11 @@ class AgentLoader:
         return [
             self.load_agents_from_yaml(
                 yaml_file=yaml_file,
-                return_type=return_types[i],
+                return_type=(
+                    return_types[i]
+                    if return_types is not None and i < len(return_types)
+                    else "auto"
+                ),
                 **kwargs,
             )
             for i, yaml_file in enumerate(yaml_files)
