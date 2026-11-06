@@ -5,6 +5,7 @@ This module provides a tool function that allows agents to dynamically
 delegate tasks to other specialized agents.
 """
 
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, List, Optional
 
@@ -135,6 +136,12 @@ def handoff_task(
             errors.append(error_msg)
 
     else:
+        locks = {}
+
+        def run_handoff(agent: Any, task: str) -> Optional[str]:
+            with locks[id(agent)]:
+                return agent_answer(agent, agent.run(task=task))
+
         # Multiple agents - execute in parallel
         with ThreadPoolExecutor(
             max_workers=len(handoffs)
@@ -147,7 +154,8 @@ def handoff_task(
 
                 if agent_name in agent_registry:
                     agent = agent_registry[agent_name]
-                    future = executor.submit(agent.run, task=task)
+                    locks.setdefault(id(agent), threading.Lock())
+                    future = executor.submit(run_handoff, agent, task)
                     future_to_handoff[future] = handoff
 
             # Collect results as they complete
@@ -158,9 +166,7 @@ def handoff_task(
                 reasoning = handoff.get("reasoning", "")
 
                 try:
-                    response = agent_answer(
-                        agent_registry[agent_name], future.result()
-                    )
+                    response = future.result()
                     result = f"""
                     Agent: {agent_name}
                     Reasoning: {reasoning}
