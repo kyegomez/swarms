@@ -639,6 +639,25 @@ def test_max_agents_cap_enforced(monkeypatch):
         builder.create_agents("some task")
 
 
+def test_constructor_stores_max_agents_and_repair_attempts():
+    """The documented max_agents and max_json_repair_attempts
+    constructor arguments must be stored, not overwritten with the
+    defaults."""
+    builder = AutoSwarmBuilder(
+        max_agents=3, max_json_repair_attempts=4
+    )
+    assert builder.max_agents == 3
+    assert builder.max_json_repair_attempts == 4
+
+
+def test_constructor_max_agents_and_repair_attempts_defaults():
+    """Without explicit values, max_agents is unbounded and one JSON
+    repair retry is allowed."""
+    builder = AutoSwarmBuilder()
+    assert builder.max_agents is None
+    assert builder.max_json_repair_attempts == 1
+
+
 def test_swarm_type_rejects_auto_swarm_builder_recursion(
     monkeypatch,
 ):
