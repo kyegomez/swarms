@@ -9,6 +9,7 @@ from swarms.structs.comms_channel import (
     claim_agents,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.execution_utils import MAX_CONCURRENT_AGENTS
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_error,
