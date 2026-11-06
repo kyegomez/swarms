@@ -3,14 +3,13 @@ import json
 import httpx
 import pytest
 
-from swarms.structs import agentmail_channel
 from swarms.structs.agentmail_channel import AgentMailChannel
 
 
 def channel_with(monkeypatch, handler, **kwargs):
     real_client = httpx.Client
     monkeypatch.setattr(
-        agentmail_channel.httpx,
+        httpx,
         "Client",
         lambda **options: real_client(
             transport=httpx.MockTransport(handler), **options

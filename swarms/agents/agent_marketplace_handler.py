@@ -25,13 +25,23 @@ owning agent.
 
 import os
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 from urllib.parse import quote
 
-import httpx
 from loguru import logger
 
 from swarms.schemas.agent_errors import AgentInitializationError
+
+if TYPE_CHECKING:
+    import httpx
 
 DEFAULT_AGENT_NAME = "swarm-worker-01"
 DEFAULT_CATEGORY = "research"
@@ -42,7 +52,7 @@ API_KEYS_URL = "https://swarms.world/platform/api-keys"
 
 
 @lru_cache(maxsize=8)
-def _client(timeout: float) -> httpx.Client:
+def _client(timeout: float) -> "httpx.Client":
     """
     Return a connection-pooled client for the given timeout.
 
@@ -50,6 +60,8 @@ def _client(timeout: float) -> httpx.Client:
     instead of paying for a fresh handshake on every call. ``httpx.Client`` is
     thread-safe, so concurrent agents can share one.
     """
+    import httpx
+
     return httpx.Client(timeout=timeout)
 
 
@@ -144,6 +156,8 @@ class AgentMarketplaceHandler:
             raise ValueError(
                 "Either prompt_id or name must be provided"
             )
+
+        import httpx
 
         # Exactly one of the two identifies the prompt; prompt_id wins.
         url = f"{MARKETPLACE_BASE_URL}/get-prompts/{quote(str(prompt_id or name), safe='')}"
@@ -313,6 +327,8 @@ class AgentMarketplaceHandler:
             "price_usd": price_usd,
             "category": category,
         }
+
+        import httpx
 
         try:
             with httpx.Client(timeout=timeout) as client:
