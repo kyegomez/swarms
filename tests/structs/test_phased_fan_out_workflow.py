@@ -303,6 +303,32 @@ def test_failed_fan_out_agent_leaves_none_and_run_continues():
     assert len(attempts) == 2
 
 
+def test_source_reply_without_the_for_each_list_is_retried():
+    replies = iter(
+        [
+            {"files": "a.py, b.py"},
+            ["a.py"],
+            {"files": ["a.py", "b.py"]},
+        ]
+    )
+
+    def handler(agent, task):
+        if task.startswith("List files"):
+            return json.dumps(next(replies))
+        return f"reviewed {task.split()[1]}"
+
+    FakeAgent.handler = handler
+    workflow = PhasedFanOutWorkflow(
+        lead_agent=FakeLead([fan_out_plan()]), max_retries=2
+    )
+    workflow.run("repo")
+
+    assert workflow.last_run["outputs"]["review"] == [
+        "reviewed a.py",
+        "reviewed b.py",
+    ]
+
+
 def test_failed_agent_retries_then_succeeds():
     lead = FakeLead(
         [
