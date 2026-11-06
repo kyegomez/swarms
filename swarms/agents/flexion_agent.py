@@ -414,18 +414,13 @@ class ReflexionAgent:
         Returns:
             Dict[str, Any]: Results of this iteration
         """
-        # Retrieve relevant memories if not the first iteration
-        relevant_memories = []
-        if iteration > 0:
+        if previous_response is None:
             relevant_memories = self.memory.get_relevant_memories(
                 task
             )
             logger.debug(
                 f"Retrieved {len(relevant_memories)} relevant memories"
             )
-
-        # Generate response (or use previous response if provided)
-        if previous_response is None:
             response = self.act(task, relevant_memories)
         else:
             response = previous_response
