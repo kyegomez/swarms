@@ -71,7 +71,9 @@ def test_execute_tool_by_name():
     )
 
     result = tool.execute_tool_by_name("sample_function", response)
-    assert json.loads(result)["results"] == {"sample_function": "3"}
+    assert json.loads(result)["results"] == [
+        {"name": "sample_function", "result": "3"}
+    ]
     print("execute_tool_by_name test passed")
 
 

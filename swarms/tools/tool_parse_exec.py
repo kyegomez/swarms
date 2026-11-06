@@ -65,7 +65,7 @@ def parse_and_execute_json(
         if verbose:
             logger.info(f"Processing {len(function_list)} functions")
 
-        results = {}
+        results = []
 
         for function_data in function_list:
             function_name = function_data.get("name")
@@ -84,7 +84,9 @@ def parse_and_execute_json(
                 logger.warning(
                     f"Function '{function_name}' not found"
                 )
-                results[function_name] = "Error: Function not found"
+                results.append(
+                    (function_name, "Error: Function not found")
+                )
                 continue
 
             for attempt in range(max_retries):
@@ -92,7 +94,7 @@ def parse_and_execute_json(
                     result = function_dict[function_name](
                         **parameters
                     )
-                    results[function_name] = str(result)
+                    results.append((function_name, str(result)))
                     if verbose:
                         logger.info(
                             f"Result for {function_name}: {result}"
@@ -103,14 +105,20 @@ def parse_and_execute_json(
                         f"Attempt {attempt + 1} failed for {function_name}: {e}"
                     )
                     if attempt == max_retries - 1:
-                        results[function_name] = (
-                            f"Error after {max_retries} attempts: {str(e)}"
+                        results.append(
+                            (
+                                function_name,
+                                f"Error after {max_retries} attempts: {str(e)}",
+                            )
                         )
 
         data = {
-            "results": results,
+            "results": [
+                {"name": name, "result": value}
+                for name, value in results
+            ],
             "summary": "\n".join(
-                f"{k}: {v}" for k, v in results.items()
+                f"{name}: {value}" for name, value in results
             ),
         }
 
