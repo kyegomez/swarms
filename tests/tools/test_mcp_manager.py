@@ -1051,6 +1051,29 @@ class TestOAuthPlumbing:
             provider.context.storage, MCPInMemoryTokenStorage
         )
 
+    def test_authorization_code_uses_the_configured_client(
+        self, tmp_path
+    ):
+        manager = MCPManager()
+        for use_token_cache in (True, False):
+            connection = MCPConnection(
+                url=f"https://{use_token_cache}.example.com/mcp",
+                oauth=MCPOAuthConfig(
+                    client_id="my-app",
+                    client_secret="my-secret",
+                    use_token_cache=use_token_cache,
+                    token_storage_path=str(tmp_path / "tokens.json"),
+                ),
+            )
+            provider = manager._build_oauth_provider(connection)
+            client = run_async(
+                provider.context.storage.get_client_info()
+            )
+            assert (client.client_id, client.client_secret) == (
+                "my-app",
+                "my-secret",
+            )
+
     def test_callback_server_captures_code_and_state(self):
         import threading
         import urllib.request
