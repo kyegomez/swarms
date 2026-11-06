@@ -26,7 +26,8 @@ _SECTION_HEADERS = (
     "attributes:",
 )
 
-_PARAM_RE = re.compile(r"^(\w+)\s*(?:\([^)]*\))?\s*:\s*(.+)$")
+# The description may be empty when it starts on the next, more indented line
+_PARAM_RE = re.compile(r"^(\w+)\s*(?:\([^)]*\))?\s*:\s*(.*)$")
 
 
 class DocstringParam(NamedTuple):
@@ -94,7 +95,7 @@ def parse(docstring: str) -> DocstringInfo:
         if current_param is not None and indent > param_indent:
             current_param = DocstringParam(
                 arg_name=current_param.arg_name,
-                description=f"{current_param.description} {stripped}",
+                description=f"{current_param.description} {stripped}".lstrip(),
             )
             continue
 
