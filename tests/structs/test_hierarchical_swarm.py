@@ -552,6 +552,28 @@ def test_custom_director_and_workers_are_forced_to_final_output():
     assert orders[0].agent_name == "Worker"
 
 
+def test_director_sees_roster_and_plan_when_planning_enabled():
+    director_tasks = []
+    director = StubAgent("Director", [])
+    director.run = lambda task=None, **kwargs: (
+        director_tasks.append(task)
+        or '{"plan": "p", "orders": '
+        '[{"agent_name": "Worker", "task": "Draft it"}]}'
+    )
+    swarm = make_recovery_swarm(
+        director, [StubAgent("Worker", ["done"])]
+    )
+    swarm.planning_enabled = True
+    swarm._planning_director = StubAgent(
+        "Director", ["PLAN: Worker drafts the brief"]
+    )
+
+    swarm.run("Write a brief")
+
+    assert "| Worker |" in director_tasks[0]
+    assert "PLAN: Worker drafts the brief" in director_tasks[0]
+
+
 def test_step_skips_feedback_on_final_loop(monkeypatch):
     swarm = make_recovery_swarm(
         StubAgent("Director", []),
