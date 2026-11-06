@@ -54,6 +54,8 @@ class IterativeReflectiveExpansion:
         system_prompt: str = GENERAL_REASONING_AGENT_SYS_PROMPT,
         model_name: str = "gpt-5.4",
         output_type: OutputType = "dict",
+        max_paths: int = 4,
+        score_threshold: float = 0.7,
     ) -> None:
         """
         Initialize the Iterative Reflective Expansion engine.
@@ -65,6 +67,8 @@ class IterativeReflectiveExpansion:
         self.description = description
         self.agent = agent
         self.max_loops = max_loops
+        self.max_paths = max_paths
+        self.score_threshold = score_threshold
         self.output_type = output_type
         self.system_prompt = system_prompt
         self.conversation = Conversation()
@@ -252,30 +256,44 @@ class IterativeReflectiveExpansion:
         logger.info(
             f"Starting iterative reflective expansion for problem: {task}"
         )
-        candidate_paths = self.generate_initial_hypotheses(task)
+        candidate_paths = self.generate_initial_hypotheses(task)[
+            : self.max_paths
+        ]
         memory_pool: List[str] = []
 
         for iteration in range(self.max_loops):
             logger.info(f"Iteration {iteration + 1}/{self.max_loops}")
             expanded_paths: List[str] = []
+            revised_any = False
 
             for path in candidate_paths:
                 outcome, score, error_info = self.simulate_path(path)
-                # Use a threshold score of 0.7 (this can be adjusted)
-                if score < 0.7:
+                if score < self.score_threshold:
+                    revised_any = True
                     feedback = self.meta_reflect(error_info)
                     revised_paths = self.revise_path(path, feedback)
-                    expanded_paths.extend(revised_paths)
+                    expanded_paths.extend(
+                        revised_paths[: self.max_paths]
+                    )
                 else:
                     expanded_paths.append(path)
+
+                if len(expanded_paths) >= self.max_paths:
+                    break
 
             memory_pool.extend(candidate_paths)
             candidate_paths = self.select_promising_paths(
                 expanded_paths
-            )
+            )[: self.max_paths]
             logger.info(
                 f"Candidate paths for next iteration: {candidate_paths}"
             )
+
+            if not revised_any:
+                logger.info(
+                    "All paths met the score threshold; stopping early."
+                )
+                break
 
         self.synthesize_solution(candidate_paths, memory_pool)
         logger.info("Final solution generated.")

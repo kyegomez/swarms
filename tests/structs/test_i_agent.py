@@ -103,7 +103,7 @@ def test_ire_agent_steps_read_only_the_latest_reply():
         return "Final plan"
 
     agent = IterativeReflectiveExpansion(
-        max_loops=2, output_type="final"
+        max_loops=2, output_type="final", score_threshold=0.95
     )
 
     with patch.object(Agent, "call_llm", fake_call_llm):
@@ -111,3 +111,64 @@ def test_ire_agent_steps_read_only_the_latest_reply():
 
     assert simulated == ["Approach A", "Approach B", "Approach A"]
     assert result == "Final plan"
+
+
+def test_low_scoring_paths_do_not_multiply_without_bound():
+    from unittest.mock import MagicMock, patch
+
+    calls = {"simulate": 0}
+
+    with patch("swarms.agents.i_agent.Agent"):
+        ire = IterativeReflectiveExpansion(max_loops=5, max_paths=4)
+
+    def simulate(path):
+        calls["simulate"] += 1
+        assert calls["simulate"] < 500, "path expansion is unbounded"
+        return ("out", 0.5, "err")
+
+    ire.generate_initial_hypotheses = lambda task: [
+        f"h{i}" for i in range(9)
+    ]
+    ire.simulate_path = simulate
+    ire.meta_reflect = lambda err: "feedback"
+    ire.revise_path = lambda path, fb: [
+        f"{path}-r{i}" for i in range(9)
+    ]
+    ire.select_promising_paths = lambda paths: paths
+    ire.synthesize_solution = lambda paths, pool: "done"
+    ire.conversation = MagicMock()
+
+    with patch(
+        "swarms.agents.i_agent.history_output_formatter",
+        return_value="ok",
+    ):
+        ire.run("What is the 2nd prime number?")
+
+    assert calls["simulate"] <= ire.max_loops * ire.max_paths
+
+
+def test_a_run_where_every_path_scores_well_stops_early():
+    from unittest.mock import MagicMock, patch
+
+    calls = {"simulate": 0}
+
+    with patch("swarms.agents.i_agent.Agent"):
+        ire = IterativeReflectiveExpansion(max_loops=5, max_paths=4)
+
+    def simulate(path):
+        calls["simulate"] += 1
+        return ("out", 0.95, "")
+
+    ire.generate_initial_hypotheses = lambda task: ["only-path"]
+    ire.simulate_path = simulate
+    ire.select_promising_paths = lambda paths: paths
+    ire.synthesize_solution = lambda paths, pool: "done"
+    ire.conversation = MagicMock()
+
+    with patch(
+        "swarms.agents.i_agent.history_output_formatter",
+        return_value="ok",
+    ):
+        ire.run("trivial")
+
+    assert calls["simulate"] == 1
