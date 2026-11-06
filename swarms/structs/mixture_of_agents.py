@@ -1,5 +1,6 @@
 import asyncio
-from typing import Any, Dict, List, Optional
+import copy
+from typing import Any, Dict, List, Optional, Union
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
 from swarms.structs.agent import Agent
@@ -20,6 +21,7 @@ from swarms.structs.execution_utils import (
 )
 from swarms.structs.ma_utils import list_all_agents
 from swarms.structs.multi_agent_exec import run_agents_concurrently
+from swarms.structs.phased_fan_out_workflow import fresh_agent
 from swarms.telemetry.otel import (
     capture_init,
     trace_run,
@@ -28,6 +30,7 @@ from swarms.utils.generate_id import generate_id
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.structs.usage_utils import total_usage
@@ -134,6 +137,7 @@ class MixtureOfAgents:
         self.reliability_check()
 
         self.channel = channel
+        self._single_use_usage = empty_usage()
         self._reset_conversation()
 
         if self.aggregator_agent is None:
@@ -427,8 +431,27 @@ class MixtureOfAgents:
         """
         return batched_run(self.run, tasks)
 
-    def run_concurrently(self, tasks: List[str]) -> List[str]:
-        """Run multiple tasks concurrently through this mixture.
+    def _clone_for_task(self) -> "MixtureOfAgents":
+        """Copy this mixture with its own agents and ``Conversation``.
+
+        ``_run`` resets and appends to ``self.conversation``, so one
+        instance cannot serve several threads.
+        """
+        clone = copy.copy(self)
+        clone.agents = [fresh_agent(agent) for agent in self.agents]
+        clone.aggregator_agent = fresh_agent(self.aggregator_agent)
+        clone._reset_conversation()
+        return clone
+
+    def run_concurrently(
+        self, tasks: List[str]
+    ) -> Union[List[Any], Dict[Any, Any]]:
+        """Run multiple tasks concurrently, each on its own clone.
+
+        ``_run`` resets and appends to ``self.conversation``, so running
+        the same instance from several threads interleaves the tasks into
+        one transcript. Each task therefore runs on ``_clone_for_task()``,
+        and the clones' token usage is added to :attr:`usage` afterwards.
 
         Args:
             tasks: Tasks to submit to the mixture in parallel.
@@ -437,7 +460,21 @@ class MixtureOfAgents:
             A list of formatted responses, one per task, in the order the
             tasks were given.
         """
-        return run_concurrently(self.run, tasks)
+        clones = []
+
+        def run_on_clone(task):
+            clone = self._clone_for_task()
+            clones.append(clone)
+            return clone.run(task)
+
+        try:
+            return run_concurrently(run_on_clone, tasks)
+        finally:
+            spent = total_usage(
+                [(c.agents, c.aggregator_agent) for c in clones]
+            )
+            for key, value in spent.items():
+                self._single_use_usage[key] += value
 
     @property
     def usage(self) -> dict:
