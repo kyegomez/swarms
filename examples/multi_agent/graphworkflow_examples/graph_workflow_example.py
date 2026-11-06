@@ -35,8 +35,7 @@ workflow.visualize()
 
 workflow.compile()
 
-# Export workflow to JSON
-workflow_json = workflow.to_json()
+workflow_json = workflow.to_spec()
 print(workflow_json)
 
 # Run the workflow and print results
