@@ -2459,6 +2459,47 @@ class TestLLMFailureRaises:
 
         assert calls == ["gpt-5.4"]
 
+    @pytest.mark.parametrize(
+        "kwargs, expected",
+        [
+            (
+                {
+                    "model_name": "claude-sonnet-4-6",
+                    "fallback_models": ["gpt-5.4", "gpt-5.4-mini"],
+                },
+                ["claude-sonnet-4-6", "gpt-5.4", "gpt-5.4-mini"],
+            ),
+            (
+                {"fallback_models": ["gpt-5.4", "gpt-5.4-mini"]},
+                ["gpt-5.4", "gpt-5.4-mini"],
+            ),
+            (
+                {
+                    "model_name": "claude-sonnet-4-6",
+                    "fallback_models": [
+                        "claude-sonnet-4-6",
+                        "gpt-5.4",
+                    ],
+                },
+                ["claude-sonnet-4-6", "gpt-5.4"],
+            ),
+        ],
+    )
+    def test_model_name_runs_before_the_fallback_models(
+        self, kwargs, expected
+    ):
+        agent = self._agent(**kwargs)
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, set(expected)),
+        ), pytest.raises(AgentLLMError):
+            agent.run(self.TASK)
+
+        assert calls == expected
+
     def test_fallback_model_name_joins_the_model_list(self):
         agent = self._agent(
             model_name="gpt-5.4",

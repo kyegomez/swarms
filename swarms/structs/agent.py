@@ -25,7 +25,10 @@ from swarms.agents.agent_marketplace_handler import (
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.agents.context_compressor import ContextCompressor
-from swarms.agents.llm_manager import LLMManager
+from swarms.agents.llm_manager import (
+    DEFAULT_MODEL_NAME,
+    LLMManager,
+)
 from swarms.agents.skills_manager import SkillsManager
 from swarms.agents.tool_manager import ToolManager
 from swarms.prompts.autonomous_agent_prompt import (
@@ -141,7 +144,7 @@ class Agent:
         user_name (str): The user name
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): A single fallback model, folded into fallback_models
-        fallback_models (List[str]): Models to try in order. The first is the primary; every run starts there and moves down the list when a model fails
+        fallback_models (List[str]): Models to try, in order, when a model fails. An explicit model_name runs first; without one, the first entry is the primary. Every run starts at the primary
         preset_stopping_token (bool): Use "<DONE>" as the stopping token.
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
@@ -271,11 +274,11 @@ class Agent:
 
     >>> # Fallback model example
     >>> agent = Agent(
-    ...     fallback_models=["gpt-5.4", "gpt-5.4", "gpt-3.5-turbo"],
+    ...     model_name="gpt-5.4",
+    ...     fallback_models=["claude-sonnet-4-6", "gpt-5.4-mini"],
     ...     max_loops=1
     ... )
     >>> response = agent.run("Generate a report on the financials.")
-    >>> # Will try gpt-4o first, then gpt-4o-mini, then gpt-3.5-turbo if each fails
 
     >>> # Marketplace prompt example - load a prompt in one line
     >>> agent = Agent(
@@ -330,7 +333,7 @@ class Agent:
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
         plan_enabled: bool = False,
-        model_name: str = "gpt-5.4",
+        model_name: Optional[str] = None,
         llm_args: dict = None,
         prompt_caching: bool = False,
         cache_config: dict = None,
@@ -446,7 +449,7 @@ class Agent:
         self.description = agent_description
         self.auto_generate_prompt = auto_generate_prompt
         self.plan_enabled = plan_enabled
-        self.model_name = model_name
+        self.model_name = model_name or DEFAULT_MODEL_NAME
         self.llm_args = llm_args
         self.prompt_caching = prompt_caching
         self.cache_config = cache_config
@@ -600,15 +603,15 @@ class Agent:
 
         self.fallback_models = list(fallback_models or [])
         if not self.fallback_models and fallback_model_name:
-            # The single-fallback form, folded into the list once.
-            self.fallback_models = list(
-                dict.fromkeys(
-                    m
-                    for m in (self.model_name, fallback_model_name)
-                    if m
-                )
-            )
-        # The list names the primary model, so model_name follows it.
+            self.fallback_models = [
+                self.model_name,
+                fallback_model_name,
+            ]
+        elif self.fallback_models and model_name:
+            self.fallback_models.insert(0, self.model_name)
+        self.fallback_models = list(
+            dict.fromkeys(self.fallback_models)
+        )
         if self.fallback_models:
             self.model_name = self.fallback_models[0]
 
