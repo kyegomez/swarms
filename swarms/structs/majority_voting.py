@@ -132,7 +132,7 @@ class MajorityVoting:
         consensus_agent_name: str = "Consensus-Agent",
         consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
         consensus_agent_model_name: str = "gpt-5.4",
-        additional_consensus_agent_kwargs: dict = {},
+        additional_consensus_agent_kwargs: Optional[dict] = None,
         channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
@@ -167,7 +167,7 @@ class MajorityVoting:
             system_prompt=consensus_agent_prompt,
             description=consensus_agent_description,
             model_name=consensus_agent_model_name,
-            **additional_consensus_agent_kwargs,
+            **(additional_consensus_agent_kwargs or {}),
         )
 
         self.reliability_check()
