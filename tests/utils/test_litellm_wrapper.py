@@ -606,3 +606,50 @@ class TestGeminiProvider:
         )
         result = agent.run(SIMPLE_TASK)
         assert result is not None
+
+
+class TestMcpToolCallIds:
+    def test_mcp_output_for_tools_keeps_id_and_type(self):
+        import json
+        from types import SimpleNamespace
+
+        from swarms.tools.base_tool import BaseTool
+        from swarms.utils.litellm_wrapper import LiteLLM
+
+        def get_weather(city: str) -> str:
+            """Weather.
+
+            Args:
+                city: The city.
+
+            Returns:
+                The weather.
+            """
+            return "sunny"
+
+        llm = LiteLLM(
+            model_name="gpt-5.4", api_key="k", mcp_call=True
+        )
+        call = SimpleNamespace(
+            id="c1",
+            type="function",
+            function=SimpleNamespace(
+                name="get_weather",
+                arguments=json.dumps({"city": "Paris"}),
+            ),
+        )
+        response = SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(tool_calls=[call])
+                )
+            ]
+        )
+
+        rebuilt = llm.output_for_tools(response)
+
+        assert rebuilt["id"] == "c1"
+        assert rebuilt["type"] == "function"
+        bt = BaseTool(tools=[get_weather], verbose=False)
+        ran = bt.execute_function_calls_from_api_response([rebuilt])
+        assert ran == ["Function 'get_weather' result:\nsunny"]
