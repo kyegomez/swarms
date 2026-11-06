@@ -1,3 +1,6 @@
+import subprocess
+import sys
+
 from swarms.utils.formatter import Formatter
 
 
@@ -182,6 +185,22 @@ def test_director_panel_does_not_parse_markup_in_a_task():
     )
 
     assert "[scalability]" in output
+
+
+def test_import_swarms_does_not_load_the_markdown_renderer():
+    probe = (
+        "import sys; from swarms import Agent; "
+        "print('rich.markdown' in sys.modules, "
+        "'markdown_it' in sys.modules)"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", probe],
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    lines = result.stdout.splitlines()
+    assert lines[-1] == "False False", result.stderr
 
 
 if __name__ == "__main__":
