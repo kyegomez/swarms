@@ -286,6 +286,26 @@ class TestScheduling:
         assert not barrier.broken
         assert all(agent.calls == 1 for agent in agents)
 
+    def test_runs_reuse_one_bid_pool_until_close(self):
+        barrier = threading.Barrier(2, timeout=5)
+        threads = []
+
+        class PoolAgent(ScriptedAgent):
+            def run(self, task=None, *args, **kwargs):
+                threads.append(threading.current_thread())
+                barrier.wait()
+                return super().run(task, *args, **kwargs)
+
+        chat = make_chat([PoolAgent("A"), PoolAgent("B")])
+        chat.run("first")
+        first = set(threads)
+        chat.run("second")
+
+        assert len(first) == 2
+        assert set(threads) == first
+        chat.close()
+        assert not any(thread.is_alive() for thread in first)
+
     def test_a_lull_ends_the_chat(self):
         quiet = [
             ScriptedAgent("A", [(0.2, "murmur")]),
