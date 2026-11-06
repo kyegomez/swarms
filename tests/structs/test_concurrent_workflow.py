@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 from types import SimpleNamespace
 
@@ -626,6 +627,31 @@ def test_concurrent_workflow_returns_results_in_agent_order():
         "Beta",
         "Gamma",
     ]
+
+
+class _ThreadRecordingAgent(_EchoAgent):
+    def __init__(self, agent_name: str):
+        super().__init__(agent_name)
+        self.threads = []
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        self.threads.append(threading.current_thread())
+        return super().run(task, img=img, imgs=imgs, **kwargs)
+
+
+def test_concurrent_workflow_reuses_its_pool_until_closed():
+    agent = _ThreadRecordingAgent("Alpha")
+    workflow = ConcurrentWorkflow(
+        name="Pool-Workflow", agents=[agent]
+    )
+
+    workflow.run("first filing")
+    workflow.run("second filing")
+    first, second = agent.threads
+    assert first is second
+
+    workflow.close()
+    assert not first.is_alive()
 
 
 def _channel_agents(names):
