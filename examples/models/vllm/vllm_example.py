@@ -1,6 +1,6 @@
 # Deprecated
 
-from swarms.utils.vllm_wrapper import VLLMWrapper
+from vllm_wrapper import VLLMWrapper
 
 
 def main():
