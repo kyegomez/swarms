@@ -566,6 +566,18 @@ class LLMManager:
                 span.set(
                     "gen_ai.response.finish_reasons", finish_reason
                 )
+            if finish_reason == "length" and not result:
+                reasoning = (
+                    getattr(agent, "_usage", None) or {}
+                ).get("reasoning_tokens", 0) - usage_before.get(
+                    "reasoning_tokens", 0
+                )
+                logger.warning(
+                    f"Agent '{agent.agent_name}' hit max_tokens="
+                    f"{agent.max_tokens} before writing any answer "
+                    f"text ({reasoning} reasoning tokens used). "
+                    "Raise max_tokens to get a response."
+                )
             response_model = getattr(
                 agent.llm, "last_response_model", None
             )
