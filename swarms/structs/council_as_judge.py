@@ -337,7 +337,6 @@ class CouncilAsAJudge:
                     or self.model_name,
                     max_loops=1,
                     output_type="final",
-                    dynamic_temperature_enabled=True,
                 )
                 for dim in EVAL_DIMENSIONS
             }
@@ -362,7 +361,6 @@ class CouncilAsAJudge:
                 system_prompt=aggregator_system_prompt(),
                 model_name=self.aggregation_model_name,
                 max_loops=1,
-                dynamic_temperature_enabled=True,
                 output_type="final",
             )
         except Exception as e:
