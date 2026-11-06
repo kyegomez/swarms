@@ -131,6 +131,34 @@ def test_func_to_dict_resolves_nested_model_refs():
     assert params["$defs"]["LineItem"]["required"] == ["sku", "qty"]
 
 
+def test_tool_receives_models_for_model_parameters():
+    def ship(
+        items: list[LineItem], gift: Optional[LineItem] = None
+    ) -> int:
+        return sum(item.qty for item in items)
+
+    arguments = {
+        "items": [{"sku": "A1", "qty": 2}, {"sku": "B2", "qty": 3}]
+    }
+    results = BaseTool(
+        tools=[ship]
+    ).execute_function_calls_from_api_response(
+        [
+            {
+                "id": "call_1",
+                "type": "function",
+                "function": {
+                    "name": "ship",
+                    "arguments": json.dumps(arguments),
+                },
+            }
+        ],
+        return_as_string=False,
+    )
+
+    assert results == [5]
+
+
 def add_numbers(a: int, b: int) -> int:
     """Add two numbers.
 
