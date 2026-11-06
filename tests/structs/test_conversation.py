@@ -786,6 +786,29 @@ def test_suppress_memory_md_during_setup(tmp_path):
     assert "Custom rule." not in content
 
 
+def test_seeded_turns_are_not_appended_to_memory_md(tmp_path):
+    from swarms.structs.file_channel import FileChannel
+
+    md_path = tmp_path / "MEMORY.md"
+    channel = FileChannel(tmp_path / "run.md")
+    channel.post("Writer", "Earlier answer.")
+    for _ in range(2):
+        conv = Conversation(
+            memory_md_path=str(md_path),
+            conversations_dir=str(tmp_path / "convs"),
+            messages=[
+                {"role": "user", "content": "Project is Helios."}
+            ],
+            channel=channel,
+        )
+    content = md_path.read_text()
+    assert "Project is Helios." not in content
+    assert "Earlier answer." not in content
+
+    conv.add("user", "New turn.")
+    assert "New turn." in md_path.read_text()
+
+
 def test_empty_content_skipped(tmp_path):
     """Empty or whitespace-only content is not written to MEMORY.md."""
     md_path = tmp_path / "MEMORY.md"
