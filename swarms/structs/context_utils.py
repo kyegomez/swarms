@@ -114,13 +114,14 @@ def split_last_turn(
 
     Args:
         messages: Turns from :func:`messages_for`, oldest first.
-        fallback: Task text used when there are no turns to split.
+        fallback: Task text used when there are no turns to split, or
+            when the newest turn is the agent's own answer.
 
     Returns:
         ``(prior_messages, task)``.
     """
-    if not messages:
-        return [], fallback
+    if not messages or messages[-1]["role"] == "assistant":
+        return messages, fallback
     # A blank newest turn would reach Agent.run as an empty task, which it rejects
     task = messages[-1]["content"]
     if not str(task).strip():
