@@ -643,6 +643,8 @@ class HeavySwarm(SerializableMixin):
             Timeout and exception handling ensure robustness even if individual agents fail.
         """
 
+        failures = []
+
         # Define agent execution tasks
         def execute_agent(agent_info):
             agent_type, agent, question = agent_info
@@ -660,6 +662,7 @@ class HeavySwarm(SerializableMixin):
                     "ERROR",
                     f"❌ Error in {agent_type} Agent: {str(e)} Traceback: {traceback.format_exc()}",
                 )
+                failures.append(e)
                 return agent_type, f"Error: {str(e)}"
 
         # Prepare agent tasks
@@ -768,6 +771,9 @@ class HeavySwarm(SerializableMixin):
                     results[agent_type.lower()] = (
                         f"Exception: {str(e)}"
                     )
+
+        if failures:
+            raise failures[0]
 
         return results
 
@@ -967,6 +973,8 @@ class HeavySwarm(SerializableMixin):
             agent_configs
         ) as tracker:
 
+            failures = []
+
             def execute_agent_with_progress(agent_info):
                 agent_type, agent_key, agent, question = agent_info
                 try:
@@ -994,6 +1002,7 @@ class HeavySwarm(SerializableMixin):
                         "ERROR",
                         f"❌ Error in {agent_type} Agent: {str(e)} Traceback: {traceback.format_exc()}",
                     )
+                    failures.append(e)
                     return agent_type, f"Error: {str(e)}"
 
             # Prepare agent tasks with keys
@@ -1115,6 +1124,9 @@ class HeavySwarm(SerializableMixin):
                     except Exception as e:
                         tracker.error(agent_key, agent_key)
                         results[agent_key] = f"Exception: {str(e)}"
+
+        if failures:
+            raise failures[0]
 
         # Show completion summary
         agent_count = (

@@ -1153,5 +1153,29 @@ class TestGrokHeavyFullPipeline:
         assert len(result) > 100
 
 
+@pytest.mark.parametrize("show_dashboard", [False, True])
+def test_worker_failure_raises_before_synthesis(show_dashboard):
+    swarm = HeavySwarm(show_dashboard=show_dashboard)
+    questions = {
+        f"{key}_question": "q"
+        for key in (
+            "research",
+            "analysis",
+            "alternatives",
+            "verification",
+        )
+    }
+    for key in swarm.agents:
+        swarm.agents[key].run = lambda *a, **k: "ok"
+    swarm.agents["analysis"].run = _raise_provider_down
+
+    with pytest.raises(RuntimeError, match="provider down"):
+        swarm._execute_agents_parallel(questions, swarm.agents)
+
+
+def _raise_provider_down(*args, **kwargs):
+    raise RuntimeError("provider down")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
