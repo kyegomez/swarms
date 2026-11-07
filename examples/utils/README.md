@@ -21,9 +21,7 @@ This directory contains utility examples and helper functions for various Swarms
 - [conversation_test.py](misc/conversation_test.py) - Conversation testing
 - [csvagent_example.py](misc/csvagent_example.py) - CSV processing agent
 - [dict_to_table.py](misc/dict_to_table.py) - Dictionary to table conversion
-- [swarm_matcher_example.py](misc/swarm_matcher_example.py) - Swarm matching utilities
 - [test_load_conversation.py](misc/test_load_conversation.py) - Conversation loading tests
-- [visualizer_test.py](misc/visualizer_test.py) - Visualization testing
 
 
 ### Conversation Structure

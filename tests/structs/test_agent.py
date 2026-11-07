@@ -17,7 +17,9 @@ from swarms.structs.file_channel import FileChannel
 from swarms import Agent
 from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.structs.agent import DEFAULT_AGENT_DESCRIPTION
 from swarms.schemas.agent_errors import (
+    AgentInitializationError,
     AgentLLMError,
     AgentToolExecutionError,
 )
@@ -80,24 +82,16 @@ def basic_flow(mocked_llm, tmp_path):
 
 @pytest.fixture
 def flow_with_condition(mocked_llm, tmp_path):
-    from swarms.structs.agent import stop_when_repeats
-
     return _flow(
         "flow-with-condition",
         mocked_llm,
         tmp_path,
-        stopping_condition=stop_when_repeats,
+        stopping_condition=lambda text: "stop" in text.lower(),
     )
 
 
 class TestBasicAgent:
     """Constructor, run plumbing and the save/load round trip."""
-
-    def test_stop_when_repeats(self):
-        from swarms.structs.agent import stop_when_repeats
-
-        assert stop_when_repeats("Please Stop now")
-        assert not stop_when_repeats("Continue the process")
 
     def test_flow_initialization(self, basic_flow):
         """The constructor arguments survive __init__.
@@ -803,6 +797,7 @@ class TestLLMArgsAndHandling:
             agent_name="random-models-agent",
             model_name="gpt-4o-mini",
             random_models_on=True,
+            max_tokens=None,
         )
 
         assert agent.model_name == "gpt-4.1-nano"
@@ -827,11 +822,24 @@ class TestConstructorWindows:
         assert agent.context_length == 200000
         assert agent.short_memory.context_length == 200000
 
-    def test_context_length_defaults_to_the_model_input_window(self):
-        """Omitting it should size to the model, not a flat 16000."""
+    def test_defaults_skip_the_model_lookup(self):
+        with patch(
+            "swarms.utils.llm_backend.get_model_info"
+        ) as lookup:
+            agent = self._agent(model_name="default-window-probe")
+
+        assert (agent.context_length, agent.max_tokens) == (
+            128000,
+            16384,
+        )
+        assert lookup.call_count == 0
+
+    def test_context_length_none_uses_the_model_input_window(self):
         # The relation, not the literal, so a litellm model-table refresh
         # does not break this.
-        assert self._agent(model_name="gpt-4o").context_length > 16000
+        agent = self._agent(model_name="gpt-4o", context_length=None)
+
+        assert agent.context_length > 16000
 
     def test_max_tokens_explicit_value_is_honoured(self):
         """A caller capping output was overwritten with the model's limit."""
@@ -839,15 +847,29 @@ class TestConstructorWindows:
 
         assert agent.max_tokens == 500
 
-    def test_max_tokens_defaults_to_the_model_output_window(self):
-        assert self._agent(model_name="gpt-4o-mini").max_tokens > 500
+    def test_max_tokens_none_uses_the_model_output_window(self):
+        agent = self._agent(model_name="gpt-4o-mini", max_tokens=None)
 
-    def test_non_positive_max_tokens_falls_back_to_the_model(self):
-        for bad in (0, -1, None):
-            agent = self._agent(
-                model_name="gpt-4o-mini", max_tokens=bad
-            )
-            assert agent.max_tokens > 0
+        assert agent.max_tokens > 500
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"max_tokens": 0},
+            {"max_tokens": -1},
+            {"context_length": 0},
+            {"context_length": -1},
+        ],
+    )
+    def test_non_positive_windows_raise_without_a_lookup(
+        self, kwargs
+    ):
+        with patch(
+            "swarms.utils.llm_backend.get_model_info"
+        ) as lookup, pytest.raises(AgentInitializationError):
+            self._agent(model_name="non-positive-probe", **kwargs)
+
+        assert lookup.call_count == 0
 
     def test_saved_state_path_is_honoured(self):
         """It was assigned, then overwritten with a generated name twelve
@@ -861,7 +883,11 @@ class TestConstructorWindows:
 
     def test_unknown_model_falls_back_for_both(self):
         """An unrecognised model must not raise out of __init__."""
-        agent = self._agent(model_name="totally-made-up-model-xyz")
+        agent = self._agent(
+            model_name="totally-made-up-model-xyz",
+            context_length=None,
+            max_tokens=None,
+        )
 
         assert agent.context_length == 16000
         assert agent.max_tokens == 16000
@@ -873,7 +899,11 @@ class TestConstructorWindows:
             return_value=info,
         ) as lookup:
             agents = [
-                self._agent(model_name="model-info-cache-probe")
+                self._agent(
+                    model_name="model-info-cache-probe",
+                    context_length=None,
+                    max_tokens=None,
+                )
                 for _ in range(2)
             ]
 
@@ -936,6 +966,26 @@ class TestToolsListIsolation:
             ).tools_list_dictionary
             == given
         )
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({}, DEFAULT_AGENT_DESCRIPTION),
+        ({"agent_description": "x"}, "x"),
+        ({"description": "Checks tax math."}, "Checks tax math."),
+        ({"agent_description": None, "description": "y"}, "y"),
+        ({"agent_description": "x", "description": "y"}, "x"),
+    ],
+)
+def test_description_is_another_name_for_agent_description(
+    kwargs, expected
+):
+    agent = _patched_agent("described", **kwargs)
+    assert (agent.agent_description, agent.description) == (
+        expected,
+        expected,
+    )
 
 
 def test_list_base_models_schema_reaches_short_memory():
@@ -2400,6 +2450,47 @@ class TestLLMFailureRaises:
                 agent.run(self.TASK)
 
         assert calls == ["gpt-5.4"]
+
+    @pytest.mark.parametrize(
+        "kwargs, expected",
+        [
+            (
+                {
+                    "model_name": "claude-sonnet-4-6",
+                    "fallback_models": ["gpt-5.4", "gpt-5.4-mini"],
+                },
+                ["claude-sonnet-4-6", "gpt-5.4", "gpt-5.4-mini"],
+            ),
+            (
+                {"fallback_models": ["gpt-5.4", "gpt-5.4-mini"]},
+                ["gpt-5.4", "gpt-5.4-mini"],
+            ),
+            (
+                {
+                    "model_name": "claude-sonnet-4-6",
+                    "fallback_models": [
+                        "claude-sonnet-4-6",
+                        "gpt-5.4",
+                    ],
+                },
+                ["claude-sonnet-4-6", "gpt-5.4"],
+            ),
+        ],
+    )
+    def test_model_name_runs_before_the_fallback_models(
+        self, kwargs, expected
+    ):
+        agent = self._agent(**kwargs)
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, set(expected)),
+        ), pytest.raises(AgentLLMError):
+            agent.run(self.TASK)
+
+        assert calls == expected
 
     def test_fallback_model_name_joins_the_model_list(self):
         agent = self._agent(

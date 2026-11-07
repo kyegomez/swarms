@@ -27,7 +27,10 @@ from swarms.agents.agent_marketplace_handler import (
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.agents.context_compressor import ContextCompressor
-from swarms.agents.llm_manager import LLMManager
+from swarms.agents.llm_manager import (
+    DEFAULT_MODEL_NAME,
+    LLMManager,
+)
 from swarms.agents.skills_manager import SkillsManager
 from swarms.agents.tool_manager import ToolManager
 from swarms.prompts.autonomous_agent_prompt import (
@@ -117,13 +120,10 @@ async def to_new_thread(func: Callable, *args, **kwargs) -> Any:
         pool.shutdown(wait=False)
 
 
-def stop_when_repeats(response: str) -> bool:
-    # Stop if the word stop appears in the response
-    return "stop" in response.lower()
-
-
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
+
+DEFAULT_AGENT_DESCRIPTION = "An autonomous agent that can perform tasks and learn from experience powered by Swarms"
 
 
 class Agent:
@@ -143,17 +143,18 @@ class Agent:
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
+        description (Optional[str]): Another name for agent_description, used when agent_description is left unset. If both are set, agent_description wins.
         system_prompt (Optional[str]): The system prompt. Defaults to None, which sends no system prompt. With max_loops="auto" the autonomous loop prompt is used, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
-        context_length (int): The context length
+        context_length (Optional[int]): The model's input window in tokens. Defaults to 128000. None looks it up from the model.
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): A single fallback model, folded into fallback_models
-        fallback_models (List[str]): Models to try in order. The first is the primary; every run starts there and moves down the list when a model fails
+        fallback_models (List[str]): Models to try, in order, when a model fails. An explicit model_name runs first; without one, the first entry is the primary. Every run starts at the primary
         preset_stopping_token (bool): Use "<DONE>" as the stopping token.
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
@@ -166,7 +167,7 @@ class Agent:
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
         planning_prompt (str): The planning prompt
-        max_tokens (int): The maximum number of tokens
+        max_tokens (Optional[int]): The most tokens per response. Defaults to 16384. None looks up the model's own output limit.
         temperature (float): The temperature
         workspace_dir (str, optional): Ignored - workspace directory is always read from
             the 'workspace_dir' environment variable. Defaults to 'agent_workspace' if
@@ -283,11 +284,11 @@ class Agent:
 
     >>> # Fallback model example
     >>> agent = Agent(
-    ...     fallback_models=["gpt-5.4", "gpt-5.4", "gpt-3.5-turbo"],
+    ...     model_name="gpt-5.4",
+    ...     fallback_models=["claude-sonnet-4-6", "gpt-5.4-mini"],
     ...     max_loops=1
     ... )
     >>> response = agent.run("Generate a report on the financials.")
-    >>> # Will try gpt-4o first, then gpt-4o-mini, then gpt-3.5-turbo if each fails
 
     >>> # Marketplace prompt example - load a prompt in one line
     >>> agent = Agent(
@@ -304,9 +305,7 @@ class Agent:
         self,
         id: Optional[str] = None,
         agent_name: Optional[str] = "swarm-worker-01",
-        agent_description: Optional[
-            str
-        ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
+        agent_description: Optional[str] = DEFAULT_AGENT_DESCRIPTION,
         system_prompt: Optional[str] = None,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
@@ -321,7 +320,7 @@ class Agent:
         dynamic_temperature_enabled: Optional[bool] = False,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
-        context_length: Optional[int] = None,
+        context_length: Optional[int] = 128000,
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
         long_term_memory: Optional[Union[Callable, Any]] = None,
@@ -339,12 +338,12 @@ class Agent:
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
-        max_tokens: Optional[int] = None,
+        max_tokens: Optional[int] = 16384,
         temperature: Optional[float] = None,
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
         plan_enabled: bool = False,
-        model_name: str = "gpt-5.4",
+        model_name: Optional[str] = None,
         llm_args: dict = None,
         prompt_caching: bool = False,
         cache_config: dict = None,
@@ -399,6 +398,7 @@ class Agent:
         context_compression: bool = True,
         persistent_memory: bool = False,
         messages: Optional[List[Dict[str, Any]]] = None,
+        description: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -423,6 +423,11 @@ class Agent:
         self.tools = tools
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
+        if description is not None and agent_description in (
+            None,
+            DEFAULT_AGENT_DESCRIPTION,
+        ):
+            agent_description = description
         self.agent_description = agent_description
         # Fallback: this once overwrote the caller's own path.
         self.saved_state_path = saved_state_path or (
@@ -454,7 +459,7 @@ class Agent:
         self.description = agent_description
         self.auto_generate_prompt = auto_generate_prompt
         self.plan_enabled = plan_enabled
-        self.model_name = model_name
+        self.model_name = model_name or DEFAULT_MODEL_NAME
         self.llm_args = llm_args
         self.prompt_caching = prompt_caching
         self.cache_config = cache_config
@@ -542,8 +547,8 @@ class Agent:
         if self.context_length is None:
             self.context_length = self._default_context_length()
 
-        if self.max_tokens is None or self.max_tokens <= 0:
-            self.max_tokens = self._default_max_tokens() or 16000
+        if self.max_tokens is None:
+            self.max_tokens = self._default_max_tokens()
 
         if self.max_loops == "auto":
             # Without this the prompt tells the model to call a think tool it lacks
@@ -608,15 +613,15 @@ class Agent:
 
         self.fallback_models = list(fallback_models or [])
         if not self.fallback_models and fallback_model_name:
-            # The single-fallback form, folded into the list once.
-            self.fallback_models = list(
-                dict.fromkeys(
-                    m
-                    for m in (self.model_name, fallback_model_name)
-                    if m
-                )
-            )
-        # The list names the primary model, so model_name follows it.
+            self.fallback_models = [
+                self.model_name,
+                fallback_model_name,
+            ]
+        elif self.fallback_models and model_name:
+            self.fallback_models.insert(0, self.model_name)
+        self.fallback_models = list(
+            dict.fromkeys(self.fallback_models)
+        )
         if self.fallback_models:
             self.model_name = self.fallback_models[0]
 
@@ -1691,23 +1696,13 @@ Subtask Breakdown:
                 f"got {self.max_loops!r}."
             )
 
-        # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
-        if self.max_tokens is None or self.max_tokens <= 0:
-            suggested_tokens = llm_backend.get_max_tokens(
-                self.model_name
-            )
-            if suggested_tokens is not None and suggested_tokens > 0:
-                self.max_tokens = suggested_tokens
-            else:
-                logger.warning(
-                    f"Could not determine max_tokens for model '{self.model_name}'. Falling back to default value of 8192."
+        for name in ("max_tokens", "context_length"):
+            value = getattr(self, name)
+            if value <= 0:
+                raise AgentInitializationError(
+                    f"{name} must be a positive integer, or None to "
+                    f"look it up from the model, got {value!r}."
                 )
-                self.max_tokens = 8192
-
-        if self.context_length is None or self.context_length == 0:
-            raise AgentInitializationError(
-                "Context length is not provided. Please set a valid context length."
-            )
 
         if (
             os.getenv("SWARMS_STRICT_MODEL_CHECK", "").lower()

@@ -1,6 +1,8 @@
 import asyncio
 from types import SimpleNamespace
 
+import pytest
+
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms.structs.council_as_judge import CouncilAsAJudge
 
@@ -57,3 +59,39 @@ def test_arun_awaits_every_judge_within_max_concurrency():
 
     assert report == "verdict"
     assert max(peak) == 2
+
+
+@pytest.mark.parametrize("entry", ["run", "arun"])
+def test_judges_and_aggregator_send_no_temperature(
+    monkeypatch, entry
+):
+    requests = []
+
+    def fake_completion(**params):
+        requests.append(params)
+        message = SimpleNamespace(
+            content="ok", tool_calls=None, reasoning_content=None
+        )
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(message=message, finish_reason="stop")
+            ],
+            usage=None,
+        )
+
+    monkeypatch.setattr(
+        litellm_wrapper, "completion", fake_completion
+    )
+
+    council = CouncilAsAJudge(
+        model_name="claude-sonnet-4-6",
+        aggregation_model_name="claude-sonnet-4-6",
+    )
+    result = getattr(council, entry)("Rate: 2 + 2 = 4")
+    if asyncio.iscoroutine(result):
+        asyncio.run(result)
+
+    assert len(requests) == len(council.judge_agents) + 1
+    assert not [
+        r["temperature"] for r in requests if "temperature" in r
+    ]

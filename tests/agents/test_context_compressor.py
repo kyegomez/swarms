@@ -457,6 +457,28 @@ class TestIntegration:
             for f in archives
         )
 
+    @pytest.mark.parametrize("content", [None, "", "  \n"])
+    def test_empty_summary_keeps_the_history(self, content):
+        from swarms.structs.conversation import Conversation
+
+        conv = Conversation(time_enabled=False, token_count=False)
+        conv.add("User", "The deploy key is K-7731.")
+        conv.add("Assistant", "Noted: K-7731.")
+        before = conv.return_history_as_string()
+        agent = SimpleNamespace(
+            short_memory=conv,
+            context_length=10,
+            model_name="claude-sonnet-4-5",
+            agent_name="EmptySummaryAgent",
+        )
+        with patch(
+            "swarms.agents.context_compressor.completion",
+            return_value=_make_completion_response(content),
+        ):
+            result = ContextCompressor().maybe_compress(agent)
+        assert result is None
+        assert conv.return_history_as_string() == before
+
 
 class TestShouldCompressSkipsTokenizing:
     """should_compress tokenized the whole history on every loop, even when

@@ -823,7 +823,15 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_concurrent_workflow(self, *args, **kwargs):
-        """Create a ``ConcurrentWorkflow`` from the configured agents."""
+        """Create a ``ConcurrentWorkflow`` from the configured agents.
+
+        When a fallback swarm follows ``ConcurrentWorkflow`` in the
+        router's chain, a failing agent raises (``on_error="raise"``) so
+        the router can fall back, unless ``on_error`` is passed explicitly.
+        """
+        chain = [self.swarm_type, *(self.fallback_swarms or [])]
+        if "ConcurrentWorkflow" in chain[:-1]:
+            kwargs.setdefault("on_error", "raise")
         return ConcurrentWorkflow(
             *args,
             **self._base_kwargs(channel=self.channel),
