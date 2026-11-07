@@ -3281,10 +3281,7 @@ class TestDebateWithJudge:
 
         agent_runs = _all_by_name(spans, "Agent.run")
         names = [_attrs(s).get("swarms.name") for s in agent_runs]
-        # Role-intro call + one debate round call, for all three agents.
-        assert names.count("Pro-Debater") == 2
-        assert names.count("Con-Debater") == 2
-        assert names.count("Debate-Judge") == 2
+        assert names == ["Pro-Debater", "Con-Debater", "Debate-Judge"]
 
     def test_member_failure_propagates(self, spans):
         debate, pro, con, judge = self._build()
