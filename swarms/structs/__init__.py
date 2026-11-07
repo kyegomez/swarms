@@ -18,6 +18,7 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.broadcast import Broadcast, broadcast
+from swarms.structs.checked_swarm import CheckedSwarm
 from swarms.structs.comms_channel import CommsChannel
 from swarms.structs.agentmail_channel import AgentMailChannel
 from swarms.structs.file_channel import FileChannel
@@ -106,6 +107,7 @@ from swarms.structs.check_models import (
 __all__ = [
     "AdvisorSwarm",
     "Agent",
+    "CheckedSwarm",
     "ConcurrentWorkflow",
     "SocialAlgorithms",
     "CommsChannel",
