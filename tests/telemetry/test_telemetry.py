@@ -3498,7 +3498,7 @@ class TestHeavySwarm:
         worker's exception is actually caught *inside* `execute_agent`
         itself (heavy_swarm.py), which returns `(agent_type, "Error: ...")`
         instead of raising. That tuple lands in the internal `results` dict,
-        but `_synthesize_results` never reads that dict's values — it only
+        but `_synthesize_results` never receives that dict — it only
         reads `self.conversation`, and `conversation.add(...)` for that
         agent is skipped on the exception path. Net effect, verified
         empirically here: the failed worker's error text does not even
