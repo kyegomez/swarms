@@ -2735,6 +2735,30 @@ class TestIntegerLoopRequest:
             for m in messages
         )
 
+    def test_a_later_loop_never_ends_on_the_models_own_turn(self):
+        # Gemini 3.5+ rejects "Requests ending with a model turn".
+        agent = self._agent(max_loops=3)
+        sent = []
+
+        def fake_completion(**kwargs):
+            sent.append(kwargs["messages"])
+            message = SimpleNamespace(
+                content=f"answer {len(sent)}", tool_calls=None
+            )
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=message)]
+            )
+
+        with patch.object(
+            litellm_wrapper, "completion", side_effect=fake_completion
+        ):
+            output = agent.run("Plan a trip")
+
+        assert [messages[-1]["role"] for messages in sent] == [
+            "user"
+        ] * 3
+        assert "Continue" not in output
+
     def test_a_compressed_history_is_sent_as_its_summary(
         self, monkeypatch
     ):
