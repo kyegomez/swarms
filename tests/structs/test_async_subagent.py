@@ -761,6 +761,56 @@ class TestAutonomousLoopCreateAndAssignTools:
         # Should list a mapping line with worker name and task id alias
         assert "- [worker-1] task-1 -> task-" in msg
 
+    def test_assign_task_waits_only_for_its_own_tasks(self):
+        """A blocking assign_task_tool must not wait on earlier background tasks."""
+        gate = threading.Event()
+        researcher = MagicMock()
+        researcher.agent_name = "researcher"
+        researcher.run = MagicMock(
+            side_effect=lambda task: gate.wait(5)
+        )
+        writer = MagicMock()
+        writer.agent_name = "writer"
+        writer.run = MagicMock(return_value="draft done")
+
+        class ParentAgentStub:
+            def __init__(self):
+                self.id = "parent-assign-5"
+                self.verbose = False
+                self.short_memory = (
+                    TestAutonomousLoopCreateAndAssignTools._ShortMemoryStub()
+                )
+                self.sub_agents = {
+                    "researcher": {
+                        "agent": researcher,
+                        "name": "researcher",
+                    },
+                    "writer": {"agent": writer, "name": "writer"},
+                }
+
+        parent = ParentAgentStub()
+        try:
+            assign_task_tool(
+                parent,
+                assignments=[
+                    {"agent_id": "researcher", "task": "dig"}
+                ],
+                wait_for_completion=False,
+            )
+            (background,) = parent._subagent_registry.tasks.values()
+
+            msg = assign_task_tool(
+                parent,
+                assignments=[{"agent_id": "writer", "task": "draft"}],
+                wait_for_completion=True,
+            )
+
+            assert "Result: draft done" in msg
+            assert not background.future.done()
+        finally:
+            gate.set()
+            parent._subagent_registry.shutdown()
+
 
 # ── Recursive Subagent Tree Tests ───────────────────────────
 
