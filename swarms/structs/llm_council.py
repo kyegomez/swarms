@@ -199,6 +199,9 @@ class LLMCouncil:
             raise ValueError("task must be a non-empty string")
 
         self.conversation.clear()
+        for agent in [*self.council_members, self.chairman]:
+            if isinstance(agent, Agent):
+                agent.reset()
 
         self.conversation.add(role="User", content=task)
 
