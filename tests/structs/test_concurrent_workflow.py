@@ -594,6 +594,40 @@ def test_concurrent_workflow_run_twice_returns_only_each_task():
     ]
 
 
+def test_concurrent_workflow_does_not_resend_earlier_runs(
+    monkeypatch, tmp_path
+):
+    """A reused workflow must not send an earlier task to the model (#3269)."""
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    requests = []
+
+    def fake_run(self, task=None, messages=None, *args, **kwargs):
+        requests.append(
+            " ".join(str(m.get("content")) for m in messages or [])
+            + str(task or "")
+        )
+        return "an answer"
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    agents = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Alpha", "Beta")
+    ]
+    workflow = ConcurrentWorkflow(agents=agents)
+
+    workflow.run("FIRSTTASK")
+    requests.clear()
+    workflow.batch_run(["SECONDTASK", "THIRDTASK"])
+
+    assert len(requests) == 4
+    assert not any("FIRSTTASK" in r for r in requests)
+    assert not any(
+        "SECONDTASK" in r for r in requests if "THIRDTASK" in r
+    )
+
+
 class _SlowEchoAgent(_EchoAgent):
     """Echoes like _EchoAgent, but only after a fixed delay."""
 
