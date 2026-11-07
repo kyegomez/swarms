@@ -333,6 +333,10 @@ class LLMManager:
                         }
                     if tc.id:
                         accumulator[idx]["id"] = tc.id
+                    if getattr(tc, "extra_content", None):
+                        accumulator[idx][
+                            "extra_content"
+                        ] = tc.extra_content
                     if tc.function:
                         if tc.function.name:
                             accumulator[idx]["function"][
