@@ -1065,9 +1065,6 @@ class Agent:
         """
         history_start = len(self.short_memory.conversation_history)
         try:
-            if messages:
-                self.short_memory.add_messages(messages)
-
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.check_model_supports_utilities(img=img)
@@ -1080,8 +1077,9 @@ class Agent:
             # Set the loop count
             loop_count = 0
 
-            # A caller's messages stand in for the earlier history.
+            # A caller's messages stand in for earlier history as prefix.
             request_start = 0 if messages is None else history_start
+            prefix = messages or ()
 
             # Clear the short memory
             response = None
@@ -1104,6 +1102,7 @@ class Agent:
                 ):
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
+                    prefix = ()
 
                 # Autosave config at the start of each loop step
                 if self.autosave:
@@ -1147,6 +1146,7 @@ class Agent:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
+                                    prefix=prefix,
                                 )
                             )
 
@@ -2580,9 +2580,6 @@ Subtask Breakdown:
             Any: The run's output.
         """
         if self.max_loops == "auto":
-            # Constructor messages are already in short_memory; per-call ones are not.
-            if messages:
-                self.short_memory.add_messages(messages)
             return self._run_autonomous_loop(
                 task=task,
                 img=img,
