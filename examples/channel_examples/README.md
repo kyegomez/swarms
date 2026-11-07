@@ -18,6 +18,7 @@ edit it between runs to steer the next one.
 | `majority_voting_channel.py` | Every vote and the consensus |
 | `swarm_router_channel.py` | One channel forwarded to whichever swarm the router builds |
 | `resume_channel.py` | A second run that continues an existing file |
+| `spec_gated_channel.py` | A `GatedChannel` that checks Marketing's brief against a pricing spec before the engineer reads it |
 | `sqlite_channel.py` | A fan-out posting into one SQLite table from several threads, then a SQL query over it |
 | `sqlite_channel_example.py` | Three agents in one named SQLite conversation, read back with `fetch_messages` and `list_conversations` |
 | `queue_channel_example.py` | Three agents through a `QueueChannel` while the main thread prints each message as it lands |
