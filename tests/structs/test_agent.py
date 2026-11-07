@@ -2277,6 +2277,25 @@ class TestSeededMessages:
         assert "My project is called Helios." in recorded
         assert "Noted: Helios." in recorded
 
+    @pytest.mark.parametrize("with_messages", [False, True])
+    def test_rules_are_sent_once_and_first(self, with_messages):
+        agent = _patched_agent("SeedAgent", rules="Answer in French.")
+        sent = {}
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            sent["messages"] = kwargs.get("messages")
+            return "Bonjour"
+
+        agent.call_llm = fake_call_llm
+        agent.run(
+            "Say hello.",
+            messages=self.PRIOR if with_messages else None,
+        )
+
+        contents = [m["content"] for m in sent["messages"]]
+        assert contents[0] == "Answer in French."
+        assert contents.count("Answer in French.") == 1
+
 
 class TestLLMFailureRaises:
     """#2408: once its retries ran out, _run broke out of the loop and
