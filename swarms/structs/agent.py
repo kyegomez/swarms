@@ -105,11 +105,6 @@ def _model_info(model_name: str) -> Dict[str, Any]:
         return {}
 
 
-def stop_when_repeats(response: str) -> bool:
-    # Stop if the word stop appears in the response
-    return "stop" in response.lower()
-
-
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
