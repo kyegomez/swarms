@@ -28,7 +28,11 @@ class FileChannel(CommsChannel):
         The market grew 31% last year ...
     """
 
-    HEADER = re.compile(r"^## @(.+?)[ \t]*$", re.MULTILINE)
+    HEADER = re.compile(r"\n?^## @(.+?)[ \t]*$\n?\n?", re.MULTILINE)
+
+    HEADER_LIKE = re.compile(r"^(\\*## @)", re.MULTILINE)
+
+    ESCAPED = re.compile(r"^\\(\\*## @)", re.MULTILINE)
 
     EXTENSIONS = (".md", ".txt")
 
@@ -60,7 +64,8 @@ class FileChannel(CommsChannel):
         """
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.path, "a", encoding="utf-8") as f:
-            f.write(f"\n## @{agent_name}\n\n{str(content).strip()}\n")
+            body = self.HEADER_LIKE.sub(r"\\\1", str(content))
+            f.write(f"\n## @{agent_name}\n\n{body}\n")
 
     def messages(self) -> List[Dict[str, Any]]:
         """
@@ -75,7 +80,12 @@ class FileChannel(CommsChannel):
         text = self.path.read_text(encoding="utf-8")
         parts = self.HEADER.split(text)[1:]
         return [
-            {"agent_name": agent_name, "content": body.strip()}
+            {
+                "agent_name": agent_name,
+                "content": self.ESCAPED.sub(
+                    r"\1", body.removesuffix("\n")
+                ),
+            }
             for agent_name, body in zip(parts[::2], parts[1::2])
         ]
 
