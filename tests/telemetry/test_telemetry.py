@@ -3370,9 +3370,8 @@ class TestCouncilAsAJudge:
 # ===========================================================================
 # LLMCouncil — accepts pre-built council members via `council_members=[...]`;
 # the Chairman is always built internally, reached via `council.chairman`.
-# Free text throughout; a council member's failure is swallowed (the
-# exception object itself is substituted as its "response"), but a Chairman
-# failure is NOT wrapped in any try/except -> genuinely propagates.
+# Free text throughout; a council member's or the Chairman's failure
+# propagates.
 # ===========================================================================
 class TestLLMCouncil:
     def _build(self):

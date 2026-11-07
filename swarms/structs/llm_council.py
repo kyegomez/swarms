@@ -40,6 +40,13 @@ from swarms.utils.generate_id import generate_id
 from swarms.utils.litellm_wrapper import empty_usage
 
 
+def _raise_member_failure(results) -> None:
+    """Re-raise the first exception the concurrent runner returned as a result."""
+    for result in results:
+        if isinstance(result, Exception):
+            raise result
+
+
 class LLMCouncil:
     """
     An LLM Council that orchestrates multiple specialized agents to collaboratively
@@ -185,6 +192,8 @@ class LLMCouncil:
 
         Raises:
             ValueError: If ``task`` is not a non-empty string.
+            Exception: The first council member's error, if any member
+                fails while answering or ranking. The chairman is not run.
         """
         if not isinstance(task, str) or not task.strip():
             raise ValueError("task must be a non-empty string")
@@ -204,6 +213,7 @@ class LLMCouncil:
             task=task,
             return_agent_output_dict=True,
         )
+        _raise_member_failure(results_dict.values())
 
         # Map results to member names
         original_responses = {
@@ -255,6 +265,7 @@ class LLMCouncil:
         evaluation_results = batched_grid_agent_execution(
             self.council_members, evaluation_tasks
         )
+        _raise_member_failure(evaluation_results)
 
         # Map results to member names
         evaluations = {
