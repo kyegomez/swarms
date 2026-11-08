@@ -27,6 +27,7 @@ from swarms.structs.comms_channel import (
     claim_agents,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.phased_fan_out_workflow import _parse_json
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.history_output_formatter import (
@@ -710,17 +711,23 @@ class PlannerWorkerSwarm:
                             return model_class(**item)
                         except (TypeError, ValueError):
                             pass
+                last = output[-1] if output else None
+                if isinstance(last, dict) and isinstance(
+                    last.get("content"), str
+                ):
+                    output = last["content"]
 
             # Try parsing as JSON string
             if isinstance(output, str):
-                try:
-                    data = json.loads(output)
-                    return model_class(**data)
-                except (json.JSONDecodeError, TypeError):
-                    pass
+                for parse in (json.loads, _parse_json):
+                    try:
+                        return model_class(**parse(output))
+                    except (json.JSONDecodeError, TypeError):
+                        pass
 
             raise ValueError(
-                f"Unable to parse output as {model_class.__name__}: {type(output)}"
+                f"Unable to parse output as {model_class.__name__}: "
+                f"{str(output)[:500]}"
             )
 
         except Exception as e:
