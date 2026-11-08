@@ -1,3 +1,4 @@
+import json
 import os
 
 import time
@@ -442,6 +443,9 @@ def _local_router(agents=None, delay=0.0):
             self.agent_name = name
             self.description = name
 
+        def reset(self):
+            pass
+
         def run(self, task, *args, **kwargs):
             if delay:
                 time.sleep(delay)
@@ -544,6 +548,49 @@ def test_concurrent_batch_run_returns_results_in_input_order():
         "ok:a",
         "ok:c",
     ]
+
+
+@pytest.mark.parametrize(
+    "handoffs", [["Worker"], ["Worker", "Other"]]
+)
+def test_a_reused_router_does_not_resend_earlier_tasks(
+    monkeypatch, tmp_path, handoffs
+):
+    """The second task routed to an agent carried the first one along."""
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    requests = []
+
+    def fake_run(self, task=None, messages=None, *args, **kwargs):
+        requests.append(
+            " ".join(str(m.get("content")) for m in messages or [])
+            + str(task or "")
+        )
+        return "an answer"
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    agents = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Worker", "Other")
+    ]
+    router = MultiAgentRouter(agents=agents, print_on=False)
+    router.function_caller.run = lambda task: json.dumps(
+        {
+            "handoffs": [
+                {"reasoning": "r", "agent_name": name, "task": task}
+                for name in handoffs
+            ]
+        }
+    )
+
+    router.route_task("FIRSTTASK")
+    requests.clear()
+    router.route_task("SECONDTASK")
+
+    assert len(requests) == len(handoffs)
+    assert not any("FIRSTTASK" in r for r in requests)
 
 
 if __name__ == "__main__":

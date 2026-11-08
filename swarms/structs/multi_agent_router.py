@@ -5,6 +5,7 @@ from typing import Callable, List, Optional
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.utils.formatter import formatter
@@ -262,6 +263,8 @@ class MultiAgentRouter:
                 )
             return
 
+        if isinstance(selected_agent, Agent):
+            selected_agent.reset()
         # Use the agent's run method directly
         agent_response = selected_agent.run(final_task)
 
@@ -334,6 +337,10 @@ class MultiAgentRouter:
 
         # Execute agents only if there are valid tasks
         if selected_agents:
+            # Reset here, not in the threads, so an agent picked twice isn't reset mid-run
+            for agent in selected_agents:
+                if isinstance(agent, Agent):
+                    agent.reset()
             # The tasks are independent, in series they cost the sum of their latencies
             with ContextThreadPoolExecutor(
                 max_workers=len(selected_agents)
