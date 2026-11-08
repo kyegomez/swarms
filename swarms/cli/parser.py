@@ -5,6 +5,7 @@ import shutil
 import textwrap
 from typing import Any, Dict, List, Optional
 
+from swarms.cli.utils import check_swarms_version
 
 DEFAULT_HEAVY_SWARM_MODEL: str = "gpt-5.4"
 
@@ -207,7 +208,14 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         help="Show this help message and exit",
     )
     parser.add_argument(
+        "--version",
+        action="version",
+        version=f"swarms {check_swarms_version()}",
+        help="Print the installed swarms version and exit",
+    )
+    parser.add_argument(
         "command",
+        nargs="?",
         metavar="COMMAND",
         choices=COMMAND_CHOICES,
         help=f"Command to execute. Available commands: {', '.join(COMMAND_CHOICES)}",
