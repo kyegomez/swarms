@@ -452,6 +452,21 @@ class TestHandleAgent:
         # model_name is passed either positionally or as keyword
         assert call_kwargs is not None
 
+    def test_missing_task_exits_before_building_the_agent(self):
+        from swarms.cli.parser import setup_argument_parser
+
+        args = setup_argument_parser().parse_args(
+            ["agent", "--name", "A", "--description", "d"]
+            + ["--system-prompt", "s"]
+        )
+        with patch("swarms.cli.commands.Agent") as mock_agent, patch(
+            "swarms.cli.commands.show_error"
+        ) as mock_err, pytest.raises(SystemExit) as exit_info:
+            self.handle_agent(args)
+        assert exit_info.value.code == 1
+        assert "task" in str(mock_err.call_args)
+        mock_agent.assert_not_called()
+
 
 # ===========================================================================
 # 6. handle_autoswarm

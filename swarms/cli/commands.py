@@ -5,7 +5,7 @@ import getpass
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from dotenv import set_key
 from rich.markup import escape as rich_escape
@@ -709,15 +709,11 @@ def create_swarm_agent(
     description: str,
     system_prompt: str,
     model_name: str,
-    task: Optional[str] = None,
+    task: str,
     **kwargs: Any,
-) -> Optional[Union[Agent, Any]]:
+) -> Optional[Any]:
     """
-    Create and optionally run a custom agent with the specified parameters.
-
-    This function creates a new Agent instance with the provided configuration.
-    If a task is provided, the agent will execute it immediately. Otherwise,
-    the agent is created in interactive mode, ready for user input.
+    Create a custom agent with the specified parameters and run it on a task.
 
     Args:
         name: The name of the agent. Used for identification and display.
@@ -725,8 +721,7 @@ def create_swarm_agent(
         system_prompt: The system prompt that defines the agent's behavior
             and instructions.
         model_name: The LLM model to use (e.g., 'gpt-4', 'gpt-3.5-turbo').
-        task: Optional task for the agent to execute immediately. If None,
-            the agent is created in interactive mode. Defaults to None.
+        task: The task for the agent to run.
         **kwargs: Additional keyword arguments passed to the Agent constructor.
             Common options include:
             - temperature: Float between 0.0 and 2.0
@@ -737,10 +732,7 @@ def create_swarm_agent(
             - And other Agent configuration parameters
 
     Returns:
-        Optional[Union[Agent, Any]]:
-            - If task is provided: Returns the task execution result (Any)
-            - If task is None: Returns the created Agent instance
-            - Returns None if the task returned no results
+        The task's result, or None if the task returned no results.
 
     Raises:
         Exception: If agent creation or execution fails. Errors are displayed
@@ -835,33 +827,6 @@ def create_swarm_agent(
                         f"[white]⚠ Agent '{name}' completed but returned no results.[/white]"
                     )
                     return None
-            else:
-                # No task provided, just create the agent
-                progress.update(
-                    init_task,
-                    description="Agent created! (No task provided - use interactive mode)",
-                    completed=True,
-                )
-                console.print(
-                    f"\n[bold white]✓ Agent '{name}' created successfully![/bold white]"
-                )
-                console.print(
-                    "[white]ℹ️  No task provided. Agent is ready for interactive use.[/white]"
-                )
-
-                # Display agent info
-                agent_info = Panel(
-                    f"[bold]Agent Name:[/bold] {name}\n"
-                    f"[bold]Model:[/bold] {model_name}\n"
-                    f"[bold]Interactive Mode:[/bold] Enabled\n"
-                    f"[bold]Status:[/bold] Ready for use",
-                    title="Agent Created",
-                    border_style="red",
-                    padding=(1, 2),
-                )
-                console.print(agent_info)
-
-                return agent
 
     except Exception as e:
         show_error(
@@ -889,9 +854,9 @@ def handle_agent(args: argparse.Namespace) -> None:
             - description: Required agent description
             - system_prompt: Required unless marketplace_prompt_id is provided
             - marketplace_prompt_id: Optional prompt ID from Swarms marketplace
-            - task: Optional task to execute immediately
+            - task: Task to run (required)
             - model_name: Model to use (default: "gpt-4")
-            - interactive: Enable interactive mode (default: True)
+            - interactive: Keep prompting after the first response (default: False)
             - temperature: Temperature setting (0.0-2.0)
             - max_loops: Maximum loops (integer or "auto")
             - And other optional agent configuration parameters
@@ -901,13 +866,13 @@ def handle_agent(args: argparse.Namespace) -> None:
         value is invalid.
 
     Note:
-        The task parameter is optional. If not provided, the agent is created
-        in interactive mode, ready for user input. The function handles conversion
-        of max_loops from string to int or "auto" as appropriate.
+        For an interactive agent without a task, use `swarms chat`. The function
+        converts max_loops from a string to an int or "auto" as appropriate.
     """
     required_args = ["name", "description"]
     if not getattr(args, "marketplace_prompt_id", None):
         required_args.append("system_prompt")
+    required_args.append("task")
 
     missing_args = [
         arg for arg in required_args if not getattr(args, arg)
@@ -925,13 +890,14 @@ def handle_agent(args: argparse.Namespace) -> None:
             "  --task 'Analyze market trends' \\\n"
             "  --model-name 'gpt-4' \\\n"
             "  --temperature 0.1\n\n"
-            "Note: --task is optional. If not provided, agent will be created in interactive mode.",
+            "Note: --task is required. For an interactive agent, use `swarms chat`.",
         )
         exit(1)
 
     # Build kwargs for additional parameters
     additional_params = {}
     param_mapping = {
+        "interactive": "interactive",
         "temperature": "temperature",
         "max_loops": "max_loops",
         "auto_generate_prompt": "auto_generate_prompt",
@@ -950,11 +916,6 @@ def handle_agent(args: argparse.Namespace) -> None:
         "mcp_url": "mcp_url",
         "marketplace_prompt_id": "marketplace_prompt_id",
     }
-
-    # Set interactive to True by default
-    additional_params["interactive"] = getattr(
-        args, "interactive", True
-    )
 
     for cli_arg, agent_param in param_mapping.items():
         value = getattr(args, cli_arg, None)
