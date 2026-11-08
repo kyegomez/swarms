@@ -56,7 +56,6 @@ def test_total_usage_counts_each_agent_client_and_counter_once():
 def test_total_usage_counts_a_member_that_keeps_a_usage_copy_once(
     monkeypatch,
 ):
-    """A member storing a copy of its usage in its last run counts once."""
     step = {"id": "s1", "agent": "W", "prompt": "{task}"}
     plan = {
         "name": "p",
