@@ -127,9 +127,19 @@ def fresh_agent(agent: Any) -> Any:
             not in (param.VAR_POSITIONAL, param.VAR_KEYWORD)
             and hasattr(agent, name)
         }
-        if isinstance(config.get("llm"), LiteLLM):
+        own_llm = isinstance(config.get("llm"), LiteLLM)
+        if own_llm:
             config.pop("llm")
+        config["tools_list_dictionary"] = list(
+            agent.tools_list_dictionary
+        )
         fresh = type(agent)(**config)
+        fresh.system_prompt = agent.system_prompt
+        fresh.tools_list_dictionary = list(
+            agent.tools_list_dictionary
+        )
+        if own_llm:
+            fresh.llm_handling()
     else:
         fresh = copy.deepcopy(agent)
     fresh.output_type = "final"

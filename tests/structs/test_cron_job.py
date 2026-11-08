@@ -706,6 +706,33 @@ def test_run_many_names_the_missing_key(spec, missing):
         CronJob.run_many([spec], block=False)
 
 
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"agent": "x", "interval": "5fortnights", "task": "t"},
+        {"agent": "x", "interval": "1second"},
+        {
+            "agent": "x",
+            "interval": "1second",
+            "task": "t",
+            "kwargs": {"task": "dup"},
+        },
+    ],
+)
+def test_run_many_leaves_nothing_running_when_an_entry_fails(bad):
+    first = {
+        "agent": MockAgent(),
+        "interval": "1second",
+        "task": "t",
+        "job_id": "run-many-first",
+    }
+    with pytest.raises((CronJobConfigError, TypeError)):
+        CronJob.run_many([first, bad], block=False)
+
+    names = [thread.name for thread in threading.enumerate()]
+    assert "cronjob_run-many-first" not in names
+
+
 def test_stop_many_does_not_wait_out_each_jobs_sleep():
     jobs = CronJob.run_many(
         [

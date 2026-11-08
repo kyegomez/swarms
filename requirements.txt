@@ -15,3 +15,4 @@ schedule
 opentelemetry-sdk
 opentelemetry-exporter-otlp-proto-http
 zstandard
+pytest-asyncio>=0.26.0

@@ -4,6 +4,7 @@ import time
 
 import pytest
 
+from swarms import Agent
 from swarms.structs import phased_fan_out_workflow as dw
 from swarms.structs.phased_fan_out_workflow import (
     PhasedFanOutWorkflow,
@@ -28,6 +29,7 @@ class FakeAgent:
         self.agent_name = agent_name
         self.agent_description = agent_description
         self.system_prompt = system_prompt
+        self.tools_list_dictionary = []
         self.output_type = kwargs.get("output_type")
         self.handler = handler or FakeAgent.handler
         self.history = []
@@ -526,6 +528,38 @@ def test_predefined_agents_are_copied_per_use():
     assert analyst.history == []
     assert len(FakeAgent.instances) == 4
     assert all(len(a.history) == 1 for a in FakeAgent.instances)
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        lambda: {"max_loops": 2},
+        lambda: {"max_loops": "auto"},
+        lambda: {"safety_prompt_on": True, "react_on": True},
+        lambda: {"handoffs": [Agent(agent_name="helper")]},
+    ],
+)
+def test_fresh_agent_sends_the_same_prompt_and_tools(
+    monkeypatch, config
+):
+    monkeypatch.setattr(dw, "Agent", Agent)
+    original = Agent(
+        agent_name="analyst",
+        system_prompt="Analyses things.",
+        print_on=False,
+        **config(),
+    )
+    schemas = list(original.tools_list_dictionary)
+
+    copies = [dw.fresh_agent(original) for _ in range(2)]
+
+    assert original.tools_list_dictionary == schemas
+    for copy in copies:
+        assert copy.llm.system_prompt == original.llm.system_prompt
+        assert (
+            copy.llm.tools_list_dictionary
+            == original.llm.tools_list_dictionary
+        )
 
 
 def test_usage_sums_lead_and_workers():

@@ -1128,6 +1128,23 @@ def test_second_run_does_not_carry_the_first_task():
     )
 
 
+def test_second_run_does_not_send_the_director_the_first_task():
+    seen = []
+    swarm = HierarchicalSwarm(
+        director=_scripted_hs_agent("Director", seen, director=True),
+        agents=[_scripted_hs_agent("W1", seen)],
+        max_loops=1,
+    )
+
+    swarm.run("first task")
+    swarm.run("second task")
+
+    second_run = [m for name, m in seen if name == "Director"][-1]
+    sent = " ".join(str(m.get("content")) for m in second_run)
+    assert "second task" in sent, sent
+    assert "first task" not in sent, sent
+
+
 def test_task_queue_pending_count_tracks_dependency_readiness():
     """get_pending_count only counts PENDING tasks whose dependencies are done."""
     queue = TaskQueue()
@@ -1243,6 +1260,44 @@ def test_planner_worker_swarm_run_starts_with_an_empty_task_queue():
         swarm.run(goal)
 
     assert judged == [[goal] for goal in goals]
+
+
+def test_a_run_continues_from_a_non_empty_channel(tmp_path):
+    from swarms.structs.file_channel import FileChannel
+
+    def seeded(name):
+        channel = FileChannel(tmp_path / name)
+        channel.post("Analyst", "About 120B USD in 2025.")
+        return channel
+
+    order = HierarchicalOrder(agent_name="Worker", task="List them.")
+    hierarchical = make_recovery_swarm(
+        StubAgent("Director", [OrderBatch(orders=[order])]),
+        [StubAgent("Worker", ["done"])],
+        max_loops=1,
+        channel=seeded("hierarchical.md"),
+    )
+
+    worker = StubAgent("Worker", ["done"])
+    worker.short_memory_init = lambda: None
+    planner_worker = PlannerWorkerSwarm(
+        agents=[worker], channel=seeded("planner.md")
+    )
+    plan = {
+        "plan": "p",
+        "tasks": [{"title": "t", "description": "d"}],
+    }
+    planner_worker._create_planner_agent = lambda name="Planner": (
+        StubAgent(name, [plan])
+    )
+    planner_worker._run_judge = lambda img=None: CycleVerdict(
+        is_complete=True, overall_quality=9, summary=""
+    )
+
+    for swarm in (hierarchical, planner_worker):
+        swarm.run("Name the top vendors.")
+        history = swarm.conversation.get_str()
+        assert "About 120B USD in 2025." in history, history
 
 
 def test_harness_result_reflects_conversation_state(tmp_path):
