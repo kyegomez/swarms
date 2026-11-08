@@ -87,6 +87,15 @@ model_recommendations = {
         ],
         "provider": "openrouter",
     },
+    "z-ai/glm-5.3-flash": {
+        "description": "Z.ai's fast, low-cost GLM 5.3 model served through OpenRouter, with a 1M-token context window, for coding and agent tasks at high volume",
+        "best_for": [
+            "Low-cost coding",
+            "High-volume agent tasks",
+            "Long documents on a budget",
+        ],
+        "provider": "openrouter",
+    },
     "mistral-large-latest": {
         "description": "Mistral's flagship model with strong general performance at low cost",
         "best_for": [
