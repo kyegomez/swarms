@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, ValidationError
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.multi_agent_exec import get_agents_info
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
 from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.telemetry.otel import capture_init, trace_run
@@ -194,14 +195,6 @@ class Agents(BaseModel):
     )
 
 
-class AgentsConfig(BaseModel):
-    """Configuration for a list of agents in a swarm"""
-
-    agents: List[AgentSpec] = Field(
-        description="A list of agent configurations",
-    )
-
-
 class SwarmRouterConfig(BaseModel):
     """Configuration model for SwarmRouter.
 
@@ -305,7 +298,6 @@ class AutoSwarmBuilder:
         self.max_json_repair_attempts = 1
         self.auto_execute = auto_execute
         self.conversation = Conversation()
-        self.agents_pool = []
         self._usage_sources = []
 
         self.reliability_check()
@@ -715,7 +707,12 @@ class AutoSwarmBuilder:
             swarm_spec: SwarmRouterConfig = (
                 self._generate_structured_output(
                     config=SwarmRouterConfig,
-                    prompt=f"Create the swarm spec for the following task: {task}",
+                    prompt=(
+                        f"Create the swarm spec for the following task: {task}\n\n"
+                        "Use only these existing agents, by their exact "
+                        "names, in agents and rearrange_flow:\n\n"
+                        f"{get_agents_info(agents, team_name=self.name)}"
+                    ),
                 )
             )
             self._validate_swarm_type(swarm_spec.swarm_type)

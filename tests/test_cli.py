@@ -298,7 +298,9 @@ class TestHandleRunAgents:
             yaml_file=str(tmp_path / "nonexistent.yaml"),
         )
         with patch("swarms.cli.main.show_error") as mock_err:
-            self.handle_run_agents(args)
+            with pytest.raises(SystemExit) as exit_info:
+                self.handle_run_agents(args)
+            assert exit_info.value.code == 1
             mock_err.assert_called_once()
             assert "File Error" in mock_err.call_args[0][0]
 
@@ -326,7 +328,9 @@ class TestHandleRunAgents:
             command="run-agents", yaml_file=str(yaml_file)
         )
         with patch("swarms.cli.main.show_error") as mock_err:
-            self.handle_run_agents(args)
+            with pytest.raises(SystemExit) as exit_info:
+                self.handle_run_agents(args)
+            assert exit_info.value.code == 1
             mock_err.assert_called_once()
             assert "API Key" in mock_err.call_args[0][0]
 
@@ -341,7 +345,9 @@ class TestHandleRunAgents:
             command="run-agents", yaml_file=str(yaml_file)
         )
         with patch("swarms.cli.main.show_error") as mock_err:
-            self.handle_run_agents(args)
+            with pytest.raises(SystemExit) as exit_info:
+                self.handle_run_agents(args)
+            assert exit_info.value.code == 1
             assert "Context Length" in mock_err.call_args[0][0]
 
 
@@ -478,15 +484,18 @@ class TestRunAutoswarm:
         self.run_autoswarm = run_autoswarm
 
     def test_empty_task_shows_error(self):
-        # run_autoswarm catches SwarmCLIError internally and calls show_error
         with patch("swarms.cli.main.show_error") as mock_err:
-            self.run_autoswarm(task="", model="gpt-4o")
+            with pytest.raises(SystemExit) as exit_info:
+                self.run_autoswarm(task="", model="gpt-4o")
+        assert exit_info.value.code == 1
         mock_err.assert_called_once()
         assert "Task cannot be empty" in str(mock_err.call_args)
 
     def test_empty_model_shows_error(self):
         with patch("swarms.cli.main.show_error") as mock_err:
-            self.run_autoswarm(task="do something", model="")
+            with pytest.raises(SystemExit) as exit_info:
+                self.run_autoswarm(task="do something", model="")
+        assert exit_info.value.code == 1
         mock_err.assert_called_once()
         assert "Model name cannot be empty" in str(mock_err.call_args)
 
@@ -527,6 +536,38 @@ class TestHandleOnboarding:
         args = make_args(command="onboarding", verbose=True)
         handle_onboarding(args)
         mock_check.assert_called_once_with(verbose=True)
+
+
+class TestHandleInit:
+    def test_existing_env_keeps_its_entries(
+        self, tmp_path, monkeypatch
+    ):
+        from dotenv import dotenv_values
+
+        from swarms.cli import main as cli
+
+        env_path = tmp_path / ".env"
+        env_path.write_text(
+            "OPENAI_API_KEY=sk-existing\nDATABASE_URL=postgres://db\n"
+        )
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-existing")
+        answers = iter(["", "1,2"])
+        monkeypatch.setattr(
+            cli.console, "input", lambda *a, **k: next(answers)
+        )
+        keys = iter(["", "sk-ant-new", ""])
+        monkeypatch.setattr(
+            cli.getpass, "getpass", lambda *a, **k: next(keys)
+        )
+
+        cli.handle_init(make_args(command="init", dir=str(tmp_path)))
+
+        assert dotenv_values(env_path) == {
+            "OPENAI_API_KEY": "sk-existing",
+            "DATABASE_URL": "postgres://db",
+            "WORKSPACE_DIR": str(tmp_path / "workspace"),
+            "ANTHROPIC_API_KEY": "sk-ant-new",
+        }
 
 
 # ===========================================================================
@@ -730,5 +771,6 @@ class TestMain:
         from swarms.cli.main import main
 
         with patch("sys.argv", ["swarms", "setup-check"]):
-            # Should NOT raise — errors are caught and printed
-            main()
+            with pytest.raises(SystemExit) as exit_info:
+                main()
+            assert exit_info.value.code == 1

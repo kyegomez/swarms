@@ -10,9 +10,7 @@ This directory contains miscellaneous utility examples and helper functions.
 - [conversation_test.py](conversation_test.py) - Conversation testing
 - [csvagent_example.py](csvagent_example.py) - CSV agent example
 - [dict_to_table.py](dict_to_table.py) - Dictionary to table conversion
-- [swarm_matcher_example.py](swarm_matcher_example.py) - Swarm matcher example
 - [test_load_conversation.py](test_load_conversation.py) - Conversation loading test
-- [visualizer_test.py](visualizer_test.py) - Visualization testing
 
 ## Subdirectories
 

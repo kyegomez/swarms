@@ -1,3 +1,4 @@
+import asyncio
 import os
 from concurrent.futures import as_completed
 from functools import lru_cache
@@ -22,6 +23,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.structs.usage_utils import total_usage
 
 
 class EvaluationError(Exception):
@@ -32,12 +34,6 @@ class EvaluationError(Exception):
 
 class DimensionEvaluationError(EvaluationError):
     """Exception raised when a specific dimension evaluation fails."""
-
-    pass
-
-
-class AggregationError(EvaluationError):
-    """Exception raised when aggregation of evaluations fails."""
 
     pass
 
@@ -341,7 +337,6 @@ class CouncilAsAJudge:
                     or self.model_name,
                     max_loops=1,
                     output_type="final",
-                    dynamic_temperature_enabled=True,
                 )
                 for dim in EVAL_DIMENSIONS
             }
@@ -366,7 +361,6 @@ class CouncilAsAJudge:
                 system_prompt=aggregator_system_prompt(),
                 model_name=self.aggregation_model_name,
                 max_loops=1,
-                dynamic_temperature_enabled=True,
                 output_type="final",
             )
         except Exception as e:
@@ -492,3 +486,80 @@ class CouncilAsAJudge:
             raise EvaluationError(
                 f"Evaluation process failed: {str(e)}"
             )
+
+    async def arun(
+        self, task: str, max_concurrency: Optional[int] = None
+    ):
+        """
+        Run the evaluation on the event loop, awaiting each judge's arun.
+
+        Args:
+            task (str): Task containing the response to evaluate
+            max_concurrency (Optional[int]): Most judges evaluating at
+                once. Defaults to None, which runs every judge at once.
+
+        Raises:
+            ValueError: If max_concurrency is less than 1
+            EvaluationError: If evaluation process fails
+        """
+        if max_concurrency is not None and max_concurrency < 1:
+            raise ValueError("max_concurrency must be at least 1")
+        semaphore = asyncio.Semaphore(
+            max_concurrency or len(self.judge_agents)
+        )
+
+        async def _judge(dim: str, agent: Agent) -> Tuple[str, str]:
+            prompt = build_judge_prompt(dim, task, task)
+            async with semaphore:
+                try:
+                    return agent.agent_name, await agent.arun(
+                        f"{prompt} \n\n Evaluate the following response for the {dim} dimension: {task}.",
+                        messages=[],
+                    )
+                except Exception as e:
+                    raise DimensionEvaluationError(
+                        f"Failed to evaluate dimension {dim}: {str(e)}"
+                    ) from e
+
+        try:
+            self.conversation.clear()
+            self.conversation.add(role="User", content=task)
+            verdicts = await asyncio.gather(
+                *(
+                    _judge(dim, agent)
+                    for dim, agent in self.judge_agents.items()
+                )
+            )
+            for name, verdict in verdicts:
+                self.conversation.add(role=name, content=verdict)
+
+            aggregator = self.aggregator_agent
+            prior, aggregation_task = split_last_turn(
+                messages_for(aggregator.agent_name, self.conversation)
+            )
+            final_report = await aggregator.arun(
+                task=aggregation_task, messages=prior
+            )
+            self.conversation.add(
+                role=aggregator.agent_name, content=final_report
+            )
+
+            return history_output_formatter(
+                conversation=self.conversation,
+                type=self.output_type,
+            )
+        except Exception as e:
+            raise EvaluationError(
+                f"Evaluation process failed: {str(e)}"
+            ) from e
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

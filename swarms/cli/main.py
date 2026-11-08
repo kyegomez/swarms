@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 import traceback
+from dotenv import set_key
 from rich.markup import escape as rich_escape
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
@@ -189,6 +190,7 @@ def run_autoswarm(
                 + "2. Verify your network connection\n"
                 + "3. Try a different model",
             )
+        sys.exit(1)
 
 
 def load_markdown_agents(
@@ -210,7 +212,7 @@ def load_markdown_agents(
 
     Returns:
         List[Agent]: A list of loaded Agent instances. Returns an empty list
-            if no agents were loaded or if an error occurred.
+            if no agents were loaded.
 
     Raises:
         FileNotFoundError: If the specified file or directory doesn't exist.
@@ -306,7 +308,7 @@ def load_markdown_agents(
             f"Markdown file/directory not found: {file_path}\n"
             "Please make sure the path exists and you're in the correct directory.",
         )
-        return []
+        sys.exit(1)
     except ValueError as e:
         show_error(
             "Configuration Error",
@@ -320,7 +322,7 @@ def load_markdown_agents(
             "---\n"
             "System prompt content here...",
         )
-        return []
+        sys.exit(1)
     except Exception as e:
         show_error(
             "Execution Error",
@@ -329,7 +331,7 @@ def load_markdown_agents(
             "2. Verify your API keys are set\n"
             "3. Check network connectivity",
         )
-        return []
+        sys.exit(1)
 
 
 def run_heavy_swarm(
@@ -360,7 +362,7 @@ def run_heavy_swarm(
 
     Returns:
         Optional[Any]: The result from the HeavySwarm execution, or None if
-            execution failed or returned no results.
+            it returned no results.
 
     Raises:
         Exception: If HeavySwarm initialization or execution fails. Errors are
@@ -442,7 +444,7 @@ def run_heavy_swarm(
             "2. You have network connectivity\n"
             "3. The task is properly formatted",
         )
-        return None
+        sys.exit(1)
 
 
 def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
@@ -459,7 +461,7 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
 
     Returns:
         Optional[Any]: The final response from the LLM Council, or None if
-            execution failed or returned no results.
+            it returned no results.
 
     Raises:
         Exception: If LLM Council initialization or execution fails. Errors are
@@ -535,7 +537,7 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
             "2. You have network connectivity\n"
             "3. The task is properly formatted",
         )
-        return None
+        sys.exit(1)
 
 
 def create_swarm_agent(
@@ -574,7 +576,7 @@ def create_swarm_agent(
         Optional[Union[Agent, Any]]:
             - If task is provided: Returns the task execution result (Any)
             - If task is None: Returns the created Agent instance
-            - Returns None if agent creation or execution fails
+            - Returns None if the task returned no results
 
     Raises:
         Exception: If agent creation or execution fails. Errors are displayed
@@ -707,7 +709,7 @@ def create_swarm_agent(
             "3. All required parameters are provided\n"
             "4. Your system prompt is properly formatted",
         )
-        return None
+        sys.exit(1)
 
 
 class CustomHelpAction(argparse.Action):
@@ -1328,11 +1330,13 @@ def handle_run_agents(args: argparse.Namespace) -> None:
 
     except FileNotFoundError as e:
         show_error("File Error", str(e))
+        sys.exit(1)
     except ValueError as e:
         show_error(
             "Configuration Error",
             str(e) + "\n\nPlease check your agents.yaml file format.",
         )
+        sys.exit(1)
     except Exception as e:
         # Enhanced error handling
         error_msg = str(e)
@@ -1360,6 +1364,7 @@ def handle_run_agents(args: argparse.Namespace) -> None:
                 "2. Verify your API keys are set\n"
                 "3. Check network connectivity",
             )
+        sys.exit(1)
 
 
 def handle_load_markdown(args: argparse.Namespace) -> None:
@@ -1635,7 +1640,7 @@ def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
 
     Returns:
         Optional[Agent]: The initialized chat agent instance, or None if
-            initialization failed.
+            the session returned nothing.
 
     Raises:
         Exception: If chat agent initialization fails. Errors are displayed
@@ -1694,7 +1699,7 @@ def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
             "2. You have network connectivity\n"
             "3. All parameters are properly formatted[/white]"
         )
-        return None
+        sys.exit(1)
 
 
 def handle_init(args: argparse.Namespace) -> None:
@@ -1953,7 +1958,14 @@ def handle_init(args: argparse.Namespace) -> None:
         "# SWARMS_LOG_LEVEL=INFO",
     ]
 
-    env_path.write_text("\n".join(env_lines) + "\n")
+    if env_path.exists():
+        for env_var, value in {
+            "WORKSPACE_DIR": str(workspace_dir),
+            **collected_keys,
+        }.items():
+            set_key(env_path, env_var, value, quote_mode="never")
+    else:
+        env_path.write_text("\n".join(env_lines) + "\n")
     console.print(f"  [white]✓ .env[/white]               {env_path}")
     console.print(
         f"  [white]✓ workspace/[/white]         {workspace_dir}"
@@ -2087,6 +2099,7 @@ def handle_tips(args: argparse.Namespace) -> None:
             "Unknown tip category",
             f"{e}\nRun 'swarms tips' with no --category to see a random tip from any pool.",
         )
+        sys.exit(1)
 
 
 def handle_models(args: argparse.Namespace) -> None:
@@ -2276,8 +2289,7 @@ def main() -> None:
 
     Raises:
         Exception: Re-raises critical errors after displaying formatted error
-            messages. Command execution errors are caught and displayed without
-            raising.
+            messages. A failed command is displayed and exits with status 1.
 
     Note:
         The function uses try-except blocks to ensure graceful error handling
@@ -2314,7 +2326,7 @@ def main() -> None:
             route_command(args)
         except Exception as e:
             _show_command_error(e)
-            return
+            sys.exit(1)
     except Exception as error:
         formatter.print_panel(
             f"Critical error detected: {error}\n\n"

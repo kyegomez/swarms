@@ -37,6 +37,14 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.generate_id import generate_id
+from swarms.utils.litellm_wrapper import empty_usage
+
+
+def _raise_member_failure(results) -> None:
+    """Re-raise the first exception the concurrent runner returned as a result."""
+    for result in results:
+        if isinstance(result, Exception):
+            raise result
 
 
 class LLMCouncil:
@@ -184,11 +192,16 @@ class LLMCouncil:
 
         Raises:
             ValueError: If ``task`` is not a non-empty string.
+            Exception: The first council member's error, if any member
+                fails while answering or ranking. The chairman is not run.
         """
         if not isinstance(task, str) or not task.strip():
             raise ValueError("task must be a non-empty string")
 
         self.conversation.clear()
+        for agent in [*self.council_members, self.chairman]:
+            if isinstance(agent, Agent):
+                agent.reset()
 
         self.conversation.add(role="User", content=task)
 
@@ -203,6 +216,7 @@ class LLMCouncil:
             task=task,
             return_agent_output_dict=True,
         )
+        _raise_member_failure(results_dict.values())
 
         # Map results to member names
         original_responses = {
@@ -254,6 +268,7 @@ class LLMCouncil:
         evaluation_results = batched_grid_agent_execution(
             self.council_members, evaluation_tasks
         )
+        _raise_member_failure(evaluation_results)
 
         # Map results to member names
         evaluations = {
@@ -301,3 +316,23 @@ class LLMCouncil:
             List of formatted outputs based on output_type
         """
         return batched_run(self.run, tasks)
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every council member and the chairman.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        agents = {
+            id(agent): agent
+            for agent in [*self.council_members, self.chairman]
+        }
+        total = empty_usage()
+        for agent in agents.values():
+            for key, value in agent.usage.items():
+                if key in total:
+                    total[key] += value
+        return total
