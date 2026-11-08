@@ -1,4 +1,4 @@
-# from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from swarms.structs.agent_router import AgentRouter
 from swarms.structs.agent import Agent
@@ -291,6 +291,28 @@ def test_update_agent_history_agent_not_found():
     router.update_agent_history("non_existent_agent")
 
 
+def test_update_agent_history_embeds_the_history_text():
+    router = AgentRouter()
+    agent = Agent(
+        agent_name="writer",
+        agent_description="Writes",
+        system_prompt="You write.",
+        model_name="gpt-5.4",
+        max_loops=1,
+        print_on=False,
+    )
+    with patch.object(
+        AgentRouter, "_generate_embedding", return_value=[1.0, 0.0]
+    ) as embed:
+        router.add_agent(agent)
+        agent.short_memory.add(role="User", content="Draft a haiku")
+        router.update_agent_history("writer")
+
+    text = router.agent_metadata[0]["text"]
+    assert "User: Draft a haiku" in text
+    assert embed.call_args.args[0] == text
+
+
 def test_agent_metadata_structure():
     """Test the structure of agent metadata with real agent."""
     router = AgentRouter()
@@ -425,51 +447,3 @@ def test_router_find_and_run_with_streaming():
         assert (
             len(streamed_chunks) > 0 or response != ""
         ), "Best agent should stream when run"
-
-
-if __name__ == "__main__":
-    # List of all test functions
-    tests = [
-        test_agent_router_initialization_default,
-        test_agent_router_initialization_custom,
-        test_cosine_similarity_identical_vectors,
-        test_cosine_similarity_orthogonal_vectors,
-        test_cosine_similarity_opposite_vectors,
-        test_cosine_similarity_different_lengths,
-        test_generate_embedding_success,
-        test_add_agent_success,
-        test_add_agents_multiple,
-        test_find_best_agent_success,
-        test_find_best_agent_no_agents,
-        test_update_agent_history_success,
-        test_update_agent_history_agent_not_found,
-        test_agent_metadata_structure,
-        test_agent_router_edge_cases,
-        test_router_with_agent_streaming,
-        test_router_find_and_run_with_streaming,
-    ]
-
-    # Run all tests
-    print("Running all tests...")
-    passed = 0
-    failed = 0
-
-    for test_func in tests:
-        try:
-            print(f"\n{'='*60}")
-            print(f"Running: {test_func.__name__}")
-            print(f"{'='*60}")
-            test_func()
-            print(f"✓ PASSED: {test_func.__name__}")
-            passed += 1
-        except Exception as e:
-            print(f"✗ FAILED: {test_func.__name__}")
-            print(f"  Error: {str(e)}")
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"Test Summary: {passed} passed, {failed} failed")
-    print(f"{'='*60}")

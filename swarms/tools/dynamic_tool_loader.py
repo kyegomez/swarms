@@ -132,6 +132,7 @@ _STOPWORDS = frozenset(
     """
     a an the and or of to in on for with from by at as is are be it its
     this that these those any some all please can could would should
+    am you your who
     """.split()
 )
 

@@ -28,7 +28,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [groupchat/](multi_agent/groupchat/) | Asynchronous self-selecting group chat examples where agents independently decide whether to respond |
 | [heavy_swarm_examples/](multi_agent/heavy_swarm_examples/) | Heavy swarm implementations for complex tasks |
 | [hiearchical_swarm/](multi_agent/hiearchical_swarm/) | Hierarchical swarm structures and patterns |
-| [hscf/](multi_agent/hscf/) | Hierarchical Swarm Control Framework examples |
 | [council/llm_council/](multi_agent/council/llm_council/) | LLM Council collaboration patterns |
 | [majority_voting/](multi_agent/majority_voting/) | Majority voting and consensus examples |
 | [mar/](multi_agent/mar/) | Multi-agent rearrangement examples |
@@ -90,9 +89,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [2_stagehand_tools_agent.py](tools/stagehand/2_stagehand_tools_agent.py) | Stagehand tools agent |
 | [3_stagehand_mcp_agent.py](tools/stagehand/3_stagehand_mcp_agent.py) | Stagehand MCP agent |
 | [4_stagehand_multi_agent_workflow.py](tools/stagehand/4_stagehand_multi_agent_workflow.py) | Stagehand multi-agent workflow |
-| [tests/](tools/stagehand/tests/) | Stagehand tests |
-| [test_stagehand_integration.py](tools/stagehand/tests/test_stagehand_integration.py) | Stagehand integration test |
-| [test_stagehand_simple.py](tools/stagehand/tests/test_stagehand_simple.py) | Simple Stagehand test |
 
 ### API & Protocols
 
@@ -237,9 +233,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [conversation_test.py](utils/misc/conversation_test.py) | Conversation test |
 | [csvagent_example.py](utils/misc/csvagent_example.py) | CSV agent example |
 | [dict_to_table.py](utils/misc/dict_to_table.py) | Dictionary to table conversion |
-| [swarm_matcher_example.py](utils/misc/swarm_matcher_example.py) | Swarm matcher example |
 | [test_load_conversation.py](utils/misc/test_load_conversation.py) | Load conversation test |
-| [visualizer_test.py](utils/misc/visualizer_test.py) | Visualizer test |
 | [telemetry/](utils/telemetry/) | Telemetry and monitoring utilities |
 
 ### User Interface

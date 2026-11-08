@@ -38,7 +38,6 @@ Set the matching API key as an environment variable before running any example (
 - [swarms_api_mixture_of_agents.py](gpt_astra/swarms_api_mixture_of_agents.py) — MixtureOfAgents of gpt-6-astra agents through the Swarms API (`/v1/swarm/completions`)
 
 ### Llama 4
-- [llama_4.py](llama4/llama_4.py) — Llama 4 agent
 - [litellm_example.py](llama4/litellm_example.py) — Llama 4 via LiteLLM
 - [simple_agent.py](llama4/simple_agent.py) — Simple Llama 4 agent
 

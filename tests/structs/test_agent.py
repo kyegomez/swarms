@@ -13,10 +13,13 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
+from swarms.structs.file_channel import FileChannel
 from swarms import Agent
 from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.structs.agent import DEFAULT_AGENT_DESCRIPTION
 from swarms.schemas.agent_errors import (
+    AgentInitializationError,
     AgentLLMError,
     AgentToolExecutionError,
 )
@@ -79,24 +82,16 @@ def basic_flow(mocked_llm, tmp_path):
 
 @pytest.fixture
 def flow_with_condition(mocked_llm, tmp_path):
-    from swarms.structs.agent import stop_when_repeats
-
     return _flow(
         "flow-with-condition",
         mocked_llm,
         tmp_path,
-        stopping_condition=stop_when_repeats,
+        stopping_condition=lambda text: "stop" in text.lower(),
     )
 
 
 class TestBasicAgent:
     """Constructor, run plumbing and the save/load round trip."""
-
-    def test_stop_when_repeats(self):
-        from swarms.structs.agent import stop_when_repeats
-
-        assert stop_when_repeats("Please Stop now")
-        assert not stop_when_repeats("Continue the process")
 
     def test_flow_initialization(self, basic_flow):
         """The constructor arguments survive __init__.
@@ -108,7 +103,7 @@ class TestBasicAgent:
         assert basic_flow.stopping_condition is None
         assert basic_flow.retry_attempts == 3
         assert basic_flow.task is None
-        assert basic_flow.stopping_token == "<DONE>"
+        assert basic_flow.stopping_token is None
         assert not basic_flow.interactive
 
     @patch("time.sleep", return_value=None)
@@ -123,9 +118,44 @@ class TestBasicAgent:
     ):
         assert flow_with_condition.run("Stop") is not None
 
-    def test_bulk_run(self, basic_flow):
-        inputs = [{"task": "Test1"}, {"task": "Test2"}]
-        assert basic_flow.bulk_run(inputs) is not None
+    def test_run_after_reset_starts_a_fresh_conversation(
+        self, mocked_llm, tmp_path
+    ):
+        class Weather(BaseModel):
+            city: str
+
+        agent = _flow(
+            "reset-flow",
+            mocked_llm,
+            tmp_path,
+            list_base_models=[Weather],
+        )
+        agent.run("first task")
+        agent.autonomous_subtasks = [{"step_id": "old"}]
+        agent.reset()
+        agent.run("second task")
+
+        history = agent.short_memory.conversation_history
+        contents = [str(row["content"]) for row in history]
+        assert agent.autonomous_subtasks == []
+        assert not any(row["role"] == "System" for row in history)
+        assert any("Weather" in c for c in contents)
+        assert not any("first task" in c for c in contents)
+        assert any("second task" in c for c in contents)
+
+    def test_no_system_prompt_seeds_no_system_row(
+        self, mocked_llm, tmp_path
+    ):
+        agent = _flow("blank-flow", mocked_llm, tmp_path)
+        agent.run("the task")
+
+        history = agent.short_memory.conversation_history
+
+        assert [row["role"] for row in history] == [
+            agent.user_name,
+            "blank-flow",
+        ]
+        assert str(history[0]["content"]) == "the task"
 
     def test_save_and_load(self, basic_flow, mocked_llm, tmp_path):
         """State written by save() comes back through load().
@@ -252,7 +282,7 @@ class TestAgentFeatures:
             {"task": "Say hello"},
             {"task": "Tell a short joke"},
         ]
-        responses = agent.bulk_run(tasks)
+        responses = [agent.run(**task) for task in tasks]
         assert len(responses) == len(tasks)
         assert all(r is not None for r in responses)
 
@@ -767,6 +797,7 @@ class TestLLMArgsAndHandling:
             agent_name="random-models-agent",
             model_name="gpt-4o-mini",
             random_models_on=True,
+            max_tokens=None,
         )
 
         assert agent.model_name == "gpt-4.1-nano"
@@ -791,11 +822,24 @@ class TestConstructorWindows:
         assert agent.context_length == 200000
         assert agent.short_memory.context_length == 200000
 
-    def test_context_length_defaults_to_the_model_input_window(self):
-        """Omitting it should size to the model, not a flat 16000."""
+    def test_defaults_skip_the_model_lookup(self):
+        with patch(
+            "swarms.utils.llm_backend.get_model_info"
+        ) as lookup:
+            agent = self._agent(model_name="default-window-probe")
+
+        assert (agent.context_length, agent.max_tokens) == (
+            128000,
+            16384,
+        )
+        assert lookup.call_count == 0
+
+    def test_context_length_none_uses_the_model_input_window(self):
         # The relation, not the literal, so a litellm model-table refresh
         # does not break this.
-        assert self._agent(model_name="gpt-4o").context_length > 16000
+        agent = self._agent(model_name="gpt-4o", context_length=None)
+
+        assert agent.context_length > 16000
 
     def test_max_tokens_explicit_value_is_honoured(self):
         """A caller capping output was overwritten with the model's limit."""
@@ -803,15 +847,29 @@ class TestConstructorWindows:
 
         assert agent.max_tokens == 500
 
-    def test_max_tokens_defaults_to_the_model_output_window(self):
-        assert self._agent(model_name="gpt-4o-mini").max_tokens > 500
+    def test_max_tokens_none_uses_the_model_output_window(self):
+        agent = self._agent(model_name="gpt-4o-mini", max_tokens=None)
 
-    def test_non_positive_max_tokens_falls_back_to_the_model(self):
-        for bad in (0, -1, None):
-            agent = self._agent(
-                model_name="gpt-4o-mini", max_tokens=bad
-            )
-            assert agent.max_tokens > 0
+        assert agent.max_tokens > 500
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"max_tokens": 0},
+            {"max_tokens": -1},
+            {"context_length": 0},
+            {"context_length": -1},
+        ],
+    )
+    def test_non_positive_windows_raise_without_a_lookup(
+        self, kwargs
+    ):
+        with patch(
+            "swarms.utils.llm_backend.get_model_info"
+        ) as lookup, pytest.raises(AgentInitializationError):
+            self._agent(model_name="non-positive-probe", **kwargs)
+
+        assert lookup.call_count == 0
 
     def test_saved_state_path_is_honoured(self):
         """It was assigned, then overwritten with a generated name twelve
@@ -825,10 +883,35 @@ class TestConstructorWindows:
 
     def test_unknown_model_falls_back_for_both(self):
         """An unrecognised model must not raise out of __init__."""
-        agent = self._agent(model_name="totally-made-up-model-xyz")
+        agent = self._agent(
+            model_name="totally-made-up-model-xyz",
+            context_length=None,
+            max_tokens=None,
+        )
 
         assert agent.context_length == 16000
         assert agent.max_tokens == 16000
+
+    def test_model_info_is_looked_up_once_per_model(self):
+        info = {"max_input_tokens": 90000, "max_output_tokens": 9000}
+        with patch(
+            "swarms.utils.llm_backend.get_model_info",
+            return_value=info,
+        ) as lookup:
+            agents = [
+                self._agent(
+                    model_name="model-info-cache-probe",
+                    context_length=None,
+                    max_tokens=None,
+                )
+                for _ in range(2)
+            ]
+
+        assert lookup.call_count == 1
+        assert [(a.context_length, a.max_tokens) for a in agents] == [
+            (90000, 9000),
+            (90000, 9000),
+        ]
 
 
 class TestFunctionCallingWarning:
@@ -885,6 +968,26 @@ class TestToolsListIsolation:
         )
 
 
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({}, DEFAULT_AGENT_DESCRIPTION),
+        ({"agent_description": "x"}, "x"),
+        ({"description": "Checks tax math."}, "Checks tax math."),
+        ({"agent_description": None, "description": "y"}, "y"),
+        ({"agent_description": "x", "description": "y"}, "x"),
+    ],
+)
+def test_description_is_another_name_for_agent_description(
+    kwargs, expected
+):
+    agent = _patched_agent("described", **kwargs)
+    assert (agent.agent_description, agent.description) == (
+        expected,
+        expected,
+    )
+
+
 def test_list_base_models_schema_reaches_short_memory():
     class Order(BaseModel):
         item: str
@@ -898,6 +1001,68 @@ def test_list_base_models_schema_reaches_short_memory():
 
     schema = agent.short_memory.conversation_history[-1]["content"]
     assert "Order" in schema and "item" in schema and "qty" in schema
+
+
+def test_safety_prompt_on_reaches_the_model():
+    from swarms.prompts.safety_prompt import SAFETY_PROMPT
+
+    agent = Agent(
+        agent_name="Safety-Agent",
+        model_name="gpt-5.4-mini",
+        system_prompt="Be terse.",
+        safety_prompt_on=True,
+        max_loops=1,
+        print_on=False,
+        persistent_memory=False,
+    )
+    response = SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=SimpleNamespace(content="ok", tool_calls=None)
+            )
+        ],
+        usage=None,
+    )
+    with patch(
+        "swarms.utils.litellm_wrapper.completion",
+        return_value=response,
+    ) as completion:
+        agent.run("hi")
+
+    system = [
+        m["content"]
+        for m in completion.call_args.kwargs["messages"]
+        if m["role"] == "system"
+    ]
+    assert system == [f"Be terse.\n\n{SAFETY_PROMPT}".strip()]
+
+
+def test_system_prompt_defaults_follow_max_loops():
+    from swarms.prompts.autonomous_agent_prompt import (
+        get_autonomous_agent_prompt,
+    )
+    from swarms.prompts.max_loop_prompt import (
+        generate_reasoning_prompt,
+    )
+
+    auto = get_autonomous_agent_prompt(include_think_tool=False)
+    for options, expected in (
+        ({"max_loops": 1}, ""),
+        ({"max_loops": 3}, generate_reasoning_prompt(3)),
+        ({"max_loops": "auto"}, auto),
+        (
+            {"system_prompt": "Be terse.", "max_loops": "auto"},
+            f"Be terse.\n\n{auto}",
+        ),
+    ):
+        agent = Agent(
+            agent_name="Prompt-Agent",
+            model_name="gpt-5.4-mini",
+            print_on=False,
+            persistent_memory=False,
+            **options,
+        )
+        assert agent.system_prompt == expected
 
 
 class TestAutonomousAgentLoop:
@@ -1110,6 +1275,18 @@ class TestArunForwarding:
         # The original error surfaces — not a TypeError from awaiting None.
         with pytest.raises(ValueError, match="boom"):
             asyncio.run(Agent.arun(agent, "T"))
+
+    def test_handle_run_error_tolerates_braces_in_provider_message(
+        self,
+    ):
+        """Provider JSON bodies contain braces; logging must not KeyError (#2861)."""
+        agent = self._bare_agent()
+        agent.autosave = False
+        err = ValueError(
+            "Error code: 404 - [{'error': {'code': 404, 'message': 'missing'}}]"
+        )
+        with pytest.raises(ValueError, match="Error code: 404"):
+            agent._handle_run_error(err)
 
 
 class TestEmptyTaskGuard:
@@ -2101,45 +2278,11 @@ class TestSeededMessages:
         assert "Noted: Helios." in recorded
 
 
-class TestRunSamples:
-    """Each of the ``n`` samples gets the same inputs as a single run."""
-
-    def test_every_sample_receives_the_image_and_callback(self):
-        agent = _patched_agent("Vision")
-        calls = []
-
-        def fake_call_llm(
-            task=None,
-            img=None,
-            imgs=None,
-            current_loop=0,
-            streaming_callback=None,
-            *args,
-            **kwargs,
-        ):
-            calls.append((img, streaming_callback))
-            return "A bar chart."
-
-        def on_token(token):
-            return None
-
-        agent.call_llm = fake_call_llm
-        agent.run(
-            "Describe the chart.",
-            img="https://example.com/chart.png",
-            streaming_callback=on_token,
-            n=2,
-        )
-
-        assert (
-            calls == [("https://example.com/chart.png", on_token)] * 2
-        )
-
-
 class TestLLMFailureRaises:
     """#2408: once its retries ran out, _run broke out of the loop and
     returned the formatted history, so run() returned '' with no error and
-    fallback_models was never tried.
+    fallback_models was never tried. Retries now belong to litellm, so a
+    failed call reaches run() at once and run() moves to the next model.
     """
 
     TASK = "What is 2+2?"
@@ -2171,14 +2314,13 @@ class TestLLMFailureRaises:
         return Agent(
             agent_name="FallbackAgent",
             max_loops=1,
-            retry_attempts=2,
             print_on=False,
             verbose=False,
             persistent_memory=False,
             **kwargs,
         )
 
-    def test_raises_when_retries_run_out(self):
+    def test_raises_when_the_model_fails(self):
         agent = self._agent(model_name="gpt-5.4")
         history_before = len(agent.short_memory.conversation_history)
         calls = []
@@ -2191,7 +2333,7 @@ class TestLLMFailureRaises:
             with pytest.raises(AgentLLMError):
                 agent.run(self.TASK)
 
-        assert calls == ["gpt-5.4", "gpt-5.4"]
+        assert calls == ["gpt-5.4"]
         assert (
             len(agent.short_memory.conversation_history)
             == history_before
@@ -2210,7 +2352,7 @@ class TestLLMFailureRaises:
         ):
             output = agent.run(self.TASK)
 
-        assert calls == ["gpt-5.4", "gpt-5.4", "claude-sonnet-4-6"]
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6"]
         assert "answer from claude-sonnet-4-6" in str(output)
         task_turns = [
             m
@@ -2218,6 +2360,37 @@ class TestLLMFailureRaises:
             if m["content"] == self.TASK
         ]
         assert len(task_turns) == 1
+
+    def test_fallback_request_keeps_the_callers_messages(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+        sent = {}
+        fake_completion = self._completion(calls, {"gpt-5.4"})
+
+        def recording_completion(**params):
+            sent[params["model"]] = [
+                m["content"] for m in params["messages"]
+            ]
+            return fake_completion(**params)
+
+        prior = [
+            {"role": "user", "content": "My project is Helios."},
+            {"role": "assistant", "content": "Noted: Helios."},
+        ]
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=recording_completion,
+        ):
+            agent.run(self.TASK, messages=prior)
+
+        assert sent["claude-sonnet-4-6"][-3:] == [
+            "My project is Helios.",
+            "Noted: Helios.",
+            self.TASK,
+        ]
 
     def test_raises_once_every_fallback_fails(self):
         agent = self._agent(
@@ -2235,9 +2408,371 @@ class TestLLMFailureRaises:
             with pytest.raises(AgentLLMError):
                 agent.run(self.TASK)
 
-        assert calls == [
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6"]
+
+    def test_the_next_run_starts_from_the_primary_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+        down = {"gpt-5.4"}
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, down),
+        ):
+            agent.run(self.TASK)
+            down.clear()
+            output = agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6", "gpt-5.4"]
+        assert "answer from gpt-5.4" in str(output)
+        assert agent.model_name == "gpt-5.4"
+
+    def test_an_error_outside_the_model_call_keeps_the_model(self):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+
+        def broken(response):
+            raise ValueError("not a provider error")
+
+        agent.tool_manager.parse_response = broken
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, set()),
+        ):
+            with pytest.raises(ValueError):
+                agent.run(self.TASK)
+
+        assert calls == ["gpt-5.4"]
+
+    @pytest.mark.parametrize(
+        "kwargs, expected",
+        [
+            (
+                {
+                    "model_name": "claude-sonnet-4-6",
+                    "fallback_models": ["gpt-5.4", "gpt-5.4-mini"],
+                },
+                ["claude-sonnet-4-6", "gpt-5.4", "gpt-5.4-mini"],
+            ),
+            (
+                {"fallback_models": ["gpt-5.4", "gpt-5.4-mini"]},
+                ["gpt-5.4", "gpt-5.4-mini"],
+            ),
+            (
+                {
+                    "model_name": "claude-sonnet-4-6",
+                    "fallback_models": [
+                        "claude-sonnet-4-6",
+                        "gpt-5.4",
+                    ],
+                },
+                ["claude-sonnet-4-6", "gpt-5.4"],
+            ),
+        ],
+    )
+    def test_model_name_runs_before_the_fallback_models(
+        self, kwargs, expected
+    ):
+        agent = self._agent(**kwargs)
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, set(expected)),
+        ), pytest.raises(AgentLLMError):
+            agent.run(self.TASK)
+
+        assert calls == expected
+
+    def test_fallback_model_name_joins_the_model_list(self):
+        agent = self._agent(
+            model_name="gpt-5.4",
+            fallback_model_name="claude-sonnet-4-6",
+        )
+        assert agent.fallback_models == [
             "gpt-5.4",
-            "gpt-5.4",
-            "claude-sonnet-4-6",
             "claude-sonnet-4-6",
         ]
+
+        same = self._agent(
+            model_name="gpt-5.4", fallback_model_name="gpt-5.4"
+        )
+        assert same.fallback_models == ["gpt-5.4"]
+
+
+class TestCommsChannel:
+    """An agent given a channel reads it before a run and posts to it after."""
+
+    def _agent(self, name, channel, reply="done"):
+        agent = _patched_agent(name, channel=channel)
+        agent.requests = []
+
+        def call_llm(task=None, *args, **kwargs):
+            agent.requests.append(kwargs.get("messages"))
+            return reply
+
+        agent.call_llm = call_llm
+        return agent
+
+    def test_reads_prior_turns_and_posts_the_task_and_answer(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        channel.post("Researcher", "Growth was 31%.")
+        agent = self._agent(
+            "Writer", channel, reply="Report: 31% growth."
+        )
+
+        agent.run("Write the report.")
+
+        sent = [m["content"] for m in agent.requests[0]]
+        assert sent[-2:] == ["Growth was 31%.", "Write the report."]
+        assert channel.messages() == [
+            {
+                "agent_name": "Researcher",
+                "content": "Growth was 31%.",
+            },
+            {
+                "agent_name": agent.user_name,
+                "content": "Write the report.",
+            },
+            {
+                "agent_name": "Writer",
+                "content": "Report: 31% growth.",
+            },
+        ]
+
+    def test_agents_sharing_a_channel_post_the_task_once(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        first = self._agent("First", channel, reply="one")
+        second = self._agent("Second", channel, reply="two")
+
+        first.run("Discuss.")
+        second.run("Discuss.")
+
+        roles = [m["agent_name"] for m in channel.messages()]
+        assert roles == [first.user_name, "First", "Second"]
+        # The second agent saw the first's answer, and the task only as its own turn.
+        sent = [m["content"] for m in second.requests[0]]
+        assert sent.count("Discuss.") == 1
+        assert "one" in sent
+
+    def test_given_messages_skip_the_channel_and_only_the_answer_is_posted(
+        self, tmp_path
+    ):
+        channel = FileChannel(tmp_path / "run.md")
+        channel.post("Researcher", "Growth was 31%.")
+        agent = self._agent("Writer", channel, reply="ok")
+
+        agent.run(
+            "Write.",
+            messages=[{"role": "user", "content": "Only this."}],
+        )
+
+        sent = [m["content"] for m in agent.requests[0]]
+        assert "Growth was 31%." not in sent
+        assert "Only this." in sent
+        assert channel.messages() == [
+            {
+                "agent_name": "Researcher",
+                "content": "Growth was 31%.",
+            },
+            {"agent_name": "Writer", "content": "ok"},
+        ]
+
+    def test_a_failed_run_posts_no_answer(self, tmp_path):
+        channel = FileChannel(tmp_path / "run.md")
+        agent = _patched_agent("Writer", channel=channel)
+
+        def down(*args, **kwargs):
+            raise RuntimeError("provider down")
+
+        agent.llm_manager.call = down
+
+        with pytest.raises(AgentLLMError):
+            agent.run("Write.")
+
+        assert [m["agent_name"] for m in channel.messages()] == [
+            agent.user_name
+        ]
+
+
+class TestIntegerLoopRequest:
+    """The integer max_loops path sends typed messages, not a flattened string."""
+
+    def _agent(self, **kwargs):
+        return Agent(
+            agent_name="IntPathTest",
+            model_name="gpt-4o-mini",
+            persistent_memory=False,
+            print_on=False,
+            verbose=False,
+            autosave=False,
+            tool_call_summary=False,
+            **kwargs,
+        )
+
+    def _capture(self, monkeypatch, agent, replies):
+        sent = []
+
+        def call_llm(task=None, *args, **kwargs):
+            sent.append((task, kwargs.get("messages")))
+            return replies[len(sent) - 1]
+
+        monkeypatch.setattr(agent, "call_llm", call_llm)
+        return sent
+
+    def test_the_task_is_sent_as_a_user_message(self, monkeypatch):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(monkeypatch, agent, ["done"])
+
+        agent.run("find the bug")
+
+        task, messages = sent[0]
+        assert task is None
+        assert any(
+            m["role"] == "user" and "find the bug" in m["content"]
+            for m in messages
+        )
+
+    def test_tool_results_are_paired_across_loops(self, monkeypatch):
+        def get_weather(city: str) -> str:
+            """Return the weather for a city.
+
+            Args:
+                city: The city name.
+            """
+            return f"{city}: sunny"
+
+        agent = self._agent(max_loops=2, tools=[get_weather])
+        call = {
+            "id": "w1",
+            "type": "function",
+            "function": {
+                "name": "get_weather",
+                "arguments": json.dumps({"city": "Paris"}),
+            },
+        }
+        sent = self._capture(
+            monkeypatch, agent, [[call], "It is sunny in Paris."]
+        )
+
+        agent.run("weather in Paris?")
+
+        messages = sent[1][1]
+        turn = next(
+            i for i, m in enumerate(messages) if m.get("tool_calls")
+        )
+        assert messages[turn + 1]["role"] == "tool"
+        assert messages[turn + 1]["tool_call_id"] == "w1"
+        assert "sunny" in messages[turn + 1]["content"]
+
+    def test_transforms_keep_the_flattened_prompt(self, monkeypatch):
+        agent = self._agent(max_loops=1)
+        agent.transforms = object()
+        sent = self._capture(monkeypatch, agent, ["done"])
+        monkeypatch.setattr(
+            "swarms.structs.agent.handle_transforms",
+            lambda **kw: "FLATTENED",
+        )
+
+        agent.run("hello")
+
+        assert sent[0] == ("FLATTENED", None)
+
+    def test_caller_messages_pass_through_as_given(self, monkeypatch):
+        agent = self._agent(max_loops=1)
+        sent = self._capture(monkeypatch, agent, ["done"])
+        image = [
+            {"type": "text", "text": "look"},
+            {
+                "type": "image_url",
+                "image_url": {"url": "https://x/a.png"},
+            },
+        ]
+
+        agent.run(
+            "Describe it",
+            messages=[
+                {"role": "system", "content": "Answer in French."},
+                {"role": "user", "content": image},
+            ],
+        )
+
+        assert sent[0][1] == [
+            {"role": "system", "content": "Answer in French."},
+            {"role": "user", "content": image},
+            {"role": "user", "content": "Describe it"},
+        ]
+
+    def test_no_loop_markers_are_sent(self, monkeypatch):
+        agent = self._agent(max_loops=3)
+        sent = self._capture(monkeypatch, agent, ["a", "b", "c"])
+
+        agent.run("Plan a trip")
+
+        assert not any(
+            "Reasoning Loop" in str(m["content"])
+            for _, messages in sent
+            for m in messages
+        )
+
+    def test_a_compressed_history_is_sent_as_its_summary(
+        self, monkeypatch
+    ):
+        agent = self._agent(max_loops=2)
+        sent = self._capture(monkeypatch, agent, ["first", "second"])
+
+        class Compressor:
+            def maybe_compress(self, agent):
+                if len(sent) != 1:
+                    return None
+                agent.short_memory.compact(
+                    summary="SUMMARY", summary_role="user"
+                )
+                return "SUMMARY"
+
+        agent._context_compressor = Compressor()
+
+        agent.run("task", messages=[{"role": "user", "content": "x"}])
+
+        assert sent[1][1] == [{"role": "user", "content": "SUMMARY"}]
+
+
+class TestAgentOutputCleanerRemoval:
+    """Tests confirming removal of unused output_cleaner parameter and op (#2719)."""
+
+    def test_agent_has_no_output_cleaner_attribute(self):
+        agent = _patched_agent("cleaner-test")
+        assert not hasattr(agent, "output_cleaner")
+        assert not hasattr(agent, "output_cleaner_op")
+
+    def test_legacy_output_cleaner_kwarg_absorbed(self):
+        agent = _patched_agent(
+            "legacy-cleaner", output_cleaner=lambda s: "CLEANED"
+        )
+        assert not hasattr(agent, "output_cleaner")
+
+    def test_direct_post_processing_on_run_return_value(
+        self, tmp_path, mocked_llm
+    ):
+        agent = _flow(
+            "post-process-test",
+            mocked_llm,
+            tmp_path,
+            output_type="str",
+        )
+        result = agent.run("raw output")
+        assert isinstance(result, str)
+        cleaned = result.upper()
+        assert "RAW OUTPUT" in cleaned

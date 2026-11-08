@@ -1,6 +1,5 @@
 import functools
 import inspect
-import json
 from logging import getLogger
 from typing import (
     Any,
@@ -228,7 +227,7 @@ def get_param_annotations(
     }
 
 
-class Parameters(BaseModel):
+class Parameters(BaseModel, defer_build=True):
     """Parameters of a function as defined by the OpenAI API"""
 
     type: Literal["object"] = "object"
@@ -236,7 +235,7 @@ class Parameters(BaseModel):
     required: List[str]
 
 
-class Function(BaseModel):
+class Function(BaseModel, defer_build=True):
     """A function as defined by the OpenAI API"""
 
     name: Annotated[str, Field(description="Name of the function")]
@@ -248,7 +247,7 @@ class Function(BaseModel):
     ]
 
 
-class ToolFunction(BaseModel):
+class ToolFunction(BaseModel, defer_build=True):
     """A function under tool as defined by the OpenAI API."""
 
     type: Literal["function"] = "function"
@@ -578,12 +577,3 @@ def load_basemodels_if_needed(
         return _a_load_parameters_if_needed
     else:
         return _load_parameters_if_needed
-
-
-def serialize_to_str(x: Any) -> str:
-    if isinstance(x, str):
-        return x
-    elif isinstance(x, BaseModel):
-        return model_dump_json(x)
-    else:
-        return json.dumps(x)
