@@ -7,6 +7,7 @@ Run with: pytest tests/test_cli.py -v
 """
 
 import argparse
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -176,6 +177,23 @@ class TestSetupArgumentParser:
         ):
             assert getattr(args, dest) == DEFAULT_HEAVY_SWARM_MODEL
             assert DEFAULT_HEAVY_SWARM_MODEL in actions[dest].help
+
+    def test_help_lists_every_command_and_option(self, capsys):
+        from swarms.cli.parser import COMMAND_CHOICES
+
+        parser = self.setup_argument_parser()
+        with pytest.raises(SystemExit):
+            parser.parse_args(["--help"])
+        help_text = capsys.readouterr().out
+
+        for command in COMMAND_CHOICES:
+            assert f"  {command} " in help_text
+        for action in parser._actions:
+            for option in action.option_strings:
+                assert re.search(
+                    rf"(?<![\w-]){re.escape(option)}(?![\w-])",
+                    help_text,
+                ), option
 
 
 # ===========================================================================
