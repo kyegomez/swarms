@@ -1,8 +1,7 @@
 import types
 from unittest.mock import patch
 
-from swarms import Agent
-from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
+from swarms import Agent, PlannerWorkerSwarm
 
 
 def _usage_agent(name, input_tokens, output_tokens, output="ok"):
