@@ -796,3 +796,28 @@ class TestMain:
             with pytest.raises(SystemExit) as exit_info:
                 main()
             assert exit_info.value.code == 1
+
+    @pytest.mark.parametrize(
+        "argv, expected, banner",
+        [
+            (["--version"], "swarms ", False),
+            ([], "Commands:", True),
+        ],
+    )
+    @patch("swarms.cli.main.show_ascii_art")
+    def test_version_and_no_args_exit_zero(
+        self, mock_art, capsys, argv, expected, banner
+    ):
+        from swarms.cli.main import main
+        from swarms.cli.utils import check_swarms_version
+
+        with patch("sys.argv", ["swarms", *argv]):
+            try:
+                main()
+            except SystemExit as exit_info:
+                assert exit_info.code == 0
+        out = capsys.readouterr().out
+        assert expected in out
+        assert mock_art.called is banner
+        if argv:
+            assert out == f"swarms {check_swarms_version()}\n"

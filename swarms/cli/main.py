@@ -27,7 +27,11 @@ from swarms.cli.commands import (
     handle_tips,
 )
 from swarms.cli.errors import _show_command_error
-from swarms.cli.parser import COMMAND_CHOICES, setup_argument_parser
+from swarms.cli.parser import (
+    COMMAND_CHOICES,
+    format_help,
+    setup_argument_parser,
+)
 from swarms.cli.utils import (
     check_login,
     get_api_key,
@@ -125,7 +129,9 @@ def main() -> None:
         purposes while maintaining a clean user experience.
     """
     try:
-        show_ascii_art()
+        # The version line stays bare so scripts can parse it.
+        if "--version" not in sys.argv[1:]:
+            show_ascii_art()
 
         # Catch a mistyped command before argparse's generic "invalid choice"
         if (
@@ -149,6 +155,10 @@ def main() -> None:
 
         parser = setup_argument_parser()
         args = parser.parse_args()
+
+        if args.command is None:
+            print(format_help(parser))
+            return
 
         try:
             route_command(args)
