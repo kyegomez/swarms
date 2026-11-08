@@ -1,9 +1,12 @@
 from typing import Any
 
-from swarms.structs.agent import Agent
 from swarms.utils.litellm_wrapper import empty_usage
 
 _USAGE_KEYS = empty_usage().keys()
+
+
+def _is_usage(value: Any) -> bool:
+    return isinstance(value, dict) and value.keys() == _USAGE_KEYS
 
 
 def total_usage(*roots: Any) -> dict:
@@ -21,30 +24,34 @@ def total_usage(*roots: Any) -> dict:
     """
     total = empty_usage()
     seen = set()
-    stack = list(roots)
+    stack = [(root, True) for root in roots]
     while stack:
-        value = stack.pop()
+        value, counted = stack.pop()
         if isinstance(value, (str, bytes, int, float, bool)):
             continue
-        if id(value) in seen:
+        if id(value) in seen or (_is_usage(value) and not counted):
             continue
         seen.add(id(value))
-        if isinstance(value, Agent):
-            usage = value.usage
-        elif isinstance(value, dict) and value.keys() == _USAGE_KEYS:
+        if _is_usage(value):
             usage = value
         elif isinstance(value, dict):
-            stack.extend(value.values())
+            stack.extend((item, counted) for item in value.values())
             continue
         elif isinstance(value, (list, tuple, set, frozenset)):
-            stack.extend(value)
+            stack.extend((item, counted) for item in value)
             continue
         elif hasattr(value, "__dict__") and any(
             cls.__module__.startswith("swarms.")
             for cls in type(value).__mro__
         ):
-            stack.extend(vars(value).values())
-            continue
+            attributes = vars(value)
+            if not isinstance(attributes.get("_usage"), dict):
+                stack.extend(
+                    (item, _is_usage(item))
+                    for item in attributes.values()
+                )
+                continue
+            usage = value.usage
         else:
             continue
         for key in total:
