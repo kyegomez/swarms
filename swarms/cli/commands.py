@@ -22,7 +22,6 @@ from swarms.cli.utils import (
     COLORS,
     SwarmCLIError,
     console,
-    run_setup_check,
     show_error,
 )
 from swarms.structs.agent import Agent
@@ -390,28 +389,6 @@ def handle_init(args: argparse.Namespace) -> None:
     console.print()
     console.print(render_tip(category="commands"))
     console.print()
-
-
-def handle_onboarding(args: argparse.Namespace) -> None:
-    """
-    Handle the onboarding command.
-
-    Runs the same environment setup checks as the setup-check command,
-    verifying Python version, Swarms installation, API keys, dependencies,
-    environment files, and workspace directory configuration.
-
-    Args:
-        args: Parsed command line arguments containing:
-            - verbose: Optional boolean flag for verbose output
-
-    Note:
-        This command is an alias for 'setup-check' and provides the same
-        functionality for backward compatibility.
-    """
-    console.print(
-        "[white]Note: 'swarms onboarding' now runs the same checks as 'swarms setup-check'[/white]"
-    )
-    run_setup_check(verbose=args.verbose)
 
 
 def handle_run_agents(args: argparse.Namespace) -> None:

@@ -22,7 +22,6 @@ from swarms.cli.commands import (
     handle_llm_council,
     handle_load_markdown,
     handle_models,
-    handle_onboarding,
     handle_run_agents,
     handle_tips,
 )
@@ -54,8 +53,6 @@ def route_command(args: argparse.Namespace) -> None:
     Route the command to the appropriate handler function.
 
     Maps CLI commands to their respective handler functions and executes them.
-    If a command is not recognized, displays an error message with helpful
-    suggestions.
 
     Args:
         args: Parsed command line arguments containing:
@@ -69,7 +66,9 @@ def route_command(args: argparse.Namespace) -> None:
     """
     command_handlers: Dict[str, Any] = {
         "init": handle_init,
-        "onboarding": handle_onboarding,
+        "onboarding": lambda args: run_setup_check(
+            verbose=args.verbose
+        ),
         "get-api-key": lambda args: get_api_key(),
         "check-login": lambda args: check_login(),
         "run-agents": handle_run_agents,
@@ -89,14 +88,7 @@ def route_command(args: argparse.Namespace) -> None:
         "models": handle_models,
     }
 
-    handler = command_handlers.get(args.command)
-    if handler:
-        handler(args)
-    else:
-        show_error(
-            "Unknown command",
-            f"Command '{args.command}' is not recognized. Use 'swarms help' to see available commands.",
-        )
+    command_handlers[args.command](args)
 
 
 def main() -> None:

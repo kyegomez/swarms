@@ -416,12 +416,7 @@ def run_setup_check(verbose: bool = False):
         recommendations = []
 
         # Check specific failures and provide recommendations
-        for check_name, (
-            passed,
-            status_icon,
-            details,
-            *extra,
-        ) in checks:
+        for check_name, (passed, *_) in checks:
             if not passed:
                 if "WORKSPACE_DIR" in check_name:
                     recommendations.append(
@@ -435,14 +430,6 @@ def run_setup_check(verbose: bool = False):
                     recommendations.append(
                         "Create .env file with your API keys"
                     )
-                elif (
-                    "Swarms Version" in check_name and len(extra) > 0
-                ):
-                    latest_version = extra[0]
-                    if latest_version != "Unknown":
-                        recommendations.append(
-                            f"Update Swarms: pip install --upgrade swarms (latest: {latest_version})"
-                        )
                 elif "Dependencies" in check_name:
                     recommendations.append(
                         "Install missing dependencies: pip install -r requirements.txt"
