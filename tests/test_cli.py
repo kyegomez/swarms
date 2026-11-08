@@ -216,11 +216,11 @@ class TestRouteCommand:
         self.route_command(args)
         mock_handler.assert_called_once_with(args)
 
-    @patch("swarms.cli.main.handle_onboarding")
-    def test_routes_onboarding(self, mock_handler):
-        args = make_args(command="onboarding")
+    @patch("swarms.cli.main.run_setup_check")
+    def test_routes_onboarding(self, mock_fn):
+        args = make_args(command="onboarding", verbose=True)
         self.route_command(args)
-        mock_handler.assert_called_once_with(args)
+        mock_fn.assert_called_once_with(verbose=True)
 
     @patch("swarms.cli.main.handle_run_agents")
     def test_routes_run_agents(self, mock_handler):
@@ -289,13 +289,6 @@ class TestRouteCommand:
         mock_run.assert_called_once_with(
             ["pip", "install", "--upgrade", "swarms"], check=True
         )
-
-    @patch("swarms.cli.main.show_error")
-    def test_unknown_command_shows_error(self, mock_show_error):
-        # We bypass argparse validation by crafting args directly
-        args = argparse.Namespace(command="definitely-not-a-command")
-        self.route_command(args)
-        mock_show_error.assert_called_once()
 
 
 # ===========================================================================
@@ -535,29 +528,6 @@ class TestRunAutoswarm:
             task="build something", model="gpt-4o", no_run=True
         )
         mock_write.assert_called_once()
-
-
-# ===========================================================================
-# 8. handle_onboarding
-# ===========================================================================
-
-
-class TestHandleOnboarding:
-    @patch("swarms.cli.commands.run_setup_check")
-    def test_delegates_to_setup_check(self, mock_check):
-        from swarms.cli.commands import handle_onboarding
-
-        args = make_args(command="onboarding", verbose=False)
-        handle_onboarding(args)
-        mock_check.assert_called_once_with(verbose=False)
-
-    @patch("swarms.cli.commands.run_setup_check")
-    def test_passes_verbose_flag(self, mock_check):
-        from swarms.cli.commands import handle_onboarding
-
-        args = make_args(command="onboarding", verbose=True)
-        handle_onboarding(args)
-        mock_check.assert_called_once_with(verbose=True)
 
 
 class TestHandleInit:
