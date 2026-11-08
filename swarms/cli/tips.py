@@ -69,7 +69,6 @@ AGENT_FLAG_TIPS: List[str] = [
 
 SWARM_FLAG_TIPS: List[str] = [
     "[bold]swarms heavy-swarm --loops-per-agent 5[/bold] gives each specialist room to think",
-    "Make heavy-swarms non-deterministic with [bold]--random-loops-per-agent[/bold]",
     "Choose the heavy-swarm worker model with [bold]--worker-model-name claude-opus-4-7[/bold]",
     "Choose the heavy-swarm question agent with [bold]--question-agent-model-name gpt-4o[/bold]",
     "Generate a swarm spec without running it: [bold]swarms autoswarm --task '...' --no-run[/bold]",
@@ -109,7 +108,7 @@ ENV_TIPS: List[str] = [
     "Run [bold]swarms setup-check --verbose[/bold] to spot missing env vars",
     "Set [bold]OPENAI_API_KEY[/bold] and [bold]ANTHROPIC_API_KEY[/bold] together — Swarms picks per-agent",
     "Override the workspace per command with [bold]WORKSPACE_DIR=/tmp/runX swarms agent ...[/bold]",
-    "[bold]~/.swarms/[/bold] holds conversation logs and saved agent state",
+    "Conversations save to [bold]./conversations/[/bold], agent state and logs to [bold]WORKSPACE_DIR[/bold]; [bold]~/.swarms/[/bold] only caches MCP OAuth tokens",
 ]
 
 MODEL_FLAG_TIPS: List[str] = [

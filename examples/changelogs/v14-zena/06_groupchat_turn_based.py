@@ -34,7 +34,6 @@ chat = GroupChat(
     threshold=0.6,  # minimum bid to take the floor
     recency_penalty=0.3,  # discourage back-to-back speaking
     recency_window=1,
-    idle_timeout=8.0,  # stop after a conversational lull
     auto_equip=True,  # attach the bidding tool automatically
 )
 

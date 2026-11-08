@@ -90,7 +90,7 @@ def test_multi_agent_router_initialization_default():
         == "Routes tasks to specialized agents based on their capabilities"
     )
     assert router.model == "gpt-5.4"
-    assert router.temperature == 0.1
+    assert router.temperature is None
     assert router.output_type == "dict"
     assert router.print_on is True
     assert router.skip_null_tasks is True

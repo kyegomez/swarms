@@ -570,7 +570,8 @@ class Formatter:
         Similar to the approach used in litellm_stream.py.
 
         Args:
-            streaming_response: The streaming response generator from LiteLLM.
+            streaming_response: The streaming response generator from LiteLLM, or an
+                iterable of text parts, each a string or a (text, style) pair.
             title (str): Title of the panel.
             style (str): Style for the panel border (if None, will use random color).
             collect_chunks (bool): Whether to collect individual chunks for conversation saving.
@@ -620,14 +621,21 @@ class Formatter:
         ) as live:
             try:
                 for part in streaming_response:
-                    if (
+                    chunk, chunk_style = None, None
+                    if isinstance(part, tuple):
+                        chunk, chunk_style = part
+                    elif isinstance(part, str):
+                        chunk = part
+                    elif (
                         hasattr(part, "choices")
                         and part.choices
                         and part.choices[0].delta.content
                     ):
-                        # Add ONLY the new chunk to the Text object with random color style
                         chunk = part.choices[0].delta.content
-                        streaming_text.append(chunk, style=text_style)
+                    if chunk:
+                        streaming_text.append(
+                            chunk, style=chunk_style or text_style
+                        )
                         complete_response += chunk
 
                         # Collect chunks if requested

@@ -73,12 +73,9 @@ def _detect_active_provider() -> str:
     return f"{primary}{suffix} · Multi-Agent Framework"
 
 
-def create_spinner(text: str) -> Progress:
+def create_spinner() -> Progress:
     """
-    Create a custom spinner with the given text.
-
-    Args:
-        text: The text to display in the spinner
+    Create a custom spinner that shows each task's description.
 
     Returns:
         Progress: A Rich Progress instance configured as a spinner
@@ -108,7 +105,10 @@ def show_ascii_art():
     info = Text()
     info.append("Swarms", style="bold white")
     info.append(f"  v{version}\n", style="dim white")
-    info.append(provider + "\n", style="dim white")
+    # The provider label carries Rich markup, which a plain append prints literally.
+    info.append_text(
+        Text.from_markup(provider + "\n", style="dim white")
+    )
     info.append(cwd + "\n", style="dim white")
     info.append(
         "https://github.com/kyegomez/swarms", style="dim white"
@@ -486,7 +486,7 @@ def show_error(message: str, help_text: Optional[str] = None):
 
 def get_api_key():
     """Retrieve API key with visual feedback."""
-    with create_spinner("Opening API key portal...") as progress:
+    with create_spinner() as progress:
         task = progress.add_task("Opening browser...")
         webbrowser.open("https://swarms.world/platform/api-keys")
         time.sleep(1)
@@ -515,7 +515,7 @@ def check_login():
                 )
                 return True
 
-    with create_spinner("Authenticating...") as progress:
+    with create_spinner() as progress:
         task = progress.add_task("Initializing session...")
         time.sleep(1)
         with open(cache_file, "w") as f:

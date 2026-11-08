@@ -4,8 +4,12 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import pytest
+
+from swarms.utils import llm_backend
 from swarms.utils.litellm_wrapper import (
     LiteLLM,
+    NetworkConnectionError,
     empty_usage,
     usage_from_response,
 )
@@ -237,3 +241,113 @@ class TestLiteLLMUsage:
             llm.run("x")
 
         assert "stream_options" not in fake.call_args.kwargs
+
+
+class TestLastResponseDetails:
+    @staticmethod
+    def _response(finish_reason, model):
+        message = SimpleNamespace(content="ok", tool_calls=None)
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=message, finish_reason=finish_reason
+                )
+            ],
+            model=model,
+            usage=None,
+        )
+
+    def test_keeps_the_finish_reason_and_model(self):
+        """A response's finish reason and model are kept for the caller."""
+        llm = LiteLLM(model_name="gpt-5.4")
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=self._response("stop", "gpt-5.4-2026-03-01"),
+        ):
+            llm.run("x")
+
+        assert llm.last_finish_reason == "stop"
+        assert llm.last_response_model == "gpt-5.4-2026-03-01"
+
+    def test_streaming_keeps_the_final_finish_reason(self):
+        """A stream's finish reason comes from the chunk that ends it."""
+        llm = LiteLLM(model_name="gpt-5.4", stream=True)
+
+        def chunk(text, finish_reason=None):
+            choice = SimpleNamespace(
+                delta=SimpleNamespace(content=text),
+                finish_reason=finish_reason,
+            )
+            return SimpleNamespace(
+                choices=[choice], usage=None, model="gpt-5.4-stream"
+            )
+
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=iter([chunk("hel"), chunk("lo", "length")]),
+        ):
+            list(llm.run("x"))
+
+        assert llm.last_finish_reason == "length"
+        assert llm.last_response_model == "gpt-5.4-stream"
+
+    def test_keeps_the_request_and_the_whole_response(self):
+        """The exact request sent and the response object are kept."""
+        llm = LiteLLM(model_name="gpt-5.4")
+        response = self._response("stop", "gpt-5.4-2026-03-01")
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            return_value=response,
+        ):
+            llm.run("what is 2+2?")
+
+        assert llm.last_response is response
+        assert llm.last_request["model"] == "gpt-5.4"
+        assert "what is 2+2?" in str(llm.last_request["messages"])
+
+    def test_a_failed_call_keeps_its_request_and_no_response(self):
+        """A call that raises still leaves the request it sent."""
+        import pytest
+
+        llm = LiteLLM(model_name="gpt-5.4")
+        with patch(
+            "swarms.utils.litellm_wrapper.completion",
+            side_effect=RuntimeError("provider down"),
+        ):
+            with pytest.raises(RuntimeError):
+                llm.run("doomed")
+
+        assert "doomed" in str(llm.last_request["messages"])
+        assert llm.last_response is None
+
+
+def test_run_raises_network_connection_error():
+    error = llm_backend.APIConnectionError(
+        message="Connection error.",
+        llm_provider="openai",
+        model="gpt-5.4-mini",
+    )
+    llm = LiteLLM(model_name="gpt-5.4-mini")
+    with patch(
+        "swarms.utils.litellm_wrapper.completion",
+        side_effect=error,
+    ):
+        with pytest.raises(NetworkConnectionError) as exc_info:
+            llm.run("hi")
+    assert exc_info.value.__cause__ is error
+
+
+def test_arun_raises_network_connection_error():
+    error = llm_backend.Timeout(
+        message="Request timed out.",
+        llm_provider="openai",
+        model="gpt-5.4-mini",
+    )
+    llm = LiteLLM(model_name="gpt-5.4-mini")
+    with patch(
+        "swarms.utils.litellm_wrapper.acompletion",
+        side_effect=error,
+    ):
+        with pytest.raises(NetworkConnectionError) as exc_info:
+            asyncio.run(llm.arun("hi"))
+    assert exc_info.value.__cause__ is error
