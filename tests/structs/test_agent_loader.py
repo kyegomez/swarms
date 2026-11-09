@@ -697,6 +697,35 @@ def test_parse_markdown_file():
         raise
 
 
+def test_parse_markdown_file_reads_claude_code_subagents():
+    subagents = {
+        "reviewer.md": "---\nname: reviewer\nmodel: inherit\n---\nReview.\n",
+        "tester.md": "---\nname: tester\nmodel: sonnet\n---\nTest.\n",
+        "hunter.md": (
+            "---\nname: hunter\ndescription: Use it. Examples:\\n"
+            "<example>\\nContext: a catch block\\n</example>\n"
+            "model: haiku\n---\nHunt.\n"
+        ),
+    }
+    loader = AgentLoader()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        configs = []
+        for name, text in subagents.items():
+            path = os.path.join(tmpdir, name)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+            configs.append(loader.parse_markdown_file(path))
+
+    assert [(c.agent_name, c.model_name) for c in configs] == [
+        ("reviewer", None),
+        ("tester", "claude-sonnet-5-5"),
+        ("hunter", "claude-haiku-5-5"),
+    ]
+    assert configs[2].agent_description.startswith(
+        "Use it. Examples:"
+    )
+
+
 def test_loaded_agents_can_run():
     """Test that loaded agents can actually run tasks."""
     try:
