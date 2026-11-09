@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from loguru import logger
 
+from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
 )
@@ -96,6 +97,10 @@ class BatchedGridWorkflow:
         Returns:
             List: Results from all execution loops.
         """
+        for agent in self.agents:
+            if isinstance(agent, Agent):
+                agent.reset()
+
         results = []
         current_loop = 0
 
