@@ -30,6 +30,38 @@ from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.llm_council import LLMCouncil
 
 
+def _print_result(
+    result: Any,
+    label: str,
+    title: str,
+    body: Optional[str] = None,
+    success: Optional[str] = None,
+) -> Optional[Any]:
+    """
+    Print a command's result in a red panel and return it, or print a
+    warning and return None when it is empty.
+
+    ``body`` defaults to ``str(result)``, and ``success`` to
+    "<label> completed successfully!".
+    """
+    if not result:
+        console.print(
+            f"[white]⚠ {label} completed but returned no results.[/white]"
+        )
+        return None
+    success = success or f"{label} completed successfully!"
+    console.print(f"\n[bold white]✓ {success}[/bold white]")
+    console.print(
+        Panel(
+            str(result) if body is None else body,
+            title=title,
+            border_style="red",
+            padding=(1, 2),
+        )
+    )
+    return result
+
+
 def handle_init(args: argparse.Namespace) -> None:
     """
     Handle the `swarms init` command — interactive project scaffolding wizard.
@@ -803,30 +835,16 @@ def create_swarm_agent(
                     completed=True,
                 )
 
-                # Display results
-                if result:
-                    console.print(
-                        f"\n[bold white]✓ Agent '{name}' completed the task successfully![/bold white]"
-                    )
-
-                    # Display agent info
-                    agent_info = Panel(
-                        f"[bold]Agent Name:[/bold] {name}\n"
-                        f"[bold]Model:[/bold] {model_name}\n"
-                        f"[bold]Task:[/bold] {task}\n"
-                        f"[bold]Result:[/bold]\n{result}",
-                        title="Agent Execution Results",
-                        border_style="red",
-                        padding=(1, 2),
-                    )
-                    console.print(agent_info)
-
-                    return result
-                else:
-                    console.print(
-                        f"[white]⚠ Agent '{name}' completed but returned no results.[/white]"
-                    )
-                    return None
+                return _print_result(
+                    result,
+                    label=f"Agent '{name}'",
+                    title="Agent Execution Results",
+                    success=f"Agent '{name}' completed the task successfully!",
+                    body=f"[bold]Agent Name:[/bold] {name}\n"
+                    f"[bold]Model:[/bold] {model_name}\n"
+                    f"[bold]Task:[/bold] {task}\n"
+                    f"[bold]Result:[/bold]\n{result}",
+                )
 
     except Exception as e:
         show_error(
@@ -1232,27 +1250,11 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
                 completed=True,
             )
 
-        # Display results
-        if result:
-            console.print(
-                "\n[bold white]✓ LLM Council completed successfully![/bold white]"
-            )
-
-            # Display result in a panel
-            result_panel = Panel(
-                str(result),
-                title="LLM Council Final Response",
-                border_style="red",
-                padding=(1, 2),
-            )
-            console.print(result_panel)
-
-            return result
-        else:
-            console.print(
-                "[white]⚠ LLM Council completed but returned no results.[/white]"
-            )
-            return None
+        return _print_result(
+            result,
+            label="LLM Council",
+            title="LLM Council Final Response",
+        )
 
     except Exception as e:
         show_error(
@@ -1372,27 +1374,11 @@ def run_heavy_swarm(
                 completed=True,
             )
 
-        # Display results
-        if result:
-            console.print(
-                "\n[bold white]✓ HeavySwarm completed successfully![/bold white]"
-            )
-
-            # Display result in a panel
-            result_panel = Panel(
-                str(result),
-                title="HeavySwarm Final Response",
-                border_style="red",
-                padding=(1, 2),
-            )
-            console.print(result_panel)
-
-            return result
-        else:
-            console.print(
-                "[white]⚠ HeavySwarm completed but returned no results.[/white]"
-            )
-            return None
+        return _print_result(
+            result,
+            label="HeavySwarm",
+            title="HeavySwarm Final Response",
+        )
 
     except Exception as e:
         show_error(
