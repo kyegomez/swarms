@@ -702,7 +702,7 @@ def test_parse_markdown_file_reads_claude_code_subagents():
         "reviewer.md": "---\nname: reviewer\nmodel: inherit\n---\nReview.\n",
         "tester.md": "---\nname: tester\nmodel: sonnet\n---\nTest.\n",
         "hunter.md": (
-            "---\nname: hunter\ndescription: Use it. Examples:\\n"
+            '---\nname: "hunter"\ndescription: Use it. Examples:\\n'
             "<example>\\nContext: a catch block\\n</example>\n"
             "model: haiku\n---\nHunt.\n"
         ),

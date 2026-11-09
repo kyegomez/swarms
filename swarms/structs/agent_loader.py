@@ -35,7 +35,7 @@ CLAUDE_CODE_MODELS = {
 }
 
 FRONTMATTER_LINE = re.compile(
-    r"^([A-Za-z_][\w-]*):[ \t]*(.*?)[ \t]*$", re.MULTILINE
+    r"^([A-Za-z_][\w-]*):[ \t]*([\"']?)(.*?)\2[ \t]*$", re.MULTILINE
 )
 
 
@@ -153,9 +153,12 @@ class AgentLoader:
         try:
             frontmatter_data = yaml.safe_load(frontmatter_text) or {}
         except yaml.YAMLError as e:
-            frontmatter_data = dict(
-                FRONTMATTER_LINE.findall(frontmatter_text)
-            )
+            frontmatter_data = {
+                key: value
+                for key, _, value in FRONTMATTER_LINE.findall(
+                    frontmatter_text
+                )
+            }
             if not frontmatter_data:
                 logger.warning(
                     f"Failed to parse YAML frontmatter: {e}"
