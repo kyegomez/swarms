@@ -1048,11 +1048,12 @@ def trace_run(
         except (ValueError, TypeError):
             sig = None
 
-        @functools.wraps(func)
-        def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        @contextmanager
+        def run_span(self: Any, args: tuple, kwargs: dict):
             telem = swarm_telemetry()
             if not telem.ready:
-                return func(self, *args, **kwargs)
+                yield None
+                return
 
             inputs: dict = {}
             arguments: dict = {}
@@ -1078,9 +1079,7 @@ def trace_run(
                     _call_safely(usage, self) if usage else None
                 )
                 try:
-                    result = func(self, *args, **kwargs)
-                    span.record_output(result)
-                    return result
+                    yield span
                 finally:
                     history = _call_safely(find_history, self)
                     if history is not None:
@@ -1091,6 +1090,28 @@ def trace_run(
                         )
                         if used is not None:
                             span.record_usage(used)
+
+        if inspect.iscoroutinefunction(func):
+
+            @functools.wraps(func)
+            async def async_wrapper(
+                self: Any, *args: Any, **kwargs: Any
+            ) -> Any:
+                with run_span(self, args, kwargs) as span:
+                    result = await func(self, *args, **kwargs)
+                    if span is not None:
+                        span.record_output(result)
+                    return result
+
+            return async_wrapper
+
+        @functools.wraps(func)
+        def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+            with run_span(self, args, kwargs) as span:
+                result = func(self, *args, **kwargs)
+                if span is not None:
+                    span.record_output(result)
+                return result
 
         return wrapper
 

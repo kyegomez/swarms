@@ -1281,19 +1281,46 @@ class LiteLLM:
         self.last_finish_reason = None
         self.last_response_model = None
         for chunk in stream:
-            choices = _field(chunk, "choices") or []
-            if choices and _field(choices[0], "finish_reason"):
-                self.last_finish_reason = _field(
-                    choices[0], "finish_reason"
-                )
-            self.last_response_model = (
-                _field(chunk, "model") or self.last_response_model
+            if self._note_stream_chunk(chunk):
+                yield chunk
+
+    async def _atrack_streaming_usage(self, stream: any):
+        """Yield an async stream's chunks, recording the trailing usage chunk.
+
+        Args:
+            stream: The async chunk stream from the provider.
+
+        Yields:
+            Any: Each chunk that carries choices.
+        """
+        self.last_finish_reason = None
+        self.last_response_model = None
+        async for chunk in stream:
+            if self._note_stream_chunk(chunk):
+                yield chunk
+
+    def _note_stream_chunk(self, chunk: any) -> bool:
+        """Record one chunk's finish reason, model and usage.
+
+        Args:
+            chunk: A chunk from the provider stream.
+
+        Returns:
+            bool: False for the usage-only trailing chunk, which is not forwarded.
+        """
+        choices = _field(chunk, "choices") or []
+        if choices and _field(choices[0], "finish_reason"):
+            self.last_finish_reason = _field(
+                choices[0], "finish_reason"
             )
-            if _field(chunk, "usage"):
-                self._accumulate_usage(usage_from_response(chunk))
-                if not choices:
-                    continue
-            yield chunk
+        self.last_response_model = (
+            _field(chunk, "model") or self.last_response_model
+        )
+        if _field(chunk, "usage"):
+            self._accumulate_usage(usage_from_response(chunk))
+            if not choices:
+                return False
+        return True
 
     def _process_response(self, response: any):
         """
@@ -1453,7 +1480,8 @@ class LiteLLM:
         Async version of `run`, using litellm's acompletion.
 
         Accepts the same arguments and returns the same output types as
-        `run` (see its docstring).
+        `run` (see its docstring), except that stream=True returns an
+        async generator of chunks.
         """
         self.last_request = None
         self.last_response = None
@@ -1483,6 +1511,9 @@ class LiteLLM:
             if not self.stream:
                 self.last_response = response
             self._record_usage(response)
+            # An async stream needs an async generator around it.
+            if self.stream and response:
+                return self._atrack_streaming_usage(response)
             return self._process_response(response)
         except (
             *self._NETWORK_ERRORS,
