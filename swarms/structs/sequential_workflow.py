@@ -405,13 +405,14 @@ class SequentialWorkflow:
             for token in workflow.run_stream("Analyse NVDA"):
                 print(token, end="", flush=True)
         """
+        rearrange = self.agent_rearrange._clone_for_task()
         if with_events:
-            for evt in self.agent_rearrange.run_stream(
+            for evt in rearrange.run_stream(
                 task=task, img=img, with_events=True, **kwargs
             ):
                 yield evt
         else:
-            for _name, token in self.agent_rearrange.run_stream(
+            for _name, token in rearrange.run_stream(
                 task=task, img=img, **kwargs
             ):
                 yield token
@@ -436,16 +437,14 @@ class SequentialWorkflow:
             str | dict: Plain token strings, or event dicts when
             ``with_events=True``.
         """
+        rearrange = self.agent_rearrange._clone_for_task()
         if with_events:
-            async for evt in self.agent_rearrange.arun_stream(
+            async for evt in rearrange.arun_stream(
                 task=task, img=img, with_events=True, **kwargs
             ):
                 yield evt
         else:
-            async for (
-                _name,
-                token,
-            ) in self.agent_rearrange.arun_stream(
+            async for _name, token in rearrange.arun_stream(
                 task=task, img=img, **kwargs
             ):
                 yield token
@@ -515,7 +514,9 @@ class SequentialWorkflow:
             raise ValueError("Task must be a non-empty string")
 
         try:
-            return await self.agent_rearrange.run_async(task)
+            return await self.agent_rearrange._clone_for_task().run_async(
+                task
+            )
         except Exception as e:
             logger.error(
                 f"An error occurred while executing the task asynchronously: {e}"
