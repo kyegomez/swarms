@@ -7,7 +7,10 @@ from loguru import logger
 from pydantic import BaseModel
 
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
-from swarms.schemas.agent_errors import AgentToolExecutionError
+from swarms.schemas.agent_errors import (
+    AgentRunError,
+    AgentToolExecutionError,
+)
 from swarms.structs.autonomous_loop_utils import (
     get_autonomous_loop_tool_names,
 )
@@ -583,7 +586,26 @@ class ToolManager:
         for call in response:
             if _name(call) != "handoff_task":
                 continue
-            handoffs = _arguments(call).get("handoffs", [])
+            try:
+                handoffs = _arguments(call).get("handoffs", [])
+            except json.JSONDecodeError as error:
+                if (
+                    getattr(agent.llm, "last_finish_reason", None)
+                    == "length"
+                ):
+                    problem = f"was cut off at max_tokens={agent.max_tokens}"
+                    advice = (
+                        "Raise max_tokens so the whole call fits."
+                    )
+                else:
+                    problem = f"has arguments that are not valid JSON ({error})"
+                    advice = (
+                        "If the reply was cut off, raise max_tokens."
+                    )
+                raise AgentRunError(
+                    f"Agent '{agent.agent_name}': the handoff_task call "
+                    f"{problem}, so no handoff ran. {advice}"
+                ) from error
             self.visualize_handoff_call(handoffs, call)
 
             result = self.handoff_task_tool(handoffs=handoffs)
