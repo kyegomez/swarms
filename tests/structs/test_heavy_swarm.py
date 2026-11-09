@@ -528,7 +528,7 @@ class TestQuestionAgentPerVariant:
     and its sampling settings have to be ones every provider accepts.
     """
 
-    def _capture(self, monkeypatch):
+    def _capture(self, monkeypatch, reply=""):
         seen = {}
 
         class FakeLiteLLM:
@@ -536,7 +536,7 @@ class TestQuestionAgentPerVariant:
                 seen.update(kwargs)
 
             def run(self, task, *args, **kwargs):
-                return ""
+                return reply
 
         monkeypatch.setattr(
             "swarms.structs.heavy_swarm.LiteLLM", FakeLiteLLM
@@ -605,6 +605,39 @@ class TestQuestionAgentPerVariant:
         assert "temperature" not in seen
         assert "frequency_penalty" not in seen
         assert "presence_penalty" not in seen
+
+    @pytest.mark.parametrize(
+        "arguments", [None, '{"research_question": "r?"}']
+    )
+    def test_run_raises_when_questions_are_missing(
+        self, monkeypatch, arguments
+    ):
+        from types import SimpleNamespace
+
+        call = SimpleNamespace(
+            id="call-1",
+            function=SimpleNamespace(
+                name="generate_specialized_questions",
+                arguments=arguments,
+            ),
+        )
+        self._capture(monkeypatch, [call] if arguments else None)
+        swarm = HeavySwarm(
+            worker_model_name=MODEL,
+            question_agent_model_name=MODEL,
+        )
+        tasks = []
+        for agent in swarm.agents.values():
+            agent.run = lambda task, *args, **kwargs: tasks.append(
+                task
+            )
+
+        with pytest.raises(
+            RuntimeError, match="verification_question"
+        ):
+            swarm.run("A task")
+
+        assert tasks == []
 
     def test_medium_get_questions_only_returns_its_roster(
         self, monkeypatch
@@ -801,6 +834,33 @@ class TestUsage:
         swarm.run("task")
 
         assert swarm.usage["input_tokens"] == 30 + 100 * 5
+
+
+def test_the_synthesis_row_is_the_answer(monkeypatch):
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+        output_type="final",
+        max_loops=2,
+    )
+    roles = ["research", "analysis", "alternatives", "verification"]
+    monkeypatch.setattr(
+        swarm,
+        "execute_question_generation",
+        lambda task, img=None: {f"{r}_question": r for r in roles},
+    )
+    for role in roles:
+        swarm.agents[role].run = (
+            lambda *a, _r=role, **kw: f"{_r} found"
+        )
+    swarm.agents["synthesis"].call_llm = lambda *a, **kw: "SYNTHESIS"
+
+    assert swarm.run("task") == "SYNTHESIS"
+    assert [
+        m["content"]
+        for m in swarm.conversation.conversation_history
+        if m["role"] == "Synthesis Agent"
+    ] == ["SYNTHESIS", "SYNTHESIS"]
 
 
 def test_second_run_carries_nothing_from_the_first(monkeypatch):

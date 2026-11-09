@@ -100,10 +100,6 @@ def _msg_config_error(err: Exception, tb: str) -> str:
     return f"SwarmRouterConfigError: {err} Full Traceback: {tb}"
 
 
-def _msg_fetch_history_error(err: Exception) -> str:
-    return f"Error fetching message history as string: {err}"
-
-
 def _msg_invalid_factory_type(swarm_type: str, valid_types) -> str:
     return (
         f"Invalid swarm type: {swarm_type}. "
@@ -305,7 +301,6 @@ class SwarmRouter(SerializableMixin):
             about every other agent at start of run. Defaults to ``False``.
         conversation (Any, optional): Pre-existing conversation object to seed
             the swarm with.
-        agents_config (Dict, optional): Optional config overrides per agent.
         heavy_swarm_question_agent_model_name (str, optional): Model for the
             ``HeavySwarm`` question agent.
         heavy_swarm_worker_model_name (str, optional): Model for ``HeavySwarm``
@@ -386,7 +381,6 @@ class SwarmRouter(SerializableMixin):
         list_all_agents: bool = False,
         conversation: Any = None,
         channel: Optional[CommsChannel] = None,
-        agents_config: Optional[Dict[Any, Any]] = None,
         heavy_swarm_question_agent_model_name: str = "gpt-5.4",
         heavy_swarm_worker_model_name: str = "gpt-5.4",
         heavy_swarm_swarm_show_output: bool = True,
@@ -434,7 +428,6 @@ class SwarmRouter(SerializableMixin):
         self.list_all_agents = list_all_agents
         self.conversation = conversation
         self.channel = channel
-        self.agents_config = agents_config
         self.heavy_swarm_question_agent_model_name = (
             heavy_swarm_question_agent_model_name
         )
@@ -619,7 +612,9 @@ class SwarmRouter(SerializableMixin):
         candidates = list(self.agents or [])
         for swarm in self._swarm_cache.values():
             for value in vars(swarm).values():
-                if isinstance(value, (list, tuple)):
+                if isinstance(value, dict):
+                    candidates.extend(value.values())
+                elif isinstance(value, (list, tuple)):
                     candidates.extend(value)
                 else:
                     candidates.append(value)
@@ -629,25 +624,6 @@ class SwarmRouter(SerializableMixin):
             if isinstance(candidate, Agent):
                 seen.setdefault(id(candidate), candidate)
         return list(seen.values())
-
-    def fetch_message_history_as_string(self):
-        """Return the underlying swarm's conversation history as a string.
-
-        Reads from ``self.swarm.conversation`` and excludes the first message
-        (typically the system prompt). Requires ``run()`` to have been called
-        at least once so that ``self.swarm`` exists.
-
-        Returns:
-            str | None: The serialized history, or ``None`` if no history is
-            available or the read fails.
-        """
-        try:
-            return (
-                self.swarm.conversation.return_all_except_first_string()
-            )
-        except Exception as e:
-            self._log("error", _msg_fetch_history_error(e))
-            return None
 
     def _initialize_swarm_factory(self) -> Dict[str, Callable]:
         """Build the dispatch table used to instantiate swarm types.
@@ -847,7 +823,15 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_concurrent_workflow(self, *args, **kwargs):
-        """Create a ``ConcurrentWorkflow`` from the configured agents."""
+        """Create a ``ConcurrentWorkflow`` from the configured agents.
+
+        When a fallback swarm follows ``ConcurrentWorkflow`` in the
+        router's chain, a failing agent raises (``on_error="raise"``) so
+        the router can fall back, unless ``on_error`` is passed explicitly.
+        """
+        chain = [self.swarm_type, *(self.fallback_swarms or [])]
+        if "ConcurrentWorkflow" in chain[:-1]:
+            kwargs.setdefault("on_error", "raise")
         return ConcurrentWorkflow(
             *args,
             **self._base_kwargs(channel=self.channel),

@@ -18,8 +18,6 @@ from typing import (
     Sequence,
 )
 
-from opentelemetry import context, trace
-from opentelemetry.trace import Status, StatusCode
 from loguru import logger
 from pydantic import BaseModel
 
@@ -319,6 +317,8 @@ class _SpanHandle:
         if self._span is None or self._done:
             return
         try:
+            from opentelemetry.trace import Status, StatusCode
+
             self._span.set_attribute("swarms.status", "completed")
             self._span.set_status(Status(StatusCode.OK))
             self._done = True
@@ -399,6 +399,8 @@ class _SpanHandle:
         if self._span is None or self._done:
             return
         try:
+            from opentelemetry.trace import Status, StatusCode
+
             self._span.set_attribute("swarms.status", "error")
             self._span.set_attribute(
                 "swarms.error.type", type(exc).__name__
@@ -435,6 +437,8 @@ def _current_span(span: Optional["Span"]) -> Iterator[None]:
         return
 
     try:
+        from opentelemetry import trace
+
         # The caller ends the span and _SpanHandle records errors, so neither is done twice
         with trace.use_span(
             span,
@@ -463,7 +467,12 @@ def bind_context(func: Callable) -> Callable:
     Returns:
         Callable: ``func`` wrapped so it runs under the captured context.
     """
+    if not swarm_telemetry().ready:
+        return func
+
     import functools
+
+    from opentelemetry import context
 
     try:
         ctx = context.get_current()
@@ -588,6 +597,7 @@ class SwarmTelemetry:
             from swarms.telemetry.compression import (
                 CompressingSession,
             )
+            from opentelemetry import trace
             from opentelemetry.sdk.resources import Resource
             from opentelemetry.sdk.trace import TracerProvider
             from opentelemetry.sdk.trace.export import (
@@ -799,6 +809,8 @@ class SwarmTelemetry:
         if not self.ready:
             return
         try:
+            from opentelemetry.trace import Status, StatusCode
+
             component = (
                 type(obj).__name__ if obj is not None else "swarms"
             )
@@ -996,10 +1008,12 @@ def trace_run(
 
     Wraps the method: opens a span named ``name`` tagged with the instance's
     identity, captures the listed ``input_params`` by name, invokes the method,
-    then records its return value (or exception). Fully fail-safe, and a
-    near-zero no-op when telemetry is off (a single readiness check, then a
-    straight passthrough). Use it in place of an inline ``capture_run`` block on
-    methods with many return paths::
+    then records its return value (or exception). Fully fail-safe. When
+    telemetry is off at decoration time, which for the framework's own classes
+    is ``import swarms``, the method is returned undecorated and a call costs
+    nothing extra, so ``SWARMS_TELEMETRY_ON`` has to be set before that import
+    (a ``.env`` file is loaded first). Use it in place of an inline
+    ``capture_run`` block on methods with many return paths::
 
         @trace_run("Agent.run", input_params=("task", "img"))
         def run(self, task=None, img=None, ...):
@@ -1019,12 +1033,16 @@ def trace_run(
             recorded as swarms.usage attributes. Defaults to None.
 
     Returns:
-        Callable[[Callable], Callable]: A decorator that wraps the target method.
+        Callable[[Callable], Callable]: A decorator that wraps the target method,
+            or returns it unchanged when telemetry is off.
     """
     import functools
     import inspect
 
     def decorator(func: Callable) -> Callable:
+        if not telemetry_on():
+            return func
+
         try:
             sig: Optional[inspect.Signature] = inspect.signature(func)
         except (ValueError, TypeError):

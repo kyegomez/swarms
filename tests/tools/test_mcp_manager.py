@@ -202,6 +202,32 @@ class TestConnectionNormalization:
         )
         assert manager.connections[0].api_key == "specific"
 
+    def test_shared_connection_keeps_each_managers_defaults(self):
+        shared = MCPConnection(url="http://localhost:1/mcp")
+        alice = MCPManager(
+            mcp_config=shared,
+            authorization_token="alice-token",
+            headers={"X-User": "alice"},
+        )
+        bob = MCPManager(
+            mcp_config=shared,
+            authorization_token="bob-token",
+            headers={"X-User": "bob"},
+        )
+
+        assert run_async(bob._build_headers(bob.connections[0])) == {
+            "X-User": "bob",
+            "Authorization": "Bearer bob-token",
+        }
+        assert run_async(
+            alice._build_headers(alice.connections[0])
+        ) == {
+            "X-User": "alice",
+            "Authorization": "Bearer alice-token",
+        }
+        assert shared.authorization_token is None
+        assert shared.headers is None
+
     def test_invalid_server_type_rejected(self):
         with pytest.raises(AgentMCPConnectionError):
             MCPManager(mcp_url=12345)
@@ -1008,6 +1034,33 @@ class TestOAuthPlumbing:
         storage.clear()
         assert run_async(storage.get_tokens()) is None
 
+    def test_shared_token_cache_is_not_read_by_another_server(
+        self, tmp_path
+    ):
+        from mcp.shared.auth import OAuthToken
+
+        manager = MCPManager(
+            mcp_urls=[
+                "https://alpha.example.com/mcp",
+                "https://beta.example.com/mcp",
+            ],
+            oauth=MCPOAuthConfig(
+                token_storage_path=str(tmp_path / "tokens.json")
+            ),
+        )
+        alpha, beta = (
+            manager._build_oauth_provider(c).context.storage
+            for c in manager.connections
+        )
+        run_async(
+            alpha.set_tokens(
+                OAuthToken(access_token="alpha", token_type="Bearer")
+            )
+        )
+
+        assert run_async(beta.get_tokens()) is None
+        assert run_async(alpha.get_tokens()).access_token == "alpha"
+
     def test_default_storage_path_is_per_server(self):
         a = MCPFileTokenStorage("https://alpha.example.com/mcp")
         b = MCPFileTokenStorage("https://beta.example.com/mcp")
@@ -1024,6 +1077,29 @@ class TestOAuthPlumbing:
         assert isinstance(
             provider.context.storage, MCPInMemoryTokenStorage
         )
+
+    def test_authorization_code_uses_the_configured_client(
+        self, tmp_path
+    ):
+        manager = MCPManager()
+        for use_token_cache in (True, False):
+            connection = MCPConnection(
+                url=f"https://{use_token_cache}.example.com/mcp",
+                oauth=MCPOAuthConfig(
+                    client_id="my-app",
+                    client_secret="my-secret",
+                    use_token_cache=use_token_cache,
+                    token_storage_path=str(tmp_path / "tokens.json"),
+                ),
+            )
+            provider = manager._build_oauth_provider(connection)
+            client = run_async(
+                provider.context.storage.get_client_info()
+            )
+            assert (client.client_id, client.client_secret) == (
+                "my-app",
+                "my-secret",
+            )
 
     def test_callback_server_captures_code_and_state(self):
         import threading
@@ -1079,6 +1155,65 @@ class TestOAuthPlumbing:
         server.start()
         with pytest.raises(AgentMCPConnectionError):
             server.wait(timeout=0.5)
+
+    def test_oauth_accepts_a_resource_served_at_a_path(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        port = _free_port()
+        base = f"http://127.0.0.1:{port}"
+        metadata_path = "/.well-known/oauth-protected-resource/mcp"
+        requested = []
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                requested.append(self.path)
+                if self.path != metadata_path:
+                    self.send_error(404)
+                    return
+                body = json.dumps(
+                    {
+                        "resource": f"{base}/mcp",
+                        "authorization_servers": [base],
+                    }
+                ).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_POST(self):
+                self.rfile.read(int(self.headers["Content-Length"]))
+                self.send_response(401)
+                self.send_header(
+                    "WWW-Authenticate",
+                    f'Bearer resource_metadata="{base}{metadata_path}"',
+                )
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        server = HTTPServer(("127.0.0.1", port), Handler)
+        threading.Thread(
+            target=server.serve_forever, daemon=True
+        ).start()
+        manager = MCPManager(
+            mcp_url=MCPConnection(
+                url=f"{base}/mcp",
+                oauth=MCPOAuthConfig(use_token_cache=False),
+            ),
+            retry_attempts=1,
+        )
+        try:
+            with pytest.raises(AgentMCPConnectionError):
+                manager.get_tools()
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert "/.well-known/oauth-authorization-server" in requested
 
 
 ########################################################

@@ -6,6 +6,7 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
+import pytest
 from loguru import logger
 
 from swarms.structs import conversation as conversation_module
@@ -579,6 +580,24 @@ def test_save_and_load_json():
             return False
     finally:
         shutil.rmtree(temp_dir)
+
+
+def test_unreadable_save_file_raises_instead_of_being_overwritten(
+    tmp_path,
+):
+    saved = tmp_path / "conversation_research.json"
+    cut_off = '[{"role": "user", "content": "Compare the two'
+    saved.write_text(cut_off)
+
+    with pytest.raises(json.JSONDecodeError):
+        Conversation(
+            name="research",
+            conversations_dir=str(tmp_path),
+            autosave=True,
+            system_prompt="You are a researcher.",
+        )
+
+    assert saved.read_text() == cut_off
 
 
 def test_load_filepath_restores_the_saved_history(tmp_path):
@@ -1691,17 +1710,6 @@ class TestCommsChannelMirror:
             ("Writer", "Earlier answer."),
         ]
         assert len(channel.messages()) == 2
-
-
-def test_conversation_output_metadata_parameter_removed():
-    """Verify that unread output_metadata parameter is removed from Conversation."""
-    import inspect
-
-    sig = inspect.signature(Conversation.__init__)
-    assert "output_metadata" not in sig.parameters
-
-    conv = Conversation()
-    assert not hasattr(conv, "output_metadata")
 
 
 if __name__ == "__main__":
