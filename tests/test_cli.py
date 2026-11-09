@@ -460,28 +460,32 @@ class TestHandleAgent:
         assert "task" in str(mock_err.call_args)
         mock_agent.assert_not_called()
 
-    @pytest.mark.parametrize(
-        "value, expected",
-        [("auto", "auto"), ("AUTO", "auto"), ("3", 3), ("abc", 2)],
-    )
-    def test_max_loops_is_parsed_by_argparse(self, value, expected):
+    def _parse_max_loops(self, value):
         from swarms.cli.parser import setup_argument_parser
 
         argv = ["agent", "--name", "A", "--description", "d"]
         argv += ["--system-prompt", "s", "--task", "t"]
-        parser = setup_argument_parser()
-        if value == "abc":
-            with pytest.raises(SystemExit) as exit_info:
-                parser.parse_args(argv + ["--max-loops", value])
-            assert exit_info.value.code == expected
-            return
-        args = parser.parse_args(argv + ["--max-loops", value])
+        return setup_argument_parser().parse_args(
+            argv + ["--max-loops", value]
+        )
+
+    @pytest.mark.parametrize(
+        "value, expected",
+        [("auto", "auto"), ("AUTO", "auto"), ("3", 3)],
+    )
+    def test_max_loops_is_parsed_by_argparse(self, value, expected):
+        args = self._parse_max_loops(value)
         assert args.max_loops == expected
         with patch(
             "swarms.cli.commands.create_swarm_agent"
         ) as mock_create:
             self.handle_agent(args)
         assert mock_create.call_args.kwargs["max_loops"] == expected
+
+    def test_max_loops_rejects_a_non_integer(self):
+        with pytest.raises(SystemExit) as exit_info:
+            self._parse_max_loops("abc")
+        assert exit_info.value.code == 2
 
 
 # ===========================================================================

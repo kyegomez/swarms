@@ -65,7 +65,11 @@ def _print_result(
 def _require(
     args: argparse.Namespace, *names: str, example: str
 ) -> None:
-    """Show an error and exit 1 when any named argument is empty."""
+    """Show an error and exit 1 when any named argument is empty.
+
+    The message format follows how many names were passed, not how
+    many are missing.
+    """
     missing = [name for name in names if not getattr(args, name)]
     if not missing:
         return

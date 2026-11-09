@@ -3,7 +3,7 @@
 import argparse
 import shutil
 import textwrap
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from swarms.cli.utils import check_swarms_version
 
@@ -175,7 +175,7 @@ class CustomHelpAction(argparse.Action):
         parser.exit()
 
 
-def _max_loops(value: str) -> Any:
+def _max_loops(value: str) -> Union[int, str]:
     """Parse --max-loops as an integer or "auto"."""
     if value.lower() == "auto":
         return "auto"
