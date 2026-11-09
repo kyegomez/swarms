@@ -7,7 +7,6 @@ used throughout the CLI application.
 
 import os
 import sys
-import time
 import webbrowser
 from pathlib import Path
 from typing import Optional, Tuple
@@ -15,7 +14,6 @@ from typing import Optional, Tuple
 from rich.align import Align
 from rich.console import Console, Group
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
@@ -71,20 +69,6 @@ def _detect_active_provider() -> str:
     extras = len(detected) - 1
     suffix = f" +{extras} more" if extras else ""
     return f"{primary}{suffix} · Multi-Agent Framework"
-
-
-def create_spinner() -> Progress:
-    """
-    Create a custom spinner that shows each task's description.
-
-    Returns:
-        Progress: A Rich Progress instance configured as a spinner
-    """
-    return Progress(
-        SpinnerColumn(style=COLORS["primary"]),
-        TextColumn("[{task.description}]", style=COLORS["text"]),
-        console=console,
-    )
 
 
 def show_ascii_art():
@@ -489,12 +473,8 @@ def show_error(message: str, help_text: Optional[str] = None):
 
 
 def get_api_key():
-    """Retrieve API key with visual feedback."""
-    with create_spinner() as progress:
-        task = progress.add_task("Opening browser...")
-        webbrowser.open("https://swarms.world/platform/api-keys")
-        time.sleep(1)
-        progress.remove_task(task)
+    """Open the Swarms API-key page in the browser."""
+    webbrowser.open("https://swarms.world/platform/api-keys")
     console.print(
         f"\n[{COLORS['success']}]✓ API key page opened in your browser[/{COLORS['success']}]"
     )
