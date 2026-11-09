@@ -29,7 +29,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 ## Caching Examples
 - [example_multi_agent_caching.py](caching_examples/example_multi_agent_caching.py) - Multi-agent caching implementation
 - [quick_start_agent_caching.py](caching_examples/quick_start_agent_caching.py) - Quick start guide for caching
-- [test_simple_agent_caching.py](caching_examples/test_simple_agent_caching.py) - Simple caching tests
 
 ## Concurrent Examples
 - [asi.py](concurrent_examples/asi.py) - ASI (Artificial Super Intelligence) example
@@ -72,9 +71,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [graph_workflow_basic.py](graphworkflow_examples/graph_workflow_basic.py) - Basic graph workflow
 - [graph_workflow_example.py](graphworkflow_examples/graph_workflow_example.py) - Complete graph workflow example
 - [graph_workflow_validation.py](graphworkflow_examples/graph_workflow_validation.py) - Workflow validation
-- [test_enhanced_json_export.py](graphworkflow_examples/test_enhanced_json_export.py) - JSON export testing
-- [test_graph_workflow_caching.py](graphworkflow_examples/test_graph_workflow_caching.py) - Caching tests
-- [test_graphviz_visualization.py](graphworkflow_examples/test_graphviz_visualization.py) - Visualization tests
 - [test_parallel_processing_example.py](graphworkflow_examples/test_parallel_processing_example.py) - Parallel processing tests
 - [graph/](graphworkflow_examples/graph/) - Core graph utilities
 - [example_images/](graphworkflow_examples/example_images/) - Visualization images
@@ -106,7 +102,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [sector_analysis_hiearchical_swarm.py](hiearchical_swarm/sector_analysis_hiearchical_swarm.py) - Sector analysis
 - [hiearchical_examples/](hiearchical_swarm/hiearchical_examples/) - Additional hierarchical examples
 - [hiearchical_swarm_ui/](hiearchical_swarm/hiearchical_swarm_ui/) - UI components
-- [hscf/](hiearchical_swarm/hscf/) - Hierarchical framework examples
 
 ## Majority Voting
 - [majority_voting_example_new.py](majority_voting/majority_voting_example_new.py) - Updated voting example
@@ -146,9 +141,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 
 ## Swarm Router
 - [swarm_router/](swarm_router/) - Routing and load balancing
-
-## Swarm Arrange
-- [swarmarrange/](swarmarrange/) - Agent arrangement utilities
 
 ## Swarms API
 - [swarms_api_examples/](swarms_api_examples/) - API integration examples

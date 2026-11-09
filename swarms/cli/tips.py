@@ -41,7 +41,6 @@ COMMAND_TIPS: List[str] = [
     "Print every tip in a category with [bold]swarms tips --category pro --all[/bold]",
     "Re-run onboarding any time with [bold]swarms onboarding[/bold]",
     "Open the API-key portal with [bold]swarms get-api-key[/bold]",
-    "Confirm you're logged in with [bold]swarms check-login[/bold]",
 ]
 
 AGENT_FLAG_TIPS: List[str] = [
@@ -109,7 +108,7 @@ ENV_TIPS: List[str] = [
     "Run [bold]swarms setup-check --verbose[/bold] to spot missing env vars",
     "Set [bold]OPENAI_API_KEY[/bold] and [bold]ANTHROPIC_API_KEY[/bold] together — Swarms picks per-agent",
     "Override the workspace per command with [bold]WORKSPACE_DIR=/tmp/runX swarms agent ...[/bold]",
-    "[bold]~/.swarms/[/bold] holds conversation logs and saved agent state",
+    "Conversations save to [bold]./conversations/[/bold], agent state and logs to [bold]WORKSPACE_DIR[/bold]; [bold]~/.swarms/[/bold] only caches MCP OAuth tokens",
 ]
 
 MODEL_FLAG_TIPS: List[str] = [

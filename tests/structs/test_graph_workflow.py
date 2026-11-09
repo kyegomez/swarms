@@ -1,4 +1,6 @@
 import hashlib
+import subprocess
+import sys
 
 import pytest
 
@@ -875,6 +877,20 @@ def test_graph_workflow_backend_fallback():
         )
 
 
+def test_import_swarms_does_not_load_graph_libraries():
+    loaded = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys, swarms; print(sorted({'networkx', 'rustworkx', 'graphviz'} & set(sys.modules)))",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert loaded.strip() == "[]"
+
+
 @pytest.mark.parametrize("backend", ["networkx", "rustworkx"])
 def test_graph_workflow_max_loops_accumulates_results(backend):
     """Test that max_loops > 1 actually executes multiple iterations and
@@ -1591,7 +1607,7 @@ def _usage_agent(name, input_tokens=0, output_tokens=0):
     """An offline Agent whose run() reports a fixed usage per call through the real hook."""
     from unittest.mock import patch
 
-    with patch("swarms.structs.agent.LiteLLM"):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
         agent = Agent(
             agent_name=name,
             model_name="gpt-5.4",
@@ -1762,6 +1778,90 @@ def test_usage_returns_a_copy():
     wf.usage["input_tokens"] = 999
 
     assert wf.usage["input_tokens"] == 5
+
+
+def _barrier_agent(name: str, barrier):
+    """Return a mock agent whose run blocks until the whole barrier arrives."""
+    a = _mock_agent(name)
+
+    def run(*args, **kwargs):
+        barrier.wait()
+        return f"output-{name}"
+
+    a.run.side_effect = run
+    return a
+
+
+def test_graph_workflow_runs_a_wide_layer_at_once_by_default():
+    import threading
+
+    width = 64
+    barrier = threading.Barrier(width, timeout=5)
+    wf = GraphWorkflow(name="wide")
+    for i in range(width):
+        wf.add_node(_barrier_agent(f"n{i}", barrier))
+
+    wf.run("task")
+
+    assert not barrier.broken
+    assert wf._max_workers is None
+
+
+def test_graph_workflow_max_parallel_nodes_still_caps_the_pool():
+    import threading
+    import time
+
+    lock = threading.Lock()
+    running = peak = 0
+
+    def run(*args, **kwargs):
+        nonlocal running, peak
+        with lock:
+            running += 1
+            peak = max(peak, running)
+        time.sleep(0.02)
+        with lock:
+            running -= 1
+        return "ok"
+
+    wf = GraphWorkflow(name="capped", max_parallel_nodes=3)
+    for i in range(12):
+        a = _mock_agent(f"n{i}")
+        a.run.side_effect = run
+        wf.add_node(a)
+
+    wf.run("task")
+
+    assert peak <= 3
+
+
+@pytest.mark.parametrize(
+    "on_error, b_output, saved",
+    [
+        ("continue", "output-B", 2),
+        ("skip_descendants", None, 0),
+        ("raise", None, 0),
+    ],
+)
+def test_graph_workflow_on_error(tmp_path, on_error, b_output, saved):
+    agents = [_mock_agent(name) for name in "ABC"]
+    agents[0].run.side_effect = RuntimeError("boom")
+    wf = GraphWorkflow(
+        checkpoint_dir=str(tmp_path), on_error=on_error
+    )
+    for agent in agents:
+        wf.add_node(agent)
+    wf.add_edge("A", "B")
+
+    if on_error == "raise":
+        with pytest.raises(RuntimeError, match="boom"):
+            wf.run("task")
+    else:
+        results = wf.run("task")
+        assert (results["B"], results["C"]) == (b_output, "output-C")
+    assert agents[1].run.called == (b_output is not None)
+    # A failed layer is saved only under "continue", so a rerun retries it.
+    assert len(list(tmp_path.glob("*.json"))) == saved
 
 
 if __name__ == "__main__":

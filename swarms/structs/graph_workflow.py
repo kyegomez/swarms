@@ -1,6 +1,8 @@
 import asyncio
 import concurrent.futures
 import hashlib
+import importlib
+import importlib.util
 import json
 import os
 import time
@@ -16,33 +18,19 @@ from typing import (
     Iterable,
     Iterator,
     List,
+    Literal,
     Optional,
     Set,
     Tuple,
     Union,
 )
 
-import networkx as nx
-
-try:
-    import graphviz
-
-    GRAPHVIZ_AVAILABLE = True
-except ImportError:
-    GRAPHVIZ_AVAILABLE = False
-    graphviz = None
-
-try:
-    import rustworkx as rx
-
-    RUSTWORKX_AVAILABLE = True
-except ImportError:
-    RUSTWORKX_AVAILABLE = False
-    rx = None
-
 from swarms.structs.agent import Agent  # noqa: F401
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
-from swarms.utils.get_cpu_cores import get_cpu_cores
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -53,6 +41,38 @@ from swarms.utils.generate_id import generate_id
 from swarms.utils.litellm_wrapper import empty_usage
 
 logger = initialize_logger(log_folder="graph_workflow")
+
+_NOT_STARTED = object()
+
+
+class _LazyModule:
+    """
+    A module that is imported the first time one of its attributes is read.
+
+    Args:
+        name (str): The module to import.
+    """
+
+    def __init__(self, name: str):
+        self._name = name
+        self._module = None
+
+    def __getattr__(self, attr: str) -> Any:
+        if self._module is None:
+            self._module = importlib.import_module(self._name)
+        return getattr(self._module, attr)
+
+
+# Loaded on first use, so import swarms does not pay for the graph libraries.
+nx = _LazyModule("networkx")
+
+GRAPHVIZ_AVAILABLE = importlib.util.find_spec("graphviz") is not None
+graphviz = _LazyModule("graphviz") if GRAPHVIZ_AVAILABLE else None
+
+RUSTWORKX_AVAILABLE = (
+    importlib.util.find_spec("rustworkx") is not None
+)
+rx = _LazyModule("rustworkx") if RUSTWORKX_AVAILABLE else None
 
 
 class GraphBackend:
@@ -763,7 +783,8 @@ class GraphWorkflow:
         task (str): The task to be executed by the workflow.
         _compiled (bool): Whether the graph has been compiled for optimization.
         _sorted_layers (List[List[str]]): Pre-computed topological layers for faster execution.
-        _max_workers (int): Maximum nodes executed concurrently. Set from max_parallel_nodes if provided, otherwise int(get_cpu_cores() * 0.95) with a minimum of 1.
+        _max_workers (Optional[int]): Maximum nodes executed concurrently, set from max_parallel_nodes. None means no cap, so every node in the widest layer runs at once.
+        on_error (str): What a failed node does to the run. "continue" passes its error string downstream, "skip_descendants" skips the nodes that depend on it, and "raise" starts no new nodes, lets running ones finish and raises its exception.
         verbose (bool): Whether to enable verbose logging.
         usage (dict): Provider token usage summed over every distinct agent in
             the graph, subgraphs included. See :attr:`usage`.
@@ -788,7 +809,17 @@ class GraphWorkflow:
         checkpoint_dir: Optional[str] = None,
         on_node_complete: Optional[Callable[[str, Any], None]] = None,
         max_parallel_nodes: Optional[int] = None,
+        channel: Optional[CommsChannel] = None,
+        on_error: Literal[
+            "continue", "skip_descendants", "raise"
+        ] = "continue",
     ):
+        if on_error not in ("continue", "skip_descendants", "raise"):
+            raise ValueError(
+                "on_error must be 'continue', 'skip_descendants' or "
+                f"'raise', got {on_error!r}"
+            )
+        self.on_error = on_error
         self.id = id or generate_id("graph-workflow")
         self.verbose = verbose
         self.on_node_complete = on_node_complete
@@ -836,10 +867,11 @@ class GraphWorkflow:
         self._successors_map = {}
         self._predecessors_cache = {}
         self.max_parallel_nodes = max_parallel_nodes
+        # Nodes are network-bound LLM calls, so the default is layer width, not CPU count.
         self._max_workers = (
             max(1, max_parallel_nodes)
             if max_parallel_nodes is not None
-            else max(1, int(get_cpu_cores() * 0.95))
+            else None
         )
         self._compilation_timestamp = None
 
@@ -848,7 +880,8 @@ class GraphWorkflow:
                 f"GraphWorkflow max_workers set to: {self._max_workers}"
             )
 
-        self.conversation = Conversation()
+        self.channel = channel
+        self.conversation = Conversation(channel=channel)
 
         # Rebuild the graph from nodes and edges if provided
         if self.nodes:
@@ -1228,6 +1261,7 @@ class GraphWorkflow:
                 raise ValueError(error_msg)
 
             self.nodes[node.id] = node
+            claim_agents([node.agent], self.channel, self.name)
             self.graph_backend.add_node(
                 node.id,
                 type=node.type,
@@ -1259,7 +1293,7 @@ class GraphWorkflow:
 
         try:
             with ContextThreadPoolExecutor(
-                max_workers=self._max_workers
+                max_workers=max(1, self._max_workers or batch_size)
             ) as executor:
                 # Process agents in batches
                 for i in range(0, len(agents), batch_size):
@@ -1944,21 +1978,21 @@ class GraphWorkflow:
     @staticmethod
     def _safe_output(
         agent_name: str, produce: Callable[[], Any]
-    ) -> Tuple[bool, Any]:
+    ) -> Tuple[Optional[Exception], Any]:
         """
         Run ``produce``, turning a failure into an ``[ERROR]`` string.
 
         One node blowing up degrades that node's output rather than the whole
         layer, so downstream agents still receive something to work with.
-        Returns ``(succeeded, output)``.
+        Returns ``(error, output)``, where ``error`` is ``None`` on success.
         """
         try:
-            return True, produce()
+            return None, produce()
         except Exception as e:
             logger.exception(
                 f"Error in GraphWorkflow agent execution for {agent_name}: {e}"
             )
-            return False, f"[ERROR] Agent {agent_name} failed: {e}"
+            return e, f"[ERROR] Agent {agent_name} failed: {e}"
 
     @trace_run(
         "GraphWorkflow.run",
@@ -2002,6 +2036,11 @@ class GraphWorkflow:
                 When max_loops > 1, returns a dict with per-loop results
                 keyed as ``{node_id}_loop_{loop_number}`` plus the final
                 loop's results under the plain ``node_id`` keys.
+                Nodes skipped under ``on_error="skip_descendants"`` map to
+                ``None``.
+
+        Raises:
+            Exception: The failed node's exception, under ``on_error="raise"``.
         """
         # Resolve callbacks: run-level overrides instance-level
         _on_node_complete = on_node_complete or self.on_node_complete
@@ -2039,21 +2078,27 @@ class GraphWorkflow:
         widest_layer = max(
             (len(layer) for layer in self._execution_plan), default=1
         )
+        pool_size = max(
+            1,
+            (
+                widest_layer
+                if self._max_workers is None
+                else min(self._max_workers, widest_layer)
+            ),
+        )
         executor: Optional[ContextThreadPoolExecutor] = None
 
         def _get_executor() -> ContextThreadPoolExecutor:
             nonlocal executor
             if executor is None:
                 executor = ContextThreadPoolExecutor(
-                    max_workers=max(
-                        1, min(self._max_workers, widest_layer)
-                    ),
+                    max_workers=pool_size,
                     thread_name_prefix=f"graph-{self.name}",
                 )
                 if self.verbose:
                     logger.debug(
                         f"Created shared thread pool with "
-                        f"{max(1, min(self._max_workers, widest_layer))} workers"
+                        f"{pool_size} workers"
                     )
             return executor
 
@@ -2079,6 +2124,8 @@ class GraphWorkflow:
 
                 execution_results = {}
                 prev_outputs = {}
+                # Failed under skip_descendants, or downstream of one; their layers stay unsaved so a rerun retries them.
+                no_answer: Set[str] = set()
                 pending_fanouts: Dict[str, List[Any]] = {}
                 fan_collected: Set[str] = set()
 
@@ -2099,7 +2146,9 @@ class GraphWorkflow:
                     layer_start_time = time.time()
 
                     # Resume: skip any layer already checkpointed for this task.
-                    if self.checkpoint_dir:
+                    if self.checkpoint_dir and no_answer.isdisjoint(
+                        entry[0] for entry in layer
+                    ):
                         checkpoint_path = self._checkpoint_path(
                             task_key, layer_idx
                         )
@@ -2147,6 +2196,8 @@ class GraphWorkflow:
                             f"with {len(layer)} nodes: {[n[0] for n in layer]}"
                         )
 
+                    layer_errors: Dict[str, Exception] = {}
+
                     # Pre-build all prompts for this layer
                     layer_data = []
                     expanded_targets: Dict[str, List[str]] = {}
@@ -2156,6 +2207,9 @@ class GraphWorkflow:
                         node_type,
                         agent_name,
                     ) in layer:
+                        if node_id in no_answer:
+                            execution_results[node_id] = None
+                            continue
                         if node_id in pending_fanouts:
                             items = pending_fanouts.pop(node_id)
                             instance_ids = []
@@ -2222,15 +2276,6 @@ class GraphWorkflow:
                         if node_type == NodeType.SUBGRAPH:
                             # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
                             inner: GraphWorkflow = agent
-                            _prev_cp = inner.checkpoint_dir
-                            if (
-                                self.checkpoint_dir
-                                and not inner.checkpoint_dir
-                            ):
-                                inner.checkpoint_dir = str(
-                                    Path(self.checkpoint_dir)
-                                    / node_id
-                                )
 
                             flattened = "\n\n".join(
                                 [m["content"] for m in messages]
@@ -2240,8 +2285,13 @@ class GraphWorkflow:
                             def _run_inner(
                                 _inner=inner,
                                 _prompt=flattened,
-                                _prev=_prev_cp,
                             ):
+                                _prev = _inner.checkpoint_dir
+                                if self.checkpoint_dir and not _prev:
+                                    _inner.checkpoint_dir = str(
+                                        Path(self.checkpoint_dir)
+                                        / node_id
+                                    )
                                 try:
                                     return _inner.run(
                                         _prompt,
@@ -2342,7 +2392,7 @@ class GraphWorkflow:
                             prompt,
                             prior_messages,
                         ) = layer_data[0]
-                        _, output = self._safe_output(
+                        error, output = self._safe_output(
                             agent_name,
                             _make_call(
                                 node_id,
@@ -2352,6 +2402,8 @@ class GraphWorkflow:
                                 prior_messages,
                             ),
                         )
+                        if error is not None:
+                            layer_errors[node_id] = error
                         _record(
                             node_id, agent_name, node_type, output
                         )
@@ -2359,6 +2411,17 @@ class GraphWorkflow:
                         # Parallel layer: dispatch onto the run-wide pool.
                         pool = _get_executor()
                         future_to_data = {}
+                        stop_on_error = self.on_error == "raise"
+
+                        def _unless_stopped(node_id, call):
+                            """Under "raise", hold queued nodes back once one has failed."""
+                            if stop_on_error and layer_errors:
+                                return _NOT_STARTED
+                            try:
+                                return call()
+                            except Exception as e:
+                                layer_errors[node_id] = e
+                                raise
 
                         for (
                             node_id,
@@ -2370,13 +2433,15 @@ class GraphWorkflow:
                         ) in layer_data:
                             try:
                                 future = pool.submit(
+                                    _unless_stopped,
+                                    node_id,
                                     _make_call(
                                         node_id,
                                         agent,
                                         node_type,
                                         prompt,
                                         prior_messages,
-                                    )
+                                    ),
                                 )
                                 future_to_data[future] = (
                                     node_id,
@@ -2392,6 +2457,7 @@ class GraphWorkflow:
                                 execution_results[node_id] = (
                                     error_output
                                 )
+                                layer_errors[node_id] = e
 
                         completed_count = 0
                         for future in concurrent.futures.as_completed(
@@ -2402,10 +2468,12 @@ class GraphWorkflow:
                                 agent_name,
                                 node_type,
                             ) = future_to_data[future]
-                            ok, output = self._safe_output(
+                            error, output = self._safe_output(
                                 agent_name, future.result
                             )
-                            if ok:
+                            if output is _NOT_STARTED:
+                                continue
+                            if error is None:
                                 completed_count += 1
                                 if self.verbose:
                                     logger.success(
@@ -2434,8 +2502,20 @@ class GraphWorkflow:
                         time.time() - layer_start_time
                     )
 
+                    # Raised before the save below, so a rerun retries this layer.
+                    if layer_errors and self.on_error == "raise":
+                        raise next(iter(layer_errors.values()))
+                    if self.on_error == "skip_descendants":
+                        for failed in layer_errors:
+                            no_answer.add(failed)
+                            no_answer |= (
+                                self.graph_backend.descendants(failed)
+                            )
+
                     # Save now so a crash on a later layer does not force re-running this one.
-                    if self.checkpoint_dir:
+                    if self.checkpoint_dir and no_answer.isdisjoint(
+                        entry[0] for entry in layer
+                    ):
                         try:
                             Path(self.checkpoint_dir).mkdir(
                                 parents=True, exist_ok=True
@@ -2483,6 +2563,7 @@ class GraphWorkflow:
                     node_id: execution_results[node_id]
                     for node_id in self.end_points
                     if node_id in execution_results
+                    and node_id not in no_answer
                 }
 
                 # Accumulate per-loop results (keyed to avoid overwriting)

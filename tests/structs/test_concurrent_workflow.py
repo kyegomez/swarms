@@ -594,6 +594,40 @@ def test_concurrent_workflow_run_twice_returns_only_each_task():
     ]
 
 
+def test_concurrent_workflow_does_not_resend_earlier_runs(
+    monkeypatch, tmp_path
+):
+    """A reused workflow must not send an earlier task to the model (#3269)."""
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    requests = []
+
+    def fake_run(self, task=None, messages=None, *args, **kwargs):
+        requests.append(
+            " ".join(str(m.get("content")) for m in messages or [])
+            + str(task or "")
+        )
+        return "an answer"
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    agents = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Alpha", "Beta")
+    ]
+    workflow = ConcurrentWorkflow(agents=agents)
+
+    workflow.run("FIRSTTASK")
+    requests.clear()
+    workflow.batch_run(["SECONDTASK", "THIRDTASK"])
+
+    assert len(requests) == 4
+    assert not any("FIRSTTASK" in r for r in requests)
+    assert not any(
+        "SECONDTASK" in r for r in requests if "THIRDTASK" in r
+    )
+
+
 class _SlowEchoAgent(_EchoAgent):
     """Echoes like _EchoAgent, but only after a fixed delay."""
 
@@ -625,6 +659,56 @@ def test_concurrent_workflow_returns_results_in_agent_order():
         "Alpha",
         "Beta",
         "Gamma",
+    ]
+
+
+def _channel_agents(names):
+    """Agents whose run() answers at once, for channel tests."""
+    agents = []
+    for name in names:
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-4o",
+            max_loops=1,
+            print_on=False,
+            verbose=False,
+            persistent_memory=False,
+        )
+
+        def _make(agent_obj, agent_name):
+            def _run(task=None, **kwargs):
+                answer = f"{agent_name}-answer"
+                agent_obj.short_memory.add(
+                    role=agent_name, content=answer
+                )
+                return answer
+
+            return _run
+
+        agent.run = _make(agent, name)
+        agents.append(agent)
+    return agents
+
+
+def test_comms_channel_records_answers_in_agent_order(tmp_path):
+    from swarms.structs.file_channel import FileChannel
+
+    channel = FileChannel(tmp_path / "run.md")
+    workflow = ConcurrentWorkflow(
+        agents=_channel_agents(["B", "A"]),
+        autosave=False,
+        show_dashboard=False,
+        channel=channel,
+    )
+
+    workflow.run("Go.")
+
+    assert [
+        (m["agent_name"], m["content"]) for m in channel.messages()
+    ] == [
+        ("User", "Go."),
+        ("B", "B-answer"),
+        ("A", "A-answer"),
     ]
 
 
