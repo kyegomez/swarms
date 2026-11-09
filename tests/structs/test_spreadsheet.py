@@ -4,10 +4,12 @@ import csv
 import threading
 import time
 from datetime import datetime
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
 
+import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms.structs.agent import Agent
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
@@ -1104,3 +1106,46 @@ def test_a_failed_agent_is_recorded_as_an_error(temp_workspace):
     )
     with open(path) as f:
         assert json.load(f)["tasks_completed"] == 1
+
+
+@pytest.mark.parametrize("task", [None, "shared task"])
+def test_csv_loaded_agents_send_no_temperature(
+    sample_csv_file, temp_workspace, monkeypatch, task
+):
+    """CSV-loaded agents must not put a temperature on their requests."""
+    requests = []
+
+    def fake_completion(**params):
+        requests.append(params)
+        message = SimpleNamespace(
+            content="ok", tool_calls=None, reasoning_content=None
+        )
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(message=message, finish_reason="stop")
+            ],
+            usage=None,
+        )
+
+    monkeypatch.setattr(
+        litellm_wrapper, "completion", fake_completion
+    )
+
+    placeholder = Agent(
+        agent_name="placeholder",
+        system_prompt="placeholder",
+        model_name="claude-sonnet-4-6",
+        max_loops=1,
+    )
+    swarm = SpreadSheetSwarm(
+        agents=[placeholder],
+        load_path=sample_csv_file,
+        autosave=False,
+    )
+    swarm.load_from_csv()
+    swarm.run(task)
+
+    assert requests
+    assert not [
+        r["temperature"] for r in requests if "temperature" in r
+    ]
