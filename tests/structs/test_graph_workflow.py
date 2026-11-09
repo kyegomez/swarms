@@ -1603,6 +1603,40 @@ def test_fan_out_expands_target_per_item():
     assert merge.run.call_args.kwargs["task"] == ["a", "b", "c"]
 
 
+@pytest.mark.parametrize(
+    "on_error, merge_output",
+    [
+        ("continue", "output-Merge"),
+        ("skip_descendants", None),
+        ("raise", None),
+    ],
+)
+def test_fan_out_failed_item_fails_its_node(on_error, merge_output):
+    def work(task, **kwargs):
+        if task == "b":
+            raise RuntimeError("boom")
+        return task
+
+    source = _mock_agent("Source")
+    source.run.side_effect = lambda **kw: FanOut(
+        "Worker", ["a", "b", "c"]
+    )
+    worker = _mock_agent("Worker")
+    worker.run.side_effect = work
+    merge = _mock_agent("Merge")
+    wf = GraphWorkflow(on_error=on_error)
+    wf.add_nodes([source, worker, merge])
+    wf.add_edge("Source", "Worker")
+    wf.add_edge("Worker", "Merge")
+
+    if on_error == "raise":
+        with pytest.raises(RuntimeError, match="boom"):
+            wf.run("task")
+    else:
+        assert wf.run("task")["Merge"] == merge_output
+    assert merge.run.called == (merge_output is not None)
+
+
 def _usage_agent(name, input_tokens=0, output_tokens=0):
     """An offline Agent whose run() reports a fixed usage per call through the real hook."""
     from unittest.mock import patch

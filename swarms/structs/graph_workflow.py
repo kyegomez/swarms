@@ -2506,7 +2506,13 @@ class GraphWorkflow:
                     if layer_errors and self.on_error == "raise":
                         raise next(iter(layer_errors.values()))
                     if self.on_error == "skip_descendants":
+                        template_of = {
+                            instance_id: original_id
+                            for original_id, ids in expanded_targets.items()
+                            for instance_id in ids
+                        }
                         for failed in layer_errors:
+                            failed = template_of.get(failed, failed)
                             no_answer.add(failed)
                             no_answer |= (
                                 self.graph_backend.descendants(failed)
