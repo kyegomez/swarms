@@ -91,6 +91,10 @@ class BatchedGridWorkflow:
         """
         Run the batched grid workflow with the given tasks.
 
+        Each call starts every Agent from a clean history, so messages
+        added to its ``short_memory`` by hand before the call are
+        dropped. The system prompt and seeded ``messages`` are kept.
+
         Args:
             tasks: List of tasks to execute.
 
@@ -119,6 +123,10 @@ class BatchedGridWorkflow:
     def run(self, tasks: List[str]):
         """
         Run the batched grid workflow with the given tasks.
+
+        Each call starts every Agent from a clean history, so messages
+        added to its ``short_memory`` by hand before the call are
+        dropped. The system prompt and seeded ``messages`` are kept.
 
         Args:
             tasks: List of tasks to execute.
