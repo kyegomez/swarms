@@ -15,7 +15,6 @@ COMMANDS: Dict[str, str] = {
     "init": "Create a .env file and workspace directory for a new project",
     "onboarding": "Run the environment setup check (same as setup-check)",
     "get-api-key": "Open the Swarms platform API key page in your browser",
-    "check-login": "Verify authentication status and initialize cache",
     "run-agents": "Execute agents from a YAML configuration file",
     "load-markdown": "Load agents from markdown files with YAML frontmatter",
     "agent": "Create and run a custom agent",

@@ -82,7 +82,6 @@ class TestSetupArgumentParser:
             "init",
             "onboarding",
             "get-api-key",
-            "check-login",
             "run-agents",
             "load-markdown",
             "agent",
@@ -267,12 +266,6 @@ class TestRouteCommand:
     @patch("swarms.cli.main.get_api_key")
     def test_routes_get_api_key(self, mock_fn):
         args = make_args(command="get-api-key")
-        self.route_command(args)
-        mock_fn.assert_called_once()
-
-    @patch("swarms.cli.main.check_login")
-    def test_routes_check_login(self, mock_fn):
-        args = make_args(command="check-login")
         self.route_command(args)
         mock_fn.assert_called_once()
 
@@ -703,6 +696,18 @@ class TestCLIUtils:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "ant-test")
         result = _detect_active_provider()
         assert "+1 more" in result
+
+    @pytest.mark.parametrize(
+        "key, expected", [("sk-swarms", "is set"), ("", "Not set")]
+    )
+    def test_check_swarms_api_key_never_fails(
+        self, monkeypatch, key, expected
+    ):
+        from swarms.cli.utils import check_swarms_api_key
+
+        monkeypatch.setenv("SWARMS_API_KEY", key)
+        passed, _, message = check_swarms_api_key()
+        assert passed and expected in message
 
 
 # ===========================================================================

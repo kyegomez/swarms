@@ -36,11 +36,6 @@ bash 01_setup_check.sh
   swarms get-api-key
   ```
 
-- **[04_check_login.sh](04_check_login.sh)** - Verify authentication
-  ```bash
-  swarms check-login
-  ```
-
 ### Agent Management
 
 - **[05_create_agent.sh](05_create_agent.sh)** - Create and run custom agents
@@ -181,7 +176,6 @@ All scripts are located in `examples/cli/`:
 - `examples/cli/01_setup_check.sh`
 - `examples/cli/02_onboarding.sh`
 - `examples/cli/03_get_api_key.sh`
-- `examples/cli/04_check_login.sh`
 - `examples/cli/05_create_agent.sh`
 - `examples/cli/06_run_agents_yaml.sh`
 - `examples/cli/07_load_markdown.sh`

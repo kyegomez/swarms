@@ -297,6 +297,22 @@ def check_api_keys() -> Tuple[bool, str, str]:
         )
 
 
+def check_swarms_api_key() -> Tuple[bool, str, str]:
+    """
+    Report whether SWARMS_API_KEY is set. It is optional, so this check never fails.
+
+    Returns:
+        Tuple containing (success, status_icon, message)
+    """
+    if os.getenv("SWARMS_API_KEY"):
+        return True, "✓", "SWARMS_API_KEY is set (not validated)"
+    return (
+        True,
+        "○",
+        "Not set. Optional; marketplace prompts need it (swarms get-api-key)",
+    )
+
+
 def check_dependencies() -> Tuple[bool, str, str]:
     """
     Check if key dependencies are available.
@@ -360,6 +376,7 @@ def run_setup_check(verbose: bool = False):
             (True, "✓", check_swarms_version(verbose)),
         ),
         ("API Keys", check_api_keys()),
+        ("Swarms API Key", check_swarms_api_key()),
         ("Dependencies", check_dependencies()),
         ("Environment File", check_env_file()),
         ("Workspace Directory", check_workspace_dir()),
@@ -481,36 +498,3 @@ def get_api_key():
     console.print(
         f"\n[{COLORS['success']}]✓ API key page opened in your browser[/{COLORS['success']}]"
     )
-
-
-def check_login():
-    """
-    Verify login status with enhanced visual feedback.
-
-    Returns:
-        bool: True if login is successful
-    """
-    cache_dir = Path.home() / ".cache" / "swarms"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_file = cache_dir / "auth"
-
-    if cache_file.exists():
-        with open(cache_file, "r") as f:
-            if f.read() == "logged_in":
-                console.print(
-                    f"[{COLORS['success']}]✓ Authentication verified[/{COLORS['success']}]"
-                )
-                return True
-
-    with create_spinner() as progress:
-        task = progress.add_task("Initializing session...")
-        time.sleep(1)
-        with open(cache_file, "w") as f:
-            f.write("logged_in")
-        cache_file.chmod(0o600)
-        progress.remove_task(task)
-
-    console.print(
-        f"[{COLORS['success']}]✓ Login successful![/{COLORS['success']}]"
-    )
-    return True

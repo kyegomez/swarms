@@ -32,7 +32,6 @@ from swarms.cli.parser import (
     setup_argument_parser,
 )
 from swarms.cli.utils import (
-    check_login,
     get_api_key,
     run_setup_check,
     show_ascii_art,
@@ -74,7 +73,6 @@ def route_command(args: argparse.Namespace) -> None:
             verbose=args.verbose
         ),
         "get-api-key": lambda args: get_api_key(),
-        "check-login": lambda args: check_login(),
         "run-agents": handle_run_agents,
         "load-markdown": handle_load_markdown,
         "agent": handle_agent,
