@@ -648,6 +648,61 @@ class Conversation:
             )
         return added
 
+    def _to_messages_tokens(
+        self, row: Dict[str, Any], agent_name: Optional[str] = None
+    ) -> int:
+        """Count tokens for the chat messages produced by a history row.
+
+        Args:
+            row (Dict[str, Any]): A history row.
+            agent_name (Optional[str]): The role mapped to assistant.
+
+        Returns:
+            int: Token count for the row's chat messages.
+        """
+        if "tool_results" in row:
+            total = 0
+            for call in row.get("tool_calls") or []:
+                function = call.get("function") or {}
+                total += count_tokens(
+                    str(function.get("name") or ""),
+                    self.tokenizer_model_name,
+                )
+                total += count_tokens(
+                    str(function.get("arguments") or ""),
+                    self.tokenizer_model_name,
+                )
+                total += count_tokens(
+                    str(
+                        row["tool_results"].get(
+                            call["id"],
+                            f"(no result recorded for {function.get('name')})",
+                        )
+                    ),
+                    self.tokenizer_model_name,
+                )
+            return total
+        role, content = row.get("role"), row.get("content")
+        if role in ("system", "user", "assistant", "tool"):
+            fields = {**(row.get("metadata") or {}), **row}
+            return count_tokens(
+                str(fields.get("content") or ""),
+                self.tokenizer_model_name,
+            )
+        if content is not None and role not in (
+            "System",
+            "Tool Executor",
+        ):
+            return count_tokens(
+                str(content), self.tokenizer_model_name
+            )
+        return 0
+
+    @staticmethod
+    def _to_messages_is_system_row(row: Dict[str, Any]) -> bool:
+        """Return True when a history row is a system-role chat row."""
+        return row.get("role") == "system"
+
     def to_messages(
         self,
         agent_name: Optional[str] = None,
@@ -664,8 +719,34 @@ class Conversation:
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
         """
+        history = self.conversation_history[start:]
+        if self.dynamic_context_window is True:
+            leading = []
+            rest = history
+            for index, row in enumerate(history):
+                if self._to_messages_is_system_row(row):
+                    leading.append(row)
+                else:
+                    rest = history[index:]
+                    break
+            else:
+                rest = []
+
+            budget = self.context_length
+            for row in leading:
+                budget -= self._to_messages_tokens(row, agent_name)
+
+            kept = []
+            for row in reversed(rest):
+                tokens = self._to_messages_tokens(row, agent_name)
+                if kept and tokens > budget:
+                    break
+                kept.append(row)
+                budget -= tokens
+            history = leading + list(reversed(kept))
+
         messages = []
-        for row in [*prefix, *self.conversation_history[start:]]:
+        for row in [*prefix, *history]:
             role, content = row.get("role"), row.get("content")
             if "tool_results" in row:
                 messages.append(

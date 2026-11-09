@@ -1658,6 +1658,63 @@ def test_record_assistant_sends_a_non_text_reply_as_text():
     assert conv.conversation_history[-1]["content"] == {"answer": 2}
 
 
+def test_to_messages_caps_at_context_length():
+    conv = Conversation(
+        context_length=500, dynamic_context_window=True
+    )
+    for i in range(40):
+        conv.add(
+            role="user" if i % 2 == 0 else "p",
+            content=f"message {i} "
+            + "lorem ipsum dolor sit amet " * 20,
+        )
+
+    assert count_tokens(conv.get_str(), "gpt-5.4-mini") <= 500
+    msgs = conv.to_messages("p", 0)
+    assert len(msgs) < 40
+    total = sum(
+        count_tokens(m.get("content") or "", "gpt-5.4-mini")
+        for m in msgs
+    )
+    assert total <= 500
+
+
+def test_to_messages_uncapped_when_dynamic_context_window_false():
+    conv = Conversation(
+        context_length=50, dynamic_context_window=False
+    )
+    for i in range(20):
+        conv.add("user", "word " * 50)
+
+    msgs = conv.to_messages()
+    assert len(msgs) == 20
+
+
+def test_to_messages_keeps_tool_call_and_results_together():
+    conv = Conversation(
+        context_length=60, dynamic_context_window=True
+    )
+    conv.add("user", "first question " + "x " * 30)
+    calls = conv.record_assistant(
+        [_tool_call("get_weather", call_id="w1", city="a")]
+    )
+    conv.flush_tool_results(calls, {"w1": "sunny"})
+    conv.add("user", "last question")
+
+    msgs = conv.to_messages()
+    _assert_calls_answered(msgs)
+    for index, message in enumerate(msgs):
+        if message.get("tool_calls"):
+            following = [
+                m
+                for m in msgs[index + 1 :]
+                if m.get("role") == "tool"
+            ]
+            assert any(
+                m.get("tool_call_id") == "w1" for m in following
+            )
+
+
 def test_export_conversation_writes_the_named_json_file(tmp_path):
     conv = Conversation(conversations_dir=str(tmp_path))
     conv.add("User", "keep this")
