@@ -82,24 +82,16 @@ def basic_flow(mocked_llm, tmp_path):
 
 @pytest.fixture
 def flow_with_condition(mocked_llm, tmp_path):
-    from swarms.structs.agent import stop_when_repeats
-
     return _flow(
         "flow-with-condition",
         mocked_llm,
         tmp_path,
-        stopping_condition=stop_when_repeats,
+        stopping_condition=lambda text: "stop" in text.lower(),
     )
 
 
 class TestBasicAgent:
     """Constructor, run plumbing and the save/load round trip."""
-
-    def test_stop_when_repeats(self):
-        from swarms.structs.agent import stop_when_repeats
-
-        assert stop_when_repeats("Please Stop now")
-        assert not stop_when_repeats("Continue the process")
 
     def test_flow_initialization(self, basic_flow):
         """The constructor arguments survive __init__.

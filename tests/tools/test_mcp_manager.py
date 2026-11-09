@@ -1034,6 +1034,33 @@ class TestOAuthPlumbing:
         storage.clear()
         assert run_async(storage.get_tokens()) is None
 
+    def test_shared_token_cache_is_not_read_by_another_server(
+        self, tmp_path
+    ):
+        from mcp.shared.auth import OAuthToken
+
+        manager = MCPManager(
+            mcp_urls=[
+                "https://alpha.example.com/mcp",
+                "https://beta.example.com/mcp",
+            ],
+            oauth=MCPOAuthConfig(
+                token_storage_path=str(tmp_path / "tokens.json")
+            ),
+        )
+        alpha, beta = (
+            manager._build_oauth_provider(c).context.storage
+            for c in manager.connections
+        )
+        run_async(
+            alpha.set_tokens(
+                OAuthToken(access_token="alpha", token_type="Bearer")
+            )
+        )
+
+        assert run_async(beta.get_tokens()) is None
+        assert run_async(alpha.get_tokens()).access_token == "alpha"
+
     def test_default_storage_path_is_per_server(self):
         a = MCPFileTokenStorage("https://alpha.example.com/mcp")
         b = MCPFileTokenStorage("https://beta.example.com/mcp")
@@ -1050,6 +1077,29 @@ class TestOAuthPlumbing:
         assert isinstance(
             provider.context.storage, MCPInMemoryTokenStorage
         )
+
+    def test_authorization_code_uses_the_configured_client(
+        self, tmp_path
+    ):
+        manager = MCPManager()
+        for use_token_cache in (True, False):
+            connection = MCPConnection(
+                url=f"https://{use_token_cache}.example.com/mcp",
+                oauth=MCPOAuthConfig(
+                    client_id="my-app",
+                    client_secret="my-secret",
+                    use_token_cache=use_token_cache,
+                    token_storage_path=str(tmp_path / "tokens.json"),
+                ),
+            )
+            provider = manager._build_oauth_provider(connection)
+            client = run_async(
+                provider.context.storage.get_client_info()
+            )
+            assert (client.client_id, client.client_secret) == (
+                "my-app",
+                "my-secret",
+            )
 
     def test_callback_server_captures_code_and_state(self):
         import threading

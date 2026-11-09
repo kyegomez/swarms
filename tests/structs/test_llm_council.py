@@ -352,5 +352,61 @@ def test_llm_council_usage_sums_members_and_chairman():
     }
 
 
+def test_second_run_does_not_resend_the_first(monkeypatch):
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    requests = []
+
+    def fake_run(self, task=None, *args, messages=None, **kwargs):
+        requests.append(str(messages) + str(task))
+        return "Use Postgres."
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    members = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Member-A", "Member-B")
+    ]
+    council = LLMCouncil(council_members=members, verbose=False)
+
+    council.run("FIRSTTASK")
+    requests.clear()
+    council.run("SECONDTASK")
+
+    assert len(requests) == 5
+    assert not any("FIRSTTASK" in r for r in requests)
+
+
+@pytest.mark.parametrize(
+    "failing_call", [1, 2], ids=["answer", "ranking"]
+)
+def test_member_failure_raises_before_the_chairman(failing_call):
+    calls, chairman_tasks = [], []
+
+    def answer(task=None, *args, **kwargs):
+        return "Use Postgres."
+
+    def flaky(task=None, *args, **kwargs):
+        calls.append(task)
+        if len(calls) == failing_call:
+            raise RuntimeError("rate limited")
+        return "Use Postgres."
+
+    members = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Member-A", "Member-B", "Member-C")
+    ]
+    members[0].run = members[2].run = answer
+    members[1].run = flaky
+    council = LLMCouncil(council_members=members, verbose=False)
+    council.chairman.run = (
+        lambda task=None, **kw: chairman_tasks.append(task)
+    )
+
+    with pytest.raises(RuntimeError, match="rate limited"):
+        council.run("Pick a database.")
+    assert len(calls) == failing_call
+    assert chairman_tasks == []
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
