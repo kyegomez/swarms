@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 from loguru import logger
 
-from swarms import create_agents_from_yaml
+from swarms import AgentLoader
 
 # Load environment variables
 load_dotenv()
@@ -12,8 +12,8 @@ yaml_file = "agents.yaml"
 
 try:
     # Create agents and return them without running any task
-    task_results = create_agents_from_yaml(
-        yaml_file=yaml_file, return_type="agents"
+    task_results = AgentLoader().load_agents_from_yaml(
+        yaml_file, return_type="agents"
     )
 
     print(task_results)

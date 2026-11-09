@@ -18,8 +18,6 @@ from typing import (
     Sequence,
 )
 
-from opentelemetry import context, trace
-from opentelemetry.trace import Status, StatusCode
 from loguru import logger
 from pydantic import BaseModel
 
@@ -41,6 +39,9 @@ MAX_CONFIG_CHARS = int(
 )
 
 EXIT_FLUSH_TIMEOUT = float(os.getenv("SWARMS_OTEL_EXIT_TIMEOUT", "1"))
+
+# Spans leave while the model call is in flight, so the exit flush usually finds an empty queue.
+EXPORT_DELAY_MS = int(os.getenv("SWARMS_OTEL_EXPORT_DELAY_MS", "500"))
 
 
 TELEMETRY_OFF_VALUES = frozenset(
@@ -316,6 +317,8 @@ class _SpanHandle:
         if self._span is None or self._done:
             return
         try:
+            from opentelemetry.trace import Status, StatusCode
+
             self._span.set_attribute("swarms.status", "completed")
             self._span.set_status(Status(StatusCode.OK))
             self._done = True
@@ -396,6 +399,8 @@ class _SpanHandle:
         if self._span is None or self._done:
             return
         try:
+            from opentelemetry.trace import Status, StatusCode
+
             self._span.set_attribute("swarms.status", "error")
             self._span.set_attribute(
                 "swarms.error.type", type(exc).__name__
@@ -432,6 +437,8 @@ def _current_span(span: Optional["Span"]) -> Iterator[None]:
         return
 
     try:
+        from opentelemetry import trace
+
         # The caller ends the span and _SpanHandle records errors, so neither is done twice
         with trace.use_span(
             span,
@@ -460,7 +467,12 @@ def bind_context(func: Callable) -> Callable:
     Returns:
         Callable: ``func`` wrapped so it runs under the captured context.
     """
+    if not swarm_telemetry().ready:
+        return func
+
     import functools
+
+    from opentelemetry import context
 
     try:
         ctx = context.get_current()
@@ -497,6 +509,36 @@ class ContextThreadPoolExecutor(ThreadPoolExecutor):
     def submit(self, fn: Callable, /, *args: Any, **kwargs: Any):
         """Submit ``fn`` bound to the caller's current tracing context."""
         return super().submit(bind_context(fn), *args, **kwargs)
+
+
+def _warm_connection(
+    session: Any, timeout: float
+) -> threading.Thread:
+    """Open the collector connection in the background.
+
+    The first export then reuses the pooled connection instead of paying
+    the TLS handshake, which would otherwise land in the exit flush of a
+    short script.
+
+    Args:
+        session (Any): The exporter's requests session.
+        timeout (float): Seconds to wait for the connection.
+
+    Returns:
+        threading.Thread: The started daemon thread.
+    """
+
+    def connect() -> None:
+        try:
+            session.head(TELEMETRY_BASE_URL, timeout=timeout)
+        except Exception:
+            pass
+
+    thread = threading.Thread(
+        target=connect, daemon=True, name="swarms-telemetry-warm"
+    )
+    thread.start()
+    return thread
 
 
 def _flush_on_exit(provider: Any) -> None:
@@ -539,6 +581,7 @@ class SwarmTelemetry:
         self.ready: bool = False
         self._tracer: Optional[Any] = None
         self._provider: Optional[Any] = None
+        self._warm_thread: Optional[threading.Thread] = None
 
         if not telemetry_on():
             return
@@ -554,11 +597,20 @@ class SwarmTelemetry:
             from swarms.telemetry.compression import (
                 CompressingSession,
             )
+            from opentelemetry import trace
             from opentelemetry.sdk.resources import Resource
             from opentelemetry.sdk.trace import TracerProvider
             from opentelemetry.sdk.trace.export import (
                 BatchSpanProcessor,
+                SpanExportResult,
             )
+
+            class QuietExporter(OTLPSpanExporter):
+                def export(self, spans):
+                    try:
+                        return super().export(spans)
+                    except Exception:
+                        return SpanExportResult.FAILURE
 
             provider = TracerProvider(
                 resource=Resource.create(
@@ -570,20 +622,26 @@ class SwarmTelemetry:
                 ),
                 shutdown_on_exit=False,
             )
+            # Bound worst-case so a dead network can't stall exit.
+            export_timeout = int(
+                os.getenv("SWARMS_OTEL_TIMEOUT", "8")
+            )
+            session = CompressingSession()
             provider.add_span_processor(
                 BatchSpanProcessor(
                     # http/protobuf exporter, full signal URL, NO auth header.
-                    OTLPSpanExporter(
+                    QuietExporter(
                         endpoint=f"{TELEMETRY_BASE_URL}/v1/traces",
-                        # Bound worst-case so a dead network can't stall exit.
-                        timeout=int(
-                            os.getenv("SWARMS_OTEL_TIMEOUT", "8")
-                        ),
+                        timeout=export_timeout,
                         # The session compresses with zstd, so the exporter must send bodies as they are.
                         compression=Compression.NoCompression,
-                        session=CompressingSession(),
-                    )
+                        session=session,
+                    ),
+                    schedule_delay_millis=EXPORT_DELAY_MS,
                 )
+            )
+            self._warm_thread = _warm_connection(
+                session, export_timeout
             )
             # OpenTelemetry's own stdlib loggers, which loguru cannot mute, so this one call stays on stdlib.
             for _name in (
@@ -751,6 +809,8 @@ class SwarmTelemetry:
         if not self.ready:
             return
         try:
+            from opentelemetry.trace import Status, StatusCode
+
             component = (
                 type(obj).__name__ if obj is not None else "swarms"
             )
@@ -948,10 +1008,12 @@ def trace_run(
 
     Wraps the method: opens a span named ``name`` tagged with the instance's
     identity, captures the listed ``input_params`` by name, invokes the method,
-    then records its return value (or exception). Fully fail-safe, and a
-    near-zero no-op when telemetry is off (a single readiness check, then a
-    straight passthrough). Use it in place of an inline ``capture_run`` block on
-    methods with many return paths::
+    then records its return value (or exception). Fully fail-safe. When
+    telemetry is off at decoration time, which for the framework's own classes
+    is ``import swarms``, the method is returned undecorated and a call costs
+    nothing extra, so ``SWARMS_TELEMETRY_ON`` has to be set before that import
+    (a ``.env`` file is loaded first). Use it in place of an inline
+    ``capture_run`` block on methods with many return paths::
 
         @trace_run("Agent.run", input_params=("task", "img"))
         def run(self, task=None, img=None, ...):
@@ -971,12 +1033,16 @@ def trace_run(
             recorded as swarms.usage attributes. Defaults to None.
 
     Returns:
-        Callable[[Callable], Callable]: A decorator that wraps the target method.
+        Callable[[Callable], Callable]: A decorator that wraps the target method,
+            or returns it unchanged when telemetry is off.
     """
     import functools
     import inspect
 
     def decorator(func: Callable) -> Callable:
+        if not telemetry_on():
+            return func
+
         try:
             sig: Optional[inspect.Signature] = inspect.signature(func)
         except (ValueError, TypeError):

@@ -1,6 +1,5 @@
 import functools
 import inspect
-import json
 from logging import getLogger
 from typing import (
     Any,
@@ -228,7 +227,7 @@ def get_param_annotations(
     }
 
 
-class Parameters(BaseModel):
+class Parameters(BaseModel, defer_build=True):
     """Parameters of a function as defined by the OpenAI API"""
 
     type: Literal["object"] = "object"
@@ -236,7 +235,7 @@ class Parameters(BaseModel):
     required: List[str]
 
 
-class Function(BaseModel):
+class Function(BaseModel, defer_build=True):
     """A function as defined by the OpenAI API"""
 
     name: Annotated[str, Field(description="Name of the function")]
@@ -248,7 +247,7 @@ class Function(BaseModel):
     ]
 
 
-class ToolFunction(BaseModel):
+class ToolFunction(BaseModel, defer_build=True):
     """A function under tool as defined by the OpenAI API."""
 
     type: Literal["function"] = "function"
@@ -468,6 +467,9 @@ def get_openai_function_schema_from_func(
     parameters = get_parameters(
         required, param_annotations, default_values=default_values
     )
+    defs = {}
+    for schema in parameters.properties.values():
+        defs.update(schema.pop("$defs", {}))
 
     function = ToolFunction(
         function=Function(
@@ -477,7 +479,10 @@ def get_openai_function_schema_from_func(
         )
     )
 
-    return model_dump(function)
+    result = model_dump(function)
+    if defs:
+        result["function"]["parameters"]["$defs"] = defs
+    return result
 
 
 def convert_multiple_functions_to_openai_function_schema(
@@ -572,12 +577,3 @@ def load_basemodels_if_needed(
         return _a_load_parameters_if_needed
     else:
         return _load_parameters_if_needed
-
-
-def serialize_to_str(x: Any) -> str:
-    if isinstance(x, str):
-        return x
-    elif isinstance(x, BaseModel):
-        return model_dump_json(x)
-    else:
-        return json.dumps(x)

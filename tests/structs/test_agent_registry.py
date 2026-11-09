@@ -1,10 +1,5 @@
 import os
 
-try:
-    import pytest
-except ImportError:
-    pytest = None
-
 from loguru import logger
 
 try:
@@ -621,7 +616,7 @@ def test_agent_registry_find_agent_by_id():
 
         registry.add(agent)
 
-        found_agent = registry.find_agent_by_id(agent.agent_name)
+        found_agent = registry.find_agent_by_id(agent.id)
 
         assert (
             found_agent is not None
@@ -911,86 +906,3 @@ def test_agent_registry_thread_safety():
             f"Error in test_agent_registry_thread_safety: {str(e)}"
         )
         raise
-
-
-if __name__ == "__main__":
-    import sys
-
-    test_dict = {
-        "test_agent_registry_initialization": test_agent_registry_initialization,
-        "test_agent_registry_add_single_agent": test_agent_registry_add_single_agent,
-        "test_agent_registry_add_multiple_agents": test_agent_registry_add_multiple_agents,
-        "test_agent_registry_get_agent": test_agent_registry_get_agent,
-        "test_agent_registry_delete_agent": test_agent_registry_delete_agent,
-        "test_agent_registry_update_agent": test_agent_registry_update_agent,
-        "test_agent_registry_list_agents": test_agent_registry_list_agents,
-        "test_agent_registry_return_all_agents": test_agent_registry_return_all_agents,
-        "test_agent_registry_query_with_condition": test_agent_registry_query_with_condition,
-        "test_agent_registry_query_without_condition": test_agent_registry_query_without_condition,
-        "test_agent_registry_find_agent_by_name": test_agent_registry_find_agent_by_name,
-        "test_agent_registry_find_agent_by_id": test_agent_registry_find_agent_by_id,
-        "test_agent_registry_agents_to_json": test_agent_registry_agents_to_json,
-        "test_agent_registry_initialization_with_agents": test_agent_registry_initialization_with_agents,
-        "test_agent_registry_error_duplicate_agent": test_agent_registry_error_duplicate_agent,
-        "test_agent_registry_error_nonexistent_agent": test_agent_registry_error_nonexistent_agent,
-        "test_agent_registry_retrieved_agents_can_run": test_agent_registry_retrieved_agents_can_run,
-        "test_agent_registry_thread_safety": test_agent_registry_thread_safety,
-    }
-
-    if len(sys.argv) > 1:
-        requested_tests = []
-        for test_name in sys.argv[1:]:
-            if test_name in test_dict:
-                requested_tests.append(test_dict[test_name])
-            elif test_name == "all" or test_name == "--all":
-                requested_tests = list(test_dict.values())
-                break
-            else:
-                print(f"⚠ Warning: Test '{test_name}' not found.")
-                print(
-                    f"Available tests: {', '.join(test_dict.keys())}"
-                )
-                sys.exit(1)
-
-        tests_to_run = requested_tests
-    else:
-        tests_to_run = list(test_dict.values())
-
-    if len(tests_to_run) == 1:
-        print(f"Running: {tests_to_run[0].__name__}")
-    else:
-        print(f"Running {len(tests_to_run)} test(s)...")
-
-    passed = 0
-    failed = 0
-
-    for test_func in tests_to_run:
-        try:
-            print(f"\n{'='*60}")
-            print(f"Running: {test_func.__name__}")
-            print(f"{'='*60}")
-            test_func()
-            print(f"✓ PASSED: {test_func.__name__}")
-            passed += 1
-        except Exception as e:
-            print(f"✗ FAILED: {test_func.__name__}")
-            print(f"  Error: {str(e)}")
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"Test Summary: {passed} passed, {failed} failed")
-    print(f"{'='*60}")
-
-    if len(sys.argv) == 1:
-        print("\n💡 Tip: Run a specific test with:")
-        print(
-            "   python test_agent_registry.py test_agent_registry_initialization"
-        )
-        print("\n   Or use pytest:")
-        print("   pytest test_agent_registry.py")
-        print(
-            "   pytest test_agent_registry.py::test_agent_registry_initialization"
-        )

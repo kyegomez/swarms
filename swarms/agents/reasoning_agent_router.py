@@ -67,6 +67,7 @@ class ReasoningAgentRouter:
         eval (bool): Enable evaluation mode for self-consistency.
         random_models_on (bool): Enable random model selection for diversity.
         majority_voting_prompt (Optional[str]): Custom prompt for majority voting.
+        reasoning_model_name (Optional[str]): Model for the reasoning-duo reasoning agent. Defaults to None, which runs it on model_name.
 
     Example:
         >>> router = ReasoningAgentRouter(swarm_type="reasoning-duo")
@@ -89,7 +90,7 @@ class ReasoningAgentRouter:
         eval: bool = False,
         random_models_on: bool = False,
         majority_voting_prompt: Optional[str] = None,
-        reasoning_model_name: Optional[str] = "gpt-4o",
+        reasoning_model_name: Optional[str] = None,
     ):
         """
         Initialize the ReasoningAgentRouter with the specified configuration.
@@ -163,7 +164,7 @@ class ReasoningAgentRouter:
         return ReasoningDuo(
             agent_name=self.agent_name,
             agent_description=self.description,
-            model_name=[self.model_name, self.model_name],
+            model_name=self.model_name,
             system_prompt=self.system_prompt,
             output_type=self.output_type,
             reasoning_model_name=self.reasoning_model_name,

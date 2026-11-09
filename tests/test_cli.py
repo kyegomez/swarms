@@ -7,6 +7,7 @@ Run with: pytest tests/test_cli.py -v
 """
 
 import argparse
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -68,7 +69,7 @@ class TestSetupArgumentParser:
 
     @pytest.fixture(autouse=True)
     def _import(self):
-        from swarms.cli.main import setup_argument_parser
+        from swarms.cli.parser import setup_argument_parser
 
         self.setup_argument_parser = setup_argument_parser
 
@@ -81,7 +82,6 @@ class TestSetupArgumentParser:
             "init",
             "onboarding",
             "get-api-key",
-            "check-login",
             "run-agents",
             "load-markdown",
             "agent",
@@ -164,7 +164,7 @@ class TestSetupArgumentParser:
         assert args.loops_per_agent == 3
 
     def test_heavy_swarm_model_help_states_the_real_default(self):
-        from swarms.cli.main import DEFAULT_HEAVY_SWARM_MODEL
+        from swarms.cli.parser import DEFAULT_HEAVY_SWARM_MODEL
 
         parser = self.setup_argument_parser()
         args = parser.parse_args(["heavy-swarm"])
@@ -176,6 +176,23 @@ class TestSetupArgumentParser:
         ):
             assert getattr(args, dest) == DEFAULT_HEAVY_SWARM_MODEL
             assert DEFAULT_HEAVY_SWARM_MODEL in actions[dest].help
+
+    def test_help_lists_every_command_and_option(self, capsys):
+        from swarms.cli.parser import COMMAND_CHOICES
+
+        parser = self.setup_argument_parser()
+        with pytest.raises(SystemExit):
+            parser.parse_args(["--help"])
+        help_text = capsys.readouterr().out
+
+        for command in COMMAND_CHOICES:
+            assert f"  {command} " in help_text
+        for action in parser._actions:
+            for option in action.option_strings:
+                assert re.search(
+                    rf"(?<![\w-]){re.escape(option)}(?![\w-])",
+                    help_text,
+                ), option
 
 
 # ===========================================================================
@@ -198,11 +215,11 @@ class TestRouteCommand:
         self.route_command(args)
         mock_handler.assert_called_once_with(args)
 
-    @patch("swarms.cli.main.handle_onboarding")
-    def test_routes_onboarding(self, mock_handler):
-        args = make_args(command="onboarding")
+    @patch("swarms.cli.main.run_setup_check")
+    def test_routes_onboarding(self, mock_fn):
+        args = make_args(command="onboarding", verbose=True)
         self.route_command(args)
-        mock_handler.assert_called_once_with(args)
+        mock_fn.assert_called_once_with(verbose=True)
 
     @patch("swarms.cli.main.handle_run_agents")
     def test_routes_run_agents(self, mock_handler):
@@ -252,12 +269,6 @@ class TestRouteCommand:
         self.route_command(args)
         mock_fn.assert_called_once()
 
-    @patch("swarms.cli.main.check_login")
-    def test_routes_check_login(self, mock_fn):
-        args = make_args(command="check-login")
-        self.route_command(args)
-        mock_fn.assert_called_once()
-
     @patch("swarms.cli.main.run_setup_check")
     def test_routes_setup_check(self, mock_fn):
         args = make_args(command="setup-check", verbose=True)
@@ -272,13 +283,6 @@ class TestRouteCommand:
             ["pip", "install", "--upgrade", "swarms"], check=True
         )
 
-    @patch("swarms.cli.main.show_error")
-    def test_unknown_command_shows_error(self, mock_show_error):
-        # We bypass argparse validation by crafting args directly
-        args = argparse.Namespace(command="definitely-not-a-command")
-        self.route_command(args)
-        mock_show_error.assert_called_once()
-
 
 # ===========================================================================
 # 3. handle_run_agents
@@ -288,7 +292,7 @@ class TestRouteCommand:
 class TestHandleRunAgents:
     @pytest.fixture(autouse=True)
     def _import(self):
-        from swarms.cli.main import handle_run_agents
+        from swarms.cli.commands import handle_run_agents
 
         self.handle_run_agents = handle_run_agents
 
@@ -297,12 +301,14 @@ class TestHandleRunAgents:
             command="run-agents",
             yaml_file=str(tmp_path / "nonexistent.yaml"),
         )
-        with patch("swarms.cli.main.show_error") as mock_err:
-            self.handle_run_agents(args)
+        with patch("swarms.cli.commands.show_error") as mock_err:
+            with pytest.raises(SystemExit) as exit_info:
+                self.handle_run_agents(args)
+            assert exit_info.value.code == 1
             mock_err.assert_called_once()
             assert "File Error" in mock_err.call_args[0][0]
 
-    @patch("swarms.cli.main.create_agents_from_yaml")
+    @patch("swarms.cli.commands.AgentLoader.load_agents_from_yaml")
     def test_runs_agents_from_yaml(self, mock_create, tmp_path):
         yaml_file = tmp_path / "agents.yaml"
         yaml_file.write_text("agents: []")
@@ -315,7 +321,7 @@ class TestHandleRunAgents:
             yaml_file=str(yaml_file), return_type="run_swarm"
         )
 
-    @patch("swarms.cli.main.create_agents_from_yaml")
+    @patch("swarms.cli.commands.AgentLoader.load_agents_from_yaml")
     def test_handles_api_key_error(self, mock_create, tmp_path):
         yaml_file = tmp_path / "agents.yaml"
         yaml_file.write_text("agents: []")
@@ -325,12 +331,14 @@ class TestHandleRunAgents:
         args = make_args(
             command="run-agents", yaml_file=str(yaml_file)
         )
-        with patch("swarms.cli.main.show_error") as mock_err:
-            self.handle_run_agents(args)
+        with patch("swarms.cli.commands.show_error") as mock_err:
+            with pytest.raises(SystemExit) as exit_info:
+                self.handle_run_agents(args)
+            assert exit_info.value.code == 1
             mock_err.assert_called_once()
             assert "API Key" in mock_err.call_args[0][0]
 
-    @patch("swarms.cli.main.create_agents_from_yaml")
+    @patch("swarms.cli.commands.AgentLoader.load_agents_from_yaml")
     def test_handles_context_length_error(
         self, mock_create, tmp_path
     ):
@@ -340,8 +348,10 @@ class TestHandleRunAgents:
         args = make_args(
             command="run-agents", yaml_file=str(yaml_file)
         )
-        with patch("swarms.cli.main.show_error") as mock_err:
-            self.handle_run_agents(args)
+        with patch("swarms.cli.commands.show_error") as mock_err:
+            with pytest.raises(SystemExit) as exit_info:
+                self.handle_run_agents(args)
+            assert exit_info.value.code == 1
             assert "Context Length" in mock_err.call_args[0][0]
 
 
@@ -353,18 +363,20 @@ class TestHandleRunAgents:
 class TestHandleLoadMarkdown:
     @pytest.fixture(autouse=True)
     def _import(self):
-        from swarms.cli.main import handle_load_markdown
+        from swarms.cli.commands import (
+            handle_load_markdown,
+        )
 
         self.handle_load_markdown = handle_load_markdown
 
     def test_missing_markdown_path_exits(self):
         args = make_args(command="load-markdown", markdown_path=None)
-        with patch("swarms.cli.main.show_error"), pytest.raises(
+        with patch("swarms.cli.commands.show_error"), pytest.raises(
             SystemExit
         ):
             self.handle_load_markdown(args)
 
-    @patch("swarms.cli.main.load_markdown_agents")
+    @patch("swarms.cli.commands.load_markdown_agents")
     def test_loads_agents_from_path(self, mock_load):
         mock_load.return_value = [MagicMock(name="Agent1")]
         args = make_args(
@@ -377,6 +389,31 @@ class TestHandleLoadMarkdown:
             "./agents/", concurrent=True
         )
 
+    def test_loads_a_directory_and_a_single_file(self, tmp_path):
+        from swarms.cli.commands import (
+            load_markdown_agents,
+        )
+
+        for name in ("Alpha", "Beta"):
+            (tmp_path / f"{name}.md").write_text(
+                f"---\nname: {name}\n---\nYou are {name}.\n"
+            )
+
+        with patch("swarms.cli.commands.show_error") as mock_err:
+            from_dir = load_markdown_agents(
+                str(tmp_path), concurrent=False
+            )
+            from_file = load_markdown_agents(
+                str(tmp_path / "Alpha.md")
+            )
+
+        mock_err.assert_not_called()
+        assert sorted(a.agent_name for a in from_dir) == [
+            "Alpha",
+            "Beta",
+        ]
+        assert [a.agent_name for a in from_file] == ["Alpha"]
+
 
 # ===========================================================================
 # 5. handle_agent
@@ -386,18 +423,18 @@ class TestHandleLoadMarkdown:
 class TestHandleAgent:
     @pytest.fixture(autouse=True)
     def _import(self):
-        from swarms.cli.main import handle_agent
+        from swarms.cli.commands import handle_agent
 
         self.handle_agent = handle_agent
 
-    @patch("swarms.cli.main.create_swarm_agent")
+    @patch("swarms.cli.commands.create_swarm_agent")
     def test_calls_create_swarm_agent(self, mock_create):
         mock_create.return_value = None
         args = make_args(command="agent")
         self.handle_agent(args)
         mock_create.assert_called_once()
 
-    @patch("swarms.cli.main.create_swarm_agent")
+    @patch("swarms.cli.commands.create_swarm_agent")
     def test_passes_model_name_to_agent(self, mock_create):
         mock_create.return_value = None
         args = make_args(
@@ -408,6 +445,21 @@ class TestHandleAgent:
         # model_name is passed either positionally or as keyword
         assert call_kwargs is not None
 
+    def test_missing_task_exits_before_building_the_agent(self):
+        from swarms.cli.parser import setup_argument_parser
+
+        args = setup_argument_parser().parse_args(
+            ["agent", "--name", "A", "--description", "d"]
+            + ["--system-prompt", "s"]
+        )
+        with patch("swarms.cli.commands.Agent") as mock_agent, patch(
+            "swarms.cli.commands.show_error"
+        ) as mock_err, pytest.raises(SystemExit) as exit_info:
+            self.handle_agent(args)
+        assert exit_info.value.code == 1
+        assert "task" in str(mock_err.call_args)
+        mock_agent.assert_not_called()
+
 
 # ===========================================================================
 # 6. handle_autoswarm
@@ -417,18 +469,18 @@ class TestHandleAgent:
 class TestHandleAutoswarm:
     @pytest.fixture(autouse=True)
     def _import(self):
-        from swarms.cli.main import handle_autoswarm
+        from swarms.cli.commands import handle_autoswarm
 
         self.handle_autoswarm = handle_autoswarm
 
     def test_missing_task_shows_error_and_exits(self):
         args = make_args(command="autoswarm", task=None)
-        with patch("swarms.cli.main.show_error") as mock_err:
+        with patch("swarms.cli.commands.show_error") as mock_err:
             with pytest.raises(SystemExit):
                 self.handle_autoswarm(args)
             mock_err.assert_called_once()
 
-    @patch("swarms.cli.main.run_autoswarm")
+    @patch("swarms.cli.commands.run_autoswarm")
     def test_calls_run_autoswarm_with_task(self, mock_run):
         args = make_args(
             command="autoswarm",
@@ -450,27 +502,30 @@ class TestHandleAutoswarm:
 class TestRunAutoswarm:
     @pytest.fixture(autouse=True)
     def _import(self):
-        from swarms.cli.main import run_autoswarm
+        from swarms.cli.commands import run_autoswarm
 
         self.run_autoswarm = run_autoswarm
 
     def test_empty_task_shows_error(self):
-        # run_autoswarm catches SwarmCLIError internally and calls show_error
-        with patch("swarms.cli.main.show_error") as mock_err:
-            self.run_autoswarm(task="", model="gpt-4o")
+        with patch("swarms.cli.commands.show_error") as mock_err:
+            with pytest.raises(SystemExit) as exit_info:
+                self.run_autoswarm(task="", model="gpt-4o")
+        assert exit_info.value.code == 1
         mock_err.assert_called_once()
         assert "Task cannot be empty" in str(mock_err.call_args)
 
     def test_empty_model_shows_error(self):
-        with patch("swarms.cli.main.show_error") as mock_err:
-            self.run_autoswarm(task="do something", model="")
+        with patch("swarms.cli.commands.show_error") as mock_err:
+            with pytest.raises(SystemExit) as exit_info:
+                self.run_autoswarm(task="do something", model="")
+        assert exit_info.value.code == 1
         mock_err.assert_called_once()
         assert "Model name cannot be empty" in str(mock_err.call_args)
 
     @patch(
         "swarms.agents.auto_generate_swarm_config.write_autoswarm_file"
     )
-    @patch("swarms.cli.main.generate_swarm_config")
+    @patch("swarms.cli.commands.generate_swarm_config")
     def test_no_run_skips_execution(
         self, mock_gen, mock_write, tmp_path
     ):
@@ -483,27 +538,36 @@ class TestRunAutoswarm:
         mock_write.assert_called_once()
 
 
-# ===========================================================================
-# 8. handle_onboarding
-# ===========================================================================
+class TestHandleInit:
+    def test_existing_env_keeps_its_entries(
+        self, tmp_path, monkeypatch
+    ):
+        from dotenv import dotenv_values
 
+        from swarms.cli import commands as cli
 
-class TestHandleOnboarding:
-    @patch("swarms.cli.main.run_setup_check")
-    def test_delegates_to_setup_check(self, mock_check):
-        from swarms.cli.main import handle_onboarding
+        env_path = tmp_path / ".env"
+        env_path.write_text(
+            "OPENAI_API_KEY=sk-existing\nDATABASE_URL=postgres://db\n"
+        )
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-existing")
+        answers = iter(["", "1,2"])
+        monkeypatch.setattr(
+            cli.console, "input", lambda *a, **k: next(answers)
+        )
+        keys = iter(["", "sk-ant-new", ""])
+        monkeypatch.setattr(
+            cli.getpass, "getpass", lambda *a, **k: next(keys)
+        )
 
-        args = make_args(command="onboarding", verbose=False)
-        handle_onboarding(args)
-        mock_check.assert_called_once_with(verbose=False)
+        cli.handle_init(make_args(command="init", dir=str(tmp_path)))
 
-    @patch("swarms.cli.main.run_setup_check")
-    def test_passes_verbose_flag(self, mock_check):
-        from swarms.cli.main import handle_onboarding
-
-        args = make_args(command="onboarding", verbose=True)
-        handle_onboarding(args)
-        mock_check.assert_called_once_with(verbose=True)
+        assert dotenv_values(env_path) == {
+            "OPENAI_API_KEY": "sk-existing",
+            "DATABASE_URL": "postgres://db",
+            "WORKSPACE_DIR": str(tmp_path / "workspace"),
+            "ANTHROPIC_API_KEY": "sk-ant-new",
+        }
 
 
 # ===========================================================================
@@ -514,18 +578,18 @@ class TestHandleOnboarding:
 class TestHandleLLMCouncil:
     @pytest.fixture(autouse=True)
     def _import(self):
-        from swarms.cli.main import handle_llm_council
+        from swarms.cli.commands import handle_llm_council
 
         self.handle_llm_council = handle_llm_council
 
     def test_missing_task_shows_error_and_exits(self):
         args = make_args(command="llm-council", task=None)
-        with patch("swarms.cli.main.show_error") as mock_err:
+        with patch("swarms.cli.commands.show_error") as mock_err:
             with pytest.raises(SystemExit):
                 self.handle_llm_council(args)
             mock_err.assert_called_once()
 
-    @patch("swarms.cli.main.run_llm_council")
+    @patch("swarms.cli.commands.run_llm_council")
     def test_calls_run_llm_council(self, mock_run):
         args = make_args(command="llm-council", task="What is AGI?")
         self.handle_llm_council(args)
@@ -540,18 +604,18 @@ class TestHandleLLMCouncil:
 class TestHandleHeavySwarm:
     @pytest.fixture(autouse=True)
     def _import(self):
-        from swarms.cli.main import handle_heavy_swarm
+        from swarms.cli.commands import handle_heavy_swarm
 
         self.handle_heavy_swarm = handle_heavy_swarm
 
     def test_missing_task_shows_error_and_exits(self):
         args = make_args(command="heavy-swarm", task=None)
-        with patch("swarms.cli.main.show_error") as mock_err:
+        with patch("swarms.cli.commands.show_error") as mock_err:
             with pytest.raises(SystemExit):
                 self.handle_heavy_swarm(args)
             mock_err.assert_called_once()
 
-    @patch("swarms.cli.main.run_heavy_swarm")
+    @patch("swarms.cli.commands.run_heavy_swarm")
     def test_calls_run_heavy_swarm(self, mock_run):
         args = make_args(
             command="heavy-swarm",
@@ -633,6 +697,18 @@ class TestCLIUtils:
         result = _detect_active_provider()
         assert "+1 more" in result
 
+    @pytest.mark.parametrize(
+        "key, expected", [("sk-swarms", "is set"), ("", "Not set")]
+    )
+    def test_check_swarms_api_key_never_fails(
+        self, monkeypatch, key, expected
+    ):
+        from swarms.cli.utils import check_swarms_api_key
+
+        monkeypatch.setenv("SWARMS_API_KEY", key)
+        passed, _, message = check_swarms_api_key()
+        assert passed and expected in message
+
 
 # ===========================================================================
 # 12. show_ascii_art smoke test
@@ -694,8 +770,9 @@ class TestMain:
         from swarms.cli.main import main
 
         with patch("sys.argv", ["swarms", "bad-command"]):
-            with pytest.raises(SystemExit):
+            with pytest.raises(SystemExit) as exc_info:
                 main()
+            assert exc_info.value.code == 2
 
     @patch(
         "swarms.cli.main.route_command",
@@ -706,5 +783,31 @@ class TestMain:
         from swarms.cli.main import main
 
         with patch("sys.argv", ["swarms", "setup-check"]):
-            # Should NOT raise — errors are caught and printed
-            main()
+            with pytest.raises(SystemExit) as exit_info:
+                main()
+            assert exit_info.value.code == 1
+
+    @pytest.mark.parametrize(
+        "argv, expected, banner",
+        [
+            (["--version"], "swarms ", False),
+            ([], "Commands:", True),
+        ],
+    )
+    @patch("swarms.cli.main.show_ascii_art")
+    def test_version_and_no_args_exit_zero(
+        self, mock_art, capsys, argv, expected, banner
+    ):
+        from swarms.cli.main import main
+        from swarms.cli.utils import check_swarms_version
+
+        with patch("sys.argv", ["swarms", *argv]):
+            try:
+                main()
+            except SystemExit as exit_info:
+                assert exit_info.code == 0
+        out = capsys.readouterr().out
+        assert expected in out
+        assert mock_art.called is banner
+        if argv:
+            assert out == f"swarms {check_swarms_version()}\n"

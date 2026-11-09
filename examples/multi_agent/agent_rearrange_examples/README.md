@@ -5,6 +5,7 @@ This directory contains examples demonstrating agent rearrangement functionality
 ## Examples
 
 - [rearrange_test.py](rearrange_test.py) - Test agent rearrangement functionality
+- [nested_swarms_demo.py](nested_swarms_demo.py) - Whole swarms as the steps of a flow
 
 ## Overview
 

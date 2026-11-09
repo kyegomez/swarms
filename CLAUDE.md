@@ -2,6 +2,41 @@
 
 This file teaches you how to build agents and multi-agent systems with the **Swarms** framework. Read it before writing any code in this repo.
 
+## Live documentation
+
+This file can lag the code. For current signatures and pages, query the docs MCP server or the plain-text docs:
+
+Two hosted MCP servers give an assistant live Swarms context instead of training data that may predate a rename:
+
+| Server | URL | Key | What it does |
+|---|---|---|---|
+| Docs | `https://docs.swarms.world/mcp` | none | Searches and reads the current documentation |
+| Marketplace | `https://swarms.world/mcp` | Swarms API key for calls | Searches, reads and publishes agents, prompts and tools on [swarms.world](https://swarms.world) |
+
+The whole documentation is also available as plain text at [docs.swarms.world/llms.txt](https://docs.swarms.world/llms.txt) (an index) and [docs.swarms.world/llms-full.txt](https://docs.swarms.world/llms-full.txt) (every page).
+
+Claude Code:
+
+```bash
+claude mcp add --transport http swarms-docs https://docs.swarms.world/mcp
+claude mcp add --transport http swarms-marketplace https://swarms.world/mcp \
+  --header "Authorization: Bearer $SWARMS_API_KEY"
+```
+
+Cursor, in `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "swarms-docs": { "url": "https://docs.swarms.world/mcp" },
+    "swarms-marketplace": {
+      "url": "https://swarms.world/mcp",
+      "headers": { "Authorization": "Bearer ${env:SWARMS_API_KEY}" }
+    }
+  }
+}
+```
+
 ---
 
 ## Installation & Setup
@@ -108,11 +143,11 @@ print(result)
 | `tools` | list[Callable] | `None` | Python functions the agent can call |
 | `streaming_on` | bool | `False` | Stream tokens to stdout |
 | `interactive` | bool | `False` | REPL mode — prompt user for input each loop |
-| `context_length` | int | `None` | Token budget; triggers compression at 90 % |
+| `context_length` | int | `128000` | Token budget; triggers compression at 90 %. `None` looks up the model's input window |
 | `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
 | `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
 | `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
-| `max_tokens` | int | model's max output | Max tokens per LLM call. Unset resolves to the model's own output limit |
+| `max_tokens` | int | `16384` | Max tokens per LLM call. `None` looks up the model's own output limit |
 | `reasoning_effort` | str | `None` | `"low"`, `"medium"`, `"high"` for reasoning models |
 | `thinking_tokens` | int | `None` | Extended thinking budget (Claude) |
 | `output_type` | str | `"str-all-except-first"` | How to format returned output |
@@ -579,7 +614,7 @@ result = swarm.run("Produce a comprehensive competitive analysis of the AI chip 
 
 ### GroupChat
 
-An asynchronous, self-selecting groupchat. There are no rounds or speaker-selection functions — every agent listens in parallel and decides on its own whether to chime in. A forced `respond(score, message)` function call asks each agent how much it wants to speak (0..1); replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or no message arrives for `idle_timeout` seconds.
+A turn-based groupchat with one speaker per turn. Each turn, all agents privately bid via a forced `respond(score, message)` tool call with a self-rated desire to speak (0..1) and the reply they would give. The single highest bidder whose score clears `threshold` (after subtracting `recency_penalty` for agents that spoke within `recency_window` turns) takes the floor and has its message posted. The chat ends when no agent bids above `threshold` for a turn (a conversational lull), or when `max_loops` total messages have been posted.
 
 ```python
 from swarms import Agent
@@ -614,14 +649,15 @@ realist = Agent(
 
 chat = GroupChat(
     agents=[optimist, pessimist, realist],
-    max_loops=10,        # hard cap on total messages posted
-    threshold=0.5,       # min decision score (0..1) to publish a reply
-    idle_timeout=8.0,    # seconds of silence before stopping
+    max_loops=10,         # hard cap on total messages posted
+    threshold=0.5,        # min decision score (0..1) to publish a reply
+    recency_penalty=0.3,  # penalty applied to recent speakers
+    recency_window=1,     # number of recent speakers penalized
 )
 result = chat.run("Should we adopt AI for medical diagnosis?")
 ```
 
-**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Raise `idle_timeout` if agents need time to think before replying.
+**Tuning:** raise `threshold` for a more selective room; lower it for livelier chats. Adjust `recency_penalty` and `recency_window` to prevent a single agent from dominating consecutive turns and pass the floor around.
 
 ---
 
@@ -753,17 +789,12 @@ for task in tasks:
 
 ### PlannerWorkerSwarm
 
-A planner agent generates a structured plan; worker agents execute each step.
+A planner–worker–judge loop: the swarm builds its own planner and judge from
+`planner_model_name` / `judge_model_name`, while `agents` are the workers that
+claim and execute plan steps.
 
 ```python
 from swarms import Agent, PlannerWorkerSwarm
-
-planner = Agent(
-    agent_name="Planner",
-    system_prompt="You create detailed, step-by-step execution plans.",
-    model_name="gpt-5.4",
-    max_loops=1,
-)
 
 workers = [
     Agent(agent_name=f"Worker-{i}", model_name="gpt-5.4-mini", max_loops=2)
@@ -771,8 +802,9 @@ workers = [
 ]
 
 swarm = PlannerWorkerSwarm(
-    planner_agent=planner,
-    worker_agents=workers,
+    agents=workers,
+    planner_model_name="gpt-5.4",
+    judge_model_name="gpt-5.4",
     max_loops=1,
 )
 result = swarm.run("Build a complete go-to-market strategy for a B2B SaaS product.")
@@ -1089,6 +1121,54 @@ Full specification: the [WARP Git Message Skill](https://swarms.world/prompt/32d
 
 ---
 
+## Contributing: Disclose AI authorship (required)
+
+Every commit, PR and issue that an AI agent wrote, in whole or in part, must say so. The disclosure must be accurate: name the agent and the model that actually did the work. Never leave it out, and never name a different agent or model.
+
+- **Commits:** end the message with a co-author trailer naming the model.
+  ```
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  ```
+  Other agents use the trailer they add by default, for example `Co-authored-by: Cursor <cursoragent@cursor.com>`.
+- **PRs and issues:** end the body with a line naming the agent and the model.
+  ```
+  🤖 Generated with [Claude Code](https://claude.com/claude-code) (Claude Opus 5.5)
+  ```
+- **No private links:** never add `Claude-Session:` trailers or `claude.ai/code/session_...` URLs.
+
+These markers are also what labels a PR or issue `ai-generated`, so never strip them.
+
+---
+
+## Contributing: Update the framework docs (required)
+
+The docs site lives in a separate repo, [The-Swarm-Corporation/swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs). Every change to the framework that users can see must come with a matching docs update there:
+
+- **New features:** a new class, structure, function or module gets its own page, or a section on the page it belongs to.
+- **Input parameters:** an added, removed or renamed parameter, or a changed default.
+- **Output:** a changed return value, return type or output format.
+- **Removals and renames:** delete or rename the page, and add a redirect in `docs.json` so old links still work.
+
+Open the docs PR alongside the framework PR and link each from the other. If the docs can't change until the framework PR merges, open a docs issue that links the framework PR instead, and link that issue from the framework PR. Changes users can't see, such as tests or a refactor that keeps the same API, need no docs update.
+
+The docs are a Mintlify site: pages are `.mdx` files and the navigation is in `docs.json`. Run `mint broken-links` and `mint validate` in the docs repo before opening the PR.
+
+---
+
+## Tests: only where they earn their place
+
+Not every change needs a unit test. Add one when it pins behaviour a user relies on that a later change could break: a bug fix, a new feature or a changed default. Renames, formatting, comments and docs need none, and neither does removing unused code (see below).
+
+When you do add a test, keep it small, compact and fast:
+
+- One test per behaviour. Put several cases in one table-driven test, not in near-copies.
+- Stub the model and the network. No live API calls, sleeps or real servers unless the behaviour is about them.
+- Reuse the stubs and helpers already in the test file instead of writing new ones.
+- Assert what a caller sees, not private state the change did not touch.
+- It must fail on the unpatched code and run in well under a second.
+
+---
+
 ## Comments: one line, only when needed
 
 A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.
@@ -1109,6 +1189,16 @@ return [agent.run(task) for agent in agents]
 ```
 
 Multi-line comment blocks keep arriving in PRs and keep getting removed. Write them short the first time.
+
+---
+
+## Tests: none for removing unused code
+
+When a change only deletes code nothing uses (a method, a parameter, an attribute, a branch or a line), do not add a unit test for it. A test that the old name is gone, that a signature lacks the parameter, or that passing it raises `TypeError` checks that the deletion happened, which the diff already shows, and it guards nothing a user relies on.
+
+- Delete tests that only exercised the removed code.
+- Run the existing tests for the module to show nothing else broke.
+- If the removal changes behaviour a caller can see, it was not unused: test that behaviour as for any other change.
 
 ---
 

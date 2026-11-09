@@ -89,16 +89,6 @@ def main():
     except Exception as e:
         print(f"Error processing tool_calls: {e}")
 
-    print("\n" + "=" * 50)
-
-    # Option 3: Show format detection
-    print("Format detection:")
-    format_type = tool.detect_api_response_format(mock_response)
-    print(f"  Full response format: {format_type}")
-
-    format_type_tools = tool.detect_api_response_format(tool_calls)
-    print(f"  Tool calls format: {format_type_tools}")
-
 
 if __name__ == "__main__":
     main()

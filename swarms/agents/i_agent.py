@@ -74,6 +74,7 @@ class IterativeReflectiveExpansion:
             system_prompt=self.system_prompt,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
     def generate_initial_hypotheses(self, task: str) -> List[str]:
