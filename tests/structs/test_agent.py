@@ -21,6 +21,7 @@ from swarms.structs.agent import DEFAULT_AGENT_DESCRIPTION
 from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
+    AgentRunError,
     AgentToolExecutionError,
 )
 from swarms.tools.base_tool import BaseTool
@@ -1694,6 +1695,46 @@ def test_handoff_returns_each_delegates_answer_not_its_transcript(
     assert "answer 2" in single
     assert "answer 1" not in single
     assert "answer 2" not in parallel
+
+
+@pytest.mark.parametrize(
+    "finish_reason, problem",
+    [
+        ("length", "was cut off at max_tokens=40"),
+        ("stop", "has arguments that are not valid JSON"),
+    ],
+)
+def test_a_cut_off_handoff_call_raises_a_clear_error(
+    finish_reason, problem
+):
+    call = {
+        "id": "call_1",
+        "type": "function",
+        "function": {
+            "name": "handoff_task",
+            "arguments": '{"handoffs":[{"agent_name":"writer","task":"Wr',
+        },
+    }
+    message = SimpleNamespace(
+        content=None, tool_calls=[call], reasoning_content=None
+    )
+    response = SimpleNamespace(
+        choices=[
+            SimpleNamespace(
+                message=message, finish_reason=finish_reason
+            )
+        ],
+        usage=None,
+    )
+    router = _patched_agent(
+        "router", max_tokens=40, handoffs=[_patched_agent("writer")]
+    )
+
+    with patch.object(
+        litellm_wrapper, "completion", return_value=response
+    ):
+        with pytest.raises(AgentRunError, match=problem):
+            router.run("Write one short sentence about bees.")
 
 
 class TestListTools:
