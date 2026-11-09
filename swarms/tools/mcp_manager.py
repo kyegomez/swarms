@@ -1248,14 +1248,25 @@ class MCPManager:
                     _add(call)
                 return
 
-            function = item.get("function") or item
-            name = function.get("name") or item.get("name")
+            function = item.get("function")
+            if isinstance(function, dict):
+                name = function.get("name")
+                arguments = function.get(
+                    "arguments", function.get("parameters", {})
+                )
+            else:
+                name = item.get("name")
+                keys = [
+                    key
+                    for key in ("arguments", "parameters", "input")
+                    if key in item
+                ]
+                if not keys:
+                    return
+                arguments = item[keys[0]]
             if not name:
                 return
 
-            arguments = function.get(
-                "arguments", function.get("parameters", {})
-            )
             if isinstance(arguments, str):
                 try:
                     arguments = (
