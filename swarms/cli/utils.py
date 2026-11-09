@@ -473,7 +473,7 @@ def show_error(message: str, help_text: Optional[str] = None):
 
 
 def get_api_key():
-    """Retrieve API key with visual feedback."""
+    """Open the Swarms API-key page in the browser."""
     webbrowser.open("https://swarms.world/platform/api-keys")
     console.print(
         f"\n[{COLORS['success']}]✓ API key page opened in your browser[/{COLORS['success']}]"
