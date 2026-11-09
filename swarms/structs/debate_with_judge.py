@@ -25,6 +25,7 @@ from swarms.prompts.debate_with_judge_prompts import (
     PRO_FIRST_ROUND_PROMPT,
     PRO_REFINEMENT_ROUND_PROMPT,
 )
+from swarms.structs.usage_utils import total_usage
 
 
 class DebateWithJudge:
@@ -279,9 +280,13 @@ class DebateWithJudge:
             raise ValueError("Task must be a non-empty string")
 
         self.conversation.clear()
-
-        # Initialize agents with their roles
-        self._initialize_agents(task)
+        for agent in (
+            self.pro_agent,
+            self.con_agent,
+            self.judge_agent,
+        ):
+            if isinstance(agent, Agent):
+                agent.reset()
 
         # Start with the initial task
         current_topic = task
@@ -349,28 +354,13 @@ class DebateWithJudge:
             conversation=self.conversation, type=self.output_type
         )
 
-    def _initialize_agents(self, task: str) -> None:
-        """
-        Initialize agents with their respective roles and context.
-
-        Args:
-            task (str): The initial task/topic for context.
-        """
-        names = {
-            "task": task,
-            "pro_agent_name": self.pro_agent.agent_name,
-            "con_agent_name": self.con_agent.agent_name,
-            "judge_agent_name": self.judge_agent.agent_name,
-        }
-
-        self.pro_agent.run(
-            task=PRO_AGENT_INTRO_PROMPT.format(**names)
-        )
-        self.con_agent.run(
-            task=CON_AGENT_INTRO_PROMPT.format(**names)
-        )
-        self.judge_agent.run(
-            task=JUDGE_AGENT_INTRO_PROMPT.format(**names)
+    def _intro(self, prompt: str, task: str) -> str:
+        """Format a role introduction with the topic and agent names."""
+        return prompt.format(
+            task=task,
+            pro_agent_name=self.pro_agent.agent_name,
+            con_agent_name=self.con_agent.agent_name,
+            judge_agent_name=self.judge_agent.agent_name,
         )
 
     def _create_pro_prompt(self, topic: str, round_num: int) -> str:
@@ -385,7 +375,9 @@ class DebateWithJudge:
             str: The prompt for the Pro agent.
         """
         if round_num == 0:
-            return PRO_FIRST_ROUND_PROMPT.format(topic=topic)
+            intro = self._intro(PRO_AGENT_INTRO_PROMPT, topic)
+            prompt = PRO_FIRST_ROUND_PROMPT.format(topic=topic)
+            return f"{intro}\n\n{prompt}"
 
         return PRO_REFINEMENT_ROUND_PROMPT.format(
             loop_number=round_num + 1, topic=topic
@@ -406,9 +398,11 @@ class DebateWithJudge:
             str: The prompt for the Con agent.
         """
         if round_num == 0:
-            return CON_FIRST_ROUND_PROMPT.format(
+            intro = self._intro(CON_AGENT_INTRO_PROMPT, topic)
+            prompt = CON_FIRST_ROUND_PROMPT.format(
                 topic=topic, pro_argument=pro_argument
             )
+            return f"{intro}\n\n{prompt}"
 
         return CON_REFINEMENT_ROUND_PROMPT.format(
             loop_number=round_num + 1,
@@ -446,6 +440,9 @@ class DebateWithJudge:
             con_agent_name=self.con_agent.agent_name,
             con_argument=con_argument,
         )
+        if round_num == 0:
+            intro = self._intro(JUDGE_AGENT_INTRO_PROMPT, topic)
+            prompt = f"{intro}\n\n{prompt}"
 
         if is_final_round:
             return prompt + JUDGE_FINAL_ROUND_INSTRUCTIONS
@@ -463,3 +460,14 @@ class DebateWithJudge:
             List[str]: The list of final refined answers.
         """
         return batched_run(self.run, tasks)
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

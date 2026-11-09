@@ -73,12 +73,9 @@ def _detect_active_provider() -> str:
     return f"{primary}{suffix} · Multi-Agent Framework"
 
 
-def create_spinner(text: str) -> Progress:
+def create_spinner() -> Progress:
     """
-    Create a custom spinner with the given text.
-
-    Args:
-        text: The text to display in the spinner
+    Create a custom spinner that shows each task's description.
 
     Returns:
         Progress: A Rich Progress instance configured as a spinner
@@ -108,7 +105,10 @@ def show_ascii_art():
     info = Text()
     info.append("Swarms", style="bold white")
     info.append(f"  v{version}\n", style="dim white")
-    info.append(provider + "\n", style="dim white")
+    # The provider label carries Rich markup, which a plain append prints literally.
+    info.append_text(
+        Text.from_markup(provider + "\n", style="dim white")
+    )
     info.append(cwd + "\n", style="dim white")
     info.append(
         "https://github.com/kyegomez/swarms", style="dim white"
@@ -297,6 +297,22 @@ def check_api_keys() -> Tuple[bool, str, str]:
         )
 
 
+def check_swarms_api_key() -> Tuple[bool, str, str]:
+    """
+    Report whether SWARMS_API_KEY is set. It is optional, so this check never fails.
+
+    Returns:
+        Tuple containing (success, status_icon, message)
+    """
+    if os.getenv("SWARMS_API_KEY"):
+        return True, "✓", "SWARMS_API_KEY is set (not validated)"
+    return (
+        True,
+        "○",
+        "Not set. Optional; marketplace prompts need it (swarms get-api-key)",
+    )
+
+
 def check_dependencies() -> Tuple[bool, str, str]:
     """
     Check if key dependencies are available.
@@ -360,6 +376,7 @@ def run_setup_check(verbose: bool = False):
             (True, "✓", check_swarms_version(verbose)),
         ),
         ("API Keys", check_api_keys()),
+        ("Swarms API Key", check_swarms_api_key()),
         ("Dependencies", check_dependencies()),
         ("Environment File", check_env_file()),
         ("Workspace Directory", check_workspace_dir()),
@@ -416,12 +433,7 @@ def run_setup_check(verbose: bool = False):
         recommendations = []
 
         # Check specific failures and provide recommendations
-        for check_name, (
-            passed,
-            status_icon,
-            details,
-            *extra,
-        ) in checks:
+        for check_name, (passed, *_) in checks:
             if not passed:
                 if "WORKSPACE_DIR" in check_name:
                     recommendations.append(
@@ -435,14 +447,6 @@ def run_setup_check(verbose: bool = False):
                     recommendations.append(
                         "Create .env file with your API keys"
                     )
-                elif (
-                    "Swarms Version" in check_name and len(extra) > 0
-                ):
-                    latest_version = extra[0]
-                    if latest_version != "Unknown":
-                        recommendations.append(
-                            f"Update Swarms: pip install --upgrade swarms (latest: {latest_version})"
-                        )
                 elif "Dependencies" in check_name:
                     recommendations.append(
                         "Install missing dependencies: pip install -r requirements.txt"
@@ -486,7 +490,7 @@ def show_error(message: str, help_text: Optional[str] = None):
 
 def get_api_key():
     """Retrieve API key with visual feedback."""
-    with create_spinner("Opening API key portal...") as progress:
+    with create_spinner() as progress:
         task = progress.add_task("Opening browser...")
         webbrowser.open("https://swarms.world/platform/api-keys")
         time.sleep(1)
@@ -494,36 +498,3 @@ def get_api_key():
     console.print(
         f"\n[{COLORS['success']}]✓ API key page opened in your browser[/{COLORS['success']}]"
     )
-
-
-def check_login():
-    """
-    Verify login status with enhanced visual feedback.
-
-    Returns:
-        bool: True if login is successful
-    """
-    cache_dir = Path.home() / ".cache" / "swarms"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_file = cache_dir / "auth"
-
-    if cache_file.exists():
-        with open(cache_file, "r") as f:
-            if f.read() == "logged_in":
-                console.print(
-                    f"[{COLORS['success']}]✓ Authentication verified[/{COLORS['success']}]"
-                )
-                return True
-
-    with create_spinner("Authenticating...") as progress:
-        task = progress.add_task("Initializing session...")
-        time.sleep(1)
-        with open(cache_file, "w") as f:
-            f.write("logged_in")
-        cache_file.chmod(0o600)
-        progress.remove_task(task)
-
-    console.print(
-        f"[{COLORS['success']}]✓ Login successful![/{COLORS['success']}]"
-    )
-    return True

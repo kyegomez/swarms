@@ -30,6 +30,10 @@ from swarms.structs.context_utils import (
     new_context_for,
     split_last_turn,
 )
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.hierarchical_order_parser import (
@@ -51,6 +55,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.structs.usage_utils import total_usage
 
 _ORDER_BATCH_SCHEMA = BaseTool().base_model_to_dict(OrderBatch)
 _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
@@ -75,8 +80,8 @@ class HierarchicalSwarm:
         interactive: bool = False,
         director_system_prompt: str = HIEARCHICAL_SWARM_SYSTEM_PROMPT,
         multi_agent_prompt_improvements: bool = False,
-        director_temperature: float = 0.7,
-        director_top_p: float = 0.9,
+        director_temperature: Optional[float] = None,
+        director_top_p: Optional[float] = None,
         planning_enabled: bool = False,
         autosave: bool = False,
         verbose: bool = False,
@@ -88,6 +93,7 @@ class HierarchicalSwarm:
         director_settings: Optional[Dict[str, Any]] = None,
         max_agent_retries: int = 1,
         max_reassignment_attempts: int = 1,
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -108,8 +114,8 @@ class HierarchicalSwarm:
             interactive: Prompt for a missing task.
             director_system_prompt: Director instructions.
             multi_agent_prompt_improvements: Enrich worker prompts.
-            director_temperature: Director temperature.
-            director_top_p: Director nucleus sampling.
+            director_temperature: Director temperature, sent only when set.
+            director_top_p: Director nucleus sampling, sent only when set.
             planning_enabled: Run a planning pass.
             autosave: Save conversation history.
             verbose: Enable verbose output.
@@ -191,9 +197,17 @@ class HierarchicalSwarm:
         # How much of the shared conversation each agent has already seen.
         self._delivered: Dict[str, int] = {}
 
-        self.conversation = Conversation(time_enabled=False)
+        self.channel = channel
+        self.conversation = Conversation(
+            time_enabled=False, channel=channel
+        )
 
         self.initialize_swarm()
+        claim_agents(
+            [*(self.agents or []), getattr(self, "director", None)],
+            channel,
+            self.name,
+        )
 
         capture_init(self)
 
@@ -580,8 +594,18 @@ class HierarchicalSwarm:
             if task is None and self.interactive:
                 task = self._get_interactive_task()
 
-            self.conversation.clear()
+            self.conversation = Conversation(
+                time_enabled=False, channel=self.channel
+            )
             self._delivered = {}
+            for agent in (
+                self.director,
+                self._planning_director,
+                self._feedback_director,
+                self._judge_agent,
+            ):
+                if isinstance(agent, Agent):
+                    agent.reset()
             self.add_context_to_director()
 
             if task is not None:
@@ -1120,3 +1144,14 @@ class HierarchicalSwarm:
             return_exceptions=return_exceptions,
             **kwargs,
         )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

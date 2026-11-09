@@ -7,6 +7,9 @@ shell commands to complete the task.
 """
 
 from swarms import Agent
+from swarms.structs.autonomous_loop_utils import (
+    get_autonomous_loop_tool_names,
+)
 
 # Agent with autonomous looping and terminal (bash) access
 agent = Agent(
@@ -33,4 +36,4 @@ if __name__ == "__main__":
     #     task="Use the terminal to list the current directory, and see what files are in it."
     # )
     # print(result)
-    print(agent.get_all_selected_tools())
+    print(get_autonomous_loop_tool_names())

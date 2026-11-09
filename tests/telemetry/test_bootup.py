@@ -19,7 +19,7 @@ print(json.dumps({
 """
 
 
-def run_probe(cwd, env_overrides):
+def run_probe(cwd, env_overrides, extra=""):
     """Import swarms in a fresh interpreter and report what it resolved."""
     env = dict(os.environ)
     env["PYTHONPATH"] = str(REPO_ROOT)
@@ -31,7 +31,7 @@ def run_probe(cwd, env_overrides):
             env[key] = value
 
     result = subprocess.run(
-        [sys.executable, "-c", PROBE],
+        [sys.executable, "-c", PROBE + extra],
         cwd=str(cwd),
         env=env,
         capture_output=True,
@@ -57,7 +57,6 @@ def test_exported_workspace_dir_survives_import(tmp_path):
 
     assert out["workspace"] == str(target)
     assert out["log_dir"] == os.path.join(str(target), "logs")
-    assert target.is_dir()
 
 
 def test_unset_workspace_dir_defaults_under_cwd(tmp_path):
@@ -69,6 +68,7 @@ def test_unset_workspace_dir_defaults_under_cwd(tmp_path):
     assert workspace.is_absolute()
     assert workspace.name == "agent_workspace"
     assert workspace.parent.resolve() == tmp_path.resolve()
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_relative_workspace_dir_is_left_alone(tmp_path):
@@ -76,19 +76,13 @@ def test_relative_workspace_dir_is_left_alone(tmp_path):
     out = run_probe(tmp_path, {"WORKSPACE_DIR": "my_ws"})
 
     assert out["workspace"] == "my_ws"
-    assert (tmp_path / "my_ws").is_dir()
 
 
 @pytest.mark.parametrize("kind", ["file", "unwritable"])
 def test_unusable_workspace_dir_does_not_break_the_import(
     tmp_path, kind
 ):
-    """An unusable WORKSPACE_DIR degrades to the default.
-
-    ``mkdir`` runs against a caller-supplied path inside a ``try`` block that
-    re-raises, so without a guard a path that cannot be created takes down
-    ``import swarms`` entirely.
-    """
+    """An unusable WORKSPACE_DIR degrades to the default."""
     if kind == "file":
         # exist_ok does not suppress FileExistsError when the path is a file.
         blocker = tmp_path / "blocked"
@@ -101,7 +95,11 @@ def test_unusable_workspace_dir_does_not_break_the_import(
         value = str(parent / "child")
 
     try:
-        out = run_probe(tmp_path, {"WORKSPACE_DIR": value})
+        out = run_probe(
+            tmp_path,
+            {"WORKSPACE_DIR": value},
+            "print(json.dumps({'workspace': swarms.WorkspaceManager(0).dir}))",
+        )
     finally:
         if kind == "unwritable":
             (tmp_path / "locked").chmod(0o700)

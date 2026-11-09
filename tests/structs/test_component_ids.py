@@ -10,6 +10,7 @@ from swarms import (
     MajorityVoting,
     MixtureOfAgents,
     MultiAgentRouter,
+    Prompt,
     SwarmRouter,
 )
 from swarms.agents.agent_judge import AgentJudge
@@ -17,7 +18,6 @@ from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.llm_council import LLMCouncil
-from swarms.structs.swarm_rearrange import SwarmRearrange
 
 
 ########################################################
@@ -37,16 +37,6 @@ def _agent(name: str = "IdTest") -> Agent:
     )
 
 
-class _FakeSwarm:
-    """Minimal stand-in for SwarmRearrange's swarm list."""
-
-    def __init__(self, name: str = "s1"):
-        self.name = name
-
-    def run(self, *args, **kwargs):
-        return "ok"
-
-
 # Each entry builds a fresh instance with no explicit id.
 BUILDERS = {
     "Agent": lambda: _agent(),
@@ -58,9 +48,6 @@ BUILDERS = {
         agents=[_agent("bg")]
     ),
     "CouncilAsAJudge": lambda: CouncilAsAJudge(),
-    "SwarmRearrange": lambda: SwarmRearrange(
-        swarms=[_FakeSwarm()], flow="s1"
-    ),
     "LLMCouncil": lambda: LLMCouncil(),
     "Conversation": lambda: Conversation(),
     "GraphWorkflow": lambda: GraphWorkflow(),
@@ -75,6 +62,7 @@ BUILDERS = {
     "MultiAgentRouter": lambda: MultiAgentRouter(
         agents=[_agent("mar")]
     ),
+    "Prompt": lambda: Prompt(content="x"),
 }
 
 CLASSES = {
@@ -83,7 +71,6 @@ CLASSES = {
     "MajorityVoting": MajorityVoting,
     "BatchedGridWorkflow": BatchedGridWorkflow,
     "CouncilAsAJudge": CouncilAsAJudge,
-    "SwarmRearrange": SwarmRearrange,
     "LLMCouncil": LLMCouncil,
     "Conversation": Conversation,
     "GraphWorkflow": GraphWorkflow,
@@ -185,7 +172,6 @@ def test_swarm_explicit_id():
         ("MajorityVoting", "majority-voting-"),
         ("BatchedGridWorkflow", "batched-grid-workflow-"),
         ("CouncilAsAJudge", "council-as-judge-"),
-        ("SwarmRearrange", "swarm-rearrange-"),
         ("LLMCouncil", "llm-council-"),
         ("GraphWorkflow", "graph-workflow-"),
         ("AgentJudge", "agent-judge-"),
@@ -193,6 +179,7 @@ def test_swarm_explicit_id():
         ("SwarmRouter", "swarm-router-"),
         ("MixtureOfAgents", "mixture-of-agents-"),
         ("MultiAgentRouter", "multi-agent-router-"),
+        ("Prompt", "prompt-"),
     ],
 )
 def test_ids_are_prefixed_by_component(name, prefix):
