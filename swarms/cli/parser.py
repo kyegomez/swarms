@@ -175,6 +175,18 @@ class CustomHelpAction(argparse.Action):
         parser.exit()
 
 
+def _max_loops(value: str) -> Any:
+    """Parse --max-loops as an integer or "auto"."""
+    if value.lower() == "auto":
+        return "auto"
+    try:
+        return int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"must be an integer or 'auto', got {value!r}"
+        )
+
+
 def setup_argument_parser() -> argparse.ArgumentParser:
     """
     Build the argument parser for every swarms command.
@@ -288,7 +300,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
     )
     agent.add_argument(
         "--max-loops",
-        type=str,
+        type=_max_loops,
         metavar="N",
         help="Maximum number of loops for the agent (integer or 'auto' for autonomous loops)",
     )

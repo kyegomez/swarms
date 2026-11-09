@@ -62,6 +62,24 @@ def _print_result(
     return result
 
 
+def _require(
+    args: argparse.Namespace, *names: str, example: str
+) -> None:
+    """Show an error and exit 1 when any named argument is empty."""
+    missing = [name for name in names if not getattr(args, name)]
+    if not missing:
+        return
+    if len(names) == 1:
+        flag = "--" + names[0].replace("_", "-")
+        show_error(f"Missing required argument: {flag}", example)
+    else:
+        show_error(
+            "Missing required arguments",
+            f"Required arguments: {', '.join(missing)}\n\n{example}",
+        )
+    sys.exit(1)
+
+
 def handle_init(args: argparse.Namespace) -> None:
     """
     Handle the `swarms init` command — interactive project scaffolding wizard.
@@ -717,12 +735,11 @@ def handle_load_markdown(args: argparse.Namespace) -> None:
         Displays a formatted table of loaded agents upon successful completion.
         Agents are ready for use in code or interactive execution.
     """
-    if not args.markdown_path:
-        show_error(
-            "Missing required argument: --markdown-path",
-            "Example usage: python cli.py load-markdown --markdown-path ./agents/",
-        )
-        exit(1)
+    _require(
+        args,
+        "markdown_path",
+        example="Example usage: python cli.py load-markdown --markdown-path ./agents/",
+    )
 
     # Load agents from markdown
     agents = load_markdown_agents(
@@ -880,26 +897,19 @@ def handle_agent(args: argparse.Namespace) -> None:
             - And other optional agent configuration parameters
 
     Exits:
-        Exits with code 1 if required arguments are missing or if max_loops
-        value is invalid.
+        Exits with code 1 if required arguments are missing.
 
     Note:
-        For an interactive agent without a task, use `swarms chat`. The function
-        converts max_loops from a string to an int or "auto" as appropriate.
+        For an interactive agent without a task, use `swarms chat`.
     """
     required_args = ["name", "description"]
     if not getattr(args, "marketplace_prompt_id", None):
         required_args.append("system_prompt")
     required_args.append("task")
-
-    missing_args = [
-        arg for arg in required_args if not getattr(args, arg)
-    ]
-
-    if missing_args:
-        show_error(
-            "Missing required arguments",
-            f"Required arguments: {', '.join(missing_args)}\n\n"
+    _require(
+        args,
+        *required_args,
+        example=(
             "Example usage:\n"
             "python cli.py agent \\\n"
             "  --name 'Trading Agent' \\\n"
@@ -908,51 +918,34 @@ def handle_agent(args: argparse.Namespace) -> None:
             "  --task 'Analyze market trends' \\\n"
             "  --model-name 'gpt-4' \\\n"
             "  --temperature 0.1\n\n"
-            "Note: --task is required. For an interactive agent, use `swarms chat`.",
-        )
-        exit(1)
+            "Note: --task is required. For an interactive agent, use `swarms chat`."
+        ),
+    )
 
-    # Build kwargs for additional parameters
     additional_params = {}
-    param_mapping = {
-        "interactive": "interactive",
-        "temperature": "temperature",
-        "max_loops": "max_loops",
-        "auto_generate_prompt": "auto_generate_prompt",
-        "dynamic_temperature_enabled": "dynamic_temperature_enabled",
-        "dynamic_context_window": "dynamic_context_window",
-        "output_type": "output_type",
-        "verbose": "verbose",
-        "streaming_on": "streaming_on",
-        "context_length": "context_length",
-        "retry_attempts": "retry_attempts",
-        "return_step_meta": "return_step_meta",
-        "dashboard": "dashboard",
-        "autosave": "autosave",
-        "saved_state_path": "saved_state_path",
-        "user_name": "user_name",
-        "mcp_url": "mcp_url",
-        "marketplace_prompt_id": "marketplace_prompt_id",
-    }
-
-    for cli_arg, agent_param in param_mapping.items():
-        value = getattr(args, cli_arg, None)
+    for name in (
+        "interactive",
+        "temperature",
+        "max_loops",
+        "auto_generate_prompt",
+        "dynamic_temperature_enabled",
+        "dynamic_context_window",
+        "output_type",
+        "verbose",
+        "streaming_on",
+        "context_length",
+        "retry_attempts",
+        "return_step_meta",
+        "dashboard",
+        "autosave",
+        "saved_state_path",
+        "user_name",
+        "mcp_url",
+        "marketplace_prompt_id",
+    ):
+        value = getattr(args, name, None)
         if value is not None:
-            # Handle max_loops: convert to int if numeric, keep "auto" as string
-            if cli_arg == "max_loops":
-                if value.lower() == "auto":
-                    additional_params[agent_param] = "auto"
-                else:
-                    try:
-                        additional_params[agent_param] = int(value)
-                    except ValueError:
-                        show_error(
-                            "Invalid max-loops value",
-                            f"max-loops must be an integer or 'auto', got: {value}",
-                        )
-                        exit(1)
-            else:
-                additional_params[agent_param] = value
+            additional_params[name] = value
 
     # Create and run the custom agent
     result = create_swarm_agent(
@@ -1176,12 +1169,11 @@ def handle_autoswarm(args: argparse.Namespace) -> None:
         The autoswarm command automatically generates a swarm configuration
         optimized for the given task using the specified model.
     """
-    if not args.task:
-        show_error(
-            "Missing required argument: --task",
-            "Example usage: python cli.py autoswarm --task 'analyze this data' --model gpt-4",
-        )
-        exit(1)
+    _require(
+        args,
+        "task",
+        example="Example usage: python cli.py autoswarm --task 'analyze this data' --model gpt-4",
+    )
     run_autoswarm(
         task=args.task,
         model=args.model,
@@ -1286,12 +1278,11 @@ def handle_llm_council(args: argparse.Namespace) -> None:
         The LLM Council uses multiple agents with different perspectives to
         collaborate and evaluate responses, providing comprehensive analysis.
     """
-    if not args.task:
-        show_error(
-            "Missing required argument: --task",
-            "Example usage: swarms llm-council --task 'What is the best approach to solve this problem?'",
-        )
-        exit(1)
+    _require(
+        args,
+        "task",
+        example="Example usage: swarms llm-council --task 'What is the best approach to solve this problem?'",
+    )
     run_llm_council(task=args.task, verbose=args.verbose)
 
 
@@ -1415,12 +1406,11 @@ def handle_heavy_swarm(args: argparse.Namespace) -> None:
         HeavySwarm breaks down complex tasks into questions and uses specialized
         worker agents to process them, allowing for deep analysis.
     """
-    if not args.task:
-        show_error(
-            "Missing required argument: --task",
-            "Example usage: swarms heavy-swarm --task 'Analyze the current market trends'",
-        )
-        exit(1)
+    _require(
+        args,
+        "task",
+        example="Example usage: swarms heavy-swarm --task 'Analyze the current market trends'",
+    )
     run_heavy_swarm(
         task=args.task,
         loops_per_agent=args.loops_per_agent,
