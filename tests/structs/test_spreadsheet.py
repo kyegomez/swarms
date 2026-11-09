@@ -4,12 +4,10 @@ import csv
 import threading
 import time
 from datetime import datetime
-from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
 
-import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms.structs.agent import Agent
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 
