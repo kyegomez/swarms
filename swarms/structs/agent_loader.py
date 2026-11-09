@@ -35,7 +35,7 @@ CLAUDE_CODE_MODELS = {
 }
 
 FRONTMATTER_LINE = re.compile(
-    r"^([A-Za-z_][\w-]*):[ \t]*([\"']?)(.*?)\2[ \t]*$", re.MULTILINE
+    r"^([A-Za-z_][\w-]*):[ \t]*([\"']?)(.*?)\2[ \t\r]*$", re.MULTILINE
 )
 
 
