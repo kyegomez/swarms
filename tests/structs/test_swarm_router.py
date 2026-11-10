@@ -1,3 +1,4 @@
+import json
 from collections import Counter
 from unittest.mock import patch
 
@@ -492,6 +493,35 @@ def test_run_with_group_chat():
     assert result is not None
 
 
+def test_group_chat_lets_an_agent_speak_at_the_default_max_loops():
+    """max_loops=1 gives the chat one agent turn, not zero."""
+    router = SwarmRouter(
+        agents=create_sample_agents(), swarm_type="GroupChat"
+    )
+
+    def fake_run(agent, task=None, *args, **kwargs):
+        score = 0.9 if agent.agent_name == "ResearchAgent" else 0.0
+        arguments = {"score": score, "message": "1+1 is 2."}
+        return [
+            {
+                "function": {
+                    "name": "respond",
+                    "arguments": json.dumps(arguments),
+                }
+            }
+        ]
+
+    with patch.object(
+        Agent, "run", autospec=True, side_effect=fake_run
+    ):
+        result = router.run("What is 1+1?")
+
+    assert [message["role"] for message in result] == [
+        "User",
+        "ResearchAgent",
+    ]
+
+
 def test_run_with_multi_agent_router():
     """SwarmRouter dispatches to MultiAgentRouter."""
     sample_agents = create_sample_agents()
@@ -699,6 +729,32 @@ class TestConcurrentRun:
         r = self._router(boom)
         with pytest.raises(ValueError, match="nope"):
             r.concurrent_run(["a"])
+
+
+def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
+    from swarms import Agent
+    from swarms.structs.file_channel import FileChannel
+
+    channel = FileChannel(tmp_path / "run.md")
+    agents = [
+        Agent(
+            agent_name="A",
+            model_name="gpt-4o",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+    ]
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type="SequentialWorkflow",
+        channel=channel,
+    )
+
+    swarm = router._create_swarm()
+
+    assert swarm.channel is channel
+    assert swarm.agent_rearrange.conversation.channel is channel
 
 
 if __name__ == "__main__":
@@ -1048,6 +1104,70 @@ def test_the_run_payload_reaches_the_fallback_swarm():
     ]
 
 
+@pytest.mark.parametrize(
+    "swarm_type, fallbacks, factory_kwargs, falls_back",
+    [
+        ("ConcurrentWorkflow", ["SequentialWorkflow"], {}, True),
+        ("ConcurrentWorkflow", None, {}, False),
+        (
+            "ConcurrentWorkflow",
+            ["SequentialWorkflow"],
+            {"on_error": "store"},
+            False,
+        ),
+        ("MixtureOfAgents", ["ConcurrentWorkflow"], {}, False),
+    ],
+)
+def test_concurrent_agent_failures_reach_the_fallback(
+    swarm_type, fallbacks, factory_kwargs, falls_back
+):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        agents = [
+            Agent(
+                agent_name=name,
+                model_name="gpt-5.4",
+                max_loops=1,
+                autosave=False,
+                print_on=False,
+            )
+            for name in ("A", "B")
+        ]
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("provider down")
+
+    for agent in agents:
+        agent.run = _boom
+
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type=swarm_type,
+        fallback_swarms=fallbacks,
+        autosave=False,
+    )
+    build = router._create_concurrent_workflow
+    router._swarm_factory["ConcurrentWorkflow"] = (
+        lambda *a, **k: build(*a, **factory_kwargs, **k)
+    )
+    router._swarm_factory["SequentialWorkflow"] = lambda *a, **k: (
+        _FakeSwarm("SequentialWorkflow")
+    )
+    router._swarm_factory["MixtureOfAgents"] = lambda *a, **k: (
+        _FakeSwarm("MixtureOfAgents", RuntimeError("moa down"))
+    )
+
+    result = router.run("go")
+
+    if falls_back:
+        assert result == "SequentialWorkflow-result"
+        assert router.fallback_attempts[0]["swarm_type"] == (
+            "ConcurrentWorkflow"
+        )
+    else:
+        assert "Error: provider down" in str(result)
+        assert router.active_swarm_type == "ConcurrentWorkflow"
+
+
 def test_each_swarm_type_is_cached_under_its_own_key():
     router, built = _fallback_router(
         primary_error=RuntimeError("x"),
@@ -1196,6 +1316,30 @@ def test_usage_counts_a_shared_agent_once():
     router._swarm_cache["fake"] = type("S", (), {"agents": [agent]})()
 
     assert router.usage["input_tokens"] == 100
+
+
+@pytest.mark.parametrize(
+    "swarm_type, attribute",
+    [("HeavySwarm", "agents"), ("CouncilAsAJudge", "judge_agents")],
+)
+def test_usage_includes_agents_a_swarm_holds_in_a_dict(
+    swarm_type, attribute
+):
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        router = SwarmRouter(
+            name="usage-router",
+            agents=[_agent_with_usage("A", 0, 0)],
+            swarm_type=swarm_type,
+            autosave=False,
+        )
+        held = list(
+            getattr(router._create_swarm(), attribute).values()
+        )
+    assert held
+    for agent in held:
+        agent._add_usage({"input_tokens": 10, "total_tokens": 10})
+
+    assert router.usage["input_tokens"] == 10 * len(held)
 
 
 def _stub_council_run(agent, reply, calls):

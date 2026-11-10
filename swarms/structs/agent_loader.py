@@ -5,10 +5,9 @@ import traceback
 from concurrent.futures import (
     ThreadPoolExecutor,
     TimeoutError,
-    as_completed,
 )
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import yaml
 from loguru import logger
@@ -17,15 +16,15 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    PositiveInt,
     ValidationError,
 )
 from tqdm import tqdm
 
-from swarms.agents.create_agents_from_yaml import (
-    create_agents_from_yaml,
-)
 from swarms.structs.agent import Agent
-from swarms.utils.types import ReturnTypes
+from swarms.structs.swarm_router import SwarmRouter
+
+ReturnTypes = Literal["auto", "swarm", "agents", "both", "run_swarm"]
 
 
 class AgentConfig(BaseModel):
@@ -35,7 +34,7 @@ class AgentConfig(BaseModel):
     Field names are Agent parameters; fields left unset fall back to the Agent defaults.
     """
 
-    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     agent_name: Optional[str] = Field(
         default=None,
@@ -53,7 +52,7 @@ class AgentConfig(BaseModel):
         validation_alias=AliasChoices("model_name", "model"),
     )
     temperature: Optional[float] = Field(default=None, ge=0.0, le=2.0)
-    max_loops: Optional[int] = Field(default=None, ge=1)
+    max_loops: Optional[Union[PositiveInt, Literal["auto"]]] = None
     mcp_url: Optional[str] = None
     autosave: Optional[bool] = None
     dashboard: Optional[bool] = None
@@ -76,14 +75,18 @@ class AgentConfig(BaseModel):
         validation_alias=AliasChoices("streaming_on", "streaming"),
     )
 
-    def agent_kwargs(self) -> Dict[str, Any]:
+    def agent_kwargs(self, extra: bool = False) -> Dict[str, Any]:
         """
         Return the configured fields as Agent keyword arguments.
+
+        Args:
+            extra: Also return keys the schema does not define, passed through as custom Agent parameters.
 
         Returns:
             Dict[str, Any]: The fields that were set and are not None.
         """
-        return self.model_dump(exclude_none=True)
+        exclude = None if extra else set(self.model_extra or ())
+        return self.model_dump(exclude_none=True, exclude=exclude)
 
 
 class AgentLoader:
@@ -235,7 +238,7 @@ class AgentLoader:
     def load_agents_from_markdown(
         self,
         file_paths: Union[str, List[str]],
-        concurrent: bool = True,
+        concurrent: Optional[bool] = None,
         max_file_size_mb: float = 10.0,
         **kwargs,
     ) -> List[Agent]:
@@ -244,19 +247,19 @@ class AgentLoader:
 
         Args:
             file_paths (Union[str, List[str]]): A Markdown file, a directory of them, or a list of paths.
-            concurrent (bool, optional): Whether to load files concurrently. Defaults to True.
+            concurrent (Optional[bool], optional): Whether to load files concurrently. Defaults to the loader's concurrent setting.
             max_file_size_mb (float, optional): Maximum file size in MB to process. Defaults to 10.0.
             **kwargs: Agent arguments applied to every loaded agent.
 
         Returns:
-            List[Agent]: A list of loaded Agent objects.
+            List[Agent]: The loaded Agent objects, in file order. A directory is read in name order.
         """
         agents = []
         paths_to_process = []
 
         if isinstance(file_paths, str):
             if os.path.isdir(file_paths):
-                md_files = list(Path(file_paths).glob("*.md"))
+                md_files = sorted(Path(file_paths).glob("*.md"))
                 paths_to_process = [str(f) for f in md_files]
             elif os.path.isfile(file_paths):
                 paths_to_process = [file_paths]
@@ -286,6 +289,9 @@ class AgentLoader:
                     f"Could not check size of {file_path}, skipping validation"
                 )
 
+        if concurrent is None:
+            concurrent = self.concurrent
+
         if concurrent and len(paths_to_process) > 1:
             logger.info(
                 f"Loading {len(paths_to_process)} agents concurrently with {self.max_workers} workers..."
@@ -294,19 +300,19 @@ class AgentLoader:
             with ThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
-                future_to_path = {
-                    executor.submit(
-                        self.load_agent_from_markdown,
+                futures = [
+                    (
                         file_path,
-                        **kwargs,
-                    ): file_path
+                        executor.submit(
+                            self.load_agent_from_markdown,
+                            file_path,
+                            **kwargs,
+                        ),
+                    )
                     for file_path in paths_to_process
-                }
+                ]
 
-                for future in as_completed(
-                    future_to_path, timeout=300
-                ):
-                    file_path = future_to_path[future]
+                for file_path, future in futures:
                     try:
                         agent = future.result(timeout=60)
                         agents.append(agent)
@@ -344,24 +350,77 @@ class AgentLoader:
 
     def load_agents_from_yaml(
         self,
-        yaml_file: str,
+        yaml_file: Optional[str] = None,
         return_type: ReturnTypes = "auto",
+        yaml_string: Optional[str] = None,
         **kwargs,
-    ) -> List[Agent]:
+    ) -> Any:
         """
-        Load agents from a YAML file.
+        Load agents, and a SwarmRouter if one is configured, from a YAML config with agents and swarm_architecture sections, or from a list of agents as create_agent_file writes it.
 
         Args:
-            yaml_file (str): Path to the YAML file containing agent definitions.
-            return_type (ReturnTypes, optional): The return type for the loader. Defaults to "auto".
-            **kwargs: Additional keyword arguments passed to the underlying loader.
+            yaml_file (Optional[str]): Path to the YAML file.
+            return_type (ReturnTypes, optional): "auto" returns the router, or the agents when there is none; "agents" the agents; "both" a (router or agents, agents) tuple; "swarm" and "run_swarm" run the router on its task. Defaults to "auto".
+            yaml_string (Optional[str]): YAML content to use instead of yaml_file.
+            **kwargs: Agent arguments applied to every loaded agent.
 
         Returns:
-            List[Agent]: A list of loaded Agent objects.
+            Any: A single agent or a list of them, the router, a tuple, or the swarm's output.
+
+        Raises:
+            FileNotFoundError: If yaml_file doesn't exist.
+            ValueError: If no agents are defined, return_type is unknown, or a run has no router or task.
         """
-        return create_agents_from_yaml(
-            yaml_file=yaml_file, return_type=return_type, **kwargs
+        if return_type not in ReturnTypes.__args__:
+            raise ValueError(
+                f"Invalid return_type. Must be one of: {ReturnTypes.__args__}"
+            )
+        if yaml_string is None:
+            if not yaml_file or not os.path.exists(yaml_file):
+                raise FileNotFoundError(
+                    f"YAML file {yaml_file} not found."
+                )
+            with open(yaml_file, "r", encoding="utf-8") as f:
+                yaml_string = f.read()
+        config = yaml.safe_load(yaml_string) or {}
+        if isinstance(config, list):
+            config = {"agents": config}
+        if not config.get("agents"):
+            raise ValueError(
+                "No agents defined in the YAML configuration."
+            )
+
+        agents = []
+        for idx, row in enumerate(config["agents"], 1):
+            # A nested model block holds model_name, temperature and max_tokens.
+            if isinstance(row.get("model"), dict):
+                row = dict(row)
+                row.update(row.pop("model"))
+            agent_kwargs = AgentConfig.model_validate(
+                row
+            ).agent_kwargs(extra=True)
+            agent_kwargs.setdefault("agent_name", f"Agent_{idx}")
+            agents.append(Agent(**{**agent_kwargs, **kwargs}))
+
+        swarm_config = config.get("swarm_architecture")
+        router = (
+            SwarmRouter(agents=agents, **swarm_config)
+            if swarm_config
+            else None
         )
+        single = agents[0] if len(agents) == 1 else agents
+
+        if return_type in ("swarm", "run_swarm"):
+            if router is None or not swarm_config.get("task"):
+                raise ValueError(
+                    "Running the swarm needs a swarm_architecture section with a task."
+                )
+            return router.run(swarm_config["task"])
+        if return_type == "agents":
+            return single
+        if return_type == "both":
+            return (router or single, agents)
+        return router or single
 
     def load_many_agents_from_yaml(
         self,
@@ -498,7 +557,7 @@ class AgentLoader:
         Automatically load agents from a file based on its extension.
 
         Args:
-            file_path (str): Path to the agent file (Markdown, YAML, or CSV).
+            file_path (str): Path to the agent file (Markdown, YAML, CSV or JSON).
             *args: Additional positional arguments passed to the underlying loader.
             **kwargs: Additional keyword arguments passed to the underlying loader.
 
@@ -508,15 +567,16 @@ class AgentLoader:
         Raises:
             ValueError: If the file type is not supported.
         """
-        if file_path.endswith(".md"):
+        suffix = Path(file_path).suffix.lower()
+        if suffix == ".md":
             return self.load_agents_from_markdown(
                 file_path, *args, **kwargs
             )
-        elif file_path.endswith(".yaml"):
+        elif suffix in (".yaml", ".yml"):
             return self.load_agents_from_yaml(
                 file_path, *args, **kwargs
             )
-        elif file_path.endswith(".csv"):
+        elif suffix in (".csv", ".json"):
             return self.load_agents_from_csv(
                 file_path, *args, **kwargs
             )
@@ -543,7 +603,7 @@ class AgentLoader:
         Load multiple agents from a list of files of various supported types.
 
         Args:
-            file_paths (List[str]): List of file paths to agent files (Markdown, YAML, or CSV).
+            file_paths (List[str]): List of file paths to agent files (Markdown, YAML, CSV or JSON).
             *args: Additional positional arguments passed to the underlying loader.
             **kwargs: Additional keyword arguments passed to the underlying loader.
 

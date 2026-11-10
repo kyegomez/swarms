@@ -762,3 +762,71 @@ def test_collab_prompt_is_delivered_as_a_system_turn_at_run_time():
     # ...and the caller's agents are still untouched afterwards.
     for agent, original in zip(agents, originals):
         assert agent.system_prompt == original
+
+
+def test_comms_channel_records_the_run_in_agent_order(tmp_path):
+    from swarms.structs.file_channel import FileChannel
+
+    agents, _ = _recording_agents(["Researcher", "Writer"])
+    channel = FileChannel(tmp_path / "run.md")
+    workflow = SequentialWorkflow(
+        agents=agents, autosave=False, channel=channel
+    )
+
+    workflow.run("Report on EVs.")
+
+    assert [
+        (m["agent_name"], m["content"]) for m in channel.messages()
+    ] == [
+        ("User", "Report on EVs."),
+        ("Researcher", "Researcher-answer"),
+        ("Writer", "Writer-answer"),
+    ]
+
+
+def test_a_second_run_continues_the_channel(tmp_path):
+    from swarms.structs.file_channel import FileChannel
+
+    agents, calls = _recording_agents(["Researcher", "Writer"])
+    channel = FileChannel(tmp_path / "run.md")
+    SequentialWorkflow(
+        agents=agents, autosave=False, channel=channel
+    ).run("First.")
+    SequentialWorkflow(
+        agents=agents, autosave=False, channel=channel
+    ).run("Second.")
+
+    contents = [m["content"] for m in channel.messages()]
+    assert contents == [
+        "First.",
+        "Researcher-answer",
+        "Writer-answer",
+        "Second.",
+        "Researcher-answer",
+        "Writer-answer",
+    ]
+    # The second run's researcher saw the first run as prior turns.
+    seen = " ".join(m["content"] for m in calls[2]["messages"])
+    assert "First." in seen and "Writer-answer" in seen
+
+
+def test_member_channels_are_detached_in_favour_of_the_workflows(
+    tmp_path,
+):
+    from swarms.structs.file_channel import FileChannel
+
+    agents, _ = _recording_agents(["A", "B"])
+    agents[0].channel = FileChannel(tmp_path / "member.md")
+    channel = FileChannel(tmp_path / "run.md")
+
+    SequentialWorkflow(
+        agents=agents, autosave=False, channel=channel
+    ).run("Go.")
+
+    assert agents[0].channel is None
+    assert not (tmp_path / "member.md").exists()
+    assert [m["agent_name"] for m in channel.messages()] == [
+        "User",
+        "A",
+        "B",
+    ]

@@ -6,30 +6,29 @@ inlined in ``swarms/structs/agent.py``:
 
 * construction — building the :class:`LiteLLM` instance from the agent's
   configuration, tools, and MCP tool schemas
-* model rotation — the primary/fallback model list, the current index, and
-  switching to the next model when one fails
 * capability checks — vision, function calling, parallel function calling
 * invocation — ``call()`` handles detailed streaming, panel streaming, silent
   streaming, and non-streaming calls, plus multimodal input
 * stream plumbing — assembling tool-call fragments and surfacing reasoning
   ("thinking") chunks
-* fallback execution — re-running a failed task down the fallback chain
 
 Configuration stays on the ``Agent``. The manager holds a reference to its
 owner and reads config live rather than snapshotting it, because agents mutate
 their own config at run time — ``tools_list_dictionary`` changes when tools
 are registered, ``streaming_on`` is toggled per call by ``run_stream``.
-Anything the manager writes
-(``model_name``, ``current_model_index``, ``llm``) is written back to the agent,
-so serialization, ``save``/``load``, and every existing ``agent.llm`` reference
-keep working unchanged.
+The ``llm`` it builds is written back to the agent, so serialization,
+``save``/``load``, and every existing ``agent.llm`` reference keep working
+unchanged.
 """
 
+import asyncio
+import inspect
 import random
 import time
 import traceback
+from contextlib import contextmanager
 from functools import lru_cache
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional
 
 from loguru import logger
 
@@ -87,127 +86,191 @@ def _log_once(level: str, message: str) -> None:
     logger.log(level, message)
 
 
+def _collect_tool_call_deltas(accumulator: dict, chunk: Any) -> None:
+    """Fold one chunk's tool call fragments into the calls assembled so far.
+
+    Args:
+        accumulator: Tool calls keyed by their index in the response.
+        chunk: A chunk from the model stream.
+    """
+    if not (hasattr(chunk, "choices") and chunk.choices):
+        return
+    delta = chunk.choices[0].delta
+    for tc in getattr(delta, "tool_calls", None) or []:
+        idx = tc.index
+        if idx not in accumulator:
+            accumulator[idx] = {
+                "id": "",
+                "type": "function",
+                "function": {"name": "", "arguments": ""},
+            }
+        if tc.id:
+            accumulator[idx]["id"] = tc.id
+        if tc.function:
+            if tc.function.name:
+                accumulator[idx]["function"][
+                    "name"
+                ] += tc.function.name
+            if tc.function.arguments:
+                accumulator[idx]["function"][
+                    "arguments"
+                ] += tc.function.arguments
+
+
+class _StreamParts:
+    """Turns model stream chunks into labelled text parts, one chunk at a time."""
+
+    def __init__(
+        self,
+        manager: "LLMManager",
+        tool_calls_out: list,
+        content_out: list,
+    ):
+        self.manager = manager
+        self.tool_calls_out = tool_calls_out
+        self.content_out = content_out
+        self.accumulator: dict = {}
+        # The last call of this run ended mid-line, so this one starts on a new line.
+        self.section = "carry" if manager.stream_mid_line else None
+        self.tool_names: dict = {}
+        self.tool_args_started: set = set()
+
+    def feed(self, chunk: Any) -> list:
+        """Return the (kind, text, chunk) parts one chunk carries.
+
+        Args:
+            chunk: A chunk from the model stream.
+
+        Returns:
+            list: The parts, in the order they should be shown.
+        """
+        _collect_tool_call_deltas(self.accumulator, chunk)
+        # RouteHub forwards chunks with no choices, which litellm drops.
+        if not getattr(chunk, "choices", None):
+            return []
+        parts = []
+        delta = chunk.choices[0].delta
+
+        reasoning = getattr(delta, "reasoning_content", None)
+        if reasoning:
+            if self.section != "reasoning":
+                gap = "" if self.section is None else "\n"
+                parts.append(
+                    ("reasoning", f"{gap}[thinking] ", chunk)
+                )
+                self.section = "reasoning"
+            parts.append(("reasoning", reasoning, chunk))
+
+        content = getattr(delta, "content", None)
+        if content:
+            if self.section not in (None, "content"):
+                parts.append(("content", "\n", chunk))
+            self.section = "content"
+            self.content_out.append(content)
+            parts.append(("content", content, chunk))
+
+        for tc in getattr(delta, "tool_calls", None) or []:
+            fn = getattr(tc, "function", None)
+            name = getattr(fn, "name", None) or ""
+            arguments = getattr(fn, "arguments", None) or ""
+            if self.section != ("tool_call", tc.index):
+                gap = "" if self.section is None else "\n"
+                resumed = self.tool_names.get(tc.index, "")
+                if tc.index in self.tool_args_started:
+                    resumed += " "
+                parts.append(
+                    (
+                        "tool_call",
+                        f"{gap}[tool call] {resumed}",
+                        chunk,
+                    )
+                )
+                self.section = ("tool_call", tc.index)
+            if name:
+                self.tool_names[tc.index] = (
+                    self.tool_names.get(tc.index, "") + name
+                )
+                parts.append(("tool_call", name, chunk))
+            if arguments:
+                if tc.index not in self.tool_args_started:
+                    self.tool_args_started.add(tc.index)
+                    parts.append(("tool_call", " ", chunk))
+                parts.append(("tool_call", arguments, chunk))
+        return parts
+
+    def finish(self) -> list:
+        """Close the stream: assemble the tool calls and end an open line.
+
+        Returns:
+            list: The closing parts, empty when the stream ended on content.
+        """
+        self.tool_calls_out.extend(
+            self.accumulator[i] for i in sorted(self.accumulator)
+        )
+        parts = []
+        if self.section not in (None, "content", "carry"):
+            kind = (
+                "reasoning"
+                if self.section == "reasoning"
+                else "tool_call"
+            )
+            parts.append((kind, "\n", None))
+        self.manager.stream_mid_line = self.section in (
+            "content",
+            "carry",
+        )
+        return parts
+
+
+async def emit_token(
+    callback: Optional[Callable], token: Any
+) -> None:
+    """Send one streamed token to a callback, awaiting it when it is async.
+
+    Args:
+        callback: A sync or async function taking the token, or None.
+        token: The token text, or a token_info dict in detailed streaming.
+    """
+    if callback is None:
+        return
+    result = callback(token)
+    if inspect.isawaitable(result):
+        await result
+
+
+async def _aiter_sync(stream: Any):
+    """Read a blocking chunk stream on a worker thread, one chunk per await.
+
+    Args:
+        stream: A sync iterable of chunks.
+
+    Yields:
+        Any: Each chunk, in order.
+    """
+    iterator = iter(stream)
+    done = object()
+    while True:
+        chunk = await asyncio.to_thread(next, iterator, done)
+        if chunk is done:
+            return
+        yield chunk
+
+
 class LLMManager:
     """
-    Owns model selection, LiteLLM construction, and LLM invocation for an agent.
+    Owns LiteLLM construction and LLM invocation for an agent.
 
     Args:
         agent: The owning ``Agent``. Read for configuration, written to for
-            ``model_name``, ``current_model_index``, and ``llm``.
+            ``llm``.
 
     Example:
-        >>> agent.llm_manager.get_current_model()
-        'gpt-5.4'
         >>> agent.llm_manager.call("What is Python?", current_loop=1)
     """
 
     def __init__(self, agent: Any):
         self.agent = agent
         self.stream_mid_line = False
-
-    # Model selection and fallback rotation.
-
-    def get_available_models(self) -> List[str]:
-        """
-        Get the list of available models including primary and fallback models.
-
-        Returns:
-            List[str]: List of model names in order of preference
-        """
-        agent = self.agent
-        models = []
-
-        # If fallback_models is specified, use it as the primary list
-        if agent.fallback_models:
-            models = agent.fallback_models.copy()
-        else:
-            # Otherwise, build the list from individual parameters
-            if agent.model_name:
-                models.append(agent.model_name)
-            if (
-                agent.fallback_model_name
-                and agent.fallback_model_name not in models
-            ):
-                models.append(agent.fallback_model_name)
-
-        return models
-
-    def get_current_model(self) -> str:
-        """
-        Get the current model being used.
-
-        Returns:
-            str: Current model name
-        """
-        available_models = self.get_available_models()
-
-        if self.agent.current_model_index < len(available_models):
-            return available_models[self.agent.current_model_index]
-
-        return (
-            available_models[0]
-            if available_models
-            else DEFAULT_MODEL_NAME
-        )
-
-    def switch_to_next_model(self) -> bool:
-        """
-        Switch to the next available model in the fallback list.
-
-        Rebuilds the agent's LiteLLM instance against the new model.
-
-        Returns:
-            bool: True if successfully switched, False if models are exhausted
-        """
-        agent = self.agent
-        available_models = self.get_available_models()
-
-        if agent.current_model_index + 1 >= len(available_models):
-            logger.error(
-                f"No more models: agent '{agent.agent_name}' has exhausted all available models. "
-                f"Tried {len(available_models)} models: {available_models}"
-            )
-            return False
-
-        previous_model = (
-            available_models[agent.current_model_index]
-            if agent.current_model_index < len(available_models)
-            else "Unknown"
-        )
-        agent.current_model_index += 1
-        new_model = available_models[agent.current_model_index]
-
-        # always log model switches
-        logger.warning(
-            f"[Model Switch] agent '{agent.agent_name}' switching from '{previous_model}' to fallback model: '{new_model}' "
-            f"(attempt {agent.current_model_index + 1}/{len(available_models)})"
-        )
-
-        # Update the model name and reinitialize LLM
-        agent.fallback_models = available_models
-        agent.model_name = new_model
-        agent.llm = self.build()
-
-        return True
-
-    def reset_model_index(self) -> None:
-        """Reset the model index to use the primary model."""
-        agent = self.agent
-        agent.current_model_index = 0
-        available_models = self.get_available_models()
-
-        if available_models:
-            agent.model_name = available_models[0]
-            agent.llm = self.build()
-
-    def is_fallback_available(self) -> bool:
-        """
-        Check if fallback models are available.
-
-        Returns:
-            bool: True if fallback models are configured
-        """
-        return len(self.get_available_models()) > 1
 
     # Construction and configuration.
 
@@ -232,12 +295,6 @@ class LLMManager:
         if agent.model_name is None:
             agent.model_name = DEFAULT_MODEL_NAME
 
-        # Use current model (which may be a fallback) only if fallbacks are configured
-        if agent.fallback_models:
-            current_model = self.get_current_model()
-        else:
-            current_model = agent.model_name
-
         # Determine if parallel tool calls should be enabled
         if exists(agent.tools) and len(agent.tools) >= 2:
             parallel_tool_calls = True
@@ -249,7 +306,7 @@ class LLMManager:
         try:
             # Base configuration that's always included
             common_args = {
-                "model_name": current_model,
+                "model_name": agent.model_name,
                 "temperature": agent.temperature,
                 "max_tokens": agent.max_tokens,
                 "system_prompt": agent.system_prompt,
@@ -437,27 +494,7 @@ class LLMManager:
         accumulator: dict = {}
 
         for chunk in stream:
-            if hasattr(chunk, "choices") and chunk.choices:
-                delta = chunk.choices[0].delta
-                for tc in getattr(delta, "tool_calls", None) or []:
-                    idx = tc.index
-                    if idx not in accumulator:
-                        accumulator[idx] = {
-                            "id": "",
-                            "type": "function",
-                            "function": {"name": "", "arguments": ""},
-                        }
-                    if tc.id:
-                        accumulator[idx]["id"] = tc.id
-                    if tc.function:
-                        if tc.function.name:
-                            accumulator[idx]["function"][
-                                "name"
-                            ] += tc.function.name
-                        if tc.function.arguments:
-                            accumulator[idx]["function"][
-                                "arguments"
-                            ] += tc.function.arguments
+            _collect_tool_call_deltas(accumulator, chunk)
             yield chunk  # always forward; callers filter on delta.content
 
         # Populate the output list once the stream is exhausted
@@ -482,63 +519,30 @@ class LLMManager:
         Yields:
             tuple: (kind, text, chunk), where kind is "reasoning", "content" or "tool_call".
         """
-        # The last call of this run ended mid-line, so this one starts on a new line.
-        section = "carry" if self.stream_mid_line else None
-        tool_names: dict = {}
-        tool_args_started: set = set()
+        parser = _StreamParts(self, tool_calls_out, content_out)
+        for chunk in stream:
+            yield from parser.feed(chunk)
+        yield from parser.finish()
 
-        for chunk in self.stream_with_tool_collection(
-            stream, tool_calls_out
-        ):
-            # RouteHub forwards chunks with no choices, which litellm drops.
-            if not getattr(chunk, "choices", None):
-                continue
-            delta = chunk.choices[0].delta
+    async def astream_parts(
+        self, stream, tool_calls_out: list, content_out: list
+    ):
+        """Yield everything an async stream carries as it arrives.
 
-            reasoning = getattr(delta, "reasoning_content", None)
-            if reasoning:
-                if section != "reasoning":
-                    gap = "" if section is None else "\n"
-                    yield "reasoning", f"{gap}[thinking] ", chunk
-                    section = "reasoning"
-                yield "reasoning", reasoning, chunk
+        Args:
+            stream: The raw async chunk stream from the model.
+            tool_calls_out: Filled with the assembled tool calls once the stream ends.
+            content_out: Receives each content fragment; joined, they are the reply text.
 
-            content = getattr(delta, "content", None)
-            if content:
-                if section not in (None, "content"):
-                    yield "content", "\n", chunk
-                section = "content"
-                content_out.append(content)
-                yield "content", content, chunk
-
-            for tc in getattr(delta, "tool_calls", None) or []:
-                fn = getattr(tc, "function", None)
-                name = getattr(fn, "name", None) or ""
-                arguments = getattr(fn, "arguments", None) or ""
-                if section != ("tool_call", tc.index):
-                    gap = "" if section is None else "\n"
-                    resumed = tool_names.get(tc.index, "")
-                    if tc.index in tool_args_started:
-                        resumed += " "
-                    yield "tool_call", f"{gap}[tool call] {resumed}", chunk
-                    section = ("tool_call", tc.index)
-                if name:
-                    tool_names[tc.index] = (
-                        tool_names.get(tc.index, "") + name
-                    )
-                    yield "tool_call", name, chunk
-                if arguments:
-                    if tc.index not in tool_args_started:
-                        tool_args_started.add(tc.index)
-                        yield "tool_call", " ", chunk
-                    yield "tool_call", arguments, chunk
-
-        if section not in (None, "content", "carry"):
-            kind = (
-                "reasoning" if section == "reasoning" else "tool_call"
-            )
-            yield kind, "\n", None
-        self.stream_mid_line = section in ("content", "carry")
+        Yields:
+            tuple: (kind, text, chunk), where kind is "reasoning", "content" or "tool_call".
+        """
+        parser = _StreamParts(self, tool_calls_out, content_out)
+        async for chunk in stream:
+            for part in parser.feed(chunk):
+                yield part
+        for part in parser.finish():
+            yield part
 
     def extract_thinking_from_stream(self, stream):
         """Yield only content chunks from a stream, displaying thinking chunks as a panel first.
@@ -635,24 +639,77 @@ class LLMManager:
             AgentLLMError, BadRequestError, InternalServerError,
             AuthenticationError, Exception: re-raised for upstream handling.
         """
+        with self._call_span(current_loop) as outcome:
+            outcome["result"] = self._call_llm(
+                task,
+                img,
+                imgs,
+                current_loop,
+                streaming_callback,
+                *args,
+                **kwargs,
+            )
+        return outcome["result"]
+
+    async def acall(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], Any]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Call the LLM on the event loop, with the same three modes as call.
+
+        Args:
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): Image input for multimodal processing.
+            imgs (Optional[List[str]]): Several image inputs.
+            current_loop (int): Loop iteration, used in streaming panel titles.
+            streaming_callback (Optional[Callable[[str], Any]]): A sync or async
+                function receiving each token as the provider sends it.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
+
+        Returns:
+            Any: The complete response string, or the assembled tool-call list.
+        """
+        with self._call_span(current_loop) as outcome:
+            outcome["result"] = await self._acall_llm(
+                task,
+                img,
+                imgs,
+                current_loop,
+                streaming_callback,
+                *args,
+                **kwargs,
+            )
+        return outcome["result"]
+
+    @contextmanager
+    def _call_span(self, current_loop: int):
+        """Trace one model call; the caller stores the reply under "result".
+
+        Args:
+            current_loop (int): Loop iteration, recorded on the span.
+
+        Yields:
+            dict: Holder the caller puts the model's reply in.
+        """
         agent = self.agent
+        outcome: dict = {}
         with swarm_telemetry().capture_run(
             "Agent.llm_call", agent
         ) as span:
             span.set("gen_ai.operation.name", "chat")
-            span.set("gen_ai.request.model", self.get_current_model())
+            span.set("gen_ai.request.model", agent.model_name)
             span.set("swarms.loop", current_loop)
             usage_before = dict(getattr(agent, "_usage", None) or {})
             try:
-                result = self._call_llm(
-                    task,
-                    img,
-                    imgs,
-                    current_loop,
-                    streaming_callback,
-                    *args,
-                    **kwargs,
-                )
+                yield outcome
             finally:
                 usage_after = getattr(agent, "_usage", None)
                 if isinstance(usage_after, dict):
@@ -665,6 +722,7 @@ class LLMManager:
                 request = getattr(agent.llm, "last_request", None)
                 if request is not None:
                     span.record_json("swarms.request", request)
+            result = outcome.get("result")
             response = getattr(agent.llm, "last_response", None)
             # A stream leaves no response object, so the assembled result stands in.
             span.record_json(
@@ -688,7 +746,6 @@ class LLMManager:
             if response_model:
                 span.set("gen_ai.response.model", response_model)
             span.record_success()
-            return result
 
     def _call_llm(
         self,
@@ -723,37 +780,29 @@ class LLMManager:
         if imgs:
             kwargs["imgs"] = imgs
 
-        try:
-            if agent.stream and hasattr(agent.llm, "stream"):
-                return self._call_detailed_streaming(
-                    task, img, streaming_callback, *args, **kwargs
-                )
-
-            if (
-                agent.streaming_on or streaming_callback is not None
-            ) and hasattr(agent.llm, "stream"):
-                return self._call_panel_streaming(
-                    task,
-                    img,
-                    current_loop,
-                    streaming_callback,
-                    *args,
-                    **kwargs,
-                )
-
-            run_args = {"task": task}
-
-            if img is not None:
-                run_args["img"] = img
-
-            return agent.llm.run(**run_args, **kwargs)
-
-        except Exception as e:
-            logger.error(
-                f"Error calling LLM with model '{self.get_current_model()}': {e}. "
-                f"Task: {task}, Args: {args}, Kwargs: {kwargs} Traceback: {traceback.format_exc()}"
+        if agent.stream and hasattr(agent.llm, "stream"):
+            return self._call_detailed_streaming(
+                task, img, streaming_callback, *args, **kwargs
             )
-            raise e
+
+        if (
+            agent.streaming_on or streaming_callback is not None
+        ) and hasattr(agent.llm, "stream"):
+            return self._call_panel_streaming(
+                task,
+                img,
+                current_loop,
+                streaming_callback,
+                *args,
+                **kwargs,
+            )
+
+        run_args = {"task": task}
+
+        if img is not None:
+            run_args["img"] = img
+
+        return agent.llm.run(**run_args, **kwargs)
 
     def _run_stream(
         self, task: str, img: Optional[str], *args, **kwargs
@@ -856,9 +905,7 @@ class LLMManager:
         return {
             "token_index": token_count,
             "type": kind,
-            "model": getattr(
-                chunk, "model", self.get_current_model()
-            ),
+            "model": getattr(chunk, "model", self.agent.model_name),
             "id": getattr(chunk, "id", ""),
             "created": getattr(chunk, "created", int(time.time())),
             "object": getattr(
@@ -885,7 +932,7 @@ class LLMManager:
         header = (
             f"ModelResponseStream(id='{getattr(final_chunk, 'id', 'N/A')}', "
             f"created={getattr(final_chunk, 'created', 'N/A')}, "
-            f"model='{getattr(final_chunk, 'model', self.get_current_model())}', "
+            f"model='{getattr(final_chunk, 'model', self.agent.model_name)}', "
             f"object='{getattr(final_chunk, 'object', 'chat.completion.chunk')}', "
             f"system_fingerprint='{getattr(final_chunk, 'system_fingerprint', 'N/A')}', "
             f"choices=[StreamingChoices(finish_reason='{final_chunk.choices[0].finish_reason}', "
@@ -1043,6 +1090,238 @@ class LLMManager:
         )
         return "".join(content_out)
 
+    # Async invocation.
+
+    async def _arun_llm(self, llm: Any, **run_args) -> Any:
+        """Await one model call, on a thread only when the model has no arun.
+
+        Args:
+            llm: The model client to call.
+            **run_args: Passed through to the model.
+
+        Returns:
+            Any: The model's reply, or an async chunk stream.
+        """
+        if hasattr(llm, "arun"):
+            return await llm.arun(**run_args)
+        return await asyncio.to_thread(llm.run, **run_args)
+
+    async def _acall_llm(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], Any]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """Await the model call for one loop, picking the streaming mode from the agent's config.
+
+        Args:
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): Image input for multimodal processing.
+            imgs (Optional[List[str]]): Several image inputs.
+            current_loop (int): Loop iteration, used in streaming panel titles.
+            streaming_callback (Optional[Callable[[str], Any]]): Receives streamed tokens.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
+
+        Returns:
+            Any: The complete response string, or the tool-call list.
+        """
+        agent = self.agent
+        kwargs.pop("is_last", None)
+        if imgs:
+            kwargs["imgs"] = imgs
+        if img is not None:
+            kwargs["img"] = img
+
+        streaming = (
+            agent.stream
+            or agent.streaming_on
+            or streaming_callback is not None
+        ) and hasattr(agent.llm, "stream")
+        if not streaming:
+            return await self._arun_llm(
+                agent.llm, task=task, **kwargs
+            )
+        return await self._astream_call(
+            agent.llm,
+            current_loop,
+            streaming_callback,
+            task,
+            *args,
+            **kwargs,
+        )
+
+    async def _astream_call(
+        self,
+        llm: Any,
+        current_loop: int,
+        streaming_callback: Optional[Callable[[str], Any]],
+        task: str,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """Await a streamed model call and consume it in the agent's streaming mode.
+
+        Args:
+            llm: The model client to call.
+            current_loop (int): The loop number shown in the panel title.
+            streaming_callback: Receives streamed tokens, if given.
+            task (str): The prompt to send.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
+
+        Returns:
+            Any: The assembled tool calls if the model made any, else the reply text.
+        """
+        original_stream = llm.stream
+        llm.stream = True
+        try:
+            if hasattr(llm, "arun"):
+                response = await llm.arun(task, *args, **kwargs)
+            else:
+                response = await asyncio.to_thread(
+                    llm.run, task, *args, **kwargs
+                )
+            # A client without arun hands back a sync stream, read off the loop.
+            if hasattr(response, "__iter__") and not isinstance(
+                response, (str, list, dict)
+            ):
+                response = _aiter_sync(response)
+            if not hasattr(response, "__aiter__"):
+                return response
+            if self.agent.stream:
+                return await self._aconsume_detailed(
+                    response, streaming_callback
+                )
+            return await self._aconsume_panel(
+                response, current_loop, streaming_callback
+            )
+        finally:
+            llm.stream = original_stream
+
+    async def _aconsume_detailed(
+        self,
+        streaming_response,
+        streaming_callback: Optional[Callable[[dict], Any]],
+    ) -> Any:
+        """Print and forward a token_info dict for every part of an async stream.
+
+        Args:
+            streaming_response: The raw async chunk stream from the model.
+            streaming_callback: Receives each token_info dict, if given.
+
+        Returns:
+            Any: The assembled tool calls if the model made any, else the reply text.
+        """
+        token_count = 0
+        last_chunk = [None]
+        tool_calls_out: list = []
+        content_out: list = []
+
+        async def track_last(stream):
+            async for chunk in stream:
+                last_chunk[0] = chunk
+                yield chunk
+
+        async for kind, text, chunk in self.astream_parts(
+            track_last(streaming_response),
+            tool_calls_out,
+            content_out,
+        ):
+            token_count += 1
+            token_info = self._build_token_info(
+                chunk or last_chunk[0], text, token_count, kind
+            )
+            print(f"ResponseStream {token_info}")
+            await emit_token(streaming_callback, token_info)
+
+        print(self._format_final_chunk(last_chunk[0]))
+        return (
+            tool_calls_out if tool_calls_out else "".join(content_out)
+        )
+
+    async def _aconsume_panel(
+        self,
+        streaming_response,
+        current_loop: int,
+        streaming_callback: Optional[Callable[[str], Any]],
+    ) -> Any:
+        """Send every part of an async stream to the callback, the live panel, or nowhere.
+
+        Args:
+            streaming_response: The raw async chunk stream from the model.
+            current_loop: The loop number shown in the panel title.
+            streaming_callback: Receives the text of every part, if given.
+
+        Returns:
+            Any: The assembled tool calls if the model made any, else the reply text.
+        """
+        tool_calls_out: list = []
+        content_out: list = []
+        parts = self.astream_parts(
+            streaming_response, tool_calls_out, content_out
+        )
+
+        # A callback takes precedence over the panel, as in the sync path.
+        if (
+            streaming_callback is not None
+            or self.agent.print_on is False
+        ):
+            async for _, text, _ in parts:
+                await emit_token(streaming_callback, text)
+        else:
+            styles = {
+                "reasoning": "italic grey50",
+                "tool_call": "cyan",
+            }
+            with formatter.streaming_panel(
+                f"🤖 Agent: {self.agent.agent_name} Loops: {current_loop}"
+            ) as add:
+                async for kind, text, _ in parts:
+                    add(text, styles.get(kind))
+
+        return (
+            tool_calls_out if tool_calls_out else "".join(content_out)
+        )
+
+    async def arun_side_call(
+        self,
+        llm: Any,
+        task: str,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], Any]] = None,
+    ) -> Any:
+        """Await a call on a model other than the agent's own, streamed the same way when streaming is on.
+
+        Args:
+            llm: The model to call, such as the tool summary model.
+            task: The prompt to send.
+            current_loop: The loop number shown in the panel title.
+            streaming_callback: Receives streamed tokens. Defaults to the callback of the run in progress.
+
+        Returns:
+            Any: The model's reply.
+        """
+        agent = self.agent
+        if streaming_callback is None:
+            streaming_callback = getattr(
+                agent, "_run_streaming_callback", None
+            ) or getattr(agent, "streaming_callback", None)
+
+        if not (
+            agent.stream
+            or agent.streaming_on
+            or streaming_callback is not None
+        ) or not hasattr(llm, "stream"):
+            return await self._arun_llm(llm, task=task)
+        return await self._astream_call(
+            llm, current_loop, streaming_callback, task
+        )
+
     def run_side_call(
         self,
         llm: Any,
@@ -1087,103 +1366,3 @@ class LLMManager:
         return self._consume_panel(
             response, current_loop, streaming_callback
         )
-
-    # Fallback execution.
-
-    def handle_fallback_execution(
-        self,
-        task: Optional[Union[str, Any]] = None,
-        img: Optional[str] = None,
-        imgs: Optional[List[str]] = None,
-        correct_answer: Optional[str] = None,
-        streaming_callback: Optional[Callable[[str], None]] = None,
-        original_error: Exception = None,
-        *args,
-        **kwargs,
-    ) -> Any:
-        """
-        Re-run a failed task against the next fallback model.
-
-        Recurses down the fallback chain until the task succeeds or every model
-        is exhausted, at which point the original error is handed to the
-        agent's error handler.
-
-        Args:
-            task: The task to be executed.
-            img: The image to be processed.
-            imgs: The list of images to be processed.
-            correct_answer: The correct answer for continuous run mode.
-            streaming_callback: Callback receiving streaming tokens in real time.
-            original_error (Exception): The error that triggered the fallback.
-            *args: Passed through to the agent's ``run``.
-            **kwargs: Passed through to the agent's ``run``.
-
-        Returns:
-            Any: The result of a successful run, or None once models run out.
-        """
-        agent = self.agent
-
-        # Check if fallback models are available
-        if not self.is_fallback_available():
-            if agent.verbose:
-                logger.error(
-                    f"Agent Name: {agent.agent_name} [NO FALLBACK] failed with model '{self.get_current_model()}' "
-                    f"and no fallback models are configured. Error: {str(original_error)[:100]}{'...' if len(str(original_error)) > 100 else ''}"
-                )
-            agent._handle_run_error(original_error)
-            return None
-
-        # Try to switch to the next fallback model
-        if not self.switch_to_next_model():
-            if agent.verbose:
-                logger.error(
-                    f"Agent Name: {agent.agent_name} [FALLBACK EXHAUSTED] has exhausted all available models. "
-                    f"Tried {len(self.get_available_models())} models: {self.get_available_models()}"
-                )
-            agent._handle_run_error(original_error)
-            return None
-
-        # Log fallback attempt
-        if agent.verbose:
-            logger.warning(
-                f"Agent Name: {agent.agent_name} [FALLBACK] failed with model '{self.get_current_model()}'. "
-                f"Switching to fallback model '{self.get_current_model()}' (attempt {agent.current_model_index + 1}/{len(self.get_available_models())})"
-            )
-
-        try:
-            # Recursive call to run() with the new model
-            result = agent.run(
-                task=task,
-                img=img,
-                imgs=imgs,
-                correct_answer=correct_answer,
-                streaming_callback=streaming_callback,
-                *args,
-                **kwargs,
-            )
-
-            if agent.verbose:
-                # Log successful completion with fallback model
-                logger.info(
-                    f"Agent Name: {agent.agent_name} [FALLBACK SUCCESS] successfully completed task "
-                    f"using fallback model '{self.get_current_model()}'"
-                )
-
-            return result
-
-        except Exception as fallback_error:
-            logger.error(
-                f"Agent Name: {agent.agent_name} Fallback model '{self.get_current_model()}' also failed: {fallback_error}"
-            )
-
-            # Try the next fallback model recursively
-            return self.handle_fallback_execution(
-                task=task,
-                img=img,
-                imgs=imgs,
-                correct_answer=correct_answer,
-                streaming_callback=streaming_callback,
-                original_error=original_error,
-                *args,
-                **kwargs,
-            )
