@@ -2,7 +2,7 @@ import concurrent.futures
 import time
 from typing import Callable, List, Optional, Union
 
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.comms_channel import (
     CommsChannel,
@@ -628,9 +628,7 @@ class ConcurrentWorkflow:
             >>> result = workflow.run("Analyze this data")
         """
         self.conversation = self._new_conversation()
-        for agent in self.agents:
-            if isinstance(agent, Agent):
-                agent.reset()
+        reset_agents(self.agents)
         try:
             if self.show_dashboard:
                 result = self.run_with_dashboard(

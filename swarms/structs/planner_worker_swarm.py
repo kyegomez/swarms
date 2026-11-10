@@ -458,7 +458,7 @@ class WorkerPool:
 
             try:
                 # Reset agent memory so prior tasks don't leak into this one
-                agent.short_memory = agent.short_memory_init()
+                agent.reset()
 
                 # Build context: worker focus prompt + task description + dependency results
                 dep_context = self.task_queue.get_dependency_results(

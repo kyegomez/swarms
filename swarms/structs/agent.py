@@ -10,6 +10,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     List,
     Literal,
     Optional,
@@ -110,6 +111,18 @@ def _model_info(model_name: str) -> Dict[str, Any]:
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 DEFAULT_AGENT_DESCRIPTION = "An autonomous agent that can perform tasks and learn from experience powered by Swarms"
+
+
+def reset_agents(agents: Iterable[Any]) -> None:
+    """
+    Start each agent over on a fresh conversation.
+
+    Args:
+        agents (Iterable[Any]): Agents to reset. Anything that is not an Agent is skipped.
+    """
+    for agent in agents:
+        if isinstance(agent, Agent):
+            agent.reset()
 
 
 def _threadsafe_callback(

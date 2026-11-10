@@ -665,8 +665,8 @@ class RecordingAgent(Agent):
         self._live = 0
         self._lock = threading.Lock()
 
-    def short_memory_init(self):
-        return []
+    def reset(self):
+        self.short_memory = []
 
     def run(self, task=None, *args, **kwargs):
         with self._lock:
