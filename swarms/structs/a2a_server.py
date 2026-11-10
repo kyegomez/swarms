@@ -22,7 +22,7 @@ class A2AServer(MCPDeployer):
             "tags": [type(self.target).__name__],
         }
         interface = {
-            "url": str(request.url.replace(path="/a2a")),
+            "url": f"{request.base_url}a2a",
             "protocolBinding": "JSONRPC",
             "protocolVersion": "1.0",
         }
