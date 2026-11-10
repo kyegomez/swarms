@@ -553,7 +553,7 @@ print(recommendation)
 
 ### GroupChat
 
-`GroupChat` 是一个异步、自选择的群聊。所有智能体并行监听；对于每条广播消息，其他每个智能体都会执行一次强制的 `respond(score, message)` 函数调用来决定是否发言，得分高于 `threshold` 的回复会被广播。当已发布的消息数达到 `max_loops`，或在 `idle_timeout` 秒内没有新消息时，群聊结束。没有固定的发言顺序：多个智能体可以同时对同一条消息作出反应，而选择沉默的智能体则保持沉默。
+`GroupChat` 是一个异步、自选择的群聊。所有智能体并行监听；对于每条广播消息，其他每个智能体都会执行一次强制的 `respond(score, message)` 函数调用来决定是否发言，得分高于 `threshold` 的回复会被广播。当已发布的消息数达到 `max_loops`，或没有任何回复的得分高于 `threshold` 时，群聊结束。没有固定的发言顺序：多个智能体可以同时对同一条消息作出反应，而选择沉默的智能体则保持沉默。
 
 ```python
 from swarms import Agent, GroupChat, RESPOND_TOOL
@@ -580,7 +580,6 @@ chat = GroupChat(
     agents=[tech_optimist, tech_critic],
     max_loops=10,       # hard cap on total messages posted
     threshold=0.5,      # min decision score (0..1) to publish a reply
-    idle_timeout=8.0,   # seconds of silence before stopping
 )
 
 result = chat.run("Let's discuss the societal impact of artificial intelligence.")

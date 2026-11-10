@@ -1,5 +1,3 @@
-"""Three agents share one SQLite conversation, then a second process-style read queries it back."""
-
 from swarms import Agent, SequentialWorkflow, SqliteChannel
 
 DB = "runs/channels.db"
@@ -38,16 +36,6 @@ for row in channel.fetch_messages():
     print(
         f"\n[{row['created_at']}] {row['agent_name']}\n{row['content']}"
     )
-
-# Just one speaker, or just the latest message.
-print(
-    "\nWriter said:",
-    channel.fetch_messages(agent_name="Writer")[-1]["content"][:80],
-)
-print(
-    "Last message was from:",
-    channel.fetch_messages(limit=1)[0]["agent_name"],
-)
 
 # Every conversation stored in this file.
 print(

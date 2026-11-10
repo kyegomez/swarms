@@ -35,6 +35,8 @@ import gzip
 import json
 import logging
 import os
+import subprocess
+import sys
 import threading
 import time
 import uuid
@@ -554,6 +556,51 @@ class TestSpanHandle:
 # ===========================================================================
 # capture_run — input / output / auto error capture
 # ===========================================================================
+class TestExportSchedule:
+    """Spans leave during the run, on a connection opened at setup."""
+
+    def _telemetry(self, monkeypatch):
+        monkeypatch.setenv("SWARMS_TELEMETRY_ON", "true")
+        return otel.SwarmTelemetry()
+
+    def test_the_batch_processor_exports_every_half_second(
+        self, monkeypatch
+    ):
+        from opentelemetry.sdk.trace import export as export_module
+
+        seen = {}
+
+        class Recording(export_module.BatchSpanProcessor):
+            def __init__(self, exporter, **kwargs):
+                seen.update(kwargs)
+                super().__init__(exporter, **kwargs)
+
+        monkeypatch.setattr(
+            export_module, "BatchSpanProcessor", Recording
+        )
+        telem = self._telemetry(monkeypatch)
+        assert telem.ready
+        assert seen["schedule_delay_millis"] == otel.EXPORT_DELAY_MS
+        assert otel.EXPORT_DELAY_MS == 500
+        telem._provider.shutdown()
+
+    def test_the_collector_connection_is_opened_at_setup(
+        self, monkeypatch
+    ):
+        from swarms.telemetry import compression
+
+        calls = []
+        monkeypatch.setattr(
+            compression.CompressingSession,
+            "head",
+            lambda self, url, **kwargs: calls.append((url, kwargs)),
+        )
+        telem = self._telemetry(monkeypatch)
+        telem._warm_thread.join(5)
+        assert calls == [(otel.TELEMETRY_BASE_URL, {"timeout": 8})]
+        telem._provider.shutdown()
+
+
 class TestCaptureRun:
     def test_captures_inputs(self, spans):
         with capture_run(
@@ -960,7 +1007,7 @@ class TestAgentConversation:
         """Agent.run records every parameter in its signature."""
         import inspect
 
-        fake_agent("Args-A").run("argument task", n=1)
+        fake_agent("Args-A").run("argument task")
 
         inputs = json.loads(
             _attrs(_by_name(spans, "Agent.run"))["swarms.inputs"]
@@ -968,7 +1015,6 @@ class TestAgentConversation:
         expected = set(inspect.signature(Agent.run).parameters)
         assert set(inputs) == expected - {"self"}
         assert inputs["task"] == "argument task"
-        assert inputs["n"] == 1
 
     def test_long_history_is_not_truncated(self, spans):
         """A history past the payload cap is recorded in full."""
@@ -1130,6 +1176,41 @@ class TestDisabledPath:
             h.record_error(ValueError("z"))  # no raise
         telem.capture_init(object())
         telem.capture_error(ValueError("z"), None)  # all no-ops
+
+    def test_trace_run_leaves_methods_undecorated(self):
+        probe = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "from swarms.structs.agent import Agent;"
+                "print(hasattr(Agent.run, '__wrapped__'))",
+            ],
+            env={**os.environ, "SWARMS_TELEMETRY_ON": "False"},
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert probe.stdout.strip().splitlines()[-1] == "False"
+
+    def test_off_path_imports_no_opentelemetry(self):
+        probe = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import sys;"
+                "from swarms import Agent;"
+                "from swarms.telemetry.otel import "
+                "ContextThreadPoolExecutor;"
+                "ContextThreadPoolExecutor().submit(int).result();"
+                "print(sorted(m for m in sys.modules"
+                " if m.startswith('opentelemetry')))",
+            ],
+            env={**os.environ, "SWARMS_TELEMETRY_ON": "False"},
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert probe.stdout.strip().splitlines()[-1] == "[]"
 
 
 # ===========================================================================
@@ -2611,7 +2692,7 @@ class TestMajorityVotingTelemetry:
         agent_runs = _all_by_name(spans, "Agent.run")
         assert len(agent_runs) == 3
 
-    def test_error_llm_raise_is_swallowed_by_agent(self, spans):
+    def test_error_llm_failure_propagates(self, spans):
         voters = [
             fake_agent("MV-Ok"),
             fake_agent("MV-Bad", raise_exc=True),
@@ -2619,15 +2700,14 @@ class TestMajorityVotingTelemetry:
         mv = MajorityVoting(agents=voters, max_loops=1)
         mv.consensus_agent.llm = FakeLLM("consensus reached")
 
-        result = mv.run(task="hello")
-        assert result is not None
+        with pytest.raises(AgentLLMError):
+            mv.run(task="hello")
 
-        top = _by_name(spans, "MajorityVoting.run")
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "Agent.llm_error") is not None
+        _assert_llm_failure_recorded(
+            spans, "MajorityVoting.run", "MV-Bad"
+        )
 
-    def test_error_member_failure_silently_swallowed(self, spans):
-        """Voters run via run_agents_concurrently: swallowed with no span."""
+    def test_error_member_failure_propagates(self, spans):
         voters = [
             fake_agent("MV-A3"),
             break_member_run(fake_agent("MV-B3")),
@@ -2635,14 +2715,16 @@ class TestMajorityVotingTelemetry:
         mv = MajorityVoting(agents=voters, max_loops=1)
         mv.consensus_agent.llm = FakeLLM("consensus reached")
 
-        result = mv.run(task="hello")  # does not raise
-        assert result is not None
+        with pytest.raises(
+            RuntimeError, match="member agent blew up"
+        ):
+            mv.run(task="hello")
 
         top = _by_name(spans, "MajorityVoting.run")
-        assert top.status.status_code.name == "OK"
-        assert _attrs(top)["swarms.status"] == "completed"
-        assert _by_name(spans, "MajorityVoting.error") is None
-        assert _by_name(spans, "Agent.llm_error") is None
+        assert top.status.status_code.name == "ERROR"
+        a_ = _attrs(top)
+        assert a_["swarms.status"] == "error"
+        assert a_["swarms.error.type"] == "RuntimeError"
 
 
 # ===========================================================================
@@ -3199,10 +3281,7 @@ class TestDebateWithJudge:
 
         agent_runs = _all_by_name(spans, "Agent.run")
         names = [_attrs(s).get("swarms.name") for s in agent_runs]
-        # Role-intro call + one debate round call, for all three agents.
-        assert names.count("Pro-Debater") == 2
-        assert names.count("Con-Debater") == 2
-        assert names.count("Debate-Judge") == 2
+        assert names == ["Pro-Debater", "Con-Debater", "Debate-Judge"]
 
     def test_member_failure_propagates(self, spans):
         debate, pro, con, judge = self._build()
@@ -3288,9 +3367,8 @@ class TestCouncilAsAJudge:
 # ===========================================================================
 # LLMCouncil — accepts pre-built council members via `council_members=[...]`;
 # the Chairman is always built internally, reached via `council.chairman`.
-# Free text throughout; a council member's failure is swallowed (the
-# exception object itself is substituted as its "response"), but a Chairman
-# failure is NOT wrapped in any try/except -> genuinely propagates.
+# Free text throughout; a council member's or the Chairman's failure
+# propagates.
 # ===========================================================================
 class TestLLMCouncil:
     def _build(self):

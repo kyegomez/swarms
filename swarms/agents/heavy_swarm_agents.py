@@ -261,6 +261,7 @@ def _build_agent(
         print_on=True if is_leader else worker_prints_on,
         verbose=False,
         tools=tools,
+        output_type="final",
     )
 
 

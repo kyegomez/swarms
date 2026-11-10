@@ -12,6 +12,7 @@ from swarms.utils.output_types import OutputType
 from swarms.structs.ma_blocks import return_all_agent_names
 from swarms.structs.serialization import SerializableMixin
 from swarms.telemetry.otel import capture_init, trace_run
+from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger("round-robin")
 
@@ -329,3 +330,14 @@ class RoundRobinSwarm(SerializableMixin):
             >>> results = swarm.run_batch(["Task 1", "Task 2", "Task 3"])
         """
         return batched_run(self.run, tasks)
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)
