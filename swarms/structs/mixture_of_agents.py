@@ -2,7 +2,7 @@ import asyncio
 from typing import Any, Dict, List, Optional
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import (
     agent_answer,
     get_final_agent_answer,
@@ -249,8 +249,7 @@ class MixtureOfAgents:
         """
 
         self._reset_conversation()
-        for agent in self.agents:
-            agent.reset()
+        reset_agents(self.agents)
 
         self.conversation.add(role="User", content=task)
 
@@ -366,8 +365,7 @@ class MixtureOfAgents:
             return agent.agent_name, agent_answer(agent, output)
 
         self._reset_conversation()
-        for agent in self.agents:
-            agent.reset()
+        reset_agents(self.agents)
 
         self.conversation.add(role="User", content=task)
 

@@ -744,9 +744,9 @@ class _TranscriptAgent:
         self.calls = 0
         self.inits = 0
 
-    def short_memory_init(self):
+    def reset(self):
         self.inits += 1
-        return []
+        self.short_memory = []
 
     def run(self, task, *args, **kwargs):
         self.calls += 1

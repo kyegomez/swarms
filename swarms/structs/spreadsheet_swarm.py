@@ -4,7 +4,7 @@ import os
 import uuid
 from typing import List
 
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
@@ -226,8 +226,7 @@ class SpreadSheetSwarm:
             )
 
         for _ in range(self.max_loops):
-            for agent, _task in agent_task_pairs:
-                agent.short_memory = agent.short_memory_init()
+            reset_agents(agent for agent, _ in agent_task_pairs)
 
             results = run_agents_with_different_tasks(
                 agent_task_pairs
@@ -338,8 +337,7 @@ class SpreadSheetSwarm:
         self.conversation.add(role="User", content=task)
 
         for _ in range(self.max_loops):
-            for agent in self.agents:
-                agent.short_memory = agent.short_memory_init()
+            reset_agents(self.agents)
 
             results = run_agents_with_different_tasks(
                 [(agent, task) for agent in self.agents]
