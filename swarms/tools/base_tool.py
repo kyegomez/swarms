@@ -923,7 +923,7 @@ class BaseTool(BaseModel):
             Union[List[Any], List[str]]: One result per call, in call order. A call that fails, including one naming an unknown tool, holds its exception in its own slot while the other calls still run and return
 
         Raises:
-            ToolValidationError: If neither tools nor function_map is set
+            ToolValidationError: If API response validation fails
             ToolExecutionError: If the response cannot be processed
 
         Examples:

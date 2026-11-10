@@ -375,26 +375,22 @@ def test_a_failing_call_returns_its_error_while_the_others_run():
 
     def fetch(name: str) -> str:
         together.wait()
+        if name == "b":
+            raise RuntimeError("disk full")
         return f"fetched {name}"
 
-    def broken(name: str) -> str:
-        together.wait()
-        raise RuntimeError("disk full")
-
-    results = BaseTool(
-        tools=[fetch, broken]
-    ).execute_function_calls_from_api_response(
+    tool = BaseTool(tools=[fetch])
+    results = tool.execute_function_calls_from_api_response(
         [
             SdkToolCall("c1", "fetch", {"name": "a"}),
-            SdkToolCall("c2", "broken", {"name": "b"}),
+            SdkToolCall("c2", "fetch", {"name": "b"}),
             SdkToolCall("c3", "fetch", {"name": "c"}),
         ],
         return_as_string=False,
     )
 
-    assert results[0] == "fetched a"
+    assert results[::2] == ["fetched a", "fetched c"]
     assert "disk full" in str(results[1])
-    assert results[2] == "fetched c"
 
 
 def test_a_tool_marked_sequential_never_overlaps_another_call():
