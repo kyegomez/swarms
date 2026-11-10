@@ -458,30 +458,6 @@ class TestStreamWithToolCollection:
         assert collected == chunks
         assert out == []
 
-    def test_thought_signature_survives_into_the_next_request(
-        self, agent
-    ):
-        extra_content = {"google": {"thought_signature": "sig"}}
-        fragment = FakeToolCallDelta(0, id="call_1", name="get_time")
-        fragment.extra_content = extra_content
-        chunk = FakeChunk(
-            choices=[FakeChoice(FakeDelta(tool_calls=[fragment]))]
-        )
-        streamed = []
-        list(
-            agent.llm_manager.stream_with_tool_collection(
-                iter([chunk]), streamed
-            )
-        )
-        plain = {"id": "call_2", "function": {"name": "get_time"}}
-
-        conversation = Conversation()
-        conversation.record_assistant([*streamed, plain])
-
-        sent = conversation.to_messages()[0]["tool_calls"]
-        assert sent[0]["extra_content"] == extra_content
-        assert "extra_content" not in sent[1]
-
     def test_assembles_fragmented_name_and_arguments(self, agent):
         chunks = [
             FakeChunk(
@@ -711,6 +687,17 @@ class TestStreamParts:
             agent, [content_chunk("again")]
         )
         assert (text, content) == ("again", "again")
+
+    def test_thought_signature_is_sent_back(self, agent):
+        signed = FakeToolCallDelta(0, id="c0", name="f")
+        signed.extra_content = {"google": {"thought_signature": "s"}}
+        plain = FakeToolCallDelta(1, id="c1", name="g")
+        _, _, calls, _ = streamed(agent, [tool_chunk(signed, plain)])
+        conversation = Conversation()
+        conversation.record_assistant(calls)
+        sent = conversation.to_messages()[0]["tool_calls"]
+        assert sent[0]["extra_content"] == signed.extra_content
+        assert "extra_content" not in sent[1]
 
 
 class TestRunSideCall:
