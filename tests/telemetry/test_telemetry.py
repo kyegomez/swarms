@@ -3281,10 +3281,7 @@ class TestDebateWithJudge:
 
         agent_runs = _all_by_name(spans, "Agent.run")
         names = [_attrs(s).get("swarms.name") for s in agent_runs]
-        # Role-intro call + one debate round call, for all three agents.
-        assert names.count("Pro-Debater") == 2
-        assert names.count("Con-Debater") == 2
-        assert names.count("Debate-Judge") == 2
+        assert names == ["Pro-Debater", "Con-Debater", "Debate-Judge"]
 
     def test_member_failure_propagates(self, spans):
         debate, pro, con, judge = self._build()
@@ -3370,9 +3367,8 @@ class TestCouncilAsAJudge:
 # ===========================================================================
 # LLMCouncil — accepts pre-built council members via `council_members=[...]`;
 # the Chairman is always built internally, reached via `council.chairman`.
-# Free text throughout; a council member's failure is swallowed (the
-# exception object itself is substituted as its "response"), but a Chairman
-# failure is NOT wrapped in any try/except -> genuinely propagates.
+# Free text throughout; a council member's or the Chairman's failure
+# propagates.
 # ===========================================================================
 class TestLLMCouncil:
     def _build(self):

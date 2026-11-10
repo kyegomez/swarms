@@ -164,7 +164,6 @@ class SpreadSheetSwarm:
                             else "openai/gpt-4o"
                         ),
                         docs=[row["docs"]] if "docs" in row else "",
-                        dynamic_temperature_enabled=True,
                         max_loops=(
                             row["max_loops"]
                             if "max_loops" in row

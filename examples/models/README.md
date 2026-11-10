@@ -62,6 +62,7 @@ Set the matching API key as an environment variable before running any example (
 
 ### OpenRouter
 - [glm_or.py](openrouter/glm_or.py) — GLM via OpenRouter
+- [glm_flash_or.py](openrouter/glm_flash_or.py) — GLM 5.3 Flash via OpenRouter
 - [hy3_or.py](openrouter/hy3_or.py) — Hunyuan 3 via OpenRouter
 
 ### Qwen
