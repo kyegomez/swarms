@@ -49,7 +49,7 @@ from swarms.tools.handoffs_tool_schema import get_handoff_tool_schema
 from swarms.tools.py_func_to_openai_func_str import (
     convert_multiple_functions_to_openai_function_schema,
 )
-from swarms.structs.transcript import Transcript
+from swarms.structs.conversation import Conversation
 from swarms.tools.dynamic_tool_loader import SEARCH_TOOL_NAME
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists, format_data_structure
@@ -107,13 +107,37 @@ class AutonomousAgentLoop:
     def __init__(self, agent: Any):
         self.agent = agent
         # The real body sent to the model; short_memory mirrors it.
-        self._transcript = Transcript()
+        self._transcript = Conversation()
         # Removed before the next append, so runs do not stack copies.
         self._applied_handoff_block: Optional[str] = None
+        # The client this loop last built, and the inputs it was built from.
+        self._built_llm: Any = None
+        self._built_llm_signature: Optional[str] = None
+
+    def _refresh_llm(self) -> None:
+        """Rebuild the agent's client when its tools, prompt or model changed."""
+        if self.agent.llm is None:
+            return
+        signature = json.dumps(
+            [
+                self.agent.tools_list_dictionary,
+                self.agent.system_prompt,
+                self.agent.model_name,
+            ],
+            default=str,
+        )
+        if (
+            self.agent.llm is self._built_llm
+            and signature == self._built_llm_signature
+        ):
+            return
+        self.agent.llm = self.agent.llm_handling()
+        self._built_llm = self.agent.llm
+        self._built_llm_signature = signature
 
     def _say_user(self, content: str, mirror: bool = True) -> None:
         """Add a user turn to the transcript (and to short_memory)."""
-        self._transcript.append_user(content)
+        self._transcript.add("user", str(content))
         if mirror:
             self.agent.short_memory.add(
                 role=self.agent.user_name, content=content
@@ -167,7 +191,7 @@ class AutonomousAgentLoop:
             return False
 
         # compact() already re-seeded short_memory, do not mirror the summary twice
-        self._transcript = Transcript()
+        self._transcript = Conversation()
         self._say_user(
             "[Compressed Memory Summary]\n"
             "Earlier turns were compressed to stay within the "
@@ -255,7 +279,10 @@ class AutonomousAgentLoop:
         try:
 
             # Cleared before seeding, or the opening turn is lost.
-            self._transcript = Transcript(list(messages or []))
+            self._transcript = Conversation()
+            self._transcript.conversation_history.extend(
+                messages or []
+            )
             self.agent.autonomous_subtasks = []
             self.agent.current_subtask_index = 0
             self.agent.subtask_status = {}
@@ -376,9 +403,7 @@ class AutonomousAgentLoop:
 
                     self._applied_handoff_block = handoff_block
 
-            # Reinitialize LLM with planning tools (and handoff tool if configured)
-            if self.agent.llm is not None:
-                self.agent.llm = self.agent.llm_handling()
+            self._refresh_llm()
 
             # Register planning tool handlers
             all_planning_tool_handlers = {
@@ -472,7 +497,7 @@ class AutonomousAgentLoop:
                         img=img,
                         current_loop=0,
                         streaming_callback=streaming_callback,
-                        messages=self._transcript.messages,
+                        messages=self._transcript.to_messages(),
                         *args,
                         **kwargs,
                     )
@@ -605,11 +630,6 @@ class AutonomousAgentLoop:
                 exists(self.agent.tools)
                 and not self.agent.dynamic_tools
             ):
-                # Convert user tools to function schema
-                user_tools = convert_multiple_functions_to_openai_function_schema(
-                    self.agent.tools
-                )
-
                 # Get existing tool names to avoid duplicates
                 existing_tool_names = set()
                 if self.agent.tools_list_dictionary:
@@ -626,6 +646,21 @@ class AutonomousAgentLoop:
                 if self.agent.tools_list_dictionary is None:
                     self.agent.tools_list_dictionary = []
 
+                # Schemas are named after the function, so tools already listed are not converted again.
+                unlisted_tools = [
+                    tool
+                    for tool in self.agent.tools
+                    if getattr(tool, "__name__", None)
+                    not in existing_tool_names
+                ]
+                user_tools = (
+                    convert_multiple_functions_to_openai_function_schema(
+                        unlisted_tools
+                    )
+                    if unlisted_tools
+                    else []
+                )
+
                 tools_added = 0
                 for tool in user_tools:
                     tool_name = tool.get("function", {}).get(
@@ -636,9 +671,7 @@ class AutonomousAgentLoop:
                         existing_tool_names.add(tool_name)
                         tools_added += 1
 
-                # Reinitialize LLM with both planning tools and user tools
-                if self.agent.llm is not None:
-                    self.agent.llm = self.agent.llm_handling()
+                self._refresh_llm()
 
                 if self.agent.print_on and tools_added > 0:
                     formatter.print_panel(
@@ -657,8 +690,7 @@ class AutonomousAgentLoop:
             total_iterations = 0
 
             while not self._all_subtasks_complete():
-                total_iterations += 1
-                if total_iterations > max_subtask_iterations:
+                if total_iterations >= max_subtask_iterations:
                     if self.agent.print_on:
                         formatter.print_panel(
                             f"Maximum iterations ({max_subtask_iterations}) reached. Stopping execution.",
@@ -716,8 +748,10 @@ class AutonomousAgentLoop:
                 while (
                     not subtask_done
                     and subtask_iterations < max_subtask_loops
+                    and total_iterations < max_subtask_iterations
                 ):
                     subtask_iterations += 1
+                    total_iterations += 1
 
                     # Every tool call is answered here, so replacing the transcript orphans nothing
                     if self._maybe_compress_context():
@@ -730,7 +764,7 @@ class AutonomousAgentLoop:
                             img=img,
                             current_loop=subtask_iterations,
                             streaming_callback=streaming_callback,
-                            messages=self._transcript.messages,
+                            messages=self._transcript.to_messages(),
                             *args,
                             **kwargs,
                         )
@@ -1017,7 +1051,8 @@ class AutonomousAgentLoop:
                                         temp_llm = (
                                             self.agent.tool_manager.temp_llm_instance_for_tool_summary()
                                         )
-                                        tool_response = temp_llm.run(
+                                        tool_response = self.agent.llm_manager.run_side_call(
+                                            temp_llm,
                                             f"""
                                             Please analyze and summarize the following tool execution output in a clear and concise way. 
                                             Focus on the key information and insights that would be most relevant to the user's original request.
@@ -1025,7 +1060,7 @@ class AutonomousAgentLoop:
                                             
                                             Tool Output:
                                             {tool_output}
-                                            """
+                                            """,
                                         )
                                         self.agent.short_memory.add(
                                             role=self.agent.agent_name,
@@ -1055,7 +1090,7 @@ class AutonomousAgentLoop:
                             if task_complete:
                                 return self.agent._generate_final_summary(
                                     streaming_callback=streaming_callback,
-                                    messages=self._transcript.messages,
+                                    messages=self._transcript.to_messages(),
                                 )
                         else:
                             # Handle regular tool execution
@@ -1128,7 +1163,8 @@ class AutonomousAgentLoop:
                                         temp_llm = (
                                             self.agent.tool_manager.temp_llm_instance_for_tool_summary()
                                         )
-                                        tool_response = temp_llm.run(
+                                        tool_response = self.agent.llm_manager.run_side_call(
+                                            temp_llm,
                                             f"""
                                             Please analyze and summarize the following tool execution output in a clear and concise way. 
                                             Focus on the key information and insights that would be most relevant to the user's original request.
@@ -1136,7 +1172,7 @@ class AutonomousAgentLoop:
                                             
                                             Tool Output:
                                             {tool_output}
-                                            """
+                                            """,
                                         )
                                         self.agent.short_memory.add(
                                             role=self.agent.agent_name,
@@ -1190,7 +1226,7 @@ class AutonomousAgentLoop:
                             self.agent.short_memory.add(
                                 role="system", content=nudge
                             )
-                            self._transcript.append_user(nudge)
+                            self._transcript.add("user", nudge)
 
                             # Give the nudge a chance before refiring.
                             self.agent.think_call_count = 0

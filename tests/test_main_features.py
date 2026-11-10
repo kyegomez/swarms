@@ -174,9 +174,7 @@ def test_tool_execution_with_agent():
 
 def test_multimodal_execution():
     """Test agent's ability to process images"""
-    agent = create_test_agent(
-        "VisionAgent", model_name="gpt-5.4", multi_modal=True
-    )
+    agent = create_test_agent("VisionAgent", model_name="gpt-5.4")
 
     try:
         # Check if test images exist, if not skip the test
@@ -601,9 +599,7 @@ def test_groupchat():
         ),
     ]
 
-    group_chat = GroupChat(
-        agents=agents, max_loops=2, idle_timeout=4.0
-    )
+    group_chat = GroupChat(agents=agents, max_loops=2)
 
     response = group_chat.run(
         "Let's discuss the future of artificial intelligence."

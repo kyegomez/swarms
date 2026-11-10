@@ -16,8 +16,6 @@ SHORTLIST_SHARE = 0.05
 LLM_SAMPLE = 8
 SCREEN_MODEL = "gpt-5.4-mini"
 REVIEW_MODEL = "gpt-5.4"
-# TypeSafe bills input tokens only; output tokens are free.
-DECISION_PRICE_PER_MTOK = 0.042
 
 JOB = {
     "title": "Senior Backend Engineer",
@@ -196,7 +194,7 @@ async def screen_all(model: DecisionModel, resumes: list) -> list:
         resumes: Resumes to screen.
 
     Returns:
-        One result per resume with its score, input tokens and latency.
+        One result per resume with its score and latency.
     """
     limit = asyncio.Semaphore(20)
 
@@ -210,7 +208,6 @@ async def screen_all(model: DecisionModel, resumes: list) -> list:
             return {
                 "resume": resume,
                 "score": composite_score(response["answers"]),
-                "input_tokens": response["usage"]["input_tokens"],
                 "seconds": time.perf_counter() - started,
             }
 
@@ -289,11 +286,7 @@ print(
 started = time.perf_counter()
 screened = asyncio.run(screen_all(decision_model, resumes))
 decision_wall_s = time.perf_counter() - started
-decision_cost = (
-    sum(r["input_tokens"] for r in screened)
-    * DECISION_PRICE_PER_MTOK
-    / 1_000_000
-)
+decision_cost = decision_model.calculate_cost()["total_cost"]
 decision_item_s = sum(r["seconds"] for r in screened) / len(screened)
 
 shortlist = sorted(screened, key=lambda r: r["score"], reverse=True)[

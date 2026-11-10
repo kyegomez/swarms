@@ -1,7 +1,9 @@
 import asyncio
+import json
 import os
 import random
 import re
+import threading
 import time
 from typing import Any, Dict, List, Optional, Union
 
@@ -16,10 +18,16 @@ State = Union[str, Dict[str, Any], List[Any]]
 Questions = Dict[str, Dict[str, Any]]
 
 # {UPPER_CASE} placeholders are filled from the environment, {model_name} from the model.
+# Prices are US dollars per million tokens; lists_prices providers also report them live.
 DECISION_MODEL_PROVIDERS = {
     "typesafe": {
         "prefix": "jev",
         "models": ["jev-latest", "jev-preview", "jev-1.13.0"],
+        "prices": {
+            "jev-latest": {"input": 0.042, "output": 0.0},
+            "jev-preview": {"input": 0.042, "output": 0.0},
+            "jev-1.13.0": {"input": 0.042, "output": 0.0},
+        },
         "base_url": "https://api.typesafe.ai",
         "endpoint": "/v1/systemone",
         "api_key_env": "TYPESAFE_API_KEY",
@@ -28,10 +36,26 @@ DECISION_MODEL_PROVIDERS = {
     "cloudflare": {
         "prefix": "clef",
         "models": ["clef", "clef-flash"],
+        "prices": {
+            "clef": {"input": 0.24, "output": 0.0},
+            "clef-flash": {"input": 0.09, "output": 0.0},
+        },
+        "lists_prices": True,
         "base_url": "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run",
         "endpoint": "/@cf/cloudflare/{model_name}",
         "api_key_env": "CLOUDFLARE_AUTH_TOKEN",
         "models_url": "https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/models/search?search=clef",
+    },
+    "openai": {
+        "prefix": "gpt-6-luna",
+        "models": ["gpt-6-luna"],
+        "prices": {
+            "gpt-6-luna": {"input": 0.10, "output": 0.0},
+        },
+        "base_url": "https://api.openai.com/v1",
+        "endpoint": "/decisions",
+        "api_key_env": "OPENAI_API_KEY",
+        "models_url": "https://api.openai.com/v1/models",
     },
 }
 
@@ -50,12 +74,62 @@ def get_decision_models() -> List[str]:
     return list(dict.fromkeys(models))
 
 
+def get_decision_model_prices() -> Dict[str, Dict[str, float]]:
+    """
+    List the price of every decision model.
+
+    Returns:
+        Model names mapped to input and output prices in US dollars per million tokens, fetched live from each provider that reports them and merged over the built-in prices.
+    """
+    prices = {}
+    for name, provider in DECISION_MODEL_PROVIDERS.items():
+        prices.update(_provider_prices(name, provider))
+    return prices
+
+
+def _provider_prices(
+    name: str, provider: Dict[str, Any]
+) -> Dict[str, Dict[str, float]]:
+    prices = dict(provider["prices"])
+    if not provider.get("lists_prices"):
+        return prices
+    for model, entry in _fetch_provider_models(
+        name, provider
+    ).items():
+        price = _listed_price(entry)
+        if price is not None:
+            prices[model] = price
+    return prices
+
+
+def _listed_price(
+    entry: Dict[str, Any],
+) -> Optional[Dict[str, float]]:
+    # Cloudflare lists prices as a property, e.g. {"unit": "per M input tokens", "price": 0.24}.
+    for prop in entry.get("properties") or []:
+        if not (
+            isinstance(prop, dict)
+            and prop.get("property_id") == "price"
+        ):
+            continue
+        price = {"input": 0.0, "output": 0.0}
+        try:
+            for item in prop["value"]:
+                for side in price:
+                    if side in item["unit"]:
+                        price[side] = float(item["price"])
+        except (KeyError, TypeError, ValueError):
+            return None
+        return price
+    return None
+
+
 def _fetch_provider_models(
     name: str, provider: Dict[str, Any]
-) -> List[str]:
+) -> Dict[str, Dict[str, Any]]:
     api_key = (os.getenv(provider["api_key_env"]) or "").strip()
     if not api_key:
-        return []
+        return {}
 
     try:
         response = httpx.get(
@@ -65,26 +139,37 @@ def _fetch_provider_models(
         )
         response.raise_for_status()
         data = response.json()
-        # TypeSafe lists under models; Cloudflare under result, as @cf/cloudflare/<name>.
-        entries = data.get("models") or data.get("result") or []
-        names = [
-            str(entry.get("name", "")).removeprefix("@cf/cloudflare/")
+        # TypeSafe lists under models; Cloudflare under result, as @cf/cloudflare/<name>; OpenAI under data, by id.
+        entries = (
+            data.get("models")
+            or data.get("result")
+            or data.get("data")
+            or []
+        )
+        models = {
+            str(
+                entry.get("name") or entry.get("id") or ""
+            ).removeprefix("@cf/cloudflare/"): entry
             for entry in entries
             if isinstance(entry, dict)
-        ]
+        }
     except Exception as e:
         logger.warning(f"Could not fetch {name} decision models: {e}")
-        return []
+        return {}
 
-    return [n for n in names if n.startswith(provider["prefix"])]
+    return {
+        n: entry
+        for n, entry in models.items()
+        if n.startswith(provider["prefix"])
+    }
 
 
-def _provider_for(model_name: str) -> Dict[str, Any]:
-    for provider in DECISION_MODEL_PROVIDERS.values():
+def _provider_for(model_name: str) -> str:
+    for name, provider in DECISION_MODEL_PROVIDERS.items():
         if model_name.startswith(provider["prefix"]):
-            return provider
+            return name
     # Anything else, such as the gateway id ~typesafe/jev-latest, goes to TypeSafe.
-    return DECISION_MODEL_PROVIDERS["typesafe"]
+    return "typesafe"
 
 
 def _fill_from_env(template: str) -> str:
@@ -97,6 +182,108 @@ def _fill_from_env(template: str) -> str:
     return template.format(
         **{name: os.environ[name] for name in names}
     )
+
+
+def _as_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _openai_input(state: State) -> Union[str, List[Any]]:
+    # A list of user messages passes through so it can carry input_image parts.
+    if (
+        isinstance(state, list)
+        and state
+        and all(
+            isinstance(message, dict)
+            and message.get("role") == "user"
+            for message in state
+        )
+    ):
+        return state
+    return _as_text(state)
+
+
+def _openai_question(
+    question_id: str, question: Dict[str, Any]
+) -> Dict[str, Any]:
+    question_type = question["type"]
+    criteria = question.get("criteria")
+    converted = {
+        "type": (
+            "predicate" if question_type == "noul" else question_type
+        ),
+        "name": question_id,
+        "instructions": _as_text(question.get("instructions", "")),
+    }
+    if question_type == "choice":
+        converted["choices"] = [
+            (
+                {"value": value}
+                if description is None
+                else {
+                    "value": value,
+                    "description": _as_text(description),
+                }
+            )
+            for value, description in criteria.items()
+        ]
+    elif question_type == "score":
+        converted["levels"] = [
+            {"label": _as_text(level)} for level in criteria
+        ]
+    elif criteria is not None:
+        # Predicates have no criteria field, so noul criteria join the instructions.
+        converted[
+            "instructions"
+        ] += f"\nCriteria: {_as_text(criteria)}"
+    return converted
+
+
+def _openai_answers(
+    answers: List[Dict[str, Any]],
+) -> Dict[str, Dict[str, Any]]:
+    converted = {}
+    for answer in answers:
+        name = answer.get("name")
+        answer_type = answer.get("type")
+        if answer_type == "refusal":
+            raise RuntimeError(
+                f"OpenAI refused to answer question {name!r}."
+            )
+        if answer_type == "predicate":
+            converted[name] = {
+                "type": "noul",
+                "noul": answer["probability"],
+            }
+        elif answer_type == "choice":
+            converted[name] = {
+                "type": "choice",
+                "choice": answer["choice"],
+                "probabilities": {
+                    p["value"]: p["probability"]
+                    for p in answer["probabilities"]
+                },
+                "confidence": answer["confidence"],
+            }
+        elif answer_type == "score":
+            converted[name] = {
+                "type": "score",
+                "score": answer["score"],
+                "legend": {
+                    str(p["value"]): p["label"]
+                    for p in answer["probabilities"]
+                },
+                "probabilities": {
+                    str(p["value"]): p["probability"]
+                    for p in answer["probabilities"]
+                },
+                "confidence": answer["confidence"],
+            }
+        else:
+            converted[name] = answer
+    return converted
 
 
 class DecisionModel:
@@ -129,7 +316,8 @@ class DecisionModel:
         headers: Optional[Dict[str, str]] = None,
         extra_body: Optional[Dict[str, Any]] = None,
     ):
-        provider = _provider_for(model_name)
+        self._provider_name = _provider_for(model_name)
+        provider = DECISION_MODEL_PROVIDERS[self._provider_name]
 
         self.model_name = model_name
         self.api_key_env = api_key_env or provider["api_key_env"]
@@ -149,6 +337,9 @@ class DecisionModel:
         ).strip()
         self._headers = headers or {}
         self._client: Optional[httpx.Client] = None
+        self._price: Optional[Dict[str, float]] = None
+        self._usage = {"input_tokens": 0, "output_tokens": 0}
+        self._usage_lock = threading.Lock()
 
         if not self._api_key:
             raise ValueError(
@@ -166,7 +357,7 @@ class DecisionModel:
         Ask every question about the state in one request.
 
         Args:
-            state: Text, JSON object or list the questions are asked about.
+            state: Text, JSON object or list the questions are asked about. OpenAI models also take a list of user messages with input_image parts.
             questions: Question dictionaries keyed by an id of your choosing.
 
         Returns:
@@ -174,7 +365,9 @@ class DecisionModel:
         """
         payload = self.build_payload(state, questions)
         data = self._request("POST", self.endpoint, payload)
-        return self.parse_response(data, questions)
+        result = self.parse_response(data, questions)
+        self._add_usage(result)
+        return result
 
     async def arun(
         self, state: State, questions: Questions
@@ -183,7 +376,7 @@ class DecisionModel:
         Ask every question about the state in one asynchronous request.
 
         Args:
-            state: Text, JSON object or list the questions are asked about.
+            state: Text, JSON object or list the questions are asked about. OpenAI models also take a list of user messages with input_image parts.
             questions: Question dictionaries keyed by an id of your choosing.
 
         Returns:
@@ -191,7 +384,9 @@ class DecisionModel:
         """
         payload = self.build_payload(state, questions)
         data = await self._arequest("POST", self.endpoint, payload)
-        return self.parse_response(data, questions)
+        result = self.parse_response(data, questions)
+        self._add_usage(result)
+        return result
 
     def choice(
         self,
@@ -276,6 +471,62 @@ class DecisionModel:
         """
         return get_decision_models()
 
+    @property
+    def usage(self) -> Dict[str, int]:
+        """
+        Token usage reported by the provider, summed over every request this model has made.
+
+        Returns:
+            The input and output token counts.
+        """
+        with self._usage_lock:
+            return dict(self._usage)
+
+    def get_price(self) -> Dict[str, float]:
+        """
+        Get the price of this model from its provider.
+
+        Returns:
+            Input and output prices in US dollars per million tokens.
+        """
+        if self._price is None:
+            price = _provider_prices(
+                self._provider_name,
+                DECISION_MODEL_PROVIDERS[self._provider_name],
+            ).get(self.model_name)
+            if price is None:
+                raise ValueError(
+                    f"No price is known for {self.model_name!r}."
+                )
+            self._price = price
+        return dict(self._price)
+
+    def calculate_cost(
+        self, usage: Optional[Dict[str, int]] = None
+    ) -> Dict[str, float]:
+        """
+        Price the input and output tokens reported by the provider.
+
+        Args:
+            usage: Token counts from one response. Defaults to the usage summed over every request.
+
+        Returns:
+            The input and output tokens, their cost and the total cost in US dollars.
+        """
+        usage = self.usage if usage is None else usage
+        price = self.get_price()
+        input_tokens = usage.get("input_tokens") or 0
+        output_tokens = usage.get("output_tokens") or 0
+        input_cost = input_tokens * price["input"] / 1_000_000
+        output_cost = output_tokens * price["output"] / 1_000_000
+        return {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "input_cost": input_cost,
+            "output_cost": output_cost,
+            "total_cost": input_cost + output_cost,
+        }
+
     def build_headers(self) -> Dict[str, str]:
         """
         Build the HTTP headers for a request.
@@ -329,6 +580,16 @@ class DecisionModel:
                     f"Score {question_id!r} needs criteria as a list of at least two levels."
                 )
 
+        if self._provider_name == "openai":
+            return {
+                "model": self.model_name,
+                "input": _openai_input(state),
+                "questions": [
+                    _openai_question(question_id, question)
+                    for question_id, question in questions.items()
+                ],
+                **self.extra_body,
+            }
         return {
             "model": self.model_name,
             "state": state,
@@ -340,7 +601,7 @@ class DecisionModel:
         self, data: Dict[str, Any], questions: Questions
     ) -> Dict[str, Any]:
         """
-        Check that every question came back with an answer of its own type.
+        Key the answers by question id and check that each has its question's type.
 
         Args:
             data: Decoded JSON response.
@@ -354,6 +615,11 @@ class DecisionModel:
             data.get("result"), dict
         ):
             data = data["result"]
+        if self._provider_name == "openai":
+            data = {
+                **data,
+                "answers": _openai_answers(data.get("answers") or []),
+            }
 
         answers = data.get("answers") or {}
         for question_id, question in questions.items():
@@ -384,6 +650,17 @@ class DecisionModel:
         return self.run(state, {"answer": question})["answers"][
             "answer"
         ]
+
+    def _add_usage(self, result: Any) -> None:
+        # A subclass's parse_response may return any shape; only a dict usage block counts.
+        usage = (
+            result.get("usage") if isinstance(result, dict) else None
+        )
+        if not isinstance(usage, dict):
+            return
+        with self._usage_lock:
+            for key in self._usage:
+                self._usage[key] += usage.get(key) or 0
 
     def _request(
         self,

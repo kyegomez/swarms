@@ -10,6 +10,8 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from swarms.structs.context_utils import agent_answer
+
 
 def handoff_task(
     handoffs: List[Dict[str, str]],
@@ -111,7 +113,7 @@ def handoff_task(
             )
 
             # Execute the task
-            response = agent.run(task=task)
+            response = agent_answer(agent, agent.run(task=task))
 
             result = f"""
             Agent: {agent_name}
@@ -156,7 +158,9 @@ def handoff_task(
                 reasoning = handoff.get("reasoning", "")
 
                 try:
-                    response = future.result()
+                    response = agent_answer(
+                        agent_registry[agent_name], future.result()
+                    )
                     result = f"""
                     Agent: {agent_name}
                     Reasoning: {reasoning}

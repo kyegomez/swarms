@@ -496,3 +496,35 @@ def test_batched_grid_workflow_output_consistency():
         assert loop_result is not None
         assert isinstance(loop_result, list)
         assert len(loop_result) == 3  # Three agents
+
+
+def test_batched_grid_workflow_run_starts_agents_fresh(
+    monkeypatch, tmp_path
+):
+    """A second run() starts fresh; loops of one run share memory."""
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    requests = []
+
+    def fake_run(self, task=None, messages=None, *args, **kwargs):
+        requests.append(
+            " ".join(str(m.get("content")) for m in messages or [])
+            + str(task or "")
+        )
+        return "PRIOR-ANSWER"
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    agents = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Alpha", "Beta")
+    ]
+    workflow = BatchedGridWorkflow(agents=agents, max_loops=2)
+
+    workflow.run(["FIRST-A", "FIRST-B"])
+    assert sum("PRIOR-ANSWER" in r for r in requests) == 2
+    requests.clear()
+    workflow.run(["SECOND-A", "SECOND-B"])
+
+    assert len(requests) == 4
+    assert not any("FIRST" in r for r in requests)

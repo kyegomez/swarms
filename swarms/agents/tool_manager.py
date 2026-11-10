@@ -1,13 +1,4 @@
-"""
-Tool handling for an Agent.
-
-ToolManager owns what an agent does with tools: building tool schemas,
-executing the model's tool calls (local callables, MCP servers, handoffs and
-tool search), retrying failed executions, and printing tool activity. The
-agent keeps its tool state (tools, tool_struct, tools_list_dictionary,
-tool_loader); the manager reads and writes it through self.agent.
-"""
-
+import asyncio
 import json
 import time
 import traceback
@@ -18,7 +9,9 @@ from pydantic import BaseModel
 
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.schemas.agent_errors import AgentToolExecutionError
-from swarms.structs.transcript import Transcript
+from swarms.structs.autonomous_loop_utils import (
+    get_autonomous_loop_tool_names,
+)
 from swarms.tools.base_tool import BaseTool
 from swarms.tools.dynamic_tool_loader import (
     DYNAMIC_TOOLS_NOTICE,
@@ -115,7 +108,7 @@ class ToolManager:
             agent.short_memory.add(
                 role=agent.agent_name,
                 content=agent.tool_struct.multi_base_models_to_dict(
-                    output_str=True
+                    agent.list_base_models, output_str=True
                 ),
             )
 
@@ -328,6 +321,78 @@ class ToolManager:
             )
         return len(cached)
 
+    def list_tools(self) -> List[str]:
+        """
+        Names of every tool the agent can call.
+
+        Local tools from ``tools=`` and ``tools_list_dictionary=`` come
+        first, then tools from MCP servers, then the built-ins:
+        ``handoff_task``, ``tool_search`` and the autonomous-loop tools.
+        Tools deferred behind ``tool_search`` are included, since the
+        agent can load and call them. MCP schemas are fetched at most
+        once per agent; if no server can be reached the error is logged
+        and the other names are still returned.
+
+        Returns:
+            List[str]: Tool names, without duplicates, in a stable order.
+        """
+        agent = self.agent
+        builtins = []
+        if exists(agent.handoffs):
+            builtins.extend(
+                _name(schema) for schema in get_handoff_tool_schema()
+            )
+        if agent.tool_loader is not None:
+            builtins.append(SEARCH_TOOL_NAME)
+        if agent.max_loops == "auto":
+            loop_names = get_autonomous_loop_tool_names()
+            if (
+                agent.selected_tools != "all"
+                and agent.selected_tools is not None
+            ):
+                loop_names = [
+                    name
+                    for name in loop_names
+                    if name in agent.selected_tools
+                ]
+            if not getattr(agent, "think_tool", False):
+                loop_names = [
+                    name for name in loop_names if name != "think"
+                ]
+            builtins.extend(loop_names)
+
+        mcp_schemas = []
+        if agent.mcp_enabled:
+            if agent._mcp_schemas_cache is None:
+                try:
+                    agent._mcp_schemas_cache = (
+                        agent.mcp_manager.get_tools()
+                    )
+                except Exception as error:
+                    logger.error(
+                        f"Could not list MCP tools for {agent.agent_name}: {error}"
+                    )
+            mcp_schemas = agent._mcp_schemas_cache or []
+        mcp_names = [_name(schema) for schema in mcp_schemas]
+
+        local_names = [
+            _name(schema)
+            for schema in agent.tools_list_dictionary or []
+        ]
+        if agent.tool_loader is not None:
+            local_names.extend(agent.tool_loader.loaded_names)
+            local_names.extend(agent.tool_loader.deferred_names)
+
+        reserved = set(mcp_names) | set(builtins)
+        ordered = [
+            name for name in local_names if name not in reserved
+        ]
+        return [
+            name
+            for name in dict.fromkeys(ordered + mcp_names + builtins)
+            if name
+        ]
+
     def tool_search_tool(
         self,
         query: str,
@@ -427,24 +492,23 @@ class ToolManager:
         self,
         response: Any,
         loop_count: int,
-        transcript: Optional[Transcript] = None,
         turn_calls: Optional[list] = None,
         turn_results: Optional[dict] = None,
     ) -> None:
         """
-        Run every tool call in one model response and answer each in the transcript.
+        Run every tool call in one model response and answer each in short_memory.
 
         Args:
             response: The parsed model response.
             loop_count: The current loop number.
-            transcript: The run's transcript, or None when transforms are on.
-            turn_calls: Tool calls recorded in the transcript this turn.
+            turn_calls: Tool calls recorded this turn.
             turn_results: Results keyed by tool call id, updated in place.
 
         Raises:
             AgentToolExecutionError: If the callable tools fail every retry.
         """
         agent = self.agent
+        turn_calls = turn_calls or []
         turn_results = {} if turn_results is None else turn_results
 
         if isinstance(response, list):
@@ -454,8 +518,8 @@ class ToolManager:
                 )
                 # Falling through with nothing left would log a misleading "no function calls found".
                 if not response:
-                    return self._flush(
-                        transcript, turn_calls, turn_results
+                    return agent.short_memory.flush_tool_results(
+                        turn_calls, turn_results
                     )
             self._run_handoff_calls(
                 response, turn_results, loop_count
@@ -463,13 +527,12 @@ class ToolManager:
 
         if exists(agent.tools):
             output = self.tool_execution_retry(response, loop_count)
-            if transcript is not None and turn_calls:
-                transcript.map_batch_results(
-                    [{"id": call["id"]} for call in turn_calls],
-                    output,
-                    turn_results,
-                    formatter=format_data_structure,
-                )
+            agent.short_memory.map_batch_results(
+                turn_calls,
+                output,
+                turn_results,
+                formatter=format_data_structure,
+            )
 
         if agent.mcp_enabled:
             if response is None:
@@ -481,17 +544,77 @@ class ToolManager:
                     response=response, current_loop=loop_count
                 )
 
-        self._flush(transcript, turn_calls, turn_results)
+        agent.short_memory.flush_tool_results(
+            turn_calls, turn_results
+        )
 
-    def _flush(
+    async def ahandle_tool_calls(
         self,
-        transcript: Optional[Transcript],
-        turn_calls: Optional[list],
-        turn_results: dict,
+        response: Any,
+        loop_count: int,
+        turn_calls: Optional[list] = None,
+        turn_results: Optional[dict] = None,
     ) -> None:
-        """Answer every recorded tool call; a gap makes the next request invalid."""
-        if transcript is not None and turn_calls:
-            transcript.flush_tool_results(turn_calls, turn_results)
+        """
+        Await every tool call in one model response and answer each in short_memory.
+
+        Args:
+            response: The parsed model response.
+            loop_count: The current loop number.
+            turn_calls: Tool calls recorded this turn.
+            turn_results: Results keyed by tool call id, updated in place.
+
+        Raises:
+            AgentToolExecutionError: If the callable tools fail every retry.
+        """
+        agent = self.agent
+        turn_calls = turn_calls or []
+        turn_results = {} if turn_results is None else turn_results
+
+        if isinstance(response, list):
+            if agent.tool_loader:
+                response = self._run_tool_search_calls(
+                    response, turn_results
+                )
+                if not response:
+                    return agent.short_memory.flush_tool_results(
+                        turn_calls, turn_results
+                    )
+            # Handoffs run other agents' blocking run, so they leave the loop.
+            if any(
+                _name(call) == "handoff_task" for call in response
+            ):
+                await asyncio.to_thread(
+                    self._run_handoff_calls,
+                    response,
+                    turn_results,
+                    loop_count,
+                )
+
+        if exists(agent.tools):
+            output = await self.atool_execution_retry(
+                response, loop_count
+            )
+            agent.short_memory.map_batch_results(
+                turn_calls,
+                output,
+                turn_results,
+                formatter=format_data_structure,
+            )
+
+        if agent.mcp_enabled:
+            if response is None:
+                logger.warning(
+                    f"LLM returned None response in loop {loop_count}, skipping MCP tool handling"
+                )
+            else:
+                await self.amcp_tool_handling(
+                    response=response, current_loop=loop_count
+                )
+
+        agent.short_memory.flush_tool_results(
+            turn_calls, turn_results
+        )
 
     def _run_tool_search_calls(
         self, response: list, turn_results: dict
@@ -651,12 +774,83 @@ class ToolManager:
             Exception: Whatever the tool executor raises.
         """
         agent = self.agent
+        calls = self._announce_tool_calls(response, loop_count)
+        if calls is None:
+            return
+
+        output = self._execute_calls(calls, response)
+        if not self._record_tool_output(calls, output):
+            return
+
+        # A temporary LLM instead of mutating the cached one.
+        if agent.tool_call_summary is True:
+            summary = agent.llm_manager.run_side_call(
+                self.temp_llm_instance_for_tool_summary(),
+                TOOL_SUMMARY_PROMPT.format(output=output),
+                current_loop=loop_count,
+            )
+            agent.short_memory.add(
+                role=agent.agent_name, content=summary
+            )
+            if agent.print_on is True:
+                agent.pretty_print(summary, loop_count)
+
+    async def aexecute_tools(
+        self, response: Any, loop_count: int
+    ) -> None:
+        """
+        Await the callable tool calls in a response and record their output.
+
+        Args:
+            response: A tool call dict or a list of them.
+            loop_count: The current loop number, used when printing.
+
+        Raises:
+            Exception: Whatever the tool executor raises.
+        """
+        agent = self.agent
+        calls = self._announce_tool_calls(response, loop_count)
+        if calls is None:
+            return
+
+        # Tools are blocking callables, so they run off the event loop.
+        output = await asyncio.to_thread(
+            self._execute_calls, calls, response
+        )
+        if not self._record_tool_output(calls, output):
+            return
+
+        if agent.tool_call_summary is True:
+            summary = await agent.llm_manager.arun_side_call(
+                self.temp_llm_instance_for_tool_summary(),
+                TOOL_SUMMARY_PROMPT.format(output=output),
+                current_loop=loop_count,
+            )
+            agent.short_memory.add(
+                role=agent.agent_name, content=summary
+            )
+            if agent.print_on is True:
+                agent.pretty_print(summary, loop_count)
+
+    def _announce_tool_calls(
+        self, response: Any, loop_count: int
+    ) -> Optional[list]:
+        """Print the tool calls about to run.
+
+        Args:
+            response: A tool call dict or a list of them.
+            loop_count: The current loop number, used when logging.
+
+        Returns:
+            Optional[list]: The tool call dicts, or None when there is no response.
+        """
+        agent = self.agent
         if response is None:
             logger.warning(
                 f"Cannot execute tools with None response in loop {loop_count}. "
                 "This may indicate the LLM did not return a valid response."
             )
-            return
+            return None
 
         calls = [
             call
@@ -676,10 +870,25 @@ class ToolManager:
                     arguments if isinstance(arguments, dict) else {},
                     call_id=call.get("id"),
                 )
+        return calls
 
+    def _execute_calls(self, calls: list, response: Any) -> Any:
+        """Run the callable tool calls and record each outcome in the tool loader.
+
+        Args:
+            calls: The tool call dicts in the response.
+            response: A tool call dict or a list of them.
+
+        Returns:
+            Any: What the tool executor returned.
+
+        Raises:
+            Exception: Whatever the tool executor raises.
+        """
+        agent = self.agent
         success = True
         try:
-            output = agent.tool_struct.execute_function_calls_from_api_response(
+            return agent.tool_struct.execute_function_calls_from_api_response(
                 response
             )
         except Exception:
@@ -692,12 +901,24 @@ class ToolManager:
                     name = _name(call)
                     if name:
                         loader.record_outcome(name, success)
+
+    def _record_tool_output(self, calls: list, output: Any) -> bool:
+        """Add tool output to memory and print it.
+
+        Args:
+            calls: The tool call dicts that ran.
+            output: What the tool executor returned.
+
+        Returns:
+            bool: False when there was no output to record.
+        """
+        agent = self.agent
         # Stored so a transcript builder can map it to tool_call ids.
         agent._last_tool_output = output
 
         # A reply with no tool calls parses to []; recording it would bury the answer under "[] (empty list)".
         if not output:
-            return
+            return False
 
         formatted = format_data_structure(output)
         agent.short_memory.add(
@@ -738,17 +959,7 @@ class ToolManager:
                     ),
                     title="Tool Execution",
                 )
-
-        # A temporary LLM instead of mutating the cached one.
-        if agent.tool_call_summary is True:
-            summary = self.temp_llm_instance_for_tool_summary().run(
-                TOOL_SUMMARY_PROMPT.format(output=output)
-            )
-            agent.short_memory.add(
-                role=agent.agent_name, content=summary
-            )
-            if agent.print_on is True:
-                agent.pretty_print(summary, loop_count)
+        return True
 
     def tool_execution_retry(
         self, response: Any, loop_count: int
@@ -815,27 +1026,14 @@ class ToolManager:
             tool_response = agent.mcp_manager.execute_tool_calls(
                 response, output_type="dict"
             )
-            if not tool_response:
-                if agent.verbose:
-                    logger.info(
-                        f"No MCP tool calls found in the response for {agent.agent_name}"
-                    )
+            if not self._record_mcp_response(tool_response):
                 return
 
-            text = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2, default=str)}"
-            if agent.print_on is True:
-                formatter.print_panel(
-                    content=text,
-                    title="MCP Tool Response: 🛠️",
-                    style="green",
-                )
-            agent.short_memory.add(role="Tool Executor", content=text)
-
             try:
-                summary = (
-                    self.temp_llm_instance_for_tool_summary().run(
-                        task=agent.short_memory.get_str()
-                    )
+                summary = agent.llm_manager.run_side_call(
+                    self.temp_llm_instance_for_tool_summary(),
+                    agent.short_memory.get_str(),
+                    current_loop=current_loop,
                 )
             except Exception as e:
                 logger.error(
@@ -853,6 +1051,125 @@ class ToolManager:
                 f"Error in MCP tool handling for {agent.agent_name}: {e} Traceback: {traceback.format_exc()}"
             )
             raise
+
+    async def atool_execution_retry(
+        self, response: Any, loop_count: int
+    ) -> Any:
+        """
+        Await tool execution, retrying up to agent.tool_retry_attempts times.
+
+        Args:
+            response: The model response holding the tool calls.
+            loop_count: The current loop number.
+
+        Returns:
+            Any: The tool output, or None when the response is None.
+
+        Raises:
+            AgentToolExecutionError: If every attempt fails.
+        """
+        agent = self.agent
+        if response is None:
+            logger.warning(
+                f"Agent '{agent.agent_name}' received None response from LLM in loop {loop_count}. "
+                f"This may indicate an issue with the model or prompt. Skipping tool execution."
+            )
+            return None
+
+        attempts = max(1, int(agent.tool_retry_attempts or 1))
+        last_error: Optional[Exception] = None
+        for attempt in range(1, attempts + 1):
+            try:
+                await self.aexecute_tools(
+                    response=response, loop_count=loop_count
+                )
+                return getattr(agent, "_last_tool_output", None)
+            except Exception as e:
+                last_error = e
+                logger.error(
+                    f"Agent '{agent.agent_name}' tool execution failed on attempt "
+                    f"{attempt}/{attempts} in loop {loop_count}: {str(e)}. "
+                    f"Full traceback: {traceback.format_exc()}"
+                )
+
+        raise AgentToolExecutionError(
+            f"Agent '{agent.agent_name}' failed to execute tools in loop "
+            f"{loop_count} after {attempts} attempt(s): {last_error}"
+        ) from last_error
+
+    async def amcp_tool_handling(
+        self, response: Any, current_loop: Optional[int] = 0
+    ) -> None:
+        """
+        Await the MCP tool calls in a response and record a summary.
+
+        Args:
+            response: The model response holding MCP tool calls.
+            current_loop: The current loop number, used when printing.
+
+        Raises:
+            AgentMCPConnectionError: If no MCP server could be reached.
+            AgentMCPToolError: If tool execution fails outright.
+        """
+        agent = self.agent
+        try:
+            tool_response = (
+                await agent.mcp_manager.aexecute_tool_calls(
+                    response, output_type="dict"
+                )
+            )
+            if not self._record_mcp_response(tool_response):
+                return
+
+            try:
+                summary = await agent.llm_manager.arun_side_call(
+                    self.temp_llm_instance_for_tool_summary(),
+                    agent.short_memory.get_str(),
+                    current_loop=current_loop,
+                )
+            except Exception as e:
+                logger.error(
+                    f"Error calling LLM after MCP tool execution: {e}"
+                )
+                summary = "I successfully executed the MCP tool and retrieved the information above."
+
+            if agent.print_on is True:
+                agent.pretty_print(summary, loop_count=current_loop)
+            agent.short_memory.add(
+                role=agent.agent_name, content=summary
+            )
+        except Exception as e:
+            logger.error(
+                f"Error in MCP tool handling for {agent.agent_name}: {e} Traceback: {traceback.format_exc()}"
+            )
+            raise
+
+    def _record_mcp_response(self, tool_response: Any) -> bool:
+        """Add an MCP tool response to memory and print it.
+
+        Args:
+            tool_response: What the MCP servers returned.
+
+        Returns:
+            bool: False when the response held no MCP tool calls.
+        """
+        agent = self.agent
+        if not tool_response:
+            if agent.verbose:
+                logger.info(
+                    f"No MCP tool calls found in the response for {agent.agent_name}"
+                )
+            return False
+
+        text = f"MCP Tool Response: \n\n {json.dumps(tool_response, indent=2, default=str)}"
+        if agent.print_on is True:
+            formatter.print_panel(
+                content=text,
+                title="MCP Tool Response: 🛠️",
+                style="green",
+            )
+        agent.short_memory.add(role="Tool Executor", content=text)
+        return True
 
     def temp_llm_instance_for_tool_summary(self) -> LiteLLM:
         """
