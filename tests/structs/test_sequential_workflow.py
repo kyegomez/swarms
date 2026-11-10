@@ -830,3 +830,68 @@ def test_member_channels_are_detached_in_favour_of_the_workflows(
         "A",
         "B",
     ]
+
+
+def test_arun_stream_starts_the_next_agent_when_the_stream_ends():
+    """B's request goes out while A is still posting its answer."""
+    import asyncio
+    import time
+    from types import SimpleNamespace
+
+    import swarms.utils.litellm_wrapper as litellm_wrapper
+
+    events, requests = [], []
+    replies = iter(["A-answer", "B-answer"])
+
+    async def acompletion(**params):
+        events.append("request")
+        requests.append(str(params["messages"]))
+        delta = SimpleNamespace(
+            content=next(replies),
+            tool_calls=None,
+            reasoning_content=None,
+        )
+        choice = SimpleNamespace(delta=delta, finish_reason=None)
+
+        async def stream():
+            yield SimpleNamespace(
+                choices=[choice], model="stub", usage=None
+            )
+
+        return stream()
+
+    class SlowChannel:
+        def post(self, name, content):
+            time.sleep(0.3)
+            events.append(f"{name} posted")
+
+    agents = [
+        Agent(
+            agent_name=name,
+            model_name="gpt-5.4",
+            max_loops=1,
+            print_on=False,
+            verbose=False,
+        )
+        for name in "AB"
+    ]
+    agents[0].channel = SlowChannel()
+    workflow = SequentialWorkflow(agents=agents, autosave=False)
+
+    async def consume():
+        return [token async for token in workflow.arun_stream("Go.")]
+
+    with patch.object(litellm_wrapper, "acompletion", acompletion):
+        tokens = asyncio.run(consume())
+
+    assert events == ["request", "request", "A posted"]
+    assert tokens == ["A-answer", "B-answer"]
+    assert "A-answer" in requests[1]
+    history = (
+        workflow.agent_rearrange.conversation.conversation_history
+    )
+    assert [(m["role"], m["content"]) for m in history] == [
+        ("User", "Go."),
+        ("A", "A-answer"),
+        ("B", "B-answer"),
+    ]

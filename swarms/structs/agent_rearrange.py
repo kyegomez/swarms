@@ -1212,12 +1212,15 @@ class AgentRearrange(SerializableMixin):
         task_idx: int = None,
         img: str = None,
         with_events: bool = False,
+        pending: Optional[Dict[str, asyncio.Future]] = None,
         **kwargs,
     ):
         """Stream a single sequential agent.
 
         Yields ``(agent_name, token)`` tuples by default, or structured event
-        dicts when ``with_events=True``.
+        dicts when ``with_events=True``. Returns once the agent's model stream
+        ends. The rest of its run goes into ``pending`` under its name, or is
+        awaited here when ``pending`` is None.
         """
         agent = find_agent_by_name(self.agents, agent_name)
 
@@ -1240,20 +1243,41 @@ class AgentRearrange(SerializableMixin):
         if img is not None:
             run_kwargs["img"] = img
         run_kwargs.update(kwargs)
-        try:
-            async for token in agent.arun_stream(**run_kwargs):
-                chunks.append(token)
-                if with_events:
-                    yield {
-                        "type": "token",
-                        "agent": agent_name,
-                        "token": token,
-                    }
-                else:
-                    yield (agent_name, token)
-        finally:
-            if awareness_info and original_system_prompt is not None:
-                agent.system_prompt = original_system_prompt
+        tokens: asyncio.Queue = asyncio.Queue()
+        ended = object()
+        # Other members, such as nested swarms, hand over when their stream closes.
+        if isinstance(agent, Agent):
+            run_kwargs["on_stream_end"] = lambda: tokens.put_nowait(
+                ended
+            )
+
+        async def stream():
+            try:
+                async for token in agent.arun_stream(**run_kwargs):
+                    tokens.put_nowait(token)
+            finally:
+                tokens.put_nowait(ended)
+                if (
+                    awareness_info
+                    and original_system_prompt is not None
+                ):
+                    agent.system_prompt = original_system_prompt
+
+        run = asyncio.ensure_future(stream())
+        if pending is not None:
+            pending[agent_name] = run
+        while (token := await tokens.get()) is not ended:
+            chunks.append(token)
+            if with_events:
+                yield {
+                    "type": "token",
+                    "agent": agent_name,
+                    "token": token,
+                }
+            else:
+                yield (agent_name, token)
+        if pending is None or run.done():
+            await run
 
         output = "".join(chunks)
         self.conversation.add(agent.agent_name, output)
@@ -1374,6 +1398,10 @@ class AgentRearrange(SerializableMixin):
                 ``{"type": "token", "agent": ..., "token": ...}``,
                 ``{"type": "agent_end", "agent": ..., "output": ...}``.
 
+        A sequential agent hands over as soon as its model stream ends: the
+        next step starts while its post-processing (autosave, channel post)
+        finishes. Answers are still recorded in flow order.
+
         Not yet supported in streaming mode: ``max_loops > 1``,
         ``custom_tasks``. Use ``run()`` for those.
         """
@@ -1382,26 +1410,42 @@ class AgentRearrange(SerializableMixin):
 
         self.conversation.add("User", task)
 
-        for task_idx, agent_names in enumerate(self.steps):
+        # Runs whose stream has ended but whose post-processing has not.
+        pending: Dict[str, asyncio.Future] = {}
+        try:
+            for task_idx, agent_names in enumerate(self.steps):
+                # An agent runs again only after its previous run finishes.
+                for name in agent_names:
+                    if name in pending:
+                        await pending.pop(name)
 
-            if len(agent_names) > 1:
-                async for evt in self._run_concurrent_workflow_stream(
-                    agent_names=agent_names,
-                    img=img,
-                    with_events=with_events,
-                    **kwargs,
-                ):
+                if len(agent_names) > 1:
+                    step = self._run_concurrent_workflow_stream(
+                        agent_names=agent_names,
+                        img=img,
+                        with_events=with_events,
+                        **kwargs,
+                    )
+                else:
+                    step = self._run_sequential_workflow_stream(
+                        agent_name=agent_names[0],
+                        steps=self.steps,
+                        task_idx=task_idx,
+                        img=img,
+                        with_events=with_events,
+                        pending=pending,
+                        **kwargs,
+                    )
+                async for evt in step:
                     yield evt
-            else:
-                async for evt in self._run_sequential_workflow_stream(
-                    agent_name=agent_names[0],
-                    steps=self.steps,
-                    task_idx=task_idx,
-                    img=img,
-                    with_events=with_events,
-                    **kwargs,
-                ):
-                    yield evt
+
+            await asyncio.gather(*pending.values())
+        finally:
+            for run in pending.values():
+                run.cancel()
+            await asyncio.gather(
+                *pending.values(), return_exceptions=True
+            )
 
     def run_stream(
         self,
