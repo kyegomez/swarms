@@ -2959,3 +2959,37 @@ def test_output_schema_returns_a_validated_model(use_arun, replies):
 
     assert len(sent) == 1
     assert sent[0]["response_format"] is _Report
+
+
+@pytest.mark.parametrize("use_async", [False, True])
+def test_autosave_keeps_the_conversation_out_of_config_json(
+    monkeypatch, tmp_path, mocked_llm, use_async
+):
+    """#2515: config.json once per loop, the conversation in its own file."""
+    from swarms.utils.workspace_manager import WorkspaceManager
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    configs, save_config = [], WorkspaceManager.save_config
+
+    def spy(self, *args, **kwargs):
+        path = save_config(self, *args, **kwargs)
+        with open(path) as f:
+            configs.append(json.load(f))
+        return path
+
+    monkeypatch.setattr(WorkspaceManager, "save_config", spy)
+    agent = _flow("autosave", mocked_llm, tmp_path)
+    agent.autosave, agent.max_loops = True, 3
+    if use_async:
+        asyncio.run(agent.arun("hello"))
+    else:
+        agent.run("hello")
+
+    # Before the loop, after each of the 3 steps, and at the end.
+    assert len(configs) == 5
+    assert all("short_memory" not in c for c in configs)
+    restored = _flow("restore", mocked_llm, tmp_path)
+    restored.short_memory.load(
+        os.path.join(agent.workspace.dir, "conversation_history.json")
+    )
+    assert "hello" in restored.short_memory.get_str()

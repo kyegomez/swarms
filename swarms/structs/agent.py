@@ -1152,10 +1152,6 @@ class Agent:
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
 
-                # Autosave config at the start of each loop step
-                if self.autosave:
-                    self._autosave_config_step(loop_count=loop_count)
-
                 # Dynamic temperature
                 if self.dynamic_temperature_enabled is True:
                     self.dynamic_temperature()
@@ -1315,6 +1311,7 @@ class Agent:
 
             if self.autosave is True:
                 self.save()
+                self.workspace.save_conversation(self.short_memory)
                 self._autosave_config_step(loop_count=loop_count)
 
             # Output formatting based on output_type
@@ -1358,8 +1355,10 @@ class Agent:
         if not self.autosave:
             return
 
+        # The conversation goes to conversation_history.json instead.
         path = self.workspace.save_config(
-            additional_metadata={"loop_count": loop_count}
+            additional_metadata={"loop_count": loop_count},
+            exclude=("short_memory",),
         )
 
         if path and self.verbose and loop_count is not None:
@@ -1371,6 +1370,7 @@ class Agent:
         if self.autosave is True:
             # Save full state
             self.save()
+            self.workspace.save_conversation(self.short_memory)
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
@@ -1735,9 +1735,6 @@ Subtask Breakdown:
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
 
-                if self.autosave:
-                    self._autosave_config_step(loop_count=loop_count)
-
                 if self.dynamic_temperature_enabled is True:
                     self.dynamic_temperature()
 
@@ -1890,6 +1887,7 @@ Subtask Breakdown:
 
             if self.autosave is True:
                 self.save()
+                self.workspace.save_conversation(self.short_memory)
                 self._autosave_config_step(loop_count=loop_count)
 
             return history_output_formatter(
