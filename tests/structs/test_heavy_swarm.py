@@ -919,6 +919,42 @@ def test_run_raises_when_question_generation_fails(
         swarm.run("task")
 
 
+@pytest.mark.parametrize("show_dashboard", [False, True])
+def test_a_hung_worker_times_out_without_holding_the_run(
+    show_dashboard,
+):
+    import threading
+    import time
+
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+        timeout=0.3,
+        show_dashboard=show_dashboard,
+    )
+    release = threading.Event()
+    roles = ["research", "analysis", "alternatives", "verification"]
+    for role in roles:
+        swarm.agents[role].run = (
+            lambda *a, _r=role, **kw: f"{_r} done"
+        )
+    swarm.agents["research"].run = lambda *a, **kw: release.wait(3)
+
+    start = time.monotonic()
+    results = swarm._execute_agents_parallel(
+        {f"{r}_question": r for r in roles}, swarm.agents
+    )
+    elapsed = time.monotonic() - start
+    release.set()
+
+    assert elapsed < 1.5
+    assert results["research"] == "Timeout after 0.3 seconds"
+    assert len(results) == 4
+    assert "Timeout" not in str(
+        {k: v for k, v in results.items() if k != "research"}
+    )
+
+
 class TestSwarmRouterGrokIntegration:
     """Verify SwarmRouter passes through grok flag."""
 
