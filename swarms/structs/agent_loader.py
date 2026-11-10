@@ -77,6 +77,7 @@ class AgentConfig(BaseModel):
     )
     saved_state_path: Optional[str] = None
     user_name: Optional[str] = None
+    stopping_token: Optional[str] = None
     retry_attempts: Optional[int] = Field(default=None, ge=1)
     context_length: Optional[int] = Field(default=None, ge=1)
     return_step_meta: Optional[bool] = None

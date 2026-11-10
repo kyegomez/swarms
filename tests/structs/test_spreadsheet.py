@@ -411,6 +411,25 @@ def test_load_path_alone_loads_every_row_with_numeric_max_loops(
     assert [a.max_loops for a in swarm.agents] == [2, "auto"]
 
 
+def test_csv_rows_take_agent_loader_columns_and_agent_defaults(
+    tmp_path, temp_workspace
+):
+    """A CSV row reads any AgentLoader column and leaves the rest at the Agent defaults."""
+    csv_path = tmp_path / "agents.csv"
+    csv_path.write_text(
+        "agent_name,description,system_prompt,task,temperature\n"
+        "a1,d,p,t1,0.2\n"
+    )
+    swarm = SpreadSheetSwarm(load_path=str(csv_path))
+    swarm.load_from_csv()
+    loaded = swarm.agents[0]
+    assert (loaded.model_name, loaded.temperature) == (
+        Agent(agent_name="default").model_name,
+        0.2,
+    )
+    assert swarm.agent_tasks == {"a1": "t1"}
+
+
 def test_load_from_nonexistent_csv(temp_workspace):
     """Test loading from non-existent CSV file."""
     agent = Agent(
