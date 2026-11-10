@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from loguru import logger
 
+from swarms.structs.agent import Agent
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
 )
@@ -90,12 +91,20 @@ class BatchedGridWorkflow:
         """
         Run the batched grid workflow with the given tasks.
 
+        Each call starts every Agent from a clean history, so messages
+        added to its ``short_memory`` by hand before the call are
+        dropped. The system prompt and seeded ``messages`` are kept.
+
         Args:
             tasks: List of tasks to execute.
 
         Returns:
             List: Results from all execution loops.
         """
+        for agent in self.agents:
+            if isinstance(agent, Agent):
+                agent.reset()
+
         results = []
         current_loop = 0
 
@@ -114,6 +123,10 @@ class BatchedGridWorkflow:
     def run(self, tasks: List[str]):
         """
         Run the batched grid workflow with the given tasks.
+
+        Each call starts every Agent from a clean history, so messages
+        added to its ``short_memory`` by hand before the call are
+        dropped. The system prompt and seeded ``messages`` are kept.
 
         Args:
             tasks: List of tasks to execute.
