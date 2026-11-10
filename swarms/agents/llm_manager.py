@@ -315,6 +315,7 @@ class LLMManager:
                 "retries": agent.retry_attempts,
                 "reasoning_effort": agent.reasoning_effort,
                 "thinking_tokens": agent.thinking_tokens,
+                "response_format": agent.output_schema,
                 "reasoning_enabled": agent.reasoning_enabled,
                 "agent_name": agent.agent_name,
                 "prompt_caching": agent.prompt_caching,
@@ -363,11 +364,6 @@ class LLMManager:
             # The provider stops generating at the token; llm_args can still override stop.
             if agent.stopping_token:
                 additional_args["stop"] = [agent.stopping_token]
-
-            if agent.output_schema is not None:
-                additional_args["response_format"] = (
-                    agent.output_schema
-                )
 
             if agent.llm_args is not None:
                 additional_args.update(agent.llm_args)

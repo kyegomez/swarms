@@ -2935,33 +2935,23 @@ def test_output_schema_returns_a_validated_model(use_arun, replies):
             content=replies[len(sent) - 1], tool_calls=None
         )
         return SimpleNamespace(
-            choices=[
-                SimpleNamespace(message=message, finish_reason="stop")
-            ],
-            model="stub",
-            usage=None,
+            choices=[SimpleNamespace(message=message)]
         )
 
     async def acompletion(**params):
         return completion(**params)
 
+    agent = Agent(max_loops=1, print_on=False, output_schema=_Report)
+
+    def run(task):
+        if use_arun:
+            return asyncio.run(agent.arun(task))
+        return agent.run(task)
+
     with (
         patch.object(litellm_wrapper, "completion", completion),
         patch.object(litellm_wrapper, "acompletion", acompletion),
     ):
-        agent = Agent(
-            agent_name="schema-agent",
-            max_loops=1,
-            print_on=False,
-            persistent_memory=False,
-            output_schema=_Report,
-        )
-
-        def run(task):
-            if use_arun:
-                return asyncio.run(agent.arun(task))
-            return agent.run(task)
-
         if replies[-1] == _INVALID_REPORT:
             with pytest.raises(AgentOutputSchemaError) as raised:
                 run("Rate this plan.")
@@ -2974,4 +2964,4 @@ def test_output_schema_returns_a_validated_model(use_arun, replies):
     assert len(sent) == len(replies)
     assert all(p["response_format"] is _Report for p in sent)
     if len(sent) > 1:
-        assert "score" in str(sent[1]["messages"][-1]["content"])
+        assert "score" in sent[1]["messages"][-1]["content"]
