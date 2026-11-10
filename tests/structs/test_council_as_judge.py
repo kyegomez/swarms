@@ -79,8 +79,14 @@ def test_judges_and_aggregator_send_no_temperature(
             usage=None,
         )
 
+    async def fake_acompletion(**params):
+        return fake_completion(**params)
+
     monkeypatch.setattr(
         litellm_wrapper, "completion", fake_completion
+    )
+    monkeypatch.setattr(
+        litellm_wrapper, "acompletion", fake_acompletion
     )
 
     council = CouncilAsAJudge(
