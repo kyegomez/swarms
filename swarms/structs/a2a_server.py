@@ -21,8 +21,9 @@ class A2AServer(MCPDeployer):
             "description": self.description,
             "tags": [type(self.target).__name__],
         }
+        path = request.scope.get("root_path", "") + "/a2a"
         interface = {
-            "url": f"{request.base_url}a2a",
+            "url": str(request.base_url.replace(path=path)),
             "protocolBinding": "JSONRPC",
             "protocolVersion": "1.0",
         }
@@ -64,5 +65,4 @@ class A2AServer(MCPDeployer):
             return error(-32603, repr(e))
         message = {"role": "ROLE_AGENT", "parts": [{"text": output}]}
         message["messageId"] = str(uuid.uuid4())
-        reply["result"] = {"message": message}
-        return JSONResponse(reply)
+        return JSONResponse(reply | {"result": {"message": message}})
