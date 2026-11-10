@@ -1,4 +1,5 @@
 import json
+import threading
 from typing import Optional
 
 import pytest
@@ -367,6 +368,70 @@ def test_tool_call_objects_return_results_in_call_order(sequential):
 
     assert raw == [5, {"location": "Paris", "unit": "celsius"}]
     assert text[0] == "Function 'add_numbers' result:\n5"
+
+
+def test_a_failing_call_returns_its_error_while_the_others_run():
+    together = threading.Barrier(3, timeout=5)
+
+    def fetch(name: str) -> str:
+        together.wait()
+        return f"fetched {name}"
+
+    def broken(name: str) -> str:
+        together.wait()
+        raise RuntimeError("disk full")
+
+    results = BaseTool(
+        tools=[fetch, broken]
+    ).execute_function_calls_from_api_response(
+        [
+            SdkToolCall("c1", "fetch", {"name": "a"}),
+            SdkToolCall("c2", "broken", {"name": "b"}),
+            SdkToolCall("c3", "fetch", {"name": "c"}),
+        ],
+        return_as_string=False,
+    )
+
+    assert results[0] == "fetched a"
+    assert "disk full" in str(results[1])
+    assert results[2] == "fetched c"
+
+
+def test_a_tool_marked_sequential_never_overlaps_another_call():
+    together = threading.Barrier(2, timeout=5)
+    later_call_started = threading.Event()
+    running, seen_by_write = [], []
+
+    def fetch(name: str) -> str:
+        running.append(name)
+        if name == "c":
+            later_call_started.set()
+        else:
+            together.wait()
+        running.remove(name)
+        return name
+
+    def write(name: str) -> str:
+        seen_by_write.append(
+            (list(running), later_call_started.wait(timeout=0.2))
+        )
+        return name
+
+    write.sequential = True
+    results = BaseTool(
+        tools=[fetch, write]
+    ).execute_function_calls_from_api_response(
+        [
+            SdkToolCall("c1", "fetch", {"name": "a"}),
+            SdkToolCall("c2", "fetch", {"name": "b"}),
+            SdkToolCall("c3", "write", {"name": "x"}),
+            SdkToolCall("c4", "fetch", {"name": "c"}),
+        ],
+        return_as_string=False,
+    )
+
+    assert results == ["a", "b", "x", "c"]
+    assert seen_by_write == [([], False)]
 
 
 def run_all_tests():
