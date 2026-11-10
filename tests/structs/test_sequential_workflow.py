@@ -833,11 +833,10 @@ def test_member_channels_are_detached_in_favour_of_the_workflows(
 
 
 @pytest.mark.parametrize("slow_step", ["channel", "autosave"])
-def test_arun_stream_starts_the_next_agent_when_the_stream_ends(
+def test_run_stream_starts_the_next_agent_when_the_stream_ends(
     slow_step,
 ):
     """B's request goes out while A is still posting or saving."""
-    import asyncio
     import time
     from types import SimpleNamespace
 
@@ -849,17 +848,12 @@ def test_arun_stream_starts_the_next_agent_when_the_stream_ends(
     async def acompletion(**params):
         events.append("request")
         requests.append(str(params["messages"]))
-        delta = SimpleNamespace(
-            content=next(replies),
-            tool_calls=None,
-            reasoning_content=None,
+        choice = SimpleNamespace(
+            delta=SimpleNamespace(content=next(replies))
         )
-        choice = SimpleNamespace(delta=delta, finish_reason=None)
 
         async def stream():
-            yield SimpleNamespace(
-                choices=[choice], model="stub", usage=None
-            )
+            yield SimpleNamespace(choices=[choice])
 
         return stream()
 
@@ -868,13 +862,7 @@ def test_arun_stream_starts_the_next_agent_when_the_stream_ends(
         events.append("A done")
 
     agents = [
-        Agent(
-            agent_name=name,
-            model_name="gpt-5.4",
-            max_loops=1,
-            print_on=False,
-            verbose=False,
-        )
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
         for name in "AB"
     ]
     if slow_step == "channel":
@@ -883,13 +871,10 @@ def test_arun_stream_starts_the_next_agent_when_the_stream_ends(
         agents[0].autosave = True
         agents[0].save = slow
         agents[0]._autosave_config_step = lambda *args, **kwargs: None
-    workflow = SequentialWorkflow(agents=agents, autosave=False)
-
-    async def consume():
-        return [token async for token in workflow.arun_stream("Go.")]
+    workflow = SequentialWorkflow(agents=agents)
 
     with patch.object(litellm_wrapper, "acompletion", acompletion):
-        tokens = asyncio.run(consume())
+        tokens = list(workflow.run_stream("Go."))
 
     assert events[-3:] == ["request", "request", "A done"]
     assert tokens == ["A-answer", "B-answer"]
