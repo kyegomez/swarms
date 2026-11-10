@@ -28,7 +28,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [groupchat/](multi_agent/groupchat/) | Asynchronous self-selecting group chat examples where agents independently decide whether to respond |
 | [heavy_swarm_examples/](multi_agent/heavy_swarm_examples/) | Heavy swarm implementations for complex tasks |
 | [hiearchical_swarm/](multi_agent/hiearchical_swarm/) | Hierarchical swarm structures and patterns |
-| [hscf/](multi_agent/hscf/) | Hierarchical Swarm Control Framework examples |
 | [council/llm_council/](multi_agent/council/llm_council/) | LLM Council collaboration patterns |
 | [majority_voting/](multi_agent/majority_voting/) | Majority voting and consensus examples |
 | [mar/](multi_agent/mar/) | Multi-agent rearrangement examples |
@@ -40,7 +39,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [social_algorithms_examples/](multi_agent/social_algorithms_examples/) | Social algorithm patterns and implementations |
 | [spreadsheet_examples/](multi_agent/spreadsheet_examples/) | Spreadsheet-based agent examples |
 | [swarm_router/](multi_agent/swarm_router/) | Swarm routing and routing patterns |
-| [swarmarrange/](multi_agent/swarmarrange/) | Swarm arrangement examples |
 | [swarms_api_examples/](multi_agent/swarms_api_examples/) | Swarms API integration examples |
 | [utils/](multi_agent/utils/) | Multi-agent utility functions |
 
@@ -77,30 +75,20 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [browser_use_as_tool.py](tools/browser_use_as_tool.py) | Browser automation tool |
 | [browser_use_demo.py](tools/browser_use_demo.py) | Browser automation demonstration |
 | [claude_as_a_tool.py](tools/claude_as_a_tool.py) | Claude model integration as a tool |
-| [exa_search_agent.py](tools/exa_search_agent.py) | Exa search integration |
-| [exa_search_agent_quant.py](tools/exa_search_agent_quant.py) | Exa search with quantitative analysis |
-| [exa_search_test.py](tools/exa_search_test.py) | Exa search testing examples |
+| [exa_search_agent.py](tools/exa_search/exa_search_agent.py) | Exa search integration |
+| [exa_search_agent_quant.py](tools/exa_search/exa_search_agent_quant.py) | Exa search with quantitative analysis |
+| [exa_search_test.py](tools/exa_search/exa_search_test.py) | Exa search testing examples |
 | [firecrawl_agents_example.py](tools/firecrawl_agents_example.py) | Firecrawl integration |
 | [base_tool_examples/](tools/base_tool_examples/) | Base tool implementation examples |
 | [base_tool_examples.py](tools/base_tool_examples/base_tool_examples.py) | Base tool examples |
 | [conver_funcs_to_schema.py](tools/base_tool_examples/conver_funcs_to_schema.py) | Convert functions to schema |
-| [exa_search_test.py](tools/base_tool_examples/exa_search_test.py) | Exa search test |
 | [example_usage.py](tools/base_tool_examples/example_usage.py) | Base tool usage example |
-| [schema_validation_example.py](tools/base_tool_examples/schema_validation_example.py) | Schema validation example |
-| [test_anthropic_specific.py](tools/base_tool_examples/test_anthropic_specific.py) | Anthropic-specific test |
-| [test_base_tool_comprehensive_fixed.py](tools/base_tool_examples/test_base_tool_comprehensive_fixed.py) | Comprehensive base tool test (fixed) |
-| [test_base_tool_comprehensive.py](tools/base_tool_examples/test_base_tool_comprehensive.py) | Comprehensive base tool test |
-| [test_function_calls_anthropic.py](tools/base_tool_examples/test_function_calls_anthropic.py) | Function calls test (Anthropic) |
-| [test_function_calls.py](tools/base_tool_examples/test_function_calls.py) | Function calls test |
 | [multii_tool_use/](tools/multii_tool_use/) | Multi-tool usage examples |
 | [stagehand/](tools/stagehand/) | Stagehand UI automation |
 | [1_stagehand_wrapper_agent.py](tools/stagehand/1_stagehand_wrapper_agent.py) | Stagehand wrapper agent |
 | [2_stagehand_tools_agent.py](tools/stagehand/2_stagehand_tools_agent.py) | Stagehand tools agent |
 | [3_stagehand_mcp_agent.py](tools/stagehand/3_stagehand_mcp_agent.py) | Stagehand MCP agent |
 | [4_stagehand_multi_agent_workflow.py](tools/stagehand/4_stagehand_multi_agent_workflow.py) | Stagehand multi-agent workflow |
-| [tests/](tools/stagehand/tests/) | Stagehand tests |
-| [test_stagehand_integration.py](tools/stagehand/tests/test_stagehand_integration.py) | Stagehand integration test |
-| [test_stagehand_simple.py](tools/stagehand/tests/test_stagehand_simple.py) | Simple Stagehand test |
 
 ### API & Protocols
 
@@ -164,6 +152,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [example2_technical_evaluation.py](reasoning_agents/agent_judge_examples/example2_technical_evaluation.py) | Technical evaluation example |
 | [example3_creative_evaluation.py](reasoning_agents/agent_judge_examples/example3_creative_evaluation.py) | Creative evaluation example |
 | [reasoning_agent_router_examples/](reasoning_agents/reasoning_agent_router_examples/) | Reasoning agent router examples |
+| [tree_of_thoughts_examples/](reasoning_agents/tree_of_thoughts_examples/) | Tree of Thoughts search on mathematics, physics and reasoning problems |
 | [agent_judge_example.py](reasoning_agents/reasoning_agent_router_examples/agent_judge_example.py) | Agent judge example |
 | [gkp_agent_example.py](reasoning_agents/reasoning_agent_router_examples/gkp_agent_example.py) | GKP agent example |
 | [ire_example.py](reasoning_agents/reasoning_agent_router_examples/ire_example.py) | IRE example |
@@ -244,9 +233,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [conversation_test.py](utils/misc/conversation_test.py) | Conversation test |
 | [csvagent_example.py](utils/misc/csvagent_example.py) | CSV agent example |
 | [dict_to_table.py](utils/misc/dict_to_table.py) | Dictionary to table conversion |
-| [swarm_matcher_example.py](utils/misc/swarm_matcher_example.py) | Swarm matcher example |
 | [test_load_conversation.py](utils/misc/test_load_conversation.py) | Load conversation test |
-| [visualizer_test.py](utils/misc/visualizer_test.py) | Visualizer test |
 | [telemetry/](utils/telemetry/) | Telemetry and monitoring utilities |
 
 ### User Interface
@@ -266,7 +253,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [01_setup_check.sh](cli/01_setup_check.sh) | Environment setup verification |
 | [02_onboarding.sh](cli/02_onboarding.sh) | User onboarding process |
 | [03_get_api_key.sh](cli/03_get_api_key.sh) | API key retrieval |
-| [04_check_login.sh](cli/04_check_login.sh) | Login status verification |
 | [05_create_agent.sh](cli/05_create_agent.sh) | Create custom agents |
 | [06_run_agents_yaml.sh](cli/06_run_agents_yaml.sh) | Run agents from YAML configuration |
 | [07_load_markdown.sh](cli/07_load_markdown.sh) | Load markdown configurations |
@@ -357,8 +343,8 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Browser Automation](tools/browser_use_as_tool.py) | Browser control |
 | [Browser Demo](tools/browser_use_demo.py) | Browser automation demonstration |
 | [Claude as Tool](tools/claude_as_a_tool.py) | Claude model as a tool |
-| [Exa Search](tools/exa_search_agent.py) | Search integration |
-| [Exa Search Quant](tools/exa_search_agent_quant.py) | Exa search with quantitative analysis |
+| [Exa Search](tools/exa_search/exa_search_agent.py) | Search integration |
+| [Exa Search Quant](tools/exa_search/exa_search_agent_quant.py) | Exa search with quantitative analysis |
 | [Firecrawl](tools/firecrawl_agents_example.py) | Firecrawl web scraping integration |
 | [Stagehand](tools/stagehand/) | UI automation |
 | [Base Tools](tools/base_tool_examples/) | Base tool implementation examples |
@@ -393,7 +379,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Setup Check](cli/01_setup_check.sh) | Verify environment setup |
 | [Onboarding](cli/02_onboarding.sh) | User onboarding process |
 | [Get API Key](cli/03_get_api_key.sh) | API key retrieval |
-| [Check Login](cli/04_check_login.sh) | Login status verification |
 | [Create Agent](cli/05_create_agent.sh) | Create custom agents via CLI |
 | [Run Agents YAML](cli/06_run_agents_yaml.sh) | Run agents from YAML configuration |
 | [Load Markdown](cli/07_load_markdown.sh) | Load markdown configurations |

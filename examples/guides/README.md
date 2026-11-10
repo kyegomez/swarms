@@ -2,6 +2,10 @@
 
 This directory contains comprehensive guides and tutorials for using Swarms effectively.
 
+## AgentSH Implementation
+- [agentsh.py](agentsh_implementation/agentsh.py) - Self-organized multi-agent harness with no orchestrator (Agensh, arXiv:2609.26781)
+- [README.md](agentsh_implementation/README.md) - How the implementation works
+
 ## Generation Length Blog
 - [longform_generator.py](generation_length_blog/longform_generator.py) - Long-form content generation
 - [universal_api.py](generation_length_blog/universal_api.py) - Universal API implementation
@@ -17,7 +21,6 @@ This directory contains comprehensive guides and tutorials for using Swarms effe
 - [graph_workflow_technical_guide.md](graphworkflow_guide/graph_workflow_technical_guide.md) - Technical documentation
 - [quick_start_guide.py](graphworkflow_guide/quick_start_guide.py) - Quick start implementation
 - [README.md](graphworkflow_guide/README.md) - Main documentation
-- [setup_and_test.py](graphworkflow_guide/setup_and_test.py) - Setup and testing utilities
 
 ## Hierarchical Marketing Team
 - [hiearchical_marketing_team.py](hiearchical_marketing_team.py) - Marketing team hierarchy example
@@ -56,7 +59,7 @@ This directory contains comprehensive guides and tutorials for using Swarms effe
 - [02_round_robin_swarm_routing.py](880_update_changelog_examples/02_round_robin_swarm_routing.py) - Round robin swarm routing
 - [03_graph_workflow_rustworkx.py](880_update_changelog_examples/03_graph_workflow_rustworkx.py) - Graph workflow with RustWorkX
 - [04_agent_rearrange.py](880_update_changelog_examples/04_agent_rearrange.py) - Agent rearrange example
-- [05_swarm_rearrange.py](880_update_changelog_examples/05_swarm_rearrange.py) - Swarm rearrange example
+- [05_nested_swarms.py](880_update_changelog_examples/05_nested_swarms.py) - Nested swarms in an AgentRearrange flow
 - [06_spreadsheet_swarm.py](880_update_changelog_examples/06_spreadsheet_swarm.py) - Spreadsheet swarm example
 - [07_model_router.py](880_update_changelog_examples/07_model_router.py) - Model router example
 - [08_self_moa_seq.py](880_update_changelog_examples/08_self_moa_seq.py) - Self MOA sequential example

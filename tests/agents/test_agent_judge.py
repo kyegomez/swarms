@@ -6,7 +6,7 @@ from swarms.agents.agent_judge import AgentJudge
 from swarms.structs.agent import Agent
 
 
-def _judge(max_loops=1):
+def _judge(monkeypatch, max_loops=1):
     """A judge whose LLM answers locally, recording what it received."""
     calls = []
     judge = AgentJudge(
@@ -19,13 +19,15 @@ def _judge(max_loops=1):
         )
         return f"verdict-{len(calls)}"
 
-    Agent.call_llm = fake_call_llm
+    monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
     return judge, calls
 
 
-def test_the_judge_reads_its_own_prior_verdict_as_assistant():
+def test_the_judge_reads_its_own_prior_verdict_as_assistant(
+    monkeypatch,
+):
     """A previous evaluation is the judge's own turn, not more material."""
-    judge, calls = _judge(max_loops=2)
+    judge, calls = _judge(monkeypatch, max_loops=2)
     judge.run(task="rate this answer")
 
     assert len(calls) == 2
@@ -39,9 +41,9 @@ def test_the_judge_reads_its_own_prior_verdict_as_assistant():
     assert own[0]["role"] == "assistant"
 
 
-def test_context_does_not_compound_across_loops():
+def test_context_does_not_compound_across_loops(monkeypatch):
     """Each loop must be a strict prefix of the next, not a re-flattening."""
-    judge, calls = _judge(max_loops=3)
+    judge, calls = _judge(monkeypatch, max_loops=3)
     judge.run(task="rate this answer")
 
     # call_llm receives the whole transcript: prior turns plus the instruction, appended last.
@@ -58,9 +60,9 @@ def test_context_does_not_compound_across_loops():
         assert len(later) == len(earlier) + 1
 
 
-def test_the_conversation_is_not_flattened_into_the_task():
+def test_the_conversation_is_not_flattened_into_the_task(monkeypatch):
     """The old form passed the whole transcript as one user string."""
-    judge, calls = _judge(max_loops=2)
+    judge, calls = _judge(monkeypatch, max_loops=2)
     judge.run(task="rate this answer")
 
     for call in calls:
@@ -69,8 +71,8 @@ def test_the_conversation_is_not_flattened_into_the_task():
         ), f"the judge received flattened prose: {call['task']}"
 
 
-def test_a_single_loop_sends_only_the_instruction():
-    judge, calls = _judge(max_loops=1)
+def test_a_single_loop_sends_only_the_instruction(monkeypatch):
+    judge, calls = _judge(monkeypatch, max_loops=1)
     judge.run(task="rate this answer")
 
     assert len(calls) == 1

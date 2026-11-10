@@ -1,4 +1,4 @@
-from swarms.utils import load_agent_from_markdown
+from swarms import load_agent_from_markdown
 
 agent = load_agent_from_markdown("finance_advisor.md")
 
