@@ -1884,6 +1884,16 @@ Subtask Breakdown:
                         ),
                     )
 
+                # No more tokens come after the last loop's model and tool calls.
+                stream_end_hook = getattr(
+                    self, "_stream_end_hook", None
+                )
+                if (
+                    loop_count == self.max_loops
+                    and stream_end_hook is not None
+                ):
+                    stream_end_hook()
+
                 if self.autosave:
                     self._autosave_config_step(loop_count=loop_count)
 
@@ -3299,6 +3309,7 @@ Subtask Breakdown:
         self,
         task: str,
         img: Optional[str] = None,
+        on_stream_end: Optional[Callable[[], Any]] = None,
         **kwargs,
     ):
         """Run the agent on the event loop and yield tokens as the provider sends them.
@@ -3308,6 +3319,9 @@ Subtask Breakdown:
         Args:
             task: The prompt or task string.
             img: Optional image path or base64 string for vision models.
+            on_stream_end: Called after the last token is yielded, while the
+                run's post-processing (autosave, channel post) still runs.
+                The generator itself ends only when the run does.
             **kwargs: Extra keyword arguments forwarded to arun.
 
         Yields:
@@ -3319,6 +3333,7 @@ Subtask Breakdown:
         """
         token_queue: asyncio.Queue = asyncio.Queue()
         _DONE = object()
+        _STREAM_END = object()
 
         async def _on_token(token):
             if isinstance(token, dict):
@@ -3328,6 +3343,9 @@ Subtask Breakdown:
 
         original_streaming_on = self.streaming_on
         self.streaming_on = True
+        self._stream_end_hook = lambda: token_queue.put_nowait(
+            _STREAM_END
+        )
         run = asyncio.ensure_future(
             self.arun(
                 task=task,
@@ -3343,6 +3361,10 @@ Subtask Breakdown:
                 item = await token_queue.get()
                 if item is _DONE:
                     break
+                if item is _STREAM_END:
+                    if on_stream_end is not None:
+                        on_stream_end()
+                    continue
                 yield item
             await run
         finally:
@@ -3350,6 +3372,7 @@ Subtask Breakdown:
                 run.cancel()
                 await asyncio.gather(run, return_exceptions=True)
             self.streaming_on = original_streaming_on
+            self._stream_end_hook = None
 
     def run_batched(
         self,
