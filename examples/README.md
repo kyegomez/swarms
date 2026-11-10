@@ -89,9 +89,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [2_stagehand_tools_agent.py](tools/stagehand/2_stagehand_tools_agent.py) | Stagehand tools agent |
 | [3_stagehand_mcp_agent.py](tools/stagehand/3_stagehand_mcp_agent.py) | Stagehand MCP agent |
 | [4_stagehand_multi_agent_workflow.py](tools/stagehand/4_stagehand_multi_agent_workflow.py) | Stagehand multi-agent workflow |
-| [tests/](tools/stagehand/tests/) | Stagehand tests |
-| [test_stagehand_integration.py](tools/stagehand/tests/test_stagehand_integration.py) | Stagehand integration test |
-| [test_stagehand_simple.py](tools/stagehand/tests/test_stagehand_simple.py) | Simple Stagehand test |
 
 ### API & Protocols
 
@@ -236,9 +233,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [conversation_test.py](utils/misc/conversation_test.py) | Conversation test |
 | [csvagent_example.py](utils/misc/csvagent_example.py) | CSV agent example |
 | [dict_to_table.py](utils/misc/dict_to_table.py) | Dictionary to table conversion |
-| [swarm_matcher_example.py](utils/misc/swarm_matcher_example.py) | Swarm matcher example |
 | [test_load_conversation.py](utils/misc/test_load_conversation.py) | Load conversation test |
-| [visualizer_test.py](utils/misc/visualizer_test.py) | Visualizer test |
 | [telemetry/](utils/telemetry/) | Telemetry and monitoring utilities |
 
 ### User Interface
@@ -258,7 +253,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [01_setup_check.sh](cli/01_setup_check.sh) | Environment setup verification |
 | [02_onboarding.sh](cli/02_onboarding.sh) | User onboarding process |
 | [03_get_api_key.sh](cli/03_get_api_key.sh) | API key retrieval |
-| [04_check_login.sh](cli/04_check_login.sh) | Login status verification |
 | [05_create_agent.sh](cli/05_create_agent.sh) | Create custom agents |
 | [06_run_agents_yaml.sh](cli/06_run_agents_yaml.sh) | Run agents from YAML configuration |
 | [07_load_markdown.sh](cli/07_load_markdown.sh) | Load markdown configurations |
@@ -385,7 +379,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Setup Check](cli/01_setup_check.sh) | Verify environment setup |
 | [Onboarding](cli/02_onboarding.sh) | User onboarding process |
 | [Get API Key](cli/03_get_api_key.sh) | API key retrieval |
-| [Check Login](cli/04_check_login.sh) | Login status verification |
 | [Create Agent](cli/05_create_agent.sh) | Create custom agents via CLI |
 | [Run Agents YAML](cli/06_run_agents_yaml.sh) | Run agents from YAML configuration |
 | [Load Markdown](cli/07_load_markdown.sh) | Load markdown configurations |

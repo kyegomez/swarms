@@ -1128,6 +1128,23 @@ def test_second_run_does_not_carry_the_first_task():
     )
 
 
+def test_second_run_does_not_send_the_director_the_first_task():
+    seen = []
+    swarm = HierarchicalSwarm(
+        director=_scripted_hs_agent("Director", seen, director=True),
+        agents=[_scripted_hs_agent("W1", seen)],
+        max_loops=1,
+    )
+
+    swarm.run("first task")
+    swarm.run("second task")
+
+    second_run = [m for name, m in seen if name == "Director"][-1]
+    sent = " ".join(str(m.get("content")) for m in second_run)
+    assert "second task" in sent, sent
+    assert "first task" not in sent, sent
+
+
 def test_task_queue_pending_count_tracks_dependency_readiness():
     """get_pending_count only counts PENDING tasks whose dependencies are done."""
     queue = TaskQueue()
@@ -1305,3 +1322,43 @@ def test_harness_result_reflects_conversation_state(tmp_path):
     assert after["conversation"][-1]["role"] == "System"
     assert after["conversation"][-1]["content"] == "step one passed"
     assert after["id"] == before["id"]
+
+
+def test_director_sends_temperature_and_top_p_only_when_set(
+    monkeypatch,
+):
+    sent = []
+
+    def capture(**params):
+        sent.append(params)
+        raise RuntimeError("captured")
+
+    monkeypatch.setattr(
+        "swarms.utils.litellm_wrapper.completion", capture
+    )
+
+    def sampling(**kwargs):
+        swarm = HierarchicalSwarm(
+            agents=[StubAgent("Worker", [])], autosave=False, **kwargs
+        )
+        sent.clear()
+        for director in (
+            swarm.director,
+            swarm._get_planning_director(),
+        ):
+            with pytest.raises(RuntimeError):
+                director.llm.run(task="plan")
+        return [
+            {k: p[k] for k in ("temperature", "top_p") if k in p}
+            for p in sent
+        ]
+
+    assert sampling() == [{}, {}]
+    assert (
+        sampling(director_temperature=0.2, director_top_p=0.5)
+        == [{"temperature": 0.2, "top_p": 0.5}] * 2
+    )
+    assert (
+        sampling(director_settings={"temperature": 0.3})
+        == [{"temperature": 0.3}] * 2
+    )

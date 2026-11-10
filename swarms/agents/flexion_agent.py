@@ -281,6 +281,7 @@ class ReflexionAgent:
 
         # Generate response
         start_time = time.time()
+        self.actor.reset()
         response = self.actor.run(task=prompt)
         end_time = time.time()
 
@@ -307,6 +308,7 @@ class ReflexionAgent:
 
         logger.debug(f"Evaluating response for task: {task[:100]}...")
 
+        self.evaluator.reset()
         evaluation = self.evaluator.run(task=prompt)
 
         # Regex over prose stands in for structured output
@@ -353,6 +355,7 @@ class ReflexionAgent:
             f"Generating reflection for task: {task[:100]}..."
         )
 
+        self.reflector.reset()
         reflection = self.reflector.run(task=prompt)
 
         logger.debug(f"Reflection generated: {reflection[:100]}...")
@@ -387,6 +390,7 @@ class ReflexionAgent:
 
         logger.debug(f"Refining response for task: {task[:100]}...")
 
+        self.actor.reset()
         refined_response = self.actor.run(task=prompt)
 
         logger.debug(f"Response refined: {refined_response[:100]}...")

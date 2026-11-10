@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import json
 import os
 import threading
@@ -9,6 +10,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     List,
     Literal,
     Optional,
@@ -25,7 +27,10 @@ from swarms.agents.agent_marketplace_handler import (
 from swarms.agents.ape_agent import auto_generate_prompt
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.agents.context_compressor import ContextCompressor
-from swarms.agents.llm_manager import LLMManager
+from swarms.agents.llm_manager import (
+    DEFAULT_MODEL_NAME,
+    LLMManager,
+)
 from swarms.agents.skills_manager import SkillsManager
 from swarms.agents.tool_manager import ToolManager
 from swarms.prompts.autonomous_agent_prompt import (
@@ -102,13 +107,50 @@ def _model_info(model_name: str) -> Dict[str, Any]:
         return {}
 
 
-def stop_when_repeats(response: str) -> bool:
-    # Stop if the word stop appears in the response
-    return "stop" in response.lower()
-
-
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
+
+DEFAULT_AGENT_DESCRIPTION = "An autonomous agent that can perform tasks and learn from experience powered by Swarms"
+
+
+def reset_agents(agents: Iterable[Any]) -> None:
+    """
+    Start each agent over on a fresh conversation.
+
+    Args:
+        agents (Iterable[Any]): Agents to reset. Anything that is not an Agent is skipped.
+    """
+    for agent in agents:
+        if isinstance(agent, Agent):
+            agent.reset()
+
+
+def _threadsafe_callback(
+    callback: Optional[Callable[[str], Any]],
+) -> Optional[Callable[[str], None]]:
+    """Wrap a callback so a worker thread can drive an async one on the running loop.
+
+    Args:
+        callback: A sync or async function taking a token, or None.
+
+    Returns:
+        Optional[Callable[[str], None]]: A blocking function for the thread to call.
+    """
+    if callback is None:
+        return None
+    loop = asyncio.get_running_loop()
+
+    async def _wait(awaitable):
+        return await awaitable
+
+    def call(token):
+        result = callback(token)
+        if inspect.isawaitable(result):
+            asyncio.run_coroutine_threadsafe(
+                _wait(result), loop
+            ).result()
+
+    return call
 
 
 class Agent:
@@ -128,17 +170,18 @@ class Agent:
         dashboard (bool): Enable dashboard
         agent_name (str): The name of the agent
         agent_description (str): The description of the agent
+        description (Optional[str]): Another name for agent_description, used when agent_description is left unset. If both are set, agent_description wins.
         system_prompt (Optional[str]): The system prompt. Defaults to None, which sends no system prompt. With max_loops="auto" the autonomous loop prompt is used, and a custom prompt has it appended.
         tools (List[BaseTool]): The tools to use
         dynamic_temperature_enabled (bool): Enable dynamic temperature
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
-        context_length (int): The context length
+        context_length (Optional[int]): The model's input window in tokens. Defaults to 128000. None looks it up from the model.
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         long_term_memory (BaseVectorDatabase): The long term memory
         fallback_model_name (str): A single fallback model, folded into fallback_models
-        fallback_models (List[str]): Models to try in order. The first is the primary; every run starts there and moves down the list when a model fails
+        fallback_models (List[str]): Models to try, in order, when a model fails. An explicit model_name runs first; without one, the first entry is the primary. Every run starts at the primary
         preset_stopping_token (bool): Use "<DONE>" as the stopping token.
         streaming_on (bool): Enable basic streaming with formatted panels
         stream (bool): Enable detailed token-by-token streaming with metadata (citations, tokens used, etc.)
@@ -151,7 +194,7 @@ class Agent:
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
         planning_prompt (str): The planning prompt
-        max_tokens (int): The maximum number of tokens
+        max_tokens (Optional[int]): The most tokens per response. Defaults to 16384. None looks up the model's own output limit.
         temperature (float): The temperature
         workspace_dir (str, optional): Ignored - workspace directory is always read from
             the 'workspace_dir' environment variable. Defaults to 'agent_workspace' if
@@ -268,11 +311,11 @@ class Agent:
 
     >>> # Fallback model example
     >>> agent = Agent(
-    ...     fallback_models=["gpt-5.4", "gpt-5.4", "gpt-3.5-turbo"],
+    ...     model_name="gpt-5.4",
+    ...     fallback_models=["claude-sonnet-4-6", "gpt-5.4-mini"],
     ...     max_loops=1
     ... )
     >>> response = agent.run("Generate a report on the financials.")
-    >>> # Will try gpt-4o first, then gpt-4o-mini, then gpt-3.5-turbo if each fails
 
     >>> # Marketplace prompt example - load a prompt in one line
     >>> agent = Agent(
@@ -289,9 +332,7 @@ class Agent:
         self,
         id: Optional[str] = None,
         agent_name: Optional[str] = "swarm-worker-01",
-        agent_description: Optional[
-            str
-        ] = "An autonomous agent that can perform tasks and learn from experience powered by Swarms",
+        agent_description: Optional[str] = DEFAULT_AGENT_DESCRIPTION,
         system_prompt: Optional[str] = None,
         llm: Optional[Any] = None,
         max_loops: Optional[Union[int, str]] = 1,
@@ -306,7 +347,7 @@ class Agent:
         dynamic_temperature_enabled: Optional[bool] = False,
         saved_state_path: Optional[str] = None,
         autosave: Optional[bool] = False,
-        context_length: Optional[int] = None,
+        context_length: Optional[int] = 128000,
         transforms: Optional[Union[TransformConfig, dict]] = None,
         user_name: Optional[str] = "Human",
         long_term_memory: Optional[Union[Callable, Any]] = None,
@@ -324,12 +365,12 @@ class Agent:
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
-        max_tokens: Optional[int] = None,
+        max_tokens: Optional[int] = 16384,
         temperature: Optional[float] = None,
         tags: Optional[List[str]] = None,
         auto_generate_prompt: bool = False,
         plan_enabled: bool = False,
-        model_name: str = "gpt-5.4",
+        model_name: Optional[str] = None,
         llm_args: dict = None,
         prompt_caching: bool = False,
         cache_config: dict = None,
@@ -384,6 +425,7 @@ class Agent:
         context_compression: bool = True,
         persistent_memory: bool = False,
         messages: Optional[List[Dict[str, Any]]] = None,
+        description: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -408,6 +450,11 @@ class Agent:
         self.tools = tools
         self.system_prompt = system_prompt or ""
         self.agent_name = agent_name
+        if description is not None and agent_description in (
+            None,
+            DEFAULT_AGENT_DESCRIPTION,
+        ):
+            agent_description = description
         self.agent_description = agent_description
         # Fallback: this once overwrote the caller's own path.
         self.saved_state_path = saved_state_path or (
@@ -439,7 +486,7 @@ class Agent:
         self.description = agent_description
         self.auto_generate_prompt = auto_generate_prompt
         self.plan_enabled = plan_enabled
-        self.model_name = model_name
+        self.model_name = model_name or DEFAULT_MODEL_NAME
         self.llm_args = llm_args
         self.prompt_caching = prompt_caching
         self.cache_config = cache_config
@@ -527,8 +574,8 @@ class Agent:
         if self.context_length is None:
             self.context_length = self._default_context_length()
 
-        if self.max_tokens is None or self.max_tokens <= 0:
-            self.max_tokens = self._default_max_tokens() or 16000
+        if self.max_tokens is None:
+            self.max_tokens = self._default_max_tokens()
 
         if self.max_loops == "auto":
             # Without this the prompt tells the model to call a think tool it lacks
@@ -593,15 +640,15 @@ class Agent:
 
         self.fallback_models = list(fallback_models or [])
         if not self.fallback_models and fallback_model_name:
-            # The single-fallback form, folded into the list once.
-            self.fallback_models = list(
-                dict.fromkeys(
-                    m
-                    for m in (self.model_name, fallback_model_name)
-                    if m
-                )
-            )
-        # The list names the primary model, so model_name follows it.
+            self.fallback_models = [
+                self.model_name,
+                fallback_model_name,
+            ]
+        elif self.fallback_models and model_name:
+            self.fallback_models.insert(0, self.model_name)
+        self.fallback_models = list(
+            dict.fromkeys(self.fallback_models)
+        )
         if self.fallback_models:
             self.model_name = self.fallback_models[0]
 
@@ -1459,40 +1506,392 @@ Subtask Breakdown:
                 self.short_memory, type=self.output_type
             )
 
+    @trace_run(
+        "Agent.run",
+        input_params=("task", "img", "imgs"),
+        usage=lambda agent: agent.usage,
+    )
     async def arun(
         self,
-        task: Optional[str] = None,
+        task: Optional[Union[str, Any]] = None,
         img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        streaming_callback: Optional[Callable[[str], Any]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
         *args,
         **kwargs,
     ) -> Any:
         """
-        Asynchronously runs the agent with the specified parameters.
+        Run the agent on the event loop, with everything run does.
+
+        Model calls, streaming and MCP tools are awaited. Callable tools and
+        handoffs are blocking, so they run on worker threads, as does the
+        autonomous loop used when max_loops is "auto".
 
         Args:
-            task (Optional[str]): The task to be performed. Defaults to None.
-            img (Optional[str]): The image to be processed. Defaults to None.
-            is_last (bool): Indicates if this is the last task. Defaults to False.
-            *args: Additional positional arguments.
-            **kwargs: Additional keyword arguments.
+            task (Optional[str|Any]): Task for the agent to process.
+            img (Optional[str]): Path, URL, data URI or base64 string of one image.
+            imgs (Optional[List[str]]): Several images.
+            streaming_callback (Optional[Callable[[str], Any]]): A sync or async
+                function that receives each token as the provider sends it.
+                Defaults to the agent's own streaming_callback.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format
+                that this task continues from.
+            *args: Passed through to the model call.
+            **kwargs: Passed through to the model call.
 
         Returns:
-            Any: The result of the asynchronous operation.
+            Any: The agent's output, shaped by output_type.
 
         Raises:
-            Exception: If an error occurs during the asynchronous operation.
+            ValueError: If no task is given outside interactive mode.
+            AgentLLMError: If the model call fails on every fallback model.
         """
+        if self._task_missing(task):
+            task = await asyncio.to_thread(self._prompt_for_task)
+            if task is None:
+                return None
+
+        # Channels read and write files or sockets, so they stay off the loop.
+        if self.channel is not None:
+            task, streaming_callback, messages = (
+                await asyncio.to_thread(
+                    self._prepare_run,
+                    task,
+                    streaming_callback,
+                    messages,
+                )
+            )
+        else:
+            task, streaming_callback, messages = self._prepare_run(
+                task, streaming_callback, messages
+            )
+
+        if self.max_loops == "auto":
+            streaming_callback = _threadsafe_callback(
+                streaming_callback
+            )
+            self._run_streaming_callback = streaming_callback
+
+        models = self.fallback_models or [self.model_name]
         try:
-            # Positional, in run()'s order: keywords plus *args made every extra positional collide with task.
+            for i, model in enumerate(models):
+                if model != self.model_name:
+                    self.model_name = model
+                    self.llm_handling()
+                try:
+                    output = await self._adispatch(
+                        task,
+                        img,
+                        imgs,
+                        streaming_callback,
+                        messages,
+                        *args,
+                        **kwargs,
+                    )
+                    if self.channel is not None:
+                        await asyncio.to_thread(
+                            self.channel.post,
+                            self.agent_name,
+                            agent_answer(self, output),
+                        )
+                    return output
+                except AgentLLMError as error:
+                    if i + 1 == len(models):
+                        raise
+                    logger.warning(
+                        f"Agent '{self.agent_name}': '{model}' failed, "
+                        f"trying '{models[i + 1]}': {error}"
+                    )
+        finally:
+            self._run_streaming_callback = None
+
+    async def _adispatch(
+        self,
+        task,
+        img,
+        imgs,
+        streaming_callback,
+        messages,
+        *args,
+        **kwargs,
+    ):
+        """Await the task on the current model: the autonomous loop or a single pass.
+
+        Args:
+            task: The task to run.
+            img: A single image input.
+            imgs: Several image inputs.
+            streaming_callback: Receives streamed tokens.
+            messages: Prior turns the task continues from.
+
+        Returns:
+            Any: The run's output.
+        """
+        if self.max_loops == "auto":
+            if messages:
+                self.short_memory.add_messages(messages)
+            # The autonomous loop is blocking code, so it runs on a worker thread.
             return await asyncio.to_thread(
-                self.run,
+                self._run_autonomous_loop,
                 task,
                 img,
+                streaming_callback,
+                messages,
                 *args,
                 **kwargs,
             )
+        return await self._arun(
+            task=task,
+            img=img,
+            imgs=imgs,
+            streaming_callback=streaming_callback,
+            messages=messages,
+            *args,
+            **kwargs,
+        )
+
+    async def _arun(
+        self,
+        task: Optional[Union[str, Any]] = None,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        streaming_callback: Optional[Callable[[str], Any]] = None,
+        messages: Optional[List[Dict[str, Any]]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Await the agent's main loop for a task, step for step what _run does.
+
+        Args:
+            task (Optional[Union[str, Any]]): The task for the agent to process.
+            img (Optional[str]): One image for vision models.
+            imgs (Optional[List[str]]): Several images.
+            streaming_callback (Optional[Callable[[str], Any]]): A sync or async
+                function receiving streamed tokens.
+            messages (Optional[List[Dict[str, Any]]]): Prior turns in chat format.
+            *args: Passed through to the model call.
+            **kwargs: Passed through to the model call.
+
+        Returns:
+            Any: The conversation shaped by output_type.
+
+        Raises:
+            AgentLLMError: If the model call fails. arun then tries the next fallback model.
+        """
+        history_start = len(self.short_memory.conversation_history)
+        try:
+            if messages:
+                self.short_memory.add_messages(messages)
+
+            if self.auto_generate_prompt is True:
+                await asyncio.to_thread(
+                    self.check_if_no_prompt_then_autogenerate, task
+                )
+
+            self.check_model_supports_utilities(img=img)
+
+            self.short_memory.add(role=self.user_name, content=task)
+
+            if self.plan_enabled is True:
+                await self.aplan(task)
+
+            loop_count = 0
+            # A caller's messages stand in for the earlier history.
+            request_start = 0 if messages is None else history_start
+            response = None
+
+            if self.autosave:
+                self.save()
+                self._autosave_config_step(loop_count=0)
+
+            while (
+                self.max_loops == "auto"
+                or loop_count < self.max_loops
+            ):
+                loop_count += 1
+
+                compressor = self._context_compressor
+                if (
+                    compressor is not None
+                    and compressor.should_compress(self)
+                    and await asyncio.to_thread(
+                        compressor.maybe_compress, self
+                    )
+                    is not None
+                ):
+                    # The history is now the compressed summary, so the request starts over.
+                    request_start = 0
+
+                if self.autosave:
+                    self._autosave_config_step(loop_count=loop_count)
+
+                if self.dynamic_temperature_enabled is True:
+                    self.dynamic_temperature()
+
+                task_prompt = None
+                if self.transforms is not None:
+                    task_prompt = handle_transforms(
+                        transforms=self.transforms,
+                        short_memory=self.short_memory,
+                        model_name=self.model_name,
+                    )
+
+                # Outside the try: except must answer tool calls.
+                turn_calls = []
+                turn_results = {}
+                try:
+                    show_loading = (
+                        self.interactive
+                        and not self.streaming_on
+                        and not self.stream
+                    )
+                    loading_ctx = (
+                        formatter.loading_status(
+                            f"👾 Agent: {self.agent_name} is thinking..."
+                        )
+                        if show_loading
+                        else nullcontext()
+                    )
+
+                    with loading_ctx:
+                        llm_kwargs = dict(kwargs)
+                        if self.transforms is None:
+                            llm_kwargs["messages"] = (
+                                self.short_memory.to_messages(
+                                    self.agent_name,
+                                    request_start,
+                                )
+                            )
+
+                        response = await self.acall_llm(
+                            task=task_prompt,
+                            img=img,
+                            imgs=imgs,
+                            current_loop=loop_count,
+                            streaming_callback=streaming_callback,
+                            *args,
+                            **llm_kwargs,
+                        )
+
+                    response = self.tool_manager.parse_response(
+                        response
+                    )
+
+                    # Every tool call in this turn needs a matching result before the next request.
+                    turn_calls = self.short_memory.record_assistant(
+                        response, self.agent_name
+                    )
+
+                    # Tool calls print in execute_tools and streams print as they arrive.
+                    if self.print_on and not (
+                        isinstance(response, list)
+                        or self.streaming_on
+                        or self.stream
+                    ):
+                        self.pretty_print(response, loop_count)
+
+                    await self.tool_manager.ahandle_tool_calls(
+                        response,
+                        loop_count,
+                        turn_calls=turn_calls,
+                        turn_results=turn_results,
+                    )
+
+                except AgentToolExecutionError as e:
+                    # A tool failure is not a provider failure, re-running the model cannot fix it
+                    self.short_memory.flush_tool_results(
+                        turn_calls, turn_results
+                    )
+
+                    capture_error(
+                        e,
+                        self,
+                        name="Agent.tool_error",
+                        loop=loop_count,
+                    )
+
+                    self.short_memory.add(
+                        role="Tool Executor",
+                        content=(
+                            f"Tool execution failed after "
+                            f"{self.tool_retry_attempts} attempts: {e}"
+                        ),
+                    )
+
+                if self.autosave:
+                    self._autosave_config_step(loop_count=loop_count)
+
+                if (
+                    self.stopping_condition is not None
+                    and self._check_stopping_condition(response)
+                ):
+                    logger.info(
+                        f"Agent '{self.agent_name}' stopping condition met. "
+                        f"Loop: {loop_count}, Response length: {len(str(response)) if response else 0}"
+                    )
+                    break
+                elif (
+                    self.stopping_func is not None
+                    and self.stopping_func(response)
+                ):
+                    logger.info(
+                        f"Agent '{self.agent_name}' stopping function condition met. "
+                        f"Loop: {loop_count}, Response length: {len(str(response)) if response else 0}"
+                    )
+                    break
+
+                if self.interactive:
+                    formatter.console.print()
+                    try:
+                        user_input = await asyncio.to_thread(
+                            formatter.console.input,
+                            "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] ",
+                        )
+                    except (KeyboardInterrupt, EOFError):
+                        formatter.console.print()
+                        self.pretty_print(
+                            "Session ended by user. Goodbye.",
+                            loop_count=loop_count,
+                        )
+                        break
+
+                    if (
+                        user_input.lower()
+                        == self.custom_exit_command.lower()
+                    ):
+                        self.pretty_print(
+                            "Exiting as per user request.",
+                            loop_count=loop_count,
+                        )
+                        break
+
+                    self.short_memory.add(
+                        role=self.user_name, content=user_input
+                    )
+
+                if self.loop_interval:
+                    logger.info(
+                        f"Sleeping for {self.loop_interval} seconds"
+                    )
+                    await asyncio.sleep(self.loop_interval)
+
+            if self.autosave is True:
+                self.save()
+                self._autosave_config_step(loop_count=loop_count)
+
+            return history_output_formatter(
+                self.short_memory, type=self.output_type
+            )
+
         except Exception as error:
-            # Not awaited: _handle_run_error is sync and always raises, as the other seven call sites assume.
+            # Drop this run's turns so a fallback model starts from clean history.
+            while (
+                len(self.short_memory.conversation_history)
+                > history_start
+            ):
+                self.short_memory.delete(-1)
             self._handle_run_error(error)
 
     def __call__(
@@ -1590,6 +1989,42 @@ Subtask Breakdown:
             )
             raise error
 
+    async def aplan(self, task: str, *args, **kwargs) -> None:
+        """
+        Await a step-by-step plan for the task and add it to short-term memory.
+
+        Args:
+            task (str): The task to create a plan for.
+            *args: Passed through to the model call.
+            **kwargs: Passed through to the model call.
+
+        Raises:
+            Exception: If planning fails, the original exception is re-raised.
+        """
+        try:
+            history = self.short_memory.get_str()
+            prompt = (
+                self.planning_prompt
+                if exists(self.planning_prompt)
+                else f"Create a comprehensive step-by-step plan to complete the following task: \n\n {task}"
+            )
+            planning_prompt = f"{history}\n\n{prompt}\n\nTask: {task}"
+
+            if hasattr(self.llm, "arun"):
+                plan = await self.llm.arun(
+                    planning_prompt, *args, **kwargs
+                )
+            else:
+                plan = await asyncio.to_thread(
+                    self.llm.run, planning_prompt, *args, **kwargs
+                )
+            self.short_memory.add(role=self.agent_name, content=plan)
+        except Exception as error:
+            logger.error(
+                f"Failed to create plan for task '{task}': {error}"
+            )
+            raise error
+
     def run_concurrent_tasks(self, tasks: List[str], *args, **kwargs):
         """
         Run multiple tasks concurrently.
@@ -1676,23 +2111,13 @@ Subtask Breakdown:
                 f"got {self.max_loops!r}."
             )
 
-        # Ensure max_tokens is set to a valid value based on the model, with a robust fallback.
-        if self.max_tokens is None or self.max_tokens <= 0:
-            suggested_tokens = llm_backend.get_max_tokens(
-                self.model_name
-            )
-            if suggested_tokens is not None and suggested_tokens > 0:
-                self.max_tokens = suggested_tokens
-            else:
-                logger.warning(
-                    f"Could not determine max_tokens for model '{self.model_name}'. Falling back to default value of 8192."
+        for name in ("max_tokens", "context_length"):
+            value = getattr(self, name)
+            if value <= 0:
+                raise AgentInitializationError(
+                    f"{name} must be a positive integer, or None to "
+                    f"look it up from the model, got {value!r}."
                 )
-                self.max_tokens = 8192
-
-        if self.context_length is None or self.context_length == 0:
-            raise AgentInitializationError(
-                "Context length is not provided. Please set a valid context length."
-            )
 
         if (
             os.getenv("SWARMS_STRICT_MODEL_CHECK", "").lower()
@@ -2306,16 +2731,7 @@ Subtask Breakdown:
             >>> response = agent.call_llm("What is Python?", current_loop=1)
             >>> response = agent.call_llm("Describe this image", img="chart.png")
         """
-        skills = self._skills_prompt.strip()
-        if skills:
-            if kwargs.get("messages") is not None:
-                kwargs["messages"] = [
-                    {"role": "system", "content": skills},
-                    *kwargs["messages"],
-                ]
-            elif isinstance(task, str):
-                # Not converted to messages: that path drops img and imgs.
-                task = f"{skills}\n\n{task}"
+        task = self._apply_skills(task, kwargs)
 
         try:
             return self.llm_manager.call(
@@ -2328,13 +2744,91 @@ Subtask Breakdown:
                 **kwargs,
             )
         except Exception as error:
-            capture_error(
-                error, self, name="Agent.llm_error", loop=current_loop
+            self._raise_llm_error(error, current_loop)
+
+    async def acall_llm(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], Any]] = None,
+        *args,
+        **kwargs,
+    ) -> str:
+        """
+        Await the LLM with the given task, handling streaming and multimodal inputs.
+
+        Args:
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): One image for multimodal processing.
+            imgs (Optional[List[str]]): Several images.
+            current_loop (int): The current loop number, used in panel titles.
+            streaming_callback (Optional[Callable[[str], Any]]): A sync or async
+                function receiving streamed tokens.
+            *args: Passed through to the model call.
+            **kwargs: Passed through to the model call.
+
+        Returns:
+            str: The complete response, or the assembled tool-call list.
+
+        Raises:
+            AgentLLMError: If the model call fails, chained to the provider's error.
+        """
+        task = self._apply_skills(task, kwargs)
+
+        try:
+            return await self.llm_manager.acall(
+                task=task,
+                img=img,
+                imgs=imgs,
+                current_loop=current_loop,
+                streaming_callback=streaming_callback,
+                *args,
+                **kwargs,
             )
-            raise AgentLLMError(
-                f"Agent '{self.agent_name}': model '{self.model_name}' "
-                f"failed: {error}"
-            ) from error
+        except Exception as error:
+            self._raise_llm_error(error, current_loop)
+
+    def _apply_skills(self, task: Any, kwargs: dict) -> Any:
+        """Put the loaded skills ahead of the request.
+
+        Args:
+            task: The task or prompt for this model call.
+            kwargs: The model call's keyword arguments, updated in place.
+
+        Returns:
+            Any: The task, prefixed with the skills when no messages are sent.
+        """
+        skills = self._skills_prompt.strip()
+        if skills:
+            if kwargs.get("messages") is not None:
+                kwargs["messages"] = [
+                    {"role": "system", "content": skills},
+                    *kwargs["messages"],
+                ]
+            elif isinstance(task, str):
+                # Not converted to messages: that path drops img and imgs.
+                task = f"{skills}\n\n{task}"
+        return task
+
+    def _raise_llm_error(self, error: Exception, current_loop: int):
+        """Report a failed model call and raise it as AgentLLMError.
+
+        Args:
+            error: What the model call raised.
+            current_loop: The loop the call was made in.
+
+        Raises:
+            AgentLLMError: Always, chained to the provider's error.
+        """
+        capture_error(
+            error, self, name="Agent.llm_error", loop=current_loop
+        )
+        raise AgentLLMError(
+            f"Agent '{self.agent_name}': model '{self.model_name}' "
+            f"failed: {error}"
+        ) from error
 
     def load_skills_metadata(
         self, skills_dir: str = None
@@ -2448,65 +2942,14 @@ Subtask Breakdown:
             ... )
         """
 
-        # Outside interactive mode, fail fast instead of blocking on stdin
-        if task is None or (
-            isinstance(task, str) and task.strip() == ""
-        ):
-            if not self.interactive:
-                raise ValueError(
-                    "No task provided. Pass a non-empty `task`, or set "
-                    "interactive=True to be prompted for one."
-                )
-            # Always show prompt when asking for initial task, even if print_on is False
-            self.pretty_print(
-                "Interactive mode enabled. Please enter your initial task:",
-                loop_count=0,
-            )
-            formatter.console.print()
-            try:
-                task = formatter.console.input(
-                    "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
-                ).strip()
-            except (KeyboardInterrupt, EOFError):
-                # Ctrl+C / Ctrl+D before the first task exits without a traceback
-                formatter.console.print()
-                self.pretty_print(
-                    "Session ended by user. Goodbye.",
-                    loop_count=0,
-                )
+        if self._task_missing(task):
+            task = self._prompt_for_task()
+            if task is None:
                 return None
 
-            if not task:
-                raise ValueError(
-                    "No task provided. Exiting interactive mode."
-                )
-
-        if exists(self.skills_dir):
-            self.handle_skills(task=task)
-
-        if not isinstance(task, str):
-            task = format_data_structure(task)
-
-        if streaming_callback is None:
-            if self.streaming_callback is not None:
-                streaming_callback = self.streaming_callback
-
-        # Side calls such as the tool summary stream to this run's callback too.
-        self._run_streaming_callback = streaming_callback
-        self.llm_manager.stream_mid_line = False
-
-        # A caller passing messages manages the transcript, so only the answer is posted.
-        if self.channel is not None and messages is None:
-            posted = self.channel.messages()
-            task_row = {"agent_name": self.user_name, "content": task}
-            # Posted once, so agents sharing the channel see one copy.
-            if task_row not in posted:
-                self.channel.post(self.user_name, task)
-            messages = [
-                {"role": m["agent_name"], "content": m["content"]}
-                for m in posted
-                if m != task_row
-            ]
+        task, streaming_callback, messages = self._prepare_run(
+            task, streaming_callback, messages
+        )
 
         models = self.fallback_models or [self.model_name]
         try:
@@ -2556,6 +2999,97 @@ Subtask Breakdown:
 
         finally:
             self._run_streaming_callback = None
+
+    @staticmethod
+    def _task_missing(task: Any) -> bool:
+        """Whether a run was started without a task."""
+        return task is None or (
+            isinstance(task, str) and task.strip() == ""
+        )
+
+    def _prompt_for_task(self) -> Optional[str]:
+        """Ask for the first task in interactive mode.
+
+        Returns:
+            Optional[str]: The task typed in, or None if the user ended the session.
+
+        Raises:
+            ValueError: If the agent is not interactive, or nothing was typed.
+        """
+        # Outside interactive mode, fail fast instead of blocking on stdin
+        if not self.interactive:
+            raise ValueError(
+                "No task provided. Pass a non-empty `task`, or set "
+                "interactive=True to be prompted for one."
+            )
+        # Always show prompt when asking for initial task, even if print_on is False
+        self.pretty_print(
+            "Interactive mode enabled. Please enter your initial task:",
+            loop_count=0,
+        )
+        formatter.console.print()
+        try:
+            task = formatter.console.input(
+                "[bold cyan]You[/bold cyan] [bold green]❯[/bold green] "
+            ).strip()
+        except (KeyboardInterrupt, EOFError):
+            # Ctrl+C / Ctrl+D before the first task exits without a traceback
+            formatter.console.print()
+            self.pretty_print(
+                "Session ended by user. Goodbye.",
+                loop_count=0,
+            )
+            return None
+
+        if not task:
+            raise ValueError(
+                "No task provided. Exiting interactive mode."
+            )
+        return task
+
+    def _prepare_run(
+        self,
+        task: Any,
+        streaming_callback: Optional[Callable[[str], Any]],
+        messages: Optional[List[Dict[str, Any]]],
+    ) -> tuple:
+        """Load skills, settle the streaming callback and read the channel before a run.
+
+        Args:
+            task: The task for this run.
+            streaming_callback: The per-call callback, if any.
+            messages: Prior turns passed by the caller, if any.
+
+        Returns:
+            tuple: The task as text, the callback to stream to, and the prior turns.
+        """
+        if exists(self.skills_dir):
+            self.handle_skills(task=task)
+
+        if not isinstance(task, str):
+            task = format_data_structure(task)
+
+        if streaming_callback is None:
+            if self.streaming_callback is not None:
+                streaming_callback = self.streaming_callback
+
+        # Side calls such as the tool summary stream to this run's callback too.
+        self._run_streaming_callback = streaming_callback
+        self.llm_manager.stream_mid_line = False
+
+        # A caller passing messages manages the transcript, so only the answer is posted.
+        if self.channel is not None and messages is None:
+            posted = self.channel.messages()
+            task_row = {"agent_name": self.user_name, "content": task}
+            # Posted once, so agents sharing the channel see one copy.
+            if task_row not in posted:
+                self.channel.post(self.user_name, task)
+            messages = [
+                {"role": m["agent_name"], "content": m["content"]}
+                for m in posted
+                if m != task_row
+            ]
+        return task, streaming_callback, messages
 
     def _dispatch(
         self,
@@ -2681,74 +3215,55 @@ Subtask Breakdown:
         img: Optional[str] = None,
         **kwargs,
     ):
-        """Async generator version of run_stream — yields tokens as they arrive.
+        """Run the agent on the event loop and yield tokens as the provider sends them.
 
-        The agent loop runs in a thread-pool executor so it does not block the
-        event loop.  Each token is forwarded to an asyncio.Queue and yielded to
-        the async caller immediately.
+        Closing the generator early cancels the run.
 
         Args:
-            task: The prompt / task string.
-            img:  Optional image path or base64 string for vision models.
-            **kwargs: Extra kwargs forwarded to run().
+            task: The prompt or task string.
+            img: Optional image path or base64 string for vision models.
+            **kwargs: Extra keyword arguments forwarded to arun.
 
         Yields:
             str: Individual token strings in generation order.
 
-        Example::
-
+        Example:
             async for token in agent.arun_stream("Analyse NVDA"):
                 print(token, end="", flush=True)
         """
-        import asyncio
-
-        loop = asyncio.get_running_loop()
         token_queue: asyncio.Queue = asyncio.Queue()
         _DONE = object()
-        _exc: list = [None]
 
-        def _on_token(token):
+        async def _on_token(token):
+            if isinstance(token, dict):
+                token = token.get("token", "")
             if isinstance(token, str) and token:
-                loop.call_soon_threadsafe(
-                    token_queue.put_nowait, token
-                )
-            elif isinstance(token, dict):
-                t = token.get("token", "")
-                if t:
-                    loop.call_soon_threadsafe(
-                        token_queue.put_nowait, t
-                    )
+                token_queue.put_nowait(token)
 
         original_streaming_on = self.streaming_on
         self.streaming_on = True
+        run = asyncio.ensure_future(
+            self.arun(
+                task=task,
+                img=img,
+                streaming_callback=_on_token,
+                **kwargs,
+            )
+        )
+        run.add_done_callback(lambda _: token_queue.put_nowait(_DONE))
 
-        def _run_sync():
-            try:
-                self.run(
-                    task=task,
-                    img=img,
-                    streaming_callback=_on_token,
-                    **kwargs,
-                )
-            except Exception as exc:
-                _exc[0] = exc
-            finally:
-                self.streaming_on = original_streaming_on
-                loop.call_soon_threadsafe(
-                    token_queue.put_nowait, _DONE
-                )
-
-        thread = threading.Thread(target=_run_sync, daemon=True)
-        thread.start()
-
-        while True:
-            item = await token_queue.get()
-            if item is _DONE:
-                break
-            yield item
-
-        if _exc[0] is not None:
-            raise _exc[0]
+        try:
+            while True:
+                item = await token_queue.get()
+                if item is _DONE:
+                    break
+                yield item
+            await run
+        finally:
+            if not run.done():
+                run.cancel()
+                await asyncio.gather(run, return_exceptions=True)
+            self.streaming_on = original_streaming_on
 
     def run_batched(
         self,

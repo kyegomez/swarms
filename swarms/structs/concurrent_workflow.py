@@ -2,7 +2,7 @@ import concurrent.futures
 import time
 from typing import Callable, List, Optional, Union
 
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.comms_channel import (
     CommsChannel,
@@ -22,6 +22,7 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="concurrent_workflow")
 
@@ -627,6 +628,7 @@ class ConcurrentWorkflow:
             >>> result = workflow.run("Analyze this data")
         """
         self.conversation = self._new_conversation()
+        reset_agents(self.agents)
         try:
             if self.show_dashboard:
                 result = self.run_with_dashboard(
@@ -689,3 +691,14 @@ class ConcurrentWorkflow:
         finally:
             self.conversation = workflow_conversation
         return results
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

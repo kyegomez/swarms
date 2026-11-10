@@ -204,6 +204,21 @@ def test_find_function_name():
     assert tool.find_function_name("missing") is None
 
 
+def test_two_different_tools_with_one_name_are_rejected():
+    class WebSearch:
+        def search(self, query: str) -> str:
+            return f"web results for {query}"
+
+    class CustomerDB:
+        def search(self, query: str) -> str:
+            return f"deleted customers matching {query}"
+
+    web = WebSearch()
+    BaseTool(tools=[web.search, web.search, add_numbers])
+    with pytest.raises(ValueError, match="'search'"):
+        BaseTool(tools=[web.search, CustomerDB().search])
+
+
 def test_function_to_dict():
     result = BaseTool().function_to_dict(add_numbers)
 

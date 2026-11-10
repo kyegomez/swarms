@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 from swarms.structs.serialization import SerializableMixin
 from swarms.structs.agent import Agent
 from swarms.telemetry.otel import capture_init, trace_run
+from swarms.structs.usage_utils import total_usage
 
 
 class SelfMoASeq(SerializableMixin):
@@ -40,10 +41,11 @@ class SelfMoASeq(SerializableMixin):
         retry_delay: float = 1.0,
         retry_backoff_multiplier: float = 2.0,
         retry_max_delay: float = 60.0,
-        additional_kwargs: Dict[str, Any] = {},
         top_p: Optional[float] = None,
     ):
         # Store parameters
+        self.name = name
+        self.description = description
         self.model_name = model_name
         self.temperature = temperature
         self.window_size = window_size
@@ -171,9 +173,7 @@ class SelfMoASeq(SerializableMixin):
                 self._log(
                     "debug", f"Generating sample {i+1}/{num_samples}"
                 )
-                self.proposer.short_memory = (
-                    self.proposer.short_memory_init()
-                )
+                self.proposer.reset()
                 sample = self.proposer.run(task)
                 samples.append(sample)
                 self.metrics["total_samples_generated"] += 1
@@ -252,9 +252,7 @@ class SelfMoASeq(SerializableMixin):
                 best_so_far,
             )
 
-            self.aggregator.short_memory = (
-                self.aggregator.short_memory_init()
-            )
+            self.aggregator.reset()
             aggregated = self.aggregator.run(prompt)
             self.metrics["total_aggregations"] += 1
 
@@ -387,3 +385,14 @@ class SelfMoASeq(SerializableMixin):
     def get_metrics(self) -> Dict[str, Any]:
         """Get current performance metrics."""
         return self.metrics.copy()
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

@@ -4,7 +4,7 @@ import os
 import uuid
 from typing import List
 
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
@@ -14,6 +14,7 @@ from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_utils import get_workspace_dir
+from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="spreadsheet_swarm")
 
@@ -163,7 +164,6 @@ class SpreadSheetSwarm:
                             else "openai/gpt-4o"
                         ),
                         docs=[row["docs"]] if "docs" in row else "",
-                        dynamic_temperature_enabled=True,
                         max_loops=(
                             row["max_loops"]
                             if "max_loops" in row
@@ -226,8 +226,7 @@ class SpreadSheetSwarm:
             )
 
         for _ in range(self.max_loops):
-            for agent, _task in agent_task_pairs:
-                agent.short_memory = agent.short_memory_init()
+            reset_agents(agent for agent, _ in agent_task_pairs)
 
             results = run_agents_with_different_tasks(
                 agent_task_pairs
@@ -338,8 +337,7 @@ class SpreadSheetSwarm:
         self.conversation.add(role="User", content=task)
 
         for _ in range(self.max_loops):
-            for agent in self.agents:
-                agent.short_memory = agent.short_memory_init()
+            reset_agents(self.agents)
 
             results = run_agents_with_different_tasks(
                 [(agent, task) for agent in self.agents]
@@ -355,9 +353,14 @@ class SpreadSheetSwarm:
         Args:
             agent_name (str): The name of the agent that completed the task.
             task (str): The task that was completed.
-            result (str): The result of the completed task.
+            result (str): The result of the completed task, or the
+                exception the agent raised, recorded as "Error: ...".
         """
-        self.tasks_completed += 1
+        if isinstance(result, Exception):
+            logger.error(f"Agent {agent_name} failed: {result}")
+            result = f"Error: {result}"
+        else:
+            self.tasks_completed += 1
         self.conversation.add(role=agent_name, content=result)
         self.outputs.append(
             {
@@ -440,3 +443,14 @@ class SpreadSheetSwarm:
                         output["timestamp"],
                     ]
                 )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

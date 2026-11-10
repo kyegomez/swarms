@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import re
 import traceback
 from concurrent.futures import (
     ThreadPoolExecutor,
@@ -25,6 +26,17 @@ from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
 
 ReturnTypes = Literal["auto", "swarm", "agents", "both", "run_swarm"]
+
+CLAUDE_CODE_MODELS = {
+    "fable": "claude-fable-5-1",
+    "opus": "claude-opus-5-5",
+    "sonnet": "claude-sonnet-5-5",
+    "haiku": "claude-haiku-5-5",
+}
+
+FRONTMATTER_LINE = re.compile(
+    r"^([A-Za-z_][\w-]*):[ \t]*([\"']?)(.*?)\2[ \t\r]*$", re.MULTILINE
+)
 
 
 class AgentConfig(BaseModel):
@@ -141,8 +153,17 @@ class AgentLoader:
         try:
             frontmatter_data = yaml.safe_load(frontmatter_text) or {}
         except yaml.YAMLError as e:
-            logger.warning(f"Failed to parse YAML frontmatter: {e}")
-            return {"frontmatter": {}, "content": content}
+            frontmatter_data = {
+                key: value
+                for key, _, value in FRONTMATTER_LINE.findall(
+                    frontmatter_text
+                )
+            }
+            if not frontmatter_data:
+                logger.warning(
+                    f"Failed to parse YAML frontmatter: {e}"
+                )
+                return {"frontmatter": {}, "content": content}
 
         return {
             "frontmatter": frontmatter_data,
@@ -179,6 +200,12 @@ class AgentLoader:
                 raise ValueError(
                     f"No YAML frontmatter found in {file_path}. File must use Claude Code sub-agent format with YAML frontmatter."
                 )
+
+            model = frontmatter.get("model")
+            if model == "inherit":
+                del frontmatter["model"]
+            elif model in CLAUDE_CODE_MODELS:
+                frontmatter["model"] = CLAUDE_CODE_MODELS[model]
 
             config = AgentConfig.model_validate(
                 {

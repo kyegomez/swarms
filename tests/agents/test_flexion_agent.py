@@ -31,3 +31,29 @@ def test_each_iteration_records_only_the_latest_replies(monkeypatch):
         ("answer 1", "Final score: 3", "reflection 1"),
         ("answer 2", "Final score: 8", "reflection 2"),
     ]
+
+
+def test_each_call_sees_only_its_own_prompt(monkeypatch):
+    requests = []
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        prompts = [
+            m["content"]
+            for m in self.short_memory.conversation_history
+            if m["role"] == "Human"
+        ]
+        requests.append((self.agent_name, prompts))
+        if self.agent_name.endswith("evaluator"):
+            return "Final score: 5"
+        return "ok"
+
+    monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
+    agent = ReflexionAgent(
+        agent_name="rx", model_name="gpt-5.4", max_loops=2
+    )
+
+    agent.run(["Summarise doc A", "Write a haiku"])
+
+    assert len(requests) == 12
+    for name, prompts in requests:
+        assert len(prompts) == 1, f"{name} also saw {prompts[:-1]}"

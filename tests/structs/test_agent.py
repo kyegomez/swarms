@@ -17,7 +17,9 @@ from swarms.structs.file_channel import FileChannel
 from swarms import Agent
 from swarms.agents.tool_manager import ToolManager
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
+from swarms.structs.agent import DEFAULT_AGENT_DESCRIPTION
 from swarms.schemas.agent_errors import (
+    AgentInitializationError,
     AgentLLMError,
     AgentToolExecutionError,
 )
@@ -80,24 +82,16 @@ def basic_flow(mocked_llm, tmp_path):
 
 @pytest.fixture
 def flow_with_condition(mocked_llm, tmp_path):
-    from swarms.structs.agent import stop_when_repeats
-
     return _flow(
         "flow-with-condition",
         mocked_llm,
         tmp_path,
-        stopping_condition=stop_when_repeats,
+        stopping_condition=lambda text: "stop" in text.lower(),
     )
 
 
 class TestBasicAgent:
     """Constructor, run plumbing and the save/load round trip."""
-
-    def test_stop_when_repeats(self):
-        from swarms.structs.agent import stop_when_repeats
-
-        assert stop_when_repeats("Please Stop now")
-        assert not stop_when_repeats("Continue the process")
 
     def test_flow_initialization(self, basic_flow):
         """The constructor arguments survive __init__.
@@ -803,6 +797,7 @@ class TestLLMArgsAndHandling:
             agent_name="random-models-agent",
             model_name="gpt-4o-mini",
             random_models_on=True,
+            max_tokens=None,
         )
 
         assert agent.model_name == "gpt-4.1-nano"
@@ -827,11 +822,24 @@ class TestConstructorWindows:
         assert agent.context_length == 200000
         assert agent.short_memory.context_length == 200000
 
-    def test_context_length_defaults_to_the_model_input_window(self):
-        """Omitting it should size to the model, not a flat 16000."""
+    def test_defaults_skip_the_model_lookup(self):
+        with patch(
+            "swarms.utils.llm_backend.get_model_info"
+        ) as lookup:
+            agent = self._agent(model_name="default-window-probe")
+
+        assert (agent.context_length, agent.max_tokens) == (
+            128000,
+            16384,
+        )
+        assert lookup.call_count == 0
+
+    def test_context_length_none_uses_the_model_input_window(self):
         # The relation, not the literal, so a litellm model-table refresh
         # does not break this.
-        assert self._agent(model_name="gpt-4o").context_length > 16000
+        agent = self._agent(model_name="gpt-4o", context_length=None)
+
+        assert agent.context_length > 16000
 
     def test_max_tokens_explicit_value_is_honoured(self):
         """A caller capping output was overwritten with the model's limit."""
@@ -839,15 +847,29 @@ class TestConstructorWindows:
 
         assert agent.max_tokens == 500
 
-    def test_max_tokens_defaults_to_the_model_output_window(self):
-        assert self._agent(model_name="gpt-4o-mini").max_tokens > 500
+    def test_max_tokens_none_uses_the_model_output_window(self):
+        agent = self._agent(model_name="gpt-4o-mini", max_tokens=None)
 
-    def test_non_positive_max_tokens_falls_back_to_the_model(self):
-        for bad in (0, -1, None):
-            agent = self._agent(
-                model_name="gpt-4o-mini", max_tokens=bad
-            )
-            assert agent.max_tokens > 0
+        assert agent.max_tokens > 500
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            {"max_tokens": 0},
+            {"max_tokens": -1},
+            {"context_length": 0},
+            {"context_length": -1},
+        ],
+    )
+    def test_non_positive_windows_raise_without_a_lookup(
+        self, kwargs
+    ):
+        with patch(
+            "swarms.utils.llm_backend.get_model_info"
+        ) as lookup, pytest.raises(AgentInitializationError):
+            self._agent(model_name="non-positive-probe", **kwargs)
+
+        assert lookup.call_count == 0
 
     def test_saved_state_path_is_honoured(self):
         """It was assigned, then overwritten with a generated name twelve
@@ -861,7 +883,11 @@ class TestConstructorWindows:
 
     def test_unknown_model_falls_back_for_both(self):
         """An unrecognised model must not raise out of __init__."""
-        agent = self._agent(model_name="totally-made-up-model-xyz")
+        agent = self._agent(
+            model_name="totally-made-up-model-xyz",
+            context_length=None,
+            max_tokens=None,
+        )
 
         assert agent.context_length == 16000
         assert agent.max_tokens == 16000
@@ -873,7 +899,11 @@ class TestConstructorWindows:
             return_value=info,
         ) as lookup:
             agents = [
-                self._agent(model_name="model-info-cache-probe")
+                self._agent(
+                    model_name="model-info-cache-probe",
+                    context_length=None,
+                    max_tokens=None,
+                )
                 for _ in range(2)
             ]
 
@@ -936,6 +966,26 @@ class TestToolsListIsolation:
             ).tools_list_dictionary
             == given
         )
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({}, DEFAULT_AGENT_DESCRIPTION),
+        ({"agent_description": "x"}, "x"),
+        ({"description": "Checks tax math."}, "Checks tax math."),
+        ({"agent_description": None, "description": "y"}, "y"),
+        ({"agent_description": "x", "description": "y"}, "x"),
+    ],
+)
+def test_description_is_another_name_for_agent_description(
+    kwargs, expected
+):
+    agent = _patched_agent("described", **kwargs)
+    assert (agent.agent_description, agent.description) == (
+        expected,
+        expected,
+    )
 
 
 def test_list_base_models_schema_reaches_short_memory():
@@ -1127,9 +1177,16 @@ class TestAutonomousAgentLoop:
         agent.autonomous_subtasks[1]["status"] = "completed"
         assert loop._get_next_executable_subtask() is None
 
-    def test_loop_drives_plan_then_execution_against_a_stub_llm(self):
+    @pytest.mark.parametrize("entry", ["run", "arun"])
+    def test_loop_drives_plan_then_execution_against_a_stub_llm(
+        self, entry
+    ):
         """A canned LLM carries the loop from planning through completion."""
         prompts = []
+        tokens = []
+
+        async def on_token(token):
+            tokens.append(token)
 
         step = {
             "step_id": "s1",
@@ -1150,6 +1207,8 @@ class TestAutonomousAgentLoop:
 
         def fake_call_llm(self, task=None, *args, **kwargs):
             prompts.append(task)
+            if kwargs.get("streaming_callback"):
+                kwargs["streaming_callback"]("tok")
             if len(prompts) == 1:
                 return call("create_plan", plan)
             if len(prompts) <= 3:
@@ -1158,7 +1217,17 @@ class TestAutonomousAgentLoop:
 
         agent = self._agent()
         with patch.object(Agent, "call_llm", fake_call_llm):
-            output = agent.run("exercise the loop")
+            if entry == "run":
+                output = agent.run("exercise the loop")
+            else:
+                # arun hands the worker thread a bridge to the async callback.
+                output = asyncio.run(
+                    agent.arun(
+                        "exercise the loop",
+                        streaming_callback=on_token,
+                    )
+                )
+                assert tokens and set(tokens) == {"tok"}
 
         assert prompts, "the loop never called the LLM"
         assert output is not None
@@ -1170,61 +1239,170 @@ class TestAutonomousAgentLoop:
         assert agent.subtask_status["s1"] == "completed"
 
 
-class TestArunForwarding:
-    """arun() must forward its arguments to run(), not await a sync method."""
+def _stream_chunk(content=None, tool=None):
+    tool_calls = None
+    if tool:
+        tool_calls = [
+            SimpleNamespace(
+                index=0,
+                id=tool.get("id"),
+                function=SimpleNamespace(
+                    name=tool.get("name"),
+                    arguments=tool.get("arguments"),
+                ),
+            )
+        ]
+    delta = SimpleNamespace(
+        content=content, tool_calls=tool_calls, reasoning_content=None
+    )
+    return SimpleNamespace(
+        choices=[SimpleNamespace(delta=delta, finish_reason=None)],
+        model="stub",
+        usage=None,
+    )
+
+
+def _add(a: int, b: int) -> str:
+    """Add two numbers.
+
+    Args:
+        a: The first number.
+        b: The second number.
+    """
+    return str(a + b)
+
+
+class TestArunNative:
+    """arun() awaits the provider on the event loop instead of threading run()."""
 
     def _bare_agent(self):
-        # No LLM/model setup — these tests only exercise arun's plumbing.
         agent = Agent.__new__(Agent)
         agent.autosave = False
         agent.agent_name = "arun-test"
         agent.to_dict = lambda: {}
         return agent
 
-    def test_extra_positional_args_reach_run(self):
-        """`task=`/`img=` as keywords alongside *args made every extra
-        positional collide with `task`: arun(task, img, extra) raised
-        `TypeError: got multiple values for argument 'task'`.
-        """
-        agent = self._bare_agent()
-        seen = {}
+    @staticmethod
+    def _provider(turns, seen_threads, gate=None):
+        """An acompletion stub replaying one list of chunks per call."""
+        turns = iter(turns)
 
-        def fake_run(*args, **kwargs):
-            seen["args"] = args
-            seen["kwargs"] = kwargs
-            return "ok"
+        async def acompletion(**params):
+            seen_threads.add(threading.current_thread())
+            chunks = next(turns)
+            if not params.get("stream"):
+                message = SimpleNamespace(
+                    content=chunks, tool_calls=None
+                )
+                return SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=message, finish_reason="stop"
+                        )
+                    ],
+                    model="stub",
+                    usage=None,
+                )
 
-        agent.run = fake_run
+            async def stream():
+                for i, chunk in enumerate(chunks):
+                    # The consumer opens the gate only once it holds the first token.
+                    if gate is not None and i == 1:
+                        await asyncio.wait_for(gate.wait(), 5)
+                    yield chunk
 
-        result = asyncio.run(Agent.arun(agent, "T", "I", "EXTRA"))
+            return stream()
 
-        assert result == "ok"
-        assert seen["args"] == ("T", "I", "EXTRA")
+        return acompletion
 
-    def test_error_path_does_not_await_a_sync_handler(self):
-        """`_handle_run_error` is sync and re-raises; the await was harmless
-        only because it always raises before returning.
-        """
-        import inspect
+    def _run(self, turns, body, gate=None, **agent_kwargs):
+        threads = set()
+        with (
+            patch.object(
+                litellm_wrapper,
+                "acompletion",
+                self._provider(turns, threads, gate),
+            ),
+            patch.object(
+                litellm_wrapper,
+                "completion",
+                side_effect=AssertionError(
+                    "blocking completion used"
+                ),
+            ),
+        ):
+            agent = Agent(
+                agent_name="native",
+                model_name="gpt-5.4",
+                max_loops=agent_kwargs.pop("max_loops", 1),
+                print_on=False,
+                verbose=False,
+                **agent_kwargs,
+            )
+            result = body(agent)
+        assert threads == {threading.main_thread()}
+        return agent, result
 
-        assert not inspect.iscoroutinefunction(
-            Agent._handle_run_error
+    def test_arun_awaits_the_provider_on_the_loop(self):
+        _, result = self._run(
+            ["4"], lambda agent: asyncio.run(agent.arun("2+2?"))
         )
-        assert (
-            "await self._handle_run_error"
-            not in inspect.getsource(Agent.arun)
+        assert result == "4"
+
+    def test_arun_stream_yields_tokens_before_the_stream_ends(self):
+        async def consume(agent, gate):
+            tokens = []
+            async for token in agent.arun_stream("hi"):
+                tokens.append(token)
+                gate.set()
+            return tokens
+
+        # The provider waits on the gate, so a buffered stream would time out.
+        gate = asyncio.Event()
+
+        async def run(agent):
+            return await consume(agent, gate)
+
+        _, tokens = self._run(
+            [[_stream_chunk("Hel"), _stream_chunk("lo")]],
+            lambda agent: asyncio.run(run(agent)),
+            gate=gate,
         )
+        assert tokens == ["Hel", "lo"]
 
+    @pytest.mark.parametrize("is_async", [True, False])
+    def test_arun_streams_to_sync_and_async_callbacks_through_a_tool_call(
+        self, is_async
+    ):
+        tokens = []
+
+        async def async_callback(token):
+            tokens.append(token)
+
+        callback = async_callback if is_async else tokens.append
+        call = {
+            "id": "c1",
+            "name": "_add",
+            "arguments": '{"a": 2, "b": 3}',
+        }
+        agent, _ = self._run(
+            [[_stream_chunk(tool=call)], [_stream_chunk("5")]],
+            lambda agent: asyncio.run(
+                agent.arun("add", streaming_callback=callback)
+            ),
+            max_loops=2,
+            tools=[_add],
+        )
+        assert tokens[-1] == "5" and "_add" in tokens
+        history = agent.short_memory.conversation_history
+        assert any("result:\n5" in str(m["content"]) for m in history)
+
+    def test_arun_raises_the_original_error(self):
         agent = self._bare_agent()
+        agent.interactive = False
 
-        def boom(*args, **kwargs):
-            raise ValueError("boom")
-
-        agent.run = boom
-
-        # The original error surfaces — not a TypeError from awaiting None.
-        with pytest.raises(ValueError, match="boom"):
-            asyncio.run(Agent.arun(agent, "T"))
+        with pytest.raises(ValueError, match="No task provided"):
+            asyncio.run(Agent.arun(agent, None))
 
     def test_handle_run_error_tolerates_braces_in_provider_message(
         self,
@@ -2400,6 +2578,47 @@ class TestLLMFailureRaises:
                 agent.run(self.TASK)
 
         assert calls == ["gpt-5.4"]
+
+    @pytest.mark.parametrize(
+        "kwargs, expected",
+        [
+            (
+                {
+                    "model_name": "claude-sonnet-4-6",
+                    "fallback_models": ["gpt-5.4", "gpt-5.4-mini"],
+                },
+                ["claude-sonnet-4-6", "gpt-5.4", "gpt-5.4-mini"],
+            ),
+            (
+                {"fallback_models": ["gpt-5.4", "gpt-5.4-mini"]},
+                ["gpt-5.4", "gpt-5.4-mini"],
+            ),
+            (
+                {
+                    "model_name": "claude-sonnet-4-6",
+                    "fallback_models": [
+                        "claude-sonnet-4-6",
+                        "gpt-5.4",
+                    ],
+                },
+                ["claude-sonnet-4-6", "gpt-5.4"],
+            ),
+        ],
+    )
+    def test_model_name_runs_before_the_fallback_models(
+        self, kwargs, expected
+    ):
+        agent = self._agent(**kwargs)
+        calls = []
+
+        with patch.object(
+            litellm_wrapper,
+            "completion",
+            side_effect=self._completion(calls, set(expected)),
+        ), pytest.raises(AgentLLMError):
+            agent.run(self.TASK)
+
+        assert calls == expected
 
     def test_fallback_model_name_joins_the_model_list(self):
         agent = self._agent(

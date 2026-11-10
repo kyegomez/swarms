@@ -665,8 +665,8 @@ class RecordingAgent(Agent):
         self._live = 0
         self._lock = threading.Lock()
 
-    def short_memory_init(self):
-        return []
+    def reset(self):
+        self.short_memory = []
 
     def run(self, task=None, *args, **kwargs):
         with self._lock:
@@ -1081,3 +1081,26 @@ def test_each_run_gets_its_own_run_id(temp_workspace):
         )
         with open(path) as f:
             assert json.load(f)["run_id"] == run_id
+
+
+def test_a_failed_agent_is_recorded_as_an_error(temp_workspace):
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=True
+    )
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["reply A", RuntimeError("provider 500")],
+    ):
+        summary = swarm.run("Summarise the market")
+
+    assert summary["tasks_completed"] == 1
+    assert [o["result"] for o in summary["outputs"]] == [
+        "reply A",
+        "Error: provider 500",
+    ]
+    assert _turns(swarm)[-1] == ("Analyst-B", "Error: provider 500")
+    path = os.path.join(
+        swarm.workspace.dir, f"{summary['run_id']}-metadata.json"
+    )
+    with open(path) as f:
+        assert json.load(f)["tasks_completed"] == 1
