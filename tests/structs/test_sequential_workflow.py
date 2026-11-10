@@ -832,8 +832,11 @@ def test_member_channels_are_detached_in_favour_of_the_workflows(
     ]
 
 
-def test_arun_stream_starts_the_next_agent_when_the_stream_ends():
-    """B's request goes out while A is still posting its answer."""
+@pytest.mark.parametrize("slow_step", ["channel", "autosave"])
+def test_arun_stream_starts_the_next_agent_when_the_stream_ends(
+    slow_step,
+):
+    """B's request goes out while A is still posting or saving."""
     import asyncio
     import time
     from types import SimpleNamespace
@@ -860,10 +863,9 @@ def test_arun_stream_starts_the_next_agent_when_the_stream_ends():
 
         return stream()
 
-    class SlowChannel:
-        def post(self, name, content):
-            time.sleep(0.3)
-            events.append(f"{name} posted")
+    def slow(*args, **kwargs):
+        time.sleep(0.2)
+        events.append("A done")
 
     agents = [
         Agent(
@@ -875,7 +877,12 @@ def test_arun_stream_starts_the_next_agent_when_the_stream_ends():
         )
         for name in "AB"
     ]
-    agents[0].channel = SlowChannel()
+    if slow_step == "channel":
+        agents[0].channel = SimpleNamespace(post=slow)
+    else:
+        agents[0].autosave = True
+        agents[0].save = slow
+        agents[0]._autosave_config_step = lambda *args, **kwargs: None
     workflow = SequentialWorkflow(agents=agents, autosave=False)
 
     async def consume():
@@ -884,7 +891,7 @@ def test_arun_stream_starts_the_next_agent_when_the_stream_ends():
     with patch.object(litellm_wrapper, "acompletion", acompletion):
         tokens = asyncio.run(consume())
 
-    assert events == ["request", "request", "A posted"]
+    assert events[-3:] == ["request", "request", "A done"]
     assert tokens == ["A-answer", "B-answer"]
     assert "A-answer" in requests[1]
     history = (

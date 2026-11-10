@@ -1841,8 +1841,11 @@ Subtask Breakdown:
                 ):
                     stream_end_hook()
 
+                # Off the loop, so a pipeline's next agent runs during the write.
                 if self.autosave:
-                    self._autosave_config_step(loop_count=loop_count)
+                    await asyncio.to_thread(
+                        self._autosave_config_step, loop_count
+                    )
 
                 if (
                     self.stopping_condition is not None
@@ -1899,8 +1902,10 @@ Subtask Breakdown:
                     await asyncio.sleep(self.loop_interval)
 
             if self.autosave is True:
-                self.save()
-                self._autosave_config_step(loop_count=loop_count)
+                await asyncio.to_thread(self.save)
+                await asyncio.to_thread(
+                    self._autosave_config_step, loop_count
+                )
 
             return history_output_formatter(
                 self.short_memory, type=self.output_type
