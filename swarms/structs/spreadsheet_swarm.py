@@ -64,7 +64,7 @@ class SpreadSheetSwarm:
     ):
         self.name = name
         self.description = description
-        self.agents = agents
+        self.agents = agents or []
         self.save_file_path = save_file_path
         self.autosave = autosave
         self.max_loops = max_loops
@@ -115,7 +115,7 @@ class SpreadSheetSwarm:
                 f"SpreadSheetSwarm Name: {self.name} reliability checks in progress..."
             )
 
-        if not self.agents:
+        if not self.agents and not self.load_path:
             raise ValueError("No agents are provided.")
 
         if not self.max_loops:
@@ -149,6 +149,7 @@ class SpreadSheetSwarm:
                 for row in csv_reader:
                     agent_name = row["agent_name"]
                     task = row["task"]
+                    max_loops = (row.get("max_loops") or "1").strip()
 
                     # Store agent task mapping
                     self.agent_tasks[agent_name] = task
@@ -165,9 +166,9 @@ class SpreadSheetSwarm:
                         ),
                         docs=[row["docs"]] if "docs" in row else "",
                         max_loops=(
-                            row["max_loops"]
-                            if "max_loops" in row
-                            else 1
+                            max_loops
+                            if max_loops == "auto"
+                            else int(max_loops)
                         ),
                         user_name=(
                             row["user_name"]
