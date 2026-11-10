@@ -7,6 +7,7 @@ in the module's namespace so nothing is fetched.
 
 import importlib
 import importlib.util
+import socket
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -192,6 +193,7 @@ class TestVisionCheck:
 
 class TestUnknownModelWarning:
     def _warnings(self, monkeypatch, known_models):
+        monkeypatch.setenv("SWARMS_STRICT_MODEL_CHECK", "true")
         _use_backend(
             monkeypatch,
             "routehub",
@@ -223,6 +225,28 @@ class TestUnknownModelWarning:
     ):
         warnings = self._warnings(monkeypatch, ["lab/other"])
         assert "may not be supported" in warnings
+
+    def test_building_an_agent_opens_no_connection(self, monkeypatch):
+        routehub = pytest.importorskip("routehub")
+        monkeypatch.delenv("SWARMS_STRICT_MODEL_CHECK", raising=False)
+        _use_backend(monkeypatch, "routehub", _module=routehub)
+        routehub.clear_model_cache()
+        opened = []
+
+        def guard(address, *args, **kwargs):
+            opened.append(address)
+            raise OSError("network is off in this test")
+
+        monkeypatch.setattr(socket, "create_connection", guard)
+        Agent(
+            agent_name="Offline",
+            model_name="gpt-4o-mini",
+            max_tokens=4096,
+            context_length=128000,
+            print_on=False,
+            persistent_memory=False,
+        )
+        assert opened == []
 
 
 if __name__ == "__main__":

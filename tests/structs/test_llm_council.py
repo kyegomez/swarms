@@ -314,5 +314,99 @@ def test_llm_council_output_types():
         raise
 
 
+def test_llm_council_usage_sums_members_and_chairman():
+    """Usage adds up every member's and the chairman's provider tokens."""
+
+    def stub_run(agent, input_tokens, output_tokens):
+        def run(task=None, *args, **kwargs):
+            agent._add_usage(
+                {
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "total_tokens": input_tokens + output_tokens,
+                }
+            )
+            return "ok"
+
+        agent.run = run
+
+    members = [
+        Agent(agent_name=f"Member-{i}", max_loops=1, print_on=False)
+        for i in range(2)
+    ]
+    council = LLMCouncil(council_members=members, verbose=False)
+    for agent, tokens in zip(
+        [*members, council.chairman], [(100, 10), (50, 5), (7, 3)]
+    ):
+        stub_run(agent, *tokens)
+
+    council.run("Pick a database.")
+
+    # Each member answers and ranks, so it is called twice.
+    assert council.usage == {
+        "input_tokens": 307,
+        "output_tokens": 33,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 340,
+    }
+
+
+def test_second_run_does_not_resend_the_first(monkeypatch):
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    requests = []
+
+    def fake_run(self, task=None, *args, messages=None, **kwargs):
+        requests.append(str(messages) + str(task))
+        return "Use Postgres."
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    members = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Member-A", "Member-B")
+    ]
+    council = LLMCouncil(council_members=members, verbose=False)
+
+    council.run("FIRSTTASK")
+    requests.clear()
+    council.run("SECONDTASK")
+
+    assert len(requests) == 5
+    assert not any("FIRSTTASK" in r for r in requests)
+
+
+@pytest.mark.parametrize(
+    "failing_call", [1, 2], ids=["answer", "ranking"]
+)
+def test_member_failure_raises_before_the_chairman(failing_call):
+    calls, chairman_tasks = [], []
+
+    def answer(task=None, *args, **kwargs):
+        return "Use Postgres."
+
+    def flaky(task=None, *args, **kwargs):
+        calls.append(task)
+        if len(calls) == failing_call:
+            raise RuntimeError("rate limited")
+        return "Use Postgres."
+
+    members = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Member-A", "Member-B", "Member-C")
+    ]
+    members[0].run = members[2].run = answer
+    members[1].run = flaky
+    council = LLMCouncil(council_members=members, verbose=False)
+    council.chairman.run = (
+        lambda task=None, **kw: chairman_tasks.append(task)
+    )
+
+    with pytest.raises(RuntimeError, match="rate limited"):
+        council.run("Pick a database.")
+    assert len(calls) == failing_call
+    assert chairman_tasks == []
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

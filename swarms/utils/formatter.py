@@ -1,5 +1,6 @@
 import time
 import re
+from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional
 
 from rich.console import Console, Group
@@ -580,98 +581,81 @@ class Formatter:
         Returns:
             str: The complete accumulated response text.
         """
-        # Get random color similar to non-streaming approach
-        random_color = choose_random_color()
-        panel_style = (
-            f"bold {random_color}" if style is None else style
-        )
-        text_style = DEFAULT_CONTENT_STYLE
+        complete_response = ""
+        with self.streaming_panel(title, style) as add:
+            for part in streaming_response:
+                chunk, chunk_style = None, None
+                if isinstance(part, tuple):
+                    chunk, chunk_style = part
+                elif isinstance(part, str):
+                    chunk = part
+                elif (
+                    hasattr(part, "choices")
+                    and part.choices
+                    and part.choices[0].delta.content
+                ):
+                    chunk = part.choices[0].delta.content
+                if chunk:
+                    add(chunk, chunk_style)
+                    complete_response += chunk
+                    if on_chunk_callback:
+                        on_chunk_callback(chunk)
 
-        def create_streaming_panel(text_obj, is_complete=False):
-            """Create panel with proper text wrapping using Rich's built-in capabilities"""
+        return complete_response
+
+    @contextmanager
+    def streaming_panel(self, title: str, style: str = None):
+        """
+        Open a live panel that text is appended to as it streams.
+
+        Args:
+            title (str): Title of the panel.
+            style (str): Style for the panel border, a random color if None.
+
+        Yields:
+            Callable: Takes a text fragment and an optional style, and shows it.
+        """
+        panel_style = (
+            f"bold {choose_random_color()}"
+            if style is None
+            else style
+        )
+        streaming_text = Text()
+
+        def render(is_complete: bool) -> Panel:
             panel_title = f"[{DEFAULT_CONTENT_STYLE}]{title}[/]"
             if is_complete:
                 panel_title += " [bold green]✅[/bold green]"
-
-            # Add blinking cursor if still streaming
             display_text = Text.from_markup("")
-            display_text.append_text(text_obj)
+            display_text.append_text(streaming_text)
             if not is_complete:
                 display_text.append("▊", style="bold green blink")
-
-            panel = Panel(
+            return Panel(
                 display_text,
                 title=panel_title,
                 border_style=panel_style,
                 padding=(1, 2),
-                width=self.console.size.width,  # Rich handles wrapping automatically
+                width=self.console.size.width,
             )
-            return panel
 
-        # Create a Text object for streaming content
-        streaming_text = Text()
-        complete_response = ""
-        chunks_collected = []
-
-        # TRUE streaming with Rich's automatic text wrapping
         with Live(
-            create_streaming_panel(streaming_text),
-            console=self.console,
-            refresh_per_second=20,
+            render(False), console=self.console, refresh_per_second=20
         ) as live:
-            try:
-                for part in streaming_response:
-                    chunk, chunk_style = None, None
-                    if isinstance(part, tuple):
-                        chunk, chunk_style = part
-                    elif isinstance(part, str):
-                        chunk = part
-                    elif (
-                        hasattr(part, "choices")
-                        and part.choices
-                        and part.choices[0].delta.content
-                    ):
-                        chunk = part.choices[0].delta.content
-                    if chunk:
-                        streaming_text.append(
-                            chunk, style=chunk_style or text_style
-                        )
-                        complete_response += chunk
 
-                        # Collect chunks if requested
-                        if collect_chunks:
-                            chunks_collected.append(chunk)
-
-                        # Call chunk callback if provided
-                        if on_chunk_callback:
-                            on_chunk_callback(chunk)
-
-                        # Update display with new text - Rich handles all wrapping automatically
-                        live.update(
-                            create_streaming_panel(
-                                streaming_text, is_complete=False
-                            )
-                        )
-
-                # Final update to show completion
-                live.update(
-                    create_streaming_panel(
-                        streaming_text, is_complete=True
-                    )
+            def add(text: str, text_style: str = None) -> None:
+                streaming_text.append(
+                    text, style=text_style or DEFAULT_CONTENT_STYLE
                 )
+                live.update(render(False))
 
+            try:
+                yield add
             except Exception as e:
-                # Handle any streaming errors gracefully
+                # A stream error is shown in the panel, as it always has been.
                 streaming_text.append(
                     f"\n[Error: {str(e)}]", style="bold red"
                 )
-                live.update(
-                    create_streaming_panel(
-                        streaming_text, is_complete=True
-                    )
-                )
-
-        return complete_response
+            live.update(render(True))
 
     def _create_dashboard_table(
         self, agents_data: List[Dict[str, Any]], title: str

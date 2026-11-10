@@ -458,6 +458,31 @@ def test_run_basic():
     assert result is not None
 
 
+def test_saved_conversation_does_not_leak_into_later_runs(
+    monkeypatch, tmp_path
+):
+    """A saved transcript must not seed the next run or a new pipeline."""
+    monkeypatch.chdir(tmp_path)
+    pipeline = _make_pipeline("A", "B")
+    pipeline.output_type = "dict"
+
+    pipeline.run("first task")
+    pipeline.conversation.save_as_json()
+
+    second = pipeline.run("second task")
+    fresh = _make_pipeline("A", "B")
+    fresh.output_type = "dict"
+    third = fresh.run("third task")
+
+    for messages, task in (
+        (second, "second task"),
+        (third, "third task"),
+    ):
+        contents = " ".join(str(m["content"]) for m in messages)
+        assert task in contents
+        assert "first task" not in contents
+
+
 def test_run_with_different_output_types():
     """Test run with different output types."""
     agents = create_sample_agents()

@@ -10,6 +10,7 @@ from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.telemetry.otel import capture_init, trace_run
+from swarms.structs.usage_utils import total_usage
 
 
 logger = initialize_logger(log_folder="social_algorithms")
@@ -478,3 +479,14 @@ class SocialAlgorithms:
             "output_type": self.output_type,
             "verbose": self.verbose,
         }
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

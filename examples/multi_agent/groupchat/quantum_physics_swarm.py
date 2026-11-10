@@ -89,7 +89,6 @@ When developing computational methods, you think in terms of mathematical algori
         agents=agents,
         max_loops=15,
         threshold=0.5,
-        idle_timeout=10.0,
         output_type="all",
     )
 

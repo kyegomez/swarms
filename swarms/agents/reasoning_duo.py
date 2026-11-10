@@ -26,6 +26,7 @@ class ReasoningDuo:
         model_name (str): The model for the main agent, and for the reasoning agent when reasoning_model_name is None.
         description (str): A description of the reasoning agent.
         model_names (list[str]): [reasoning, main] models; when given, they take the place of model_name.
+        reasoning_model_name (Optional[str]): The model for the reasoning agent. Defaults to None, which runs it on model_names[0], so a duo built on one provider stays on it.
         system_prompt (str): The system prompt for the main agent.
         reasoning_agent (Agent): An instance of the Agent class for reasoning tasks.
         main_agent (Agent): An instance of the Agent class for main tasks.
@@ -41,7 +42,7 @@ class ReasoningDuo:
         model_names: Optional[List[str]] = None,
         system_prompt: str = "You are a helpful assistant that can answer questions and help with tasks.",
         output_type: OutputType = "dict-all-except-first",
-        reasoning_model_name: Optional[str] = "gpt-4o",
+        reasoning_model_name: Optional[str] = None,
         max_loops: int = 1,
         *args,
         **kwargs,
@@ -64,7 +65,7 @@ class ReasoningDuo:
         # Distinct names: a shared one made both agents the same speaker.
         self.reasoning_agent = Agent(
             agent_name=f"{self.agent_name}-reasoning",
-            description=self.agent_description,
+            agent_description=self.agent_description,
             system_prompt=REASONING_PROMPT,
             max_loops=1,
             model_name=self.reasoning_model_name,
@@ -74,7 +75,7 @@ class ReasoningDuo:
 
         self.main_agent = Agent(
             agent_name=f"{self.agent_name}-main",
-            description=self.agent_description,
+            agent_description=self.agent_description,
             system_prompt=system_prompt,
             max_loops=1,
             model_name=model_names[1],

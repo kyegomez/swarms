@@ -10,6 +10,7 @@ from swarms.prompts.agent_acknowledgement_prompt import (
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.structs.comms_channel import CommsChannel
+from swarms.structs.usage_utils import total_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
@@ -69,7 +70,6 @@ class SequentialWorkflow:
         agents (List[Union[Agent, Callable]]): List of agents or callables to execute in sequence.
         max_loops (int): Maximum number of times to execute the workflow.
         output_type (OutputType): Format of the output from the workflow.
-        shared_memory_system (callable): Optional callable for managing shared memory between agents.
         multi_agent_collab_prompt (bool): Whether to append a collaborative prompt to each agent.
         flow (str): String representation of the agent execution order.
         agent_rearrange (AgentRearrange): Internal helper for managing agent execution.
@@ -86,11 +86,10 @@ class SequentialWorkflow:
         agents: List[Union[Agent, Callable]] = None,
         max_loops: int = 1,
         output_type: OutputType = "dict",
-        shared_memory_system: callable = None,
         multi_agent_collab_prompt: bool = False,
         collab_prompt: Optional[str] = None,
         team_awareness: bool = False,
-        autosave: bool = True,
+        autosave: bool = False,
         verbose: bool = False,
         drift_detection: bool = False,
         drift_threshold: float = 0.75,
@@ -110,7 +109,6 @@ class SequentialWorkflow:
             agents (List[Union[Agent, Callable]], optional): List of agents or callables to execute in sequence.
             max_loops (int, optional): Maximum number of times to execute the workflow. Defaults to 1.
             output_type (OutputType, optional): Output format for the workflow. Defaults to "dict".
-            shared_memory_system (callable, optional): Callable for shared memory management. Defaults to None.
             multi_agent_collab_prompt (bool, optional): If True, each agent receives a collaboration
                 preamble as a system turn for the duration of the run.
             collab_prompt (str, optional): Overrides the default preamble text. Ignored unless
@@ -139,7 +137,6 @@ class SequentialWorkflow:
         self.agents = agents
         self.max_loops = max_loops
         self.output_type = output_type
-        self.shared_memory_system = shared_memory_system
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.collab_prompt = collab_prompt
         self.team_awareness = team_awareness
@@ -269,9 +266,7 @@ class SequentialWorkflow:
         budget is spent.
         """
         for attempt in range(self.drift_max_retries + 1):
-            self.drift_agent.short_memory = (
-                self.drift_agent.short_memory_init()
-            )
+            self.drift_agent.reset()
             try:
                 raw = self.drift_agent.run(
                     f"Original task: {task}\n\nFinal output: {result}"
@@ -566,3 +561,14 @@ class SequentialWorkflow:
                 f"An error occurred while executing the batch of tasks concurrently: {e}"
             )
             raise
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

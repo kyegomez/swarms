@@ -5,7 +5,6 @@ This directory contains examples demonstrating Swarms API integration in multi-a
 ## Examples
 
 - [hedge_fund_swarm.py](hedge_fund_swarm.py) - Hedge fund swarm using API
-- [swarms_api_client.py](swarms_api_client.py) - API client implementation
 - Additional API integration examples
 
 ## Overview
