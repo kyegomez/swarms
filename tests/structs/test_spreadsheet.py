@@ -396,6 +396,21 @@ def test_load_from_csv_creates_agents(
         assert hasattr(agent, "system_prompt")
 
 
+def test_load_path_alone_loads_every_row_with_numeric_max_loops(
+    tmp_path, temp_workspace
+):
+    """A CSV-only swarm loads each row, reading max_loops as a number or "auto"."""
+    csv_path = tmp_path / "agents.csv"
+    csv_path.write_text(
+        "agent_name,description,system_prompt,task,max_loops\n"
+        "a1,d,p,t1,2\n"
+        "a2,d,p,t2,auto\n"
+    )
+    swarm = SpreadSheetSwarm(load_path=str(csv_path))
+    swarm.load_from_csv()
+    assert [a.max_loops for a in swarm.agents] == [2, "auto"]
+
+
 def test_load_from_nonexistent_csv(temp_workspace):
     """Test loading from non-existent CSV file."""
     agent = Agent(
