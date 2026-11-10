@@ -4,7 +4,8 @@ import os
 import uuid
 from typing import List
 
-from swarms.structs.agent import Agent, reset_agents
+from swarms.structs.agent import reset_agents
+from swarms.structs.agent_loader import AgentLoader
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     run_agents_with_different_tasks,
@@ -131,61 +132,15 @@ class SpreadSheetSwarm:
 
     def _load_from_csv(self):
         """
-        Load agent configurations from a CSV file.
-        Expected CSV format: agent_name,description,system_prompt,task
-
-        Args:
-            csv_path (str): Path to the CSV file containing agent configurations
+        Load the agents and their tasks from the CSV file at load_path.
         """
         try:
-            csv_path = self.load_path
-            logger.info(
-                f"Loading agent configurations from {csv_path}"
+            self.agents.extend(
+                AgentLoader().load_agents_from_csv(self.load_path)
             )
-
-            with open(csv_path, mode="r") as file:
-                csv_reader = csv.DictReader(file)
-
-                for row in csv_reader:
-                    agent_name = row["agent_name"]
-                    task = row["task"]
-                    max_loops = (row.get("max_loops") or "1").strip()
-
-                    # Store agent task mapping
-                    self.agent_tasks[agent_name] = task
-
-                    # Create new agent with configuration
-                    new_agent = Agent(
-                        agent_name=agent_name,
-                        system_prompt=row["system_prompt"],
-                        description=row["description"],
-                        model_name=(
-                            row["model_name"]
-                            if "model_name" in row
-                            else "openai/gpt-4o"
-                        ),
-                        docs=[row["docs"]] if "docs" in row else "",
-                        max_loops=(
-                            max_loops
-                            if max_loops == "auto"
-                            else int(max_loops)
-                        ),
-                        user_name=(
-                            row["user_name"]
-                            if "user_name" in row
-                            else "user"
-                        ),
-                        stopping_token=(
-                            row["stopping_token"]
-                            if "stopping_token" in row
-                            else None
-                        ),
-                    )
-
-                    # Add agent to swarm
-                    self.agents.append(new_agent)
-
-            # Agents have been loaded successfully
+            with open(self.load_path, newline="") as file:
+                for row in csv.DictReader(file):
+                    self.agent_tasks[row["agent_name"]] = row["task"]
             logger.info(
                 f"Loaded {len(self.agents)} agent configurations"
             )
