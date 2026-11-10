@@ -12,6 +12,8 @@ Covers:
 """
 
 import os
+import threading
+import time
 
 import pytest
 from dotenv import load_dotenv
@@ -923,9 +925,6 @@ def test_run_raises_when_question_generation_fails(
 def test_a_hung_worker_times_out_without_holding_the_run(
     show_dashboard,
 ):
-    import threading
-    import time
-
     swarm = HeavySwarm(
         worker_model_name=MODEL,
         question_agent_model_name=MODEL,
@@ -935,10 +934,8 @@ def test_a_hung_worker_times_out_without_holding_the_run(
     release = threading.Event()
     roles = ["research", "analysis", "alternatives", "verification"]
     for role in roles:
-        swarm.agents[role].run = (
-            lambda *a, _r=role, **kw: f"{_r} done"
-        )
-    swarm.agents["research"].run = lambda *a, **kw: release.wait(3)
+        swarm.agents[role].run = lambda q, img=None: q
+    swarm.agents["research"].run = lambda q, img=None: release.wait(3)
 
     start = time.monotonic()
     results = swarm._execute_agents_parallel(
@@ -948,11 +945,8 @@ def test_a_hung_worker_times_out_without_holding_the_run(
     release.set()
 
     assert elapsed < 1.5
-    assert results["research"] == "Timeout after 0.3 seconds"
-    assert len(results) == 4
-    assert "Timeout" not in str(
-        {k: v for k, v in results.items() if k != "research"}
-    )
+    assert results.pop("research") == "Timeout after 0.3 seconds"
+    assert sorted(results.values()) == sorted(roles[1:])
 
 
 class TestSwarmRouterGrokIntegration:
