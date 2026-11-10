@@ -364,6 +364,11 @@ class LLMManager:
             if agent.stopping_token:
                 additional_args["stop"] = [agent.stopping_token]
 
+            if agent.output_schema is not None:
+                additional_args["response_format"] = (
+                    agent.output_schema
+                )
+
             if agent.llm_args is not None:
                 additional_args.update(agent.llm_args)
 

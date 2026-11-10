@@ -32,3 +32,17 @@ class AgentToolExecutionError(AgentError):
     """Exception raised when the agent fails to execute a tool. Check the tool's configuration and availability."""
 
     pass
+
+
+class AgentOutputSchemaError(AgentError, ValueError):
+    """Exception raised when the model's reply still fails output_schema validation after every retry."""
+
+    def __init__(
+        self,
+        message: str,
+        raw_output: str,
+        validation_error: Exception,
+    ):
+        super().__init__(message)
+        self.raw_output = raw_output
+        self.validation_error = validation_error

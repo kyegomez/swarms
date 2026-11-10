@@ -21,6 +21,7 @@ from swarms.structs.agent import DEFAULT_AGENT_DESCRIPTION
 from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
+    AgentOutputSchemaError,
     AgentToolExecutionError,
 )
 from swarms.tools.base_tool import BaseTool
@@ -2904,3 +2905,73 @@ class TestAgentOutputCleanerRemoval:
         assert isinstance(result, str)
         cleaned = result.upper()
         assert "RAW OUTPUT" in cleaned
+
+
+class _Report(BaseModel):
+    title: str
+    score: float
+
+
+_VALID_REPORT = '{"title": "Plan", "score": 0.8}'
+_INVALID_REPORT = '{"title": "Plan"}'
+
+
+@pytest.mark.parametrize("use_arun", [False, True])
+@pytest.mark.parametrize(
+    "replies",
+    [
+        [_VALID_REPORT],
+        [_INVALID_REPORT, _VALID_REPORT],
+        [_INVALID_REPORT] * 3,
+    ],
+    ids=["valid", "retry-then-valid", "retries-exhausted"],
+)
+def test_output_schema_returns_a_validated_model(use_arun, replies):
+    sent = []
+
+    def completion(**params):
+        sent.append(params)
+        message = SimpleNamespace(
+            content=replies[len(sent) - 1], tool_calls=None
+        )
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(message=message, finish_reason="stop")
+            ],
+            model="stub",
+            usage=None,
+        )
+
+    async def acompletion(**params):
+        return completion(**params)
+
+    with (
+        patch.object(litellm_wrapper, "completion", completion),
+        patch.object(litellm_wrapper, "acompletion", acompletion),
+    ):
+        agent = Agent(
+            agent_name="schema-agent",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+            output_schema=_Report,
+        )
+
+        def run(task):
+            if use_arun:
+                return asyncio.run(agent.arun(task))
+            return agent.run(task)
+
+        if replies[-1] == _INVALID_REPORT:
+            with pytest.raises(AgentOutputSchemaError) as raised:
+                run("Rate this plan.")
+            assert raised.value.raw_output == _INVALID_REPORT
+        else:
+            assert run("Rate this plan.") == _Report(
+                title="Plan", score=0.8
+            )
+
+    assert len(sent) == len(replies)
+    assert all(p["response_format"] is _Report for p in sent)
+    if len(sent) > 1:
+        assert "score" in str(sent[1]["messages"][-1]["content"])
