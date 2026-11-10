@@ -9,6 +9,8 @@ budget for an unbounded run.
 
 from typing import Any, Optional
 
+from swarms.utils import llm_backend
+from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.llm_backend import completion
 from swarms.utils.litellm_wrapper import usage_from_response
 from loguru import logger
@@ -126,6 +128,67 @@ class ContextCompressor:
             for message in history
         )
 
+    def _fit_history(
+        self, agent: Any, model: str, history: str
+    ) -> str:
+        """Keep the newest part of the history that fits the summarizer's window.
+
+        Args:
+            agent: The agent whose history is being summarized.
+            model: The model the summary call goes to.
+            history: The formatted conversation history.
+
+        Returns:
+            str: The history, cut from the front when it would overflow the summary call.
+        """
+        window = getattr(agent, "context_length", None)
+        if self.summarizer_model is not None:
+            try:
+                window = (
+                    llm_backend.get_model_info(model).get(
+                        "max_input_tokens"
+                    )
+                    or window
+                )
+            except Exception:
+                pass
+        if not window:
+            return history
+
+        # Bytes bound the prompt's tokens from above; 2% covers a provider count above ours.
+        overhead = len(
+            (
+                COMPRESSION_SYSTEM_PROMPT + COMPRESSION_USER_TEMPLATE
+            ).encode()
+        )
+        budget = max(
+            window
+            - self.summarizer_max_tokens
+            - overhead
+            - window // 50,
+            window // 2,
+        )
+        # A token is never shorter than one byte, so a history under the budget in bytes fits.
+        if len(history.encode()) <= budget:
+            return history
+
+        tokens = count_tokens(history, model)
+        if tokens <= budget:
+            return history
+        full = tokens
+        for _ in range(8):
+            keep = max(int(len(history) * budget / tokens * 0.98), 1)
+            history = history[-keep:]
+            tokens = count_tokens(history, model)
+            if tokens <= budget:
+                break
+        logger.warning(
+            f"[ContextCompressor] History is {full} tokens, more than "
+            f"{model} can summarize at once; summarizing the newest "
+            f"{tokens} tokens"
+        )
+        return history
+
     def _summarize(self, agent: Any, history: str) -> str:
         model = self.summarizer_model or getattr(
             agent, "model_name", None
@@ -134,6 +197,7 @@ class ContextCompressor:
             raise ValueError(
                 "No summarizer_model configured and agent has no model_name"
             )
+        history = self._fit_history(agent, model, history)
         endpoint = {}
         if self.summarizer_model is None:
             for key, attr in (

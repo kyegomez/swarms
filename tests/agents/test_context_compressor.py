@@ -256,6 +256,27 @@ class TestSummarize:
             == messages[1]["content"]
         )
 
+    def test_a_history_past_the_window_is_cut_to_its_newest_part(
+        self,
+    ):
+        from swarms.utils.litellm_tokenizer import count_tokens
+
+        cc = ContextCompressor(summarizer_max_tokens=100)
+        agent = _make_agent(context_length=6000, model_name="gpt-4o")
+        history = "old turn. " * 4000 + "THE NEWEST TURN"
+        with patch(
+            "swarms.agents.context_compressor.completion",
+            return_value=_make_completion_response(),
+        ) as mock_comp:
+            cc._summarize(agent, history)
+        sent = mock_comp.call_args[1]["messages"]
+        tokens = sum(
+            count_tokens(m["content"], "gpt-4o") for m in sent
+        )
+        assert tokens + 100 <= 6000
+        assert "THE NEWEST TURN" in sent[1]["content"]
+        assert "old turn." in sent[1]["content"]
+
     def test_returns_response_content_unchanged(self):
         cc = ContextCompressor(summarizer_model="gpt-4o")
         agent = _make_agent()
