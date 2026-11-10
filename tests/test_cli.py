@@ -321,39 +321,6 @@ class TestHandleRunAgents:
             yaml_file=str(yaml_file), return_type="run_swarm"
         )
 
-    @patch("swarms.cli.commands.AgentLoader.load_agents_from_yaml")
-    def test_handles_api_key_error(self, mock_create, tmp_path):
-        yaml_file = tmp_path / "agents.yaml"
-        yaml_file.write_text("agents: []")
-        mock_create.side_effect = Exception(
-            "invalid api_key provided"
-        )
-        args = make_args(
-            command="run-agents", yaml_file=str(yaml_file)
-        )
-        with patch("swarms.cli.commands.show_error") as mock_err:
-            with pytest.raises(SystemExit) as exit_info:
-                self.handle_run_agents(args)
-            assert exit_info.value.code == 1
-            mock_err.assert_called_once()
-            assert "API Key" in mock_err.call_args[0][0]
-
-    @patch("swarms.cli.commands.AgentLoader.load_agents_from_yaml")
-    def test_handles_context_length_error(
-        self, mock_create, tmp_path
-    ):
-        yaml_file = tmp_path / "agents.yaml"
-        yaml_file.write_text("agents: []")
-        mock_create.side_effect = Exception("context_length_exceeded")
-        args = make_args(
-            command="run-agents", yaml_file=str(yaml_file)
-        )
-        with patch("swarms.cli.commands.show_error") as mock_err:
-            with pytest.raises(SystemExit) as exit_info:
-                self.handle_run_agents(args)
-            assert exit_info.value.code == 1
-            assert "Context Length" in mock_err.call_args[0][0]
-
 
 # ===========================================================================
 # 4. handle_load_markdown
@@ -506,21 +473,18 @@ class TestRunAutoswarm:
 
         self.run_autoswarm = run_autoswarm
 
-    def test_empty_task_shows_error(self):
-        with patch("swarms.cli.commands.show_error") as mock_err:
-            with pytest.raises(SystemExit) as exit_info:
-                self.run_autoswarm(task="", model="gpt-4o")
-        assert exit_info.value.code == 1
-        mock_err.assert_called_once()
-        assert "Task cannot be empty" in str(mock_err.call_args)
+    @pytest.mark.parametrize(
+        "task, model, message",
+        [
+            ("", "gpt-4o", "Task cannot be empty"),
+            ("do something", "", "Model name cannot be empty"),
+        ],
+    )
+    def test_empty_argument_raises(self, task, model, message):
+        from swarms.cli.utils import SwarmCLIError
 
-    def test_empty_model_shows_error(self):
-        with patch("swarms.cli.commands.show_error") as mock_err:
-            with pytest.raises(SystemExit) as exit_info:
-                self.run_autoswarm(task="do something", model="")
-        assert exit_info.value.code == 1
-        mock_err.assert_called_once()
-        assert "Model name cannot be empty" in str(mock_err.call_args)
+        with pytest.raises(SwarmCLIError, match=message):
+            self.run_autoswarm(task=task, model=model)
 
     @patch(
         "swarms.agents.auto_generate_swarm_config.write_autoswarm_file"
@@ -811,3 +775,52 @@ class TestMain:
         assert mock_art.called is banner
         if argv:
             assert out == f"swarms {check_swarms_version()}\n"
+
+    @pytest.mark.parametrize(
+        "argv, target, message, hint",
+        [
+            (
+                ["llm-council", "--task", "t"],
+                "LLMCouncil",
+                "bad [/x] value",
+                "Troubleshooting tips",
+            ),
+            (
+                ["heavy-swarm", "--task", "t"],
+                "HeavySwarm",
+                "context_length_exceeded",
+                "Context window exceeded",
+            ),
+            (
+                ["agent", "--name", "A", "--description", "d"]
+                + ["--system-prompt", "s", "--task", "t"],
+                "Agent",
+                "invalid api_key",
+                "Authentication failed",
+            ),
+            (
+                ["autoswarm", "--task", "t", "--model", "m"],
+                "generate_swarm_config",
+                "No YAML content found",
+                "returned no swarm config",
+            ),
+        ],
+    )
+    @patch("swarms.cli.main.show_ascii_art")
+    def test_command_failure_reaches_main_error_screen(
+        self, mock_art, capsys, argv, target, message, hint
+    ):
+        from swarms.cli.main import main
+
+        with patch(
+            f"swarms.cli.commands.{target}",
+            side_effect=RuntimeError(message),
+        ), patch("sys.argv", ["swarms", *argv]), pytest.raises(
+            SystemExit
+        ) as exit_info:
+            main()
+        out = " ".join(capsys.readouterr().out.split())
+        assert exit_info.value.code == 1
+        assert "Oops! An unexpected error occurred" in out
+        assert message in out
+        assert hint in out

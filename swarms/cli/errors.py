@@ -24,6 +24,7 @@ def _classify_command_error(message: str) -> List[str]:
         or "authenticationerror" in err
         or "invalid api key" in err
         or "missing api key" in err
+        or "api_key" in err
     ):
         hints.append(
             "Authentication failed — set your provider key in [bold]swarms init[/bold] "
@@ -38,6 +39,18 @@ def _classify_command_error(message: str) -> List[str]:
         hints.append(
             "Find a valid model with [bold]swarms models --search <name>[/bold] "
             "or list them all with [bold]swarms models[/bold]"
+        )
+
+    if "context_length_exceeded" in err:
+        hints.append(
+            "Context window exceeded — lower max_tokens or context_length "
+            "in your config, or use a model with a larger window"
+        )
+
+    if "no yaml content found" in err:
+        hints.append(
+            "The model returned no swarm config — check its API key, "
+            "or try another model with [bold]--model[/bold]"
         )
 
     if "workspace_dir" in err or "workspace directory" in err:
