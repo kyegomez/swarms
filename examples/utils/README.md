@@ -14,6 +14,9 @@ This directory contains utility examples and helper functions for various Swarms
 - [redis_conversation.py](communication_examples/redis_conversation.py) - Redis-based conversations
 - [sqlite_conversation.py](communication_examples/sqlite_conversation.py) - SQLite conversation storage
 
+## Recording and Replay
+- [record_and_replay_a_run.py](record_and_replay_a_run.py) - Record a run once, then replay it offline with no model called
+
 ## Miscellaneous
 - [agent_map_test.py](misc/agent_map_test.py) - Agent mapping testing
 - [conversation_simple.py](misc/conversation_simple.py) - Simple conversation handling
