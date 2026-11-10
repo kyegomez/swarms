@@ -1001,12 +1001,12 @@ class LLMManager:
         current_loop: int,
         streaming_callback: Optional[Callable[[str], None]],
     ) -> Any:
-        """Send every streamed part to the callback, the live panel, or nowhere when printing is off.
+        """Send reasoning and content to the callback, every part to the live panel, or nowhere when printing is off.
 
         Args:
             streaming_response: The raw chunk stream from the model.
             current_loop: The loop number shown in the panel title.
-            streaming_callback: Receives the text of every part, if given.
+            streaming_callback: Receives reasoning and content text, not tool-call text, if given.
 
         Returns:
             Any: The assembled tool calls if the model made any, else the reply text.
@@ -1036,11 +1036,16 @@ class LLMManager:
         streaming_callback: Optional[Callable[[str], None]] = None,
         tool_calls_out: Optional[list] = None,
     ) -> str:
-        """Drain a stream into its reply text, forwarding every streamed part to the callback.
+        """Drain a stream into its reply text, forwarding reasoning and content to the callback.
+
+        A tool call reaches the caller assembled in ``tool_calls_out``, so its
+        ``[tool call] name {args}`` rendering is console decoration and is not
+        forwarded: a callback is the programmatic path, and a client that
+        accumulates what it receives would show that text as the reply.
 
         Args:
             stream: The raw chunk stream from the model.
-            streaming_callback: Receives the text of every part: reasoning, content and tool calls.
+            streaming_callback: Receives reasoning and content text, not tool-call text.
             tool_calls_out: Filled with the assembled tool calls, if given.
 
         Returns:
@@ -1048,12 +1053,12 @@ class LLMManager:
         """
         content_out: list = []
 
-        for _, text, _ in self.stream_parts(
+        for kind, text, _ in self.stream_parts(
             stream,
             tool_calls_out if tool_calls_out is not None else [],
             content_out,
         ):
-            if streaming_callback is not None:
+            if streaming_callback is not None and kind != "tool_call":
                 streaming_callback(text)
 
         return "".join(content_out)
