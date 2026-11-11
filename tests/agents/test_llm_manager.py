@@ -1070,6 +1070,7 @@ class TestAgentWrapperDelegation:
         agent.llm_manager.call.assert_called_once_with(
             task="task",
             img=None,
+            imgs=None,
             current_loop=2,
             streaming_callback=None,
         )

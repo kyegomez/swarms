@@ -920,14 +920,19 @@ class TestFunctionCallingWarning:
 
     @staticmethod
     def _warnings_for(**kwargs):
-        with patch(
-            "swarms.utils.llm_backend.supports_function_calling",
-            return_value=False,
-        ), patch("swarms.structs.agent.logger") as log:
-            _patched_agent(
-                "warn_agent", model_name="gpt-5.4", **kwargs
+        with patch.dict(
+            os.environ, {"SWARMS_STRICT_MODEL_CHECK": "true"}
+        ):
+            with patch(
+                "swarms.utils.llm_backend.supports_function_calling",
+                return_value=False,
+            ), patch("swarms.structs.agent.logger") as log:
+                _patched_agent(
+                    "warn_agent", model_name="gpt-5.4", **kwargs
+                )
+            return " ".join(
+                str(c) for c in log.warning.call_args_list
             )
-        return " ".join(str(c) for c in log.warning.call_args_list)
 
     def test_no_tools_no_function_calling_warning(self):
         assert (
@@ -2113,7 +2118,7 @@ class TestEmptyToolsList:
             """
             return x
 
-        agent = self._agent(tools=[sample])
+        agent = self._agent(tools=[sample], dynamic_tools=True)
         assert agent.tools_list_dictionary
         assert "tool_search" in agent.system_prompt
 
