@@ -13,10 +13,20 @@ def total_usage(*roots: Any) -> dict:
     """
     Sum provider token usage over everything the roots hold.
 
+    Each distinct object is visited once, under three rules:
+
+    - An object with a ``usage`` property that keeps its running
+      total in a ``_usage`` dict is read through ``usage`` and not
+      searched further.
+    - A usage dict is counted when it is a root, sits in a root
+      container, or is a direct attribute of an object.
+    - A usage dict inside a dict or list that an object holds is a
+      stored copy of a total and is skipped. The other values there,
+      such as agents, are still searched.
+
     Args:
         *roots: Structures, agents, model clients, usage dicts, or
-            containers of them. Each distinct agent and usage dict is
-            counted once.
+            containers of them.
 
     Returns:
         A new dict with input_tokens, output_tokens, cached_tokens,
@@ -45,7 +55,10 @@ def total_usage(*roots: Any) -> dict:
             for cls in type(value).__mro__
         ):
             attributes = vars(value)
-            if not isinstance(attributes.get("_usage"), dict):
+            if not (
+                isinstance(attributes.get("_usage"), dict)
+                and hasattr(type(value), "usage")
+            ):
                 stack.extend(
                     (item, _is_usage(item))
                     for item in attributes.values()
