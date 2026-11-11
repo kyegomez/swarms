@@ -230,6 +230,13 @@ class Agent:
             "create_sub_agent", "assign_task".
             Defaults to "all" (all tools enabled). Pass a list of tool names to restrict tools, or "all"
             for unrestricted access. Use this to control which tools the agent can use during autonomous execution.
+        on_tool_call (Optional[Callable[[str, Dict[str, Any]], str]]): Autonomous loop only.
+            Consulted before create_file, update_file, delete_file and run_bash run. Receives the
+            tool name and the arguments the model sent, and returns "allow" to let the call run or
+            "deny" to block it. Any other return value is treated as a denial. A denied call returns
+            the denial to the model as the tool's result, so it can take another route. Prompt the
+            user inside the hook to approve calls interactively. Defaults to None, which runs every
+            tool unconditionally.
         prompt_caching (bool): Enable provider-side prompt caching. When True, ephemeral
             cache_control breakpoints are added to the stable prefix of each request (system
             prompt, tools, and the last message) so it is cached and re-billed at a discount.
@@ -426,6 +433,9 @@ class Agent:
         marketplace_prompt_id: Optional[str] = None,
         skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
+        on_tool_call: Optional[
+            Callable[[str, Dict[str, Any]], str]
+        ] = None,
         context_compression: bool = True,
         persistent_memory: bool = False,
         messages: Optional[List[Dict[str, Any]]] = None,
@@ -438,6 +448,7 @@ class Agent:
         self.skills = SkillsManager(skills_dir=skills_dir)
         self._skills_prompt = ""
         self.selected_tools = selected_tools
+        self.on_tool_call = on_tool_call
         self.llm = llm
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition

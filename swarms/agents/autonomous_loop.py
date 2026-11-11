@@ -89,6 +89,15 @@ ALWAYS_LOADED_TOOLS = frozenset(
     }
 )
 
+MUTATING_TOOLS = frozenset(
+    {
+        "create_file",
+        "update_file",
+        "delete_file",
+        "run_bash",
+    }
+)
+
 
 class AutonomousAgentLoop:
     """
@@ -200,6 +209,30 @@ class AutonomousAgentLoop:
             mirror=False,
         )
         return True
+
+    def _guard(self, name: str, handler: Callable) -> Callable:
+        """Run a mutating tool only when the agent's on_tool_call allows it.
+
+        Args:
+            name (str): The tool the model called.
+            handler (Callable): The tool's own handler.
+
+        Returns:
+            Callable: A handler that asks the hook first and returns the denial
+                to the model when the answer is anything but "allow".
+        """
+
+        def guarded(**kwargs: Any) -> Any:
+            decision = self.agent.on_tool_call(name, kwargs)
+            if decision == "allow":
+                return handler(**kwargs)
+            return (
+                f"DENIED: {name} was not run because this agent's "
+                f"on_tool_call policy answered {decision!r}. Take a "
+                "different approach or ask the user to allow it."
+            )
+
+        return guarded
 
     def _run_autonomous_loop(
         self,
@@ -465,6 +498,16 @@ class AutonomousAgentLoop:
                 }
             else:
                 planning_tool_handlers = all_planning_tool_handlers
+
+            if self.agent.on_tool_call is not None:
+                planning_tool_handlers = {
+                    name: (
+                        self._guard(name, handler)
+                        if name in MUTATING_TOOLS
+                        else handler
+                    )
+                    for name, handler in planning_tool_handlers.items()
+                }
 
             # Add handoff tool handler if handoffs are configured
             if exists(self.agent.handoffs):
