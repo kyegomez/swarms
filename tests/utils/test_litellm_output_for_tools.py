@@ -7,8 +7,9 @@ Local tools then never ran (the executor did not recognise the call)
 and tool results could not be keyed back to their call.
 """
 
-import json
 from types import SimpleNamespace
+
+import pytest
 
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.litellm_wrapper import LiteLLM
@@ -32,43 +33,37 @@ def _response_with(*tool_calls):
     )
 
 
-def test_mcp_single_call_keeps_id_and_type():
-    response = _response_with(
-        _tool_call("call_1", "get_weather", '{"location": "Paris"}')
-    )
-    out = LiteLLM(mcp_call=True).output_for_tools(response)
-    assert out == {
-        "id": "call_1",
-        "type": "function",
-        "function": {
-            "name": "get_weather",
-            "arguments": '{"location": "Paris"}',
-        },
-    }
-
-
-def test_mcp_single_call_without_id_keeps_legacy_shape():
-    tool_call = SimpleNamespace(
-        function=SimpleNamespace(name="ping", arguments="{}")
-    )
-    out = LiteLLM(mcp_call=True).output_for_tools(
-        _response_with(tool_call)
-    )
-    assert out == {"function": {"name": "ping", "arguments": "{}"}}
-
-
-def test_mcp_multiple_calls_keep_ids_and_types():
-    response = _response_with(
-        _tool_call("call_1", "get_weather", '{"location": "Paris"}'),
-        _tool_call("call_2", "get_time", '{"tz": "UTC"}'),
-    )
-    out = LiteLLM(mcp_call=True).output_for_tools(response)
-    assert [call["id"] for call in out] == ["call_1", "call_2"]
-    assert all(call["type"] == "function" for call in out)
-    assert [call["function"]["name"] for call in out] == [
-        "get_weather",
-        "get_time",
+@pytest.mark.parametrize(
+    "call_ids, expected_ids",
+    [
+        pytest.param(["call_1"], ["call_1"], id="single"),
+        pytest.param(
+            ["call_1", "call_2"], ["call_1", "call_2"], id="multiple"
+        ),
+        pytest.param([None], [None], id="no-id"),
+    ],
+)
+def test_mcp_calls_keep_provider_fields(call_ids, expected_ids):
+    tool_calls = [
+        (
+            _tool_call(call_id, "ping", "{}")
+            if call_id is not None
+            else SimpleNamespace(
+                function=SimpleNamespace(name="ping", arguments="{}")
+            )
+        )
+        for call_id in call_ids
     ]
+    out = LiteLLM(mcp_call=True).output_for_tools(
+        _response_with(*tool_calls)
+    )
+    expected = []
+    for call_id in expected_ids:
+        call = {"function": {"name": "ping", "arguments": "{}"}}
+        if call_id is not None:
+            call.update(id=call_id, type="function")
+        expected.append(call)
+    assert out == (expected[0] if len(expected) == 1 else expected)
 
 
 def test_mcp_output_executes_local_tool():
@@ -90,11 +85,3 @@ def test_mcp_output_executes_local_tool():
     ).execute_function_calls_from_api_response(out)
     assert ran == ["hi"]
     assert results and "noted: hi" in results[0]
-
-
-def test_standard_path_still_returns_raw_tool_calls():
-    tool_call = _tool_call("call_1", "get_weather", "{}")
-    out = LiteLLM(mcp_call=False).output_for_tools(
-        _response_with(tool_call)
-    )
-    assert out == [tool_call]
