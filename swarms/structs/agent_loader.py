@@ -1,11 +1,11 @@
 import csv
 import json
 import os
+import re
 import traceback
 from concurrent.futures import (
     ThreadPoolExecutor,
     TimeoutError,
-    as_completed,
 )
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -26,6 +26,17 @@ from swarms.structs.agent import Agent
 from swarms.structs.swarm_router import SwarmRouter
 
 ReturnTypes = Literal["auto", "swarm", "agents", "both", "run_swarm"]
+
+CLAUDE_CODE_MODELS = {
+    "fable": "claude-fable-5-1",
+    "opus": "claude-opus-5-5",
+    "sonnet": "claude-sonnet-5-5",
+    "haiku": "claude-haiku-5-5",
+}
+
+FRONTMATTER_LINE = re.compile(
+    r"^([A-Za-z_][\w-]*):[ \t]*([\"']?)(.*?)\2[ \t\r]*$", re.MULTILINE
+)
 
 
 class AgentConfig(BaseModel):
@@ -66,6 +77,7 @@ class AgentConfig(BaseModel):
     )
     saved_state_path: Optional[str] = None
     user_name: Optional[str] = None
+    stopping_token: Optional[str] = None
     retry_attempts: Optional[int] = Field(default=None, ge=1)
     context_length: Optional[int] = Field(default=None, ge=1)
     return_step_meta: Optional[bool] = None
@@ -142,8 +154,17 @@ class AgentLoader:
         try:
             frontmatter_data = yaml.safe_load(frontmatter_text) or {}
         except yaml.YAMLError as e:
-            logger.warning(f"Failed to parse YAML frontmatter: {e}")
-            return {"frontmatter": {}, "content": content}
+            frontmatter_data = {
+                key: value
+                for key, _, value in FRONTMATTER_LINE.findall(
+                    frontmatter_text
+                )
+            }
+            if not frontmatter_data:
+                logger.warning(
+                    f"Failed to parse YAML frontmatter: {e}"
+                )
+                return {"frontmatter": {}, "content": content}
 
         return {
             "frontmatter": frontmatter_data,
@@ -180,6 +201,12 @@ class AgentLoader:
                 raise ValueError(
                     f"No YAML frontmatter found in {file_path}. File must use Claude Code sub-agent format with YAML frontmatter."
                 )
+
+            model = frontmatter.get("model")
+            if model == "inherit":
+                del frontmatter["model"]
+            elif model in CLAUDE_CODE_MODELS:
+                frontmatter["model"] = CLAUDE_CODE_MODELS[model]
 
             config = AgentConfig.model_validate(
                 {
@@ -239,7 +266,7 @@ class AgentLoader:
     def load_agents_from_markdown(
         self,
         file_paths: Union[str, List[str]],
-        concurrent: bool = True,
+        concurrent: Optional[bool] = None,
         max_file_size_mb: float = 10.0,
         **kwargs,
     ) -> List[Agent]:
@@ -248,19 +275,19 @@ class AgentLoader:
 
         Args:
             file_paths (Union[str, List[str]]): A Markdown file, a directory of them, or a list of paths.
-            concurrent (bool, optional): Whether to load files concurrently. Defaults to True.
+            concurrent (Optional[bool], optional): Whether to load files concurrently. Defaults to the loader's concurrent setting.
             max_file_size_mb (float, optional): Maximum file size in MB to process. Defaults to 10.0.
             **kwargs: Agent arguments applied to every loaded agent.
 
         Returns:
-            List[Agent]: A list of loaded Agent objects.
+            List[Agent]: The loaded Agent objects, in file order. A directory is read in name order.
         """
         agents = []
         paths_to_process = []
 
         if isinstance(file_paths, str):
             if os.path.isdir(file_paths):
-                md_files = list(Path(file_paths).glob("*.md"))
+                md_files = sorted(Path(file_paths).glob("*.md"))
                 paths_to_process = [str(f) for f in md_files]
             elif os.path.isfile(file_paths):
                 paths_to_process = [file_paths]
@@ -290,6 +317,9 @@ class AgentLoader:
                     f"Could not check size of {file_path}, skipping validation"
                 )
 
+        if concurrent is None:
+            concurrent = self.concurrent
+
         if concurrent and len(paths_to_process) > 1:
             logger.info(
                 f"Loading {len(paths_to_process)} agents concurrently with {self.max_workers} workers..."
@@ -298,19 +328,19 @@ class AgentLoader:
             with ThreadPoolExecutor(
                 max_workers=self.max_workers
             ) as executor:
-                future_to_path = {
-                    executor.submit(
-                        self.load_agent_from_markdown,
+                futures = [
+                    (
                         file_path,
-                        **kwargs,
-                    ): file_path
+                        executor.submit(
+                            self.load_agent_from_markdown,
+                            file_path,
+                            **kwargs,
+                        ),
+                    )
                     for file_path in paths_to_process
-                }
+                ]
 
-                for future in as_completed(
-                    future_to_path, timeout=300
-                ):
-                    file_path = future_to_path[future]
+                for file_path, future in futures:
                     try:
                         agent = future.result(timeout=60)
                         agents.append(agent)

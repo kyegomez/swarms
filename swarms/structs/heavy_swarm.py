@@ -12,6 +12,7 @@ from swarms.prompts.heavy_swarm_prompts import (
     grok_schema,
     schema,
 )
+from swarms.structs.agent import reset_agents
 from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
@@ -123,8 +124,6 @@ class HeavySwarm(SerializableMixin):
             name (str, optional): Identifier name for the swarm instance. Defaults to "HeavySwarm".
             description (str, optional): Description of the swarm's purpose and capabilities.
                 Defaults to standard description.
-            agents (List[Agent], optional): Pre-configured agent list (currently unused as agents
-                are created internally). Defaults to None.
             timeout (int, optional): Maximum execution time per agent in seconds. Defaults to 300.
             question_agent_model_name (str, optional): Language model for
                 question generation. Defaults to "gpt-5.4".
@@ -322,8 +321,7 @@ class HeavySwarm(SerializableMixin):
             self.dashboard.show_task_init(task)
 
         self.conversation.clear()
-        for agent in self.agents.values():
-            agent.short_memory = agent.short_memory_init()
+        reset_agents(self.agents.values())
 
         # Add initial task to conversation
         self.conversation.add(
@@ -1456,6 +1454,20 @@ class HeavySwarm(SerializableMixin):
 
         # Parse the tool calls and return clean data
         out = self._parse_tool_calls(raw_output)
+
+        required = active_schema[0]["function"]["parameters"][
+            "required"
+        ]
+        missing = [
+            key
+            for key in required
+            if key.endswith("_question") and not out.get(key)
+        ]
+        if missing and "error" not in out:
+            out = {
+                "error": "Question generator returned no "
+                + ", ".join(missing)
+            }
 
         self._log(
             "INFO",

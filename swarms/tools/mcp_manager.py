@@ -216,8 +216,14 @@ class MCPFileTokenStorage:
     written with ``0600`` permissions.
     """
 
-    def __init__(self, server_url: str, path: Optional[str] = None):
+    def __init__(
+        self,
+        server_url: str,
+        path: Optional[str] = None,
+        client_info: Any = None,
+    ):
         self.server_url = server_url
+        self._client_info = client_info
         if path:
             self.path = Path(path).expanduser()
         else:
@@ -233,12 +239,20 @@ class MCPFileTokenStorage:
             try:
                 if not self.path.exists():
                     return {}
-                return json.loads(self.path.read_text())
+                data = json.loads(self.path.read_text())
             except Exception as e:
                 logger.warning(
                     f"MCP: could not read OAuth token cache {self.path}: {e}"
                 )
                 return {}
+        owner = data.get("server_url")
+        if owner != self.server_url:
+            logger.warning(
+                f"MCP: OAuth token cache {self.path} belongs to {owner}, "
+                f"not {self.server_url}; ignoring it."
+            )
+            return {}
+        return data
 
     def _write(self, data: Dict[str, Any]) -> None:
         with self._lock:
@@ -284,6 +298,8 @@ class MCPFileTokenStorage:
     async def get_client_info(self):
         from mcp.shared.auth import OAuthClientInformationFull
 
+        if self._client_info is not None:
+            return self._client_info
         data = self._read().get("client_info")
         if not data:
             return None
@@ -315,9 +331,9 @@ class MCPFileTokenStorage:
 class MCPInMemoryTokenStorage:
     """Non-persistent token storage — used when ``use_token_cache=False``."""
 
-    def __init__(self):
+    def __init__(self, client_info: Any = None):
         self._tokens = None
-        self._client_info = None
+        self._client_info = client_info
 
     async def get_tokens(self):
         return self._tokens
@@ -663,7 +679,7 @@ class MCPManager:
         self, item: Union[str, MCPConnection, Dict]
     ) -> MCPConnection:
         if isinstance(item, MCPConnection):
-            connection = item
+            connection = item.model_copy()
         elif isinstance(item, dict):
             connection = MCPConnection(**item)
         elif isinstance(item, str):
@@ -1356,30 +1372,25 @@ class MCPManager:
 
         try:
             from mcp.client.auth import OAuthClientProvider
-            from mcp.shared.auth import OAuthClientMetadata
+            from mcp.shared.auth import (
+                OAuthClientInformationFull,
+                OAuthClientMetadata,
+            )
         except ImportError as e:
             raise AgentMCPConnectionError(
                 "OAuth support requires a recent MCP SDK "
                 f"(pip install -U mcp): {e}"
             )
 
-        storage = (
-            MCPFileTokenStorage(
-                connection.url or key, oauth.token_storage_path
-            )
-            if oauth.use_token_cache
-            else MCPInMemoryTokenStorage()
-        )
-
+        client_id = _resolve_secret(oauth.client_id)
+        client_secret = _resolve_secret(oauth.client_secret)
         metadata_kwargs: Dict[str, Any] = {
             "client_name": oauth.client_name,
             "redirect_uris": [oauth.redirect_uri],
             "grant_types": ["authorization_code", "refresh_token"],
             "response_types": ["code"],
             "token_endpoint_auth_method": (
-                "client_secret_post"
-                if _resolve_secret(oauth.client_secret)
-                else "none"
+                "client_secret_post" if client_secret else "none"
             ),
         }
         if oauth.scopes:
@@ -1388,6 +1399,24 @@ class MCPManager:
             metadata_kwargs["client_uri"] = oauth.client_uri
 
         client_metadata = OAuthClientMetadata(**metadata_kwargs)
+        client_info = (
+            OAuthClientInformationFull(
+                client_id=client_id,
+                client_secret=client_secret,
+                **metadata_kwargs,
+            )
+            if client_id
+            else None
+        )
+        storage = (
+            MCPFileTokenStorage(
+                connection.url or key,
+                oauth.token_storage_path,
+                client_info=client_info,
+            )
+            if oauth.use_token_cache
+            else MCPInMemoryTokenStorage(client_info=client_info)
+        )
 
         callback_server = _OAuthCallbackServer(oauth.redirect_uri)
         label = self.label(connection)

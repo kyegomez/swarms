@@ -26,11 +26,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [broadcast_function_example.py](broadcast_examples/broadcast_function_example.py) - `broadcast()`: the async functional form
 - [README.md](broadcast_examples/README.md) - Detailed documentation
 
-## Caching Examples
-- [example_multi_agent_caching.py](caching_examples/example_multi_agent_caching.py) - Multi-agent caching implementation
-- [quick_start_agent_caching.py](caching_examples/quick_start_agent_caching.py) - Quick start guide for caching
-- [test_simple_agent_caching.py](caching_examples/test_simple_agent_caching.py) - Simple caching tests
-
 ## Concurrent Examples
 - [asi.py](concurrent_examples/asi.py) - ASI (Artificial Super Intelligence) example
 - [concurrent_example_dashboard.py](concurrent_examples/concurrent_example_dashboard.py) - Dashboard for concurrent workflows
@@ -72,9 +67,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [graph_workflow_basic.py](graphworkflow_examples/graph_workflow_basic.py) - Basic graph workflow
 - [graph_workflow_example.py](graphworkflow_examples/graph_workflow_example.py) - Complete graph workflow example
 - [graph_workflow_validation.py](graphworkflow_examples/graph_workflow_validation.py) - Workflow validation
-- [test_enhanced_json_export.py](graphworkflow_examples/test_enhanced_json_export.py) - JSON export testing
-- [test_graph_workflow_caching.py](graphworkflow_examples/test_graph_workflow_caching.py) - Caching tests
-- [test_graphviz_visualization.py](graphworkflow_examples/test_graphviz_visualization.py) - Visualization tests
 - [test_parallel_processing_example.py](graphworkflow_examples/test_parallel_processing_example.py) - Parallel processing tests
 - [graph/](graphworkflow_examples/graph/) - Core graph utilities
 - [example_images/](graphworkflow_examples/example_images/) - Visualization images

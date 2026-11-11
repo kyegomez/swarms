@@ -12,6 +12,7 @@ from swarms.utils.history_output_formatter import (
 from typing import Union, Callable
 from swarms.utils.history_output_formatter import HistoryOutputType
 from swarms.utils.str_to_dict import str_to_dict
+from swarms.structs.usage_utils import total_usage
 
 tools = [
     {
@@ -240,3 +241,14 @@ class HybridHierarchicalClusterSwarm:
             )
             for r in results
         ]
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

@@ -3,6 +3,7 @@ from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
     AgentLLMInitializationError,
+    AgentOutputSchemaError,
     AgentRunError,
     AgentToolExecutionError,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "AgentRunError",
     "AgentLLMError",
     "AgentLLMInitializationError",
+    "AgentOutputSchemaError",
     "AgentToolExecutionError",
     "AgentMCPError",
     "AgentMCPConnectionError",

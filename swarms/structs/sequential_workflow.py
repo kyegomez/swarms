@@ -10,6 +10,7 @@ from swarms.prompts.agent_acknowledgement_prompt import (
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.structs.comms_channel import CommsChannel
+from swarms.structs.usage_utils import total_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
@@ -265,9 +266,7 @@ class SequentialWorkflow:
         budget is spent.
         """
         for attempt in range(self.drift_max_retries + 1):
-            self.drift_agent.short_memory = (
-                self.drift_agent.short_memory_init()
-            )
+            self.drift_agent.reset()
             try:
                 raw = self.drift_agent.run(
                     f"Original task: {task}\n\nFinal output: {result}"
@@ -562,3 +561,14 @@ class SequentialWorkflow:
                 f"An error occurred while executing the batch of tasks concurrently: {e}"
             )
             raise
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

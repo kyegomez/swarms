@@ -16,7 +16,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [agent_router_examples/](multi_agent/agent_router_examples/) | Agent routing and routing patterns |
 | [asb/](multi_agent/asb/) | Auto Swarm Builder (ASB) examples and implementations |
 | [batched_grid_workflow/](multi_agent/batched_grid_workflow/) | Batched grid workflow examples |
-| [caching_examples/](multi_agent/caching_examples/) | Agent caching examples |
 | [concurrent_examples/](multi_agent/concurrent_examples/) | Concurrent processing and parallel execution examples |
 | [council/](multi_agent/council/) | Council pattern examples with judge evaluation |
 | [council_of_judges/](multi_agent/council_of_judges/) | Council of judges pattern implementations |
@@ -55,6 +54,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [capabilities/rag/](single_agent/capabilities/rag/) | Retrieval-augmented generation with Pinecone and Qdrant |
 | [capabilities/vision/](single_agent/capabilities/vision/) | Vision and multimodal agents, batch image processing |
 | [capabilities/streaming/](single_agent/capabilities/streaming/) | Token streaming, streaming with tools and loops |
+| [capabilities/output_schema/](single_agent/capabilities/output_schema/) | Validated Pydantic output with `output_schema` |
 | [capabilities/prompt_caching/](single_agent/capabilities/prompt_caching/) | Provider-side prompt caching (Anthropic, OpenAI) |
 | [reasoning/](single_agent/reasoning/) | Reasoning agents: judges, consistency, iterative, reasoning duo/router |
 | [autonomy/autonomous_agents/](single_agent/autonomy/autonomous_agents/) | Autonomous loops, sub-agents, `run_bash` looper |
@@ -89,9 +89,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [2_stagehand_tools_agent.py](tools/stagehand/2_stagehand_tools_agent.py) | Stagehand tools agent |
 | [3_stagehand_mcp_agent.py](tools/stagehand/3_stagehand_mcp_agent.py) | Stagehand MCP agent |
 | [4_stagehand_multi_agent_workflow.py](tools/stagehand/4_stagehand_multi_agent_workflow.py) | Stagehand multi-agent workflow |
-| [tests/](tools/stagehand/tests/) | Stagehand tests |
-| [test_stagehand_integration.py](tools/stagehand/tests/test_stagehand_integration.py) | Stagehand integration test |
-| [test_stagehand_simple.py](tools/stagehand/tests/test_stagehand_simple.py) | Simple Stagehand test |
 
 ### API & Protocols
 
@@ -222,10 +219,9 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [utils/](utils/) | Utility functions and helper implementations including agent loader, communication examples, concurrent wrappers, miscellaneous utilities, and telemetry |
+| [utils/](utils/) | Utility functions and helper implementations including agent loader, concurrent wrappers, miscellaneous utilities, and telemetry |
 | [README.md](utils/README.md) | Utils documentation |
 | [agent_loader/](utils/agent_loader/) | Agent loading utilities |
-| [communication_examples/](utils/communication_examples/) | Agent communication patterns including DuckDB, Pulsar, Redis, and SQLite |
 | [fetch_prompt.py](utils/fetch_prompt.py) | Prompt fetching utilities |
 | [litellm_connect_issue.py](utils/litellm_connect_issue.py) | LiteLLM connection issue examples |
 | [litellm_network_error_handling.py](utils/litellm_network_error_handling.py) | LiteLLM network error handling |
@@ -236,9 +232,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [conversation_test.py](utils/misc/conversation_test.py) | Conversation test |
 | [csvagent_example.py](utils/misc/csvagent_example.py) | CSV agent example |
 | [dict_to_table.py](utils/misc/dict_to_table.py) | Dictionary to table conversion |
-| [swarm_matcher_example.py](utils/misc/swarm_matcher_example.py) | Swarm matcher example |
 | [test_load_conversation.py](utils/misc/test_load_conversation.py) | Load conversation test |
-| [visualizer_test.py](utils/misc/visualizer_test.py) | Visualizer test |
 | [telemetry/](utils/telemetry/) | Telemetry and monitoring utilities |
 
 ### User Interface
@@ -258,7 +252,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [01_setup_check.sh](cli/01_setup_check.sh) | Environment setup verification |
 | [02_onboarding.sh](cli/02_onboarding.sh) | User onboarding process |
 | [03_get_api_key.sh](cli/03_get_api_key.sh) | API key retrieval |
-| [04_check_login.sh](cli/04_check_login.sh) | Login status verification |
 | [05_create_agent.sh](cli/05_create_agent.sh) | Create custom agents |
 | [06_run_agents_yaml.sh](cli/06_run_agents_yaml.sh) | Run agents from YAML configuration |
 | [07_load_markdown.sh](cli/07_load_markdown.sh) | Load markdown configurations |
@@ -300,7 +293,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Tree Swarm](multi_agent/tree_swarm_new_updates.py) | Tree swarm with latest updates |
 | [Agent Rearrange](multi_agent/agent_rearrange_examples/) | Agent rearrangement patterns |
 | [Agent Router](multi_agent/agent_router_examples/) | Agent routing implementations |
-| [Agent GRPO](multi_agent/agent_grpo_examples/) | Agent GRPO examples for math and physics problems |
 | [Auto Swarm Builder](multi_agent/asb/) | Auto Swarm Builder (ASB) examples |
 | [Batched Grid Workflow](multi_agent/batched_grid_workflow/) | Batched grid workflow patterns |
 | [Concurrent Processing](multi_agent/concurrent_examples/) | Concurrent and parallel execution |
@@ -385,7 +377,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Setup Check](cli/01_setup_check.sh) | Verify environment setup |
 | [Onboarding](cli/02_onboarding.sh) | User onboarding process |
 | [Get API Key](cli/03_get_api_key.sh) | API key retrieval |
-| [Check Login](cli/04_check_login.sh) | Login status verification |
 | [Create Agent](cli/05_create_agent.sh) | Create custom agents via CLI |
 | [Run Agents YAML](cli/06_run_agents_yaml.sh) | Run agents from YAML configuration |
 | [Load Markdown](cli/07_load_markdown.sh) | Load markdown configurations |

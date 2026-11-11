@@ -100,6 +100,16 @@ class BaseTool(BaseModel):
     function_map: Optional[Dict[str, Callable]] = None
     list_of_dicts: Optional[List[Dict[str, Any]]] = None
 
+    def model_post_init(self, __context: Any) -> None:
+        by_name = {}
+        for tool in self.tools or []:
+            name = getattr(tool, "__name__", None)
+            if by_name.setdefault(name, tool) != tool:
+                raise ValueError(
+                    f"Two different tools are named {name!r}. Tool "
+                    "calls are matched by name, so rename one of them."
+                )
+
     def _log_if_verbose(
         self, level: str, message: str, *args, **kwargs
     ) -> None:

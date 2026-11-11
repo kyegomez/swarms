@@ -301,7 +301,6 @@ class SwarmRouter(SerializableMixin):
             about every other agent at start of run. Defaults to ``False``.
         conversation (Any, optional): Pre-existing conversation object to seed
             the swarm with.
-        agents_config (Dict, optional): Optional config overrides per agent.
         heavy_swarm_question_agent_model_name (str, optional): Model for the
             ``HeavySwarm`` question agent.
         heavy_swarm_worker_model_name (str, optional): Model for ``HeavySwarm``
@@ -382,7 +381,6 @@ class SwarmRouter(SerializableMixin):
         list_all_agents: bool = False,
         conversation: Any = None,
         channel: Optional[CommsChannel] = None,
-        agents_config: Optional[Dict[Any, Any]] = None,
         heavy_swarm_question_agent_model_name: str = "gpt-5.4",
         heavy_swarm_worker_model_name: str = "gpt-5.4",
         heavy_swarm_swarm_show_output: bool = True,
@@ -430,7 +428,6 @@ class SwarmRouter(SerializableMixin):
         self.list_all_agents = list_all_agents
         self.conversation = conversation
         self.channel = channel
-        self.agents_config = agents_config
         self.heavy_swarm_question_agent_model_name = (
             heavy_swarm_question_agent_model_name
         )
@@ -826,7 +823,15 @@ class SwarmRouter(SerializableMixin):
         )
 
     def _create_concurrent_workflow(self, *args, **kwargs):
-        """Create a ``ConcurrentWorkflow`` from the configured agents."""
+        """Create a ``ConcurrentWorkflow`` from the configured agents.
+
+        When a fallback swarm follows ``ConcurrentWorkflow`` in the
+        router's chain, a failing agent raises (``on_error="raise"``) so
+        the router can fall back, unless ``on_error`` is passed explicitly.
+        """
+        chain = [self.swarm_type, *(self.fallback_swarms or [])]
+        if "ConcurrentWorkflow" in chain[:-1]:
+            kwargs.setdefault("on_error", "raise")
         return ConcurrentWorkflow(
             *args,
             **self._base_kwargs(channel=self.channel),
