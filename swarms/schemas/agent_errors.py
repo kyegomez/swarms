@@ -35,7 +35,7 @@ class AgentToolExecutionError(AgentError):
 
 
 class AgentOutputSchemaError(AgentError, ValueError):
-    """Exception raised when the model's reply still fails output_schema validation after every retry."""
+    """Exception raised when the model's reply fails output_schema validation."""
 
     def __init__(
         self,

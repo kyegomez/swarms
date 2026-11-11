@@ -20,8 +20,6 @@ agent = Agent(
     model_name="gpt-5.4-mini",
     max_loops=1,
     output_schema=TicketTriage,
-    # Send an invalid reply back to the model up to twice before raising.
-    output_schema_retries=2,
 )
 
 ticket = (

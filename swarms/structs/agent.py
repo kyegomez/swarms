@@ -193,8 +193,7 @@ class Agent:
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
         output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
-        output_schema (Optional[Type[BaseModel]]): A Pydantic model sent to the provider as response_format. run and arun then return a validated instance of it instead of output_type's format. Not supported with max_loops="auto". Defaults to None.
-        output_schema_retries (int): How many times a reply that fails output_schema validation is sent back to the model with the error before AgentOutputSchemaError is raised. Defaults to 2.
+        output_schema (Optional[Type[BaseModel]]): A Pydantic model sent to the provider as response_format. run and arun then return a validated instance of it instead of output_type's format, or raise AgentOutputSchemaError. Not supported with max_loops="auto". Defaults to None.
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
         planning_prompt (str): The planning prompt
@@ -367,7 +366,6 @@ class Agent:
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
         output_schema: Optional[Type[BaseModel]] = None,
-        output_schema_retries: int = 2,
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
@@ -483,7 +481,6 @@ class Agent:
                 'output_schema is not supported with max_loops="auto"'
             )
         self.output_schema = output_schema
-        self.output_schema_retries = output_schema_retries
         self.list_base_models = list_base_models
         self.planning_prompt = planning_prompt
         self.rules = rules
@@ -1663,18 +1660,7 @@ Subtask Breakdown:
             *args,
             **kwargs,
         )
-        attempt = 0
-        while True:
-            output, retry = self._check_output_schema(output, attempt)
-            if retry is None:
-                return output
-            attempt += 1
-            output = await self._arun(
-                task=retry,
-                streaming_callback=streaming_callback,
-                *args,
-                **kwargs,
-            )
+        return self._validated_output(output)
 
     async def _arun(
         self,
@@ -3159,55 +3145,29 @@ Subtask Breakdown:
             *args,
             **kwargs,
         )
-        attempt = 0
-        while True:
-            output, retry = self._check_output_schema(output, attempt)
-            if retry is None:
-                return output
-            attempt += 1
-            output = self._run(
-                task=retry,
-                streaming_callback=streaming_callback,
-                *args,
-                **kwargs,
-            )
+        return self._validated_output(output)
 
-    def _check_output_schema(
-        self, output: Any, attempt: int
-    ) -> tuple:
-        """Validate the last reply against output_schema.
+    def _validated_output(self, output: Any) -> Any:
+        """Parse the last reply into output_schema when one is set.
 
         Args:
             output: What the run returned.
-            attempt: How many retries came before this reply.
 
         Returns:
-            tuple: (result, None) when done, where result is the validated
-                model, or the output unchanged when no schema is set; or
-                (None, prompt) with a follow-up asking the model to fix its reply.
-
-        Raises:
-            AgentOutputSchemaError: If the reply is still invalid after
-                output_schema_retries retries.
+            Any: The validated model, or the output unchanged when no schema is set.
         """
         if self.output_schema is None:
-            return output, None
+            return output
         raw = agent_answer(self, "")
         try:
-            return self.output_schema.model_validate_json(raw), None
+            return self.output_schema.model_validate_json(raw)
         except ValidationError as error:
-            name = self.output_schema.__name__
-            if attempt >= self.output_schema_retries:
-                raise AgentOutputSchemaError(
-                    f"Agent '{self.agent_name}' did not return a valid "
-                    f"{name} after {attempt + 1} attempts: {error}",
-                    raw_output=raw,
-                    validation_error=error,
-                ) from error
-            return None, (
-                f"Your reply did not match the {name} schema:\n{error}\n"
-                "Return only JSON matching the schema."
-            )
+            raise AgentOutputSchemaError(
+                f"Agent '{self.agent_name}' did not return a valid "
+                f"{self.output_schema.__name__}: {error}",
+                raw_output=raw,
+                validation_error=error,
+            ) from error
 
     def run_stream(
         self,

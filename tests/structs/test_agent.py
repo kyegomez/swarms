@@ -2919,12 +2919,8 @@ _INVALID_REPORT = '{"title": "Plan"}'
 @pytest.mark.parametrize("use_arun", [False, True])
 @pytest.mark.parametrize(
     "replies",
-    [
-        [_VALID_REPORT],
-        [_INVALID_REPORT, _VALID_REPORT],
-        [_INVALID_REPORT] * 3,
-    ],
-    ids=["valid", "retry-then-valid", "retries-exhausted"],
+    [[_VALID_REPORT], [_INVALID_REPORT]],
+    ids=["valid", "invalid"],
 )
 def test_output_schema_returns_a_validated_model(use_arun, replies):
     sent = []
@@ -2961,7 +2957,5 @@ def test_output_schema_returns_a_validated_model(use_arun, replies):
                 title="Plan", score=0.8
             )
 
-    assert len(sent) == len(replies)
-    assert all(p["response_format"] is _Report for p in sent)
-    if len(sent) > 1:
-        assert "score" in sent[1]["messages"][-1]["content"]
+    assert len(sent) == 1
+    assert sent[0]["response_format"] is _Report
