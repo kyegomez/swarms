@@ -54,6 +54,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [capabilities/rag/](single_agent/capabilities/rag/) | Retrieval-augmented generation with Pinecone and Qdrant |
 | [capabilities/vision/](single_agent/capabilities/vision/) | Vision and multimodal agents, batch image processing |
 | [capabilities/streaming/](single_agent/capabilities/streaming/) | Token streaming, streaming with tools and loops |
+| [capabilities/output_schema/](single_agent/capabilities/output_schema/) | Validated Pydantic output with `output_schema` |
 | [capabilities/prompt_caching/](single_agent/capabilities/prompt_caching/) | Provider-side prompt caching (Anthropic, OpenAI) |
 | [reasoning/](single_agent/reasoning/) | Reasoning agents: judges, consistency, iterative, reasoning duo/router |
 | [autonomy/autonomous_agents/](single_agent/autonomy/autonomous_agents/) | Autonomous loops, sub-agents, `run_bash` looper |

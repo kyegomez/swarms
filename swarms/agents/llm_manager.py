@@ -315,6 +315,7 @@ class LLMManager:
                 "retries": agent.retry_attempts,
                 "reasoning_effort": agent.reasoning_effort,
                 "thinking_tokens": agent.thinking_tokens,
+                "response_format": agent.output_schema,
                 "reasoning_enabled": agent.reasoning_enabled,
                 "agent_name": agent.agent_name,
                 "prompt_caching": agent.prompt_caching,

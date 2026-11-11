@@ -15,11 +15,12 @@ from typing import (
     Literal,
     Optional,
     Sequence,
+    Type,
     Union,
 )
 
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from swarms.agents.agent_marketplace_handler import (
     AgentMarketplaceHandler,
@@ -42,6 +43,7 @@ from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
+    AgentOutputSchemaError,
     AgentRunError,  # noqa: F401  re-exported from this module
     AgentToolExecutionError,
 )
@@ -191,6 +193,7 @@ class Agent:
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
         output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
+        output_schema (Optional[Type[BaseModel]]): A Pydantic model sent to the provider as response_format. run and arun then return a validated instance of it instead of output_type's format, or raise AgentOutputSchemaError. Not supported with max_loops="auto". Defaults to None.
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
         planning_prompt (str): The planning prompt
@@ -362,6 +365,7 @@ class Agent:
         custom_exit_command: Optional[str] = "exit",
         tool_schema: ToolUsageType = None,
         output_type: OutputType = "str-all-except-first",
+        output_schema: Optional[Type[BaseModel]] = None,
         list_base_models: Optional[List[BaseModel]] = None,
         rules: str = None,  # type: ignore
         planning_prompt: Optional[str] = None,
@@ -471,6 +475,12 @@ class Agent:
         self.custom_exit_command = custom_exit_command
         self.tool_schema = tool_schema
         self.output_type = output_type
+        # The autonomous loop's final answer is a summary, not the model's reply.
+        if output_schema is not None and max_loops == "auto":
+            raise ValueError(
+                'output_schema is not supported with max_loops="auto"'
+            )
+        self.output_schema = output_schema
         self.list_base_models = list_base_models
         self.planning_prompt = planning_prompt
         self.rules = rules
@@ -1641,7 +1651,7 @@ Subtask Breakdown:
                 *args,
                 **kwargs,
             )
-        return await self._arun(
+        output = await self._arun(
             task=task,
             img=img,
             imgs=imgs,
@@ -1650,6 +1660,7 @@ Subtask Breakdown:
             *args,
             **kwargs,
         )
+        return self._validated_output(output)
 
     async def _arun(
         self,
@@ -3125,7 +3136,7 @@ Subtask Breakdown:
                 *args,
                 **kwargs,
             )
-        return self._run(
+        output = self._run(
             task=task,
             img=img,
             imgs=imgs,
@@ -3134,6 +3145,29 @@ Subtask Breakdown:
             *args,
             **kwargs,
         )
+        return self._validated_output(output)
+
+    def _validated_output(self, output: Any) -> Any:
+        """Parse the last reply into output_schema when one is set.
+
+        Args:
+            output: What the run returned.
+
+        Returns:
+            Any: The validated model, or the output unchanged when no schema is set.
+        """
+        if self.output_schema is None:
+            return output
+        raw = agent_answer(self, "")
+        try:
+            return self.output_schema.model_validate_json(raw)
+        except ValidationError as error:
+            raise AgentOutputSchemaError(
+                f"Agent '{self.agent_name}' did not return a valid "
+                f"{self.output_schema.__name__}: {error}",
+                raw_output=raw,
+                validation_error=error,
+            ) from error
 
     def run_stream(
         self,
