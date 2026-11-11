@@ -1169,9 +1169,42 @@ When you do add a test, keep it small, compact and fast:
 
 ---
 
+## Code style: clean, typed and readable
+
+Write code a reviewer can read top to bottom without stopping.
+
+- **Docstrings:** every public class, function and method gets one. Start with a short phrase saying what it does, then `Args` and `Returns`. Leave out long explanations and design history.
+- **Types:** annotate every parameter and every return value. Use `Optional[...]` when `None` is allowed, and prefer a specific type to `Any`.
+- **Spacing:** don't pack code together. Put a blank line between methods, and between the logical steps inside a function: setup, the main work, the result.
+- **Names:** say what a value is (`agent_outputs`, not `res`). Keep functions short enough to do one thing; split one that needs internal sections.
+- **Comments:** keep them to a minimum. See the next section.
+
+```python
+def collect_answers(
+    agents: List[Agent], task: str
+) -> Dict[str, str]:
+    """Run each agent on the task and collect its answer.
+
+    Args:
+        agents: The agents to run.
+        task: The task given to every agent.
+
+    Returns:
+        Each agent's answer, keyed by agent name.
+    """
+    answers: Dict[str, str] = {}
+
+    for agent in agents:
+        answers[agent.agent_name] = agent.run(task)
+
+    return answers
+```
+
+---
+
 ## Comments: one line, only when needed
 
-A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.
+A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all. When a line really is hard to follow, give it one short, plain comment saying why it is there.
 
 ```python
 # Good

@@ -37,6 +37,8 @@ print(agent.run("Summarise the current state of LLM research."))
 - Commit, PR and issue titles use WARP: `[TYPE][Function/FileName][Short description]`.
 - Disclose AI authorship: a co-author trailer on commits and a "Generated with" line naming the agent and model on PRs and issues.
 - Format with `black --line-length 70` and lint with `ruff check .`.
+- Write clean, readable code: a docstring on every public class, function and method (a short phrase, then `Args` and `Returns`), type hints on every parameter and return value, and blank lines between methods and between the steps inside a function.
+- Keep comments to a minimum. When a line is hard to follow, give it one short, plain comment, never a multi-line block.
 - Removing unused code (a method, parameter, attribute or line) needs no new unit test. Delete the tests that only exercised it and run the module's existing tests.
 - Not every change needs a unit test. When you add one, keep it small and fast: one table-driven test per behaviour, stubbed model and network, no near-copies.
 - User-visible changes need a matching PR in [swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs).
