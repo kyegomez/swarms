@@ -22,6 +22,7 @@ import os
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -1338,6 +1339,7 @@ class TestAgentIntegration:
         from mcp import ClientSession
 
         from swarms import Agent
+        from swarms.agents.tool_manager import ToolManager
 
         sessions, initialize = [], ClientSession.initialize
 
@@ -1346,6 +1348,11 @@ class TestAgentIntegration:
             return await initialize(session)
 
         monkeypatch.setattr(ClientSession, "initialize", spy)
+        monkeypatch.setattr(
+            ToolManager,
+            "temp_llm_instance_for_tool_summary",
+            lambda self: SimpleNamespace(run=lambda *a, **k: "done"),
+        )
         args = '{"a": 1, "b": 2}'
         call = [{"function": {"name": "add", "arguments": args}}]
         agent = Agent(
@@ -1358,8 +1365,31 @@ class TestAgentIntegration:
         agent.run("add")
         asyncio.run(agent.arun("add"))
         assert len(sessions) == 2
-        agent.mcp_manager.execute_tool_calls(call)
+        manager = agent.mcp_manager
+        manager.open()
+        asyncio.run(manager.aget_tools(force_refresh=True))
+        asyncio.run(manager.acall_tool("add", {"a": 1, "b": 2}))
+        manager.close()
         assert len(sessions) == 3
+        manager.execute_tool_calls(call)
+        assert len(sessions) == 4
+
+    def test_close_returns_when_shutdown_hangs(
+        self, open_server, monkeypatch
+    ):
+        async def hang(pool):
+            await asyncio.Event().wait()
+
+        monkeypatch.setattr(
+            MCPManager, "_aclose_sessions", staticmethod(hang)
+        )
+        manager = MCPManager(mcp_url=open_server.url, timeout=1)
+        manager.open()
+        manager.get_tools()
+        closer = threading.Thread(target=manager.close, daemon=True)
+        closer.start()
+        closer.join(5)
+        assert not closer.is_alive()
 
 
 ########################################################
