@@ -5,12 +5,7 @@ This directory contains examples demonstrating hierarchical swarm patterns for m
 ## Examples
 
 - [hierarchical_swarm_autosave_example.py](hierarchical_swarm_autosave_example.py) - **Autosave feature example** - Shows how to automatically save conversation history
-- [hierarchical_swarm_basic_demo.py](hierarchical_swarm_basic_demo.py) - Basic hierarchical demo
-- [hierarchical_swarm_batch_demo.py](hierarchical_swarm_batch_demo.py) - Batch processing demo
-- [hierarchical_swarm_comparison_demo.py](hierarchical_swarm_comparison_demo.py) - Comparison demo
 - [hierarchical_swarm_example.py](hierarchical_swarm_example.py) - Main hierarchical example
-- [hierarchical_swarm_streaming_demo.py](hierarchical_swarm_streaming_demo.py) - Streaming demo
-- [hierarchical_swarm_streaming_example.py](hierarchical_swarm_streaming_example.py) - Streaming example
 - [hs_interactive.py](hs_interactive.py) - Interactive hierarchical swarm
 - [hs_stock_team.py](hs_stock_team.py) - Stock trading team
 - [hybrid_hiearchical_swarm.py](hybrid_hiearchical_swarm.py) - Hybrid approach

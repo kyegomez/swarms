@@ -86,12 +86,7 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [medical_heavy_swarm_example.py](heavy_swarm_examples/medical_heavy_swarm_example.py) - Medical heavy swarm
 
 ## Hierarchical Swarm
-- [hierarchical_swarm_basic_demo.py](hiearchical_swarm/hierarchical_swarm_basic_demo.py) - Basic hierarchical demo
-- [hierarchical_swarm_batch_demo.py](hiearchical_swarm/hierarchical_swarm_batch_demo.py) - Batch processing demo
-- [hierarchical_swarm_comparison_demo.py](hiearchical_swarm/hierarchical_swarm_comparison_demo.py) - Comparison demo
 - [hierarchical_swarm_example.py](hiearchical_swarm/hierarchical_swarm_example.py) - Main hierarchical example
-- [hierarchical_swarm_streaming_demo.py](hiearchical_swarm/hierarchical_swarm_streaming_demo.py) - Streaming demo
-- [hierarchical_swarm_streaming_example.py](hiearchical_swarm/hierarchical_swarm_streaming_example.py) - Streaming example
 - [hs_interactive.py](hiearchical_swarm/hs_interactive.py) - Interactive hierarchical swarm
 - [hs_stock_team.py](hiearchical_swarm/hs_stock_team.py) - Stock trading team
 - [hybrid_hiearchical_swarm.py](hiearchical_swarm/hybrid_hiearchical_swarm.py) - Hybrid approach
