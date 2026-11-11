@@ -395,28 +395,18 @@ print(outputs)
 This makes `GraphWorkflow` the right choice when your workflow has fan-out / fan-in or diamond patterns, conditional dependencies, or any structure that doesn't fit a strict line or a flat parallel batch. Per-node callbacks let you hook into node completion for streaming and progress tracking. [Learn more about GraphWorkflow](https://docs.swarms.world/api/graph-workflow)
 
 ```python
-from swarms import Agent, GraphWorkflow, Node, Edge, NodeType
+from swarms import Agent, GraphWorkflow
 
-researcher = Agent(agent_name="Researcher", system_prompt="Research the given topic and produce key findings.", model_name="gpt-5.4")
-writer     = Agent(agent_name="Writer",     system_prompt="Write a clear article from the research provided.", model_name="gpt-5.4")
-reviewer   = Agent(agent_name="Reviewer",   system_prompt="Review the article for accuracy and clarity.",      model_name="gpt-5.4")
-publisher  = Agent(agent_name="Publisher",  system_prompt="Format the final reviewed article for publication.", model_name="gpt-5.4")
+researcher = Agent(agent_name="Researcher", system_prompt="Research the topic and list the key findings.", model_name="gpt-5.4")
+writer = Agent(agent_name="Writer", system_prompt="Write a clear article from the research.", model_name="gpt-5.4")
+reviewer = Agent(agent_name="Reviewer", system_prompt="Review the article for accuracy and clarity.", model_name="gpt-5.4")
 
 workflow = GraphWorkflow()
-workflow.add_node(Node(id="researcher", type=NodeType.AGENT, agent=researcher))
-workflow.add_node(Node(id="writer",     type=NodeType.AGENT, agent=writer))
-workflow.add_node(Node(id="reviewer",   type=NodeType.AGENT, agent=reviewer))
-workflow.add_node(Node(id="publisher",  type=NodeType.AGENT, agent=publisher))
+workflow.add_nodes([researcher, writer, reviewer])
+workflow.add_edge(researcher, writer)
+workflow.add_edge(writer, reviewer)
 
-workflow.add_edge(Edge(source="researcher", target="writer"))
-workflow.add_edge(Edge(source="writer",     target="reviewer"))
-workflow.add_edge(Edge(source="reviewer",   target="publisher"))
-
-workflow.set_entry_points(["researcher"])
-workflow.set_end_points(["publisher"])
-
-results = workflow.run("Produce a short article on the rise of small language models.")
-print(results)
+print(workflow.run("Write a short article on the rise of small language models."))
 ```
 
 ----
