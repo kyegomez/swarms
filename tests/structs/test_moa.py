@@ -601,3 +601,21 @@ def test_arun_matches_run_under_max_concurrency_keeping_failed_workers(
     assert imgs.count("chart.png") == 6
     assert sorted(calls, key=str) == sorted(sync_calls, key=str)
     assert "W2 (layer 1/2): Error: division by zero" in str(calls)
+
+
+def test_mixture_of_agents_creates_aggregator_with_default_model():
+    """Creating MixtureOfAgents without aggregator uses DEFAULT_MODEL_NAME."""
+    from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
+
+    worker = Agent(
+        agent_name="Worker-1",
+        model_name="gpt-4o",
+        max_loops=1,
+    )
+    moa = MixtureOfAgents(
+        agents=[worker],
+        layers=1,
+    )
+    assert moa.aggregator_model_name == DEFAULT_MODEL_NAME
+    assert moa.aggregator_agent is not None
+    assert moa.aggregator_agent.model_name == DEFAULT_MODEL_NAME
