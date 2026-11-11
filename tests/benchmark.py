@@ -45,7 +45,7 @@ def main() -> None:
         with ProcessPoolExecutor(1) as pool:
             try:
                 column = pool.submit(measure, name, args).result()
-            except ImportError:
+            except ModuleNotFoundError:
                 column = [(r, "not installed") for r, _ in columns[0]]
             columns.append(column)
 
