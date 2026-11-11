@@ -133,6 +133,7 @@ class Conversation:
         self._cache_misses: int = 0
         self._last_cached_tokens: int = 0
         self._token_count_cache: Dict[Tuple[str, str], int] = {}
+        self._to_messages_token_cache: Dict[str, int] = {}
 
         self.setup_file_path()
         if not self.conversation_history:
@@ -648,14 +649,36 @@ class Conversation:
             )
         return added
 
-    def _to_messages_tokens(
-        self, row: Dict[str, Any], agent_name: Optional[str] = None
-    ) -> int:
+    def _to_messages_tokens(self, row: Dict[str, Any]) -> int:
         """Count tokens for the chat messages produced by a history row.
+
+        The count is memoised per row content, so an unchanged row is not
+        recounted on every :meth:`to_messages` call.
 
         Args:
             row (Dict[str, Any]): A history row.
-            agent_name (Optional[str]): The role mapped to assistant.
+
+        Returns:
+            int: Token count for the row's chat messages.
+        """
+        key = json.dumps(row, default=str, sort_keys=True)
+        cache = self._to_messages_token_cache
+        if key not in cache:
+            if len(cache) >= 2 * len(self.conversation_history):
+                live = {
+                    json.dumps(live_row, default=str, sort_keys=True)
+                    for live_row in self.conversation_history
+                }
+                cache = {k: cache[k] for k in live if k in cache}
+                self._to_messages_token_cache = cache
+            cache[key] = self._row_token_count(row)
+        return cache[key]
+
+    def _row_token_count(self, row: Dict[str, Any]) -> int:
+        """Token count for one history row's chat messages.
+
+        Args:
+            row (Dict[str, Any]): A history row.
 
         Returns:
             int: Token count for the row's chat messages.
@@ -698,16 +721,12 @@ class Conversation:
             )
         return 0
 
-    @staticmethod
-    def _to_messages_is_system_row(row: Dict[str, Any]) -> bool:
-        """Return True when a history row is a system-role chat row."""
-        return row.get("role") == "system"
-
     def to_messages(
         self,
         agent_name: Optional[str] = None,
         start: int = 0,
         prefix: Sequence[Dict[str, Any]] = (),
+        max_tokens: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Build a chat request body from the history.
 
@@ -715,6 +734,7 @@ class Conversation:
             agent_name (Optional[str]): The role whose rows become assistant turns.
             start (int): Index of the first row to include.
             prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
+            max_tokens (Optional[int]): Tokens reserved for the reply; None means no reservation.
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
@@ -724,7 +744,7 @@ class Conversation:
             leading = []
             rest = history
             for index, row in enumerate(history):
-                if self._to_messages_is_system_row(row):
+                if row.get("role") == "system":
                     leading.append(row)
                 else:
                     rest = history[index:]
@@ -733,12 +753,16 @@ class Conversation:
                 rest = []
 
             budget = self.context_length
+            if max_tokens is not None:
+                reserved = self.context_length - max_tokens
+                if reserved > 0:
+                    budget = reserved
             for row in leading:
-                budget -= self._to_messages_tokens(row, agent_name)
+                budget -= self._to_messages_tokens(row)
 
             kept = []
             for row in reversed(rest):
-                tokens = self._to_messages_tokens(row, agent_name)
+                tokens = self._to_messages_tokens(row)
                 if kept and tokens > budget:
                     break
                 kept.append(row)

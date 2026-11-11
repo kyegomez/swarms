@@ -1142,6 +1142,7 @@ class Agent:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
+                                    max_tokens=self.max_tokens,
                                 )
                             )
 
