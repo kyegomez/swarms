@@ -88,7 +88,7 @@ class MixtureOfAgents:
         layers: int = 3,
         max_loops: int = 1,
         output_type: OutputType = "final",
-        aggregator_model_name: str = "claude-sonnet-4-20250514",
+        aggregator_model_name: str = "claude-sonnet-5-5",
         max_workers: Optional[int] = None,
         aggegrator_args: Dict[str, Any] = None,
         channel: Optional[CommsChannel] = None,
