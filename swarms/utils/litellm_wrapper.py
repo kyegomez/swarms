@@ -491,9 +491,7 @@ class LiteLLM:
                         "arguments": tool_call.function.arguments,
                     }
                 }
-                # Tool executors and the transcript builder key
-                # results by call id; keep it (and the type) when
-                # the provider supplied one.
+                # Preserve provider IDs so executors can match calls to results.
                 call_id = getattr(tool_call, "id", None)
                 if call_id:
                     call["id"] = call_id
@@ -1555,4 +1553,4 @@ class LiteLLM:
 
         return run_concurrently(
             self.run, tasks, max_workers=batch_size
-        )
+                )
