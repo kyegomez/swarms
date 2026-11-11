@@ -173,9 +173,7 @@ class SelfMoASeq(SerializableMixin):
                 self._log(
                     "debug", f"Generating sample {i+1}/{num_samples}"
                 )
-                self.proposer.short_memory = (
-                    self.proposer.short_memory_init()
-                )
+                self.proposer.reset()
                 sample = self.proposer.run(task)
                 samples.append(sample)
                 self.metrics["total_samples_generated"] += 1
@@ -254,9 +252,7 @@ class SelfMoASeq(SerializableMixin):
                 best_so_far,
             )
 
-            self.aggregator.short_memory = (
-                self.aggregator.short_memory_init()
-            )
+            self.aggregator.reset()
             aggregated = self.aggregator.run(prompt)
             self.metrics["total_aggregations"] += 1
 

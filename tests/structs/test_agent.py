@@ -21,6 +21,7 @@ from swarms.structs.agent import DEFAULT_AGENT_DESCRIPTION
 from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
+    AgentOutputSchemaError,
     AgentToolExecutionError,
 )
 from swarms.tools.base_tool import BaseTool
@@ -82,24 +83,16 @@ def basic_flow(mocked_llm, tmp_path):
 
 @pytest.fixture
 def flow_with_condition(mocked_llm, tmp_path):
-    from swarms.structs.agent import stop_when_repeats
-
     return _flow(
         "flow-with-condition",
         mocked_llm,
         tmp_path,
-        stopping_condition=stop_when_repeats,
+        stopping_condition=lambda text: "stop" in text.lower(),
     )
 
 
 class TestBasicAgent:
     """Constructor, run plumbing and the save/load round trip."""
-
-    def test_stop_when_repeats(self):
-        from swarms.structs.agent import stop_when_repeats
-
-        assert stop_when_repeats("Please Stop now")
-        assert not stop_when_repeats("Continue the process")
 
     def test_flow_initialization(self, basic_flow):
         """The constructor arguments survive __init__.
@@ -1185,9 +1178,16 @@ class TestAutonomousAgentLoop:
         agent.autonomous_subtasks[1]["status"] = "completed"
         assert loop._get_next_executable_subtask() is None
 
-    def test_loop_drives_plan_then_execution_against_a_stub_llm(self):
+    @pytest.mark.parametrize("entry", ["run", "arun"])
+    def test_loop_drives_plan_then_execution_against_a_stub_llm(
+        self, entry
+    ):
         """A canned LLM carries the loop from planning through completion."""
         prompts = []
+        tokens = []
+
+        async def on_token(token):
+            tokens.append(token)
 
         step = {
             "step_id": "s1",
@@ -1208,6 +1208,8 @@ class TestAutonomousAgentLoop:
 
         def fake_call_llm(self, task=None, *args, **kwargs):
             prompts.append(task)
+            if kwargs.get("streaming_callback"):
+                kwargs["streaming_callback"]("tok")
             if len(prompts) == 1:
                 return call("create_plan", plan)
             if len(prompts) <= 3:
@@ -1216,7 +1218,17 @@ class TestAutonomousAgentLoop:
 
         agent = self._agent()
         with patch.object(Agent, "call_llm", fake_call_llm):
-            output = agent.run("exercise the loop")
+            if entry == "run":
+                output = agent.run("exercise the loop")
+            else:
+                # arun hands the worker thread a bridge to the async callback.
+                output = asyncio.run(
+                    agent.arun(
+                        "exercise the loop",
+                        streaming_callback=on_token,
+                    )
+                )
+                assert tokens and set(tokens) == {"tok"}
 
         assert prompts, "the loop never called the LLM"
         assert output is not None
@@ -1228,61 +1240,170 @@ class TestAutonomousAgentLoop:
         assert agent.subtask_status["s1"] == "completed"
 
 
-class TestArunForwarding:
-    """arun() must forward its arguments to run(), not await a sync method."""
+def _stream_chunk(content=None, tool=None):
+    tool_calls = None
+    if tool:
+        tool_calls = [
+            SimpleNamespace(
+                index=0,
+                id=tool.get("id"),
+                function=SimpleNamespace(
+                    name=tool.get("name"),
+                    arguments=tool.get("arguments"),
+                ),
+            )
+        ]
+    delta = SimpleNamespace(
+        content=content, tool_calls=tool_calls, reasoning_content=None
+    )
+    return SimpleNamespace(
+        choices=[SimpleNamespace(delta=delta, finish_reason=None)],
+        model="stub",
+        usage=None,
+    )
+
+
+def _add(a: int, b: int) -> str:
+    """Add two numbers.
+
+    Args:
+        a: The first number.
+        b: The second number.
+    """
+    return str(a + b)
+
+
+class TestArunNative:
+    """arun() awaits the provider on the event loop instead of threading run()."""
 
     def _bare_agent(self):
-        # No LLM/model setup — these tests only exercise arun's plumbing.
         agent = Agent.__new__(Agent)
         agent.autosave = False
         agent.agent_name = "arun-test"
         agent.to_dict = lambda: {}
         return agent
 
-    def test_extra_positional_args_reach_run(self):
-        """`task=`/`img=` as keywords alongside *args made every extra
-        positional collide with `task`: arun(task, img, extra) raised
-        `TypeError: got multiple values for argument 'task'`.
-        """
-        agent = self._bare_agent()
-        seen = {}
+    @staticmethod
+    def _provider(turns, seen_threads, gate=None):
+        """An acompletion stub replaying one list of chunks per call."""
+        turns = iter(turns)
 
-        def fake_run(*args, **kwargs):
-            seen["args"] = args
-            seen["kwargs"] = kwargs
-            return "ok"
+        async def acompletion(**params):
+            seen_threads.add(threading.current_thread())
+            chunks = next(turns)
+            if not params.get("stream"):
+                message = SimpleNamespace(
+                    content=chunks, tool_calls=None
+                )
+                return SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=message, finish_reason="stop"
+                        )
+                    ],
+                    model="stub",
+                    usage=None,
+                )
 
-        agent.run = fake_run
+            async def stream():
+                for i, chunk in enumerate(chunks):
+                    # The consumer opens the gate only once it holds the first token.
+                    if gate is not None and i == 1:
+                        await asyncio.wait_for(gate.wait(), 5)
+                    yield chunk
 
-        result = asyncio.run(Agent.arun(agent, "T", "I", "EXTRA"))
+            return stream()
 
-        assert result == "ok"
-        assert seen["args"] == ("T", "I", "EXTRA")
+        return acompletion
 
-    def test_error_path_does_not_await_a_sync_handler(self):
-        """`_handle_run_error` is sync and re-raises; the await was harmless
-        only because it always raises before returning.
-        """
-        import inspect
+    def _run(self, turns, body, gate=None, **agent_kwargs):
+        threads = set()
+        with (
+            patch.object(
+                litellm_wrapper,
+                "acompletion",
+                self._provider(turns, threads, gate),
+            ),
+            patch.object(
+                litellm_wrapper,
+                "completion",
+                side_effect=AssertionError(
+                    "blocking completion used"
+                ),
+            ),
+        ):
+            agent = Agent(
+                agent_name="native",
+                model_name="gpt-5.4",
+                max_loops=agent_kwargs.pop("max_loops", 1),
+                print_on=False,
+                verbose=False,
+                **agent_kwargs,
+            )
+            result = body(agent)
+        assert threads == {threading.main_thread()}
+        return agent, result
 
-        assert not inspect.iscoroutinefunction(
-            Agent._handle_run_error
+    def test_arun_awaits_the_provider_on_the_loop(self):
+        _, result = self._run(
+            ["4"], lambda agent: asyncio.run(agent.arun("2+2?"))
         )
-        assert (
-            "await self._handle_run_error"
-            not in inspect.getsource(Agent.arun)
+        assert result == "4"
+
+    def test_arun_stream_yields_tokens_before_the_stream_ends(self):
+        async def consume(agent, gate):
+            tokens = []
+            async for token in agent.arun_stream("hi"):
+                tokens.append(token)
+                gate.set()
+            return tokens
+
+        # The provider waits on the gate, so a buffered stream would time out.
+        gate = asyncio.Event()
+
+        async def run(agent):
+            return await consume(agent, gate)
+
+        _, tokens = self._run(
+            [[_stream_chunk("Hel"), _stream_chunk("lo")]],
+            lambda agent: asyncio.run(run(agent)),
+            gate=gate,
         )
+        assert tokens == ["Hel", "lo"]
 
+    @pytest.mark.parametrize("is_async", [True, False])
+    def test_arun_streams_to_sync_and_async_callbacks_through_a_tool_call(
+        self, is_async
+    ):
+        tokens = []
+
+        async def async_callback(token):
+            tokens.append(token)
+
+        callback = async_callback if is_async else tokens.append
+        call = {
+            "id": "c1",
+            "name": "_add",
+            "arguments": '{"a": 2, "b": 3}',
+        }
+        agent, _ = self._run(
+            [[_stream_chunk(tool=call)], [_stream_chunk("5")]],
+            lambda agent: asyncio.run(
+                agent.arun("add", streaming_callback=callback)
+            ),
+            max_loops=2,
+            tools=[_add],
+        )
+        assert tokens[-1] == "5" and "_add" in tokens
+        history = agent.short_memory.conversation_history
+        assert any("result:\n5" in str(m["content"]) for m in history)
+
+    def test_arun_raises_the_original_error(self):
         agent = self._bare_agent()
+        agent.interactive = False
 
-        def boom(*args, **kwargs):
-            raise ValueError("boom")
-
-        agent.run = boom
-
-        # The original error surfaces — not a TypeError from awaiting None.
-        with pytest.raises(ValueError, match="boom"):
-            asyncio.run(Agent.arun(agent, "T"))
+        with pytest.raises(ValueError, match="No task provided"):
+            asyncio.run(Agent.arun(agent, None))
 
     def test_handle_run_error_tolerates_braces_in_provider_message(
         self,
@@ -2784,3 +2905,57 @@ class TestAgentOutputCleanerRemoval:
         assert isinstance(result, str)
         cleaned = result.upper()
         assert "RAW OUTPUT" in cleaned
+
+
+class _Report(BaseModel):
+    title: str
+    score: float
+
+
+_VALID_REPORT = '{"title": "Plan", "score": 0.8}'
+_INVALID_REPORT = '{"title": "Plan"}'
+
+
+@pytest.mark.parametrize("use_arun", [False, True])
+@pytest.mark.parametrize(
+    "replies",
+    [[_VALID_REPORT], [_INVALID_REPORT]],
+    ids=["valid", "invalid"],
+)
+def test_output_schema_returns_a_validated_model(use_arun, replies):
+    sent = []
+
+    def completion(**params):
+        sent.append(params)
+        message = SimpleNamespace(
+            content=replies[len(sent) - 1], tool_calls=None
+        )
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=message)]
+        )
+
+    async def acompletion(**params):
+        return completion(**params)
+
+    agent = Agent(max_loops=1, print_on=False, output_schema=_Report)
+
+    def run(task):
+        if use_arun:
+            return asyncio.run(agent.arun(task))
+        return agent.run(task)
+
+    with (
+        patch.object(litellm_wrapper, "completion", completion),
+        patch.object(litellm_wrapper, "acompletion", acompletion),
+    ):
+        if replies[-1] == _INVALID_REPORT:
+            with pytest.raises(AgentOutputSchemaError) as raised:
+                run("Rate this plan.")
+            assert raised.value.raw_output == _INVALID_REPORT
+        else:
+            assert run("Rate this plan.") == _Report(
+                title="Plan", score=0.8
+            )
+
+    assert len(sent) == 1
+    assert sent[0]["response_format"] is _Report

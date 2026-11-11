@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from loguru import logger
 
 from swarms.structs.execution_utils import batched_run
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
@@ -280,9 +280,9 @@ class DebateWithJudge:
             raise ValueError("Task must be a non-empty string")
 
         self.conversation.clear()
-
-        # Initialize agents with their roles
-        self._initialize_agents(task)
+        reset_agents(
+            (self.pro_agent, self.con_agent, self.judge_agent)
+        )
 
         # Start with the initial task
         current_topic = task
@@ -350,28 +350,13 @@ class DebateWithJudge:
             conversation=self.conversation, type=self.output_type
         )
 
-    def _initialize_agents(self, task: str) -> None:
-        """
-        Initialize agents with their respective roles and context.
-
-        Args:
-            task (str): The initial task/topic for context.
-        """
-        names = {
-            "task": task,
-            "pro_agent_name": self.pro_agent.agent_name,
-            "con_agent_name": self.con_agent.agent_name,
-            "judge_agent_name": self.judge_agent.agent_name,
-        }
-
-        self.pro_agent.run(
-            task=PRO_AGENT_INTRO_PROMPT.format(**names)
-        )
-        self.con_agent.run(
-            task=CON_AGENT_INTRO_PROMPT.format(**names)
-        )
-        self.judge_agent.run(
-            task=JUDGE_AGENT_INTRO_PROMPT.format(**names)
+    def _intro(self, prompt: str, task: str) -> str:
+        """Format a role introduction with the topic and agent names."""
+        return prompt.format(
+            task=task,
+            pro_agent_name=self.pro_agent.agent_name,
+            con_agent_name=self.con_agent.agent_name,
+            judge_agent_name=self.judge_agent.agent_name,
         )
 
     def _create_pro_prompt(self, topic: str, round_num: int) -> str:
@@ -386,7 +371,9 @@ class DebateWithJudge:
             str: The prompt for the Pro agent.
         """
         if round_num == 0:
-            return PRO_FIRST_ROUND_PROMPT.format(topic=topic)
+            intro = self._intro(PRO_AGENT_INTRO_PROMPT, topic)
+            prompt = PRO_FIRST_ROUND_PROMPT.format(topic=topic)
+            return f"{intro}\n\n{prompt}"
 
         return PRO_REFINEMENT_ROUND_PROMPT.format(
             loop_number=round_num + 1, topic=topic
@@ -407,9 +394,11 @@ class DebateWithJudge:
             str: The prompt for the Con agent.
         """
         if round_num == 0:
-            return CON_FIRST_ROUND_PROMPT.format(
+            intro = self._intro(CON_AGENT_INTRO_PROMPT, topic)
+            prompt = CON_FIRST_ROUND_PROMPT.format(
                 topic=topic, pro_argument=pro_argument
             )
+            return f"{intro}\n\n{prompt}"
 
         return CON_REFINEMENT_ROUND_PROMPT.format(
             loop_number=round_num + 1,
@@ -447,6 +436,9 @@ class DebateWithJudge:
             con_agent_name=self.con_agent.agent_name,
             con_argument=con_argument,
         )
+        if round_num == 0:
+            intro = self._intro(JUDGE_AGENT_INTRO_PROMPT, topic)
+            prompt = f"{intro}\n\n{prompt}"
 
         if is_final_round:
             return prompt + JUDGE_FINAL_ROUND_INSTRUCTIONS

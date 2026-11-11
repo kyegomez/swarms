@@ -26,10 +26,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [broadcast_function_example.py](broadcast_examples/broadcast_function_example.py) - `broadcast()`: the async functional form
 - [README.md](broadcast_examples/README.md) - Detailed documentation
 
-## Caching Examples
-- [example_multi_agent_caching.py](caching_examples/example_multi_agent_caching.py) - Multi-agent caching implementation
-- [quick_start_agent_caching.py](caching_examples/quick_start_agent_caching.py) - Quick start guide for caching
-
 ## Concurrent Examples
 - [asi.py](concurrent_examples/asi.py) - ASI (Artificial Super Intelligence) example
 - [concurrent_example_dashboard.py](concurrent_examples/concurrent_example_dashboard.py) - Dashboard for concurrent workflows
@@ -90,12 +86,7 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [medical_heavy_swarm_example.py](heavy_swarm_examples/medical_heavy_swarm_example.py) - Medical heavy swarm
 
 ## Hierarchical Swarm
-- [hierarchical_swarm_basic_demo.py](hiearchical_swarm/hierarchical_swarm_basic_demo.py) - Basic hierarchical demo
-- [hierarchical_swarm_batch_demo.py](hiearchical_swarm/hierarchical_swarm_batch_demo.py) - Batch processing demo
-- [hierarchical_swarm_comparison_demo.py](hiearchical_swarm/hierarchical_swarm_comparison_demo.py) - Comparison demo
 - [hierarchical_swarm_example.py](hiearchical_swarm/hierarchical_swarm_example.py) - Main hierarchical example
-- [hierarchical_swarm_streaming_demo.py](hiearchical_swarm/hierarchical_swarm_streaming_demo.py) - Streaming demo
-- [hierarchical_swarm_streaming_example.py](hiearchical_swarm/hierarchical_swarm_streaming_example.py) - Streaming example
 - [hs_interactive.py](hiearchical_swarm/hs_interactive.py) - Interactive hierarchical swarm
 - [hs_stock_team.py](hiearchical_swarm/hs_stock_team.py) - Stock trading team
 - [hybrid_hiearchical_swarm.py](hiearchical_swarm/hybrid_hiearchical_swarm.py) - Hybrid approach

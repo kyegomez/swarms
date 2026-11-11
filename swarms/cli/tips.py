@@ -41,7 +41,6 @@ COMMAND_TIPS: List[str] = [
     "Print every tip in a category with [bold]swarms tips --category pro --all[/bold]",
     "Re-run onboarding any time with [bold]swarms onboarding[/bold]",
     "Open the API-key portal with [bold]swarms get-api-key[/bold]",
-    "Confirm you're logged in with [bold]swarms check-login[/bold]",
 ]
 
 AGENT_FLAG_TIPS: List[str] = [

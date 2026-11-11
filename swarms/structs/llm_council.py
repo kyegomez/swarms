@@ -25,7 +25,7 @@ from swarms.prompts.llm_council_prompts import (
     get_synthesis_prompt,
 )
 from swarms.structs.execution_utils import batched_run
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
@@ -199,6 +199,7 @@ class LLMCouncil:
             raise ValueError("task must be a non-empty string")
 
         self.conversation.clear()
+        reset_agents([*self.council_members, self.chairman])
 
         self.conversation.add(role="User", content=task)
 

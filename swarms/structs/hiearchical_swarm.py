@@ -24,7 +24,7 @@ from swarms.schemas.hs_schemas import (
     OrderBatch,
     SwarmSpec as SwarmSpec,
 )
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import (
     messages_for,
     new_context_for,
@@ -80,8 +80,8 @@ class HierarchicalSwarm:
         interactive: bool = False,
         director_system_prompt: str = HIEARCHICAL_SWARM_SYSTEM_PROMPT,
         multi_agent_prompt_improvements: bool = False,
-        director_temperature: float = 0.7,
-        director_top_p: float = 0.9,
+        director_temperature: Optional[float] = None,
+        director_top_p: Optional[float] = None,
         planning_enabled: bool = False,
         autosave: bool = False,
         verbose: bool = False,
@@ -114,8 +114,8 @@ class HierarchicalSwarm:
             interactive: Prompt for a missing task.
             director_system_prompt: Director instructions.
             multi_agent_prompt_improvements: Enrich worker prompts.
-            director_temperature: Director temperature.
-            director_top_p: Director nucleus sampling.
+            director_temperature: Director temperature, sent only when set.
+            director_top_p: Director nucleus sampling, sent only when set.
             planning_enabled: Run a planning pass.
             autosave: Save conversation history.
             verbose: Enable verbose output.
@@ -605,14 +605,14 @@ class HierarchicalSwarm:
                 time_enabled=False, channel=self.channel
             )
             self._delivered = {}
-            for agent in (
-                self.director,
-                self._planning_director,
-                self._feedback_director,
-                self._judge_agent,
-            ):
-                if isinstance(agent, Agent):
-                    agent.reset()
+            reset_agents(
+                (
+                    self.director,
+                    self._planning_director,
+                    self._feedback_director,
+                    self._judge_agent,
+                )
+            )
             self.add_context_to_director()
 
             if task is not None:

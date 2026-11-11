@@ -541,7 +541,7 @@ class TestFileOutput:
 
 class TestCLIAutoswarmArgs:
     def test_output_flag_short(self):
-        from swarms.cli.main import setup_argument_parser
+        from swarms.cli.parser import setup_argument_parser
 
         parser = setup_argument_parser()
         args = parser.parse_args(
@@ -558,7 +558,7 @@ class TestCLIAutoswarmArgs:
         assert args.output == "out.py"
 
     def test_output_flag_long(self):
-        from swarms.cli.main import setup_argument_parser
+        from swarms.cli.parser import setup_argument_parser
 
         parser = setup_argument_parser()
         args = parser.parse_args(
@@ -575,7 +575,7 @@ class TestCLIAutoswarmArgs:
         assert args.output == "out.py"
 
     def test_no_run_flag(self):
-        from swarms.cli.main import setup_argument_parser
+        from swarms.cli.parser import setup_argument_parser
 
         parser = setup_argument_parser()
         args = parser.parse_args(
@@ -591,7 +591,7 @@ class TestCLIAutoswarmArgs:
         assert args.no_run is True
 
     def test_output_dir_flag_short(self):
-        from swarms.cli.main import setup_argument_parser
+        from swarms.cli.parser import setup_argument_parser
 
         parser = setup_argument_parser()
         args = parser.parse_args(
@@ -608,7 +608,7 @@ class TestCLIAutoswarmArgs:
         assert args.output_dir == "/tmp/out"
 
     def test_output_dir_flag_long(self):
-        from swarms.cli.main import setup_argument_parser
+        from swarms.cli.parser import setup_argument_parser
 
         parser = setup_argument_parser()
         args = parser.parse_args(
@@ -625,7 +625,7 @@ class TestCLIAutoswarmArgs:
         assert args.output_dir == "/tmp/out"
 
     def test_defaults(self):
-        from swarms.cli.main import setup_argument_parser
+        from swarms.cli.parser import setup_argument_parser
 
         parser = setup_argument_parser()
         args = parser.parse_args(
@@ -636,7 +636,7 @@ class TestCLIAutoswarmArgs:
         assert args.no_run is False
 
     def test_all_flags_combined(self):
-        from swarms.cli.main import setup_argument_parser
+        from swarms.cli.parser import setup_argument_parser
 
         parser = setup_argument_parser()
         args = parser.parse_args(

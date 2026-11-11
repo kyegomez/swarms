@@ -8,12 +8,6 @@ This directory contains utility examples and helper functions for various Swarms
 - [finance_advisor.md](agent_loader/finance_advisor.md) - Finance advisor documentation
 - [multi_agents_loader_demo.py](agent_loader/multi_agents_loader_demo.py) - Multi-agent loading demo
 
-## Communication Examples
-- [duckdb_agent.py](communication_examples/duckdb_agent.py) - DuckDB database agent
-- [pulsar_conversation.py](communication_examples/pulsar_conversation.py) - Apache Pulsar messaging
-- [redis_conversation.py](communication_examples/redis_conversation.py) - Redis-based conversations
-- [sqlite_conversation.py](communication_examples/sqlite_conversation.py) - SQLite conversation storage
-
 ## Miscellaneous
 - [agent_map_test.py](misc/agent_map_test.py) - Agent mapping testing
 - [conversation_simple.py](misc/conversation_simple.py) - Simple conversation handling

@@ -642,3 +642,14 @@ def test_arun_matches_run_under_max_concurrency(
     assert max(peaks) == peak
     assert imgs.count("chart.png") == 6
     assert sorted(calls, key=str) == sorted(sync_calls, key=str)
+
+
+def test_default_aggregator_model_is_not_retired():
+    import inspect
+
+    default = (
+        inspect.signature(MixtureOfAgents.__init__)
+        .parameters["aggregator_model_name"]
+        .default
+    )
+    assert default == "claude-sonnet-5-5"
