@@ -302,24 +302,20 @@ A `SequentialWorkflow` executes tasks in a strict order, forming a pipeline wher
 ```python
 from swarms import Agent, SequentialWorkflow
 
-# Agent 1: The Researcher
 researcher = Agent(
     agent_name="Researcher",
     system_prompt="Your job is to research the provided topic and provide a detailed summary.",
     model_name="gpt-5.4",
 )
 
-# Agent 2: The Writer
 writer = Agent(
     agent_name="Writer",
     system_prompt="Your job is to take the research summary and write a beautiful, engaging blog post about it.",
     model_name="gpt-5.4",
 )
 
-# Create a sequential workflow where the researcher's output feeds into the writer's input
 workflow = SequentialWorkflow(agents=[researcher, writer])
 
-# Run the workflow on a task
 final_post = workflow.run("The history and future of artificial intelligence")
 print(final_post)
 ```
@@ -334,7 +330,6 @@ A `ConcurrentWorkflow` runs multiple agents simultaneously, allowing for paralle
 ```python
 from swarms import Agent, ConcurrentWorkflow
 
-# Create agents for different analysis tasks
 market_analyst = Agent(
     agent_name="Market-Analyst",
     system_prompt="Analyze market trends and provide insights on the given topic.",
@@ -356,13 +351,11 @@ risk_analyst = Agent(
     max_loops=1,
 )
 
-# Create concurrent workflow
 concurrent_workflow = ConcurrentWorkflow(
     agents=[market_analyst, financial_analyst, risk_analyst],
     max_loops=1,
 )
 
-# Run all agents concurrently on the same task
 results = concurrent_workflow.run(
     "Analyze the potential impact of AI technology on the healthcare industry"
 )
@@ -379,22 +372,17 @@ Inspired by `einsum`, `AgentRearrange` lets you define complex, non-linear relat
 ```python
 from swarms import Agent, AgentRearrange
 
-# Define agents
 researcher = Agent(agent_name="researcher", model_name="gpt-5.4")
 writer = Agent(agent_name="writer", model_name="gpt-5.4")
 editor = Agent(agent_name="editor", model_name="gpt-5.4")
 
-# Define a flow: researcher sends work to both writer and editor simultaneously
-# This is a one-to-many relationship
 flow = "researcher -> writer, editor"
 
-# Create the rearrangement system
 rearrange_system = AgentRearrange(
     agents=[researcher, writer, editor],
     flow=flow,
 )
 
-# Run the swarm
 outputs = rearrange_system.run("Analyze the impact of AI on modern cinema.")
 print(outputs)
 ```
@@ -409,13 +397,11 @@ This makes `GraphWorkflow` the right choice when your workflow has fan-out / fan
 ```python
 from swarms import Agent, GraphWorkflow, Node, Edge, NodeType
 
-# Define agents
 researcher = Agent(agent_name="Researcher", system_prompt="Research the given topic and produce key findings.", model_name="gpt-5.4")
 writer     = Agent(agent_name="Writer",     system_prompt="Write a clear article from the research provided.", model_name="gpt-5.4")
 reviewer   = Agent(agent_name="Reviewer",   system_prompt="Review the article for accuracy and clarity.",      model_name="gpt-5.4")
 publisher  = Agent(agent_name="Publisher",  system_prompt="Format the final reviewed article for publication.", model_name="gpt-5.4")
 
-# Build the graph: Researcher -> Writer -> Reviewer -> Publisher
 workflow = GraphWorkflow()
 workflow.add_node(Node(id="researcher", type=NodeType.AGENT, agent=researcher))
 workflow.add_node(Node(id="writer",     type=NodeType.AGENT, agent=writer))
@@ -429,7 +415,6 @@ workflow.add_edge(Edge(source="reviewer",   target="publisher"))
 workflow.set_entry_points(["researcher"])
 workflow.set_end_points(["publisher"])
 
-# Run the graph
 results = workflow.run("Produce a short article on the rise of small language models.")
 print(results)
 ```
@@ -440,51 +425,20 @@ print(results)
 
 The `SwarmRouter` simplifies building complex workflows by providing a single interface to run any type of swarm. Instead of importing and managing different swarm classes, you can dynamically select the one you need just by changing the `swarm_type` parameter. [Read the full documentation](https://docs.swarms.world/api/swarm-router)
 
-This makes your code cleaner and more flexible, allowing you to switch between different multi-agent strategies with ease. Here's a complete example that shows how to define agents and then use `SwarmRouter` to execute the same task using different collaborative strategies.
+Change `swarm_type` to `"ConcurrentWorkflow"`, `"MixtureOfAgents"`, `"HierarchicalSwarm"` or any other supported type to run the same agents with a different strategy.
 
 ```python
-from swarms import Agent, SwarmRouter, SwarmType
+from swarms import Agent, SwarmRouter
 
-# Define a few generic agents
 writer = Agent(agent_name="Writer", system_prompt="You are a creative writer.", model_name="gpt-5.4")
 editor = Agent(agent_name="Editor", system_prompt="You are an expert editor for stories.", model_name="gpt-5.4")
-reviewer = Agent(agent_name="Reviewer", system_prompt="You are a final reviewer who gives a score.", model_name="gpt-5.4")
 
-# The agents and task will be the same for all examples
-agents = [writer, editor, reviewer]
-task = "Write a short story about a robot who discovers music."
-
-# --- Example 1: SequentialWorkflow ---
-# Agents run one after another in a chain: Writer -> Editor -> Reviewer.
-print("Running a Sequential Workflow...")
-sequential_router = SwarmRouter(swarm_type=SwarmType.SequentialWorkflow, agents=agents)
-sequential_output = sequential_router.run(task)
-print(f"Final Sequential Output:\n{sequential_output}\n")
-
-# --- Example 2: ConcurrentWorkflow ---
-# All agents receive the same initial task and run at the same time.
-print("Running a Concurrent Workflow...")
-concurrent_router = SwarmRouter(swarm_type=SwarmType.ConcurrentWorkflow, agents=agents)
-concurrent_outputs = concurrent_router.run(task)
-# This returns a dictionary of each agent's output
-for agent_name, output in concurrent_outputs.items():
-    print(f"Output from {agent_name}:\n{output}\n")
-
-# --- Example 3: MixtureOfAgents ---
-# All agents run in parallel, and a special 'aggregator' agent synthesizes their outputs.
-print("Running a Mixture of Agents Workflow...")
-aggregator = Agent(
-    agent_name="Aggregator",
-    system_prompt="Combine the story, edits, and review into a final document.",
-    model_name="gpt-5.4"
+router = SwarmRouter(
+    agents=[writer, editor],
+    swarm_type="SequentialWorkflow",
 )
-moa_router = SwarmRouter(
-    swarm_type=SwarmType.MixtureOfAgents,
-    agents=agents,
-    aggregator_agent=aggregator, # MoA requires an aggregator
-)
-aggregated_output = moa_router.run(task)
-print(f"Final Aggregated Output:\n{aggregated_output}\n")
+
+print(router.run("Write a short story about a robot who discovers music."))
 ```
 
 -------
@@ -497,7 +451,6 @@ The `AutoSwarmBuilder` automatically generates specialized agents and their work
 from swarms import AutoSwarmBuilder
 import json
 
-# Initialize the AutoSwarmBuilder
 swarm = AutoSwarmBuilder(
     name="My Swarm",
     description="A swarm of agents",
@@ -507,7 +460,6 @@ swarm = AutoSwarmBuilder(
     model_name="gpt-5.4",
 )
 
-# Let the builder automatically create agents and workflows
 result = swarm.run(
     task="Create an accounting team to analyze crypto transactions, "
          "there must be 5 agents in the team with extremely extensive prompts. "
@@ -515,7 +467,6 @@ result = swarm.run(
          "Make sure to include all the details of the task in the prompts."
 )
 
-# The result contains the generated agents and their configurations
 print(json.dumps(result, indent=4))
 ```
 
@@ -528,25 +479,21 @@ The `MixtureOfAgents` architecture processes tasks by feeding them to multiple "
 ```python
 from swarms import Agent, MixtureOfAgents
 
-# Define expert agents
 financial_analyst = Agent(agent_name="FinancialAnalyst", system_prompt="Analyze financial data.", model_name="gpt-5.4")
 market_analyst = Agent(agent_name="MarketAnalyst", system_prompt="Analyze market trends.", model_name="gpt-5.4")
 risk_analyst = Agent(agent_name="RiskAnalyst", system_prompt="Analyze investment risks.", model_name="gpt-5.4")
 
-# Define the aggregator agent
 aggregator = Agent(
     agent_name="InvestmentAdvisor",
     system_prompt="Synthesize the financial, market, and risk analyses to provide a final investment recommendation.",
     model_name="gpt-5.4"
 )
 
-# Create the MoA swarm
 moa_swarm = MixtureOfAgents(
     agents=[financial_analyst, market_analyst, risk_analyst],
     aggregator_agent=aggregator,
 )
 
-# Run the swarm
 recommendation = moa_swarm.run("Should we invest in NVIDIA stock right now?")
 print(recommendation)
 ```
@@ -555,12 +502,11 @@ print(recommendation)
 
 ### GroupChat
 
-`GroupChat` is an asynchronous, self-selecting groupchat. All agents listen in parallel; for each broadcast message, every other agent runs a forced `respond(score, message)` function call to decide whether to chime in, and replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or when no reply clears `threshold`. There is no turn order: multiple agents can react to the same message at the same time, and silent agents stay silent.
+`GroupChat` is an asynchronous, self-selecting groupchat. All agents listen in parallel; for each broadcast message, every other agent runs a forced `respond(score, message)` function call to decide whether to chime in, and replies above `threshold` are broadcast. The chat ends when `max_loops` messages have been posted or when no reply clears `threshold`. There is no turn order: multiple agents can react to the same message at the same time, and silent agents stay silent. Every agent must carry `RESPOND_TOOL` so the chat can ask it whether to speak.
 
 ```python
 from swarms import Agent, GroupChat, RESPOND_TOOL
 
-# Every agent MUST carry RESPOND_TOOL so the chat can ask it whether to speak.
 tech_optimist = Agent(
     agent_name="TechOptimist",
     system_prompt="Argue for the benefits of AI in society.",
@@ -580,8 +526,8 @@ tech_critic = Agent(
 
 chat = GroupChat(
     agents=[tech_optimist, tech_critic],
-    max_loops=10,       # hard cap on total messages posted
-    threshold=0.5,      # min decision score (0..1) to publish a reply
+    max_loops=10,
+    threshold=0.5,
 )
 
 result = chat.run("Let's discuss the societal impact of artificial intelligence.")
@@ -597,7 +543,6 @@ print(result)
 ```python
 from swarms import Agent, HierarchicalSwarm
 
-# Define specialized worker agents
 content_strategist = Agent(
     agent_name="Content-Strategist",
     system_prompt="You are a senior content strategist. Develop comprehensive content strategies, editorial calendars, and content roadmaps.",
@@ -622,16 +567,14 @@ brand_strategist = Agent(
     model_name="gpt-5.4"
 )
 
-# Create the hierarchical swarm with a director
 marketing_swarm = HierarchicalSwarm(
     name="Marketing-Team-Swarm",
     description="A comprehensive marketing team with specialized agents coordinated by a director",
     agents=[content_strategist, creative_director, seo_specialist, brand_strategist],
-    max_loops=2,  # Allow for feedback and refinement
+    max_loops=2,
     verbose=True
 )
 
-# Run the swarm on a complex marketing challenge
 result = marketing_swarm.run(
     "Develop a comprehensive marketing strategy for a new SaaS product launch. "
     "The product is a project management tool targeting small to medium businesses. "
@@ -646,12 +589,11 @@ print(result)
 
 ### HeavySwarm
 
-`HeavySwarm` implements a sophisticated 5-phase workflow inspired by X.AI's Grok heavy implementation. It uses specialized agents (Research, Analysis, Alternatives, Verification) to provide comprehensive task analysis through intelligent question generation, parallel execution, and synthesis. An optional real-time dashboard shows the analysis as it runs. This architecture excels at financial analysis, strategic planning, research reports, and any task requiring thorough investigation and multiple perspectives. [Learn more about HeavySwarm](https://docs.swarms.world/api/heavy-swarm)
+`HeavySwarm` implements a sophisticated 5-phase workflow inspired by X.AI's Grok heavy implementation. It uses specialized agents (Research, Analysis, Alternatives, Verification) to provide comprehensive task analysis through intelligent question generation, parallel execution, and synthesis. An optional real-time dashboard shows the analysis as it runs. This architecture excels at financial analysis, strategic planning, research reports, and any task requiring thorough investigation and multiple perspectives. [Learn more about HeavySwarm](https://docs.swarms.world/api/heavy-swarm) The example below uses `exa_search` from `swarms-tools` (`pip install swarms-tools`).
 
 ```python
 from swarms import HeavySwarm
 
-# Pip install swarms-tools
 from swarms_tools import exa_search
 
 swarm = HeavySwarm(
@@ -686,24 +628,16 @@ print(out)
 ```python
 from swarms import Agent, SocialAlgorithms
 
-# Define a custom social algorithm
 def research_analysis_synthesis_algorithm(agents, task, **kwargs):
-    # Agent 1 researches the topic
     research_result = agents[0].run(f"Research: {task}")
-    
-    # Agent 2 analyzes the research
     analysis = agents[1].run(f"Analyze this research: {research_result}")
-    
-    # Agent 3 synthesizes the findings
     synthesis = agents[2].run(f"Synthesize: {research_result} + {analysis}")
-    
     return {
         "research": research_result,
         "analysis": analysis,
         "synthesis": synthesis
     }
 
-# Create agents
 researcher = Agent(
   agent_name="Researcher",
   agent_description="Expert in comprehensive research and information gathering.",
@@ -720,7 +654,6 @@ synthesizer = Agent(
   model_name="gpt-5.4"
 )
 
-# Create social algorithm
 social_alg = SocialAlgorithms(
     name="Research-Analysis-Synthesis",
     agents=[researcher, analyst, synthesizer],
@@ -728,7 +661,6 @@ social_alg = SocialAlgorithms(
     verbose=True
 )
 
-# Run the algorithm
 result = social_alg.run("The impact of AI on healthcare")
 print(result.final_outputs)
 ```
