@@ -1,39 +1,58 @@
-from swarms.agents.agent_judge import AgentJudge
-from swarms.agents.agent_marketplace_handler import (
-    AgentMarketplaceHandler,
-)
-from swarms.agents.consistency_agent import SelfConsistencyAgent
-from swarms.agents.context_compressor import ContextCompressor
-from swarms.agents.flexion_agent import ReflexionAgent
-from swarms.agents.gkp_agent import GKPAgent
-from swarms.agents.i_agent import IterativeReflectiveExpansion
-from swarms.agents.reasoning_agent_router import (
-    ReasoningAgentRouter,
-    agent_types,
-)
-from swarms.agents.llm_manager import LLMManager
-from swarms.agents.reasoning_duo import ReasoningDuo
-from swarms.agents.skills_manager import SkillsManager
-from swarms.agents.tree_of_thoughts import (
-    TreeOfThoughts,
-    TreeOfThoughtsResult,
-    ThoughtNode,
-)
+import importlib
+from typing import Any
+
+_MODULE_MAP = {
+    "AgentJudge": "agent_judge",
+    "AgentMarketplaceHandler": "agent_marketplace_handler",
+    "ContextCompressor": "context_compressor",
+    "GKPAgent": "gkp_agent",
+    "IterativeReflectiveExpansion": "i_agent",
+    "LLMManager": "llm_manager",
+    "ReasoningAgentRouter": "reasoning_agent_router",
+    "ReasoningDuo": "reasoning_duo",
+    "ReflexionAgent": "flexion_agent",
+    "SelfConsistencyAgent": "consistency_agent",
+    "SkillsManager": "skills_manager",
+    "ThoughtNode": "tree_of_thoughts",
+    "TreeOfThoughts": "tree_of_thoughts",
+    "TreeOfThoughtsResult": "tree_of_thoughts",
+    "agent_types": "reasoning_agent_router",
+}
 
 __all__ = [
-    "IterativeReflectiveExpansion",
-    "SelfConsistencyAgent",
-    "ReasoningDuo",
-    "ReasoningAgentRouter",
-    "agent_types",
-    "ReflexionAgent",
-    "GKPAgent",
     "AgentJudge",
-    "ContextCompressor",
-    "SkillsManager",
-    "LLMManager",
     "AgentMarketplaceHandler",
+    "ContextCompressor",
+    "GKPAgent",
+    "IterativeReflectiveExpansion",
+    "LLMManager",
+    "ReasoningAgentRouter",
+    "ReasoningDuo",
+    "ReflexionAgent",
+    "SelfConsistencyAgent",
+    "SkillsManager",
+    "ThoughtNode",
     "TreeOfThoughts",
     "TreeOfThoughtsResult",
-    "ThoughtNode",
+    "agent_types",
 ]
+
+
+def __getattr__(name: str) -> Any:
+    """Resolve agent attributes lazily on first access (PEP 562)."""
+    if name in _MODULE_MAP:
+        module = importlib.import_module(
+            f".{_MODULE_MAP[name]}", __name__
+        )
+        attr = getattr(module, name)
+        globals()[name] = attr
+        return attr
+
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}"
+    )
+
+
+def __dir__() -> list:
+    """Advertise all public exports before anything has accessed them."""
+    return sorted(set(globals()) | set(__all__))
