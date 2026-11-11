@@ -1515,47 +1515,18 @@ class HeavySwarm(SerializableMixin):
         if "error" in result:
             return {"error": result["error"]}
 
-        if self.variant == "heavy":
-            heavy_keys = [
-                "harper",
-                "benjamin",
-                "lucas",
-                "olivia",
-                "james",
-                "charlotte",
-                "henry",
-                "mia",
-                "william",
-                "sebastian",
-                "jack",
-                "owen",
-                "luna",
-                "elizabeth",
-                "noah",
-            ]
-            return {
-                f"{k}_question": result.get(f"{k}_question", "")
-                for k in heavy_keys
-            }
-
-        if self.variant == "medium":
-            return {
-                "harper_question": result.get("harper_question", ""),
-                "benjamin_question": result.get(
-                    "benjamin_question", ""
-                ),
-                "lucas_question": result.get("lucas_question", ""),
-            }
+        active_schema = {
+            "heavy": grok_heavy_schema,
+            "medium": grok_schema,
+        }.get(self.variant, schema)
+        required = active_schema[0]["function"]["parameters"][
+            "required"
+        ]
 
         return {
-            "research_question": result.get("research_question", ""),
-            "analysis_question": result.get("analysis_question", ""),
-            "alternatives_question": result.get(
-                "alternatives_question", ""
-            ),
-            "verification_question": result.get(
-                "verification_question", ""
-            ),
+            key: result.get(key, "")
+            for key in required
+            if key.endswith("_question")
         }
 
     def get_questions_as_list(
@@ -1603,38 +1574,4 @@ class HeavySwarm(SerializableMixin):
         if "error" in questions:
             return [f"Error: {questions['error']}"]
 
-        if self.variant == "heavy":
-            heavy_keys = [
-                "harper",
-                "benjamin",
-                "lucas",
-                "olivia",
-                "james",
-                "charlotte",
-                "henry",
-                "mia",
-                "william",
-                "sebastian",
-                "jack",
-                "owen",
-                "luna",
-                "elizabeth",
-                "noah",
-            ]
-            return [
-                questions.get(f"{k}_question", "") for k in heavy_keys
-            ]
-
-        if self.variant == "medium":
-            return [
-                questions.get("harper_question", ""),
-                questions.get("benjamin_question", ""),
-                questions.get("lucas_question", ""),
-            ]
-
-        return [
-            questions.get("research_question", ""),
-            questions.get("analysis_question", ""),
-            questions.get("alternatives_question", ""),
-            questions.get("verification_question", ""),
-        ]
+        return list(questions.values())
