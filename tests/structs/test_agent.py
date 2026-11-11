@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
+from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.structs.file_channel import FileChannel
 from swarms import Agent
 from swarms.agents.tool_manager import ToolManager
@@ -2759,6 +2760,25 @@ class TestIntegerLoopRequest:
 
         monkeypatch.setattr(agent, "call_llm", call_llm)
         return sent
+
+    def test_the_request_is_cut_to_the_context_length(
+        self, monkeypatch
+    ):
+        """A history over context_length loses its oldest turns, not the run."""
+        agent = self._agent(max_loops=1, context_length=500)
+        for index in range(40):
+            agent.short_memory.add(
+                "User", f"old {index} " + "lorem ipsum " * 40
+            )
+        sent = self._capture(monkeypatch, agent, ["done"])
+
+        agent.run("find the bug")
+
+        messages = sent[0][1]
+        assert (
+            count_tokens(json.dumps(messages), "gpt-4o-mini") <= 500
+        )
+        assert "find the bug" in messages[-1]["content"]
 
     def test_the_task_is_sent_as_a_user_message(self, monkeypatch):
         agent = self._agent(max_loops=1)

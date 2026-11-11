@@ -133,6 +133,7 @@ class Conversation:
         self._cache_misses: int = 0
         self._last_cached_tokens: int = 0
         self._token_count_cache: Dict[Tuple[str, str], int] = {}
+        self._turn_token_cache: Dict[str, int] = {}
 
         self.setup_file_path()
         if not self.conversation_history:
@@ -653,6 +654,7 @@ class Conversation:
         agent_name: Optional[str] = None,
         start: int = 0,
         prefix: Sequence[Dict[str, Any]] = (),
+        max_tokens: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Build a chat request body from the history.
 
@@ -660,63 +662,113 @@ class Conversation:
             agent_name (Optional[str]): The role whose rows become assistant turns.
             start (int): Index of the first row to include.
             prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
+            max_tokens (Optional[int]): Token budget; the oldest turns are dropped to fit it. None sends every turn.
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
         """
-        messages = []
+        turns = []
         for row in [*prefix, *self.conversation_history[start:]]:
             role, content = row.get("role"), row.get("content")
             if "tool_results" in row:
-                messages.append(
-                    {
-                        "role": "assistant",
-                        "content": None,
-                        "tool_calls": row["tool_calls"],
-                    }
-                )
-                messages.extend(
-                    {
-                        "role": "tool",
-                        "tool_call_id": call["id"],
-                        "content": row["tool_results"].get(
-                            call["id"],
-                            f"(no result recorded for {call['function']['name']})",
+                turns.append(
+                    [
+                        {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": row["tool_calls"],
+                        },
+                        *(
+                            {
+                                "role": "tool",
+                                "tool_call_id": call["id"],
+                                "content": row["tool_results"].get(
+                                    call["id"],
+                                    f"(no result recorded for {call['function']['name']})",
+                                ),
+                            }
+                            for call in row["tool_calls"]
                         ),
-                    }
-                    for call in row["tool_calls"]
+                    ]
                 )
             elif role in ("system", "user", "assistant", "tool"):
                 # Rows already in chat form, such as a caller's messages, pass through as given.
                 fields = {**(row.get("metadata") or {}), **row}
-                messages.append(
-                    {
-                        key: fields[key]
-                        for key in (
-                            "role",
-                            "content",
-                            "name",
-                            "tool_calls",
-                            "tool_call_id",
-                        )
-                        if key in fields
-                    }
+                turns.append(
+                    [
+                        {
+                            key: fields[key]
+                            for key in (
+                                "role",
+                                "content",
+                                "name",
+                                "tool_calls",
+                                "tool_call_id",
+                            )
+                            if key in fields
+                        }
+                    ]
                 )
             elif content is not None and role not in (
                 "System",
                 "Tool Executor",
             ):
-                messages.append(
-                    {
-                        "role": (
-                            "assistant"
-                            if role == agent_name
-                            else "user"
-                        ),
-                        "content": str(content),
-                    }
+                turns.append(
+                    [
+                        {
+                            "role": (
+                                "assistant"
+                                if role == agent_name
+                                else "user"
+                            ),
+                            "content": str(content),
+                        }
+                    ]
                 )
-        return messages
+        if max_tokens is not None:
+            turns = self._fit_turns(turns, max_tokens)
+        return [message for turn in turns for message in turn]
+
+    def _fit_turns(
+        self, turns: List[List[Dict[str, Any]]], max_tokens: int
+    ) -> List[List[Dict[str, Any]]]:
+        """Drop the oldest turns until the rest fit a token budget.
+
+        Args:
+            turns (List[List[Dict[str, Any]]]): Chat messages grouped so a tool call stays with its results.
+            max_tokens (int): The token budget.
+
+        Returns:
+            List[List[Dict[str, Any]]]: The system turns, the newest turn and as many recent turns as fit.
+        """
+        texts = [json.dumps(turn, default=str) for turn in turns]
+        # A token is at least one character, so a short history skips tokenizing.
+        if sum(len(text) for text in texts) <= max_tokens:
+            return turns
+        cache = self._turn_token_cache
+        if len(cache) > 2 * len(texts):
+            cache = {t: cache[t] for t in texts if t in cache}
+            self._turn_token_cache = cache
+        for text in texts:
+            if text not in cache:
+                cache[text] = count_tokens(
+                    text, self.tokenizer_model_name
+                )
+        total = sum(cache[text] for text in texts)
+        kept, dropped_last = [], False
+        for index, turn in enumerate(turns):
+            role = turn[0]["role"]
+            newest = index == len(turns) - 1
+            # A tool result whose call was dropped would be rejected by the provider.
+            orphan = dropped_last and role == "tool"
+            over = total > max_tokens and role != "system"
+            if (over or orphan) and not newest:
+                total -= cache[texts[index]]
+                dropped_last = True
+            else:
+                kept.append(turn)
+                dropped_last = False
+        return kept
 
     def record_assistant(
         self, parsed: Any, role: str = "assistant"
