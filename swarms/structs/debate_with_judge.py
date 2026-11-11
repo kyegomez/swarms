@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from loguru import logger
 
 from swarms.structs.execution_utils import batched_run
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
@@ -280,13 +280,9 @@ class DebateWithJudge:
             raise ValueError("Task must be a non-empty string")
 
         self.conversation.clear()
-        for agent in (
-            self.pro_agent,
-            self.con_agent,
-            self.judge_agent,
-        ):
-            if isinstance(agent, Agent):
-                agent.reset()
+        reset_agents(
+            (self.pro_agent, self.con_agent, self.judge_agent)
+        )
 
         # Start with the initial task
         current_topic = task

@@ -105,6 +105,9 @@ from swarms.structs.check_models import (
 )
 
 
+from swarms.structs.a2a_client import A2AClient
+from swarms.structs.a2a_server import A2AServer
+
 __all__ = [
     "AdvisorSwarm",
     "Agent",
@@ -191,4 +194,6 @@ __all__ = [
     "deploy_as_mcp",
     "get_available_models",
     "is_model_available",
+    "A2AClient",
+    "A2AServer",
 ]

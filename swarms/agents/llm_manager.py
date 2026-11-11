@@ -21,9 +21,12 @@ The ``llm`` it builds is written back to the agent, so serialization,
 unchanged.
 """
 
+import asyncio
+import inspect
 import random
 import time
 import traceback
+from contextlib import contextmanager
 from functools import lru_cache
 from typing import Any, Callable, List, Optional
 
@@ -81,6 +84,176 @@ def _log_once(level: str, message: str) -> None:
         return
     _logged_capability_messages.add(message)
     logger.log(level, message)
+
+
+def _collect_tool_call_deltas(accumulator: dict, chunk: Any) -> None:
+    """Fold one chunk's tool call fragments into the calls assembled so far.
+
+    Args:
+        accumulator: Tool calls keyed by their index in the response.
+        chunk: A chunk from the model stream.
+    """
+    if not (hasattr(chunk, "choices") and chunk.choices):
+        return
+    delta = chunk.choices[0].delta
+    for tc in getattr(delta, "tool_calls", None) or []:
+        idx = tc.index
+        if idx not in accumulator:
+            accumulator[idx] = {
+                "id": "",
+                "type": "function",
+                "function": {"name": "", "arguments": ""},
+            }
+        if tc.id:
+            accumulator[idx]["id"] = tc.id
+        if tc.function:
+            if tc.function.name:
+                accumulator[idx]["function"][
+                    "name"
+                ] += tc.function.name
+            if tc.function.arguments:
+                accumulator[idx]["function"][
+                    "arguments"
+                ] += tc.function.arguments
+
+
+class _StreamParts:
+    """Turns model stream chunks into labelled text parts, one chunk at a time."""
+
+    def __init__(
+        self,
+        manager: "LLMManager",
+        tool_calls_out: list,
+        content_out: list,
+    ):
+        self.manager = manager
+        self.tool_calls_out = tool_calls_out
+        self.content_out = content_out
+        self.accumulator: dict = {}
+        # The last call of this run ended mid-line, so this one starts on a new line.
+        self.section = "carry" if manager.stream_mid_line else None
+        self.tool_names: dict = {}
+        self.tool_args_started: set = set()
+
+    def feed(self, chunk: Any) -> list:
+        """Return the (kind, text, chunk) parts one chunk carries.
+
+        Args:
+            chunk: A chunk from the model stream.
+
+        Returns:
+            list: The parts, in the order they should be shown.
+        """
+        _collect_tool_call_deltas(self.accumulator, chunk)
+        # RouteHub forwards chunks with no choices, which litellm drops.
+        if not getattr(chunk, "choices", None):
+            return []
+        parts = []
+        delta = chunk.choices[0].delta
+
+        reasoning = getattr(delta, "reasoning_content", None)
+        if reasoning:
+            if self.section != "reasoning":
+                gap = "" if self.section is None else "\n"
+                parts.append(
+                    ("reasoning", f"{gap}[thinking] ", chunk)
+                )
+                self.section = "reasoning"
+            parts.append(("reasoning", reasoning, chunk))
+
+        content = getattr(delta, "content", None)
+        if content:
+            if self.section not in (None, "content"):
+                parts.append(("content", "\n", chunk))
+            self.section = "content"
+            self.content_out.append(content)
+            parts.append(("content", content, chunk))
+
+        for tc in getattr(delta, "tool_calls", None) or []:
+            fn = getattr(tc, "function", None)
+            name = getattr(fn, "name", None) or ""
+            arguments = getattr(fn, "arguments", None) or ""
+            if self.section != ("tool_call", tc.index):
+                gap = "" if self.section is None else "\n"
+                resumed = self.tool_names.get(tc.index, "")
+                if tc.index in self.tool_args_started:
+                    resumed += " "
+                parts.append(
+                    (
+                        "tool_call",
+                        f"{gap}[tool call] {resumed}",
+                        chunk,
+                    )
+                )
+                self.section = ("tool_call", tc.index)
+            if name:
+                self.tool_names[tc.index] = (
+                    self.tool_names.get(tc.index, "") + name
+                )
+                parts.append(("tool_call", name, chunk))
+            if arguments:
+                if tc.index not in self.tool_args_started:
+                    self.tool_args_started.add(tc.index)
+                    parts.append(("tool_call", " ", chunk))
+                parts.append(("tool_call", arguments, chunk))
+        return parts
+
+    def finish(self) -> list:
+        """Close the stream: assemble the tool calls and end an open line.
+
+        Returns:
+            list: The closing parts, empty when the stream ended on content.
+        """
+        self.tool_calls_out.extend(
+            self.accumulator[i] for i in sorted(self.accumulator)
+        )
+        parts = []
+        if self.section not in (None, "content", "carry"):
+            kind = (
+                "reasoning"
+                if self.section == "reasoning"
+                else "tool_call"
+            )
+            parts.append((kind, "\n", None))
+        self.manager.stream_mid_line = self.section in (
+            "content",
+            "carry",
+        )
+        return parts
+
+
+async def emit_token(
+    callback: Optional[Callable], token: Any
+) -> None:
+    """Send one streamed token to a callback, awaiting it when it is async.
+
+    Args:
+        callback: A sync or async function taking the token, or None.
+        token: The token text, or a token_info dict in detailed streaming.
+    """
+    if callback is None:
+        return
+    result = callback(token)
+    if inspect.isawaitable(result):
+        await result
+
+
+async def _aiter_sync(stream: Any):
+    """Read a blocking chunk stream on a worker thread, one chunk per await.
+
+    Args:
+        stream: A sync iterable of chunks.
+
+    Yields:
+        Any: Each chunk, in order.
+    """
+    iterator = iter(stream)
+    done = object()
+    while True:
+        chunk = await asyncio.to_thread(next, iterator, done)
+        if chunk is done:
+            return
+        yield chunk
 
 
 class LLMManager:
@@ -142,6 +315,7 @@ class LLMManager:
                 "retries": agent.retry_attempts,
                 "reasoning_effort": agent.reasoning_effort,
                 "thinking_tokens": agent.thinking_tokens,
+                "response_format": agent.output_schema,
                 "reasoning_enabled": agent.reasoning_enabled,
                 "agent_name": agent.agent_name,
                 "prompt_caching": agent.prompt_caching,
@@ -321,27 +495,7 @@ class LLMManager:
         accumulator: dict = {}
 
         for chunk in stream:
-            if hasattr(chunk, "choices") and chunk.choices:
-                delta = chunk.choices[0].delta
-                for tc in getattr(delta, "tool_calls", None) or []:
-                    idx = tc.index
-                    if idx not in accumulator:
-                        accumulator[idx] = {
-                            "id": "",
-                            "type": "function",
-                            "function": {"name": "", "arguments": ""},
-                        }
-                    if tc.id:
-                        accumulator[idx]["id"] = tc.id
-                    if tc.function:
-                        if tc.function.name:
-                            accumulator[idx]["function"][
-                                "name"
-                            ] += tc.function.name
-                        if tc.function.arguments:
-                            accumulator[idx]["function"][
-                                "arguments"
-                            ] += tc.function.arguments
+            _collect_tool_call_deltas(accumulator, chunk)
             yield chunk  # always forward; callers filter on delta.content
 
         # Populate the output list once the stream is exhausted
@@ -366,63 +520,30 @@ class LLMManager:
         Yields:
             tuple: (kind, text, chunk), where kind is "reasoning", "content" or "tool_call".
         """
-        # The last call of this run ended mid-line, so this one starts on a new line.
-        section = "carry" if self.stream_mid_line else None
-        tool_names: dict = {}
-        tool_args_started: set = set()
+        parser = _StreamParts(self, tool_calls_out, content_out)
+        for chunk in stream:
+            yield from parser.feed(chunk)
+        yield from parser.finish()
 
-        for chunk in self.stream_with_tool_collection(
-            stream, tool_calls_out
-        ):
-            # RouteHub forwards chunks with no choices, which litellm drops.
-            if not getattr(chunk, "choices", None):
-                continue
-            delta = chunk.choices[0].delta
+    async def astream_parts(
+        self, stream, tool_calls_out: list, content_out: list
+    ):
+        """Yield everything an async stream carries as it arrives.
 
-            reasoning = getattr(delta, "reasoning_content", None)
-            if reasoning:
-                if section != "reasoning":
-                    gap = "" if section is None else "\n"
-                    yield "reasoning", f"{gap}[thinking] ", chunk
-                    section = "reasoning"
-                yield "reasoning", reasoning, chunk
+        Args:
+            stream: The raw async chunk stream from the model.
+            tool_calls_out: Filled with the assembled tool calls once the stream ends.
+            content_out: Receives each content fragment; joined, they are the reply text.
 
-            content = getattr(delta, "content", None)
-            if content:
-                if section not in (None, "content"):
-                    yield "content", "\n", chunk
-                section = "content"
-                content_out.append(content)
-                yield "content", content, chunk
-
-            for tc in getattr(delta, "tool_calls", None) or []:
-                fn = getattr(tc, "function", None)
-                name = getattr(fn, "name", None) or ""
-                arguments = getattr(fn, "arguments", None) or ""
-                if section != ("tool_call", tc.index):
-                    gap = "" if section is None else "\n"
-                    resumed = tool_names.get(tc.index, "")
-                    if tc.index in tool_args_started:
-                        resumed += " "
-                    yield "tool_call", f"{gap}[tool call] {resumed}", chunk
-                    section = ("tool_call", tc.index)
-                if name:
-                    tool_names[tc.index] = (
-                        tool_names.get(tc.index, "") + name
-                    )
-                    yield "tool_call", name, chunk
-                if arguments:
-                    if tc.index not in tool_args_started:
-                        tool_args_started.add(tc.index)
-                        yield "tool_call", " ", chunk
-                    yield "tool_call", arguments, chunk
-
-        if section not in (None, "content", "carry"):
-            kind = (
-                "reasoning" if section == "reasoning" else "tool_call"
-            )
-            yield kind, "\n", None
-        self.stream_mid_line = section in ("content", "carry")
+        Yields:
+            tuple: (kind, text, chunk), where kind is "reasoning", "content" or "tool_call".
+        """
+        parser = _StreamParts(self, tool_calls_out, content_out)
+        async for chunk in stream:
+            for part in parser.feed(chunk):
+                yield part
+        for part in parser.finish():
+            yield part
 
     def extract_thinking_from_stream(self, stream):
         """Yield only content chunks from a stream, displaying thinking chunks as a panel first.
@@ -519,7 +640,68 @@ class LLMManager:
             AgentLLMError, BadRequestError, InternalServerError,
             AuthenticationError, Exception: re-raised for upstream handling.
         """
+        with self._call_span(current_loop) as outcome:
+            outcome["result"] = self._call_llm(
+                task,
+                img,
+                imgs,
+                current_loop,
+                streaming_callback,
+                *args,
+                **kwargs,
+            )
+        return outcome["result"]
+
+    async def acall(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], Any]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """
+        Call the LLM on the event loop, with the same three modes as call.
+
+        Args:
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): Image input for multimodal processing.
+            imgs (Optional[List[str]]): Several image inputs.
+            current_loop (int): Loop iteration, used in streaming panel titles.
+            streaming_callback (Optional[Callable[[str], Any]]): A sync or async
+                function receiving each token as the provider sends it.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
+
+        Returns:
+            Any: The complete response string, or the assembled tool-call list.
+        """
+        with self._call_span(current_loop) as outcome:
+            outcome["result"] = await self._acall_llm(
+                task,
+                img,
+                imgs,
+                current_loop,
+                streaming_callback,
+                *args,
+                **kwargs,
+            )
+        return outcome["result"]
+
+    @contextmanager
+    def _call_span(self, current_loop: int):
+        """Trace one model call; the caller stores the reply under "result".
+
+        Args:
+            current_loop (int): Loop iteration, recorded on the span.
+
+        Yields:
+            dict: Holder the caller puts the model's reply in.
+        """
         agent = self.agent
+        outcome: dict = {}
         with swarm_telemetry().capture_run(
             "Agent.llm_call", agent
         ) as span:
@@ -528,15 +710,7 @@ class LLMManager:
             span.set("swarms.loop", current_loop)
             usage_before = dict(getattr(agent, "_usage", None) or {})
             try:
-                result = self._call_llm(
-                    task,
-                    img,
-                    imgs,
-                    current_loop,
-                    streaming_callback,
-                    *args,
-                    **kwargs,
-                )
+                yield outcome
             finally:
                 usage_after = getattr(agent, "_usage", None)
                 if isinstance(usage_after, dict):
@@ -549,6 +723,7 @@ class LLMManager:
                 request = getattr(agent.llm, "last_request", None)
                 if request is not None:
                     span.record_json("swarms.request", request)
+            result = outcome.get("result")
             response = getattr(agent.llm, "last_response", None)
             # A stream leaves no response object, so the assembled result stands in.
             span.record_json(
@@ -572,7 +747,6 @@ class LLMManager:
             if response_model:
                 span.set("gen_ai.response.model", response_model)
             span.record_success()
-            return result
 
     def _call_llm(
         self,
@@ -916,6 +1090,238 @@ class LLMManager:
             collect_chunks=True,
         )
         return "".join(content_out)
+
+    # Async invocation.
+
+    async def _arun_llm(self, llm: Any, **run_args) -> Any:
+        """Await one model call, on a thread only when the model has no arun.
+
+        Args:
+            llm: The model client to call.
+            **run_args: Passed through to the model.
+
+        Returns:
+            Any: The model's reply, or an async chunk stream.
+        """
+        if hasattr(llm, "arun"):
+            return await llm.arun(**run_args)
+        return await asyncio.to_thread(llm.run, **run_args)
+
+    async def _acall_llm(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], Any]] = None,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """Await the model call for one loop, picking the streaming mode from the agent's config.
+
+        Args:
+            task (str): The task or prompt to send to the LLM.
+            img (Optional[str]): Image input for multimodal processing.
+            imgs (Optional[List[str]]): Several image inputs.
+            current_loop (int): Loop iteration, used in streaming panel titles.
+            streaming_callback (Optional[Callable[[str], Any]]): Receives streamed tokens.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
+
+        Returns:
+            Any: The complete response string, or the tool-call list.
+        """
+        agent = self.agent
+        kwargs.pop("is_last", None)
+        if imgs:
+            kwargs["imgs"] = imgs
+        if img is not None:
+            kwargs["img"] = img
+
+        streaming = (
+            agent.stream
+            or agent.streaming_on
+            or streaming_callback is not None
+        ) and hasattr(agent.llm, "stream")
+        if not streaming:
+            return await self._arun_llm(
+                agent.llm, task=task, **kwargs
+            )
+        return await self._astream_call(
+            agent.llm,
+            current_loop,
+            streaming_callback,
+            task,
+            *args,
+            **kwargs,
+        )
+
+    async def _astream_call(
+        self,
+        llm: Any,
+        current_loop: int,
+        streaming_callback: Optional[Callable[[str], Any]],
+        task: str,
+        *args,
+        **kwargs,
+    ) -> Any:
+        """Await a streamed model call and consume it in the agent's streaming mode.
+
+        Args:
+            llm: The model client to call.
+            current_loop (int): The loop number shown in the panel title.
+            streaming_callback: Receives streamed tokens, if given.
+            task (str): The prompt to send.
+            *args: Passed through to the LLM.
+            **kwargs: Passed through to the LLM.
+
+        Returns:
+            Any: The assembled tool calls if the model made any, else the reply text.
+        """
+        original_stream = llm.stream
+        llm.stream = True
+        try:
+            if hasattr(llm, "arun"):
+                response = await llm.arun(task, *args, **kwargs)
+            else:
+                response = await asyncio.to_thread(
+                    llm.run, task, *args, **kwargs
+                )
+            # A client without arun hands back a sync stream, read off the loop.
+            if hasattr(response, "__iter__") and not isinstance(
+                response, (str, list, dict)
+            ):
+                response = _aiter_sync(response)
+            if not hasattr(response, "__aiter__"):
+                return response
+            if self.agent.stream:
+                return await self._aconsume_detailed(
+                    response, streaming_callback
+                )
+            return await self._aconsume_panel(
+                response, current_loop, streaming_callback
+            )
+        finally:
+            llm.stream = original_stream
+
+    async def _aconsume_detailed(
+        self,
+        streaming_response,
+        streaming_callback: Optional[Callable[[dict], Any]],
+    ) -> Any:
+        """Print and forward a token_info dict for every part of an async stream.
+
+        Args:
+            streaming_response: The raw async chunk stream from the model.
+            streaming_callback: Receives each token_info dict, if given.
+
+        Returns:
+            Any: The assembled tool calls if the model made any, else the reply text.
+        """
+        token_count = 0
+        last_chunk = [None]
+        tool_calls_out: list = []
+        content_out: list = []
+
+        async def track_last(stream):
+            async for chunk in stream:
+                last_chunk[0] = chunk
+                yield chunk
+
+        async for kind, text, chunk in self.astream_parts(
+            track_last(streaming_response),
+            tool_calls_out,
+            content_out,
+        ):
+            token_count += 1
+            token_info = self._build_token_info(
+                chunk or last_chunk[0], text, token_count, kind
+            )
+            print(f"ResponseStream {token_info}")
+            await emit_token(streaming_callback, token_info)
+
+        print(self._format_final_chunk(last_chunk[0]))
+        return (
+            tool_calls_out if tool_calls_out else "".join(content_out)
+        )
+
+    async def _aconsume_panel(
+        self,
+        streaming_response,
+        current_loop: int,
+        streaming_callback: Optional[Callable[[str], Any]],
+    ) -> Any:
+        """Send every part of an async stream to the callback, the live panel, or nowhere.
+
+        Args:
+            streaming_response: The raw async chunk stream from the model.
+            current_loop: The loop number shown in the panel title.
+            streaming_callback: Receives the text of every part, if given.
+
+        Returns:
+            Any: The assembled tool calls if the model made any, else the reply text.
+        """
+        tool_calls_out: list = []
+        content_out: list = []
+        parts = self.astream_parts(
+            streaming_response, tool_calls_out, content_out
+        )
+
+        # A callback takes precedence over the panel, as in the sync path.
+        if (
+            streaming_callback is not None
+            or self.agent.print_on is False
+        ):
+            async for _, text, _ in parts:
+                await emit_token(streaming_callback, text)
+        else:
+            styles = {
+                "reasoning": "italic grey50",
+                "tool_call": "cyan",
+            }
+            with formatter.streaming_panel(
+                f"🤖 Agent: {self.agent.agent_name} Loops: {current_loop}"
+            ) as add:
+                async for kind, text, _ in parts:
+                    add(text, styles.get(kind))
+
+        return (
+            tool_calls_out if tool_calls_out else "".join(content_out)
+        )
+
+    async def arun_side_call(
+        self,
+        llm: Any,
+        task: str,
+        current_loop: int = 0,
+        streaming_callback: Optional[Callable[[str], Any]] = None,
+    ) -> Any:
+        """Await a call on a model other than the agent's own, streamed the same way when streaming is on.
+
+        Args:
+            llm: The model to call, such as the tool summary model.
+            task: The prompt to send.
+            current_loop: The loop number shown in the panel title.
+            streaming_callback: Receives streamed tokens. Defaults to the callback of the run in progress.
+
+        Returns:
+            Any: The model's reply.
+        """
+        agent = self.agent
+        if streaming_callback is None:
+            streaming_callback = getattr(
+                agent, "_run_streaming_callback", None
+            ) or getattr(agent, "streaming_callback", None)
+
+        if not (
+            agent.stream
+            or agent.streaming_on
+            or streaming_callback is not None
+        ) or not hasattr(llm, "stream"):
+            return await self._arun_llm(llm, task=task)
+        return await self._astream_call(
+            llm, current_loop, streaming_callback, task
+        )
 
     def run_side_call(
         self,

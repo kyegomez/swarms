@@ -69,6 +69,9 @@ Feature-specific examples — what an agent can do.
 - [agent_streaming.py](capabilities/streaming/agent_streaming.py) — Streaming agent
 - [example_streaming_tools.py](capabilities/streaming/example_streaming_tools.py) — Streaming with tools
 
+### output_schema/
+- [output_schema_example.py](capabilities/output_schema/output_schema_example.py) — `run` returns a validated Pydantic instance
+
 ### prompt_caching/
 - [prompt_caching_example.py](capabilities/prompt_caching/prompt_caching_example.py) — Overview
 - [1_basic_anthropic.py](capabilities/prompt_caching/1_basic_anthropic.py) — Basic Anthropic caching
