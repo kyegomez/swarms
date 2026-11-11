@@ -17,6 +17,7 @@ from typing import (
 )
 
 from swarms.structs.comms_channel import CommsChannel
+from swarms.structs.context_utils import _USER_ROLES
 from swarms.utils.litellm_tokenizer import count_tokens
 
 if TYPE_CHECKING:
@@ -713,7 +714,13 @@ class Conversation:
                             if role == agent_name
                             else "user"
                         ),
-                        "content": str(content),
+                        # Another speaker's turn keeps its name, as messages_for does.
+                        "content": (
+                            str(content)
+                            if role in (agent_name, self.user)
+                            or str(role).lower() in _USER_ROLES
+                            else f"{role}: {content}"
+                        ),
                     }
                 )
         return messages
