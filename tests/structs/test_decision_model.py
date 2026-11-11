@@ -19,6 +19,7 @@ CREDENTIAL_VARS = (
     "CLOUDFLARE_AUTH_TOKEN",
     "CLOUDFLARE_ACCOUNT_ID",
     "OPENAI_API_KEY",
+    "GEMINI_API_KEY",
 )
 
 BUILTIN_MODELS = [
@@ -28,6 +29,7 @@ BUILTIN_MODELS = [
     "clef",
     "clef-flash",
     "gpt-6-luna",
+    "gemini-decision-1",
 ]
 
 TYPESAFE_MODELS_URL = "https://api.typesafe.ai/v1/models"
@@ -36,6 +38,10 @@ CLOUDFLARE_MODELS_URL = (
     "/ai/models/search?search=clef"
 )
 OPENAI_MODELS_URL = "https://api.openai.com/v1/models"
+GEMINI_MODELS_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models"
+    "?pageSize=1000"
+)
 
 QUESTIONS = {
     "department": {
@@ -157,6 +163,23 @@ class FakeAPI:
                     },
                 },
             )
+        if request.url.host == "generativelanguage.googleapis.com":
+            return httpx.Response(
+                200,
+                json={
+                    "answers": {
+                        question_id: _answer(question)
+                        for question_id, question in body[
+                            "questions"
+                        ].items()
+                    },
+                    "usage": {
+                        "total_input_tokens": 100,
+                        "total_output_tokens": 0,
+                        "total_tokens": 100,
+                    },
+                },
+            )
         result = {
             "model": body["model"],
             "answers": {
@@ -179,8 +202,14 @@ class FakeAPI:
         return json.loads(self.requests[-1].content)
 
 
-def _listing(url, typesafe=None, cloudflare=None, openai=None):
+def _listing(
+    url, typesafe=None, cloudflare=None, openai=None, gemini=None
+):
     request = httpx.Request("GET", url)
+    if "googleapis" in url:
+        return httpx.Response(
+            200, request=request, json={"models": gemini or []}
+        )
     if "typesafe" in url:
         return httpx.Response(
             200, request=request, json={"models": typesafe or []}
@@ -267,6 +296,11 @@ def openai_key(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-openai")
 
 
+@pytest.fixture
+def gemini_key(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "gm-key")
+
+
 def test_builtin_models_are_listed_without_credentials():
     assert get_decision_models() == BUILTIN_MODELS
 
@@ -297,6 +331,7 @@ def test_live_models_from_every_provider_are_merged(
         "clef-2",
         "gpt-6-luna",
         "gpt-6-luna-2",
+        "gemini-decision-1",
     ]
     assert seen == [
         (TYPESAFE_MODELS_URL, "Bearer ts-key"),
@@ -428,6 +463,10 @@ def test_builtin_prices_cover_every_builtin_model():
     assert prices["clef"] == {"input": 0.24, "output": 0.0}
     assert prices["clef-flash"] == {"input": 0.09, "output": 0.0}
     assert prices["gpt-6-luna"] == {"input": 0.10, "output": 0.0}
+    assert prices["gemini-decision-1"] == {
+        "input": 0.10,
+        "output": 0.0,
+    }
 
 
 def test_live_cloudflare_prices_override_the_builtin_ones(
@@ -1262,8 +1301,9 @@ def test_openai_listing_keeps_only_decision_models(
 
     monkeypatch.setattr(decision_model.httpx, "get", fake_get)
 
-    assert get_decision_models() == BUILTIN_MODELS + [
-        "gpt-6-luna-2026-10-01"
+    assert get_decision_models() == BUILTIN_MODELS[:-1] + [
+        "gpt-6-luna-2026-10-01",
+        "gemini-decision-1",
     ]
     assert seen == [(OPENAI_MODELS_URL, "Bearer sk-openai")]
 
@@ -1504,6 +1544,95 @@ async def test_openai_arun_matches_run(api, openai_key):
 
     assert result == model.run("text", QUESTIONS)
     assert api.requests[0].url == api.requests[1].url
+
+
+def test_gemini_listing_keeps_only_decision_models(
+    monkeypatch, gemini_key
+):
+    seen = []
+
+    def fake_get(url, headers=None, timeout=None):
+        seen.append((url, headers))
+        return _listing(
+            url,
+            gemini=[
+                {"name": "models/gemini-2.5-pro"},
+                {"name": "models/gemini-decision-1"},
+                {"name": "models/gemini-decision-2"},
+            ],
+        )
+
+    monkeypatch.setattr(decision_model.httpx, "get", fake_get)
+
+    assert get_decision_models() == BUILTIN_MODELS + [
+        "gemini-decision-2"
+    ]
+    assert seen == [(GEMINI_MODELS_URL, {"x-goog-api-key": "gm-key"})]
+
+
+def test_gemini_run_sends_the_decisions_format(api, gemini_key):
+    questions = {
+        **QUESTIONS,
+        "is_urgent": {
+            **QUESTIONS["is_urgent"],
+            "criteria": {
+                "true": "Time-sensitive",
+                "false": "Can wait",
+            },
+        },
+    }
+
+    result = DecisionModel(model_name="gemini-decision-1").run(
+        {"message": "Help!"}, questions
+    )
+
+    request = api.requests[-1]
+    assert str(request.url) == (
+        "https://generativelanguage.googleapis.com/v1beta/decisions"
+    )
+    assert request.headers["x-goog-api-key"] == "gm-key"
+    assert "authorization" not in request.headers
+    assert api.body == {
+        "model": "gemini-decision-1",
+        "input": '{"message": "Help!"}',
+        "questions": {
+            **questions,
+            "is_urgent": {
+                **questions["is_urgent"],
+                "criteria": {
+                    "true_description": "Time-sensitive",
+                    "false_description": "Can wait",
+                },
+            },
+        },
+    }
+    assert result["answers"]["department"]["choice"] == "billing"
+    assert result["answers"]["is_urgent"]["noul"] == 0.95
+
+
+def test_gemini_content_blocks_pass_through(api, gemini_key):
+    blocks = [
+        {"type": "text", "text": "Return request #8821."},
+        {"type": "image", "data": "aGk=", "mime_type": "image/png"},
+    ]
+
+    DecisionModel(model_name="gemini-decision-1").noul(
+        blocks, "Does the photo show damage?"
+    )
+
+    assert api.body["input"] == blocks
+
+
+def test_gemini_usage_and_cost(api, gemini_key):
+    model = DecisionModel(model_name="gemini-decision-1")
+
+    model.run("text", QUESTIONS)
+    model.noul("text", "Urgent?")
+
+    assert model.usage == {"input_tokens": 200, "output_tokens": 0}
+    assert model.calculate_cost()["total_cost"] == pytest.approx(
+        200 * 0.10 / 1_000_000
+    )
 
 
 class PlainProvider(DecisionModel):
