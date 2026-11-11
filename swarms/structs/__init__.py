@@ -154,7 +154,6 @@ __all__ = [
     "run_agents_concurrently_multiprocess",
     "run_agents_with_different_tasks",
     "run_single_agent",
-    "GroupChat",
     "MultiAgentRouter",
     "ModelRouter",
     "HybridHierarchicalClusterSwarm",
