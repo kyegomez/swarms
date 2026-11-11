@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import concurrent.futures
 import hashlib
 import importlib
@@ -859,6 +860,7 @@ class GraphWorkflow:
         self._execution_plan = []
         self._successors_map = {}
         self._predecessors_cache = {}
+        self._node_depth = {}
         self.max_parallel_nodes = max_parallel_nodes
         # Nodes are network-bound LLM calls, so the default is layer width, not CPU count.
         self._max_workers = (
@@ -965,6 +967,7 @@ class GraphWorkflow:
         self._sorted_layers = []
         self._execution_plan = []
         self._successors_map = {}
+        self._node_depth = {}
         self._compilation_timestamp = None
 
         # Clear predecessors cache when graph structure changes
@@ -1021,6 +1024,11 @@ class GraphWorkflow:
             self._predecessors_cache = {
                 node_id: tuple(parents)
                 for node_id, parents in pred.items()
+            }
+            self._node_depth = {
+                node_id: idx
+                for idx, layer in enumerate(sorted_layers)
+                for node_id in layer
             }
 
             # Never raises, so compile() stays compatible; use validate(raise_on_error=True) for strict.
@@ -1961,11 +1969,11 @@ class GraphWorkflow:
         would not survive a process restart."""
         return hashlib.sha256(task.encode("utf-8")).hexdigest()[:16]
 
-    def _checkpoint_path(self, task_key: str, layer_idx: int) -> Path:
-        """Where one layer's checkpoint lives."""
+    def _checkpoint_path(self, task_key: str, node_id: str) -> Path:
+        """Where one node's checkpoint lives."""
         return (
             Path(self.checkpoint_dir)
-            / f"{task_key}_layer_{layer_idx}.json"
+            / f"{task_key}_node_{node_id}.json"
         )
 
     @staticmethod
@@ -2067,16 +2075,13 @@ class GraphWorkflow:
                 f"Using cached compilation for {self.max_loops} loops (compiled at {getattr(self, '_compilation_timestamp', 'unknown time')})"
             )
 
-        # One executor for the whole run; per-layer pools dominated runtime on deep graphs.
-        widest_layer = max(
-            (len(layer) for layer in self._execution_plan), default=1
-        )
+        # One executor for the whole run; sized to total runnable nodes or max_parallel_nodes.
         pool_size = max(
             1,
             (
-                widest_layer
+                len(self.nodes)
                 if self._max_workers is None
-                else min(self._max_workers, widest_layer)
+                else min(self._max_workers, len(self.nodes))
             ),
         )
         executor: Optional[ContextThreadPoolExecutor] = None
@@ -2131,17 +2136,129 @@ class GraphWorkflow:
                 if prior_loop_end_outputs:
                     prev_outputs.update(prior_loop_end_outputs)
 
-                for layer_idx, layer in enumerate(
-                    self._execution_plan
+                def _make_call(
+                    node_id,
+                    agent,
+                    node_type,
+                    prompt,
+                    messages=None,
                 ):
-                    layer_start_time = time.time()
+                    """Bind one node's invocation into a zero-arg callable."""
+                    messages = messages or []
+                    if node_type == NodeType.SUBGRAPH:
+                        # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
+                        inner: GraphWorkflow = agent
+                        flattened = "\n\n".join(
+                            [m["content"] for m in messages]
+                            + [prompt]
+                        )
 
-                    # Resume: skip any layer already checkpointed for this task.
-                    if self.checkpoint_dir and no_answer.isdisjoint(
-                        entry[0] for entry in layer
+                        def _run_inner(
+                            _inner=inner,
+                            _prompt=flattened,
+                        ):
+                            _prev = _inner.checkpoint_dir
+                            if self.checkpoint_dir and not _prev:
+                                _inner.checkpoint_dir = str(
+                                    Path(self.checkpoint_dir)
+                                    / node_id
+                                )
+                            try:
+                                return _inner.run(
+                                    _prompt,
+                                    img=img,
+                                    *args,
+                                    **kwargs,
+                                )
+                            finally:
+                                _inner.checkpoint_dir = _prev
+
+                        return _run_inner
+
+                    if _streaming_callback is None:
+                        # Common path: no per-node kwargs copy needed.
+                        def _run_agent(
+                            _agent=agent,
+                            _prompt=prompt,
+                            _messages=messages,
+                        ):
+                            return _agent.run(
+                                task=_prompt,
+                                img=img,
+                                messages=_messages,
+                                *args,
+                                **kwargs,
+                            )
+
+                        return _run_agent
+
+                    def _run_agent_streaming(
+                        _agent=agent,
+                        _prompt=prompt,
+                        _nid=node_id,
+                        _messages=messages,
                     ):
+                        call_kwargs = dict(kwargs)
+                        call_kwargs["streaming_callback"] = (
+                            lambda token: _streaming_callback(
+                                _nid, token
+                            )
+                        )
+                        return _agent.run(
+                            task=_prompt,
+                            img=img,
+                            messages=_messages,
+                            *args,
+                            **call_kwargs,
+                        )
+
+                    return _run_agent_streaming
+
+                def _record(node_id, agent_name, node_type, output):
+                    """Persist one node's output into the run's state."""
+                    # SUBGRAPH nodes only, so an agent returning a dict is not silently flattened.
+                    if node_type == NodeType.SUBGRAPH and isinstance(
+                        output, dict
+                    ):
+                        output = "\n\n".join(
+                            f"[{k}]: {v}"
+                            for k, v in output.items()
+                            if v is not None
+                        )
+
+                    prev_outputs[node_id] = output
+                    execution_results[node_id] = output
+
+                    try:
+                        self.conversation.add(
+                            role=agent_name, content=output
+                        )
+                    except Exception as e:
+                        logger.exception(
+                            f"Error adding output to conversation for agent {agent_name}: {e}"
+                        )
+
+                    if _on_node_complete is not None:
+                        try:
+                            _on_node_complete(node_id, output)
+                        except Exception as e:
+                            logger.exception(
+                                f"Error in on_node_complete callback for {agent_name}: {e}"
+                            )
+
+                # Ready-queue scheduler: count remaining predecessors per node.
+                remaining_preds: Dict[str, int] = {
+                    node_id: len(self._get_predecessors(node_id))
+                    for node_id in self.nodes
+                }
+                completed_nodes: Set[str] = set()
+
+                # Checkpoint resume: load completed node outputs from disk.
+                if self.checkpoint_dir and task_key:
+                    restored_count = 0
+                    for node_id in self.nodes:
                         checkpoint_path = self._checkpoint_path(
-                            task_key, layer_idx
+                            task_key, node_id
                         )
                         if checkpoint_path.exists():
                             try:
@@ -2150,210 +2267,145 @@ class GraphWorkflow:
                                         encoding="utf-8"
                                     )
                                 )
-                                prev_outputs.update(saved)
-                                execution_results.update(saved)
-                                # Replayed so state matches a non-checkpoint run
-                                for node_id, output in saved.items():
-                                    agent_name = (
-                                        getattr(
-                                            self.nodes[node_id].agent,
-                                            "agent_name",
-                                            node_id,
-                                        )
-                                        if node_id in self.nodes
-                                        else node_id
+                                if (
+                                    isinstance(saved, dict)
+                                    and node_id in saved
+                                ):
+                                    output = saved[node_id]
+                                elif (
+                                    isinstance(saved, dict)
+                                    and "output" in saved
+                                    and saved.get("node_id")
+                                    == node_id
+                                ):
+                                    output = saved["output"]
+                                elif (
+                                    isinstance(saved, dict)
+                                    and len(saved) == 1
+                                ):
+                                    output = next(
+                                        iter(saved.values())
                                     )
-                                    try:
-                                        self.conversation.add(
-                                            role=agent_name,
-                                            content=output,
-                                        )
-                                    except Exception:
-                                        pass
-                                logger.info(
-                                    f"Checkpoint found - skipping layer {layer_idx + 1} "
-                                    f"({len(saved)} agents restored from {checkpoint_path})"
+                                else:
+                                    output = saved
+
+                                prev_outputs[node_id] = output
+                                execution_results[node_id] = output
+                                completed_nodes.add(node_id)
+                                restored_count += 1
+
+                                agent_name = getattr(
+                                    self.nodes[node_id].agent,
+                                    "agent_name",
+                                    node_id,
                                 )
-                                continue
+                                try:
+                                    self.conversation.add(
+                                        role=agent_name,
+                                        content=output,
+                                    )
+                                except Exception:
+                                    pass
                             except Exception as cp_err:
                                 logger.warning(
                                     f"Failed to load checkpoint {checkpoint_path}, "
-                                    f"re-executing layer: {cp_err}"
+                                    f"re-executing node {node_id}: {cp_err}"
                                 )
 
-                    if self.verbose:
-                        logger.info(
-                            f"Executing layer {layer_idx + 1}/{len(self._execution_plan)} "
-                            f"with {len(layer)} nodes: {[n[0] for n in layer]}"
+                    if completed_nodes:
+                        for cid in completed_nodes:
+                            for succ_id in self._successors_map.get(
+                                cid, []
+                            ):
+                                if succ_id in remaining_preds:
+                                    remaining_preds[succ_id] -= 1
+
+                        if self.verbose or restored_count > 0:
+                            logger.info(
+                                f"Checkpoint found — {restored_count} node(s) "
+                                f"restored from {self.checkpoint_dir}"
+                            )
+
+                ready_nodes: collections.deque[str] = (
+                    collections.deque(
+                        node_id
+                        for node_id, count in remaining_preds.items()
+                        if count == 0
+                        and node_id not in completed_nodes
+                    )
+                )
+
+                pool = _get_executor()
+                active_futures: Dict[
+                    concurrent.futures.Future,
+                    Tuple[str, str, NodeType],
+                ] = {}
+                completed_count = len(completed_nodes)
+                total_nodes = len(self.nodes)
+                run_errors: Dict[str, Exception] = {}
+                stop_on_error = self.on_error == "raise"
+
+                def _unblock_successors(nid: str) -> None:
+                    for succ_id in self._successors_map.get(nid, []):
+                        if succ_id in remaining_preds:
+                            remaining_preds[succ_id] -= 1
+                            if (
+                                remaining_preds[succ_id] == 0
+                                and succ_id not in completed_nodes
+                            ):
+                                ready_nodes.append(succ_id)
+
+                def _mark_failed(nid: str, err: Exception) -> None:
+                    run_errors[nid] = err
+                    if self.on_error == "skip_descendants":
+                        no_answer.add(nid)
+                        no_answer.update(
+                            self.graph_backend.descendants(nid)
                         )
 
-                    layer_errors: Dict[str, Exception] = {}
+                def _unless_stopped(nid: str, call):
+                    """Under "raise", hold queued nodes back once one has failed."""
+                    if stop_on_error and run_errors:
+                        return _NOT_STARTED
+                    try:
+                        return call()
+                    except Exception as e:
+                        run_errors[nid] = e
+                        raise
 
-                    # Pre-build all prompts for this layer
-                    layer_data = []
-                    for (
-                        node_id,
-                        agent,
-                        node_type,
-                        agent_name,
-                    ) in layer:
-                        if node_id in no_answer:
-                            execution_results[node_id] = None
-                            continue
-                        try:
-                            prompt, prior_messages = (
-                                self._build_prompt(
-                                    node_id,
-                                    task,
-                                    prev_outputs,
-                                    layer_idx,
-                                    loop,
-                                )
-                            )
-                        except Exception as e:
-                            logger.exception(
-                                f"Error building prompt for node {node_id}: {e}"
-                            )
-                            # Continue with an error prompt as fallback
-                            prompt = f"Error building prompt: {e}"
-                            prior_messages = []
-                        layer_data.append(
-                            (
-                                node_id,
-                                agent,
-                                node_type,
-                                agent_name,
-                                prompt,
-                                prior_messages,
-                            )
-                        )
+                def _submit_ready_node(node_id: str) -> None:
+                    if stop_on_error and run_errors:
+                        return
+                    if node_id in no_answer:
+                        execution_results[node_id] = None
+                        completed_nodes.add(node_id)
+                        _unblock_successors(node_id)
+                        return
 
-                    def _make_call(
-                        node_id,
-                        agent,
-                        node_type,
-                        prompt,
-                        messages=None,
-                    ):
-                        """Bind one node's invocation into a zero-arg callable."""
-                        messages = messages or []
-                        if node_type == NodeType.SUBGRAPH:
-                            # Subgraphs take the prompt as their task and checkpoint under a per-parent directory.
-                            inner: GraphWorkflow = agent
+                    node = self.nodes[node_id]
+                    agent = node.agent
+                    node_type = node.type
+                    agent_name = getattr(agent, "agent_name", node_id)
 
-                            flattened = "\n\n".join(
-                                [m["content"] for m in messages]
-                                + [prompt]
-                            )
-
-                            def _run_inner(
-                                _inner=inner,
-                                _prompt=flattened,
-                            ):
-                                _prev = _inner.checkpoint_dir
-                                if self.checkpoint_dir and not _prev:
-                                    _inner.checkpoint_dir = str(
-                                        Path(self.checkpoint_dir)
-                                        / node_id
-                                    )
-                                try:
-                                    return _inner.run(
-                                        _prompt,
-                                        img=img,
-                                        *args,
-                                        **kwargs,
-                                    )
-                                finally:
-                                    _inner.checkpoint_dir = _prev
-
-                            return _run_inner
-
-                        if _streaming_callback is None:
-                            # Common path: no per-node kwargs copy needed.
-                            def _run_agent(
-                                _agent=agent,
-                                _prompt=prompt,
-                                _messages=messages,
-                            ):
-                                return _agent.run(
-                                    task=_prompt,
-                                    img=img,
-                                    messages=_messages,
-                                    *args,
-                                    **kwargs,
-                                )
-
-                            return _run_agent
-
-                        def _run_agent_streaming(
-                            _agent=agent,
-                            _prompt=prompt,
-                            _nid=node_id,
-                            _messages=messages,
-                        ):
-                            call_kwargs = dict(kwargs)
-                            call_kwargs["streaming_callback"] = (
-                                lambda token: _streaming_callback(
-                                    _nid, token
-                                )
-                            )
-                            return _agent.run(
-                                task=_prompt,
-                                img=img,
-                                messages=_messages,
-                                *args,
-                                **call_kwargs,
-                            )
-
-                        return _run_agent_streaming
-
-                    def _record(
-                        node_id, agent_name, node_type, output
-                    ):
-                        """Persist one node's output into the run's state."""
-                        # SUBGRAPH nodes only, so an agent returning a dict is not silently flattened.
-                        if (
-                            node_type == NodeType.SUBGRAPH
-                            and isinstance(output, dict)
-                        ):
-                            output = "\n\n".join(
-                                f"[{k}]: {v}"
-                                for k, v in output.items()
-                                if v is not None
-                            )
-
-                        prev_outputs[node_id] = output
-                        execution_results[node_id] = output
-
-                        try:
-                            self.conversation.add(
-                                role=agent_name, content=output
-                            )
-                        except Exception as e:
-                            logger.exception(
-                                f"Error adding output to conversation for agent {agent_name}: {e}"
-                            )
-
-                        if _on_node_complete is not None:
-                            try:
-                                _on_node_complete(node_id, output)
-                            except Exception as e:
-                                logger.exception(
-                                    f"Error in on_node_complete callback for {agent_name}: {e}"
-                                )
-
-                    if len(layer_data) == 1:
-                        # Single-node layer, a worker thread would only add latency
-                        (
+                    try:
+                        prompt, prior_messages = self._build_prompt(
                             node_id,
-                            agent,
-                            node_type,
-                            agent_name,
-                            prompt,
-                            prior_messages,
-                        ) = layer_data[0]
-                        error, output = self._safe_output(
-                            agent_name,
+                            task,
+                            prev_outputs,
+                            self._node_depth.get(node_id, 0),
+                            loop,
+                        )
+                    except Exception as e:
+                        logger.exception(
+                            f"Error building prompt for node {node_id}: {e}"
+                        )
+                        prompt = f"Error building prompt: {e}"
+                        prior_messages = []
+
+                    try:
+                        future = pool.submit(
+                            _unless_stopped,
+                            node_id,
                             _make_call(
                                 node_id,
                                 agent,
@@ -2362,140 +2414,110 @@ class GraphWorkflow:
                                 prior_messages,
                             ),
                         )
+                        active_futures[future] = (
+                            node_id,
+                            agent_name,
+                            node_type,
+                        )
+                    except Exception as e:
+                        logger.exception(
+                            f"Error submitting task for agent {agent_name}: {e}"
+                        )
+                        error_output = (
+                            f"[ERROR] Failed to submit task: {e}"
+                        )
+                        _mark_failed(node_id, e)
+                        _record(
+                            node_id,
+                            agent_name,
+                            node_type,
+                            error_output,
+                        )
+                        completed_nodes.add(node_id)
+                        if not (stop_on_error and run_errors):
+                            _unblock_successors(node_id)
+
+                while len(completed_nodes) < total_nodes:
+                    while ready_nodes and not (
+                        stop_on_error and run_errors
+                    ):
+                        nid = ready_nodes.popleft()
+                        _submit_ready_node(nid)
+
+                    if not active_futures:
+                        break
+
+                    done, _ = concurrent.futures.wait(
+                        active_futures.keys(),
+                        return_when=concurrent.futures.FIRST_COMPLETED,
+                    )
+
+                    for future in done:
+                        (
+                            node_id,
+                            agent_name,
+                            node_type,
+                        ) = active_futures.pop(future)
+                        error, output = self._safe_output(
+                            agent_name, future.result
+                        )
+                        if output is _NOT_STARTED:
+                            continue
                         if error is not None:
-                            layer_errors[node_id] = error
+                            _mark_failed(node_id, error)
+                        else:
+                            completed_count += 1
+                            if self.verbose:
+                                logger.success(
+                                    f"Agent {agent_name} completed successfully "
+                                    f"({completed_count}/{total_nodes})"
+                                )
+
                         _record(
                             node_id, agent_name, node_type, output
                         )
-                    else:
-                        # Parallel layer: dispatch onto the run-wide pool.
-                        pool = _get_executor()
-                        future_to_data = {}
-                        stop_on_error = self.on_error == "raise"
+                        completed_nodes.add(node_id)
 
-                        def _unless_stopped(node_id, call):
-                            """Under "raise", hold queued nodes back once one has failed."""
-                            if stop_on_error and layer_errors:
-                                return _NOT_STARTED
-                            try:
-                                return call()
-                            except Exception as e:
-                                layer_errors[node_id] = e
-                                raise
-
-                        for (
-                            node_id,
-                            agent,
-                            node_type,
-                            agent_name,
-                            prompt,
-                            prior_messages,
-                        ) in layer_data:
-                            try:
-                                future = pool.submit(
-                                    _unless_stopped,
-                                    node_id,
-                                    _make_call(
-                                        node_id,
-                                        agent,
-                                        node_type,
-                                        prompt,
-                                        prior_messages,
-                                    ),
-                                )
-                                future_to_data[future] = (
-                                    node_id,
-                                    agent_name,
-                                    node_type,
-                                )
-                            except Exception as e:
-                                logger.exception(
-                                    f"Error submitting task for agent {agent_name}: {e}"
-                                )
-                                error_output = f"[ERROR] Failed to submit task: {e}"
-                                prev_outputs[node_id] = error_output
-                                execution_results[node_id] = (
-                                    error_output
-                                )
-                                layer_errors[node_id] = e
-
-                        completed_count = 0
-                        for future in concurrent.futures.as_completed(
-                            future_to_data
+                        # Save per-node checkpoint immediately (skip failed nodes unless continuing)
+                        if (
+                            self.checkpoint_dir
+                            and task_key
+                            and (
+                                error is None
+                                or self.on_error == "continue"
+                            )
                         ):
-                            (
-                                node_id,
-                                agent_name,
-                                node_type,
-                            ) = future_to_data[future]
-                            error, output = self._safe_output(
-                                agent_name, future.result
-                            )
-                            if output is _NOT_STARTED:
-                                continue
-                            if error is None:
-                                completed_count += 1
-                                if self.verbose:
-                                    logger.success(
-                                        f"Agent {agent_name} completed successfully "
-                                        f"({completed_count}/{len(layer_data)})"
-                                    )
-
-                            _record(
-                                node_id, agent_name, node_type, output
-                            )
-
-                    layer_execution_time = (
-                        time.time() - layer_start_time
-                    )
-
-                    # Raised before the save below, so a rerun retries this layer.
-                    if layer_errors and self.on_error == "raise":
-                        raise next(iter(layer_errors.values()))
-                    if self.on_error == "skip_descendants":
-                        for failed in layer_errors:
-                            no_answer.add(failed)
-                            no_answer |= (
-                                self.graph_backend.descendants(failed)
-                            )
-
-                    # Save now so a crash on a later layer does not force re-running this one.
-                    if self.checkpoint_dir and no_answer.isdisjoint(
-                        entry[0] for entry in layer
-                    ):
-                        try:
-                            Path(self.checkpoint_dir).mkdir(
-                                parents=True, exist_ok=True
-                            )
-                            checkpoint_path = self._checkpoint_path(
-                                task_key, layer_idx
-                            )
-                            layer_outputs = {
-                                entry[0]: prev_outputs[entry[0]]
-                                for entry in layer
-                                if entry[0] in prev_outputs
-                            }
-                            checkpoint_path.write_text(
-                                json.dumps(
-                                    layer_outputs,
-                                    indent=2,
-                                    default=str,
-                                ),
-                                encoding="utf-8",
-                            )
-                            if self.verbose:
-                                logger.info(
-                                    f"Checkpoint saved for layer {layer_idx + 1} → {checkpoint_path}"
+                            try:
+                                Path(self.checkpoint_dir).mkdir(
+                                    parents=True, exist_ok=True
                                 )
-                        except Exception as cp_err:
-                            logger.warning(
-                                f"Failed to save checkpoint for layer {layer_idx + 1}: {cp_err}"
-                            )
+                                checkpoint_path = (
+                                    self._checkpoint_path(
+                                        task_key, node_id
+                                    )
+                                )
+                                checkpoint_path.write_text(
+                                    json.dumps(
+                                        {node_id: output},
+                                        indent=2,
+                                        default=str,
+                                    ),
+                                    encoding="utf-8",
+                                )
+                                if self.verbose:
+                                    logger.info(
+                                        f"Checkpoint saved for node {node_id} → {checkpoint_path}"
+                                    )
+                            except Exception as cp_err:
+                                logger.warning(
+                                    f"Failed to save checkpoint for node {node_id}: {cp_err}"
+                                )
 
-                    if self.verbose:
-                        logger.success(
-                            f"Layer {layer_idx + 1} completed in {layer_execution_time:.3f}s"
-                        )
+                        if not (stop_on_error and run_errors):
+                            _unblock_successors(node_id)
+
+                if run_errors and stop_on_error:
+                    raise next(iter(run_errors.values()))
 
                 loop_execution_time = time.time() - loop_start_time
                 loop += 1
@@ -2942,9 +2964,8 @@ class GraphWorkflow:
         if not cp_dir.exists():
             return 0
         task_key = self._task_key(task)
-        prefix = f"{task_key}_layer_"
         deleted = 0
-        for cp_file in cp_dir.glob(f"{prefix}*.json"):
+        for cp_file in cp_dir.glob(f"{task_key}_*.json"):
             try:
                 cp_file.unlink()
                 deleted += 1
