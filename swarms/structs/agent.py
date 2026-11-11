@@ -1918,15 +1918,12 @@ Subtask Breakdown:
             task (Optional[str]): The task to be performed. Defaults to None.
             img (Optional[str]): The image to be processed. Defaults to None.
         """
-        try:
-            return self.run(
-                task=task,
-                img=img,
-                *args,
-                **kwargs,
-            )
-        except Exception as error:
-            self._handle_run_error(error)
+        return self.run(
+            task=task,
+            img=img,
+            *args,
+            **kwargs,
+        )
 
     def receive_message(
         self, agent_name: str, task: str, *args, **kwargs
