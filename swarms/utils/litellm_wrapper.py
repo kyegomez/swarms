@@ -1553,4 +1553,4 @@ class LiteLLM:
 
         return run_concurrently(
             self.run, tasks, max_workers=batch_size
-                )
+        )
