@@ -2538,6 +2538,35 @@ class TestLLMFailureRaises:
 
         assert calls == ["gpt-5.4", "claude-sonnet-4-6"]
 
+    @pytest.mark.parametrize(
+        "down, outcome",
+        [
+            ({"gpt-5.4"}, "answer from claude-sonnet-4-6"),
+            ({"gpt-5.4", "claude-sonnet-4-6"}, AgentLLMError),
+        ],
+    )
+    def test_arun_falls_back_to_the_next_model(self, down, outcome):
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
+        )
+        calls = []
+        completion = self._completion(calls, down)
+
+        async def acompletion(**params):
+            return completion(**params)
+
+        with patch.object(
+            litellm_wrapper, "acompletion", acompletion
+        ):
+            if outcome is AgentLLMError:
+                with pytest.raises(AgentLLMError):
+                    asyncio.run(agent.arun(self.TASK))
+            else:
+                output = asyncio.run(agent.arun(self.TASK))
+                assert outcome in str(output)
+
+        assert calls == ["gpt-5.4", "claude-sonnet-4-6"]
+
     def test_the_next_run_starts_from_the_primary_model(self):
         agent = self._agent(
             fallback_models=["gpt-5.4", "claude-sonnet-4-6"]
