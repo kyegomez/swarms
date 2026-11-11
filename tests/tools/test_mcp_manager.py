@@ -24,6 +24,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -1330,6 +1331,35 @@ class TestAgentIntegration:
             }
         )
         assert results[0]["result"] == "42"
+
+    def test_agent_run_keeps_one_session(
+        self, open_server, monkeypatch
+    ):
+        from mcp import ClientSession
+
+        from swarms import Agent
+
+        sessions, initialize = [], ClientSession.initialize
+
+        async def spy(session):
+            sessions.append(session)
+            return await initialize(session)
+
+        monkeypatch.setattr(ClientSession, "initialize", spy)
+        args = '{"a": 1, "b": 2}'
+        call = [{"function": {"name": "add", "arguments": args}}]
+        agent = Agent(
+            agent_name="MCPReuseAgent",
+            mcp_url=open_server.url,
+            max_loops=3,
+            print_on=False,
+            llm=SimpleNamespace(run=lambda *a, **k: call),
+        )
+        agent.run("add")
+        asyncio.run(agent.arun("add"))
+        assert len(sessions) == 2
+        agent.mcp_manager.execute_tool_calls(call)
+        assert len(sessions) == 3
 
 
 ########################################################

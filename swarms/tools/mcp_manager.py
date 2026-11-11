@@ -24,6 +24,7 @@ import re
 import threading
 import time
 import traceback
+import weakref
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import timedelta
@@ -202,6 +203,14 @@ def run_async(coro: Any) -> Any:
 
     with ThreadPoolExecutor(max_workers=1) as executor:
         return executor.submit(asyncio.run, coro).result()
+
+
+_POOL_LOCK = threading.Lock()
+
+
+def _serve_loop(loop: asyncio.AbstractEventLoop) -> None:
+    loop.run_forever()
+    loop.close()
 
 
 # OAuth support.
@@ -659,6 +668,12 @@ class MCPManager:
             str, _ClientCredentialsToken
         ] = {}
 
+        # Between open() and close(), sessions live on this loop, one per server.
+        self._holds = 0
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._pool: Dict[str, List[Any]] = {}
+        self._stale = weakref.WeakSet()
+
     # Config normalization.
 
     @staticmethod
@@ -824,6 +839,48 @@ class MCPManager:
         self._oauth_providers = {}
         self._client_credentials = {}
 
+    def open(self) -> None:
+        """
+        Keep one initialized session per server until :meth:`close`.
+
+        Calls are nested and counted, so concurrent agent runs share the
+        sessions and the last :meth:`close` shuts them.
+        """
+        with _POOL_LOCK:
+            self._holds += 1
+
+    def close(self) -> None:
+        """Release one :meth:`open`; the last release closes every session."""
+        with _POOL_LOCK:
+            self._holds = max(0, self._holds - 1)
+            if self._holds or self._loop is None:
+                return
+            loop, pool = self._loop, self._pool
+            self._loop, self._pool = None, {}
+        asyncio.run_coroutine_threadsafe(
+            self._aclose_sessions(pool), loop
+        ).result()
+        loop.call_soon_threadsafe(loop.stop)
+
+    def _pool_loop(self) -> asyncio.AbstractEventLoop:
+        with _POOL_LOCK:
+            if self._loop is None:
+                self._loop = asyncio.new_event_loop()
+                threading.Thread(
+                    target=_serve_loop,
+                    args=(self._loop,),
+                    daemon=True,
+                ).start()
+            return self._loop
+
+    def _submit(self, coro: Any) -> Any:
+        """Run ``coro`` on the session loop while open, else on a fresh loop."""
+        if not self._holds:
+            return run_async(coro)
+        return asyncio.run_coroutine_threadsafe(
+            coro, self._pool_loop()
+        ).result()
+
     # Tool discovery.
 
     def get_tools(
@@ -844,7 +901,7 @@ class MCPManager:
         ):
             return self._tools_cache
 
-        return run_async(
+        return self._submit(
             self.aget_tools(
                 format=format, force_refresh=force_refresh
             )
@@ -985,7 +1042,7 @@ class MCPManager:
         Each call is routed to the server that advertised the tool. Results are
         returned in the order the calls appeared.
         """
-        return run_async(
+        return self._submit(
             self.aexecute_tool_calls(
                 response, output_type=output_type
             )
@@ -997,6 +1054,15 @@ class MCPManager:
         output_type: Literal["json", "dict", "str"] = "dict",
     ) -> Union[List[Dict[str, Any]], str]:
         """Async version of :meth:`execute_tool_calls`."""
+        if (
+            self._holds
+            and asyncio.get_running_loop() is not self._loop
+        ):
+            future = asyncio.run_coroutine_threadsafe(
+                self.aexecute_tool_calls(response, output_type),
+                self._pool_loop(),
+            )
+            return await asyncio.wrap_future(future)
         if not self.enabled:
             raise AgentMCPConnectionError(
                 "No MCP servers are configured for this agent."
@@ -1091,6 +1157,7 @@ class MCPManager:
         except (asyncio.CancelledError, KeyboardInterrupt):
             raise
         except BaseException as e:
+            self._stale.add(session)
             message = _describe_exception(e)
             logger.error(
                 f"MCP [{self.agent_name}]: tool '{name}' failed on "
@@ -1120,7 +1187,7 @@ class MCPManager:
         self, name: str, arguments: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """Call a single MCP tool by name (synchronous convenience helper)."""
-        return run_async(self.acall_tool(name, arguments))
+        return self._submit(self.acall_tool(name, arguments))
 
     async def acall_tool(
         self, name: str, arguments: Optional[Dict[str, Any]] = None
@@ -1558,6 +1625,55 @@ class MCPManager:
 
     @asynccontextmanager
     async def _session(self, connection: MCPConnection):
+        """Yield the pooled session on the session loop, else a new one."""
+        if asyncio.get_running_loop() is not self._loop:
+            async with self._open_session(connection) as session:
+                yield session
+            return
+        key = self._connection_key(connection)
+        entry = self._pool.get(key)
+        if entry is None:
+            ready = asyncio.get_running_loop().create_future()
+            stop = asyncio.Event()
+            task = asyncio.ensure_future(
+                self._hold_session(connection, ready, stop)
+            )
+            entry = self._pool[key] = [ready, stop, task, 0]
+        entry[3] += 1
+        session, failed = None, True
+        try:
+            session = await asyncio.shield(entry[0])
+            yield session
+            failed = session in self._stale
+        finally:
+            entry[3] -= 1
+            # A failed session takes no new borrowers and closes after its last.
+            if failed and self._pool.get(key) is entry:
+                del self._pool[key]
+            if self._pool.get(key) is not entry and not entry[3]:
+                await self._aclose_sessions({key: entry})
+
+    async def _hold_session(self, connection, ready, stop) -> None:
+        # One task enters and exits the session, as anyio requires.
+        try:
+            async with self._open_session(connection) as session:
+                ready.set_result(session)
+                await stop.wait()
+        except BaseException as e:
+            if not ready.done():
+                ready.set_exception(e)
+
+    @staticmethod
+    async def _aclose_sessions(pool: Dict[str, Any]) -> None:
+        for entry in pool.values():
+            entry[1].set()
+        await asyncio.gather(
+            *[entry[2] for entry in pool.values()],
+            return_exceptions=True,
+        )
+
+    @asynccontextmanager
+    async def _open_session(self, connection: MCPConnection):
         """
         Open an authenticated, initialized MCP session for one server.
 

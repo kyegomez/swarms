@@ -1037,6 +1037,8 @@ class FakeMCPManager:
         self.schemas = schemas
         self.executed = []
 
+    open = close = lambda self: None
+
     def get_tools(self):
         return self.schemas
 
