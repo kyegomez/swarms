@@ -67,14 +67,13 @@ def _require(
 ) -> None:
     """Show an error and exit 1 when any named argument is empty.
 
-    The message format follows how many names were passed, not how
-    many are missing.
+    One missing argument is named by its flag; several are listed.
     """
     missing = [name for name in names if not getattr(args, name)]
     if not missing:
         return
-    if len(names) == 1:
-        flag = "--" + names[0].replace("_", "-")
+    if len(missing) == 1:
+        flag = "--" + missing[0].replace("_", "-")
         show_error(f"Missing required argument: {flag}", example)
     else:
         show_error(

@@ -457,7 +457,8 @@ class TestHandleAgent:
         ) as mock_err, pytest.raises(SystemExit) as exit_info:
             self.handle_agent(args)
         assert exit_info.value.code == 1
-        assert "task" in str(mock_err.call_args)
+        title = mock_err.call_args[0][0]
+        assert title == "Missing required argument: --task"
         mock_agent.assert_not_called()
 
     def _parse_max_loops(self, value):
