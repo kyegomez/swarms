@@ -1,4 +1,6 @@
+import asyncio
 import re
+import pytest
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.agent import Agent
 
@@ -340,6 +342,30 @@ class TestWorkerContributions:
             for c in worker_messages
         ), "a worker echoed the task back into the shared conversation"
 
+    def test_a_reused_mixture_starts_workers_from_a_clean_memory(
+        self,
+    ):
+        from swarms import MixtureOfAgents
+
+        workers = [_scripted_agent("W1"), _scripted_agent("W2")]
+        moa = MixtureOfAgents(
+            agents=workers,
+            aggregator_agent=_scripted_agent("Agg"),
+            layers=2,
+        )
+        moa.run("FIRST-TASK-alpha")
+        moa.run("SECOND-TASK-beta")
+
+        for worker in workers:
+            request = "\n\n".join(
+                str(m["content"])
+                for m in worker.short_memory.conversation_history
+            )
+            assert (
+                "FIRST-TASK-alpha" not in request
+            ), f"{worker.agent_name} still holds the first task"
+            assert "Previous layer synthesis" in request
+
     def test_the_conversation_starts_clean(self):
         """
         Conversation used to auto-load a default-named file from disk, so
@@ -508,3 +534,81 @@ def test_aggregator_can_tell_which_layer_produced_each_answer():
         assert (
             f"layer {layer}/3" in contents
         ), f"layer {layer} not attributed: {contents}"
+
+
+def test_run_raises_when_the_aggregator_fails():
+    agents, _ = _recording_agents(["W1", "W2"])
+    aggregator, _ = _recording_agents(["Agg"])
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("aggregator provider returned 503")
+
+    aggregator[0].run = fail
+    moa = MixtureOfAgents(
+        agents=agents, aggregator_agent=aggregator[0]
+    )
+
+    with pytest.raises(RuntimeError, match="returned 503"):
+        moa.run("Question?")
+
+
+@pytest.mark.parametrize(
+    "max_workers, limit, peak", [(None, 2, 2), (1, None, 1)]
+)
+def test_arun_matches_run_under_max_concurrency_keeping_failed_workers(
+    max_workers, limit, peak
+):
+    def mixture():
+        agents, calls = _recording_agents(["W1", "W2", "W3", "Agg"])
+        agents[1].run = lambda **kwargs: 1 / 0
+        return (
+            MixtureOfAgents(
+                agents=agents[:3],
+                aggregator_agent=agents[3],
+                layers=2,
+                max_workers=max_workers,
+            ),
+            calls,
+        )
+
+    sync_moa, sync_calls = mixture()
+    expected = sync_moa.run("Question?", img="chart.png")
+    moa, calls = mixture()
+    live, peaks, imgs = [], [], []
+
+    def awaitable(run):
+        async def arun(task=None, img=None, **kwargs):
+            live.append(task)
+            peaks.append(len(live))
+            imgs.append(img)
+            await asyncio.sleep(0)
+            live.pop()
+            return run(task=task, **kwargs)
+
+        return arun
+
+    for agent in [*moa.agents, moa.aggregator_agent]:
+        agent.arun = awaitable(agent.run)
+
+    with pytest.raises(ValueError, match="at least 1"):
+        asyncio.run(moa.arun("Question?", max_concurrency=0))
+
+    assert (
+        asyncio.run(moa.arun("Question?", "chart.png", limit))
+        == expected
+    )
+    assert max(peaks) == peak
+    assert imgs.count("chart.png") == 6
+    assert sorted(calls, key=str) == sorted(sync_calls, key=str)
+    assert "W2 (layer 1/2): Error: division by zero" in str(calls)
+
+
+def test_default_aggregator_model_is_not_retired():
+    import inspect
+
+    default = (
+        inspect.signature(MixtureOfAgents.__init__)
+        .parameters["aggregator_model_name"]
+        .default
+    )
+    assert default == "claude-sonnet-5-5"

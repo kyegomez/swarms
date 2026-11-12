@@ -1,3 +1,4 @@
+import copy
 import os
 from typing import List
 from swarms.structs.execution_utils import run_concurrently
@@ -11,6 +12,7 @@ from swarms.utils.history_output_formatter import (
 from typing import Union, Callable
 from swarms.utils.history_output_formatter import HistoryOutputType
 from swarms.utils.str_to_dict import str_to_dict
+from swarms.structs.usage_utils import total_usage
 
 tools = [
     {
@@ -146,6 +148,7 @@ class HybridHierarchicalClusterSwarm:
         if not task:
             raise ValueError("Task cannot be empty.")
 
+        self.conversation = Conversation()
         self.conversation.add(role="User", content=task)
 
         response = self.router_agent.run(task=task)
@@ -224,7 +227,7 @@ class HybridHierarchicalClusterSwarm:
             raise ValueError("Task list cannot be empty.")
 
         results = run_concurrently(
-            self.run,
+            lambda task: copy.copy(self).run(task),
             tasks,
             max_workers=os.cpu_count() * 2,
             return_exceptions=True,
@@ -238,3 +241,14 @@ class HybridHierarchicalClusterSwarm:
             )
             for r in results
         ]
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

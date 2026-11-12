@@ -310,7 +310,7 @@ class AgentRegistry:
         Find an agent by its ID.
         """
         return find_agent_by_id_ma_blocks(
-            agents=self.agents, agent_id=agent_id
+            agents=list(self.agents.values()), agent_id=agent_id
         )
 
     def agents_to_json(self) -> str:

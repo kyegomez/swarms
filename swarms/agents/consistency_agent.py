@@ -259,12 +259,10 @@ class SelfConsistencyAgent:
         self.conversation.add(role="User", content=task)
 
         # Generate multiple independent responses concurrently
-        reasoning_agent = self._create_reasoning_agent()
-
         with ThreadPoolExecutor() as executor:
             futures = {
                 executor.submit(
-                    reasoning_agent.run,
+                    self._create_reasoning_agent().run,
                     task=task,
                     img=img,
                     *args,
@@ -292,7 +290,12 @@ class SelfConsistencyAgent:
                     return None
 
         # Aggregate responses using AI-powered aggregation
-        final_answer = aggregation_agent(responses)
+        final_answer = aggregation_agent(
+            responses,
+            prompt=self.majority_voting_prompt
+            or majority_voting_prompt,
+            model_name=self.model_name,
+        )
 
         self.conversation.add(
             role="Majority Voting Agent", content=final_answer

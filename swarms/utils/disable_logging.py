@@ -1,12 +1,22 @@
-import concurrent.futures
 import logging
 import os
 import warnings
 
 
+def set_logger_level(logger_name: str) -> None:
+    """
+    Sets the logging level for a specific logger to CRITICAL.
+
+    Args:
+        logger_name (str): The name of the logger to modify.
+    """
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.CRITICAL)
+
+
 def disable_logging():
     """
-    Disables logging for specific modules and sets up file and stream handlers.
+    Disables logging for specific modules and sets up a stream handler.
     Runs in a separate thread to avoid blocking the main thread.
     """
     warnings.filterwarnings("ignore", category=UserWarning)
@@ -36,39 +46,14 @@ def disable_logging():
         "packaging",
     ]
 
-    # Use concurrent futures to set the level for each logger concurrently
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        executor.map(set_logger_level, logger_names)
+    # Set the level for each logger sequentially, no concurrent futures
+    for logger_name in logger_names:
+        set_logger_level(logger_name)
 
     # Remove all existing handlers
     logging.getLogger().handlers = []
-
-    # Get the workspace directory from the environment variables
-    workspace_dir = os.getenv("WORKSPACE_DIR") or "agent_workspace"
-
-    # Check if the workspace directory exists, if not, create it
-    if not os.path.exists(workspace_dir):
-        os.makedirs(workspace_dir)
-
-    # Create a file handler to log errors to the file
-    file_handler = logging.FileHandler(
-        os.path.join(workspace_dir, "error.txt")
-    )
-    file_handler.setLevel(logging.ERROR)
-    logging.getLogger().addHandler(file_handler)
 
     # Create a stream handler to log errors to the terminal
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.ERROR)
     logging.getLogger().addHandler(stream_handler)
-
-
-def set_logger_level(logger_name: str) -> None:
-    """
-    Sets the logging level for a specific logger to CRITICAL.
-
-    Args:
-        logger_name (str): The name of the logger to modify.
-    """
-    logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.CRITICAL)

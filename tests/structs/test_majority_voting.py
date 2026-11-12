@@ -1,3 +1,7 @@
+import asyncio
+
+import pytest
+
 from swarms.structs.agent import Agent
 from swarms.structs.majority_voting import MajorityVoting
 
@@ -383,6 +387,21 @@ def test_votes_recorded_are_answers_not_transcripts():
         ), f"{name} echoed the task back into the shared conversation"
 
 
+def test_failing_voter_raises_instead_of_casting_its_error_as_a_vote():
+    mv, calls = _voting_system(
+        ["Voter-A", "Voter-B", "Voter-C"], max_loops=1
+    )
+
+    def down(task=None, messages=None, **kwargs):
+        raise RuntimeError("invalid x-api-key")
+
+    mv.agents[1].run = down
+
+    with pytest.raises(RuntimeError, match="invalid x-api-key"):
+        mv.run("go")
+    assert {c["agent"] for c in calls} == {"Voter-A", "Voter-C"}
+
+
 def test_consensus_agent_sees_its_own_prior_consensus_as_assistant():
     """The consensus agent's own turn must not come back labelled as the user's."""
     mv, calls = _voting_system(["Voter-A", "Voter-B"], max_loops=2)
@@ -417,3 +436,64 @@ def test_consensus_agent_sees_its_own_prior_consensus_as_assistant():
             assert not any(
                 call["answer"] in content for content in assistant
             ), f"{name}'s vote arrived as the consensus agent's own turn"
+
+
+def test_arun_awaits_voters_within_max_concurrency_like_run():
+    names = ["Voter-A", "Voter-B", "Voter-C"]
+    sync_mv, sync_calls = _voting_system(names, max_loops=2)
+    expected = sync_mv.run("go")
+    mv, calls = _voting_system(names, max_loops=2)
+    live, peak = [], []
+
+    def awaitable(run):
+        async def arun(task=None, img=None, *args, **kwargs):
+            live.append(task)
+            peak.append(len(live))
+            await asyncio.sleep(0)
+            live.pop()
+            return run(task=task, **kwargs)
+
+        return arun
+
+    for agent in [*mv.agents, mv.consensus_agent]:
+        agent.arun = awaitable(agent.run)
+
+    assert asyncio.run(mv.arun("go", max_concurrency=2)) == expected
+    assert max(peak) == 2
+    assert sorted(calls, key=str) == sorted(sync_calls, key=str)
+
+
+@pytest.mark.parametrize(
+    "extra, expected",
+    [
+        (
+            {},
+            {
+                "dynamic_temperature_enabled": False,
+                "temperature": None,
+            },
+        ),
+        (
+            {"dynamic_temperature_enabled": True},
+            {"dynamic_temperature_enabled": True},
+        ),
+        (
+            {"dynamic_temperature_enabled": False},
+            {"dynamic_temperature_enabled": False},
+        ),
+        (
+            {"dynamic_context_window": False},
+            {"dynamic_context_window": False},
+        ),
+        ({"max_loops": 2}, {"max_loops": 2}),
+    ],
+)
+def test_consensus_agent_defaults_and_kwargs_passthrough(
+    extra, expected
+):
+    mv = MajorityVoting(
+        agents=[Agent(agent_name="Voter-A", max_loops=1)],
+        additional_consensus_agent_kwargs=extra,
+    )
+    for attr, value in expected.items():
+        assert getattr(mv.consensus_agent, attr) == value

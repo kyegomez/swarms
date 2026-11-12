@@ -1,8 +1,12 @@
-import concurrent.futures
 import time
 from typing import Callable, List, Optional, Union
 
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
+from swarms.structs.context_utils import agent_answer
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -17,11 +21,9 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="concurrent_workflow")
-
-# Default cap on concurrent agent calls, guards provider rate limits not CPU
-MAX_CONCURRENT_AGENTS = 32
 
 
 class ConcurrentWorkflow:
@@ -41,12 +43,10 @@ class ConcurrentWorkflow:
         auto_save (bool): Whether to automatically save workflow metadata
         output_type (str): Format for output formatting (e.g., "dict-all-except-first")
         max_loops (int): Maximum number of execution loops (currently unused)
-        auto_generate_prompts (bool): Whether to enable automatic prompt engineering
         show_dashboard (bool): Whether to display real-time dashboard during execution
         agent_statuses (dict): Dictionary tracking status and output of each agent
-        metadata_output_path (str): Path for saving workflow metadata
         autosave (bool): Whether to persist conversation history to the workflow
-            workspace directory after each run
+            workspace directory after each run. Defaults to False
         verbose (bool): Whether to emit debug-level logging for workspace and
             autosave operations
         on_error (str): Failure policy for an agent that raises. ``"store"``
@@ -54,8 +54,7 @@ class ConcurrentWorkflow:
             agents finish; ``"raise"`` propagates the exception and aborts the run
         max_workers (Optional[int]): Thread pool size for concurrent agent
             execution. Agent calls are network-bound, so this defaults to
-            ``len(agents)`` capped at ``MAX_CONCURRENT_AGENTS`` rather than
-            deriving from CPU count.
+            ``len(agents)`` rather than deriving from CPU count.
         swarm_workspace_dir (Optional[str]): Resolved workspace directory used for
             autosave, or None when autosave is disabled or setup failed
         conversation (Conversation): Conversation object for storing agent interactions
@@ -95,12 +94,12 @@ class ConcurrentWorkflow:
         auto_save: bool = True,
         output_type: str = "dict-all-except-first",
         max_loops: int = 1,
-        auto_generate_prompts: bool = False,
         show_dashboard: bool = False,
-        autosave: bool = True,
+        autosave: bool = False,
         verbose: bool = False,
         on_error: str = "store",
         max_workers: Optional[int] = None,
+        channel: Optional[CommsChannel] = None,
     ):
         """
         Initialize a ConcurrentWorkflow.
@@ -117,13 +116,12 @@ class ConcurrentWorkflow:
             output_type (str): Output formatting mode passed to
                 ``history_output_formatter`` (e.g. ``"dict-all-except-first"``).
             max_loops (int): Maximum number of execution loops. Currently unused.
-            auto_generate_prompts (bool): Whether to enable automatic prompt
-                engineering for the configured agents.
             show_dashboard (bool): Whether to display a real-time dashboard during
                 execution. Enabling this disables per-agent stdout printing to
                 avoid conflicting with the dashboard.
             autosave (bool): Whether to persist conversation history to the
-                workflow workspace directory after each run.
+                workflow workspace directory after each run. Defaults to
+                False.
             verbose (bool): Whether to emit debug-level logging for workspace and
                 autosave operations.
             on_error (str): Failure policy for an agent that raises. ``"store"``
@@ -132,8 +130,8 @@ class ConcurrentWorkflow:
                 aborts the run.
             max_workers (Optional[int]): Thread pool size for concurrent agent
                 execution. Agent calls are network-bound rather than CPU-bound,
-                so when omitted the pool is sized at ``len(agents)``, capped at
-                ``MAX_CONCURRENT_AGENTS``. See :meth:`_resolve_max_workers`.
+                so when omitted the pool is sized at ``len(agents)``. Set it to
+                throttle large rosters. See :meth:`_resolve_max_workers`.
 
         Raises:
             ValueError: If no agents are provided or the agents list is empty.
@@ -144,15 +142,11 @@ class ConcurrentWorkflow:
         self.agents = agents
         self.auto_save = auto_save
         self.max_loops = max_loops
-        self.auto_generate_prompts = auto_generate_prompts
         self.output_type = output_type
         self.show_dashboard = show_dashboard
         self.autosave = autosave
         self.verbose = verbose
         self.on_error = on_error
-        self.metadata_output_path = (
-            f"concurrent_workflow_name_{name}_id_{self.id}.json"
-        )
         self.max_workers = max_workers
 
         # Initialize agent statuses if agents are provided
@@ -165,6 +159,8 @@ class ConcurrentWorkflow:
             self.agent_statuses = {}
 
         self.reliability_check()
+        self.channel = channel
+        claim_agents(self.agents, channel, self.name)
         self.conversation = self._new_conversation()
 
         if self.show_dashboard is True:
@@ -191,7 +187,8 @@ class ConcurrentWorkflow:
                 scopes :meth:`batch_run` runs each task in.
         """
         return Conversation(
-            name=f"concurrent_workflow_name_{self.name}_id_{self.id}_conversation"
+            name=f"concurrent_workflow_name_{self.name}_id_{self.id}_conversation",
+            channel=self.channel,
         )
 
     def fix_agents(self):
@@ -215,16 +212,15 @@ class ConcurrentWorkflow:
 
         Each submitted task is one agent's LLM call, which is network-bound, so
         CPU count is not the limiting factor. The pool never receives more than
-        ``len(self.agents)`` tasks, making that the natural size. The ceiling
-        guards large rosters against provider rate limits and HTTP connection
-        pool exhaustion.
+        ``len(self.agents)`` tasks, making that the natural size. Pass
+        max_workers to throttle against provider rate limits.
 
         Returns:
             int: Number of worker threads to use, at least 1.
         """
         if self.max_workers is not None:
             return max(1, self.max_workers)
-        return max(1, min(len(self.agents), MAX_CONCURRENT_AGENTS))
+        return max(1, len(self.agents))
 
     def reliability_check(self):
         """
@@ -310,144 +306,59 @@ class ConcurrentWorkflow:
         Returns:
             Union[Dict, List, str]: Formatted conversation history based on output_type.
         """
-        try:
-            self.conversation.add(role="User", content=task)
+        display = (
+            self.display_agent_dashboard
+            if self.show_dashboard
+            else lambda *args, **kwargs: None
+        )
 
-            # Reset agent statuses
+        def run_agent_with_status(
+            agent, task, img, imgs, streaming_callback
+        ):
+            status = self.agent_statuses[agent.agent_name]
+            status["status"] = "running"
+            display()
+            last_update_time = [0]
+
+            def dashboard_callback(name, chunk, is_final):
+                if chunk and not is_final:
+                    status["output"] += chunk
+                    if time.time() - last_update_time[0] >= 0.1:
+                        display()
+                        last_update_time[0] = time.time()
+                if streaming_callback:
+                    streaming_callback(name, chunk, is_final)
+
+            try:
+                output = self._run_agent_with_streaming(
+                    agent, task, img, imgs, dashboard_callback
+                )
+            except Exception as e:
+                status.update(status="error", output=f"Error: {e}")
+                display()
+                raise
+            status.update(status="completed", output=output)
+            display()
+            return output
+
+        try:
             for agent in self.agents:
                 self.agent_statuses[agent.agent_name] = {
                     "status": "pending",
                     "output": "",
                 }
-
-            if self.show_dashboard:
-                self.display_agent_dashboard()
-
-            futures = []
-            results = []
-
-            def run_agent_with_status(agent, task, img, imgs):
-                try:
-                    self.agent_statuses[agent.agent_name][
-                        "status"
-                    ] = "running"
-                    if self.show_dashboard:
-                        self.display_agent_dashboard()
-
-                    last_update_time = [0]
-                    update_interval = 0.1
-
-                    def agent_streaming_callback(chunk: str):
-                        try:
-                            if self.show_dashboard and chunk:
-                                current_output = self.agent_statuses[
-                                    agent.agent_name
-                                ]["output"]
-                                self.agent_statuses[agent.agent_name][
-                                    "output"
-                                ] = (current_output + chunk)
-
-                                current_time = time.time()
-                                if (
-                                    current_time - last_update_time[0]
-                                    >= update_interval
-                                ):
-                                    self.display_agent_dashboard()
-                                    last_update_time[0] = current_time
-
-                            if (
-                                streaming_callback
-                                and chunk is not None
-                            ):
-                                streaming_callback(
-                                    agent.agent_name, chunk, False
-                                )
-                        except Exception as callback_error:
-                            logger.warning(
-                                f"Dashboard streaming callback failed for {agent.agent_name}: {str(callback_error)}"
-                            )
-
-                    output = agent.run(
-                        task=task,
-                        img=img,
-                        imgs=imgs,
-                        streaming_callback=agent_streaming_callback,
-                    )
-
-                    self.agent_statuses[agent.agent_name][
-                        "status"
-                    ] = "completed"
-                    self.agent_statuses[agent.agent_name][
-                        "output"
-                    ] = output
-                    if self.show_dashboard:
-                        self.display_agent_dashboard()
-
-                    if streaming_callback:
-                        streaming_callback(agent.agent_name, "", True)
-
-                    return output
-                except Exception as e:
-                    self.agent_statuses[agent.agent_name][
-                        "status"
-                    ] = "error"
-                    self.agent_statuses[agent.agent_name][
-                        "output"
-                    ] = f"Error: {str(e)}"
-                    if self.show_dashboard:
-                        self.display_agent_dashboard()
-
-                    if streaming_callback:
-                        streaming_callback(
-                            agent.agent_name, f"Error: {str(e)}", True
-                        )
-
-                    raise
-
-            with ContextThreadPoolExecutor(
-                max_workers=self._resolve_max_workers()
-            ) as executor:
-                futures = [
-                    executor.submit(
-                        run_agent_with_status, agent, task, img, imgs
-                    )
-                    for agent in self.agents
-                ]
-                concurrent.futures.wait(futures)
-
-                for future, agent in zip(futures, self.agents):
-                    try:
-                        output = future.result()
-                        results.append((agent.agent_name, output))
-                    except Exception as e:
-                        # Same failure policy as _run: the dashboard must not revoke on_error.
-                        if self.on_error == "raise":
-                            raise
-                        capture_error(
-                            e,
-                            self,
-                            name="ConcurrentWorkflow.agent_error",
-                            agent=getattr(agent, "agent_name", None),
-                        )
-                        logger.error(
-                            f"Agent {agent.agent_name} failed: {str(e)}"
-                        )
-                        results.append(
-                            (agent.agent_name, f"Error: {str(e)}")
-                        )
-
-            for agent_name, output in results:
-                self.conversation.add(role=agent_name, content=output)
-
-            if self.show_dashboard:
-                self.display_agent_dashboard(
-                    "Final ConcurrentWorkflow Dashboard",
-                    is_final=True,
-                )
-
-            return history_output_formatter(
-                conversation=self.conversation, type=self.output_type
+            display()
+            result = self._run(
+                task,
+                img,
+                imgs,
+                streaming_callback,
+                run_agent_with_status,
             )
+            display(
+                "Final ConcurrentWorkflow Dashboard", is_final=True
+            )
+            return result
         finally:
             if self.show_dashboard:
                 formatter.stop_dashboard()
@@ -460,46 +371,49 @@ class ConcurrentWorkflow:
         streaming_callback: Optional[
             Callable[[str, str, bool], None]
         ] = None,
+        run_agent: Optional[Callable] = None,
     ):
         """
-        Execute agents concurrently without dashboard.
+        Execute agents concurrently.
 
-        Internal method that runs all agents concurrently using ThreadPoolExecutor
-        without displaying the dashboard. This is the core execution logic used when
-        dashboard mode is disabled.
+        Internal method that runs all agents concurrently using ThreadPoolExecutor.
+        This is the core execution logic for both the plain and the dashboard runs.
 
         Args:
             task (str): The task to be executed by all agents.
             img (Optional[str]): Single image path for agents that support image input.
             imgs (Optional[List[str]]): List of image paths for agents that support multiple images.
             streaming_callback (Optional[Callable[[str, str, bool], None]]): Callback function for streaming updates.
+            run_agent (Optional[Callable]): Runs one agent, with the same arguments as
+                :meth:`_run_agent_with_streaming`, which is the default. The dashboard
+                passes one that updates each agent's status.
 
         Returns:
             Union[Dict, List, str]: Formatted conversation history based on output_type.
         """
         self.conversation.add(role="User", content=task)
+        run_agent = run_agent or self._run_agent_with_streaming
 
         with ContextThreadPoolExecutor(
             max_workers=self._resolve_max_workers()
         ) as executor:
-            future_to_agent = {
+            futures = [
                 executor.submit(
-                    self._run_agent_with_streaming,
+                    run_agent,
                     agent,
                     task,
                     img,
                     imgs,
                     streaming_callback,
-                ): agent
+                )
                 for agent in self.agents
-            }
+            ]
 
-            for future in concurrent.futures.as_completed(
-                future_to_agent
-            ):
-                agent = future_to_agent[future]
+            for future, agent in zip(futures, self.agents):
                 try:
-                    output = future.result()
+                    output = agent_answer(
+                        agent, fallback=future.result()
+                    )
                     self.conversation.add(
                         role=agent.agent_name, content=output
                     )
@@ -629,6 +543,8 @@ class ConcurrentWorkflow:
             >>> workflow = ConcurrentWorkflow(agents=[agent1, agent2])
             >>> result = workflow.run("Analyze this data")
         """
+        self.conversation = self._new_conversation()
+        reset_agents(self.agents)
         try:
             if self.show_dashboard:
                 result = self.run_with_dashboard(
@@ -639,12 +555,9 @@ class ConcurrentWorkflow:
                     task, img, imgs, streaming_callback
                 )
 
-            self.workspace.save_conversation()
-
             return result
-        except Exception:
+        finally:
             self.workspace.save_conversation()
-            raise
 
     def batch_run(
         self,
@@ -684,7 +597,6 @@ class ConcurrentWorkflow:
                 img = None
                 if imgs is not None and idx < len(imgs):
                     img = imgs[idx]
-                self.conversation = self._new_conversation()
                 results.append(
                     self.run(
                         task=task,
@@ -695,3 +607,14 @@ class ConcurrentWorkflow:
         finally:
             self.conversation = workflow_conversation
         return results
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

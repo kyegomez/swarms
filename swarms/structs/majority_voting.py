@@ -1,11 +1,17 @@
+import asyncio
+import copy
 from concurrent.futures import as_completed
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from swarms.structs.execution_utils import (
     batched_run,
     run_concurrently,
 )
 from swarms.structs.agent import Agent
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -24,6 +30,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
+from swarms.structs.usage_utils import total_usage
 
 CONSENSUS_AGENT_PROMPT = """
 You are the Consensus Agent, responsible for synthesizing and evaluating the responses from a panel of expert agents. Your task is to deliver a rigorous, insightful, and actionable consensus based on their outputs.
@@ -87,10 +94,7 @@ def default_consensus_agent(
         agent_name=name,
         agent_description=description,
         model_name=model_name,
-        max_loops=1,
         system_prompt=system_prompt,
-        dynamic_context_window=True,
-        dynamic_temperature_enabled=True,
         streaming_on=streaming_on_value,
         *args,
         **kwargs,
@@ -129,6 +133,7 @@ class MajorityVoting:
         consensus_agent_description: str = "An agent that uses consensus to generate a final answer.",
         consensus_agent_model_name: str = "gpt-5.4",
         additional_consensus_agent_kwargs: dict = {},
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -149,8 +154,12 @@ class MajorityVoting:
         self.output_type = output_type
         self.consensus_agent_prompt = consensus_agent_prompt
 
+        self.channel = channel
         self.conversation = Conversation(
-            time_enabled=False, *args, **kwargs
+            time_enabled=False,
+            channel=channel,
+            *args,
+            **kwargs,
         )
 
         self.consensus_agent = default_consensus_agent(
@@ -162,6 +171,11 @@ class MajorityVoting:
         )
 
         self.reliability_check()
+        claim_agents(
+            [*(self.agents or []), self.consensus_agent],
+            channel,
+            self.name,
+        )
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -216,13 +230,8 @@ class MajorityVoting:
 
             for future in as_completed(future_to_agent):
                 agent = future_to_agent[future]
-                try:
-                    result = future.result()
-                except Exception as error:
-                    answers[agent.agent_name] = error
-                    continue
                 answers[agent.agent_name] = agent_answer(
-                    agent, fallback=result
+                    agent, fallback=future.result()
                 )
 
         return answers
@@ -254,7 +263,9 @@ class MajorityVoting:
         """
 
         # A reused instance would otherwise carry the previous task's votes
-        self.conversation = Conversation(time_enabled=False)
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
 
         self.conversation.add(
             role="user",
@@ -281,15 +292,13 @@ class MajorityVoting:
 
             if streaming_callback is not None:
 
-                def consensus_streaming_callback(chunk: str):
+                def consensus_streaming_callback(
+                    chunk: str,
+                    agent_name: str = consensus_agent_name,
+                ):
                     """Wrapper for consensus agent streaming callback."""
-                    try:
-                        if chunk is not None and chunk.strip():
-                            streaming_callback(
-                                consensus_agent_name, chunk, False
-                            )
-                    except Exception as callback_error:
-                        raise callback_error
+                    if chunk is not None and chunk.strip():
+                        streaming_callback(agent_name, chunk, False)
 
             else:
                 consensus_streaming_callback = None
@@ -314,7 +323,7 @@ class MajorityVoting:
                 content=consensus_output,
             )
 
-        self.workspace.save_conversation()
+        self.workspace.save_conversation(self.conversation)
 
         return history_output_formatter(
             conversation=self.conversation,
@@ -337,11 +346,21 @@ class MajorityVoting:
         """
         return batched_run(self.run, tasks, *args, **kwargs)
 
+    def _clone_for_task(self) -> "MajorityVoting":
+        """Build a copy of this system for one concurrent task.
+
+        ``run`` replaces ``self.conversation`` and every voter writes into
+        it, so one instance cannot serve several threads. The copy shares
+        the agents, as the instance already did; ``run`` gives it its own
+        Conversation.
+        """
+        return copy.copy(self)
+
     def run_concurrently(
         self, tasks: List[str], *args, **kwargs
-    ) -> List[Any]:
+    ) -> Union[List[Any], Dict[Any, Any]]:
         """
-        Runs the majority voting system concurrently.
+        Runs the majority voting system concurrently, each task on its own clone.
 
         Args:
             tasks (List[str]): List of tasks to be performed by the agents.
@@ -351,4 +370,78 @@ class MajorityVoting:
         Returns:
             List[Any]: List of majority votes for each task.
         """
-        return run_concurrently(self.run, tasks, *args, **kwargs)
+        return run_concurrently(
+            lambda task, *a, **kw: self._clone_for_task().run(
+                task, *a, **kw
+            ),
+            tasks,
+            *args,
+            **kwargs,
+        )
+
+    async def arun(
+        self, task: str, max_concurrency: Optional[int] = None
+    ) -> Any:
+        """
+        Run the vote on the event loop, awaiting each agent's arun.
+
+        Args:
+            task (str): The task to be performed by the agents.
+            max_concurrency (Optional[int]): Most voters running at once.
+                Defaults to None, which runs every voter at once.
+
+        Returns:
+            Any: The conversation formatted by output_type, as run returns.
+
+        Raises:
+            ValueError: If max_concurrency is less than 1.
+        """
+        if max_concurrency is not None and max_concurrency < 1:
+            raise ValueError("max_concurrency must be at least 1")
+        semaphore = asyncio.Semaphore(
+            max_concurrency or len(self.agents)
+        )
+
+        async def _answer(agent: Agent) -> Any:
+            prior, turn = split_last_turn(
+                messages_for(agent.agent_name, self.conversation)
+            )
+            async with semaphore:
+                result = await agent.arun(task=turn, messages=prior)
+            return agent_answer(agent, fallback=result)
+
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
+        self.conversation.add(role="user", content=task)
+
+        for _ in range(self.max_loops):
+            votes = await asyncio.gather(
+                *(_answer(agent) for agent in self.agents)
+            )
+            for agent, vote in zip(self.agents, votes):
+                self.conversation.add(
+                    role=agent.agent_name, content=vote
+                )
+
+            self.consensus_agent.streaming_on = False
+            self.conversation.add(
+                role=self.consensus_agent.agent_name,
+                content=await _answer(self.consensus_agent),
+            )
+
+        self.workspace.save_conversation(self.conversation)
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

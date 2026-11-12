@@ -111,3 +111,28 @@ def test_second_run_does_not_replay_the_first_task():
     assert not any(
         "first task" in text for text in seen
     ), f"previous task replayed into the next run: {seen}"
+
+
+def test_run_returns_the_answer_not_the_turn_prompt(monkeypatch):
+    """Each turn records and returns the agent's answer, not its prompt."""
+    monkeypatch.setattr(
+        Agent,
+        "call_llm",
+        lambda self, task, *args, **kwargs: f"{self.agent_name}-out",
+    )
+    agents = [
+        Agent(
+            agent_name=name,
+            model_name="gpt-5.4",
+            max_loops=1,
+            print_on=False,
+        )
+        for name in ("A", "B")
+    ]
+    swarm = RoundRobinSwarm(agents=agents, max_loops=2)
+
+    assert swarm.run("original task") == "B-out"
+    assert [
+        message["content"]
+        for message in swarm.conversation.conversation_history[1:]
+    ] == ["A-out", "B-out", "A-out", "B-out"]

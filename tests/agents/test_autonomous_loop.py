@@ -21,6 +21,8 @@ Covers four fixed defects:
 * #1962 — ``ContextCompressor.maybe_compress`` was never called on the
   ``max_loops="auto"`` path, so history grew unbounded in exactly the mode
   that needs compression most.
+* #1752 — the loop's three iteration budgets were module constants, so a
+  caller could not bound a run's cost without monkeypatching the module.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms
@@ -35,6 +37,10 @@ import pytest
 from swarms import Agent
 from swarms.agents.autonomous_loop import AutonomousAgentLoop
 from swarms.structs.autonomous_loop_utils import (
+    _BASH_MAX_LENGTH,
+    _check_bash_command,
+    MAX_PLANNING_ATTEMPTS,
+    MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
     get_autonomous_planning_tools,
     glob_tool,
@@ -533,7 +539,7 @@ class TestStructuredTranscript:
         agent = self._run_simple(monkeypatch, tmp_path)
         roles = [
             m["role"]
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._transcript.to_messages()
         ]
 
         assert "assistant" in roles, "no assistant turn was recorded"
@@ -548,7 +554,7 @@ class TestStructuredTranscript:
         agent = self._run_simple(monkeypatch, tmp_path)
         assistant = [
             m
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._transcript.to_messages()
             if m["role"] == "assistant"
         ]
         assert assistant, "no assistant turns"
@@ -569,7 +575,7 @@ class TestStructuredTranscript:
         next request fail outright, so this is the invariant that matters most.
         """
         agent = self._run_simple(monkeypatch, tmp_path)
-        transcript = agent.autonomous_loop._transcript.messages
+        transcript = agent.autonomous_loop._transcript.to_messages()
 
         for index, message in enumerate(transcript):
             if message["role"] != "assistant" or not message.get(
@@ -854,7 +860,7 @@ class TestThinkLoopContainment:
 
         nudges = [
             m
-            for m in agent.autonomous_loop._transcript.messages
+            for m in agent.autonomous_loop._transcript.to_messages()
             if "times in a row" in str(m.get("content"))
         ]
         assert (
@@ -866,7 +872,7 @@ class TestThinkLoopContainment:
         agent, _ = self._thrashing_agent(monkeypatch)
         agent.run("demo")
 
-        transcript = agent.autonomous_loop._transcript.messages
+        transcript = agent.autonomous_loop._transcript.to_messages()
         assert any(
             "Take concrete action now" in str(m.get("content"))
             for m in transcript
@@ -994,6 +1000,125 @@ class TestHandoffPromptIsNotReappended:
         assert agent.system_prompt == before
 
 
+def lookup(query: str) -> str:
+    """Look up a query.
+
+    Args:
+        query: The text to look up.
+
+    Returns:
+        str: The query, unchanged.
+    """
+    return query
+
+
+def define(term: str) -> str:
+    """Define a term.
+
+    Args:
+        term: The term to define.
+
+    Returns:
+        str: The term, unchanged.
+    """
+    return term
+
+
+class TestClientIsReusedAcrossRuns:
+    """Runs with unchanged tools reuse the client and the tool schemas."""
+
+    def _complete_one_run(self, agent, monkeypatch):
+        """Run the loop through one planned step to completion."""
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+        agent.run("test task")
+
+    def _count_builds_and_conversions(self, agent, monkeypatch):
+        """Record every client build and every schema conversion."""
+        import swarms.agents.autonomous_loop as loop_module
+
+        builds, conversions = [], []
+        real_build = agent.llm_handling
+        real_convert = (
+            loop_module.convert_multiple_functions_to_openai_function_schema
+        )
+
+        def build(*args, **kwargs):
+            builds.append(1)
+            return real_build(*args, **kwargs)
+
+        def convert(functions):
+            conversions.append([f.__name__ for f in functions])
+            return real_convert(functions)
+
+        monkeypatch.setattr(agent, "llm_handling", build)
+        monkeypatch.setattr(
+            loop_module,
+            "convert_multiple_functions_to_openai_function_schema",
+            convert,
+        )
+        return builds, conversions
+
+    def test_second_run_rebuilds_and_converts_nothing(
+        self, monkeypatch
+    ):
+        """A second run with the same tools builds no client and converts no schema."""
+        agent = build_agent(tools=[lookup])
+        builds, conversions = self._count_builds_and_conversions(
+            agent, monkeypatch
+        )
+
+        self._complete_one_run(agent, monkeypatch)
+        builds_after_first_run = len(builds)
+        self._complete_one_run(agent, monkeypatch)
+
+        assert builds_after_first_run == 1
+        assert len(builds) == 1
+        assert conversions == []
+
+    def test_a_new_tool_is_converted_and_rebuilds_the_client(
+        self, monkeypatch
+    ):
+        """A tool added between runs is converted alone and the client is rebuilt."""
+        agent = build_agent(tools=[lookup])
+        builds, conversions = self._count_builds_and_conversions(
+            agent, monkeypatch
+        )
+
+        self._complete_one_run(agent, monkeypatch)
+        agent.tools.append(define)
+        self._complete_one_run(agent, monkeypatch)
+
+        assert conversions == [["define"]]
+        assert len(builds) == 2
+        names = [
+            schema["function"]["name"]
+            for schema in agent.tools_list_dictionary
+        ]
+        assert names.count("define") == 1
+
+
 # --------------------------------------------------------------------------
 # #1962 — context compression in the auto loop
 # --------------------------------------------------------------------------
@@ -1003,7 +1128,7 @@ class TestContextCompression:
     """#1962 — ``maybe_compress`` was never called on the auto path.
 
     The compressor measures and compacts ``short_memory``, but the body
-    sent to the model is the loop's ``Transcript`` — so the fix both
+    sent to the model is the loop's transcript — so the fix both
     triggers the compressor between subtask iterations and rebuilds the
     transcript from the summary it returns. Compressing only the mirror
     would leave the request payload growing unbounded.
@@ -1026,7 +1151,7 @@ class TestContextCompression:
         loop._say_user("seed")
 
         assert loop._maybe_compress_context() is False
-        assert len(loop._transcript) == 1
+        assert len(loop._transcript.to_messages()) == 1
 
     def test_below_threshold_leaves_the_transcript_alone(self):
         agent = build_agent(
@@ -1036,7 +1161,7 @@ class TestContextCompression:
         loop._say_user("seed")
 
         assert loop._maybe_compress_context() is False
-        assert len(loop._transcript) == 1
+        assert len(loop._transcript.to_messages()) == 1
 
     def test_compression_rebuilds_the_transcript(self):
         agent = build_agent()
@@ -1052,8 +1177,8 @@ class TestContextCompression:
 
         # The request body is now a single user turn holding the
         # summary, not the six accumulated turns.
-        assert len(loop._transcript) == 1
-        seeded = loop._transcript[0]
+        assert len(loop._transcript.to_messages()) == 1
+        seeded = loop._transcript.to_messages()[0]
         assert seeded["role"] == "user"
         assert "[Compressed Memory Summary]" in seeded["content"]
         assert "CANNED SUMMARY" in seeded["content"]
@@ -1144,7 +1269,52 @@ class TestContextCompression:
         )
 
         assert loop._maybe_compress_context() is False
-        assert len(loop._transcript) == 1
+        assert len(loop._transcript.to_messages()) == 1
+
+
+class TestRunBashSteersFileWritesToTheFileTools:
+    """A worker that writes a report through `cat > file << EOF` hits the
+    length limit and, told only "too long", shrinks the file and tries again
+    for minutes. The rejection has to name the tool it should use instead.
+    """
+
+    def test_long_heredoc_is_pointed_at_create_file(self):
+        body = "line of report text\n" * 40
+        command = f"cat > /tmp/report.md << 'EOF'\n{body}EOF"
+        assert len(command) > _BASH_MAX_LENGTH
+
+        reason = _check_bash_command(command)
+
+        assert reason is not None
+        assert "create_file" in reason and "update_file" in reason
+
+    def test_long_redirect_is_pointed_at_create_file(self):
+        command = "echo '" + "x" * _BASH_MAX_LENGTH + "' > out.txt"
+
+        assert "create_file" in _check_bash_command(command)
+
+    def test_long_plain_command_is_told_to_split(self):
+        command = "ls " + " ".join(f"dir{i}" for i in range(200))
+        assert len(command) > _BASH_MAX_LENGTH
+
+        reason = _check_bash_command(command)
+
+        assert "Split it" in reason
+        assert "create_file" not in reason
+
+    def test_short_writes_are_still_allowed(self):
+        assert _check_bash_command("echo hi > notes.txt") is None
+        assert (
+            _check_bash_command("cat > a.txt << 'EOF'\nhi\nEOF")
+            is None
+        )
+
+    def test_tool_description_says_not_to_write_files_with_bash(self):
+        tools = {
+            t["function"]["name"]: t["function"]
+            for t in get_autonomous_planning_tools()
+        }
+        assert "create_file" in tools["run_bash"]["description"]
 
 
 if __name__ == "__main__":
@@ -1244,3 +1414,192 @@ class TestGlobTool:
             "pattern",
             "path",
         }
+
+
+class TestFinalSummaryShape:
+    """The complete_task path returns the same shape as the other paths."""
+
+    def test_complete_task_result_follows_output_type(
+        self, monkeypatch
+    ):
+        agent = build_agent(output_type="list")
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="all done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+
+        result = agent.run("test task")
+
+        assert isinstance(result, list)
+
+
+class TestIterationLimitsAreConfigurable:
+    """The three budgets bound a run's cost, so they must be settable per agent."""
+
+    def _thinks_forever(self, agent, monkeypatch, *steps):
+        """Script a model that plans, then only ever calls `think`."""
+        turn = {"n": 0}
+
+        def scripted(task=None, *args, **kwargs):
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return plan(*steps)
+            return [
+                tool_call(
+                    "think",
+                    current_state=f"state {turn['n']}",
+                    analysis="pondering",
+                    next_actions=["keep thinking"],
+                    confidence=0.5,
+                )
+            ]
+
+        monkeypatch.setattr(agent, "call_llm", scripted)
+        return turn
+
+    def test_the_defaults_are_the_module_constants(self):
+        agent = build_agent()
+
+        assert agent.max_planning_attempts == MAX_PLANNING_ATTEMPTS
+        assert agent.max_subtask_iterations == MAX_SUBTASK_ITERATIONS
+        assert agent.max_subtask_loops == MAX_SUBTASK_LOOPS
+
+    def test_the_subtask_budget_is_per_agent(self, monkeypatch):
+        capped = build_agent(think_tool=True, max_subtask_loops=3)
+        capped_turns = self._thinks_forever(
+            capped, monkeypatch, ("s1", [])
+        )
+        capped.run("demo")
+
+        default = build_agent(think_tool=True)
+        default_turns = self._thinks_forever(
+            default, monkeypatch, ("s1", [])
+        )
+        default.run("demo")
+
+        assert status_of(capped, "s1") == "failed"
+        assert capped_turns["n"] < default_turns["n"]
+
+    def test_the_run_budget_stops_the_outer_loop(self, monkeypatch):
+        agent = build_agent(
+            think_tool=True,
+            max_subtask_loops=2,
+            max_subtask_iterations=1,
+        )
+        self._thinks_forever(
+            agent, monkeypatch, ("s1", []), ("s2", []), ("s3", [])
+        )
+
+        agent.run("demo")
+
+        assert status_of(agent, "s2") == "pending"
+        assert status_of(agent, "s3") == "pending"
+
+    def test_the_planning_budget_bounds_planning_retries(
+        self, monkeypatch
+    ):
+        agent = build_agent(max_planning_attempts=2)
+        calls = script_llm(
+            agent,
+            monkeypatch,
+            ["not a plan", "still not a plan", "nor this one"],
+        )
+
+        with pytest.raises(Exception):
+            agent.run("demo")
+
+        assert len(calls) == 2
+
+    def test_the_total_budget_counts_llm_calls_not_subtasks(
+        self, monkeypatch
+    ):
+        """
+        max_subtask_iterations is documented as the run's worst-case number
+        of LLM calls. It used to be incremented once per subtask selection,
+        so the real ceiling was that many times max_subtask_loops. One
+        planning call and one summary call bracket the execution budget.
+        """
+        agent = build_agent(
+            max_subtask_iterations=3, max_subtask_loops=20
+        )
+        turn = {"n": 0}
+
+        def never_finishes(task=None, *args, **kwargs):
+            turn["n"] += 1
+            if turn["n"] == 1:
+                return plan(("s1", []), ("s2", []), ("s3", []))
+            return "no action taken"
+
+        monkeypatch.setattr(agent, "call_llm", never_finishes)
+        agent.run("demo")
+
+        assert turn["n"] == agent.max_subtask_iterations + 2
+
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "max_planning_attempts",
+            "max_subtask_iterations",
+            "max_subtask_loops",
+        ],
+    )
+    def test_a_budget_below_one_is_rejected(self, name):
+        with pytest.raises(ValueError):
+            build_agent(**{name: 0})
+
+
+class TestRunStreamUsesTheAutonomousLoop:
+    def test_run_stream_plans_and_completes_like_run(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        script = [
+            plan(("step1", [])),
+            [
+                tool_call(
+                    "subtask_done",
+                    task_id="step1",
+                    summary="done",
+                    success=True,
+                )
+            ],
+            [
+                tool_call(
+                    "complete_task",
+                    task_id="main",
+                    summary="all done",
+                    success=True,
+                )
+            ],
+        ]
+        calls = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            calls.append(task)
+            return script.pop(0)
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        list(agent.run_stream("test task"))
+
+        assert len(calls) == 3
+        assert status_of(agent, "step1") == "completed"

@@ -26,11 +26,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [broadcast_function_example.py](broadcast_examples/broadcast_function_example.py) - `broadcast()`: the async functional form
 - [README.md](broadcast_examples/README.md) - Detailed documentation
 
-## Caching Examples
-- [example_multi_agent_caching.py](caching_examples/example_multi_agent_caching.py) - Multi-agent caching implementation
-- [quick_start_agent_caching.py](caching_examples/quick_start_agent_caching.py) - Quick start guide for caching
-- [test_simple_agent_caching.py](caching_examples/test_simple_agent_caching.py) - Simple caching tests
-
 ## Concurrent Examples
 - [asi.py](concurrent_examples/asi.py) - ASI (Artificial Super Intelligence) example
 - [concurrent_example_dashboard.py](concurrent_examples/concurrent_example_dashboard.py) - Dashboard for concurrent workflows
@@ -72,9 +67,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [graph_workflow_basic.py](graphworkflow_examples/graph_workflow_basic.py) - Basic graph workflow
 - [graph_workflow_example.py](graphworkflow_examples/graph_workflow_example.py) - Complete graph workflow example
 - [graph_workflow_validation.py](graphworkflow_examples/graph_workflow_validation.py) - Workflow validation
-- [test_enhanced_json_export.py](graphworkflow_examples/test_enhanced_json_export.py) - JSON export testing
-- [test_graph_workflow_caching.py](graphworkflow_examples/test_graph_workflow_caching.py) - Caching tests
-- [test_graphviz_visualization.py](graphworkflow_examples/test_graphviz_visualization.py) - Visualization tests
 - [test_parallel_processing_example.py](graphworkflow_examples/test_parallel_processing_example.py) - Parallel processing tests
 - [graph/](graphworkflow_examples/graph/) - Core graph utilities
 - [example_images/](graphworkflow_examples/example_images/) - Visualization images
@@ -94,19 +86,13 @@ This directory contains comprehensive examples demonstrating various multi-agent
 - [medical_heavy_swarm_example.py](heavy_swarm_examples/medical_heavy_swarm_example.py) - Medical heavy swarm
 
 ## Hierarchical Swarm
-- [hierarchical_swarm_basic_demo.py](hiearchical_swarm/hierarchical_swarm_basic_demo.py) - Basic hierarchical demo
-- [hierarchical_swarm_batch_demo.py](hiearchical_swarm/hierarchical_swarm_batch_demo.py) - Batch processing demo
-- [hierarchical_swarm_comparison_demo.py](hiearchical_swarm/hierarchical_swarm_comparison_demo.py) - Comparison demo
 - [hierarchical_swarm_example.py](hiearchical_swarm/hierarchical_swarm_example.py) - Main hierarchical example
-- [hierarchical_swarm_streaming_demo.py](hiearchical_swarm/hierarchical_swarm_streaming_demo.py) - Streaming demo
-- [hierarchical_swarm_streaming_example.py](hiearchical_swarm/hierarchical_swarm_streaming_example.py) - Streaming example
 - [hs_interactive.py](hiearchical_swarm/hs_interactive.py) - Interactive hierarchical swarm
 - [hs_stock_team.py](hiearchical_swarm/hs_stock_team.py) - Stock trading team
 - [hybrid_hiearchical_swarm.py](hiearchical_swarm/hybrid_hiearchical_swarm.py) - Hybrid approach
 - [sector_analysis_hiearchical_swarm.py](hiearchical_swarm/sector_analysis_hiearchical_swarm.py) - Sector analysis
 - [hiearchical_examples/](hiearchical_swarm/hiearchical_examples/) - Additional hierarchical examples
 - [hiearchical_swarm_ui/](hiearchical_swarm/hiearchical_swarm_ui/) - UI components
-- [hscf/](hiearchical_swarm/hscf/) - Hierarchical framework examples
 
 ## Majority Voting
 - [majority_voting_example_new.py](majority_voting/majority_voting_example_new.py) - Updated voting example
@@ -146,9 +132,6 @@ This directory contains comprehensive examples demonstrating various multi-agent
 
 ## Swarm Router
 - [swarm_router/](swarm_router/) - Routing and load balancing
-
-## Swarm Arrange
-- [swarmarrange/](swarmarrange/) - Agent arrangement utilities
 
 ## Swarms API
 - [swarms_api_examples/](swarms_api_examples/) - API integration examples

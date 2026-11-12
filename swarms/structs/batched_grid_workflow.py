@@ -3,10 +3,12 @@ from typing import List, Optional
 
 from loguru import logger
 
+from swarms.structs.agent import reset_agents
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
 )
 from swarms.structs.omni_agent_types import AgentType
+from swarms.structs.usage_utils import total_usage
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.generate_id import generate_id
 
@@ -89,12 +91,18 @@ class BatchedGridWorkflow:
         """
         Run the batched grid workflow with the given tasks.
 
+        Each call starts every Agent from a clean history, so messages
+        added to its ``short_memory`` by hand before the call are
+        dropped. The system prompt and seeded ``messages`` are kept.
+
         Args:
             tasks: List of tasks to execute.
 
         Returns:
             List: Results from all execution loops.
         """
+        reset_agents(self.agents)
+
         results = []
         current_loop = 0
 
@@ -113,6 +121,10 @@ class BatchedGridWorkflow:
     def run(self, tasks: List[str]):
         """
         Run the batched grid workflow with the given tasks.
+
+        Each call starts every Agent from a clean history, so messages
+        added to its ``short_memory`` by hand before the call are
+        dropped. The system prompt and seeded ``messages`` are kept.
 
         Args:
             tasks: List of tasks to execute.
@@ -135,3 +147,14 @@ class BatchedGridWorkflow:
                 )
             )
             raise
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

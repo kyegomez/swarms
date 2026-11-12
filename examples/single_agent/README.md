@@ -68,7 +68,9 @@ Feature-specific examples — what an agent can do.
 - [streaming_example.py](capabilities/streaming/streaming_example.py) — Token streaming
 - [agent_streaming.py](capabilities/streaming/agent_streaming.py) — Streaming agent
 - [example_streaming_tools.py](capabilities/streaming/example_streaming_tools.py) — Streaming with tools
-- [test_agent_streaming_and_loop.py](capabilities/streaming/test_agent_streaming_and_loop.py) — Streaming + loops
+
+### output_schema/
+- [output_schema_example.py](capabilities/output_schema/output_schema_example.py) — `run` returns a validated Pydantic instance
 
 ### prompt_caching/
 - [prompt_caching_example.py](capabilities/prompt_caching/prompt_caching_example.py) — Overview
@@ -132,6 +134,5 @@ Configuration, output formats, and misc helpers.
 - [grok_4_agent.py](utils/grok_4_agent.py) — Grok 4 agent
 - [list_agent_output_types.py](utils/list_agent_output_types.py) — Output types
 - [markdown_agent.py](utils/markdown_agent.py) — Markdown output
-- [xml_output_example.py](utils/xml_output_example.py) — XML output
 - **autosaving_examples/** — [autosave_basic_example.py](utils/autosaving_examples/autosave_basic_example.py), [autosave_config_access_example.py](utils/autosaving_examples/autosave_config_access_example.py), [autosave_directory_structure_example.py](utils/autosaving_examples/autosave_directory_structure_example.py), [autosave_recovery_example.py](utils/autosaving_examples/autosave_recovery_example.py)
 - **transform_prompts/** — [transforms_agent_example.py](utils/transform_prompts/transforms_agent_example.py), [transforms_examples.py](utils/transform_prompts/transforms_examples.py)

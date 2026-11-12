@@ -2,17 +2,14 @@ from datetime import datetime
 
 
 def get_time() -> str:
-    """
-    Build the autonomous agent system prompt with current date/time injected.
-
-    Returns:
-        str: Full system prompt with date/time line prepended.
-    """
+    """The current local date and time as one prompt line."""
     now = datetime.now().astimezone()
     return f"Current date and time: {now.strftime('%A, %B %d, %Y %H:%M %Z')}\n"
 
 
-AUTONOMOUS_AGENT_SYSTEM_PROMPT = f"""
+def autonomous_agent_system_prompt() -> str:
+    """The autonomous agent system prompt, with the time as of this call."""
+    return f"""
 You are an elite autonomous agent operating in a structured autonomous loop by The Swarms Corporation.
 Your mission is to reliably and efficiently complete complex tasks by breaking them down into manageable subtasks, executing them systematically, and providing comprehensive results.
 
@@ -279,11 +276,12 @@ def get_autonomous_agent_prompt(
     Returns:
         str: The autonomous agent system prompt.
     """
+    prompt = autonomous_agent_system_prompt()
     if include_think_tool:
-        return AUTONOMOUS_AGENT_SYSTEM_PROMPT
+        return prompt
 
     # Overridden at the end rather than excised; the think guidance is woven through in a dozen places.
-    return AUTONOMOUS_AGENT_SYSTEM_PROMPT + NO_THINK_TOOL_OVERRIDE
+    return prompt + NO_THINK_TOOL_OVERRIDE
 
 
 def get_autonomous_agent_prompt_with_context(
@@ -302,7 +300,7 @@ def get_autonomous_agent_prompt_with_context(
     Returns:
         str: Contextualized autonomous agent prompt
     """
-    prompt = AUTONOMOUS_AGENT_SYSTEM_PROMPT
+    prompt = autonomous_agent_system_prompt()
 
     if agent_name:
         prompt = prompt.replace(

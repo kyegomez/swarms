@@ -1,6 +1,10 @@
 from swarms.structs.advisor_swarm import AdvisorSwarm
 from swarms.structs.agent import Agent
-from swarms.structs.agent_loader import AgentLoader
+from swarms.structs.agent_loader import (
+    AgentLoader,
+    load_agent_from_markdown,
+    load_agents_from_markdown,
+)
 from swarms.structs.agent_rearrange import AgentRearrange, rearrange
 from swarms.structs.async_subagent import (
     SubagentRegistry,
@@ -14,11 +18,23 @@ from swarms.structs.auto_swarm_builder import AutoSwarmBuilder
 from swarms.structs.batch_agent_execution import batch_agent_execution
 from swarms.structs.batched_grid_workflow import BatchedGridWorkflow
 from swarms.structs.broadcast import Broadcast, broadcast
+from swarms.structs.comms_channel import CommsChannel
+from swarms.structs.agentmail_channel import AgentMailChannel
+from swarms.structs.file_channel import FileChannel
+from swarms.structs.http_channel import HttpChannel
+from swarms.structs.queue_channel import QueueChannel
+from swarms.structs.smtp_channel import SmtpChannel
+from swarms.structs.sqlite_channel import SqliteChannel
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
 from swarms.structs.debate_with_judge import DebateWithJudge
+from swarms.structs.decision_model import (
+    DecisionModel,
+    get_decision_model_prices,
+    get_decision_models,
+)
 from swarms.structs.graph_workflow import (
     Edge,
     GraphWorkflow,
@@ -63,12 +79,13 @@ from swarms.structs.planner_generator_evaluator import (
     PlannerGeneratorEvaluator,
     StepContract,
 )
+from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
+from swarms.structs.self_organize import SelfOrganizingSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
-from swarms.structs.swarm_rearrange import SwarmRearrange
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -88,16 +105,27 @@ from swarms.structs.check_models import (
 )
 
 
+from swarms.structs.a2a_client import A2AClient
+from swarms.structs.a2a_server import A2AServer
+
 __all__ = [
     "AdvisorSwarm",
     "Agent",
     "ConcurrentWorkflow",
     "SocialAlgorithms",
+    "CommsChannel",
+    "AgentMailChannel",
+    "FileChannel",
+    "HttpChannel",
+    "QueueChannel",
+    "SmtpChannel",
+    "SqliteChannel",
     "Conversation",
     "GroupChat",
     "MajorityVoting",
     "AgentRearrange",
     "rearrange",
+    "PlannerWorkerSwarm",
     "RoundRobinSwarm",
     "SequentialWorkflow",
     "MixtureOfAgents",
@@ -119,7 +147,6 @@ __all__ = [
     "SpreadSheetSwarm",
     "SwarmRouter",
     "SwarmType",
-    "SwarmRearrange",
     "batched_grid_agent_execution",
     "run_agent_async",
     "run_agents_concurrently",
@@ -127,7 +154,6 @@ __all__ = [
     "run_agents_concurrently_multiprocess",
     "run_agents_with_different_tasks",
     "run_single_agent",
-    "GroupChat",
     "MultiAgentRouter",
     "ModelRouter",
     "HybridHierarchicalClusterSwarm",
@@ -145,9 +171,15 @@ __all__ = [
     "HeavySwarm",
     "CronJob",
     "AgentLoader",
+    "load_agent_from_markdown",
+    "load_agents_from_markdown",
     "BatchedGridWorkflow",
     "SelfMoASeq",
+    "SelfOrganizingSwarm",
     "DebateWithJudge",
+    "DecisionModel",
+    "get_decision_model_prices",
+    "get_decision_models",
     "PlannerGeneratorEvaluator",
     "StepContract",
     "EvaluationReport",
@@ -161,4 +193,6 @@ __all__ = [
     "deploy_as_mcp",
     "get_available_models",
     "is_model_available",
+    "A2AClient",
+    "A2AServer",
 ]
