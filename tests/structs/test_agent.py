@@ -1088,11 +1088,19 @@ class TestAutonomousAgentLoop:
             **kwargs,
         )
 
-    def test_loop_is_constructed_and_back_references_agent(self):
-        """Every agent owns a loop, and the loop can reach its agent."""
-        agent = self._agent()
-        assert isinstance(agent.autonomous_loop, AutonomousAgentLoop)
-        assert agent.autonomous_loop.agent is agent
+    def test_loop_is_built_on_first_read_and_back_references_agent(
+        self,
+    ):
+        """The loop and its transcript are built on first read, once."""
+        with patch(
+            "swarms.agents.autonomous_loop.Conversation"
+        ) as transcript:
+            agent = self._agent(max_loops=1)
+            assert transcript.call_count == 0
+            loop = agent.autonomous_loop
+        assert isinstance(loop, AutonomousAgentLoop)
+        assert loop.agent is agent
+        assert agent.autonomous_loop is loop
 
     def test_loop_owns_the_tool_methods_not_the_agent(self):
         """The moved methods live on the loop; Agent must not regrow them."""
