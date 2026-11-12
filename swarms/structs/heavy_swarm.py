@@ -1,7 +1,8 @@
 import concurrent.futures
 import json
+import threading
 import traceback
-from typing import Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from swarms.agents.heavy_swarm_agents import (
     SwarmVariant,
@@ -26,6 +27,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
+    bind_context,
     capture_init,
     trace_run,
 )
@@ -565,6 +567,52 @@ class HeavySwarm(SerializableMixin):
         """
         for key in self._question_usage:
             self._question_usage[key] += call_usage.get(key, 0)
+
+    def _call_with_timeout(
+        self,
+        phase: str,
+        call: Callable[..., Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Run one model call, giving up once the swarm's timeout passes.
+
+        The call runs on a daemon thread, so a call that never returns can't
+        hold run or the process's exit. Python can't stop that thread; it
+        finishes in the background.
+
+        Args:
+            phase (str): The phase named in the error, such as "Synthesis".
+            call (Callable[..., Any]): The model call to run.
+            *args (Any): Positional arguments for the call.
+            **kwargs (Any): Keyword arguments for the call.
+
+        Returns:
+            Any: What the call returns.
+
+        Raises:
+            TimeoutError: If the call is still running when the timeout passes.
+        """
+        outcome: Dict[str, Any] = {}
+        bound_call = bind_context(call)
+
+        def target() -> None:
+            try:
+                outcome["value"] = bound_call(*args, **kwargs)
+            except BaseException as error:
+                outcome["error"] = error
+
+        thread = threading.Thread(target=target, daemon=True)
+        thread.start()
+        thread.join(self.timeout)
+
+        if thread.is_alive():
+            raise TimeoutError(
+                f"{phase} did not finish within {self.timeout} seconds"
+            )
+        if "error" in outcome:
+            raise outcome["error"]
+        return outcome["value"]
 
     def create_agents(self):
         """Build the swarm's agents.
@@ -1270,7 +1318,9 @@ class HeavySwarm(SerializableMixin):
         Be thorough, objective, and ensure your synthesis is easy to follow for a non-technical audience.
         """
 
-        return synthesis_agent.run(
+        return self._call_with_timeout(
+            "Synthesis",
+            synthesis_agent.run,
             synthesis_prompt,
             messages=messages_for(
                 synthesis_agent.agent_name or "", self.conversation
@@ -1450,7 +1500,9 @@ class HeavySwarm(SerializableMixin):
         )
 
         # Get raw tool calls from LiteLLM
-        raw_output = question_agent.run(task, img=img)
+        raw_output = self._call_with_timeout(
+            "Question generation", question_agent.run, task, img=img
+        )
 
         # Parse the tool calls and return clean data
         out = self._parse_tool_calls(raw_output)

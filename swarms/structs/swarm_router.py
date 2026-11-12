@@ -315,7 +315,8 @@ class SwarmRouter(SerializableMixin):
         heavy_swarm_max_loops (int, optional): Iteration count for ``HeavySwarm``
             multi-loop refinement. Defaults to ``1``.
         heavy_swarm_timeout (int, optional): Per-worker wall-clock cap (seconds)
-            for ``HeavySwarm``. Defaults to ``900``.
+            for HeavySwarm, also applied to question generation and
+            synthesis. Defaults to 900.
         council_judge_model_name (str, optional): Judge model for
             ``CouncilAsAJudge``.
         verbose (bool, optional): Emit info/debug logs (reliability check,

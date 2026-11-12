@@ -12,6 +12,8 @@ Covers:
 """
 
 import os
+import threading
+import time
 
 import pytest
 from dotenv import load_dotenv
@@ -889,6 +891,39 @@ def test_second_run_carries_nothing_from_the_first(monkeypatch):
 
     assert "research on glaciers" in second
     assert "volcanoes" not in second
+
+
+@pytest.mark.parametrize("show_dashboard", [False, True])
+@pytest.mark.parametrize(
+    "phase", ["Question generation", "Synthesis"]
+)
+def test_a_hung_question_or_synthesis_call_times_out(
+    monkeypatch, phase, show_dashboard
+):
+    TestUsage()._fake_question_llm(monkeypatch)
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+        timeout=0.3,
+        show_dashboard=show_dashboard,
+    )
+    TestUsage._stub_agents(swarm)
+    release = threading.Event()
+    hang = lambda *args, **kwargs: release.wait(3)  # noqa: E731
+    if phase == "Synthesis":
+        swarm.agents["synthesis"].run = hang
+    else:
+        monkeypatch.setattr(
+            "swarms.structs.heavy_swarm.LiteLLM.run", hang
+        )
+
+    start = time.monotonic()
+    with pytest.raises(TimeoutError, match=f"{phase} did not finish"):
+        swarm.run("task")
+    elapsed = time.monotonic() - start
+    release.set()
+
+    assert elapsed < 1.5
 
 
 @pytest.mark.parametrize(
