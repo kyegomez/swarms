@@ -1311,7 +1311,6 @@ class Agent:
 
             if self.autosave is True:
                 self.save()
-                self.workspace.save_conversation(self.short_memory)
                 self._autosave_config_step(loop_count=loop_count)
 
             # Output formatting based on output_type
@@ -1341,21 +1340,22 @@ class Agent:
         self, loop_count: Optional[int] = None
     ) -> None:
         """
-        Write a config snapshot to the agent workspace, once per step.
+        Write the config and the conversation to the workspace, once per step.
 
         Args:
             loop_count (Optional[int]): Current loop, recorded in the
                 saved metadata and used only for logging. Defaults to None.
 
         Note:
-            Writes ``config.json`` under
+            Writes config.json, without the conversation, and
+            conversation_history.json under
             workspace_dir/agents/{name-of-agent}-{uuid}/. Never raises -
             autosave must not interrupt a run.
         """
         if not self.autosave:
             return
 
-        # The conversation goes to conversation_history.json instead.
+        self.workspace.save_conversation(self.short_memory)
         path = self.workspace.save_config(
             additional_metadata={"loop_count": loop_count},
             exclude=("short_memory",),
@@ -1370,7 +1370,6 @@ class Agent:
         if self.autosave is True:
             # Save full state
             self.save()
-            self.workspace.save_conversation(self.short_memory)
             # Also save config step on error
             self._autosave_config_step(loop_count=None)
 
@@ -1887,7 +1886,6 @@ Subtask Breakdown:
 
             if self.autosave is True:
                 self.save()
-                self.workspace.save_conversation(self.short_memory)
                 self._autosave_config_step(loop_count=loop_count)
 
             return history_output_formatter(
