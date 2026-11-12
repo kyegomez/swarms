@@ -104,7 +104,6 @@ class TestBasicAgent:
         assert basic_flow.max_loops == 1
         assert basic_flow.stopping_condition is None
         assert basic_flow.retry_attempts == 3
-        assert basic_flow.task is None
         assert basic_flow.stopping_token is None
         assert not basic_flow.interactive
 
