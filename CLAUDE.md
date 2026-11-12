@@ -1202,6 +1202,32 @@ def collect_answers(
 
 ---
 
+## Docstrings: no backticks
+
+Never put a backtick in a docstring, anywhere in the repo: source, tests and examples alike. That covers single backticks around a name, double backticks, and Sphinx roles such as `` :meth:`close` `` or `` :class:`Agent` ``. Write names as plain words.
+
+A docstring is read as plain text in an editor, in `help()` and in tool schemas sent to a model, where backticks are only noise. Backticks are still fine in Markdown files, comments and the docs site.
+
+```python
+# Good
+def close(self) -> None:
+    """Release one open call; the last release closes every session.
+
+    Waits up to the manager's timeout, or 30 seconds when unset.
+    """
+```
+
+```python
+# Bad
+def close(self) -> None:
+    """Release one :meth:`open`; the last release closes every session.
+
+    Waits up to the manager's ``timeout``, or `30` when unset.
+    """
+```
+
+---
+
 ## Comments: one line, only when needed
 
 A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all. When a line really is hard to follow, give it one short, plain comment saying why it is there.
