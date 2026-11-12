@@ -1,5 +1,7 @@
+import asyncio
 import time
-from typing import Callable, List, Optional, Union
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
@@ -24,6 +26,9 @@ from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="concurrent_workflow")
+
+# Kept to tell when run or arun has been replaced on Agent, a subclass or an instance.
+AGENT_RUN, AGENT_ARUN = Agent.run, Agent.arun
 
 
 class ConcurrentWorkflow:
@@ -52,9 +57,9 @@ class ConcurrentWorkflow:
         on_error (str): Failure policy for an agent that raises. ``"store"``
             records the error string as that agent's output and lets the other
             agents finish; ``"raise"`` propagates the exception and aborts the run
-        max_workers (Optional[int]): Thread pool size for concurrent agent
-            execution. Agent calls are network-bound, so this defaults to
-            ``len(agents)`` rather than deriving from CPU count.
+        max_workers (Optional[int]): Most agents running at once. Agent calls
+            are network-bound, so this defaults to ``len(agents)`` rather
+            than deriving from CPU count.
         swarm_workspace_dir (Optional[str]): Resolved workspace directory used for
             autosave, or None when autosave is disabled or setup failed
         conversation (Conversation): Conversation object for storing agent interactions
@@ -128,10 +133,9 @@ class ConcurrentWorkflow:
                 records the error string as that agent's output and lets the
                 remaining agents finish; ``"raise"`` propagates the exception and
                 aborts the run.
-            max_workers (Optional[int]): Thread pool size for concurrent agent
-                execution. Agent calls are network-bound rather than CPU-bound,
-                so when omitted the pool is sized at ``len(agents)``. Set it to
-                throttle large rosters. See :meth:`_resolve_max_workers`.
+            max_workers (Optional[int]): Most agents running at once. Agent
+                calls are network-bound rather than CPU-bound, so when omitted
+                every agent runs at once. Set it to throttle large rosters.
 
         Raises:
             ValueError: If no agents are provided or the agents list is empty.
@@ -411,33 +415,177 @@ class ConcurrentWorkflow:
 
             for future, agent in zip(futures, self.agents):
                 try:
-                    output = agent_answer(
-                        agent, fallback=future.result()
-                    )
-                    self.conversation.add(
-                        role=agent.agent_name, content=output
-                    )
-                except Exception as e:
-                    if self.on_error == "raise":
-                        raise
-                    # Track the swallowed per-agent failure so it isn't lost.
-                    capture_error(
-                        e,
-                        self,
-                        name="ConcurrentWorkflow.agent_error",
-                        agent=getattr(agent, "agent_name", None),
-                    )
-                    logger.error(
-                        f"Agent {agent.agent_name} failed: {str(e)}"
-                    )
-                    self.conversation.add(
-                        role=f"{agent.agent_name} (failed)",
-                        content=f"Error: {str(e)}",
-                    )
+                    outcome = future.result()
+                except Exception as error:
+                    outcome = error
+                self._record_outcome(agent, outcome)
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
         )
+
+    def _record_outcome(
+        self, agent: Union[Agent, Callable], outcome: Any
+    ) -> None:
+        """
+        Add one agent's answer or failure to the conversation.
+
+        Args:
+            agent (Union[Agent, Callable]): The agent that ran.
+            outcome (Any): What the agent returned, or the exception it raised.
+
+        Raises:
+            BaseException: The agent's exception, when on_error is "raise".
+        """
+        if not isinstance(outcome, BaseException):
+            self.conversation.add(
+                role=agent.agent_name,
+                content=agent_answer(agent, fallback=outcome),
+            )
+            return
+
+        if self.on_error == "raise" or not isinstance(
+            outcome, Exception
+        ):
+            raise outcome
+
+        # Track the swallowed per-agent failure so it isn't lost.
+        capture_error(
+            outcome,
+            self,
+            name="ConcurrentWorkflow.agent_error",
+            agent=getattr(agent, "agent_name", None),
+        )
+        logger.error(f"Agent {agent.agent_name} failed: {outcome}")
+        self.conversation.add(
+            role=f"{agent.agent_name} (failed)",
+            content=f"Error: {outcome}",
+        )
+
+    def _runs_on_event_loop(self) -> bool:
+        """
+        Decide whether this run can await every agent on one event loop.
+
+        Returns:
+            bool: True when no event loop is running in this thread and every
+                agent is an Agent that uses its own run and arun.
+        """
+        try:
+            asyncio.get_running_loop()
+            return False
+        except RuntimeError:
+            pass
+
+        return all(
+            isinstance(agent, Agent)
+            and type(agent).run is AGENT_RUN
+            and type(agent).arun is AGENT_ARUN
+            and not {"run", "arun"} & vars(agent).keys()
+            for agent in self.agents
+        )
+
+    async def _arun(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ):
+        """
+        Execute agents concurrently on the running event loop.
+
+        Args:
+            task (str): The task to be executed by all agents.
+            img (Optional[str]): Single image path for agents that support image input.
+            imgs (Optional[List[str]]): List of image paths for agents that support multiple images.
+            streaming_callback (Optional[Callable[[str, str, bool], None]]): Callback function for streaming updates.
+
+        Returns:
+            Union[Dict, List, str]: Formatted conversation history based on output_type.
+        """
+        limit = self._resolve_max_workers()
+        # A blocking step inside an agent still gets its own thread, as on the thread path.
+        asyncio.get_running_loop().set_default_executor(
+            ThreadPoolExecutor(max_workers=limit)
+        )
+        self.conversation.add(role="User", content=task)
+        semaphore = asyncio.Semaphore(limit)
+
+        async def run_agent(agent: Agent) -> Any:
+            async with semaphore:
+                return await self._arun_agent_with_streaming(
+                    agent, task, img, imgs, streaming_callback
+                )
+
+        outcomes = await asyncio.gather(
+            *(run_agent(agent) for agent in self.agents),
+            return_exceptions=True,
+        )
+
+        for agent, outcome in zip(self.agents, outcomes):
+            self._record_outcome(agent, outcome)
+
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )
+
+    async def _arun_agent_with_streaming(
+        self,
+        agent: Agent,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ):
+        """
+        Await a single agent with streaming support.
+
+        Args:
+            agent (Agent): The agent to execute.
+            task (str): The task to be executed by the agent.
+            img (Optional[str]): Single image path for agents that support image input.
+            imgs (Optional[List[str]]): List of image paths for agents that support multiple images.
+            streaming_callback (Optional[Callable[[str, str, bool], None]]): Callback function for streaming updates.
+
+        Returns:
+            str: The output from the agent.
+
+        Raises:
+            Exception: If the agent execution fails.
+        """
+        if streaming_callback is None:
+            return await agent.arun(task=task, img=img, imgs=imgs)
+
+        def emit(chunk: str, is_final: bool) -> None:
+            try:
+                streaming_callback(agent.agent_name, chunk, is_final)
+            except Exception as callback_error:
+                logger.warning(
+                    f"Streaming callback failed for {agent.agent_name}: {str(callback_error)}"
+                )
+
+        def agent_streaming_callback(chunk: str) -> None:
+            if chunk is not None:
+                emit(chunk, False)
+
+        try:
+            output = await agent.arun(
+                task=task,
+                img=img,
+                imgs=imgs,
+                streaming_callback=agent_streaming_callback,
+            )
+        except Exception as e:
+            logger.error(f"Agent {agent.agent_name} failed: {str(e)}")
+            emit(f"Error: {str(e)}", True)
+            raise
+
+        emit("", True)
+        return output
 
     def _run_agent_with_streaming(
         self,
@@ -529,6 +677,11 @@ class ConcurrentWorkflow:
         simultaneously on the given task, with optional dashboard monitoring and
         streaming callbacks. Automatically cleans up resources after execution.
 
+        Agents are awaited on one event loop, so a model call holds no thread
+        while it waits. The run uses one thread per agent instead when the
+        dashboard is on, when an event loop is already running in the calling
+        thread, or when an agent is not a plain Agent.
+
         Args:
             task (str): The task to be executed by all agents.
             img (Optional[str]): Single image path for agents that support image input.
@@ -549,6 +702,10 @@ class ConcurrentWorkflow:
             if self.show_dashboard:
                 result = self.run_with_dashboard(
                     task, img, imgs, streaming_callback
+                )
+            elif self._runs_on_event_loop():
+                result = asyncio.run(
+                    self._arun(task, img, imgs, streaming_callback)
                 )
             else:
                 result = self._run(
