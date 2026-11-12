@@ -1,4 +1,5 @@
 import os
+import threading
 from typing import Any
 
 import pytest
@@ -785,14 +786,25 @@ class StubFlatOrchestrator:
         return next(self.outputs)
 
 
-def test_max_workers_defaults_to_cpu_heuristic():
-    swarm = make_recovery_swarm(
-        StubAgent("Director", []),
-        [StubAgent("Worker", ["done"])],
-    )
-    assert swarm.max_workers == max(
-        1, int((os.cpu_count() or 1) * 0.95)
-    )
+def test_orders_run_at_once_unless_max_workers_caps_them(monkeypatch):
+    monkeypatch.setattr(os, "cpu_count", lambda: 2)
+    orders = [
+        HierarchicalOrder(agent_name=f"W{i}", task="Wait.")
+        for i in range(3)
+    ]
+    for max_workers, failed in ((None, 0), (1, 3)):
+        barrier = threading.Barrier(3, timeout=0.5)
+        workers = [StubAgent(f"W{i}", []) for i in range(3)]
+        for worker in workers:
+            worker.run = lambda *args, **kwargs: str(barrier.wait())
+        swarm = make_recovery_swarm(
+            StubAgent("Director", []),
+            workers,
+            max_workers=max_workers,
+            max_agent_retries=0,
+        )
+        _, failures = swarm._execute_orders_once(orders)
+        assert len(failures) == failed
 
 
 def test_max_workers_override_is_used():
