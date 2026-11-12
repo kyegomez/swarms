@@ -97,6 +97,7 @@ class HeavySwarm(SerializableMixin):
         "conversation",
         "dashboard",
         "worker_tools",
+        "_running_workers",
     )
 
     def __init__(
@@ -127,8 +128,11 @@ class HeavySwarm(SerializableMixin):
             timeout (int, optional): Seconds to wait for the worker agents
                 in each loop. A worker still running then gets a "Timeout after
                 N seconds" result and the swarm moves on; its thread can't be
-                stopped and finishes in the background. Question generation
-                and synthesis are not bounded by it. Defaults to 900.
+                stopped and finishes in the background, and later loops skip
+                that agent until it returns. Worker threads aren't daemon
+                threads, so a hung worker also keeps the interpreter from
+                exiting. Question generation and synthesis are not bounded
+                by it. Defaults to 900.
             question_agent_model_name (str, optional): Language model for
                 question generation. Defaults to "gpt-5.4".
             worker_model_name (str, optional): Language model for specialized
@@ -181,6 +185,7 @@ class HeavySwarm(SerializableMixin):
         )
         self.dashboard = HeavySwarmDashboard()
         self._question_usage = empty_usage()
+        self._running_workers = set()
 
         self.agents = self.create_agents()
 
@@ -585,6 +590,19 @@ class HeavySwarm(SerializableMixin):
             variant=self.variant,
         )
 
+    def _run_worker(self, agent, question: str, img=None):
+        """Run a worker agent, refusing while an earlier timed-out run
+        of the same agent is still going in the background."""
+        if agent in self._running_workers:
+            raise RuntimeError(
+                f"{agent.agent_name} is still running from an earlier loop"
+            )
+        self._running_workers.add(agent)
+        try:
+            return agent.run(question, img=img)
+        finally:
+            self._running_workers.discard(agent)
+
     def _execute_agents_parallel(
         self, questions: Dict, agents: Dict, img: Optional[str] = None
     ) -> Dict[str, str]:
@@ -651,7 +669,7 @@ class HeavySwarm(SerializableMixin):
         def execute_agent(agent_info):
             agent_type, agent, question = agent_info
             try:
-                result = agent.run(question, img=img)
+                result = self._run_worker(agent, question, img)
 
                 self.conversation.add(
                     role=agent.agent_name,
@@ -981,7 +999,7 @@ class HeavySwarm(SerializableMixin):
                     tracker.processing(agent_key, agent_type)
                     tracker.executing(agent_key, agent_type)
 
-                    result = agent.run(question, img=img)
+                    result = self._run_worker(agent, question, img)
 
                     tracker.responding(agent_key, agent_type)
 

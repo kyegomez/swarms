@@ -932,21 +932,26 @@ def test_a_hung_worker_times_out_without_holding_the_run(
         show_dashboard=show_dashboard,
     )
     release = threading.Event()
+    calls = []
     roles = ["research", "analysis", "alternatives", "verification"]
     for role in roles:
         swarm.agents[role].run = lambda q, img=None: q
-    swarm.agents["research"].run = lambda q, img=None: release.wait(3)
+    swarm.agents["research"].run = lambda q, img=None: (
+        calls.append(q) or release.wait(3)
+    )
+    questions = {f"{r}_question": r for r in roles}
 
     start = time.monotonic()
-    results = swarm._execute_agents_parallel(
-        {f"{r}_question": r for r in roles}, swarm.agents
-    )
+    results = swarm._execute_agents_parallel(questions, swarm.agents)
+    swarm._execute_agents_parallel(questions, swarm.agents)
     elapsed = time.monotonic() - start
     release.set()
 
     assert elapsed < 1.5
     assert results.pop("research") == "Timeout after 0.3 seconds"
     assert sorted(results.values()) == sorted(roles[1:])
+    # The next loop must not start research again while it still runs.
+    assert calls == ["research"]
 
 
 class TestSwarmRouterGrokIntegration:
