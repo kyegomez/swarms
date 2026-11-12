@@ -3275,7 +3275,11 @@ Subtask Breakdown:
             task: The prompt or task string.
             img: Optional image path or base64 string for vision models.
             on_stream_end: Called after the last token is yielded, while the
-                run's post-processing (autosave, channel post) still runs.
+                run's post-processing, such as autosave, still runs. It is not
+                called when max_loops is "auto", when a stopping condition or
+                stopping function ends the run before its last loop, or when
+                the agent has a channel, so that its post comes before the
+                next agent's. The generator ending is then the only signal.
                 The generator itself ends only when the run does.
             **kwargs: Extra keyword arguments forwarded to arun.
 

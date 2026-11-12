@@ -1217,10 +1217,10 @@ class AgentRearrange(SerializableMixin):
     ):
         """Stream a single sequential agent.
 
-        Yields ``(agent_name, token)`` tuples by default, or structured event
-        dicts when ``with_events=True``. Returns once the agent's model stream
-        ends. The rest of its run goes into ``pending`` under its name, or is
-        awaited here when ``pending`` is None.
+        Yields (agent_name, token) tuples by default, or structured event
+        dicts when with_events is True. Returns once the agent's model stream
+        ends. The rest of its run goes into pending under its name, or is
+        awaited here when pending is None.
         """
         agent = find_agent_by_name(self.agents, agent_name)
 
@@ -1399,8 +1399,11 @@ class AgentRearrange(SerializableMixin):
                 ``{"type": "agent_end", "agent": ..., "output": ...}``.
 
         A sequential agent hands over as soon as its model stream ends: the
-        next step starts while its post-processing (autosave, channel post)
-        finishes. Answers are still recorded in flow order.
+        next step starts while its post-processing, such as autosave,
+        finishes. An agent with a channel hands over after its post, so
+        posts stay in flow order, as do the answers recorded here. An error
+        in post-processing after an early handover raises later, when that
+        agent's next step starts or the stream ends.
 
         Not yet supported in streaming mode: ``max_loops > 1``,
         ``custom_tasks``. Use ``run()`` for those.
