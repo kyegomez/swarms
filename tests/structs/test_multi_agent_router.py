@@ -441,7 +441,6 @@ def _local_router(agents=None, delay=0.0):
         def __init__(self, name):
             self.agent_name = name
             self.description = name
-            self.reset = lambda: None
 
         def run(self, task, *args, **kwargs):
             if delay:
@@ -552,13 +551,17 @@ def test_a_reused_router_does_not_resend_earlier_tasks(monkeypatch):
     monkeypatch.setattr(
         Agent, "call_llm", lambda s, **k: sent.append(str(k)) or "ok"
     )
-    router = MultiAgentRouter(agents=_minimal_agents())
+    agents = _minimal_agents()
+    agents[0].short_memory.add("User", "NOTE")
+    router = MultiAgentRouter(agents=agents)
     handoffs = [{"agent_name": "Agent1"}, {"agent_name": "Agent2"}]
     router.handle_single_handoff({"handoffs": handoffs}, "TASK1")
-    router.handle_single_handoff({"handoffs": handoffs}, "TASK2")
-    router.handle_multiple_handoffs({"handoffs": handoffs}, "TASK3")
-    assert len(sent) == 4 and "TASK1" not in str(sent[1:])
-    assert "TASK2" not in str(sent[2:])
+    router.handle_multiple_handoffs({"handoffs": handoffs}, "TASK2")
+    router.handle_single_handoff({"handoffs": handoffs}, "TASK3")
+    assert len(sent) == 4
+    assert "TASK1" not in str(sent[1:])
+    assert "TASK2" not in sent[3]
+    assert "NOTE" in sent[3]
 
 
 if __name__ == "__main__":
