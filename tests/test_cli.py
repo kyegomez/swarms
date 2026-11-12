@@ -795,7 +795,7 @@ class TestMain:
                 ["agent", "--name", "A", "--description", "d"]
                 + ["--system-prompt", "s", "--task", "t"],
                 "Agent",
-                "invalid api_key",
+                "litellm.AuthenticationError: OpenAIException",
                 "Authentication failed",
             ),
             (
@@ -803,6 +803,24 @@ class TestMain:
                 "generate_swarm_config",
                 "No YAML content found",
                 "returned no swarm config",
+            ),
+            (
+                ["run-agents", "--yaml-file", __file__],
+                "AgentLoader",
+                "context_length_exceeded",
+                "Context window exceeded",
+            ),
+            (
+                ["load-markdown", "--markdown-path", "a.md"],
+                "AgentLoader",
+                "Connection timed out",
+                "Network issue",
+            ),
+            (
+                ["chat"],
+                "auto_chat_agent",
+                "unexpected keyword argument 'api_key'",
+                "Troubleshooting tips",
             ),
         ],
     )

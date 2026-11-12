@@ -24,7 +24,6 @@ def _classify_command_error(message: str) -> List[str]:
         or "authenticationerror" in err
         or "invalid api key" in err
         or "missing api key" in err
-        or "api_key" in err
     ):
         hints.append(
             "Authentication failed — set your provider key in [bold]swarms init[/bold] "
