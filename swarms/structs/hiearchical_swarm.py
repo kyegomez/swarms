@@ -49,7 +49,6 @@ from swarms.telemetry.otel import (
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
-from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -121,7 +120,7 @@ class HierarchicalSwarm:
             verbose: Enable verbose output.
             print_on: Print the director's plan and orders each step.
             parallel_execution: Execute orders concurrently.
-            max_workers: Worker thread limit.
+            max_workers: Cap on orders run at once; None runs them all.
             agent_as_judge: Evaluate worker outputs.
             judge_agent_model_name: Judge model.
             director_settings: Additional director settings.
@@ -176,11 +175,7 @@ class HierarchicalSwarm:
         self.verbose = verbose
         self.print_on = print_on
         self.parallel_execution = parallel_execution
-        self.max_workers = (
-            max_workers
-            if max_workers is not None
-            else max_workers_95_percent()
-        )
+        self.max_workers = max_workers
         self.agent_as_judge = agent_as_judge
         self.judge_agent_model_name = judge_agent_model_name
         self._feedback_director = None
@@ -374,7 +369,7 @@ class HierarchicalSwarm:
                 "max_reassignment_attempts must be greater than or equal to 0."
             )
 
-        if self.max_workers <= 0:
+        if self.max_workers is not None and self.max_workers <= 0:
             raise ValueError(
                 "max_workers must be greater than 0 when provided."
             )
@@ -901,8 +896,11 @@ class HierarchicalSwarm:
 
         if self.parallel_execution:
             futures_map = {}
+            pool_size = min(
+                len(orders), self.max_workers or len(orders)
+            )
             with ContextThreadPoolExecutor(
-                max_workers=self.max_workers
+                max_workers=max(1, pool_size)
             ) as executor:
                 for index, order in enumerate(orders):
                     future = executor.submit(
