@@ -1255,8 +1255,11 @@ class AgentRearrange(SerializableMixin):
                 start, each token, and agent end.
 
         A sequential agent hands over as soon as its model stream ends: the
-        next step starts while its post-processing (autosave, channel post)
-        finishes. Answers are still recorded in flow order.
+        next step starts while its post-processing, such as autosave,
+        finishes. An agent with a channel hands over after its post, so
+        posts stay in flow order, as do the answers recorded here. An error
+        in post-processing after an early handover raises later, when that
+        agent's next step starts or the stream ends.
 
         Not yet supported in streaming mode: max_loops greater than 1,
         and custom_tasks. Use run for those.
