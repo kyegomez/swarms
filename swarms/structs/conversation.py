@@ -214,7 +214,9 @@ class Conversation:
         self._save_filepath = value
 
     def _default_save_filepath(self, conversations_dir):
-        extension = ".json" if self.export_method == "json" else ".yaml"
+        extension = (
+            ".json" if self.export_method == "json" else ".yaml"
+        )
         return os.path.join(
             self.conversations_dir or conversations_dir,
             f"conversation_{self.name}{extension}",
