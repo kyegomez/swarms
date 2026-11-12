@@ -665,7 +665,7 @@ class Agent:
         # Reads config off this agent, so it must come after the config is set
         self.llm_manager = LLMManager(agent=self)
         self.tool_manager = ToolManager(agent=self)
-        self.autonomous_loop = AutonomousAgentLoop(agent=self)
+        self._autonomous_loop: Optional[AutonomousAgentLoop] = None
 
         self.setup_config()
 
@@ -772,6 +772,18 @@ class Agent:
                 self, verbose=self.verbose
             )
         return self._workspace
+
+    @property
+    def autonomous_loop(self) -> AutonomousAgentLoop:
+        """
+        This agent's max_loops="auto" loop, created on first access.
+
+        Returns:
+            AutonomousAgentLoop: The loop that runs this agent autonomously.
+        """
+        if self._autonomous_loop is None:
+            self._autonomous_loop = AutonomousAgentLoop(agent=self)
+        return self._autonomous_loop
 
     def _get_agent_workspace_dir(self) -> str:
         """
