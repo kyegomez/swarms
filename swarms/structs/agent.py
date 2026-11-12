@@ -1835,8 +1835,10 @@ Subtask Breakdown:
                 stream_end_hook = getattr(
                     self, "_stream_end_hook", None
                 )
+                # With a channel, hand over after the post so posts keep flow order.
                 if (
                     loop_count == self.max_loops
+                    and self.channel is None
                     and stream_end_hook is not None
                 ):
                     stream_end_hook()

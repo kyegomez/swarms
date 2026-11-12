@@ -832,11 +832,18 @@ def test_member_channels_are_detached_in_favour_of_the_workflows(
     ]
 
 
-@pytest.mark.parametrize("slow_step", ["channel", "autosave"])
-def test_run_stream_starts_the_next_agent_when_the_stream_ends(
-    slow_step,
+@pytest.mark.parametrize(
+    "slow_step, tail",
+    [
+        # B shares A's channel, so B starts only after A has posted.
+        ("channel", ["A done", "request", "B posted"]),
+        ("autosave", ["request", "request", "A done"]),
+    ],
+)
+def test_run_stream_hands_over_before_autosave_but_after_a_post(
+    slow_step, tail
 ):
-    """B's request goes out while A is still posting or saving."""
+    """B's request goes out while A is still saving, or once A has posted."""
     import time
     from types import SimpleNamespace
 
@@ -861,12 +868,20 @@ def test_run_stream_starts_the_next_agent_when_the_stream_ends(
         time.sleep(0.2)
         events.append("A done")
 
+    def post(name, content):
+        if name == "A":
+            slow()
+        else:
+            events.append("B posted")
+
     agents = [
         Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
         for name in "AB"
     ]
     if slow_step == "channel":
-        agents[0].channel = SimpleNamespace(post=slow)
+        agents[0].channel = agents[1].channel = SimpleNamespace(
+            post=post
+        )
     else:
         agents[0].autosave = True
         agents[0].save = slow
@@ -876,7 +891,7 @@ def test_run_stream_starts_the_next_agent_when_the_stream_ends(
     with patch.object(litellm_wrapper, "acompletion", acompletion):
         tokens = list(workflow.run_stream("Go."))
 
-    assert events[-3:] == ["request", "request", "A done"]
+    assert events[-3:] == tail
     assert tokens == ["A-answer", "B-answer"]
     assert "A-answer" in requests[1]
     history = (
