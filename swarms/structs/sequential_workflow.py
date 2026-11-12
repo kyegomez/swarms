@@ -1,7 +1,6 @@
 import ast
+import asyncio
 import json
-import os
-from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from swarms.prompts.agent_acknowledgement_prompt import (
@@ -12,7 +11,6 @@ from swarms.structs.agent_rearrange import AgentRearrange
 from swarms.structs.comms_channel import CommsChannel
 from swarms.structs.usage_utils import total_usage
 from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
@@ -522,13 +520,16 @@ class SequentialWorkflow:
 
     async def run_concurrent(self, tasks: List[str]) -> List[str]:
         """
-        Executes a batch of tasks through the agents in the dynamically constructed flow concurrently.
+        Run a batch of tasks through the flow concurrently.
+
+        Each task runs on its own copy of the flow in a worker thread,
+        so awaiting this leaves the event loop free.
 
         Args:
             tasks (List[str]): A list of tasks for the agents to execute.
 
         Returns:
-            List[str]: A list of final results after processing through all agents.
+            List[str]: One final result per task, in the same order as tasks.
 
         Raises:
             ValueError: If tasks is None, empty, or contains non-string elements.
@@ -542,20 +543,17 @@ class SequentialWorkflow:
             )
 
         try:
-            with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
-            ) as executor:
-                results = [
-                    executor.submit(
-                        self.agent_rearrange._clone_for_task().run,
-                        task,
+            return list(
+                await asyncio.gather(
+                    *(
+                        asyncio.to_thread(
+                            self.agent_rearrange._clone_for_task().run,
+                            task,
+                        )
+                        for task in tasks
                     )
-                    for task in tasks
-                ]
-                return [
-                    result.result()
-                    for result in as_completed(results)
-                ]
+                )
+            )
         except Exception as e:
             logger.error(
                 f"An error occurred while executing the batch of tasks concurrently: {e}"

@@ -1,9 +1,11 @@
+import asyncio
 import os
+import time
 from unittest.mock import patch
 
 import pytest
 
-from swarms import Agent, SequentialWorkflow
+from swarms import Agent, AgentRearrange, SequentialWorkflow
 from swarms.prompts.agent_acknowledgement_prompt import (
     AGENT_COLLAB_PROMPT,
 )
@@ -180,6 +182,25 @@ async def test_sequential_workflow_concurrent_execution():
     # run_concurrent returns a list of results
     assert isinstance(results, list)
     assert len(results) == 3
+
+
+async def test_run_concurrent_keeps_task_order_and_frees_the_loop():
+    """Tasks keep their order, run on clones and leave the loop free."""
+    wf, flows = _make_workflow(), []
+    delays = {"slow": 0.2, "mid": 0.1, "fast": 0}
+
+    def run(flow, task):
+        flows.append(flow)
+        time.sleep(delays[task])
+        return task
+
+    with patch.object(
+        AgentRearrange, "run", autospec=True, side_effect=run
+    ):
+        other = asyncio.create_task(asyncio.sleep(0))
+        assert await wf.run_concurrent(list(delays)) == list(delays)
+        assert other.done()
+    assert len({id(f) for f in flows} - {id(wf.agent_rearrange)}) == 3
 
 
 def test_sequential_workflow_with_multi_agent_collaboration():
