@@ -442,7 +442,6 @@ class Agent:
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
         self.retry_attempts = retry_attempts
-        self.task = None
         self.stopping_token = stopping_token
         self.interactive = interactive
         self.dashboard = dashboard
@@ -535,7 +534,6 @@ class Agent:
 
         self.dynamic_tools = dynamic_tools
         self.tool_loader: Optional[DynamicToolLoader] = None
-        self._mcp_tools_deferred = False
         self._usage = empty_usage()
         self._mcp_schemas_cache: Optional[List[dict]] = None
 
@@ -554,7 +552,6 @@ class Agent:
         self.max_subtask_iterations = max_subtask_iterations
         self.max_subtask_loops = max_subtask_loops
         self.reasoning_enabled = reasoning_enabled
-        self.fallback_model_name = fallback_model_name
         self.handoffs = handoffs
         self.capabilities = capabilities
         self.mode = mode
@@ -614,9 +611,6 @@ class Agent:
 
         # Initialize autonomous loop tracking structures
         self.autonomous_subtasks = []  # List of subtasks from plan
-        self.current_subtask_index = (
-            0  # Current subtask being executed
-        )
         self.subtask_status = {}  # Track status of each subtask
         self.plan_created = False  # Whether a plan has been created
         self.think_call_count = (
@@ -2469,7 +2463,6 @@ Subtask Breakdown:
         self.short_memory = self.short_memory_init()
         self.tool_manager.handle_tool_schema_ops()
         self.autonomous_subtasks = []
-        self.current_subtask_index = 0
         self.subtask_status = {}
         self.plan_created = False
         self.think_call_count = 0
