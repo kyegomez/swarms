@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import re
 import tempfile
 import threading
 import time
@@ -880,7 +881,13 @@ class TestConstructorWindows:
         assert agent.saved_state_path == "/tmp/chosen-state.json"
 
     def test_saved_state_path_defaults_when_unset(self):
-        assert self._agent().saved_state_path.endswith("_state.json")
+        paths = {self._agent().saved_state_path for _ in range(2)}
+
+        assert len(paths) == 2
+        for path in paths:
+            assert re.fullmatch(
+                r"agent-[0-9a-f]{32}_state\.json", path
+            )
 
     def test_unknown_model_falls_back_for_both(self):
         """An unrecognised model must not raise out of __init__."""

@@ -84,7 +84,6 @@ from swarms.tools.mcp_manager import MCPManager
 from swarms.utils.file_processing import create_file_in_folder
 from swarms.utils.formatter import formatter
 from swarms.utils.generate_id import generate_id
-from swarms.utils.generate_keys import generate_api_key
 from swarms.utils.get_reasoning_efforts import ReasoningEffort
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -461,8 +460,8 @@ class Agent:
             agent_description = description
         self.agent_description = agent_description
         # Fallback: this once overwrote the caller's own path.
-        self.saved_state_path = saved_state_path or (
-            f"{generate_api_key(prefix='agent-')}_state.json"
+        self.saved_state_path = (
+            saved_state_path or f"{generate_id('agent')}_state.json"
         )
         self.autosave = autosave
         self.long_term_memory = long_term_memory
