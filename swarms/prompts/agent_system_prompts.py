@@ -158,7 +158,7 @@ def build_agent_system_prompt() -> str:
     """Render the default agent system prompt with the current time.
 
     Returns:
-        str: The prompt with a freshly interpolated ``Time:`` line.
+        str: The prompt with a freshly interpolated "Time:" line.
     """
     return (
         _AGENT_SYSTEM_PROMPT_3_HEADER

@@ -24,19 +24,19 @@ class MCPOAuthConfig(BaseModel):
 
     Three flavours are supported:
 
-    1. ``grant_type="authorization_code"`` (default) — the interactive browser
+    1. grant_type="authorization_code" (default) — the interactive browser
        flow described by the MCP authorization spec. PKCE and RFC 7591 dynamic
-       client registration are handled by the MCP SDK, so ``client_id`` is
+       client registration are handled by the MCP SDK, so client_id is
        optional. Tokens are cached on disk so the browser prompt only happens
        once.
-    2. ``grant_type="client_credentials"`` — a headless machine-to-machine
-       flow. Requires ``client_id``/``client_secret``. The token endpoint is
-       discovered from the server's ``/.well-known/oauth-authorization-server``
-       metadata unless ``token_url`` is given.
-    3. ``access_token=...`` — a token you already obtained elsewhere. No flow
+    2. grant_type="client_credentials" — a headless machine-to-machine
+       flow. Requires client_id/client_secret. The token endpoint is
+       discovered from the server's /.well-known/oauth-authorization-server
+       metadata unless token_url is given.
+    3. access_token=... — a token you already obtained elsewhere. No flow
        is run; the token is simply sent as a bearer credential.
 
-    Any string field may use ``"env:MY_VAR"`` or ``"${MY_VAR}"`` to read the
+    Any string field may use "env:MY_VAR" or "${MY_VAR}" to read the
     value from the environment instead of hardcoding a secret.
     """
 

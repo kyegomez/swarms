@@ -41,13 +41,13 @@ class SafeLoaderUtils:
 
     @staticmethod
     def is_settable(obj: Any, key: str) -> bool:
-        """Can ``key`` actually be assigned on ``obj``?
+        """Can key actually be assigned on obj?
 
-        A read-only ``property`` on the class raises AttributeError on
-        assignment. ``create_state_dict`` reads instance state and happily
+        A read-only property on the class raises AttributeError on
+        assignment. create_state_dict reads instance state and happily
         serialises such values, so a state file can carry a key that cannot
-        be written back — Agent has two, ``workspace`` and ``mcp_enabled``,
-        which made ``Agent.load()`` raise for every agent.
+        be written back — Agent has two, workspace and mcp_enabled,
+        which made Agent.load() raise for every agent.
 
         These are derived values in any case: whatever they should be is
         recomputed from the state that *is* restorable, so skipping them

@@ -1,9 +1,9 @@
 """Prompt templates for the Tree of Thoughts agent.
 
-``TreeOfThoughts`` fills the placeholders: ``{tool}`` is the function the
-model must call, ``{steps}`` is a numbered list of reasoning steps (or
-``TOT_NO_STEPS``), and ``{guidance}`` and ``{criteria}`` are empty unless the
-agent was given ``thought_description`` or ``evaluation_criteria``.
+TreeOfThoughts fills the placeholders: {tool} is the function the
+model must call, {steps} is a numbered list of reasoning steps (or
+TOT_NO_STEPS), and {guidance} and {criteria} are empty unless the
+agent was given thought_description or evaluation_criteria.
 """
 
 TREE_OF_THOUGHTS_SYSTEM_PROMPT = """You are a careful, deliberate problem solver. You work one step at a time, check each step for errors, and prefer a correct answer over a fast one. When asked to call a function, respond only with that function call."""

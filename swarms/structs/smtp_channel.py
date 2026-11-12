@@ -30,8 +30,8 @@ _QUOTED = re.compile(
 class SmtpChannel(CommsChannel):
     """A conversation kept as one email thread in a mailbox you already run.
 
-    Each post is emailed to `to`, who can reply from their own mail client,
-    and to `from_address`, whose mailbox `messages()` reads over IMAP. A post
+    Each post is emailed to the to address, who can reply from their own mail client,
+    and to from_address, whose mailbox messages() reads over IMAP. A post
     reads back exactly as it was sent. A person's reply is spoken by its From
     address, with the quoted history below it removed.
 
