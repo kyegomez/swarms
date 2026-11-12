@@ -36,7 +36,7 @@ class PlannerTask(BaseModel):
     """A single task in the shared planner-worker task queue.
 
     Created by planner agents, consumed by worker agents.
-    The `version` field enables optimistic concurrency control.
+    The version field enables optimistic concurrency control.
     """
 
     id: str = Field(

@@ -15,8 +15,8 @@ def total_usage(*roots: Any) -> dict:
 
     Each distinct object is visited once, under three rules:
 
-    - An object with a ``usage`` property that keeps its running
-      total in a ``_usage`` dict is read through ``usage`` and not
+    - An object with a usage property that keeps its running
+      total in a _usage dict is read through usage and not
       searched further.
     - A usage dict is counted when it is a root, sits in a root
       container, or is a direct attribute of an object.

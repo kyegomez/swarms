@@ -80,9 +80,9 @@ class Broadcast:
     """
     Facilitates broadcasting from one agent to many agents.
 
-    A reusable wrapper around :func:`broadcast` that holds the sender, the
+    A reusable wrapper around broadcast that holds the sender, the
     receivers and the output format, so the same group can be run on many
-    tasks. ``run`` is synchronous.
+    tasks. The run method is synchronous.
     """
 
     def __init__(

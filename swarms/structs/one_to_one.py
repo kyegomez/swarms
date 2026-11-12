@@ -23,7 +23,7 @@ def one_to_one(
     One-to-one communication between two agents.
 
     The sender answers the task, the receiver answers the sender, and the
-    exchange repeats ``max_loops`` times. Each agent reads the shared
+    exchange repeats max_loops times. Each agent reads the shared
     conversation as typed turns, so it can tell its own earlier messages
     from the other agent's.
 
@@ -68,7 +68,7 @@ class OneToOne:
     """
     Facilitates one-to-one communication between two agents.
 
-    A reusable wrapper around :func:`one_to_one` that holds the two agents
+    A reusable wrapper around one_to_one that holds the two agents
     and the output format, so the same pair can be run on many tasks.
     """
 
