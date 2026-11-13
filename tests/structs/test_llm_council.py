@@ -376,6 +376,26 @@ def test_second_run_does_not_resend_the_first(monkeypatch):
     assert not any("FIRSTTASK" in r for r in requests)
 
 
+def test_default_members_reach_their_own_providers_api():
+    import litellm
+
+    council = LLMCouncil(verbose=False)
+
+    providers = {
+        member.agent_name: litellm.get_llm_provider(
+            member.model_name
+        )[1]
+        for member in council.council_members
+    }
+
+    assert providers == {
+        "GPT-5.1-Councilor": "openai",
+        "Gemini-3-Pro-Councilor": "gemini",
+        "Claude-Sonnet-4.5-Councilor": "anthropic",
+        "Grok-4-Councilor": "xai",
+    }
+
+
 @pytest.mark.parametrize(
     "failing_call", [1, 2], ids=["answer", "ranking"]
 )

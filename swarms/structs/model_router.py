@@ -60,8 +60,8 @@ model_recommendations = {
         ],
         "provider": "anthropic",
     },
-    "gemini-2.5-pro": {
-        "description": "Google's Gemini Pro model with a 1M-token context window and strong multimodal skills",
+    "gemini-3.8-flash": {
+        "description": "Google's most capable Flash model, with a 1M-token context window and text, image, video, audio and PDF input, at Flash speed and cost",
         "best_for": [
             "Multimodal tasks",
             "Code generation",
