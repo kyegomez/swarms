@@ -25,9 +25,9 @@ LOG_FORMAT = (
 
 def get_log_dir() -> str:
     """
-    Directory every log file is written to: ``{WORKSPACE_DIR}/logs``.
+    Directory every log file is written to: {WORKSPACE_DIR}/logs.
 
-    Falls back to ``agent_workspace`` when ``WORKSPACE_DIR`` is unset, matching
+    Falls back to agent_workspace when WORKSPACE_DIR is unset, matching
     the default used elsewhere in the package.
 
     Returns:
@@ -52,19 +52,19 @@ def _module_log_router(message) -> None:
     """
     Append each record to a file named after the module that emitted it.
 
-    ``{workspace}/logs/graph_workflow.log`` then holds that module's lines and
+    {workspace}/logs/graph_workflow.log then holds that module's lines and
     nothing else, so one component can be read in isolation while the combined
     log still shows the whole call chain interleaved.
 
-    Routing on ``record["name"]`` rather than registering a handler per caller
-    of :func:`initialize_logger` is what makes this complete: most modules take
-    ``from loguru import logger`` directly and never call it, so a per-caller
-    scheme would silently miss them — ``agent`` and ``conversation`` included.
+    Routing on record["name"] rather than registering a handler per caller
+    of initialize_logger is what makes this complete: most modules import
+    logger from loguru directly and never call it, so a per-caller
+    scheme would silently miss them — agent and conversation included.
 
     Files are opened on demand, so only modules that actually log get one.
 
     Args:
-        message: The loguru message; ``message.record`` carries the metadata.
+        message: The loguru message; message.record carries the metadata.
     """
     name = message.record["name"] or ""
     if not name.startswith("swarms"):
@@ -96,7 +96,7 @@ def initialize_logger(log_folder: str = "swarms"):
         log_folder (str): Name of the calling module. Accepted for backwards
             compatibility, but no longer used as a path: treating it as one
             created a directory per module in the working directory. The module
-            is already recorded in each log line by ``{name}``.
+            is already recorded in each log line by {name}.
 
     Returns:
         logger: The logger instance.

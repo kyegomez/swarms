@@ -5,21 +5,21 @@ Implements "Tree of Thoughts: Deliberate Problem Solving with Large Language
 Models" (Yao et al., 2023, https://arxiv.org/abs/2305.10601). Instead of
 answering in one pass, the agent grows a tree of partial solutions:
 
-    1. Generate: from a node, propose ``num_thoughts`` candidate next steps,
+    1. Generate: from a node, propose num_thoughts candidate next steps,
        all in one call ("propose") or one call per step ("sample").
     2. Evaluate: score each candidate from 0 to 1, either on its own
        ("value") or by comparing candidates and voting ("vote").
     3. Search: explore breadth-first with a beam ("bfs") or depth-first with
-       backtracking ("dfs"), pruning candidates below ``value_threshold``.
+       backtracking ("dfs"), pruning candidates below value_threshold.
     4. Answer: write the final answer from the best path found.
 
 Every model output is a function call validated against a Pydantic schema
-(``ProposeThoughts``, ``EvaluateThought``, ``VoteForThought``,
-``FinalAnswer``), so the search never parses free-form prose.
+(ProposeThoughts, EvaluateThought, VoteForThought,
+FinalAnswer), so the search never parses free-form prose.
 
 The prompts are domain-agnostic. To adapt the search to a task, describe what
-one step looks like with ``thought_description`` and how to judge progress
-with ``evaluation_criteria``.
+one step looks like with thought_description and how to judge progress
+with evaluation_criteria.
 
 Example:
     >>> from swarms.agents import TreeOfThoughts
@@ -178,14 +178,14 @@ class FinalAnswer(BaseModel):
 
 
 def _inline_refs(schema: Any, definitions: Dict[str, Any]) -> Any:
-    """Replace local ``$ref`` pointers with their definitions and drop ``$defs``.
+    """Replace local $ref pointers with their definitions and drop $defs.
 
-    Some providers ignore ``$ref`` in tool schemas; the model then invents its
+    Some providers ignore $ref in tool schemas; the model then invents its
     own field names for nested objects and every call fails validation.
 
     Args:
         schema: A JSON schema, or any value nested inside one.
-        definitions: The schema's ``$defs``, keyed by definition name.
+        definitions: The schema's $defs, keyed by definition name.
 
     Returns:
         The schema with every local reference expanded in place.
@@ -207,7 +207,7 @@ def _inline_refs(schema: Any, definitions: Dict[str, Any]) -> Any:
 
 
 def _tool_schema(model: Type[BaseModel]) -> Dict[str, Any]:
-    """Build the OpenAI function schema for ``model`` with no ``$ref`` left in it.
+    """Build the OpenAI function schema for the model with no $ref left in it.
 
     Args:
         model: The Pydantic model describing the function's arguments.
@@ -260,7 +260,7 @@ def _decode(text: str) -> Any:
         text: Raw text from the model or an agent's rendered output.
 
     Returns:
-        The decoded value, or ``None`` when nothing decodes.
+        The decoded value, or None when nothing decodes.
     """
     for loader in (json.loads, ast.literal_eval):
         try:
@@ -285,16 +285,16 @@ def _decode(text: str) -> Any:
 def _tool_arguments(
     output: Any, tool_name: str
 ) -> Optional[Dict[str, Any]]:
-    """Find the arguments of a ``tool_name`` call in an agent's output.
+    """Find the arguments of a tool_name call in an agent's output.
 
     Args:
-        output: What ``Agent.run`` returned: a list of tool-call dicts, a
+        output: What Agent.run returned: a list of tool-call dicts, a
             single tool-call dict, a string holding either, or the arguments
             as plain JSON when the model answered in text instead of calling.
         tool_name: The function whose arguments to return.
 
     Returns:
-        The call's arguments, or ``None`` when no such call is present.
+        The call's arguments, or None when no such call is present.
     """
     if isinstance(output, BaseModel):
         output = output.model_dump()
@@ -323,18 +323,18 @@ def _tool_arguments(
 def parse_tool_call(
     output: Any, schema: Type[SchemaT]
 ) -> Optional[SchemaT]:
-    """Validate the function call for ``schema`` found in an agent's output.
+    """Validate the function call for the schema found in an agent's output.
 
     The tool name is the schema's class name, as produced by
-    ``BaseTool.base_model_to_dict``.
+    BaseTool.base_model_to_dict.
 
     Args:
-        output: What ``Agent.run`` returned for a call made with the schema's
+        output: What Agent.run returned for a call made with the schema's
             tool attached.
         schema: The Pydantic model describing the function's arguments.
 
     Returns:
-        The validated arguments, or ``None`` when the output holds no call
+        The validated arguments, or None when the output holds no call
         or the call does not match the schema.
     """
     arguments = _tool_arguments(output, schema.__name__)
@@ -354,12 +354,12 @@ class ThoughtNode:
     Attributes:
         content: The reasoning step. Empty for the root.
         depth: Number of steps from the root; the root is 0.
-        parent: The node this step continues from; ``None`` for the root.
+        parent: The node this step continues from; None for the root.
         is_final: Whether this step completes the task. Steps at
-            ``max_depth`` are always final.
-        score: Evaluation in ``[0, 1]``, or ``None`` until evaluated.
+            max_depth are always final.
+        score: Evaluation in [0, 1], or None until evaluated.
         evaluation: The evaluator's critique, or the vote tally.
-        pruned: Whether the score fell below ``value_threshold``.
+        pruned: Whether the score fell below value_threshold.
         children: Candidate next steps generated from this node.
     """
 
@@ -409,9 +409,9 @@ class TreeOfThoughtsResult:
         task: The task that was searched.
         answer: The final answer written from the best path.
         solved: Whether the search reached a final step that cleared
-            ``value_threshold``. When ``False``, ``answer`` was completed
+            value_threshold. When False, the answer was completed
             from the most promising partial path.
-        best_node: The node the answer was written from, or ``None`` if no
+        best_node: The node the answer was written from, or None if no
             candidate was ever evaluated.
         root: The root of the search tree, for inspection.
         nodes_expanded: How many nodes had candidates generated from them.
@@ -482,18 +482,18 @@ class TreeOfThoughts:
     """Solve a task by searching a tree of reasoning steps.
 
     Each model call is a function call made by a fresh, stateless
-    ``Agent`` that carries only that function's schema, so calls are
+    Agent that carries only that function's schema, so calls are
     independent of one another and those at the same level of the tree run
     concurrently. Output that holds no valid call is logged and skipped.
 
-    Scores are in ``[0, 1]``. In ``"value"`` mode a score is the evaluator's
-    rating, averaged over ``n_evaluate_samples`` calls. In ``"vote"`` mode it
+    Scores are in [0, 1]. In "value" mode a score is the evaluator's
+    rating, averaged over n_evaluate_samples calls. In "vote" mode it
     is a candidate's votes divided by the leading candidate's votes, so the
     leader always scores 1. Vote mode ranks candidates against each other,
     so it cannot reject a lone candidate, and with one vote per level only
-    the winner survives; raise ``n_evaluate_samples`` to keep more branches.
+    the winner survives; raise n_evaluate_samples to keep more branches.
 
-    Candidates scoring below ``value_threshold`` are pruned: never expanded
+    Candidates scoring below value_threshold are pruned: never expanded
     and never accepted as the answer. A final candidate that survives is a
     solution. BFS stops once its best solution scores at least as high as
     every open partial path. DFS visits children best-first and returns the
@@ -550,15 +550,15 @@ class TreeOfThoughts:
             system_prompt: System prompt for every model call. Replace it to
                 give the search a domain persona; the step, evaluation and
                 answer instructions are sent separately and stay in force.
-            search_algorithm: ``"bfs"`` keeps the best ``breadth`` nodes per
-                level; ``"dfs"`` follows the best child first and backtracks
+            search_algorithm: "bfs" keeps the best breadth nodes per
+                level; "dfs" follows the best child first and backtracks
                 when a branch is pruned or exhausted.
-            generation_strategy: ``"propose"`` asks for ``num_thoughts``
+            generation_strategy: "propose" asks for num_thoughts
                 distinct steps in one call, which suits constrained tasks.
-                ``"sample"`` makes ``num_thoughts`` independent calls for one
+                "sample" makes num_thoughts independent calls for one
                 step each, which suits open-ended tasks.
-            evaluation_strategy: ``"value"`` rates each candidate on its own;
-                ``"vote"`` compares candidates and scores them by votes.
+            evaluation_strategy: "value" rates each candidate on its own;
+                "vote" compares candidates and scores them by votes.
             num_thoughts: Candidate steps generated per expanded node.
             breadth: BFS beam width: nodes kept per level. Ignored by DFS.
             max_depth: Maximum number of steps on a path. Steps at this depth
@@ -568,8 +568,8 @@ class TreeOfThoughts:
             value_threshold: Candidates scoring below this are pruned.
                 Between 0 and 1.
             max_expansions: Cap on how many nodes may be expanded in one
-                search, bounding cost. ``None`` means no cap; DFS can then
-                expand up to ``num_thoughts ** (max_depth - 1)`` nodes and
+                search, bounding cost. None means no cap; DFS can then
+                expand up to num_thoughts ** (max_depth - 1) nodes and
                 more.
             thought_description: What one step looks like for your task,
                 e.g. "One SQL clause" or "A one-paragraph plan for the next
@@ -577,21 +577,21 @@ class TreeOfThoughts:
             evaluation_criteria: How to judge progress for your task, e.g.
                 "Does the query still return the requested columns?". Shown
                 to the evaluator.
-            temperature: Sampling temperature for every call. ``None`` sends
+            temperature: Sampling temperature for every call. None sends
                 no temperature, so the provider's default applies; some
                 models, such as Claude Sonnet 5, reject the parameter. If you
                 set it, keep it above 0 when sampling or averaging several
                 evaluations.
             max_workers: Maximum concurrent model calls. Set to 1 to run
                 calls one at a time.
-            output_type: How ``run`` formats its conversation. ``"final"``
+            output_type: How the run method formats its conversation. "final"
                 returns the answer string.
             verbose: Log every evaluated candidate.
-            agent_kwargs: Extra ``Agent`` arguments applied to every internal
-                call, such as ``max_tokens``, ``llm_api_key`` or
-                ``llm_base_url``. Settings this class depends on
-                (``tools_list_dictionary``, ``max_loops``, ``output_type``,
-                ``system_prompt``) cannot be overridden.
+            agent_kwargs: Extra Agent arguments applied to every internal
+                call, such as max_tokens, llm_api_key or
+                llm_base_url. Settings this class depends on
+                (tools_list_dictionary, max_loops, output_type,
+                system_prompt) cannot be overridden.
 
         Raises:
             ValueError: If a strategy name is unknown or a numeric setting is
@@ -664,8 +664,8 @@ class TreeOfThoughts:
     def usage(self) -> Dict[str, int]:
         """Provider token usage summed over every search this agent has run.
 
-        Keys match :attr:`Agent.usage`: ``input_tokens``, ``output_tokens``,
-        ``cached_tokens``, ``reasoning_tokens``, ``total_tokens``.
+        Keys match Agent.usage: input_tokens, output_tokens,
+        cached_tokens, reasoning_tokens, total_tokens.
 
         Returns:
             Dict[str, int]: A new dict; mutating it does not affect the agent.
@@ -674,22 +674,22 @@ class TreeOfThoughts:
             return dict(self._usage)
 
     def run(self, task: str) -> Any:
-        """Solve ``task`` with a tree search and return the answer.
+        """Solve the task with a tree search and return the answer.
 
         This is the agent's entry point. The conversation it formats holds
         the task, the best reasoning path, and the answer. The full search,
         with the tree, the best path and cost statistics, is kept on
-        :attr:`last_result`.
+        last_result.
 
         Args:
             task: The problem to solve.
 
         Returns:
-            Any: The conversation formatted by ``output_type``; the answer
-            string for the default ``"final"``.
+            Any: The conversation formatted by output_type; the answer
+            string for the default "final".
 
         Raises:
-            ValueError: If ``task`` is empty.
+            ValueError: If the task is empty.
             RuntimeError: If the search found no solution and the final
                 answer call also failed, so there is no answer to return.
         """
@@ -720,7 +720,7 @@ class TreeOfThoughts:
             and cost statistics.
 
         Raises:
-            ValueError: If ``task`` is empty.
+            ValueError: If the task is empty.
             RuntimeError: If the search found no solution and the final
                 answer call also failed.
         """
@@ -754,13 +754,13 @@ class TreeOfThoughts:
         )
 
     def _bfs(self, state: _SearchState) -> Optional[ThoughtNode]:
-        """Beam search: expand the best ``breadth`` open nodes, level by level.
+        """Beam search: expand the best breadth open nodes, level by level.
 
         Args:
             state: The current search.
 
         Returns:
-            The best solution found, or ``None``.
+            The best solution found, or None.
         """
         frontier = [state.root]
         best_solution: Optional[ThoughtNode] = None
@@ -797,7 +797,7 @@ class TreeOfThoughts:
             node: The node to expand.
 
         Returns:
-            The first solution reached below ``node``, or ``None``.
+            The first solution reached below the node, or None.
         """
         if node.depth >= self.max_depth or not self._within_budget(
             state, [node]
@@ -816,7 +816,7 @@ class TreeOfThoughts:
     def _within_budget(
         self, state: _SearchState, nodes: List[ThoughtNode]
     ) -> List[ThoughtNode]:
-        """Trim ``nodes`` to what ``max_expansions`` still allows.
+        """Trim the nodes to what max_expansions still allows.
 
         Args:
             state: The current search.
@@ -855,7 +855,7 @@ class TreeOfThoughts:
             nodes: Nodes to expand.
 
         Returns:
-            All new children, grouped by parent in the order of ``nodes``.
+            All new children, grouped by parent in the order of the nodes.
         """
         state.nodes_expanded += len(nodes)
         if self.generation_strategy == "propose":
@@ -906,7 +906,7 @@ class TreeOfThoughts:
     def _evaluate(
         self, state: _SearchState, nodes: List[ThoughtNode]
     ) -> None:
-        """Score ``nodes`` in place and mark those below the threshold as pruned.
+        """Score nodes in place and mark those below the threshold as pruned.
 
         Args:
             state: The current search.
@@ -933,7 +933,7 @@ class TreeOfThoughts:
     def _evaluate_by_value(
         self, state: _SearchState, nodes: List[ThoughtNode]
     ) -> None:
-        """Rate each node on its own, averaging ``n_evaluate_samples`` ratings.
+        """Rate each node on its own, averaging n_evaluate_samples ratings.
 
         A node whose every rating failed scores 0 and is pruned.
 
@@ -1012,7 +1012,7 @@ class TreeOfThoughts:
             root: The root of the search tree.
 
         Returns:
-            The best node, or ``None`` if nothing was evaluated.
+            The best node, or None if nothing was evaluated.
         """
         best: Optional[ThoughtNode] = None
         stack = list(root.children)
@@ -1038,8 +1038,8 @@ class TreeOfThoughts:
 
         Args:
             state: The current search.
-            best: The node to answer from, or ``None``.
-            solved: Whether ``best`` is an accepted solution.
+            best: The node to answer from, or None.
+            solved: Whether the best node is an accepted solution.
 
         Returns:
             The final answer. If the answer call fails on a solved path, the
@@ -1083,7 +1083,7 @@ class TreeOfThoughts:
         node: ThoughtNode,
         count: int,
     ) -> str:
-        """Build the prompt asking for ``count`` next steps after ``node``.
+        """Build the prompt asking for a number of next steps after the node.
 
         Args:
             state: The current search.
@@ -1120,7 +1120,7 @@ class TreeOfThoughts:
         )
 
     def _criteria(self) -> str:
-        """Format ``evaluation_criteria`` as a prompt section, or nothing."""
+        """Format evaluation_criteria as a prompt section, or nothing."""
         if not self.evaluation_criteria:
             return ""
         return TOT_EVALUATION_CRITERIA.format(
@@ -1130,7 +1130,7 @@ class TreeOfThoughts:
     def _value_prompt(
         self, state: _SearchState, node: ThoughtNode
     ) -> str:
-        """Build the prompt asking the evaluator to rate ``node``'s path.
+        """Build the prompt asking the evaluator to rate the node's path.
 
         Args:
             state: The current search.
@@ -1154,7 +1154,7 @@ class TreeOfThoughts:
     def _vote_prompt(
         self, state: _SearchState, nodes: List[ThoughtNode]
     ) -> str:
-        """Build the prompt asking the evaluator to pick the best of ``nodes``.
+        """Build the prompt asking the evaluator to pick the best of the nodes.
 
         Args:
             state: The current search.
@@ -1189,12 +1189,12 @@ class TreeOfThoughts:
 
         Args:
             state: The current search, which records the call and its usage.
-            role: Suffix for the agent's name, e.g. ``"generator"``.
+            role: Suffix for the agent's name, e.g. "generator".
             schema: The function the model must call.
             prompt: The task sent to the agent.
 
         Returns:
-            The validated call arguments, or ``None`` if the call failed or
+            The validated call arguments, or None if the call failed or
             returned no valid call. Failures are logged as warnings.
         """
         agent = Agent(
@@ -1236,14 +1236,14 @@ class TreeOfThoughts:
         func: Callable[[JobT], ResultT],
         jobs: Sequence[JobT],
     ) -> List[ResultT]:
-        """Run ``func`` over ``jobs`` on up to ``max_workers`` threads.
+        """Run the function over the jobs on up to max_workers threads.
 
         Args:
             func: Called once per job.
             jobs: The inputs.
 
         Returns:
-            Results in the order of ``jobs``.
+            Results in the order of the jobs.
         """
         jobs = list(jobs)
         if not jobs:
