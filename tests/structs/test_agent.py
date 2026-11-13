@@ -1101,6 +1101,22 @@ class TestAutonomousAgentLoop:
         assert loop.agent is agent
         assert agent.autonomous_loop is loop
 
+    def test_unused_helpers_are_built_on_first_read(self, mocked_llm):
+        """A plain agent builds its optional helpers only when read."""
+        lazy = ("skills", "marketplace", "tool_struct", "mcp_manager")
+        agent = self._agent(max_loops=1, llm=mocked_llm)
+        agent.run("hi")
+        assert agent.mcp_enabled is False and agent.skills_dir is None
+        assert not set(lazy) & set(vars(agent))
+        for name in lazy:
+            assert getattr(agent, name) is getattr(agent, name)
+        assert agent.marketplace.agent is agent
+        assert not set(lazy) - set(vars(agent))
+        with_tools = self._agent(llm=mocked_llm, tools=[_add])
+        assert "tool_struct" in vars(with_tools)
+        with pytest.raises(Exception, match="oauth must be"):
+            self._agent(llm=mocked_llm, mcp_oauth=1)
+
     def test_loop_owns_the_tool_methods_not_the_agent(self):
         """The moved methods live on the loop; Agent must not regrow them."""
         agent = self._agent()
