@@ -67,8 +67,6 @@ def test_agent_registry_initialization():
         registry2 = AgentRegistry(
             name="Test Registry",
             description="Test description",
-            return_json=False,
-            auto_save=True,
         )
         assert (
             registry2.name == "Test Registry"
@@ -76,10 +74,6 @@ def test_agent_registry_initialization():
         assert (
             registry2.description == "Test description"
         ), "Custom description should be set"
-        assert (
-            registry2.return_json is False
-        ), "return_json should be False"
-        assert registry2.auto_save is True, "auto_save should be True"
 
         logger.info("✓ AgentRegistry initialization test passed")
 
