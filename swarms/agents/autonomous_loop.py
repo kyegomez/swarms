@@ -284,7 +284,6 @@ class AutonomousAgentLoop:
                 messages or []
             )
             self.agent.autonomous_subtasks = []
-            self.agent.current_subtask_index = 0
             self.agent.subtask_status = {}
             self.agent.plan_created = False
             self.agent.think_call_count = 0
@@ -1446,8 +1445,6 @@ class AutonomousAgentLoop:
                 )
 
         self.agent.plan_created = True
-        if not is_revision:
-            self.agent.current_subtask_index = 0
 
         if not is_revision:
             if self.agent.verbose:
@@ -1708,10 +1705,6 @@ class AutonomousAgentLoop:
         - Stores the summary in the subtask dictionary
         - Resets think_call_count to allow fresh thinking for next subtask
 
-        **Progress Tracking:**
-        - Increments current_subtask_index to move to next subtask
-        - The autonomous loop uses this to determine when all subtasks are done
-
         **Memory Integration:**
         The completion is added to conversation memory with format:
         "[SUBTASK DONE] {task_id}: {summary} (Success: {success})"
@@ -1766,9 +1759,6 @@ class AutonomousAgentLoop:
 
         # Reset think call count when subtask is done
         self.agent.think_call_count = 0
-
-        # Move to next subtask
-        self.agent.current_subtask_index += 1
 
         if self.agent.verbose:
             logger.info(
