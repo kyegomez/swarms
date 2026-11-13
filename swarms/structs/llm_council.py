@@ -142,7 +142,8 @@ class LLMCouncil:
             agent_name="Gemini-3-Pro-Councilor",
             agent_description="Concise and well-processed AI councilor specializing in clear, structured responses",
             system_prompt=get_gemini_councilor_prompt(),
-            model_name="gemini-2.5-flash",  # Using available Gemini model
+            # Without the gemini/ prefix LiteLLM sends this to Vertex AI.
+            model_name="gemini/gemini-3.5-flash-lite",
             max_loops=1,
             verbose=False,
             temperature=0.7,

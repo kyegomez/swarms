@@ -115,7 +115,7 @@ MODEL_FLAG_TIPS: List[str] = [
     "Any LiteLLM-supported model works in [bold]--model-name[/bold] — OpenAI, Anthropic, Groq, Gemini, Mistral, Cohere…",
     "[bold]--model-name claude-opus-4-7[/bold] picks the latest frontier Anthropic model",
     "[bold]--model-name groq/llama-3.3-70b-versatile[/bold] is the fastest open-weight option",
-    "[bold]--model-name gemini/gemini-2.5-pro[/bold] gives you million-token context natively",
+    "[bold]--model-name gemini/gemini-3.6-flash[/bold] gives you million-token context natively",
     "Local models work via Ollama or vLLM — point [bold]--model-name[/bold] at the endpoint",
     "Different commands have different defaults: [bold]swarms agent[/bold] uses gpt-4, [bold]swarms chat[/bold] uses gpt-5.4",
 ]

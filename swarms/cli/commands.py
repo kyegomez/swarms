@@ -161,7 +161,11 @@ def handle_init(args: argparse.Namespace) -> None:
             "Anthropic",
             "claude-opus-4-6, claude-sonnet-4-6",
         ),
-        ("GOOGLE_API_KEY", "Google", "gemini-2.0-flash, gemini-pro"),
+        (
+            "GOOGLE_API_KEY",
+            "Google",
+            "gemini-3.8-flash, gemini-3.6-flash",
+        ),
         (
             "GROQ_API_KEY",
             "Groq",
