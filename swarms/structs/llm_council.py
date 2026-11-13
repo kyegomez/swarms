@@ -154,7 +154,6 @@ class LLMCouncil:
             agent_name="Claude-Sonnet-4.5-Councilor",
             agent_description="Thoughtful and balanced AI councilor specializing in nuanced and well-reasoned responses",
             system_prompt=get_claude_councilor_prompt(),
-            # Sonnet 5.5 rejects any non-default temperature with a 400.
             model_name="anthropic/claude-sonnet-5-5",
             max_loops=1,
             verbose=False,
