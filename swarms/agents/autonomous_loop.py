@@ -537,11 +537,6 @@ class AutonomousAgentLoop:
                                         "create_plan"
                                     ](**arguments)
 
-                                    # Add result to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"create_plan result: {result}",
-                                    )
                                     planning_results[
                                         tool_call.get("id", "")
                                     ] = result
@@ -570,11 +565,6 @@ class AutonomousAgentLoop:
                                         handoffs=handoffs_list
                                     )
 
-                                    # Add result to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=f"handoff_task result: {result}",
-                                    )
                                     planning_results[
                                         tool_call.get("id", "")
                                     ] = result
@@ -886,7 +876,6 @@ class AutonomousAgentLoop:
                                                     tool_error,
                                                 )
 
-                                        # Add result to memory
                                         self.agent.short_memory.add(
                                             role="Tool Executor",
                                             content=f"{function_name} result: {result}",
@@ -1013,13 +1002,6 @@ class AutonomousAgentLoop:
                                         regular_tool_calls
                                     )
 
-                                    # Add to memory
-                                    self.agent.short_memory.add(
-                                        role="Tool Executor",
-                                        content=format_data_structure(
-                                            tool_output
-                                        ),
-                                    )
                                     self._map_batch_results(
                                         regular_tool_calls,
                                         tool_output,
