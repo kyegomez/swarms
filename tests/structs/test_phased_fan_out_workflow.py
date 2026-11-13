@@ -270,6 +270,18 @@ def test_json_followed_by_prose_is_parsed():
         )
 
 
+def test_parse_json_keeps_valid_json_containing_a_code_fence():
+    payload = {
+        "name": "doc",
+        "description": "Use ```python\nprint(1)\n``` as the example.",
+    }
+    assert dw._parse_json(json.dumps(payload)) == payload
+    assert (
+        dw._parse_json("```json\n" + json.dumps(payload) + "\n```")
+        == payload
+    )
+
+
 def test_fan_out_over_max_agents_stops_before_starting():
     lead = FakeLead([fan_out_plan()])
     FakeAgent.handler = file_handler(5)
