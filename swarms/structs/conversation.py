@@ -160,21 +160,7 @@ class Conversation:
                 f"Invalid export_method: {self.export_method}. Must be 'json' or 'yaml'"
             )
 
-        # Set default save filepath if not provided
-        if not self.save_filepath:
-            # Ensure extension matches export method
-            extension = (
-                ".json" if self.export_method == "json" else ".yaml"
-            )
-            # Under conversations_dir, not CWD: same-named conversations must not collide.
-            self.save_filepath = os.path.join(
-                self.conversations_dir or get_conversation_dir(),
-                f"conversation_{self.name}{extension}",
-            )
-            logger.debug(
-                f"Setting default save filepath to: {self.save_filepath}"
-            )
-        else:
+        if self._save_filepath:
             # Validate that provided filepath extension matches export method
             file_ext = os.path.splitext(self.save_filepath)[1].lower()
             expected_ext = (
@@ -201,7 +187,9 @@ class Conversation:
 
         path = self.load_filepath
         if not path or not os.path.exists(path):
-            path = self.save_filepath
+            path = self._save_filepath or self._default_save_filepath(
+                "conversations"
+            )
         if wants_persistence and os.path.exists(path):
             logger.debug(
                 f"Found existing conversation file at: {path}"
@@ -212,6 +200,27 @@ class Conversation:
             logger.debug(
                 f"No existing conversation file found at: {path}"
             )
+
+    @property
+    def save_filepath(self):
+        if not self._save_filepath:
+            self._save_filepath = self._default_save_filepath(
+                get_conversation_dir()
+            )
+        return self._save_filepath
+
+    @save_filepath.setter
+    def save_filepath(self, value):
+        self._save_filepath = value
+
+    def _default_save_filepath(self, conversations_dir):
+        extension = (
+            ".json" if self.export_method == "json" else ".yaml"
+        )
+        return os.path.join(
+            self.conversations_dir or conversations_dir,
+            f"conversation_{self.name}{extension}",
+        )
 
     def _initialize_new_conversation(self):
         """Initialize a new conversation with system prompt and rules."""
@@ -1077,13 +1086,6 @@ class Conversation:
                     "or enable autosave by setting autosave=True when creating the Conversation."
                 )
                 return
-
-            # Ensure we have a valid save path
-            if not self.save_filepath:
-                self.save_filepath = os.path.join(
-                    self.conversations_dir or os.getcwd(),
-                    f"conversation_{self.id}.json",
-                )
 
             # Create directory if it doesn't exist
             save_dir = os.path.dirname(self.save_filepath)
