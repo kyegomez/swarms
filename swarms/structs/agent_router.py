@@ -19,7 +19,6 @@ class AgentRouter:
         embedding_model (str): The embedding model to use for generating embeddings.
             Examples: 'text-embedding-ada-002', 'text-embedding-3-small', 'text-embedding-3-large',
             'cohere/embed-english-v3.0', 'huggingface/microsoft/codebert-base', etc.
-        n_agents (int): Number of agents to return in queries.
         api_key (str, optional): API key for the embedding service. If not provided,
             will use environment variables.
         api_base (str, optional): Custom API base URL for the embedding service.
@@ -29,13 +28,11 @@ class AgentRouter:
     def __init__(
         self,
         embedding_model: str = "text-embedding-ada-002",
-        n_agents: int = 1,
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         agents: Optional[List[AgentType]] = None,
     ):
         self.embedding_model = embedding_model
-        self.n_agents = n_agents
         self.api_key = api_key
         self.api_base = api_base
         self.agents: List[AgentType] = []
