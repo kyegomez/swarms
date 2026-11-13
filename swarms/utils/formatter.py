@@ -580,6 +580,9 @@ class Formatter:
 
         Returns:
             str: The complete accumulated response text.
+
+        Raises:
+            Exception: Whatever the stream raises, once it is shown in the panel.
         """
         complete_response = ""
         with self.streaming_panel(title, style) as add:
@@ -614,6 +617,9 @@ class Formatter:
 
         Yields:
             Callable: Takes a text fragment and an optional style, and shows it.
+
+        Raises:
+            Exception: Whatever the streaming block raises, once it is shown in the panel.
         """
         panel_style = (
             f"bold {choose_random_color()}"
@@ -655,7 +661,9 @@ class Formatter:
                 streaming_text.append(
                     f"\n[Error: {str(e)}]", style="bold red"
                 )
-            live.update(render(True))
+                raise
+            finally:
+                live.update(render(True))
 
     def _create_dashboard_table(
         self, agents_data: List[Dict[str, Any]], title: str
