@@ -396,6 +396,20 @@ def test_default_members_reach_their_own_providers_api():
     }
 
 
+def test_default_claude_member_sends_no_temperature():
+    council = LLMCouncil(verbose=False)
+    claude = next(
+        member
+        for member in council.council_members
+        if member.agent_name == "Claude-Sonnet-4.5-Councilor"
+    )
+
+    params = claude.llm._build_completion_params("Pick a database.")
+
+    assert params["model"] == "anthropic/claude-sonnet-5-5"
+    assert "temperature" not in params
+
+
 @pytest.mark.parametrize(
     "failing_call", [1, 2], ids=["answer", "ranking"]
 )

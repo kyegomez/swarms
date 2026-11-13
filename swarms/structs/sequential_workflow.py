@@ -93,7 +93,7 @@ class SequentialWorkflow:
         verbose: bool = False,
         drift_detection: bool = False,
         drift_threshold: float = 0.75,
-        drift_model: str = "claude-sonnet-4-5",
+        drift_model: str = "claude-sonnet-5-5",
         drift_max_retries: int = 3,
         channel: Optional[CommsChannel] = None,
         *args,
@@ -120,7 +120,7 @@ class SequentialWorkflow:
             drift_threshold (float, optional): Minimum alignment score (0–1) to consider output acceptable.
                 A warning is logged when the score falls below this value. Defaults to 0.75.
             drift_model (str, optional): Model used by the drift detection judge agent.
-                Defaults to "claude-sonnet-4-5".
+                Defaults to "claude-sonnet-5-5".
             drift_max_retries (int, optional): Maximum number of pipeline reruns when the
                 drift score stays below drift_threshold. Once exhausted the last output is
                 returned with a warning instead of rerunning forever. 0 disables reruns, so
