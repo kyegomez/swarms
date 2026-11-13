@@ -8,7 +8,10 @@ from swarms.structs.auto_swarm_builder import (
     AgentSpec,
     AutoSwarmBuilder,
 )
-from swarms.structs.ma_utils import set_random_models_for_agents
+from swarms.structs.ma_utils import (
+    models,
+    set_random_models_for_agents,
+)
 
 load_dotenv()
 
@@ -404,6 +407,27 @@ def test_set_random_models_for_agents_with_none():
 
     assert isinstance(result, str)
     assert result in model_names
+
+
+@pytest.mark.parametrize("model_name", models)
+def test_random_model_is_one_its_provider_still_serves(model_name):
+    shut_down_or_scheduled = {
+        "claude-3-sonnet-20240229",
+        "claude-sonnet-4-20250514",
+        "deepseek-r1-distill-qwen-32b",
+        "moonshotai/kimi-k2-instruct",
+        "llama-3.1-8b-instant",
+        "o3-mini",
+        "o4-mini",
+        "o3",
+        "gpt-4.1-nano",
+        "gpt-4o",
+        "gpt-4o-mini",
+    }
+    provider, _, model_id = model_name.partition("/")
+
+    assert provider and model_id
+    assert model_id not in shut_down_or_scheduled
 
 
 @pytest.mark.skip(

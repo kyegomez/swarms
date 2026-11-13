@@ -95,18 +95,15 @@ def list_all_agents(
 
 
 models = [
-    "anthropic/claude-3-sonnet-20240229",
-    "openai/gpt-4o-mini",
-    "openai/gpt-4o",
-    "groq/deepseek-r1-distill-qwen-32b",
-    "groq/moonshotai/kimi-k2-instruct",
-    "openai/o3-mini",
-    "o4-mini",
-    "claude-sonnet-4-20250514",
-    "o3",
-    "gpt-5.4",
-    "groq/llama-3.1-8b-instant",
-    "gpt-4.1-nano",
+    "anthropic/claude-sonnet-5-5",
+    "openai/gpt-6-luna",
+    "groq/openai/gpt-oss-120b",
+    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-terra",
+    "openai/gpt-6.1-sol",
+    "openai/gpt-5.4",
+    "groq/openai/gpt-oss-20b",
+    "openai/gpt-5.6-luna",
 ]
 
 
