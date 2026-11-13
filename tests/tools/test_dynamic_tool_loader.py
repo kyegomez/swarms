@@ -372,6 +372,7 @@ class TestAgentIntegration:
             ('{"q": "weather"}', "ERROR: tool_search failed"),
             ('{"query": "weather", "max_results": "3"}', "Loaded 1"),
             ('{"query": "weather", "max_results": 3.0}', "Loaded 1"),
+            ('{"query": 5}', "ERROR: tool_search failed"),
         ],
     )
     def test_fixed_loop_answers_a_bad_tool_search_call(

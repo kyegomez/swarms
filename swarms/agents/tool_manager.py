@@ -625,7 +625,7 @@ class ToolManager:
                 continue
             try:
                 result = self.tool_search_tool(**_arguments(call))
-            except (ValueError, TypeError) as error:
+            except Exception as error:
                 result = _format_tool_error(SEARCH_TOOL_NAME, error)
 
             agent.short_memory.add(
