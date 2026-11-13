@@ -33,7 +33,6 @@ def main() -> None:
 
     router = AgentRouter(
         embedding_model="text-embedding-3-small",
-        n_agents=1,
         agents=[researcher, coder, writer],
     )
 

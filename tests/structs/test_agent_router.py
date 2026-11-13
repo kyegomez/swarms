@@ -9,7 +9,6 @@ def test_agent_router_initialization_default():
     router = AgentRouter()
 
     assert router.embedding_model == "text-embedding-ada-002"
-    assert router.n_agents == 1
     assert router.api_key is None
     assert router.api_base is None
     assert router.agents == []
@@ -39,14 +38,12 @@ def test_agent_router_initialization_custom():
     ]
     router = AgentRouter(
         embedding_model="text-embedding-ada-002",
-        n_agents=3,
         api_key=None,
         api_base=None,
         agents=agents,
     )
 
     assert router.embedding_model == "text-embedding-ada-002"
-    assert router.n_agents == 3
     assert len(router.agents) == 2
 
 
