@@ -5,7 +5,7 @@ import os
 import threading
 import time
 from contextlib import nullcontext
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from typing import (
     Any,
     Callable,
@@ -77,6 +77,7 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
+from swarms.tools.base_tool import BaseTool
 from swarms.tools.dynamic_tool_loader import (
     DynamicToolLoader,
 )
@@ -434,7 +435,8 @@ class Agent:
     ):
         # super().__init__(*args, **kwargs)
         self.id = id or generate_id("agent")
-        self.skills = SkillsManager(skills_dir=skills_dir)
+        if skills_dir is not None:
+            self.skills = SkillsManager(skills_dir=skills_dir)
         self._skills_prompt = ""
         self.selected_tools = selected_tools
         self.llm = llm
@@ -558,21 +560,16 @@ class Agent:
         self.publish_to_marketplace = publish_to_marketplace
         self.marketplace_prompt_id = marketplace_prompt_id
 
-        self.mcp_manager = MCPManager(
-            mcp_url=self.mcp_url,
-            mcp_urls=self.mcp_urls,
-            mcp_config=self.mcp_config,
-            mcp_configs=self.mcp_configs,
-            api_key=self.mcp_api_key,
-            authorization_token=self.mcp_authorization_token,
-            oauth=self.mcp_oauth,
-            headers=self.mcp_headers,
-            transport=self.mcp_transport,
-            timeout=self.mcp_timeout,
-            agent_name=self.agent_name,
-            verbose=self.verbose,
-            retry_attempts=self.tool_retry_attempts,
+        mcp_settings = (
+            self.mcp_url,
+            self.mcp_urls,
+            self.mcp_config,
+            self.mcp_configs,
+            self.mcp_oauth,
         )
+        if any(setting is not None for setting in mcp_settings):
+            # Invalid MCP settings raise here, not on first use.
+            self.mcp_manager = self._build_mcp_manager()
 
         if self.random_models_on is True:
             self.model_name = set_random_models_for_agents()
@@ -623,9 +620,6 @@ class Agent:
         # Async subagent support
         self._subagent_registry = None
 
-        # Owns fetching prompts from, and publishing prompts to, the Swarms Marketplace
-        self.marketplace = AgentMarketplaceHandler(agent=self)
-
         # Load prompt from marketplace if marketplace_prompt_id is provided
         if self.marketplace_prompt_id:
             self._load_prompt_from_marketplace()
@@ -668,8 +662,13 @@ class Agent:
         # Conversation owns MEMORY.md under $WORKSPACE_DIR/agents/{agent_name}-{id}/.
         self.short_memory = self.short_memory_init()
 
-        # Initialize the tools
-        self.tool_manager.setup_tools()
+        # Tools are validated now; an agent without any builds the executor on first use.
+        if (
+            self.tools is not None
+            or exists(self.tool_schema)
+            or exists(self.list_base_models)
+        ):
+            self.tool_manager.setup_tools()
 
         if self.interactive is True:
             self.reasoning_prompt_on = False
@@ -719,10 +718,53 @@ class Agent:
         """
         return self.marketplace.publish()
 
+    @cached_property
+    def skills(self) -> SkillsManager:
+        """The agent's skills manager, built on first access."""
+        return SkillsManager()
+
+    @cached_property
+    def marketplace(self) -> AgentMarketplaceHandler:
+        """The agent's Swarms Marketplace handler, built on first access."""
+        return AgentMarketplaceHandler(agent=self)
+
+    @cached_property
+    def tool_struct(self) -> BaseTool:
+        """The agent's tool executor, built on first access."""
+        return BaseTool(tools=self.tools, verbose=self.verbose)
+
+    @cached_property
+    def mcp_manager(self) -> MCPManager:
+        """The agent's MCP manager, built on first access."""
+        return self._build_mcp_manager()
+
+    def _build_mcp_manager(self) -> MCPManager:
+        """Build the MCP manager from the agent's MCP settings.
+
+        Returns:
+            MCPManager: A manager holding the configured connections.
+        """
+        return MCPManager(
+            mcp_url=self.mcp_url,
+            mcp_urls=self.mcp_urls,
+            mcp_config=self.mcp_config,
+            mcp_configs=self.mcp_configs,
+            api_key=self.mcp_api_key,
+            authorization_token=self.mcp_authorization_token,
+            oauth=self.mcp_oauth,
+            headers=self.mcp_headers,
+            transport=self.mcp_transport,
+            timeout=self.mcp_timeout,
+            agent_name=self.agent_name,
+            verbose=self.verbose,
+            retry_attempts=self.tool_retry_attempts,
+        )
+
     @property
     def skills_dir(self) -> Optional[str]:
         """Directory the agent loads Agent Skills from."""
-        return self.skills.skills_dir
+        skills = self.__dict__.get("skills")
+        return skills.skills_dir if skills is not None else None
 
     @skills_dir.setter
     def skills_dir(self, skills_dir: Optional[str]) -> None:
@@ -850,7 +892,7 @@ class Agent:
         ``mcp_url``, ``mcp_urls``, ``mcp_config`` and ``mcp_configs`` into a
         single list of connections.
         """
-        manager = getattr(self, "mcp_manager", None)
+        manager = self.__dict__.get("mcp_manager")
         return manager is not None and manager.enabled
 
     def _load_prompt_from_marketplace(self) -> None:
