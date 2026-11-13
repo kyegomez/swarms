@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 from pydantic import BaseModel
 
+from swarms.agents.autonomous_loop import _format_tool_error
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
 from swarms.schemas.agent_errors import AgentToolExecutionError
 from swarms.structs.autonomous_loop_utils import (
@@ -623,11 +624,10 @@ class ToolManager:
             if _name(call) != SEARCH_TOOL_NAME:
                 continue
             try:
-                arguments = _arguments(call)
-            except (ValueError, TypeError):
-                arguments = {}
+                result = self.tool_search_tool(**_arguments(call))
+            except (ValueError, TypeError) as error:
+                result = _format_tool_error(SEARCH_TOOL_NAME, error)
 
-            result = self.tool_search_tool(**arguments)
             agent.short_memory.add(
                 role="Tool Executor",
                 content=f"tool_search result: {result}",
