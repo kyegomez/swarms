@@ -2102,7 +2102,7 @@ Subtask Breakdown:
             logger.info(f"Running concurrent tasks: {tasks}")
             # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
             with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
+                max_workers=max(1, len(tasks))
             ) as executor:
                 futures = [
                     executor.submit(
@@ -3444,7 +3444,7 @@ Subtask Breakdown:
         """
         # Scoped to the call, see run_concurrent_tasks for why
         with ContextThreadPoolExecutor(
-            max_workers=os.cpu_count()
+            max_workers=max(1, len(agents))
         ) as executor:
             # Create futures for each agent conversation
             futures = [
