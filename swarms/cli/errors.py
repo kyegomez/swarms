@@ -40,6 +40,18 @@ def _classify_command_error(message: str) -> List[str]:
             "or list them all with [bold]swarms models[/bold]"
         )
 
+    if "context_length_exceeded" in err:
+        hints.append(
+            "Context window exceeded — lower max_tokens or context_length "
+            "in your config, or use a model with a larger window"
+        )
+
+    if "no yaml content found" in err:
+        hints.append(
+            "The model returned no swarm config — check its API key, "
+            "or try another model with [bold]--model[/bold]"
+        )
+
     if "workspace_dir" in err or "workspace directory" in err:
         hints.append(
             "Workspace not configured — run [bold]swarms init[/bold] to scaffold one"
