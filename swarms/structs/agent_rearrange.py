@@ -396,6 +396,9 @@ class AgentRearrange(SerializableMixin):
         if not self.flow or not self.flow.strip():
             raise ValueError("flow cannot be empty")
 
+        # Built on every call so it cannot go stale when agents change.
+        registered_names = {agent.agent_name for agent in self.agents}
+
         for raw_step, agent_names in zip(
             self.flow.split("->"), self.steps
         ):
@@ -404,9 +407,7 @@ class AgentRearrange(SerializableMixin):
                     f"Empty agent name in flow segment {raw_step!r}"
                 )
             for agent_name in agent_names:
-                try:
-                    find_agent_by_name(self.agents, agent_name)
-                except (TypeError, ValueError):
+                if agent_name not in registered_names:
                     raise ValueError(
                         f"Agent '{agent_name}' is not registered."
                     )
