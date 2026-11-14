@@ -136,3 +136,32 @@ def test_run_returns_the_answer_not_the_turn_prompt(monkeypatch):
         message["content"]
         for message in swarm.conversation.conversation_history[1:]
     ] == ["A-out", "B-out", "A-out", "B-out"]
+
+
+def test_turn_prompt_off_sends_only_the_conversation(monkeypatch):
+    requests = []
+
+    def call_llm(self, task, *args, **kwargs):
+        requests.append(kwargs["messages"])
+        return f"{self.agent_name}-out"
+
+    monkeypatch.setattr(Agent, "call_llm", call_llm)
+    agents = [
+        Agent(
+            agent_name=name,
+            model_name="gpt-5.4",
+            max_loops=1,
+            print_on=False,
+        )
+        for name in ("A", "B")
+    ]
+    swarm = RoundRobinSwarm(agents=agents, turn_prompt=False)
+
+    assert swarm.run("original task") == "B-out"
+    assert requests == [
+        [{"role": "user", "content": "original task"}],
+        [
+            {"role": "user", "content": "original task"},
+            {"role": "user", "content": "A: A-out"},
+        ],
+    ]
