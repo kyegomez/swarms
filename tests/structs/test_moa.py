@@ -552,15 +552,57 @@ def test_run_raises_when_the_aggregator_fails():
         moa.run("Question?")
 
 
+def _moa_with_failing_worker(layers=1):
+    agents, calls = _recording_agents(["W1", "W2", "Agg"])
+    agents[1].run = lambda **kwargs: 1 / 0
+    moa = MixtureOfAgents(
+        agents=agents[:2], aggregator_agent=agents[2], layers=layers
+    )
+    return moa, calls
+
+
+def test_run_raises_when_a_worker_fails_without_running_the_aggregator():
+    moa, calls = _moa_with_failing_worker(layers=2)
+
+    with pytest.raises(ZeroDivisionError):
+        moa.run("Question?")
+
+    assert "Error: division by zero" not in str(calls)
+    assert "Agg" not in str(calls)
+
+
+def test_arun_raises_when_a_worker_fails_without_running_the_aggregator():
+    moa, _ = _moa_with_failing_worker()
+    aggregated = []
+
+    async def worker_ok(task=None, **kwargs):
+        return "W1-answer"
+
+    async def worker_down(task=None, **kwargs):
+        return 1 / 0
+
+    async def aggregate(task=None, **kwargs):
+        aggregated.append(task)
+        return "synthesis"
+
+    moa.agents[0].arun = worker_ok
+    moa.agents[1].arun = worker_down
+    moa.aggregator_agent.arun = aggregate
+
+    with pytest.raises(ZeroDivisionError):
+        asyncio.run(moa.arun("Question?"))
+
+    assert aggregated == []
+
+
 @pytest.mark.parametrize(
     "max_workers, limit, peak", [(None, 2, 2), (1, None, 1)]
 )
-def test_arun_matches_run_under_max_concurrency_keeping_failed_workers(
+def test_arun_matches_run_under_max_concurrency(
     max_workers, limit, peak
 ):
     def mixture():
         agents, calls = _recording_agents(["W1", "W2", "W3", "Agg"])
-        agents[1].run = lambda **kwargs: 1 / 0
         return (
             MixtureOfAgents(
                 agents=agents[:3],
@@ -600,7 +642,6 @@ def test_arun_matches_run_under_max_concurrency_keeping_failed_workers(
     assert max(peaks) == peak
     assert imgs.count("chart.png") == 6
     assert sorted(calls, key=str) == sorted(sync_calls, key=str)
-    assert "W2 (layer 1/2): Error: division by zero" in str(calls)
 
 
 def test_default_aggregator_model_is_not_retired():

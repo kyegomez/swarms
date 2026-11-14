@@ -35,6 +35,13 @@ from swarms.structs.usage_utils import total_usage
 logger = initialize_logger(log_folder="mixture_of_agents")
 
 
+def _raise_worker_failure(results) -> None:
+    """Re-raise the first exception a worker returned as its result."""
+    for result in results:
+        if isinstance(result, Exception):
+            raise result
+
+
 class MixtureOfAgents:
     """Run a layered Mixture-of-Agents workflow.
 
@@ -227,6 +234,7 @@ class MixtureOfAgents:
             return_agent_output_dict=True,
             max_workers=self.max_workers,
         )
+        _raise_worker_failure(agent_outputs.values())
 
         # Only the agent's latest message (the answer) is recorded to avoid duplicating history.
         return get_final_agent_answer(
@@ -321,9 +329,9 @@ class MixtureOfAgents:
             The formatted mixture output.
 
         Raises:
-            Exception: Whatever the aggregator raised, so a failed run is
-                not mistaken for an answer. A failing worker does not
-                raise; its error is recorded as that worker's answer.
+            Exception: The first worker's error, if any worker fails (the
+                aggregator is not run), or whatever the aggregator raised,
+                so a failed run is not mistaken for an answer.
         """
         return self._run(task=task, img=img)
 
@@ -346,7 +354,8 @@ class MixtureOfAgents:
 
         Raises:
             ValueError: If max_concurrency is less than 1.
-            Exception: Whatever the aggregator raised, as ``run`` does.
+            Exception: The first worker's error or the aggregator's, as
+                ``run`` does.
         """
         if max_concurrency is None:
             max_concurrency = self.max_workers
@@ -362,6 +371,7 @@ class MixtureOfAgents:
                     output = await agent.arun(task=prompt, img=img)
                 except Exception as error:
                     output = error
+            _raise_worker_failure([output])
             return agent.agent_name, agent_answer(agent, output)
 
         self._reset_conversation()
