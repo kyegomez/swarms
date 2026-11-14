@@ -235,7 +235,7 @@ def isolated(monkeypatch):
     def no_network(*args, **kwargs):
         raise AssertionError("unexpected network call")
 
-    monkeypatch.setattr(decision_model.httpx, "get", no_network)
+    monkeypatch.setattr(httpx, "get", no_network)
 
 
 @pytest.fixture(autouse=True)
@@ -266,12 +266,12 @@ def api(monkeypatch):
     real_client = httpx.Client
     real_async_client = httpx.AsyncClient
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "Client",
         lambda **kwargs: real_client(transport=transport, **kwargs),
     )
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "AsyncClient",
         lambda **kwargs: real_async_client(
             transport=transport, **kwargs
@@ -322,7 +322,7 @@ def test_live_models_from_every_provider_are_merged(
             openai=[{"id": "gpt-6-luna"}, {"id": "gpt-6-luna-2"}],
         )
 
-    monkeypatch.setattr(decision_model.httpx, "get", fake_get)
+    monkeypatch.setattr(httpx, "get", fake_get)
 
     assert get_decision_models() == BUILTIN_MODELS[:3] + [
         "jev-2.0.0",
@@ -344,7 +344,7 @@ def test_listing_drops_models_outside_each_provider_family(
     monkeypatch, cloudflare_env
 ):
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "get",
         lambda url, **kwargs: _listing(
             url,
@@ -369,7 +369,7 @@ def test_listing_only_queries_providers_with_keys(
         seen.append(url)
         return _listing(url)
 
-    monkeypatch.setattr(decision_model.httpx, "get", fake_get)
+    monkeypatch.setattr(httpx, "get", fake_get)
 
     get_decision_models()
 
@@ -389,7 +389,7 @@ def test_listing_keeps_builtin_names_when_a_provider_is_unreachable(
     def fake_get(url, **kwargs):
         raise failure
 
-    monkeypatch.setattr(decision_model.httpx, "get", fake_get)
+    monkeypatch.setattr(httpx, "get", fake_get)
 
     assert get_decision_models() == BUILTIN_MODELS
 
@@ -398,7 +398,7 @@ def test_listing_keeps_builtin_names_on_an_http_error(
     monkeypatch, typesafe_key
 ):
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "get",
         lambda url, **kwargs: httpx.Response(
             401, request=httpx.Request("GET", url)
@@ -412,7 +412,7 @@ def test_listing_keeps_builtin_names_on_a_malformed_body(
     monkeypatch, typesafe_key
 ):
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "get",
         lambda url, **kwargs: httpx.Response(
             200, request=httpx.Request("GET", url), json=["jev-x"]
@@ -432,7 +432,7 @@ def test_list_models_returns_every_provider(
     monkeypatch, typesafe_key, cloudflare_env
 ):
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "get",
         lambda url, **kwargs: _listing(
             url, cloudflare=[{"name": "@cf/cloudflare/clef-2"}]
@@ -473,7 +473,7 @@ def test_live_cloudflare_prices_override_the_builtin_ones(
     monkeypatch, typesafe_key, cloudflare_env
 ):
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "get",
         lambda url, **kwargs: _listing(
             url,
@@ -527,7 +527,7 @@ def test_malformed_live_prices_keep_the_builtin_price(
     monkeypatch, cloudflare_env, properties
 ):
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "get",
         lambda url, **kwargs: _listing(
             url,
@@ -558,7 +558,7 @@ def test_typesafe_prices_need_no_network_call(
 ):
     seen = []
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "get",
         lambda url, **kwargs: seen.append(url) or _listing(url),
     )
@@ -586,7 +586,7 @@ def test_get_price_fetches_only_its_own_provider_once(
             ],
         )
 
-    monkeypatch.setattr(decision_model.httpx, "get", fake_get)
+    monkeypatch.setattr(httpx, "get", fake_get)
     model = DecisionModel(model_name="clef-flash")
 
     assert model.get_price() == {"input": 0.1, "output": 0.0}
@@ -1251,7 +1251,7 @@ def test_calculate_cost_bills_output_tokens_when_priced(
     monkeypatch, cloudflare_env
 ):
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "get",
         lambda url, **kwargs: _listing(
             url,
@@ -1299,7 +1299,7 @@ def test_openai_listing_keeps_only_decision_models(
             ],
         )
 
-    monkeypatch.setattr(decision_model.httpx, "get", fake_get)
+    monkeypatch.setattr(httpx, "get", fake_get)
 
     assert get_decision_models() == BUILTIN_MODELS[:-1] + [
         "gpt-6-luna-2026-10-01",
@@ -1675,12 +1675,12 @@ def plain_api(monkeypatch):
     real_client = httpx.Client
     real_async_client = httpx.AsyncClient
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "Client",
         lambda **kwargs: real_client(transport=transport, **kwargs),
     )
     monkeypatch.setattr(
-        decision_model.httpx,
+        httpx,
         "AsyncClient",
         lambda **kwargs: real_async_client(
             transport=transport, **kwargs

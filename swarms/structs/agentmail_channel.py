@@ -7,8 +7,6 @@ from email.utils import formataddr, parseaddr
 from typing import Any, Dict, List, Literal, Optional, Union
 from urllib.parse import quote
 
-import httpx
-
 from swarms.structs.comms_channel import CommsChannel
 from swarms.structs.smtp_channel import strip_quoted
 
@@ -97,6 +95,8 @@ class AgentMailChannel(CommsChannel):
         base_url = (base_url or _HOSTS[backend]).rstrip("/")
         if backend == "agentmail":
             base_url += f"/v0/inboxes/{_segment(inbox_id)}"
+        import httpx
+
         self.client = httpx.Client(
             base_url=base_url,
             headers={"Authorization": f"Bearer {api_key}"},
