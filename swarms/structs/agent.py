@@ -112,6 +112,9 @@ def _model_info(model_name: str) -> Dict[str, Any]:
 # Agent output types
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
+# Model calls wait on the network, so pools are sized by work, not CPUs.
+MAX_CONCURRENT_CALLS = 32
+
 DEFAULT_AGENT_DESCRIPTION = "An autonomous agent that can perform tasks and learn from experience powered by Swarms"
 
 
@@ -2102,7 +2105,9 @@ Subtask Breakdown:
             logger.info(f"Running concurrent tasks: {tasks}")
             # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
             with ContextThreadPoolExecutor(
-                max_workers=os.cpu_count()
+                max_workers=max(
+                    1, min(len(tasks), MAX_CONCURRENT_CALLS)
+                )
             ) as executor:
                 futures = [
                     executor.submit(
@@ -3444,7 +3449,7 @@ Subtask Breakdown:
         """
         # Scoped to the call, see run_concurrent_tasks for why
         with ContextThreadPoolExecutor(
-            max_workers=os.cpu_count()
+            max_workers=max(1, min(len(agents), MAX_CONCURRENT_CALLS))
         ) as executor:
             # Create futures for each agent conversation
             futures = [

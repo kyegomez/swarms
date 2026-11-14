@@ -2001,6 +2001,33 @@ class TestConcurrentExecutionPool:
         # Order matters: results are zipped against the caller's task list.
         assert results == ["ran:t1", "ran:t2", "ran:t3"]
 
+    def test_concurrent_paths_run_every_item_at_once_on_few_cpus(
+        self,
+    ):
+        """#2713: the pool was os.cpu_count() wide, so on a 1-CPU host
+        I/O-bound runs went one at a time."""
+        agent = self._agent()
+        others = [self._agent(n) for n in "BCDE"]
+        barrier = threading.Barrier(4, timeout=5)
+
+        def wait(*a, **kw):
+            barrier.wait()
+            return "ok"
+
+        with patch("os.cpu_count", return_value=1):
+            with patch.object(Agent, "run", side_effect=wait):
+                assert (
+                    Agent.run_concurrent_tasks(
+                        agent, ["a", "b", "c", "d"]
+                    )
+                    == ["ok"] * 4
+                )
+            with patch.object(Agent, "talk_to", side_effect=wait):
+                assert (
+                    Agent.talk_to_multiple_agents(agent, others, "hi")
+                    == ["ok"] * 4
+                )
+
     def test_run_concurrent_tasks_propagates_failure(self):
         """The except branch logged and fell through, so a failed batch
         returned None and the caller saw no error."""
