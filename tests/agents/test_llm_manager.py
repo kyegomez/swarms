@@ -792,6 +792,26 @@ class TestCallNonStreaming:
         assert "is_last" not in forwarded
         assert forwarded["other_kwarg"] == "x"
 
+    def test_empty_answer_cut_off_at_max_tokens_warns(
+        self, agent, fake_llm
+    ):
+        fake_llm.non_stream_return = None
+        fake_llm.last_finish_reason = "length"
+        records = []
+        sink = logger.add(
+            lambda message: records.append(message.record),
+            level="WARNING",
+        )
+        try:
+            agent.llm_manager.call("task")
+        finally:
+            logger.remove(sink)
+
+        assert any(
+            f"max_tokens={agent.max_tokens}" in record["message"]
+            for record in records
+        )
+
     def test_errors_are_logged_and_reraised(self, agent):
         agent.llm = RaisingRunLLM(ValueError("boom"))
         with pytest.raises(ValueError, match="boom"):
