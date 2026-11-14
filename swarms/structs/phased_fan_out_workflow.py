@@ -86,22 +86,27 @@ def _parse_json(raw: Any) -> Any:
         return raw
     text = raw.strip()
     fenced = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
-    if fenced:
-        text = fenced.group(1).strip()
-    try:
+    for candidate in (
+        text,
+        fenced.group(1).strip() if fenced else text,
+    ):
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass
+
+    # Scan the whole reply: a fence inside a JSON string cuts the fence match short.
+    start = min(
+        (i for i in (text.find("{"), text.find("[")) if i != -1),
+        default=-1,
+    )
+    if start == -1:
         return json.loads(text)
-    except json.JSONDecodeError:
-        start = min(
-            (i for i in (text.find("{"), text.find("[")) if i != -1),
-            default=-1,
-        )
-        if start == -1:
-            raise
-        rest = text[start:]
-        value, end = json.JSONDecoder().raw_decode(rest)
-        if re.fullmatch(r"[ \t]*(\n[^\[{]*)?", rest[end:]):
-            return value
-        return json.loads(rest)
+    rest = text[start:]
+    value, end = json.JSONDecoder().raw_decode(rest)
+    if re.fullmatch(r"[ \t]*(\n[^\[{]*)?", rest[end:]):
+        return value
+    return json.loads(rest)
 
 
 def fresh_agent(agent: Any) -> Any:
