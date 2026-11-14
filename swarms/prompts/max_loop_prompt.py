@@ -5,12 +5,12 @@ def generate_reasoning_prompt(max_loops: int) -> str:
 
     ## Instructions:
 
-    - In this generation, perform loop number {{current_loop}} out of {max_loops}.
+    - In this generation, perform exactly one loop step out of {max_loops} maximum loops.
     - **Do not perform more than one loop in a single generation.**
     - Use the **maximum token budget** available to explore, reason, and reflect.
     - Output must **end** with:
-        - `### End of Loop {{current_loop}}`
-    - **Do not proceed to loop {{current_loop + 1}}** unless explicitly prompted again.
+        - `### End of Loop`
+    - **Do not proceed to the next loop** unless explicitly prompted again.
 
     ## Loop Structure (per generation):
 
