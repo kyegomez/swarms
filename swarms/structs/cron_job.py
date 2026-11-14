@@ -378,8 +378,11 @@ class CronJob:
             Any: The result of the task execution (original or customized
             by callback), or ``None`` when the execution failed. A failure
             is recorded in the error counters rather than raised, so the
-            scheduler still moves the job to its next interval.
+            scheduler still moves the job to its next interval. A job that
+            is already stopped skips the task and returns ``None``.
         """
+        if self._stop_event.is_set():
+            return None
         try:
             logger.debug(f"Executing task for job {self.job_id}")
 
@@ -520,8 +523,8 @@ class CronJob:
         job's own agent or callback, and on a job that is already stopped. From
         another thread it waits up to 5 seconds for the scheduler thread to
         exit. On the scheduler thread, where the agent and callback run, it
-        returns without waiting: the tick in progress finishes and no later
-        tick runs.
+        returns without waiting: the task in progress finishes and no other
+        task runs, including the rest of a :meth:`batched_run` tick.
 
         Raises:
             CronJobExecutionError: If the job fails to stop properly.
