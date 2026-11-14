@@ -761,6 +761,26 @@ class TestAutonomousLoopCreateAndAssignTools:
         # Should list a mapping line with worker name and task id alias
         assert "- [worker-1] task-1 -> task-" in msg
 
+    def test_assign_task_waits_only_for_its_own_tasks(self):
+        """assign_task must not wait on tasks it did not dispatch."""
+        gate = threading.Event()
+        blocker, writer = MagicMock(), MagicMock()
+        blocker.run.side_effect = lambda task: gate.wait(5)
+        writer.run.return_value = "draft done"
+        reg = SubagentRegistry()
+        background = reg.get_task(reg.spawn(blocker, "dig"))
+        parent = MagicMock(_subagent_registry=reg)
+        parent.sub_agents = {"w": {"agent": writer}}
+        try:
+            msg = assign_task_tool(
+                parent, [{"agent_id": "w", "task": "draft"}]
+            )
+            assert "Result: draft done" in msg
+            assert not background.future.done()
+        finally:
+            gate.set()
+            reg.shutdown()
+
 
 # ── Recursive Subagent Tree Tests ───────────────────────────
 
