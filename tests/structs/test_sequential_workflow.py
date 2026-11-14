@@ -388,6 +388,64 @@ def test_sequential_workflow_autosave_saves_conversation_after_run(
     get_workspace_dir.cache_clear()
 
 
+@pytest.mark.parametrize(
+    "entry", ["run_async", "arun_stream", "run_stream"]
+)
+def test_concurrent_runs_keep_their_own_transcript(entry):
+    import asyncio
+    import threading
+
+    agents, calls = _recording_agents(["Researcher", "Writer"])
+    gate = threading.Barrier(2, timeout=5)
+    researcher_run = agents[0].run
+
+    def gated_run(task=None, messages=None, **kwargs):
+        gate.wait()
+        return researcher_run(task=task, messages=messages)
+
+    agents[0].run = gated_run
+    for agent in agents:
+
+        async def arun_stream(
+            task=None, messages=None, run=agent.run, **kwargs
+        ):
+            yield await asyncio.to_thread(
+                run, task=task, messages=messages
+            )
+
+        agent.arun_stream = arun_stream
+    workflow = SequentialWorkflow(agents=agents, autosave=False)
+
+    async def drain(stream):
+        return [token async for token in stream]
+
+    drivers = {
+        "run_async": workflow.run_async,
+        "arun_stream": lambda t: drain(workflow.arun_stream(t)),
+        "run_stream": lambda t: asyncio.to_thread(
+            list, workflow.run_stream(t)
+        ),
+    }
+
+    async def both():
+        await asyncio.gather(
+            *(drivers[entry](task) for task in ("One.", "Two."))
+        )
+
+    asyncio.run(both())
+
+    seen = sorted(
+        [
+            m["content"]
+            for m in call["messages"]
+            if m["content"] in ("One.", "Two.")
+        ]
+        for call in calls
+        if call["agent"] == "Writer"
+    )
+    assert seen == [["One."], ["Two."]]
+
+
 # ---------------------------------------------------------------------------
 # Drift detection integration
 # ---------------------------------------------------------------------------
