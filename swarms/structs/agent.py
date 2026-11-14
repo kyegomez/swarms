@@ -95,7 +95,7 @@ from swarms.utils.index import (
 )
 from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import empty_usage
+from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -2104,9 +2104,10 @@ Subtask Breakdown:
             with ContextThreadPoolExecutor(
                 max_workers=os.cpu_count()
             ) as executor:
+                # One clone per task, so no task sees another's turns.
                 futures = [
                     executor.submit(
-                        self.run, *args, task=task, **kwargs
+                        self.clone().run, *args, task=task, **kwargs
                     )
                     for task in tasks
                 ]
@@ -2508,6 +2509,42 @@ Subtask Breakdown:
         self.subtask_status = {}
         self.plan_created = False
         self.think_call_count = 0
+
+    def clone(self) -> "Agent":
+        """Build a copy with the same configuration and a fresh conversation.
+
+        An agent holds locks, so deepcopy fails; the copy is rebuilt from
+        its constructor arguments with its own id and its own LLM client.
+
+        Returns:
+            Agent: The new agent.
+        """
+        params = inspect.signature(type(self).__init__).parameters
+        config = {
+            name: getattr(self, name)
+            for name, param in params.items()
+            if name not in ("self", "id")
+            and param.kind
+            not in (param.VAR_POSITIONAL, param.VAR_KEYWORD)
+            and hasattr(self, name)
+        }
+        own_llm = isinstance(config.get("llm"), LiteLLM)
+        if own_llm:
+            config.pop("llm")
+        config["tools_list_dictionary"] = list(
+            self.tools_list_dictionary or []
+        )
+
+        clone = type(self)(**config)
+
+        # __init__ appends tool prompts, so restore the finished values.
+        clone.system_prompt = self.system_prompt
+        clone.tools_list_dictionary = list(
+            self.tools_list_dictionary or []
+        )
+        if own_llm:
+            clone.llm_handling()
+        return clone
 
     def send_agent_message(
         self, agent_name: str, message: str, *args, **kwargs

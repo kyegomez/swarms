@@ -1965,12 +1965,45 @@ class TestListTools:
         assert len(calls) == 1
 
 
+def test_clone_has_own_conversation_and_client_and_same_config():
+    """#2708: deepcopy(agent) fails, so run_concurrent_tasks ran every
+    task on one agent and each request carried the others' turns."""
+    agent = _patched_agent("A", system_prompt="Be brief.")
+    agent.short_memory.add("user", "earlier task")
+
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        clone = agent.clone()
+
+    assert clone.short_memory is not agent.short_memory
+    assert "earlier task" not in str(
+        clone.short_memory.conversation_history
+    )
+    assert clone.llm is not agent.llm
+    assert clone.id != agent.id
+    assert (clone.agent_name, clone.system_prompt) == (
+        "A",
+        agent.system_prompt,
+    )
+
+    with patch.object(
+        Agent, "run", autospec=True, side_effect=lambda s, task: s
+    ):
+        runners = Agent.run_concurrent_tasks(agent, ["t1", "t2"])
+    assert len({id(r) for r in runners + [agent]}) == 3
+
+
 class TestConcurrentExecutionPool:
     """#1793: both concurrent entry points referenced self.executor, which
     __init__ never assigned — run_concurrent_tasks swallowed the AttributeError
     and returned None, talk_to_multiple_agents raised it. Both now build a
     call-scoped pool.
     """
+
+    @pytest.fixture(autouse=True)
+    def _no_clone(self):
+        """A bare Agent cannot be rebuilt, so tasks run on it directly."""
+        with patch.object(Agent, "clone", lambda self: self):
+            yield
 
     @staticmethod
     def _agent(name="A"):
