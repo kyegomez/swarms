@@ -1199,10 +1199,6 @@ class Agent:
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
 
-                # Autosave config at the start of each loop step
-                if self.autosave:
-                    self._autosave_config_step(loop_count=loop_count)
-
                 # Dynamic temperature
                 if self.dynamic_temperature_enabled is True:
                     self.dynamic_temperature()
@@ -1391,22 +1387,25 @@ class Agent:
         self, loop_count: Optional[int] = None
     ) -> None:
         """
-        Write a config snapshot to the agent workspace, once per step.
+        Write the config and the conversation to the workspace, once per step.
 
         Args:
             loop_count (Optional[int]): Current loop, recorded in the
                 saved metadata and used only for logging. Defaults to None.
 
         Note:
-            Writes ``config.json`` under
+            Writes config.json, without the conversation, and
+            conversation_history.json under
             workspace_dir/agents/{name-of-agent}-{uuid}/. Never raises -
             autosave must not interrupt a run.
         """
         if not self.autosave:
             return
 
+        self.workspace.save_conversation(self.short_memory)
         path = self.workspace.save_config(
-            additional_metadata={"loop_count": loop_count}
+            additional_metadata={"loop_count": loop_count},
+            exclude=("short_memory",),
         )
 
         if path and self.verbose and loop_count is not None:
@@ -1781,9 +1780,6 @@ Subtask Breakdown:
                 ):
                     # The history is now the compressed summary, so the request starts over.
                     request_start = 0
-
-                if self.autosave:
-                    self._autosave_config_step(loop_count=loop_count)
 
                 if self.dynamic_temperature_enabled is True:
                     self.dynamic_temperature()

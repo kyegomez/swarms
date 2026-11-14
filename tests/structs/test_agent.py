@@ -3016,3 +3016,27 @@ def test_output_schema_returns_a_validated_model(use_arun, replies):
 
     assert len(sent) == 1
     assert sent[0]["response_format"] is _Report
+
+
+@pytest.mark.parametrize("arun", [False, True])
+def test_autosave_file_split(monkeypatch, tmp_path, basic_flow, arun):
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    agent, history_lengths = basic_flow, []
+    step = agent._autosave_config_step
+
+    def autosave(**kwargs):
+        step(**kwargs)
+        for path in tmp_path.rglob("*history.json"):
+            history_lengths.append(len(json.loads(path.read_text())))
+
+    agent._autosave_config_step = autosave
+    agent.autosave, agent.max_loops = True, 3
+    if arun:
+        asyncio.run(agent.arun("Helios"))
+    else:
+        agent.run("Helios")
+
+    # Saved at the start, after each of the 3 loops and at the end.
+    assert history_lengths == [1, 2, 3, 4, 4]
+    cfg = next(tmp_path.rglob("config.json")).read_text()
+    assert "short_memory" not in json.loads(cfg)
