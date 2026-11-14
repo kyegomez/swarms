@@ -1631,6 +1631,7 @@ Subtask Breakdown:
             self._run_streaming_callback = streaming_callback
 
         models = self.fallback_models or [self.model_name]
+        self.mcp_manager.open()
         try:
             for i, model in enumerate(models):
                 if model != self.model_name:
@@ -1662,6 +1663,7 @@ Subtask Breakdown:
                     )
         finally:
             self._run_streaming_callback = None
+            await asyncio.to_thread(self.mcp_manager.close)
 
     async def _adispatch(
         self,
@@ -3009,6 +3011,7 @@ Subtask Breakdown:
         )
 
         models = self.fallback_models or [self.model_name]
+        self.mcp_manager.open()
         try:
             for i, model in enumerate(models):
                 # Also moves back to the primary after an earlier run fell back.
@@ -3056,6 +3059,7 @@ Subtask Breakdown:
 
         finally:
             self._run_streaming_callback = None
+            self.mcp_manager.close()
 
     @staticmethod
     def _task_missing(task: Any) -> bool:
