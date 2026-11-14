@@ -36,12 +36,12 @@ from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 from swarms.structs.round_robin import RoundRobinSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
 from swarms.structs.serialization import SerializableMixin
+from swarms.structs.usage_utils import total_usage
 from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
 from swarms.utils.generate_id import generate_id
-from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 
@@ -591,39 +591,18 @@ class SwarmRouter(SerializableMixin):
 
     @property
     def usage(self) -> dict:
-        """Provider token usage summed over every agent this router has run.
+        """Provider token usage summed over everything this router has run.
 
-        Adds up :attr:`Agent.usage` for the configured ``agents`` plus any
-        agent a built swarm holds on its own — a ``HierarchicalSwarm``
-        director, a ``MixtureOfAgents`` aggregator, a judge. Keys:
-        ``input_tokens``, ``output_tokens``, ``cached_tokens``,
+        Adds up the configured ``agents`` plus everything a built swarm
+        holds on its own — a ``HierarchicalSwarm`` director, a
+        ``MixtureOfAgents`` aggregator, a judge, a bare model client such
+        as the ``MultiAgentRouter`` boss, or a swarm's own usage counter.
+        Keys: ``input_tokens``, ``output_tokens``, ``cached_tokens``,
         ``reasoning_tokens``, ``total_tokens``. Agent totals are lifetime totals, so an agent
         shared with another router contributes what it spent there too.
         Streaming calls are not counted.
         """
-        total = empty_usage()
-        for agent in self._usage_agents():
-            for key, value in agent.usage.items():
-                total[key] += value
-        return total
-
-    def _usage_agents(self) -> List[Agent]:
-        """Every distinct Agent the router or its built swarms hold."""
-        candidates = list(self.agents or [])
-        for swarm in self._swarm_cache.values():
-            for value in vars(swarm).values():
-                if isinstance(value, dict):
-                    candidates.extend(value.values())
-                elif isinstance(value, (list, tuple)):
-                    candidates.extend(value)
-                else:
-                    candidates.append(value)
-
-        seen = {}
-        for candidate in candidates:
-            if isinstance(candidate, Agent):
-                seen.setdefault(id(candidate), candidate)
-        return list(seen.values())
+        return total_usage(self)
 
     def _initialize_swarm_factory(self) -> Dict[str, Callable]:
         """Build the dispatch table used to instantiate swarm types.

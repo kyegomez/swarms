@@ -1294,22 +1294,6 @@ def test_usage_sums_the_configured_agents():
     }
 
 
-def test_usage_includes_agents_a_swarm_holds_on_its_own():
-    """A HierarchicalSwarm director or an MoA aggregator is not in
-    ``router.agents`` but its spend is part of the run."""
-    from types import SimpleNamespace
-
-    worker = _agent_with_usage("Worker", 100, 10)
-    director = _agent_with_usage("Director", 30, 3)
-    router = _usage_router([worker])
-    router._swarm_cache["fake"] = SimpleNamespace(
-        director=director, agents=[worker], conversation=None
-    )
-
-    assert router.usage["input_tokens"] == 130
-    assert router.usage["output_tokens"] == 13
-
-
 def test_usage_counts_a_shared_agent_once():
     agent = _agent_with_usage("A", 100, 10)
     router = _usage_router([agent])
@@ -1340,6 +1324,60 @@ def test_usage_includes_agents_a_swarm_holds_in_a_dict(
         agent._add_usage({"input_tokens": 10, "total_tokens": 10})
 
     assert router.usage["input_tokens"] == 10 * len(held)
+
+
+def _spend_hierarchical_swarm(swarm):
+    swarm.director._add_usage({"input_tokens": 10, "total_tokens": 10})
+
+
+def _spend_multi_agent_router(swarm):
+    swarm.function_caller._accumulate_usage(
+        {
+            "input_tokens": 10,
+            "output_tokens": 0,
+            "cached_tokens": 0,
+            "reasoning_tokens": 0,
+            "total_tokens": 10,
+        }
+    )
+
+
+def _spend_heavy_swarm(swarm):
+    swarm._add_question_usage({"input_tokens": 10})
+
+
+def _spend_planner_worker_swarm(swarm):
+    swarm._single_use_usage["input_tokens"] += 10
+
+
+@pytest.mark.parametrize(
+    "swarm_type, spend",
+    [
+        ("HierarchicalSwarm", _spend_hierarchical_swarm),
+        ("MultiAgentRouter", _spend_multi_agent_router),
+        ("HeavySwarm", _spend_heavy_swarm),
+        ("PlannerWorkerSwarm", _spend_planner_worker_swarm),
+    ],
+)
+def test_usage_includes_what_a_swarm_spends_on_its_own(
+    swarm_type, spend
+):
+    """A director, a bare boss or question-generator client and a
+    per-run planner are not in ``router.agents``, but their spend is
+    part of the run."""
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        router = SwarmRouter(
+            name="usage-router",
+            agents=[_agent_with_usage("A", 0, 0)],
+            swarm_type=swarm_type,
+            autosave=False,
+        )
+        swarm = router._create_swarm()
+    router._swarm_cache["built"] = swarm
+    spend(swarm)
+
+    assert swarm.usage["input_tokens"] == 10
+    assert router.usage == swarm.usage
 
 
 def _stub_council_run(agent, reply, calls):
