@@ -1670,6 +1670,70 @@ def test_record_assistant_sends_a_non_text_reply_as_text():
     assert conv.conversation_history[-1]["content"] == {"answer": 2}
 
 
+@pytest.mark.parametrize(
+    "case",
+    [
+        "capped",
+        "reply_reserve",
+        "uncapped",
+        "tool_calls_kept_with_results",
+    ],
+)
+def test_to_messages_context_length_cap(case):
+    model = "gpt-5.4-mini"
+
+    if case == "tool_calls_kept_with_results":
+        conv = Conversation(
+            context_length=60,
+            dynamic_context_window=True,
+            tokenizer_model_name=model,
+        )
+        conv.add("user", "first question " + "x " * 30)
+        calls = conv.record_assistant(
+            [_tool_call("get_weather", call_id="w1", city="a")]
+        )
+        conv.flush_tool_results(calls, {"w1": "sunny"})
+        conv.add("user", "last question")
+
+        msgs = conv.to_messages()
+        _assert_calls_answered(msgs)
+        for index, message in enumerate(msgs):
+            if message.get("tool_calls"):
+                following = [
+                    m
+                    for m in msgs[index + 1 :]
+                    if m.get("role") == "tool"
+                ]
+                assert any(
+                    m.get("tool_call_id") == "w1" for m in following
+                )
+        return
+
+    conv = Conversation(
+        context_length=500,
+        dynamic_context_window=case != "uncapped",
+        tokenizer_model_name=model,
+    )
+    for i in range(40):
+        conv.add(
+            role="user" if i % 2 == 0 else "p",
+            content=f"message {i} " + "lorem ipsum dolor sit amet " * 20,
+        )
+
+    max_tokens = 100 if case == "reply_reserve" else None
+    msgs = conv.to_messages("p", 0, max_tokens=max_tokens)
+
+    total = count_tokens(json.dumps(msgs), model)
+    if case == "reply_reserve":
+        assert total <= 500 - 100
+    elif case != "uncapped":
+        assert total <= 500
+    if case == "uncapped":
+        assert len(msgs) == 40
+    else:
+        assert len(msgs) < 40
+
+
 def test_export_conversation_writes_the_named_json_file(tmp_path):
     conv = Conversation(conversations_dir=str(tmp_path))
     conv.add("User", "keep this")
