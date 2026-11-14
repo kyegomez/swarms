@@ -665,3 +665,25 @@ def test_identical_steps_in_a_phase_are_rejected():
         )
     )
     assert any("Steps 'a' and 'b'" in e for e in errors)
+
+
+def test_plan_and_overlapping_runs_each_use_their_own_lead():
+    answers = []
+
+    class Lead(FakeLead):
+        def __deepcopy__(self, memo):
+            return Lead(self.plans)
+
+        def run(self, task, img=None):
+            if "Outputs:" not in task:
+                # Each copy answers with the task it planned.
+                self.answer = task.split("\n")[1]
+                if self.answer == "A":
+                    answers.append(workflow.run("B"))
+            return super().run(task, img)
+
+    FakeAgent.handler = file_handler(1)
+    workflow = PhasedFanOutWorkflow(lead_agent=Lead([fan_out_plan()]))
+    assert isinstance(workflow.plan("P"), dw.WorkflowPlan)
+    assert workflow.run("A") == "A"
+    assert answers == ["B"]
