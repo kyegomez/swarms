@@ -205,12 +205,6 @@ def test_two_different_tools_with_one_name_are_rejected():
         BaseTool(tools=[web.search, CustomerDB().search])
 
 
-def test_function_to_dict():
-    result = BaseTool().function_to_dict(add_numbers)
-
-    assert result["function"]["name"] == "add_numbers"
-
-
 class Function(BaseModel):
     name: str
     arguments: str
