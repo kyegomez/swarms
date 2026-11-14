@@ -65,7 +65,7 @@ class HeavySwarm(SerializableMixin):
             name (str): Name identifier for the swarm instance
             description (str): Description of the swarm's purpose
             agents (Dict[str, Agent]): Dictionary of specialized agent instances (created internally)
-            timeout (int): Maximum execution time per agent in seconds
+            timeout (int): Seconds to wait for the worker agents in each loop
             question_agent_model_name (str): Model name for question generation
             worker_model_name (str): Model name for specialized worker agents
             verbose (bool): Enable detailed logging output
@@ -97,6 +97,7 @@ class HeavySwarm(SerializableMixin):
         "conversation",
         "dashboard",
         "worker_tools",
+        "_running_workers",
     )
 
     def __init__(
@@ -124,7 +125,14 @@ class HeavySwarm(SerializableMixin):
             name (str, optional): Identifier name for the swarm instance. Defaults to "HeavySwarm".
             description (str, optional): Description of the swarm's purpose and capabilities.
                 Defaults to standard description.
-            timeout (int, optional): Maximum execution time per agent in seconds. Defaults to 300.
+            timeout (int, optional): Seconds to wait for the worker agents
+                in each loop. A worker still running then gets a "Timeout after
+                N seconds" result and the swarm moves on; its thread can't be
+                stopped and finishes in the background, and later loops skip
+                that agent until it returns. Worker threads aren't daemon
+                threads, so a hung worker also keeps the interpreter from
+                exiting. Question generation and synthesis are not bounded
+                by it. Defaults to 900.
             question_agent_model_name (str, optional): Language model for
                 question generation. Defaults to "gpt-5.4".
             worker_model_name (str, optional): Language model for specialized
@@ -177,6 +185,7 @@ class HeavySwarm(SerializableMixin):
         )
         self.dashboard = HeavySwarmDashboard()
         self._question_usage = empty_usage()
+        self._running_workers = set()
 
         self.agents = self.create_agents()
 
@@ -581,6 +590,19 @@ class HeavySwarm(SerializableMixin):
             variant=self.variant,
         )
 
+    def _run_worker(self, agent, question: str, img=None):
+        """Run a worker agent, refusing while an earlier timed-out run
+        of the same agent is still going in the background."""
+        if agent in self._running_workers:
+            raise RuntimeError(
+                f"{agent.agent_name} is still running from an earlier loop"
+            )
+        self._running_workers.add(agent)
+        try:
+            return agent.run(question, img=img)
+        finally:
+            self._running_workers.discard(agent)
+
     def _execute_agents_parallel(
         self, questions: Dict, agents: Dict, img: Optional[str] = None
     ) -> Dict[str, str]:
@@ -647,7 +669,7 @@ class HeavySwarm(SerializableMixin):
         def execute_agent(agent_info):
             agent_type, agent, question = agent_info
             try:
-                result = agent.run(question, img=img)
+                result = self._run_worker(agent, question, img)
 
                 self.conversation.add(
                     role=agent.agent_name,
@@ -733,33 +755,23 @@ class HeavySwarm(SerializableMixin):
 
         # Execute agents in parallel using ThreadPoolExecutor
         results = {}
-        with ContextThreadPoolExecutor(
+        executor = ContextThreadPoolExecutor(
             max_workers=self.max_workers
-        ) as executor:
-            # Submit all agent tasks
-            future_to_agent = {
-                executor.submit(execute_agent, task): task[0]
-                for task in agent_tasks
-            }
-
-            # Collect results as they complete
+        )
+        future_to_agent = {
+            executor.submit(execute_agent, task): task[0]
+            for task in agent_tasks
+        }
+        pending = set(future_to_agent)
+        try:
             for future in concurrent.futures.as_completed(
-                future_to_agent
+                future_to_agent, timeout=self.timeout
             ):
+                pending.discard(future)
                 agent_type = future_to_agent[future]
                 try:
-                    agent_name, result = future.result(
-                        timeout=self.timeout
-                    )
+                    agent_name, result = future.result()
                     results[agent_name.lower()] = result
-                except concurrent.futures.TimeoutError:
-                    self._log(
-                        "ERROR",
-                        f"⏰ Timeout for {agent_type} Agent after {self.timeout}s",
-                    )
-                    results[agent_type.lower()] = (
-                        f"Timeout after {self.timeout} seconds"
-                    )
                 except Exception as e:
                     self._log(
                         "ERROR",
@@ -768,6 +780,19 @@ class HeavySwarm(SerializableMixin):
                     results[agent_type.lower()] = (
                         f"Exception: {str(e)}"
                     )
+        except concurrent.futures.TimeoutError:
+            for future in pending:
+                agent_type = future_to_agent[future]
+                self._log(
+                    "ERROR",
+                    f"⏰ Timeout for {agent_type} Agent after {self.timeout}s",
+                )
+                results[agent_type.lower()] = (
+                    f"Timeout after {self.timeout} seconds"
+                )
+        finally:
+            # A hung worker thread can't be killed; return without it.
+            executor.shutdown(wait=False, cancel_futures=True)
 
         return results
 
@@ -974,7 +999,7 @@ class HeavySwarm(SerializableMixin):
                     tracker.processing(agent_key, agent_type)
                     tracker.executing(agent_key, agent_type)
 
-                    result = agent.run(question, img=img)
+                    result = self._run_worker(agent, question, img)
 
                     tracker.responding(agent_key, agent_type)
 
@@ -1079,27 +1104,24 @@ class HeavySwarm(SerializableMixin):
                     ),
                 ]
 
-            # Execute agents in parallel
-            with ContextThreadPoolExecutor(
+            executor = ContextThreadPoolExecutor(
                 max_workers=self.max_workers
-            ) as executor:
-                # Submit all agent tasks
-                future_to_agent = {
-                    executor.submit(
-                        execute_agent_with_progress, task
-                    ): task[1]
-                    for task in agent_tasks
-                }
-
-                # Collect results as they complete
+            )
+            future_to_agent = {
+                executor.submit(
+                    execute_agent_with_progress, task
+                ): task[1]
+                for task in agent_tasks
+            }
+            pending = set(future_to_agent)
+            try:
                 for future in concurrent.futures.as_completed(
-                    future_to_agent
+                    future_to_agent, timeout=self.timeout
                 ):
+                    pending.discard(future)
                     agent_key = future_to_agent[future]
                     try:
-                        agent_name, result = future.result(
-                            timeout=self.timeout
-                        )
+                        agent_name, result = future.result()
                         results[
                             agent_name.lower()
                             .replace("🔍 ", "")
@@ -1107,14 +1129,19 @@ class HeavySwarm(SerializableMixin):
                             .replace("⚡ ", "")
                             .replace("✅ ", "")
                         ] = result
-                    except concurrent.futures.TimeoutError:
-                        tracker.timeout(agent_key, agent_key)
-                        results[agent_key] = (
-                            f"Timeout after {self.timeout} seconds"
-                        )
                     except Exception as e:
                         tracker.error(agent_key, agent_key)
                         results[agent_key] = f"Exception: {str(e)}"
+            except concurrent.futures.TimeoutError:
+                for future in pending:
+                    agent_key = future_to_agent[future]
+                    tracker.timeout(agent_key, agent_key)
+                    results[agent_key] = (
+                        f"Timeout after {self.timeout} seconds"
+                    )
+            finally:
+                # A hung worker thread can't be killed; return without it.
+                executor.shutdown(wait=False, cancel_futures=True)
 
         # Show completion summary
         agent_count = (
