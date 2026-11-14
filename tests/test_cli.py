@@ -31,7 +31,7 @@ def make_args(**kwargs) -> argparse.Namespace:
         task="Say hello",
         interactive=False,
         temperature=0.5,
-        max_loops="1",
+        max_loops=1,
         auto_generate_prompt=False,
         dynamic_temperature_enabled=False,
         dynamic_context_window=False,
@@ -457,8 +457,36 @@ class TestHandleAgent:
         ) as mock_err, pytest.raises(SystemExit) as exit_info:
             self.handle_agent(args)
         assert exit_info.value.code == 1
-        assert "task" in str(mock_err.call_args)
+        title = mock_err.call_args[0][0]
+        assert title == "Missing required argument: --task"
         mock_agent.assert_not_called()
+
+    def _parse_max_loops(self, value):
+        from swarms.cli.parser import setup_argument_parser
+
+        argv = ["agent", "--name", "A", "--description", "d"]
+        argv += ["--system-prompt", "s", "--task", "t"]
+        return setup_argument_parser().parse_args(
+            argv + ["--max-loops", value]
+        )
+
+    @pytest.mark.parametrize(
+        "value, expected",
+        [("auto", "auto"), ("AUTO", "auto"), ("3", 3)],
+    )
+    def test_max_loops_is_parsed_by_argparse(self, value, expected):
+        args = self._parse_max_loops(value)
+        assert args.max_loops == expected
+        with patch(
+            "swarms.cli.commands.create_swarm_agent"
+        ) as mock_create:
+            self.handle_agent(args)
+        assert mock_create.call_args.kwargs["max_loops"] == expected
+
+    def test_max_loops_rejects_a_non_integer(self):
+        with pytest.raises(SystemExit) as exit_info:
+            self._parse_max_loops("abc")
+        assert exit_info.value.code == 2
 
 
 # ===========================================================================
