@@ -83,6 +83,9 @@ def grid_swarm(
     Raises:
         ValueError: If agents or tasks lists are empty.
     """
+    if not agents or not tasks:
+        raise ValueError("Agents and tasks lists cannot be empty.")
+
     conversation = Conversation()
 
     conversation.add(
@@ -90,18 +93,13 @@ def grid_swarm(
         content=tasks,
     )
 
-    grid_size = int(
-        len(agents) ** 0.5
-    )  # Assuming agents can form a perfect square grid
-    for i in range(grid_size):
-        for j in range(grid_size):
-            if tasks:
-                task = tasks.pop(0)
-                response = agents[i * grid_size + j].run(task)
-                conversation.add(
-                    role=agents[i * grid_size + j].agent_name,
-                    content=response,
-                )
+    for index, task in enumerate(tasks):
+        agent = agents[index % len(agents)]
+        response = agent.run(task)
+        conversation.add(
+            role=agent.agent_name,
+            content=response,
+        )
 
     return history_output_formatter(conversation, output_type)
 
