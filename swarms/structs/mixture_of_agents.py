@@ -249,7 +249,6 @@ class MixtureOfAgents:
         """
 
         self._reset_conversation()
-        reset_agents(self.agents)
 
         self.conversation.add(role="User", content=task)
 
@@ -258,6 +257,8 @@ class MixtureOfAgents:
         prev_layer_output: Optional[str] = None
 
         for i in range(self.layers):
+            reset_agents(self.agents)
+
             if prev_layer_output is not None:
                 worker_input = (
                     f"Original task: {task}\n\n"
@@ -365,12 +366,13 @@ class MixtureOfAgents:
             return agent.agent_name, agent_answer(agent, output)
 
         self._reset_conversation()
-        reset_agents(self.agents)
 
         self.conversation.add(role="User", content=task)
 
         worker_input = task
         for i in range(self.layers):
+            reset_agents(self.agents)
+
             step_output = dict(
                 await asyncio.gather(
                     *(_answer(a, worker_input) for a in self.agents)
