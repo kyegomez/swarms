@@ -1,4 +1,5 @@
 import json
+import threading
 
 import httpx
 import pytest
@@ -70,6 +71,44 @@ def test_first_post_sends_and_the_next_replies_to_it(monkeypatch):
     assert {r.headers["Authorization"] for r in seen} == {
         "Bearer am-key"
     }
+
+
+def test_concurrent_first_posts_share_one_thread(monkeypatch):
+    seen = []
+    second_request = threading.Event()
+
+    def handler(request):
+        seen.append(request.url.path)
+        number = len(seen)
+        sends = sum(path.endswith("/send") for path in seen)
+        if number == 1:
+            second_request.wait(timeout=0.2)
+        else:
+            second_request.set()
+        return httpx.Response(
+            200,
+            json={
+                "message_id": f"<m{number}@agentmail.to>",
+                "thread_id": f"t{sends}",
+            },
+        )
+
+    channel = channel_with(monkeypatch, handler)
+    posters = [
+        threading.Thread(target=channel.post, args=(name, "Hi."))
+        for name in ("Human", "Researcher")
+    ]
+    for poster in posters:
+        poster.start()
+    for poster in posters:
+        poster.join(timeout=10)
+
+    inbox = "/v0/inboxes/research@agentmail.to"
+    assert seen == [
+        f"{inbox}/messages/send",
+        f"{inbox}/messages/<m1@agentmail.to>/reply",
+    ]
+    assert channel.thread_id == "t1"
 
 
 def test_messages_reads_every_page_oldest_first(monkeypatch):
