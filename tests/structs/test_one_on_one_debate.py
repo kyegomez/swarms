@@ -1,9 +1,57 @@
+from typing import Any
+
 import pytest
 from loguru import logger
 
 from swarms.structs.agent import Agent
 from swarms.structs.deep_discussion import one_on_one_debate
 from swarms.structs.multi_agent_debates import OneOnOneDebate
+
+
+@pytest.mark.parametrize("api", ["function", "class"])
+@pytest.mark.parametrize("max_loops", [0, 1, 2])
+@pytest.mark.parametrize(
+    "output_type", [None, "str", "dict", "str-all-except-first"]
+)
+def test_debate_retains_answers_in_requested_format(
+    api: str, max_loops: int, output_type: str | None
+) -> None:
+    """Default output keeps every answer; explicit formats retain their meaning."""
+
+    class ScriptedAgent:
+        def __init__(self, name: str) -> None:
+            self.agent_name = name
+
+        def run(self, task: str | None = None, **kwargs) -> str:
+            return f"{self.agent_name} answer"
+
+    kwargs: dict[str, Any] = {
+        "agents": [ScriptedAgent("A"), ScriptedAgent("B")],
+        "max_loops": max_loops,
+    }
+    if output_type is not None:
+        kwargs["output_type"] = output_type
+    if api == "function":
+        result = one_on_one_debate(task="topic", **kwargs)
+    else:
+        result = OneOnOneDebate(**kwargs).run("topic")
+
+    answers = ["A answer", "B answer"][:max_loops]
+    if output_type == "dict":
+        assert [row["content"] for row in result] == answers
+        assert [row["role"] for row in result] == ["A", "B"][
+            :max_loops
+        ]
+    elif output_type == "str-all-except-first":
+        assert result == "\n".join(answers[1:])
+    else:
+        assert isinstance(result, str)
+        for answer in answers:
+            assert result.count(answer) == 1
+        if max_loops == 0:
+            assert result == ""
+        elif max_loops == 2:
+            assert result.index(answers[0]) < result.index(answers[1])
 
 
 def create_function_agent(name: str, system_prompt: str = None):
