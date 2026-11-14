@@ -695,51 +695,39 @@ class HierarchicalSwarm:
         Raises:
             Exception: If feedback generation fails.
         """
-        try:
-            output = self._get_feedback_director().run(
-                task=DIRECTOR_FEEDBACK_PROMPT.format(
-                    worker_responses=self._format_worker_responses(
-                        outputs
-                    )
+        output = self._get_feedback_director().run(
+            task=DIRECTOR_FEEDBACK_PROMPT.format(
+                worker_responses=self._format_worker_responses(
+                    outputs
                 )
             )
-            self.conversation.add(
-                role=self.director.agent_name, content=output
-            )
-
-            return output
-
-        except Exception as e:
-            logger.error(
-                f"Hiearchical Swarm: Feedback director failed: {e}"
-            )
+        )
+        self.conversation.add(
+            role=self.director.agent_name, content=output
+        )
+        return output
 
     def run_judge_agent(self, outputs: list) -> str:
         """Score worker outputs with the cached judge.
 
         Args:
-            outputs: Worker outputs used as an error fallback.
+            outputs: Worker outputs. The judge reads them from the
+                conversation instead.
 
         Returns:
             Structured judge report.
+
+        Raises:
+            Exception: If the judge fails.
         """
-        try:
-            logger.info(
-                "Running judge agent to score worker outputs..."
-            )
-            judge = self._get_judge_agent()
+        logger.info("Running judge agent to score worker outputs...")
+        judge = self._get_judge_agent()
 
-            prior, judge_task = self._messages_for(judge.agent_name)
-            result = judge.run(task=judge_task, messages=prior)
-            self.conversation.add(role="JudgeAgent", content=result)
-            logger.info(f"Judge agent completed scoring: {result}")
-            return result
-
-        except Exception as e:
-            logger.error(
-                f"[ERROR] run_judge_agent failed: {e} | Traceback: {traceback.format_exc()}"
-            )
-            return str(outputs)
+        prior, judge_task = self._messages_for(judge.agent_name)
+        result = judge.run(task=judge_task, messages=prior)
+        self.conversation.add(role="JudgeAgent", content=result)
+        logger.info(f"Judge agent completed scoring: {result}")
+        return result
 
     def call_single_agent(
         self,

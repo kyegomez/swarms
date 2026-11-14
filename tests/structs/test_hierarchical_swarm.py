@@ -627,6 +627,46 @@ def test_run_marks_only_the_last_step_as_final(monkeypatch):
     assert final_flags == [False, True]
 
 
+@pytest.mark.parametrize(
+    "flag, reviewer_attr",
+    [
+        ("director_feedback_on", "_feedback_director"),
+        ("agent_as_judge", "_judge_agent"),
+    ],
+)
+def test_a_failed_review_marks_its_loop_failed(
+    monkeypatch, flag, reviewer_attr
+):
+    swarm = make_recovery_swarm(
+        StubAgent("Director", []),
+        [StubAgent("Worker", [])],
+        max_loops=2,
+    )
+    setattr(swarm, flag, True)
+    setattr(
+        swarm,
+        reviewer_attr,
+        StubAgent("Reviewer", [RuntimeError("reviewer down"), "ok"]),
+    )
+    monkeypatch.setattr(
+        swarm,
+        "run_director",
+        lambda task, img=None: {
+            "orders": [{"agent_name": "Worker", "task": "Do it"}],
+        },
+    )
+    monkeypatch.setattr(swarm, "execute_orders", lambda orders: ["done"])
+
+    swarm.run("task")
+
+    markers = [
+        m["content"]
+        for m in swarm.conversation.conversation_history
+        if str(m["content"]).startswith("--- Loop")
+    ]
+    assert markers[0] == "--- Loop 1/2 failed: reviewer down ---"
+
+
 def test_batched_run_forwards_utility_options(monkeypatch):
     swarm = make_recovery_swarm(
         StubAgent("Director", []),
