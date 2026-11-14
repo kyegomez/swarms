@@ -796,8 +796,12 @@ class AgentRearrange(SerializableMixin):
             )
 
         # The system_prompt is baked into the LLM at build time, so assigning to it here never reaches the request.
-        awareness_info = self._get_sequential_awareness(
-            agent_name, steps, task_idx=task_idx
+        awareness_info = (
+            self._get_sequential_awareness(
+                agent_name, steps, task_idx=task_idx
+            )
+            if self.team_awareness
+            else None
         )
         if awareness_info:
             self._log(
