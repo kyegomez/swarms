@@ -541,6 +541,16 @@ class TestToolCallNormalization:
     def test_non_tool_responses_yield_nothing(self, response):
         assert MCPManager._normalize_tool_calls(response) == []
 
+    def test_a_json_answer_is_not_a_tool_call(self):
+        answer = '[{"name": "Ada", "born": 1815}, {"name": "boom"}]'
+        assert MCPManager._normalize_tool_calls(answer) == []
+
+    def test_anthropic_tool_use_block_keeps_its_input(self):
+        block = {"type": "tool_use", "name": "add", "input": {"a": 1}}
+        assert MCPManager._normalize_tool_calls(block) == [
+            {"name": "add", "arguments": {"a": 1}}
+        ]
+
     def test_malformed_arguments_default_to_empty_dict(self):
         calls = MCPManager._normalize_tool_calls(
             {"function": {"name": "add", "arguments": "{not json"}}
