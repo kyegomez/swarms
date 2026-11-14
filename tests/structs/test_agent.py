@@ -2439,7 +2439,9 @@ class TestSeededMessages:
         assert "My project is called Helios." in contents
         assert "What is my project called?" in contents
 
-    def test_run_messages_are_recorded_and_sent(self):
+    def test_run_messages_sent_as_context_but_not_copied_into_short_memory(
+        self,
+    ):
         agent = _patched_agent("SeedAgent")
         sent = {}
 
@@ -2455,13 +2457,68 @@ class TestSeededMessages:
             "assistant",
             "user",
         ]
+        sent_contents = [m["content"] for m in sent["messages"]]
+        assert "My project is called Helios." in sent_contents
+        assert "Noted: Helios." in sent_contents
+        assert "What is my project called?" in sent_contents
 
         recorded = [
             m["content"]
             for m in agent.short_memory.conversation_history
         ]
-        assert "My project is called Helios." in recorded
-        assert "Noted: Helios." in recorded
+        assert "My project is called Helios." not in recorded
+        assert "Noted: Helios." not in recorded
+        assert "What is my project called?" in recorded
+        assert "Helios" in recorded
+
+    def test_repeated_runs_with_messages_grow_only_by_own_turns(
+        self,
+    ):
+        agent = _patched_agent("RepeatedAgent")
+        agent.call_llm = lambda task=None, *args, **kwargs: "Done"
+
+        shared_conversation = [
+            {"role": "user", "content": f"Turn {i}"}
+            for i in range(20)
+        ]
+        for step in range(5):
+            agent.run(f"Step {step}", messages=shared_conversation)
+
+        # 5 runs: each adds 1 user turn (task) + 1 assistant turn (answer) = 10 messages
+        assert len(agent.short_memory.conversation_history) == 10
+        tasks_in_mem = [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+            if m["role"] == agent.user_name
+        ]
+        assert tasks_in_mem == [f"Step {i}" for i in range(5)]
+        answers_in_mem = [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+            if m["role"] == agent.agent_name
+        ]
+        assert answers_in_mem == ["Done"] * 5
+
+    def test_round_robin_agents_short_memory_holds_only_own_turns(
+        self,
+    ):
+        from swarms.structs.round_robin import RoundRobinSwarm
+        from swarms.structs.context_utils import agent_answer
+
+        agents = []
+        for i in range(4):
+            a = _patched_agent(f"RRAgent_{i}")
+            a.call_llm = lambda task=None, *args, **kwargs: "RRAnswer"
+            agents.append(a)
+
+        swarm = RoundRobinSwarm(agents=agents, max_loops=10)
+        swarm.run("Start task")
+
+        # In a 10-loop run with 4 agents, each agent runs 10 times.
+        # Instead of 200+ shared messages copied repeatedly, each holds its own 10 tasks and answers = 20 messages.
+        for a in agents:
+            assert len(a.short_memory.conversation_history) == 20
+            assert agent_answer(a) == "RRAnswer"
 
 
 class TestLLMFailureRaises:
