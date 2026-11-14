@@ -956,6 +956,39 @@ class TestCallPanelStreaming:
         )
         assert fake_llm.calls[-1]["kwargs"]["imgs"] == ["a.png"]
 
+    def test_callback_leaves_out_tool_call_text(
+        self, agent, fake_llm
+    ):
+        fake_llm.stream_return = [
+            content_chunk("Checking."),
+            tool_chunk(
+                FakeToolCallDelta(
+                    0,
+                    id="call_3",
+                    name="get_weather",
+                    arguments='{"city":"NYC"}',
+                )
+            ),
+        ]
+        agent.print_on = False
+        tokens = []
+
+        result = agent.llm_manager.call(
+            "hi", current_loop=0, streaming_callback=tokens.append
+        )
+
+        assert result == [
+            {
+                "id": "call_3",
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "arguments": '{"city":"NYC"}',
+                },
+            }
+        ]
+        assert "".join(tokens) == "Checking."
+
     def test_silent_path_when_print_on_false(self, agent, fake_llm):
         fake_llm.stream_return = self._chunks()
         agent.streaming_on = True
