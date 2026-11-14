@@ -331,6 +331,35 @@ class Agent:
 
     """
 
+    # Settings an agent stores only when they differ from these defaults.
+    stopping_condition: Optional[Callable] = None
+    loop_interval: int = 0
+    retry_attempts: int = 3
+    stopping_token: Optional[str] = None
+    interactive: bool = False
+    dashboard: bool = False
+    dynamic_temperature_enabled: bool = False
+    dynamic_loops: bool = False
+    user_name: str = "Human"
+    autosave: bool = False
+    long_term_memory: Optional[Any] = None
+    preset_stopping_token: bool = False
+    streaming_on: bool = False
+    stream: bool = False
+    streaming_callback: Optional[Callable] = None
+    verbose: bool = False
+    stopping_func: Optional[Callable] = None
+    custom_exit_command: str = "exit"
+    tool_schema: Optional[Any] = None
+    mcp_url: Optional[Any] = None
+    mcp_urls: Optional[List[Any]] = None
+    mcp_config: Optional[Any] = None
+    mcp_configs: Optional[List[Any]] = None
+    mcp_api_key: Optional[str] = None
+    mcp_authorization_token: Optional[str] = None
+    mcp_oauth: Optional[Any] = None
+    mcp_headers: Optional[Dict[str, str]] = None
+
     def __init__(
         self,
         id: Optional[str] = None,
@@ -441,15 +470,26 @@ class Agent:
         self.selected_tools = selected_tools
         self.llm = llm
         self.max_loops = max_loops
-        self.stopping_condition = stopping_condition
-        self.loop_interval = loop_interval
-        self.retry_attempts = retry_attempts
-        self.stopping_token = stopping_token
-        self.interactive = interactive
-        self.dashboard = dashboard
-        self.dynamic_temperature_enabled = dynamic_temperature_enabled
-        self.dynamic_loops = dynamic_loops
-        self.user_name = user_name
+        if stopping_condition is not None:
+            self.stopping_condition = stopping_condition
+        if loop_interval != 0:
+            self.loop_interval = loop_interval
+        if retry_attempts != 3:
+            self.retry_attempts = retry_attempts
+        if stopping_token is not None:
+            self.stopping_token = stopping_token
+        if interactive is not False:
+            self.interactive = interactive
+        if dashboard is not False:
+            self.dashboard = dashboard
+        if dynamic_temperature_enabled is not False:
+            self.dynamic_temperature_enabled = (
+                dynamic_temperature_enabled
+            )
+        if dynamic_loops is not False:
+            self.dynamic_loops = dynamic_loops
+        if user_name != "Human":
+            self.user_name = user_name
         self.context_length = context_length
         self.tools = tools
         self.system_prompt = system_prompt or ""
@@ -464,16 +504,26 @@ class Agent:
         self.saved_state_path = (
             saved_state_path or f"{generate_id('agent')}_state.json"
         )
-        self.autosave = autosave
-        self.long_term_memory = long_term_memory
-        self.preset_stopping_token = preset_stopping_token
-        self.streaming_on = streaming_on
-        self.stream = stream
-        self.streaming_callback = streaming_callback
-        self.verbose = verbose
-        self.stopping_func = stopping_func
-        self.custom_exit_command = custom_exit_command
-        self.tool_schema = tool_schema
+        if autosave is not False:
+            self.autosave = autosave
+        if long_term_memory is not None:
+            self.long_term_memory = long_term_memory
+        if preset_stopping_token is not False:
+            self.preset_stopping_token = preset_stopping_token
+        if streaming_on is not False:
+            self.streaming_on = streaming_on
+        if stream is not False:
+            self.stream = stream
+        if streaming_callback is not None:
+            self.streaming_callback = streaming_callback
+        if verbose is not False:
+            self.verbose = verbose
+        if stopping_func is not None:
+            self.stopping_func = stopping_func
+        if custom_exit_command != "exit":
+            self.custom_exit_command = custom_exit_command
+        if tool_schema is not None:
+            self.tool_schema = tool_schema
         self.output_type = output_type
         # The autonomous loop's final answer is a summary, not the model's reply.
         if output_schema is not None and max_loops == "auto":
@@ -509,17 +559,25 @@ class Agent:
             if tools_list_dictionary is not None
             else []
         )
-        self.mcp_url = mcp_url
-        self.mcp_urls = mcp_urls
+        if mcp_url is not None:
+            self.mcp_url = mcp_url
+        if mcp_urls is not None:
+            self.mcp_urls = mcp_urls
         self.react_on = react_on
         self.safety_prompt_on = safety_prompt_on
         self.random_models_on = random_models_on
-        self.mcp_config = mcp_config
-        self.mcp_configs = mcp_configs
-        self.mcp_api_key = mcp_api_key
-        self.mcp_authorization_token = mcp_authorization_token
-        self.mcp_oauth = mcp_oauth
-        self.mcp_headers = mcp_headers
+        if mcp_config is not None:
+            self.mcp_config = mcp_config
+        if mcp_configs is not None:
+            self.mcp_configs = mcp_configs
+        if mcp_api_key is not None:
+            self.mcp_api_key = mcp_api_key
+        if mcp_authorization_token is not None:
+            self.mcp_authorization_token = mcp_authorization_token
+        if mcp_oauth is not None:
+            self.mcp_oauth = mcp_oauth
+        if mcp_headers is not None:
+            self.mcp_headers = mcp_headers
         self.mcp_transport = mcp_transport
         self.mcp_timeout = mcp_timeout
         self.top_p = top_p
@@ -2662,7 +2720,11 @@ Subtask Breakdown:
         """
 
         # The llm object is not serializable
-        dict_copy = self.__dict__.copy()
+        defaults = {
+            name: getattr(type(self), name)
+            for name in Agent.__annotations__
+        }
+        dict_copy = defaults | self.__dict__
         dict_copy.pop("llm", None)
 
         return {

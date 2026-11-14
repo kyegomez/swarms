@@ -888,6 +888,18 @@ class TestConstructorWindows:
                 r"agent-[0-9a-f]{32}_state\.json", path
             )
 
+    def test_default_settings_are_not_stored_per_agent(self):
+        """A setting left at its default reads the same and is still exported."""
+        plain = self._agent()
+        changed = self._agent(retry_attempts=5, stopping_token="END")
+
+        assert "retry_attempts" not in vars(plain)
+        assert plain.retry_attempts == 3
+        assert plain.stopping_token is None
+        assert plain.to_dict()["retry_attempts"] == 3
+        assert vars(changed)["retry_attempts"] == 5
+        assert changed.to_dict()["stopping_token"] == "END"
+
     def test_unknown_model_falls_back_for_both(self):
         """An unrecognised model must not raise out of __init__."""
         agent = self._agent(
