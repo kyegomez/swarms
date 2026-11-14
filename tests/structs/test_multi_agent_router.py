@@ -546,5 +546,23 @@ def test_concurrent_batch_run_returns_results_in_input_order():
     ]
 
 
+def test_a_reused_router_does_not_resend_earlier_tasks(monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        Agent, "call_llm", lambda s, **k: sent.append(str(k)) or "ok"
+    )
+    agents = _minimal_agents()
+    agents[0].short_memory.add("User", "NOTE")
+    router = MultiAgentRouter(agents=agents)
+    handoffs = [{"agent_name": "Agent1"}, {"agent_name": "Agent2"}]
+    router.handle_single_handoff({"handoffs": handoffs}, "TASK1")
+    router.handle_multiple_handoffs({"handoffs": handoffs}, "TASK2")
+    router.handle_single_handoff({"handoffs": handoffs}, "TASK3")
+    assert len(sent) == 4
+    assert "TASK1" not in str(sent[1:])
+    assert "TASK2" not in sent[3]
+    assert "NOTE" in sent[3]
+
+
 if __name__ == "__main__":
     pytest.main([__file__])
