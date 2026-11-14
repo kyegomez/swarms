@@ -1658,6 +1658,25 @@ def test_to_messages_maps_roles_and_pairs_results():
     ]
 
 
+def test_to_messages_names_a_channel_post_and_no_other_role():
+    conv = Conversation(user="Human")
+    conv.add_messages(
+        [
+            {
+                "role": "Alice",
+                "content": "code is 471",
+                "speaker": "Alice",
+            }
+        ]
+    )
+    conv.add("Harness", '{"notice": "1 unread"}')
+
+    assert conv.to_messages("Carol") == [
+        {"role": "user", "content": "Alice: code is 471"},
+        {"role": "user", "content": '{"notice": "1 unread"}'},
+    ]
+
+
 def test_record_assistant_sends_a_non_text_reply_as_text():
     conv = Conversation()
     conv.record_assistant({"answer": 1})

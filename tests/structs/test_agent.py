@@ -2720,7 +2720,10 @@ class TestCommsChannel:
         agent.run("Write the report.")
 
         sent = [m["content"] for m in agent.requests[0]]
-        assert sent[-2:] == ["Growth was 31%.", "Write the report."]
+        assert sent[-2:] == [
+            "Researcher: Growth was 31%.",
+            "Write the report.",
+        ]
         assert channel.messages() == [
             {
                 "agent_name": "Researcher",
@@ -2751,7 +2754,7 @@ class TestCommsChannel:
         # The second agent saw the first's answer, and the task only as its own turn.
         sent = [m["content"] for m in second.requests[0]]
         assert sent.count("Discuss.") == 1
-        assert "one" in sent
+        assert "First: one" in sent
 
     def test_given_messages_skip_the_channel_and_only_the_answer_is_posted(
         self, tmp_path
@@ -2766,7 +2769,7 @@ class TestCommsChannel:
         )
 
         sent = [m["content"] for m in agent.requests[0]]
-        assert "Growth was 31%." not in sent
+        assert not any("Growth was 31%." in str(c) for c in sent)
         assert "Only this." in sent
         assert channel.messages() == [
             {
