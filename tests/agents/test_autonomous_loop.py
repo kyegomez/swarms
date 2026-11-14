@@ -351,6 +351,76 @@ class TestBatchedToolCalls:
         ), "file write batched after complete_task was dropped"
 
 
+class TestToolPermissionHook:
+    """``on_tool_call`` gates create_file, update_file, delete_file, run_bash."""
+
+    def run_with_hook(self, monkeypatch, tmp_path, hook):
+        agent = build_agent(on_tool_call=hook)
+        target = tmp_path / "guarded.txt"
+
+        script_llm(
+            agent,
+            monkeypatch,
+            [
+                plan(("step1", [])),
+                [
+                    tool_call(
+                        "create_file",
+                        file_path=str(target),
+                        content="payload",
+                    ),
+                    tool_call(
+                        "subtask_done",
+                        task_id="step1",
+                        summary="done",
+                        success=True,
+                    ),
+                ],
+                [
+                    tool_call(
+                        "complete_task",
+                        task_id="main",
+                        summary="done",
+                        success=True,
+                    )
+                ],
+            ],
+        )
+
+        agent.run("test task")
+        return agent, target
+
+    def test_a_denied_call_does_not_run_and_the_model_is_told(
+        self, monkeypatch, tmp_path
+    ):
+        consulted = []
+
+        def deny(name, arguments):
+            consulted.append((name, arguments))
+            return "deny"
+
+        agent, target = self.run_with_hook(
+            monkeypatch, tmp_path, deny
+        )
+
+        assert not target.exists()
+        assert consulted == [
+            (
+                "create_file",
+                {"file_path": str(target), "content": "payload"},
+            )
+        ]
+        assert "DENIED: create_file" in history(agent)
+
+    def test_an_allowed_call_runs(self, monkeypatch, tmp_path):
+        agent, target = self.run_with_hook(
+            monkeypatch, tmp_path, lambda name, arguments: "allow"
+        )
+
+        assert target.read_text() == "payload"
+        assert "DENIED" not in history(agent)
+
+
 # --------------------------------------------------------------------------
 # #1963 — tool errors reach the model
 # --------------------------------------------------------------------------
