@@ -1026,6 +1026,34 @@ def test_graph_workflow_on_node_complete_run_overrides_init():
     assert len(init_calls) == 0
 
 
+def test_graph_workflow_on_event_reports_typed_node_events():
+    boom = RuntimeError("model down")
+    agents = [_mock_agent(name) for name in "ABC"]
+    agents[2].run.side_effect = boom
+    workflow = GraphWorkflow(name="Events-Test")
+    for agent in agents:
+        workflow.add_node(agent)
+    workflow.add_edge(agents[0], agents[1])
+    workflow.add_edge(agents[0], agents[2])
+    events = []
+
+    result = workflow.run("go", on_event=events.append)
+
+    seen = {}
+    for e in events:
+        seen.setdefault(e.node_id, []).append(
+            (e.type, e.output, e.error)
+        )
+    started = ("node_started", None, None)
+    assert seen == {
+        "A": [started, ("node_completed", "output-A", None)],
+        "B": [started, ("node_completed", "output-B", None)],
+        "C": [started, ("node_failed", None, boom)],
+    }
+    assert result["C"].startswith("[ERROR]")
+    assert len({e.run_id for e in events}) == 1
+
+
 # ---------------------------------------------------------------------------
 # Subgraph / nested GraphWorkflow tests (no real LLM calls)
 # ---------------------------------------------------------------------------
