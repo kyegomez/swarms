@@ -74,7 +74,7 @@ class HierarchicalSwarm:
         feedback_director_model_name: str = "gpt-5.4",
         director_name: str = "Director",
         director_model_name: str = "gpt-5.4",
-        add_collaboration_prompt: bool = True,
+        add_collaboration_prompt: bool = False,
         director_feedback_on: bool = False,
         interactive: bool = False,
         director_system_prompt: str = HIEARCHICAL_SWARM_SYSTEM_PROMPT,
@@ -108,7 +108,10 @@ class HierarchicalSwarm:
             feedback_director_model_name: Feedback model.
             director_name: Director name.
             director_model_name: Director model.
-            add_collaboration_prompt: Add worker collaboration context.
+            add_collaboration_prompt: Append the multi-agent
+                collaboration prompt to the roster the director reads.
+                Off by default; on, it adds about 1.5k tokens to every
+                director call.
             director_feedback_on: Enable feedback loops.
             interactive: Prompt for a missing task.
             director_system_prompt: Director instructions.
