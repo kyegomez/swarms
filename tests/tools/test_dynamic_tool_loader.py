@@ -365,6 +365,36 @@ class TestAgentIntegration:
             "get_weather" in seen[1]
         ), "the loaded tool was not sent on the following turn"
 
+    @pytest.mark.parametrize(
+        "arguments, expected",
+        [
+            ('{"query": "weath', "ERROR: tool_search failed"),
+            ('{"q": "weather"}', "ERROR: tool_search failed"),
+            ('{"query": "weather", "max_results": "3"}', "Loaded 1"),
+            ('{"query": "weather", "max_results": 3.0}', "Loaded 1"),
+            ('{"query": 5}', "ERROR: tool_search failed"),
+        ],
+    )
+    def test_fixed_loop_answers_a_bad_tool_search_call(
+        self, monkeypatch, arguments, expected
+    ):
+        agent = build(
+            max_loops=2, tools=[get_weather], dynamic_tools=True
+        )
+        call = tool_call(SEARCH_TOOL_NAME)
+        call["function"]["arguments"] = arguments
+        script(agent, monkeypatch, [[call], "done"])
+
+        agent.run("weather?")
+
+        results = [
+            message["content"]
+            for message in agent.short_memory.to_messages()
+            if message["role"] == "tool"
+        ]
+        assert len(results) == 1
+        assert expected in results[0]
+
 
 class TestAutonomousLoopIntegration:
     """max_loops="auto" defers its own tools behind tool_search."""
