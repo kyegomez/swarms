@@ -776,9 +776,7 @@ class ToolManager:
         if calls is None:
             return
 
-        output = agent.tool_struct.execute_function_calls_from_api_response(
-            response
-        )
+        output = self._execute_calls(calls, response)
         if not self._record_tool_output(calls, output):
             return
 
@@ -815,8 +813,7 @@ class ToolManager:
 
         # Tools are blocking callables, so they run off the event loop.
         output = await asyncio.to_thread(
-            agent.tool_struct.execute_function_calls_from_api_response,
-            response,
+            self._execute_calls, calls, response
         )
         if not self._record_tool_output(calls, output):
             return
@@ -872,6 +869,36 @@ class ToolManager:
                     call_id=call.get("id"),
                 )
         return calls
+
+    def _execute_calls(self, calls: list, response: Any) -> Any:
+        """Run the callable tool calls and record each outcome in the tool loader.
+
+        Args:
+            calls: The tool call dicts in the response.
+            response: A tool call dict or a list of them.
+
+        Returns:
+            Any: What the tool executor returned.
+
+        Raises:
+            Exception: Whatever the tool executor raises.
+        """
+        agent = self.agent
+        success = True
+        try:
+            return agent.tool_struct.execute_function_calls_from_api_response(
+                response
+            )
+        except Exception:
+            success = False
+            raise
+        finally:
+            loader = agent.tool_loader
+            if loader is not None:
+                for call in calls:
+                    name = _name(call)
+                    if name:
+                        loader.record_outcome(name, success)
 
     def _record_tool_output(self, calls: list, output: Any) -> bool:
         """Add tool output to memory and print it.
