@@ -1,5 +1,5 @@
 import datetime
-from typing import List
+from typing import Callable, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -113,7 +113,9 @@ browser_and_terminal_tool_two = """
 
 
 # Function to parse tools and get their documentation
-def parse_tools(tools: List[BaseTool] = []):
+def parse_tools(tools: Optional[List[BaseTool]] = None):
+    if tools is None:
+        tools = []
     tool_docs = []
     for tool in tools:
         tool_doc = scrape_tool_func_docs(tool)
@@ -123,8 +125,10 @@ def parse_tools(tools: List[BaseTool] = []):
 
 # Function to generate the worker prompt
 def tool_usage_worker_prompt(
-    current_time=time, tools: List[callable] = []
+    current_time=time, tools: Optional[List[Callable]] = None
 ):
+    if tools is None:
+        tools = []
     tool_docs = BaseTool(verbose=True, functions=tools)
 
     prompt = f"""
