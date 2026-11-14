@@ -5,6 +5,7 @@ All network calls (litellm.completion) are mocked.  Only the integration
 test at the bottom touches the filesystem, using pytest's tmp_path fixture.
 """
 
+import copy
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -16,6 +17,7 @@ from swarms.agents.context_compressor import (
     COMPRESSION_USER_TEMPLATE,
 )
 from swarms import Agent
+from swarms.structs.conversation import Conversation
 from swarms.utils.litellm_wrapper import empty_usage
 
 # ---------------------------------------------------------------------------
@@ -587,3 +589,31 @@ class TestUsageRatioReusesMessageCounts:
         )
         messages = len(conv.conversation_history)
         assert exact <= estimate <= exact + messages
+
+
+def test_attachment_data_stays_out_of_history_text(tmp_path):
+    data = "A" * 9000
+    parts = [
+        {
+            "type": "file",
+            "file": {"file_data": data, "filename": "a.pdf"},
+        },
+        {"type": "image_url", "image_url": data},
+        {"type": "video_url", "video_url": {"url": "data:," + data}},
+        {"type": "document", "source": {"data": data}},
+        {"type": "image_url", "image_url": "https://a.example/b.png"},
+    ]
+    path, channel = tmp_path / "MEMORY.md", MagicMock()
+    conv = Conversation(memory_md_path=str(path), channel=channel)
+    conv.add("user", copy.deepcopy(parts))
+    agent = SimpleNamespace(short_memory=conv, context_length=1000)
+
+    assert ContextCompressor().should_compress(agent) is False
+    assert conv.to_messages()[-1]["content"] == parts
+    for text in (
+        conv.return_history_as_string(),
+        path.read_text(encoding="utf-8"),
+        channel.post.call_args.args[1],
+    ):
+        assert "AAAA" not in text
+        assert "a.pdf" in text and "https://a.example/b.png" in text
