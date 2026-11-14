@@ -1630,12 +1630,8 @@ Subtask Breakdown:
             )
             self._run_streaming_callback = streaming_callback
 
-        models = self.fallback_models or [self.model_name]
         try:
-            for i, model in enumerate(models):
-                if model != self.model_name:
-                    self.model_name = model
-                    self.llm_handling()
+            for model, remaining in self._models_to_try():
                 try:
                     output = await self._adispatch(
                         task,
@@ -1654,12 +1650,7 @@ Subtask Breakdown:
                         )
                     return output
                 except AgentLLMError as error:
-                    if i + 1 == len(models):
-                        raise
-                    logger.warning(
-                        f"Agent '{self.agent_name}': '{model}' failed, "
-                        f"trying '{models[i + 1]}': {error}"
-                    )
+                    self._fall_back_or_raise(error, model, remaining)
         finally:
             self._run_streaming_callback = None
 
@@ -3008,13 +2999,8 @@ Subtask Breakdown:
             task, streaming_callback, messages
         )
 
-        models = self.fallback_models or [self.model_name]
         try:
-            for i, model in enumerate(models):
-                # Also moves back to the primary after an earlier run fell back.
-                if model != self.model_name:
-                    self.model_name = model
-                    self.llm_handling()
+            for model, remaining in self._models_to_try():
                 try:
                     output = self._dispatch(
                         task,
@@ -3032,12 +3018,7 @@ Subtask Breakdown:
                         )
                     return output
                 except AgentLLMError as error:
-                    if i + 1 == len(models):
-                        raise
-                    logger.warning(
-                        f"Agent '{self.agent_name}': '{model}' failed, "
-                        f"trying '{models[i + 1]}': {error}"
-                    )
+                    self._fall_back_or_raise(error, model, remaining)
 
         except KeyboardInterrupt:
             # Save config on interrupt
@@ -3147,6 +3128,25 @@ Subtask Breakdown:
                 if m != task_row
             ]
         return task, streaming_callback, messages
+
+    def _models_to_try(self) -> Iterable[tuple]:
+        """Switch to each model in turn, starting back at the primary, and yield it with the models left after it."""
+        models = self.fallback_models or [self.model_name]
+        for i, model in enumerate(models):
+            if model != self.model_name:
+                self.model_name = model
+                self.llm_handling()
+            yield model, models[i + 1 :]
+
+    def _fall_back_or_raise(
+        self, error: AgentLLMError, model: str, remaining: List[str]
+    ) -> None:
+        """Raise error when no model is left, else log the move to the next one."""
+        if not remaining:
+            raise error
+        logger.warning(
+            f"Agent '{self.agent_name}': '{model}' failed, trying '{remaining[0]}': {error}"
+        )
 
     def _dispatch(
         self,
