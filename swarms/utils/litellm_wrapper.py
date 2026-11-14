@@ -663,6 +663,11 @@ class LiteLLM:
         # A prebuilt body is already structured, so only this instance's system prompt is added.
         if messages is not None:
             prepared = base + list(messages)
+            # Gemini 3.5+ rejects a request that ends with the model's own turn.
+            if prepared and prepared[-1].get("role") == "assistant":
+                prepared.append(
+                    {"role": "user", "content": "Continue."}
+                )
             if self.prompt_caching and prepared:
                 self._apply_prompt_caching(prepared)
             return prepared
