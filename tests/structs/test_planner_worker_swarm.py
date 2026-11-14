@@ -1,5 +1,8 @@
+import json
 import types
 from unittest.mock import patch
+
+import pytest
 
 from swarms import Agent, PlannerWorkerSwarm
 
@@ -49,3 +52,32 @@ def test_usage_counts_the_single_use_planner_and_judge():
         "reasoning_tokens": 0,
         "total_tokens": 165,
     }
+
+
+def test_planner_that_answers_in_text_still_yields_its_tasks():
+    swarm = PlannerWorkerSwarm(agents=[_usage_agent("Worker", 0, 0)])
+    plan = json.dumps(
+        {
+            "plan": "p",
+            "tasks": [{"title": "Write", "description": "d"}],
+        }
+    )
+    prose = "Coverage catches regressions early. " * 30
+
+    def planner_says(text):
+        planner = _usage_agent(
+            "Planner", 0, 0, [{"role": "Planner", "content": text}]
+        )
+        swarm._create_planner_agent = lambda name="Planner": planner
+
+    for reply in (plan, f"```json\n{plan}\n```"):
+        planner_says(reply)
+        assert [t.title for t in swarm._run_planner("Plan.")] == [
+            "Write"
+        ]
+
+    planner_says(prose)
+    with pytest.raises(ValueError) as err:
+        swarm._run_planner("Plan.")
+    assert prose[:200] in str(err.value)
+    assert len(str(err.value)) < len(prose)
