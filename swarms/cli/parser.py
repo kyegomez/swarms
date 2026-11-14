@@ -379,7 +379,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         type=int,
         default=1,
         metavar="N",
-        help="Number of execution loops each agent should perform (default: 1)",
+        help="Number of refinement loops the heavy swarm performs (default: 1)",
     )
     heavy.add_argument(
         "--question-agent-model-name",
@@ -394,11 +394,6 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         default=DEFAULT_HEAVY_SWARM_MODEL,
         metavar="MODEL",
         help=f"Model name for specialized worker agents (default: {DEFAULT_HEAVY_SWARM_MODEL})",
-    )
-    heavy.add_argument(
-        "--random-loops-per-agent",
-        action="store_true",
-        help="Enable random number of loops per agent (1-10 range)",
     )
     autoswarm.add_argument(
         "--model",

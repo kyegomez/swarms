@@ -68,7 +68,6 @@ AGENT_FLAG_TIPS: List[str] = [
 
 SWARM_FLAG_TIPS: List[str] = [
     "[bold]swarms heavy-swarm --loops-per-agent 5[/bold] gives each specialist room to think",
-    "Make heavy-swarms non-deterministic with [bold]--random-loops-per-agent[/bold]",
     "Choose the heavy-swarm worker model with [bold]--worker-model-name claude-opus-4-7[/bold]",
     "Choose the heavy-swarm question agent with [bold]--question-agent-model-name gpt-4o[/bold]",
     "Generate a swarm spec without running it: [bold]swarms autoswarm --task '...' --no-run[/bold]",
