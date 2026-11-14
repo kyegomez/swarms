@@ -1,4 +1,5 @@
 import asyncio
+from unittest.mock import patch
 
 import pytest
 
@@ -471,6 +472,7 @@ def test_arun_awaits_voters_within_max_concurrency_like_run():
             {
                 "dynamic_temperature_enabled": False,
                 "temperature": None,
+                "print_on": False,
             },
         ),
         (
@@ -486,6 +488,7 @@ def test_arun_awaits_voters_within_max_concurrency_like_run():
             {"dynamic_context_window": False},
         ),
         ({"max_loops": 2}, {"max_loops": 2}),
+        ({"print_on": True}, {"print_on": True}),
     ],
 )
 def test_consensus_agent_defaults_and_kwargs_passthrough(
@@ -497,3 +500,14 @@ def test_consensus_agent_defaults_and_kwargs_passthrough(
     )
     for attr, value in expected.items():
         assert getattr(mv.consensus_agent, attr) == value
+
+
+@pytest.mark.parametrize("verbose", [False, True])
+@patch("swarms.structs.majority_voting.formatter.print_panel")
+def test_panels_follow_verbose(print_panel, verbose):
+    mv = MajorityVoting(
+        agents=[Agent(agent_name="Voter-A", max_loops=1)],
+        verbose=verbose,
+    )
+    assert print_panel.call_count == verbose
+    assert mv.consensus_agent.print_on == verbose
