@@ -836,3 +836,75 @@ def test_member_channels_are_detached_in_favour_of_the_workflows(
         "A",
         "B",
     ]
+
+
+@pytest.mark.parametrize(
+    "slow_step, tail",
+    [
+        # B shares A's channel, so B starts only after A has posted.
+        ("channel", ["A done", "request", "B posted"]),
+        ("autosave", ["request", "request", "A done"]),
+    ],
+)
+def test_run_stream_hands_over_before_autosave_but_after_a_post(
+    slow_step, tail
+):
+    """B's request goes out while A is still saving, or once A has posted."""
+    import time
+    from types import SimpleNamespace
+
+    import swarms.utils.litellm_wrapper as litellm_wrapper
+
+    events, requests = [], []
+    replies = iter(["A-answer", "B-answer"])
+
+    async def acompletion(**params):
+        events.append("request")
+        requests.append(str(params["messages"]))
+        choice = SimpleNamespace(
+            delta=SimpleNamespace(content=next(replies))
+        )
+
+        async def stream():
+            yield SimpleNamespace(choices=[choice])
+
+        return stream()
+
+    def slow(*args, **kwargs):
+        time.sleep(0.2)
+        events.append("A done")
+
+    def post(name, content):
+        if name == "A":
+            slow()
+        else:
+            events.append("B posted")
+
+    agents = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in "AB"
+    ]
+    if slow_step == "channel":
+        agents[0].channel = agents[1].channel = SimpleNamespace(
+            post=post
+        )
+    else:
+        agents[0].autosave = True
+        agents[0].save = slow
+        agents[0]._autosave_config_step = lambda *args, **kwargs: None
+    workflow = SequentialWorkflow(agents=agents)
+
+    with patch.object(litellm_wrapper, "acompletion", acompletion):
+        tokens = list(workflow.run_stream("Go."))
+
+    assert events[-3:] == tail
+    assert tokens == ["A-answer", "B-answer"]
+    assert "A-answer" in requests[1]
+    history = (
+        workflow.agent_rearrange.conversation.conversation_history
+    )
+    assert [(m["role"], m["content"]) for m in history] == [
+        ("User", "Go."),
+        ("A", "A-answer"),
+        ("B", "B-answer"),
+    ]
