@@ -64,6 +64,10 @@ class LiteLLMException(Exception):
     """
 
 
+class ModelRefusalError(LiteLLMException):
+    pass
+
+
 class NetworkConnectionError(Exception):
     """
     Exception raised when network connectivity issues are detected.
@@ -1283,6 +1287,7 @@ class LiteLLM:
         for chunk in stream:
             if self._note_stream_chunk(chunk):
                 yield chunk
+        self._raise_on_refusal(self.last_finish_reason)
 
     async def _atrack_streaming_usage(self, stream: any):
         """Yield an async stream's chunks, recording the trailing usage chunk.
@@ -1298,6 +1303,7 @@ class LiteLLM:
         async for chunk in stream:
             if self._note_stream_chunk(chunk):
                 yield chunk
+        self._raise_on_refusal(self.last_finish_reason)
 
     def _note_stream_chunk(self, chunk: any) -> bool:
         """Record one chunk's finish reason, model and usage.
@@ -1322,6 +1328,13 @@ class LiteLLM:
                 return False
         return True
 
+    def _raise_on_refusal(self, finish_reason: Optional[str]) -> None:
+        if finish_reason in ("refusal", "content_filter"):
+            raise ModelRefusalError(
+                f"{self.model_name} refused the request "
+                f"(finish_reason={finish_reason!r})"
+            )
+
     def _process_response(self, response: any):
         """
         Route a completion response to the right output handler based on
@@ -1336,6 +1349,12 @@ class LiteLLM:
         # Streaming: hand back the generator, with usage recorded as it drains
         if self.stream:
             return self._track_streaming_usage(response)
+
+        choices = _field(response, "choices") or []
+        if choices:
+            self._raise_on_refusal(
+                _field(choices[0], "finish_reason")
+            )
 
         # Before the reasoning branch: reasoning models still emit tool_calls, which would be dropped.
         if self.tools_list_dictionary is not None and getattr(
