@@ -832,6 +832,19 @@ class Agent:
         """
         return self.workspace.dir
 
+    def _request_token_budget(self) -> Optional[int]:
+        """
+        Return the input tokens one request may carry.
+
+        Returns:
+            Optional[int]: The context length less the room kept for the reply, or None when the dynamic context window is off.
+        """
+        if not (self.dynamic_context_window and self.context_length):
+            return None
+        room = self.context_length - (self.max_tokens or 0)
+        # A reply allowance larger than the window cannot be reserved from it.
+        return room if room > 0 else self.context_length
+
     def short_memory_init(self):
         # Keyed on agent_name, not self.id, which is a fresh uuid per run and would orphan MEMORY.md.
         memory_md_path = None
@@ -1241,6 +1254,7 @@ class Agent:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
+                                    max_tokens=self._request_token_budget(),
                                 )
                             )
 
@@ -1820,6 +1834,7 @@ Subtask Breakdown:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
+                                    max_tokens=self._request_token_budget(),
                                 )
                             )
 

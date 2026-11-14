@@ -1658,6 +1658,37 @@ def test_to_messages_maps_roles_and_pairs_results():
     ]
 
 
+def test_to_messages_drops_the_oldest_turns_to_fit_max_tokens():
+    """A budget keeps the system turn, the newest turn and whole tool turns only."""
+    conv = Conversation()
+    conv.add("system", "rules")
+    conv.add(
+        "assistant",
+        None,
+        metadata={
+            "tool_calls": [
+                {
+                    "id": "c1",
+                    "type": "function",
+                    "function": {"name": "f", "arguments": "{}"},
+                }
+            ]
+        },
+    )
+    conv.add("tool", "result " * 50, metadata={"tool_call_id": "c1"})
+    for index in range(20):
+        conv.add("User", f"turn {index} " + "lorem ipsum " * 40)
+
+    everything = conv.to_messages()
+    fitted = conv.to_messages(max_tokens=400)
+
+    assert len(everything) == 23
+    assert count_tokens(json.dumps(fitted), "gpt-5.4") <= 400
+    assert fitted[0]["role"] == "system"
+    assert fitted[-1] == everything[-1]
+    assert "tool" not in {m["role"] for m in fitted}
+
+
 def test_record_assistant_sends_a_non_text_reply_as_text():
     conv = Conversation()
     conv.record_assistant({"answer": 1})
