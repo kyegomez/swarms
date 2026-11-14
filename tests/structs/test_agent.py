@@ -1561,6 +1561,8 @@ class TestToolExecutionRetry:
         agent = self._agent(attempts=3)
         agent.print_on = False
         agent.tool_struct = BaseTool(tools=[charge_card])
+        agent.short_memory = SimpleNamespace(add=lambda **kw: None)
+        agent.tool_call_summary = False
         call = {
             "id": "c1",
             "type": "function",
@@ -1570,9 +1572,8 @@ class TestToolExecutionRetry:
             },
         }
 
-        with pytest.raises(AgentToolExecutionError):
-            agent.tool_manager.tool_execution_retry([call], 1)
-        assert len(runs) == 3
+        agent.tool_manager.tool_execution_retry([call], 1)
+        assert len(runs) == 1
 
     def test_none_response_does_not_execute_or_raise(self):
         agent = self._agent()

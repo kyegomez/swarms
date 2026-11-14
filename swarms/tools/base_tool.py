@@ -915,17 +915,16 @@ class BaseTool(BaseModel):
 
         Args:
             api_response (Union[Dict[str, Any], str, List[Any]]): The API response containing function calls
-            sequential (bool): If True, execute functions sequentially. If False, execute in parallel (default)
+            sequential (bool): If True, execute functions sequentially. If False, execute in parallel (default), except that a tool whose function has ``sequential = True`` runs alone, after the calls before it finish and before the calls after it start
             max_workers (int): Maximum number of worker threads for parallel execution (default: 4)
             return_as_string (bool): If True, return results as formatted strings (default: True)
 
         Returns:
-            Union[List[Any], List[str]]: List of results from executed functions
+            Union[List[Any], List[str]]: One result per call, in call order. A call that fails, including one naming an unknown tool, holds its exception in its own slot while the other calls still run and return
 
         Raises:
             ToolValidationError: If API response validation fails
-            ToolNotFoundError: If any function is not found
-            ToolExecutionError: If function execution fails
+            ToolExecutionError: If the response cannot be processed
 
         Examples:
             >>> # OpenAI API response example
@@ -1389,9 +1388,7 @@ class BaseTool(BaseModel):
                 self._log_if_verbose(
                     "error", f"Failed to execute {call['name']}: {e}"
                 )
-                raise ToolExecutionError(
-                    f"Failed to execute function {call['name']}: {e}"
-                ) from e
+                results.append(e)
 
         return results
 
@@ -1412,10 +1409,16 @@ class BaseTool(BaseModel):
             # Submit all function calls to the executor
             future_to_index = {}
             for i, call in enumerate(function_calls):
+                tool = (self.function_map or {}).get(call["name"])
+                alone = getattr(tool, "sequential", False) is True
+                if alone:
+                    list(as_completed(future_to_index))
                 future = executor.submit(
                     self._execute_single_function_call, call
                 )
                 future_to_index[future] = i
+                if alone:
+                    list(as_completed(future_to_index))
 
             # Collect results as they complete
             for future in as_completed(future_to_index):
@@ -1434,9 +1437,7 @@ class BaseTool(BaseModel):
                         "error",
                         f"Failed to execute {call['name']} (index {index}): {e}",
                     )
-                    raise ToolExecutionError(
-                        f"Failed to execute function {call['name']}: {e}"
-                    ) from e
+                    results[index] = e
 
         return results
 
