@@ -27,6 +27,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from loguru import logger
 
 from swarms.prompts.handoffs_prompt import get_handoffs_prompt
+from swarms.schemas.agent_errors import AgentLLMError
 from swarms.structs.autonomous_loop_utils import (
     assign_task_tool,
     cancel_sub_agent_tasks_tool,
@@ -259,6 +260,7 @@ class AutonomousAgentLoop:
                 - Other types: Returns formatted conversation history based on output_type
 
         Raises:
+            AgentLLMError: If a model call fails, so run() can try the next fallback model.
             Exception: If planning phase fails after maximum attempts.
             Exception: If execution exceeds maximum iteration limits.
 
@@ -1229,6 +1231,9 @@ class AutonomousAgentLoop:
 
                             # Give the nudge a chance before refiring.
                             self.agent.think_call_count = 0
+
+                    except AgentLLMError:
+                        raise
 
                     except Exception as e:
                         if self.agent.verbose:

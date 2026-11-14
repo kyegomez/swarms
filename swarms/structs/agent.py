@@ -1480,7 +1480,10 @@ class Agent:
                 flattened string rendering of it.
 
         Returns:
-            Any: The conversation shaped by ``output_type``, on every path.
+            Any: The conversation shaped by output_type.
+
+        Raises:
+            AgentLLMError: If the summary call fails, so run() can try the next fallback model.
         """
         summary_prompt = get_summary_prompt()
         self.short_memory.add(
@@ -1554,6 +1557,9 @@ Subtask Breakdown:
             return history_output_formatter(
                 self.short_memory, type=self.output_type
             )
+
+        except AgentLLMError:
+            raise
 
         except Exception as e:
             if self.verbose:
