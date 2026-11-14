@@ -95,6 +95,20 @@ For mainnet:
    )
    ```
 
+## Nano (nano:mainnet, exact)
+
+`nano_exact/` serves the same research agent for XNO with the standard library only. The seller holds no key: it reads the payer's send block from a node you choose.
+
+```bash
+export NANO_PAY_TO=nano_your_account
+export NANO_NODE_URL=https://your-node/rpc
+cd nano_exact && python research_agent_nano_example.py
+```
+
+- Each 402 carries one order. The payer sets the send block's representative to `extra.representative`, a commitment to the order id, `payTo` and the exact raw price, then retries with `X-PAYMENT` holding `blockHash` and `orderId`. A block paid for one request cannot be used for another.
+- Each credited block is fsynced to `.nano_state/claims.jsonl`, so a replay is refused after a restart too.
+- Tests: `pytest tests/examples/test_nano_exact.py` (no network, no install beyond pytest).
+
 ## Learn More
 
 - [X402 Documentation](https://docs.cdp.coinbase.com/x402)
