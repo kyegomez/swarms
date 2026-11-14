@@ -73,6 +73,29 @@ class WorkflowPlan(BaseModel):
     )
 
 
+def _json_before_prose(text: str) -> Any:
+    """Parse the first JSON value in a text, allowing prose around it.
+
+    Args:
+        text: The text holding a JSON object or array.
+
+    Returns:
+        Any: The parsed JSON value.
+    """
+    start = min(
+        (i for i in (text.find("{"), text.find("[")) if i != -1),
+        default=-1,
+    )
+    if start == -1:
+        return json.loads(text)
+
+    rest = text[start:]
+    value, end = json.JSONDecoder().raw_decode(rest)
+    if re.fullmatch(r"[ \t]*(\n[^\[{]*)?", rest[end:]):
+        return value
+    return json.loads(rest)
+
+
 def _parse_json(raw: Any) -> Any:
     """Parse JSON from an LLM reply, tolerating code fences and surrounding prose.
 
@@ -84,29 +107,26 @@ def _parse_json(raw: Any) -> Any:
     """
     if not isinstance(raw, str):
         return raw
+
     text = raw.strip()
+    candidates = [text]
     fenced = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
-    for candidate in (
-        text,
-        fenced.group(1).strip() if fenced else text,
-    ):
+    if fenced:
+        candidates.append(fenced.group(1).strip())
+
+    for candidate in candidates:
         try:
             return json.loads(candidate)
         except json.JSONDecodeError:
             pass
 
-    # Scan the whole reply: a fence inside a JSON string cuts the fence match short.
-    start = min(
-        (i for i in (text.find("{"), text.find("[")) if i != -1),
-        default=-1,
-    )
-    if start == -1:
-        return json.loads(text)
-    rest = text[start:]
-    value, end = json.JSONDecoder().raw_decode(rest)
-    if re.fullmatch(r"[ \t]*(\n[^\[{]*)?", rest[end:]):
-        return value
-    return json.loads(rest)
+    # Fenced block first; a fence inside a JSON string cuts it short.
+    for candidate in candidates[:0:-1]:
+        try:
+            return _json_before_prose(candidate)
+        except json.JSONDecodeError:
+            pass
+    return _json_before_prose(text)
 
 
 def fresh_agent(agent: Any) -> Any:

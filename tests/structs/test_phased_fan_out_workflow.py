@@ -277,6 +277,8 @@ def test_json_followed_by_prose_is_parsed():
         '```json\n{"note": "```python\\nmain()\\n```"}\n```',
         'Here:\n```json\n{"note": "ok"}\n```\nDone.',
         '```json\n{"note": 1}\n```\nor\n```json\n{"other": 2}\n```',
+        'Using {x}:\n```json\n{"note": 1}\nnotes\n```',
+        'Plan:\n```json\n{"note": 1}\nnotes\n```\nthen {b}',
     ],
 )
 def test_parse_json_keeps_fences_inside_strings(reply):
