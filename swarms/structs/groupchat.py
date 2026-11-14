@@ -52,7 +52,6 @@ import ast
 import asyncio
 import json
 from collections import deque
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, List, Optional, Tuple
 
 from swarms.structs.execution_utils import batched_run
@@ -70,7 +69,11 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.telemetry.otel import capture_init, trace_run
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="groupchat")
@@ -184,7 +187,7 @@ class GroupChat(SerializableMixin):
     - no agent bids above ``threshold`` for a turn (a conversational lull).
     """
 
-    _to_dict_exclude = ("agents", "conversation")
+    _to_dict_exclude = ("agents", "conversation", "_executor")
 
     def __init__(
         self,
@@ -238,6 +241,7 @@ class GroupChat(SerializableMixin):
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
+        self._executor: Optional[ContextThreadPoolExecutor] = None
 
         self.channel = channel
         claim_agents(self.agents, channel, self.name)
@@ -296,7 +300,7 @@ class GroupChat(SerializableMixin):
         ``tools_list_dictionary``) and extracts the structured ``(score,
         message)`` from the resulting tool call. Synchronous because
         ``Agent.run`` is blocking; the async agent loop invokes this method
-        via ``asyncio.to_thread`` so one slow model call cannot block the
+        on the chat's thread pool so one slow model call cannot block the
         whole groupchat.
         """
         prompt = GROUPCHAT_DECIDE_PROMPT.format(
@@ -403,13 +407,22 @@ class GroupChat(SerializableMixin):
         floor and the reply it would give. Bidding is the cheap "do I have
         something to add right now?" instinct — it runs in parallel for speed,
         but at most one bid is ever posted (see ``_select_speaker``). Agent
-        calls are blocking, so each runs in its own thread via
-        ``asyncio.to_thread`` and one slow model cannot stall the turn.
+        calls are blocking, so each runs in its own thread of a pool the
+        chat keeps across runs, and one slow model cannot stall the turn.
         """
+        if self._executor is None:
+            self._executor = ContextThreadPoolExecutor(
+                max_workers=max(1, len(self.agents or ()))
+            )
+        loop = asyncio.get_running_loop()
         results = await asyncio.gather(
             *(
-                asyncio.to_thread(
-                    self._decide_sync, agent, sender, message
+                loop.run_in_executor(
+                    self._executor,
+                    self._decide_sync,
+                    agent,
+                    sender,
+                    message,
                 )
                 for agent in self.agents
             )
@@ -476,11 +489,6 @@ class GroupChat(SerializableMixin):
         Returns:
             Conversation history formatted according to ``self.output_type``.
         """
-        asyncio.get_running_loop().set_default_executor(
-            ThreadPoolExecutor(
-                max_workers=max(1, len(self.agents or ()))
-            )
-        )
         self._log("info", f"[{self.name}] initial task: {task}")
 
         self.conversation = Conversation(
@@ -578,6 +586,17 @@ class GroupChat(SerializableMixin):
             List of formatted conversation outputs from ``_run_async``.
         """
         return batched_run(self.run, tasks)
+
+    def close(self) -> None:
+        executor, self._executor = self._executor, None
+        if executor is not None:
+            executor.shutdown()
+
+    def __enter__(self) -> "GroupChat":
+        return self
+
+    def __exit__(self, *exc_info: Any) -> None:
+        self.close()
 
     @property
     def usage(self) -> dict:
