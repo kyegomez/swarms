@@ -153,11 +153,19 @@ def is_base64_encoded(image_source: str) -> bool:
     return False
 
 
+def file_extension(source: str) -> str:
+    """Return the lowercase extension of a path or URL, ignoring any URL query."""
+    if source.startswith(("http://", "https://")):
+        source = urlparse(source).path
+    return Path(source).suffix.lower()
+
+
 def get_image_base64(image_source: str) -> str:
     """
     Convert image data from a URL, local file path, data URI, or raw base64 string to a base64-encoded string in data URI format.
 
-    If the input is already a data URI, it is returned unchanged. If it's a raw base64 string (without data URI prefix),
+    If the input is already an image data URI, it is returned unchanged. A base64 PDF data URI is rewritten to
+    `data:application/pdf;base64,...`, and any other data URI raises ValueError. If it's a raw base64 string (without data URI prefix),
     it is converted to a data URI format. Otherwise, the image is loaded from the specified source, encoded as base64,
     and returned as a data URI with the appropriate MIME type.
 
@@ -170,7 +178,7 @@ def get_image_base64(image_source: str) -> str:
     Raises:
         requests.HTTPError: If fetching the image from a URL fails.
         FileNotFoundError: If the local image file does not exist.
-        ValueError: If the base64 string is invalid.
+        ValueError: If the base64 string is invalid, or a data URI is neither an image nor a base64 PDF.
 
     Example:
         >>> # From file path
@@ -184,9 +192,22 @@ def get_image_base64(image_source: str) -> str:
         >>> # Already a data URI (returns as-is)
         >>> uri = get_image_base64("data:image/png;base64,iVBORw0KGgo...")
     """
-    # If already a data URI, return as-is
-    if image_source.startswith("data:image"):
+    # If already an image data URI, return as-is
+    if image_source[:10].lower() == "data:image":
         return image_source
+
+    # A PDF data URI is rewritten so providers get the plain media type.
+    if image_source[:5].lower() == "data:":
+        header, _, payload = image_source.partition(",")
+        fields = header.lower().split(";")
+        if (
+            fields[0] == "data:application/pdf"
+            and fields[-1] == "base64"
+        ):
+            return f"data:application/pdf;base64,{payload}"
+        raise ValueError(
+            f"Unsupported data URI '{header}': only images and base64 PDFs are accepted."
+        )
 
     # Check if it's a raw base64 string (without data URI prefix)
     if is_base64_encoded(
@@ -204,7 +225,7 @@ def get_image_base64(image_source: str) -> str:
         with open(image_source, "rb") as file:
             image_data = file.read()
 
-    extension = Path(image_source).suffix.lower()
+    extension = file_extension(image_source)
     mime_type_mapping = {
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
@@ -215,6 +236,7 @@ def get_image_base64(image_source: str) -> str:
         ".tiff": "image/tiff",
         ".tif": "image/tiff",
         ".svg": "image/svg+xml",
+        ".pdf": "application/pdf",
     }
     mime_type = mime_type_mapping.get(extension, "image/jpeg")
     encoded_string = base64.b64encode(image_data).decode("utf-8")

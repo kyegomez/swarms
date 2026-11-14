@@ -27,6 +27,7 @@ from pydantic import BaseModel
 from swarms.utils import llm_backend
 from swarms.utils.formatter import formatter
 from swarms.utils.image_file_b64 import (
+    file_extension,
     get_image_base64,
     is_base64_encoded,
     save_base64_as_image,
@@ -930,7 +931,8 @@ class LiteLLM:
 
         Uses direct URL passing when the model supports it; otherwise converts
         the image (file path, URL, data URI, or raw base64) to a base64 data
-        URI via `get_image_base64` and annotates it with its MIME type.
+        URI via `get_image_base64` and annotates it with its MIME type. A PDF
+        becomes a `file` block.
         """
         if self._should_use_direct_url(image):
             image_block = {
@@ -945,6 +947,15 @@ class LiteLLM:
                 mime_type = image_url.split(";base64,")[0].split(
                     "data:"
                 )[1]
+            # RouteHub sends every image_url part to Anthropic as an image block.
+            if mime_type == "application/pdf":
+                return {
+                    "type": "file",
+                    "file": {
+                        "file_data": image_url,
+                        "filename": "document.pdf",
+                    },
+                }
             if (
                 self._is_anthropic_model()
                 and mime_type not in self.ANTHROPIC_IMAGE_FORMATS
@@ -1003,6 +1014,10 @@ class LiteLLM:
 
         # Only use direct URL for HTTP/HTTPS URLs
         if not image.startswith(("http://", "https://")):
+            return False
+
+        # A PDF is sent as a file part, which carries its bytes.
+        if file_extension(image) == ".pdf":
             return False
 
         # Check for local/custom models that might not support direct URLs
