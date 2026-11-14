@@ -60,9 +60,6 @@ class ToolTypeHintError(BaseToolError):
     pass
 
 
-ToolType = Union[BaseModel, Dict[str, Any], Callable[..., Any]]
-
-
 class BaseTool(BaseModel):
     """
     A comprehensive tool management system for function calling, schema conversion, and execution.
@@ -298,33 +295,6 @@ class BaseTool(BaseModel):
             raise FunctionSchemaError(
                 f"Failed to convert multiple Pydantic models: {e}"
             ) from e
-
-    def detect_tool_input_type(self, input: ToolType) -> str:
-        """
-        Detect the type of tool input for appropriate processing.
-
-        This method analyzes the input and determines whether it's a Pydantic model,
-        dictionary, function, or unknown type. Results are cached for performance.
-
-        Args:
-            input (ToolType): The input to analyze
-
-        Returns:
-            str: Type of the input ("Pydantic", "Dictionary", "Function", or "Unknown")
-
-        Examples:
-            >>> tool = BaseTool()
-            >>> input_type = tool.detect_tool_input_type(my_function)
-            >>> print(input_type)  # "Function"
-        """
-        if isinstance(input, BaseModel):
-            return "Pydantic"
-        elif isinstance(input, dict):
-            return "Dictionary"
-        elif callable(input):
-            return "Function"
-        else:
-            return "Unknown"
 
     def execute_tool_by_name(
         self,
