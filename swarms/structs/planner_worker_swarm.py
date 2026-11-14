@@ -1,6 +1,5 @@
 import concurrent.futures
 import json
-import os
 import threading
 import time
 import traceback
@@ -384,9 +383,7 @@ class WorkerPool:
         self.task_queue = task_queue
         self.conversation = conversation
         self.img = img
-        self.max_workers = max_workers or min(
-            len(agents), os.cpu_count() or 4
-        )
+        self.max_workers = max_workers or len(agents)
         self.poll_interval = poll_interval
         self.task_timeout = task_timeout
         self._stop_event = threading.Event()
