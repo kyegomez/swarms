@@ -86,35 +86,41 @@ def _log_once(level: str, message: str) -> None:
     logger.log(level, message)
 
 
-def _collect_tool_call_deltas(accumulator: dict, chunk: Any) -> None:
+def _collect_tool_call_deltas(
+    calls: list, current: dict, chunk: Any
+) -> None:
     """Fold one chunk's tool call fragments into the calls assembled so far.
 
+    A fragment whose id differs from the call at its index starts a new
+    call, since some providers reuse an index for every call in a turn.
+
     Args:
-        accumulator: Tool calls keyed by their index in the response.
+        calls: Tool calls assembled so far, in the order they started.
+        current: The call each index is assembling, keyed by index.
         chunk: A chunk from the model stream.
     """
     if not (hasattr(chunk, "choices") and chunk.choices):
         return
     delta = chunk.choices[0].delta
     for tc in getattr(delta, "tool_calls", None) or []:
-        idx = tc.index
-        if idx not in accumulator:
-            accumulator[idx] = {
+        call = current.get(tc.index)
+        if call is None or (
+            tc.id and call["id"] and tc.id != call["id"]
+        ):
+            call = {
                 "id": "",
                 "type": "function",
                 "function": {"name": "", "arguments": ""},
             }
+            current[tc.index] = call
+            calls.append(call)
         if tc.id:
-            accumulator[idx]["id"] = tc.id
+            call["id"] = tc.id
         if tc.function:
             if tc.function.name:
-                accumulator[idx]["function"][
-                    "name"
-                ] += tc.function.name
+                call["function"]["name"] += tc.function.name
             if tc.function.arguments:
-                accumulator[idx]["function"][
-                    "arguments"
-                ] += tc.function.arguments
+                call["function"]["arguments"] += tc.function.arguments
 
 
 class _StreamParts:
@@ -129,7 +135,8 @@ class _StreamParts:
         self.manager = manager
         self.tool_calls_out = tool_calls_out
         self.content_out = content_out
-        self.accumulator: dict = {}
+        self.calls: list = []
+        self.current: dict = {}
         # The last call of this run ended mid-line, so this one starts on a new line.
         self.section = "carry" if manager.stream_mid_line else None
         self.tool_names: dict = {}
@@ -144,7 +151,7 @@ class _StreamParts:
         Returns:
             list: The parts, in the order they should be shown.
         """
-        _collect_tool_call_deltas(self.accumulator, chunk)
+        _collect_tool_call_deltas(self.calls, self.current, chunk)
         # RouteHub forwards chunks with no choices, which litellm drops.
         if not getattr(chunk, "choices", None):
             return []
@@ -204,9 +211,7 @@ class _StreamParts:
         Returns:
             list: The closing parts, empty when the stream ended on content.
         """
-        self.tool_calls_out.extend(
-            self.accumulator[i] for i in sorted(self.accumulator)
-        )
+        self.tool_calls_out.extend(self.calls)
         parts = []
         if self.section not in (None, "content", "carry"):
             kind = (
@@ -492,16 +497,15 @@ class LLMManager:
         assembled tool call list in the same format returned by output_for_tools, so
         the auto loop can handle it without any changes.
         """
-        accumulator: dict = {}
+        calls: list = []
+        current: dict = {}
 
         for chunk in stream:
-            _collect_tool_call_deltas(accumulator, chunk)
+            _collect_tool_call_deltas(calls, current, chunk)
             yield chunk  # always forward; callers filter on delta.content
 
         # Populate the output list once the stream is exhausted
-        tool_calls_out.extend(
-            accumulator[i] for i in sorted(accumulator)
-        )
+        tool_calls_out.extend(calls)
 
     def stream_parts(
         self, stream, tool_calls_out: list, content_out: list
