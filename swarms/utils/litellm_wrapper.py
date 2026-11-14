@@ -484,28 +484,32 @@ class LiteLLM:
         if self.mcp_call is True:
             tool_calls = response.choices[0].message.tool_calls
 
+            def _to_mcp_call_dict(tool_call: any) -> dict:
+                call = {
+                    "function": {
+                        "name": tool_call.function.name,
+                        "arguments": tool_call.function.arguments,
+                    }
+                }
+                # Preserve provider IDs so executors can match calls to results.
+                call_id = getattr(tool_call, "id", None)
+                if call_id:
+                    call["id"] = call_id
+                    call["type"] = (
+                        getattr(tool_call, "type", None) or "function"
+                    )
+                return call
+
             # Check if there are multiple tool calls
             if len(tool_calls) > 1:
                 # Return all tool calls if there are multiple
                 return [
-                    {
-                        "function": {
-                            "name": tool_call.function.name,
-                            "arguments": tool_call.function.arguments,
-                        }
-                    }
+                    _to_mcp_call_dict(tool_call)
                     for tool_call in tool_calls
                 ]
             else:
                 # Single tool call
-                out = tool_calls[0].function
-                output = {
-                    "function": {
-                        "name": out.name,
-                        "arguments": out.arguments,
-                    }
-                }
-                return output
+                return _to_mcp_call_dict(tool_calls[0])
         else:
             out = response.choices[0].message.tool_calls
 
