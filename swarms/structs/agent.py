@@ -41,8 +41,10 @@ from swarms.prompts.max_loop_prompt import generate_reasoning_prompt
 from swarms.prompts.react_base_prompt import REACT_SYS_PROMPT
 from swarms.prompts.safety_prompt import SAFETY_PROMPT
 from swarms.schemas.agent_errors import (
+    AgentError,  # noqa: F401  re-exported from this module
     AgentInitializationError,
     AgentLLMError,
+    AgentLLMInitializationError,  # noqa: F401  re-exported from this module
     AgentOutputSchemaError,
     AgentRunError,  # noqa: F401  re-exported from this module
     AgentToolExecutionError,
