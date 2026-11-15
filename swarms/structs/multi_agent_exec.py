@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import contextvars
 import os
 from typing import Any, Callable, List, Optional, Union
 
@@ -38,17 +39,24 @@ def run_single_agent(
     return agent.run(task=task, *args, **kwargs)
 
 
-async def run_agent_async(agent: AgentType, task: str) -> Any:
+async def run_agent_async(
+    agent: AgentType,
+    task: str,
+    executor: Optional[concurrent.futures.Executor] = None,
+) -> Any:
     """
     Run an agent asynchronously on the running event loop.
 
     Awaits the agent's own ``arun``, so an agent whose model call is native
     async holds no thread while it waits. An agent without ``arun`` runs its
-    ``run`` method in a worker thread instead.
+    ``run`` method in a worker thread of ``executor`` instead.
 
     Args:
         agent (AgentType): The agent instance to execute asynchronously
         task (str): The task string to be executed by the agent
+        executor (Optional[concurrent.futures.Executor]): Pool that runs an
+            agent without ``arun``. Defaults to None, the event loop's
+            default executor.
 
     Returns:
         Any: The result returned by the agent's arun or run method
@@ -61,7 +69,13 @@ async def run_agent_async(agent: AgentType, task: str) -> Any:
     """
     arun = getattr(agent, "arun", None)
     if arun is None:
-        return await asyncio.to_thread(run_single_agent, agent, task)
+        return await asyncio.get_running_loop().run_in_executor(
+            executor,
+            contextvars.copy_context().run,
+            run_single_agent,
+            agent,
+            task,
+        )
     return await arun(task)
 
 
@@ -74,7 +88,9 @@ async def run_agents_concurrently_async(
     Run multiple agents concurrently on one event loop.
 
     Every agent is awaited through ``run_agent_async`` with asyncio.gather(),
-    and an asyncio.Semaphore caps how many are in flight at once.
+    and an asyncio.Semaphore caps how many are in flight at once. Agents
+    without ``arun`` run on a thread pool of the same size, not on the
+    event loop's default executor.
 
     Args:
         agents (List[AgentType]): List of agent instances to run concurrently
@@ -98,13 +114,22 @@ async def run_agents_concurrently_async(
     """
     if max_concurrency is not None and max_concurrency < 1:
         raise ValueError("max_concurrency must be at least 1")
-    semaphore = asyncio.Semaphore(max_concurrency or len(agents))
+    limit = max_concurrency or len(agents) or 1
+    semaphore = asyncio.Semaphore(limit)
+    executor = concurrent.futures.ThreadPoolExecutor(
+        max_workers=limit
+    )
 
     async def _run(agent: AgentType) -> Any:
         async with semaphore:
-            return await run_agent_async(agent, task)
+            return await run_agent_async(agent, task, executor)
 
-    return await asyncio.gather(*(_run(agent) for agent in agents))
+    try:
+        return await asyncio.gather(
+            *(_run(agent) for agent in agents)
+        )
+    finally:
+        executor.shutdown(wait=False)
 
 
 def run_agents_concurrently(
