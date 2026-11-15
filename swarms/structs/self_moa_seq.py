@@ -32,8 +32,6 @@ class SelfMoASeq(SerializableMixin):
         max_loops: int = 10,
         max_tokens: int = 2000,
         num_samples: int = 30,
-        enable_logging: bool = True,
-        log_level: str = "INFO",
         verbose: bool = True,
         proposer_model_name: Optional[str] = None,
         aggregator_model_name: Optional[str] = None,
@@ -53,8 +51,6 @@ class SelfMoASeq(SerializableMixin):
         self.max_loops = max_loops
         self.max_tokens = max_tokens
         self.num_samples = num_samples
-        self.enable_logging = enable_logging
-        self.log_level = log_level
         self.verbose = verbose
 
         # Retry configuration

@@ -624,6 +624,57 @@ class TestStructuredTranscript:
         assert seen["messages"][0]["role"] == "user"
 
 
+class TestModelFailureMovesToTheFallbackModel:
+    """A model failure after planning reaches run(), which tries the next model."""
+
+    @pytest.mark.parametrize(
+        "calls_before_failure", [1, 2], ids=["subtask", "summary"]
+    )
+    def test_the_fallback_model_finishes_the_run(
+        self, monkeypatch, calls_before_failure
+    ):
+        from swarms.schemas.agent_errors import AgentLLMError
+
+        agent = build_agent(fallback_models=["gpt-4o"])
+        script = [
+            plan(("step1", [])),
+            [
+                tool_call(
+                    "subtask_done",
+                    task_id="step1",
+                    summary="done",
+                    success=True,
+                )
+            ],
+            [
+                tool_call(
+                    "complete_task",
+                    task_id="main",
+                    summary="fallback answer",
+                    success=True,
+                )
+            ],
+        ]
+        calls = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            calls.append(agent.model_name)
+            count = calls.count(agent.model_name)
+            if (
+                agent.model_name == "gpt-4o-mini"
+                and count > calls_before_failure
+            ):
+                raise AgentLLMError("provider down")
+            return script[count - 1]
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        output = agent.run("test task")
+
+        assert "fallback answer" in str(output)
+        assert calls.count("gpt-4o-mini") == calls_before_failure + 1
+
+
 # --------------------------------------------------------------------------
 # #1978 - the plan is mutable
 # --------------------------------------------------------------------------

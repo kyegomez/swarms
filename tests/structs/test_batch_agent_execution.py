@@ -7,6 +7,7 @@ two-argument call, and a 3-tuple unpacked into two names for the rest -- so
 these cover both crashes plus the index alignment the fix relies on.
 """
 
+import os
 import threading
 import time
 
@@ -153,3 +154,17 @@ def test_a_plain_callable_is_run_directly():
 
     assert results == ["ran do the thing"]
     assert calls == [("do the thing", None)]
+
+
+def test_default_pool_has_one_thread_per_agent():
+    count = (os.cpu_count() or 1) + 5
+    barrier = threading.Barrier(count, timeout=5)
+
+    def wait_for_all(task, img=None):
+        return barrier.wait()
+
+    results = batch_agent_execution(
+        [wait_for_all] * count, ["task"] * count
+    )
+
+    assert None not in results

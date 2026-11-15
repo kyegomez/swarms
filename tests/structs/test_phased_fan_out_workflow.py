@@ -270,6 +270,21 @@ def test_json_followed_by_prose_is_parsed():
         )
 
 
+@pytest.mark.parametrize(
+    "reply",
+    [
+        '{"note": "Run:\\n```python\\nmain()\\n```\\nfirst."}',
+        '```json\n{"note": "```python\\nmain()\\n```"}\n```',
+        'Here:\n```json\n{"note": "ok"}\n```\nDone.',
+        '```json\n{"note": 1}\n```\nor\n```json\n{"other": 2}\n```',
+        'Using {x}:\n```json\n{"note": 1}\nnotes\n```',
+        'Plan:\n```json\n{"note": 1}\nnotes\n```\nthen {b}',
+    ],
+)
+def test_parse_json_keeps_fences_inside_strings(reply):
+    assert "note" in dw._parse_json(reply)
+
+
 def test_fan_out_over_max_agents_stops_before_starting():
     lead = FakeLead([fan_out_plan()])
     FakeAgent.handler = file_handler(5)
