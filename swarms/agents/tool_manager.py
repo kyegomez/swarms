@@ -99,9 +99,6 @@ class ToolManager:
         if exists(agent.tool_schema):
             models.insert(0, agent.tool_schema)
 
-        if agent.tools_list_dictionary is None:
-            agent.tools_list_dictionary = []
-
         known = {_name(s) for s in agent.tools_list_dictionary}
         for schema in agent.tool_struct.multi_base_models_to_dict(
             models
