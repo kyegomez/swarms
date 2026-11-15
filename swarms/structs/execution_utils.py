@@ -1,4 +1,3 @@
-import os
 from typing import (
     Any,
     Callable,
@@ -139,8 +138,8 @@ def run_concurrently(
         func (Callable): The callable to invoke per task.
         tasks (Sequence[Any]): The tasks, each passed as the first argument.
         *args: Extra positional arguments forwarded to ``func``.
-        max_workers (Optional[int]): Thread count. Defaults to
-            ``os.cpu_count()``, which is what the hand-written versions used.
+        max_workers (Optional[int]): Thread count. Defaults to one thread
+            per task, since the tasks wait on model calls, not the CPU.
         **kwargs: Extra keyword arguments forwarded to :func:`batched_run`,
             including ``img``, ``return_agent_output_dict`` and
             ``return_exceptions``.
@@ -148,10 +147,12 @@ def run_concurrently(
     Returns:
         Union[List[Any], Dict[Any, Any]]: Results in task order.
     """
+    tasks = list(tasks)
+
     return batched_run(
         func,
         tasks,
         *args,
-        max_workers=max_workers or os.cpu_count() or 1,
+        max_workers=max_workers or len(tasks) or 1,
         **kwargs,
     )
