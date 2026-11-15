@@ -194,7 +194,9 @@ class BaseTool(BaseModel):
                 "Pydantic type parameter cannot be None"
             )
 
-        if not issubclass(pydantic_type, BaseModel):
+        if not isinstance(pydantic_type, type) or not issubclass(
+            pydantic_type, BaseModel
+        ):
             raise ToolValidationError(
                 "pydantic_type must be a subclass of BaseModel"
             )
