@@ -1,6 +1,5 @@
 import asyncio
 import copy
-import os
 from concurrent.futures import as_completed
 from typing import Any, Dict, List, Optional, get_args
 
@@ -1096,7 +1095,7 @@ class AgentRearrange(SerializableMixin):
             )
 
             # Each task gets an isolated clone; _clone_for_task survives agents a full deepcopy(self) would choke on.
-            max_workers = min(len(batch_tasks), os.cpu_count() or 4)
+            max_workers = len(batch_tasks)
             futures_ordered = []
             with ContextThreadPoolExecutor(
                 max_workers=max_workers
