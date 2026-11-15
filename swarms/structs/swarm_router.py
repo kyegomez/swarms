@@ -1,3 +1,4 @@
+import copy
 import traceback
 from typing import (
     Any,
@@ -1229,9 +1230,14 @@ class SwarmRouter(SerializableMixin):
             f"SwarmRouter '{self.name}': Executing {len(tasks)} task(s) concurrently",
         )
 
+        def run_on_own_router(task, *task_args, **task_kwargs):
+            router = copy.copy(self)
+            router._swarm_cache = {}
+            return router.run(task, *task_args, **task_kwargs)
+
         try:
             return run_concurrently(
-                self.run, tasks, *args, imgs=imgs, **kwargs
+                run_on_own_router, tasks, *args, imgs=imgs, **kwargs
             )
         except Exception as e:
             self._log(
