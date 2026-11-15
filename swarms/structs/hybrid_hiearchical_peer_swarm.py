@@ -1,16 +1,16 @@
 import copy
 import os
-from typing import List
-from swarms.structs.execution_utils import run_concurrently
+from typing import Callable, List, Optional, Union
+
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.multi_agent_exec import get_swarms_info
 from swarms.structs.swarm_router import SwarmRouter
 from swarms.utils.history_output_formatter import (
+    HistoryOutputType,
     history_output_formatter,
 )
-from typing import Union, Callable
-from swarms.utils.history_output_formatter import HistoryOutputType
 from swarms.utils.str_to_dict import str_to_dict
 from swarms.structs.usage_utils import total_usage
 
@@ -107,7 +107,7 @@ class HybridHierarchicalClusterSwarm:
         self,
         name: str = "Hybrid Hierarchical-Cluster Swarm",
         description: str = "A swarm that uses a hybrid hierarchical-peer model to solve complex tasks.",
-        swarms: List[Union[SwarmRouter, Callable]] = [],
+        swarms: Optional[List[Union[SwarmRouter, Callable]]] = None,
         max_loops: int = 1,
         output_type: HistoryOutputType = "list",
         router_agent_model_name: str = "gpt-5.4",
@@ -116,7 +116,7 @@ class HybridHierarchicalClusterSwarm:
     ):
         self.name = name
         self.description = description
-        self.swarms = swarms
+        self.swarms = swarms if swarms is not None else []
         self.max_loops = max_loops
         self.output_type = output_type
 
