@@ -188,6 +188,7 @@ def _exporter():
 def spans(_exporter):
     """The exporter, cleared so each test sees only its own spans."""
     _exporter.clear()
+    otel._CONFIGURED_CLASSES.clear()
     return _exporter
 
 
@@ -1161,6 +1162,20 @@ class TestCaptureInit:
         assert span is not None
         cfg = json.loads(_attrs(span)["swarms.config"])
         assert cfg == {"size": 7, "label": "w"}
+
+    def test_config_is_captured_once_per_class(self, spans):
+        class Widget:
+            def __init__(self, size=3):
+                self.size = size
+                capture_init(self)
+
+        Widget(size=1)
+        Widget(size=2)
+        first, second = _all_by_name(spans, "Widget.init")
+        assert json.loads(_attrs(first)["swarms.config"]) == {
+            "size": 1
+        }
+        assert "swarms.config" not in _attrs(second)
 
 
 # ===========================================================================

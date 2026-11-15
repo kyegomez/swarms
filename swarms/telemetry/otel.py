@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import threading
+import weakref
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import lru_cache
@@ -39,6 +40,8 @@ MAX_CONFIG_CHARS = int(
 )
 
 EXIT_FLUSH_TIMEOUT = float(os.getenv("SWARMS_OTEL_EXIT_TIMEOUT", "1"))
+
+_CONFIGURED_CLASSES: "weakref.WeakSet[type]" = weakref.WeakSet()
 
 # Spans leave while the model call is in flight, so the exit flush usually finds an empty queue.
 EXPORT_DELAY_MS = int(os.getenv("SWARMS_OTEL_EXPORT_DELAY_MS", "500"))
@@ -697,7 +700,7 @@ class SwarmTelemetry:
             pass
 
     def capture_init(self, obj: Any, **extra_attributes: Any) -> None:
-        """Emit a span capturing ``obj``'s entire ``__init__`` configuration.
+        """Emit an init span for obj, recording __init__ configuration once per class.
 
         Intended to be called from a component's ``__init__``. No-op when
         telemetry is off. Fail-safe.
@@ -717,7 +720,9 @@ class SwarmTelemetry:
                 f"{type(obj).__name__}.init"
             )
             self._set_identity(span, obj)
-            span.set_attribute("swarms.config", init_config(obj))
+            if type(obj) not in _CONFIGURED_CLASSES:
+                span.set_attribute("swarms.config", init_config(obj))
+                _CONFIGURED_CLASSES.add(type(obj))
             for key, value in extra_attributes.items():
                 span.set_attribute(key, _truncate(value))
             span.end()
@@ -854,7 +859,7 @@ def swarm_telemetry() -> SwarmTelemetry:
 
 # Module-level convenience API.
 def capture_init(obj: Any, **extra_attributes: Any) -> None:
-    """Capture ``obj``'s ``__init__`` configuration if telemetry is enabled.
+    """Emit obj's init span, recording __init__ configuration once per class.
 
     Call this at the end of any component's ``__init__``::
 
