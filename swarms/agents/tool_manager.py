@@ -72,7 +72,7 @@ class ToolManager:
 
     def setup_tools(self) -> BaseTool:
         """
-        Build the tool executor and add any pydantic tool schemas to memory.
+        Build the tool executor and send any pydantic tool schemas as tools.
 
         Returns:
             BaseTool: The executor, also stored on agent.tool_struct.
@@ -89,29 +89,26 @@ class ToolManager:
 
     def handle_tool_schema_ops(self) -> None:
         """
-        Add the agent's pydantic tool schemas to its memory.
+        Add the agent's pydantic tool schemas to tools_list_dictionary.
+
+        They reach the model as tools, not as a conversation turn. A
+        schema whose name is already listed is skipped.
         """
         agent = self.agent
-
+        models = list(agent.list_base_models or [])
         if exists(agent.tool_schema):
-            logger.info(f"Tool schema provided: {agent.tool_schema}")
-            agent.short_memory.add(
-                role=agent.agent_name,
-                content=agent.tool_struct.base_model_to_dict(
-                    agent.tool_schema, output_str=True
-                ),
-            )
+            models.insert(0, agent.tool_schema)
 
-        if exists(agent.list_base_models):
-            logger.info(
-                "Multiple base models provided, Automatically converting to OpenAI function"
-            )
-            agent.short_memory.add(
-                role=agent.agent_name,
-                content=agent.tool_struct.multi_base_models_to_dict(
-                    agent.list_base_models, output_str=True
-                ),
-            )
+        if agent.tools_list_dictionary is None:
+            agent.tools_list_dictionary = []
+
+        known = {_name(s) for s in agent.tools_list_dictionary}
+        for schema in agent.tool_struct.multi_base_models_to_dict(
+            models
+        ):
+            if _name(schema) not in known:
+                known.add(_name(schema))
+                agent.tools_list_dictionary.append(schema)
 
     def load_tools(self) -> None:
         """

@@ -140,7 +140,9 @@ class TestBasicAgent:
         contents = [str(row["content"]) for row in history]
         assert agent.autonomous_subtasks == []
         assert not any(row["role"] == "System" for row in history)
-        assert any("Weather" in c for c in contents)
+        assert [
+            s["function"]["name"] for s in agent.tools_list_dictionary
+        ] == ["Weather"]
         assert not any("first task" in c for c in contents)
         assert any("second task" in c for c in contents)
 
@@ -995,19 +997,39 @@ def test_description_is_another_name_for_agent_description(
     )
 
 
-def test_list_base_models_schema_reaches_short_memory():
-    class Order(BaseModel):
-        item: str
-        qty: int
+class Order(BaseModel):
+    item: str
+    qty: int
 
-    agent = _patched_agent(
-        "Order-Agent",
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [{"tool_schema": Order}, {"list_base_models": [Order]}],
+)
+def test_pydantic_schemas_reach_the_model_as_tools(kwargs):
+    agent = Agent(
+        agent_name="Order-Agent",
         model_name="gpt-5.4-mini",
-        list_base_models=[Order],
+        max_loops=1,
+        print_on=False,
+        persistent_memory=False,
+        **kwargs,
     )
+    message = SimpleNamespace(content="ok", tool_calls=None)
+    response = SimpleNamespace(
+        choices=[SimpleNamespace(message=message)], usage=None
+    )
+    with patch(
+        "swarms.utils.litellm_wrapper.completion",
+        return_value=response,
+    ) as completion:
+        agent.run("hi")
 
-    schema = agent.short_memory.conversation_history[-1]["content"]
-    assert "Order" in schema and "item" in schema and "qty" in schema
+    request = completion.call_args.kwargs
+    assert [m["role"] for m in request["messages"]] == ["user"]
+    assert [t["function"]["name"] for t in request["tools"]] == [
+        "Order"
+    ]
 
 
 def test_safety_prompt_on_reaches_the_model():
