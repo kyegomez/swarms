@@ -10,7 +10,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 |---------|-------------|
 | [multi_agent/](multi_agent/) | Advanced multi-agent patterns including agent rearrangement, auto swarm builder (ASB), batched workflows, caching, concurrent processing, councils, debates, elections, forest swarms, graph workflows, group chats, heavy swarms, hierarchical swarms, LLM council, majority voting, orchestration examples, paper implementations, sequential workflows, social algorithms, simulations, spreadsheet examples, swarm routing, and utilities |
 | [README.md](multi_agent/README.md) | Complete multi-agent examples documentation |
-| [duo_agent.py](multi_agent/duo_agent.py) | Two-agent collaboration example |
+| [duo_agent.py](single_agent/capabilities/autonomy/handoffs/duo_agent.py) | Two-agent collaboration example |
 | [tree_swarm_new_updates.py](multi_agent/tree_swarm_new_updates.py) | Tree swarm implementation with latest updates |
 | [agent_rearrange_examples/](multi_agent/agent_rearrange_examples/) | Agent rearrangement and reorganization examples |
 | [agent_router_examples/](multi_agent/agent_router_examples/) | Agent routing and routing patterns |
@@ -18,7 +18,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [batched_grid_workflow/](multi_agent/batched_grid_workflow/) | Batched grid workflow examples |
 | [concurrent_examples/](multi_agent/concurrent_examples/) | Concurrent processing and parallel execution examples |
 | [council/](multi_agent/council/) | Council pattern examples with judge evaluation |
-| [council_of_judges/](multi_agent/council_of_judges/) | Council of judges pattern implementations |
+| [council_of_judges/](multi_agent/council/judges/) | Council of judges pattern implementations |
 | [debate_examples/](multi_agent/debate_examples/) | Multi-agent debate and discussion examples |
 | [election_swarm_examples/](multi_agent/election_swarm_examples/) | Election and voting swarm examples |
 | [exec_utilities/](multi_agent/exec_utilities/) | Execution utilities including uvloop examples |
@@ -57,8 +57,8 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [capabilities/output_schema/](single_agent/capabilities/output_schema/) | Validated Pydantic output with `output_schema` |
 | [capabilities/prompt_caching/](single_agent/capabilities/prompt_caching/) | Provider-side prompt caching (Anthropic, OpenAI) |
 | [reasoning/](single_agent/reasoning/) | Reasoning agents: judges, consistency, iterative, reasoning duo/router |
-| [autonomy/autonomous_agents/](single_agent/autonomy/autonomous_agents/) | Autonomous loops, sub-agents, `run_bash` looper |
-| [autonomy/handoffs/](single_agent/autonomy/handoffs/) | Agent-to-agent handoffs |
+| [autonomy/autonomous_agents/](single_agent/capabilities/autonomy/autonomous_agents/) | Autonomous loops, sub-agents, `run_bash` looper |
+| [autonomy/handoffs/](single_agent/capabilities/autonomy/handoffs/) | Agent-to-agent handoffs |
 | [integrations/marketplace/](single_agent/integrations/marketplace/) | Marketplace prompts and publishing agents to the marketplace |
 | [integrations/external_agents/](single_agent/integrations/external_agents/) | Bridges to external agent systems |
 | [demos/](single_agent/demos/) | Applied demos: insurance, persistent legal agent |
@@ -72,18 +72,18 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [tools/](tools/) | Tool integration examples including agent-as-tools, base tool implementations, browser automation, Claude integration, Exa search, Firecrawl, multi-tool usage, and Stagehand integration |
 | [README.md](tools/README.md) | Complete tools examples documentation |
 | [agent_as_tools.py](tools/agent_as_tools.py) | Using agents as tools |
-| [browser_use_as_tool.py](tools/browser_use_as_tool.py) | Browser automation tool |
-| [browser_use_demo.py](tools/browser_use_demo.py) | Browser automation demonstration |
-| [claude_as_a_tool.py](tools/claude_as_a_tool.py) | Claude model integration as a tool |
+| [browser_use_as_tool.py](tools/browser_use/browser_use_as_tool.py) | Browser automation tool |
+| [browser_use_demo.py](tools/browser_use/browser_use_demo.py) | Browser automation demonstration |
+| [claude_as_a_tool.py](tools/claude/claude_as_a_tool.py) | Claude model integration as a tool |
 | [exa_search_agent.py](tools/exa_search/exa_search_agent.py) | Exa search integration |
 | [exa_search_agent_quant.py](tools/exa_search/exa_search_agent_quant.py) | Exa search with quantitative analysis |
 | [exa_search_test.py](tools/exa_search/exa_search_test.py) | Exa search testing examples |
-| [firecrawl_agents_example.py](tools/firecrawl_agents_example.py) | Firecrawl integration |
+| [firecrawl_agents_example.py](tools/firecrawl/firecrawl_agents_example.py) | Firecrawl integration |
 | [base_tool_examples/](tools/base_tool_examples/) | Base tool implementation examples |
 | [base_tool_examples.py](tools/base_tool_examples/base_tool_examples.py) | Base tool examples |
 | [conver_funcs_to_schema.py](tools/base_tool_examples/conver_funcs_to_schema.py) | Convert functions to schema |
 | [example_usage.py](tools/base_tool_examples/example_usage.py) | Base tool usage example |
-| [multii_tool_use/](tools/multii_tool_use/) | Multi-tool usage examples |
+| [multii_tool_use/](tools/multi_tool_use/) | Multi-tool usage examples |
 | [stagehand/](tools/stagehand/) | Stagehand UI automation |
 | [1_stagehand_wrapper_agent.py](tools/stagehand/1_stagehand_wrapper_agent.py) | Stagehand wrapper agent |
 | [2_stagehand_tools_agent.py](tools/stagehand/2_stagehand_tools_agent.py) | Stagehand tools agent |
@@ -96,15 +96,15 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [swarms_api/](swarms_api/) | Swarms API usage examples including agent overview, batch processing, client integration, team examples, analysis, and rate limiting |
-| [README.md](swarms_api/README.md) | API examples documentation |
-| [agent_overview.py](swarms_api/agent_overview.py) | Agent overview and listing examples |
-| [client_example.py](swarms_api/client_example.py) | API client example |
-| [batch_example.py](swarms_api/batch_example.py) | Batch processing example |
-| [hospital_team.py](swarms_api/hospital_team.py) | Hospital management team simulation |
-| [legal_team.py](swarms_api/legal_team.py) | Legal team collaboration example |
-| [icd_ten_analysis.py](swarms_api/icd_ten_analysis.py) | ICD-10 medical code analysis |
-| [rate_limits.py](swarms_api/rate_limits.py) | Rate limiting and throttling examples |
+| [swarms_api/](utils/swarms_api/) | Swarms API usage examples including agent overview, batch processing, client integration, team examples, analysis, and rate limiting |
+| [README.md](utils/swarms_api/README.md) | API examples documentation |
+| [agent_overview.py](utils/swarms_api/agent_overview.py) | Agent overview and listing examples |
+| [client_example.py](utils/swarms_api/client_example.py) | API client example |
+| [batch_example.py](utils/swarms_api/batch_example.py) | Batch processing example |
+| [hospital_team.py](utils/swarms_api/hospital_team.py) | Hospital management team simulation |
+| [legal_team.py](utils/swarms_api/legal_team.py) | Legal team collaboration example |
+| [icd_ten_analysis.py](utils/swarms_api/icd_ten_analysis.py) | ICD-10 medical code analysis |
+| [rate_limits.py](utils/swarms_api/rate_limits.py) | Rate limiting and throttling examples |
 
 #### Model Context Protocol (MCP)
 
@@ -159,21 +159,21 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [reasoning_duo_example.py](reasoning_agents/reasoning_agent_router_examples/reasoning_duo_example.py) | Reasoning duo example |
 | [reflexion_agent_example.py](reasoning_agents/reasoning_agent_router_examples/reflexion_agent_example.py) | Reflexion agent example |
 | [self_consistency_example.py](reasoning_agents/reasoning_agent_router_examples/self_consistency_example.py) | Self-consistency example |
-| [voice_agents/](voice_agents/) | Voice and speech-enabled agent examples including agent speech, agent with speech, debate with speech, Google Calendar integration, hierarchical speech swarm, and autonomous agent with speech |
-| [README.md](voice_agents/README.md) | Voice agents documentation |
-| [agent_speech.py](voice_agents/agent_speech.py) | Agent with speech capabilities |
-| [agent_with_speech.py](voice_agents/agent_with_speech.py) | Speech-enabled agent implementation |
-| [debate_with_speech.py](voice_agents/debate_with_speech.py) | Multi-agent debate with speech capabilities |
-| [google_calendar_agent.py](voice_agents/google_calendar_agent.py) | Google Calendar integration with voice agent |
+| [voice_agents/](guides/voice_agents/) | Voice and speech-enabled agent examples including agent speech, agent with speech, debate with speech, Google Calendar integration, hierarchical speech swarm, and autonomous agent with speech |
+| [README.md](guides/voice_agents/voice_agents_examples/README.md) | Voice agents documentation |
+| [agent_speech.py](guides/voice_agents/voice_agents_examples/agent_speech.py) | Agent with speech capabilities |
+| [agent_with_speech.py](guides/voice_agents/voice_agents_examples/agent_with_speech.py) | Speech-enabled agent implementation |
+| [debate_with_speech.py](guides/voice_agents/voice_agents_examples/debate_with_speech.py) | Multi-agent debate with speech capabilities |
+| [google_calendar_agent.py](guides/voice_agents/voice_agents_examples/google_calendar_agent.py) | Google Calendar integration with voice agent |
 | [hiearchical_speech_swarm.py](voice_agents/hiearchical_speech_swarm.py) | Hierarchical speech swarm implementation |
-| [run_auto_agent_with_speech.py](voice_agents/run_auto_agent_with_speech.py) | Autonomous agent with terminal access and streaming TTS |
+| [run_auto_agent_with_speech.py](guides/voice_agents/voice_agents_examples/run_auto_agent_with_speech.py) | Autonomous agent with terminal access and streaming TTS |
 
 ### Marketplace
 
 | Example | Description |
 |---------|-------------|
-| [marketplace/](marketplace/) | Swarms marketplace prompt integration examples for using pre-built prompts from the marketplace |
-| [zia_agent.py](marketplace/zia_agent.py) | Zia agent implementation using marketplace prompts |
+| [marketplace/](single_agent/integrations/marketplace/) | Swarms marketplace prompt integration examples for using pre-built prompts from the marketplace |
+| [zia_agent.py](single_agent/integrations/marketplace/zia_agent.py) | Zia agent implementation using marketplace prompts |
 | [single_agent/integrations/marketplace/](single_agent/integrations/marketplace/) | Single agent marketplace examples including marketplace prompt integration and quant trader agent |
 | [marketplace_prompt_example.py](single_agent/integrations/marketplace/marketplace_prompt_example.py) | Example of using marketplace prompts with agents |
 | [quant_trader_agent.py](single_agent/integrations/marketplace/quant_trader_agent.py) | Quantitative trader agent using marketplace prompts |
@@ -187,7 +187,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [hiearchical_marketing_team.py](guides/hiearchical_marketing_team.py) | Hierarchical marketing team example |
 | [840_update/](guides/840_update/) | Update examples from version 8.4.0 including agent rearrange, auto swarm builder, and fallback examples |
 | [850_workshop/](guides/850_workshop/) | Workshop examples from version 8.5.0 including MOA, peer review, and concurrent examples |
-| [880_update_changelog_examples/](guides/880_update_changelog_examples/) | Changelog examples showcasing new features including marketplace integration, multi-agent structures, workflow orchestration, voice agents, evaluation & debate, routing, and autosaving |
+| [880_update_changelog_examples/](changelogs/880_update_changelog_examples/) | Changelog examples showcasing new features including marketplace integration, multi-agent structures, workflow orchestration, voice agents, evaluation & debate, routing, and autosaving |
 | [changelog_890/](guides/changelog_890/) | Changelog examples from January 2026 release including dynamic skills loader, autonomous agent loop, agent handoffs, API key validation, max loops parameter, multi-tool agent tutorial, hierarchical voice agent, and agent rearrange patterns |
 | [mem0/](guides/mem0/) | Mem0 integration examples for memory management with Swarms |
 | [demos/](guides/demos/) | Various demonstration examples including apps, crypto, finance, insurance, legal, medical, real estate, science, and synthetic data |
@@ -204,7 +204,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [workshops/](guides/workshops/) | Workshop examples |
 | [x402_examples/](guides/x402_examples/) | X402 protocol examples |
 | [deployment/](guides/deployment/) | Deployment strategies: cron jobs and FastAPI examples |
-| [v9_examples/](guides/v9_examples/) | V9 autonomous looper examples (autonomous_looper, tools, sub-agents) |
+| [v9_examples/](changelogs/v9_examples/) | V9 autonomous looper examples (autonomous_looper, tools, sub-agents) |
 
 ### Deployment
 
@@ -270,17 +270,17 @@ This directory contains comprehensive examples demonstrating various capabilitie
 |----------|---------|
 | New to Swarms? | Start with [single_agent/simple_agent.py](single_agent/getting_started/simple_agent.py) for basic concepts |
 | Want to use the CLI? | Check out [cli/](cli/) for all CLI command examples |
-| Want multi-agent workflows? | Check out [multi_agent/duo_agent.py](multi_agent/duo_agent.py) |
+| Want multi-agent workflows? | Check out [multi_agent/duo_agent.py](single_agent/capabilities/autonomy/handoffs/duo_agent.py) |
 | Need tool integration? | Explore [tools/agent_as_tools.py](tools/agent_as_tools.py) |
 | Want to see social algorithms? | Check out [multi_agent/social_algorithms_examples/](multi_agent/social_algorithms_examples/) |
 | Looking for guides? | Visit [guides/](guides/) for comprehensive tutorials |
 | Need RAG? | Try [single_agent/rag/](single_agent/capabilities/rag/) for RAG examples |
 | Want reasoning agents? | Check out [reasoning_agents/](reasoning_agents/) for reasoning agent examples |
-| Interested in marketplace prompts? | Explore [marketplace/](marketplace/) for marketplace prompt integration examples |
-| Want voice/speech capabilities? | Check out [voice_agents/](voice_agents/) for speech-enabled agent examples |
+| Interested in marketplace prompts? | Explore [marketplace/](single_agent/integrations/marketplace/) for marketplace prompt integration examples |
+| Want voice/speech capabilities? | Check out [voice_agents/](guides/voice_agents/) for speech-enabled agent examples |
 | Interested in agent skills? | Explore [single_agent/capabilities/skills/](single_agent/capabilities/skills/) for dynamic skills |
-| Want autonomous agents? | Check out [single_agent/autonomy/autonomous_agents/](single_agent/autonomy/autonomous_agents/) for full autonomy examples |
-| Need agent handoffs? | See [single_agent/handoffs/](single_agent/autonomy/handoffs/) for handoff patterns |
+| Want autonomous agents? | Check out [single_agent/autonomy/autonomous_agents/](single_agent/capabilities/autonomy/autonomous_agents/) for full autonomy examples |
+| Need agent handoffs? | See [single_agent/handoffs/](single_agent/capabilities/autonomy/handoffs/) for handoff patterns |
 | Looking for latest features? | Visit [guides/changelog_890/](guides/changelog_890/) for January 2026 release examples |
 
 ## Key Examples by Category
@@ -289,7 +289,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [Duo Agent](multi_agent/duo_agent.py) | Two-agent collaboration |
+| [Duo Agent](single_agent/capabilities/autonomy/handoffs/duo_agent.py) | Two-agent collaboration |
 | [Tree Swarm](multi_agent/tree_swarm_new_updates.py) | Tree swarm with latest updates |
 | [Agent Rearrange](multi_agent/agent_rearrange_examples/) | Agent rearrangement patterns |
 | [Agent Router](multi_agent/agent_router_examples/) | Agent routing implementations |
@@ -297,7 +297,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Batched Grid Workflow](multi_agent/batched_grid_workflow/) | Batched grid workflow patterns |
 | [Concurrent Processing](multi_agent/concurrent_examples/) | Concurrent and parallel execution |
 | [Council](multi_agent/council/) | Council pattern with judge evaluation |
-| [Council of Judges](multi_agent/council_of_judges/) | Council of judges implementations |
+| [Council of Judges](multi_agent/council/judges/) | Council of judges implementations |
 | [Debates](multi_agent/debate_examples/) | Multi-agent debate examples |
 | [Election Swarm](multi_agent/election_swarm_examples/) | Election and voting swarms |
 | [Forest Swarm](multi_agent/forest_swarm_examples/) | Forest and tree-based swarms |
@@ -320,10 +320,10 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | Example | Description |
 |---------|-------------|
 | [Simple Agent](single_agent/getting_started/simple_agent.py) | Basic agent setup |
-| [Auto Agent](single_agent/autonomy/autonomous_agents/auto_agent.py) | Auto agent implementation |
+| [Auto Agent](single_agent/capabilities/autonomy/autonomous_agents/auto_agent.py) | Auto agent implementation |
 | [Agent Skills](single_agent/capabilities/skills/) | Dynamic skills loader and custom skill examples |
-| [Autonomous Agents](single_agent/autonomy/autonomous_agents/) | Full autonomy examples with marketplace integration |
-| [Agent Handoffs](single_agent/autonomy/handoffs/) | Agent handoff patterns and examples |
+| [Autonomous Agents](single_agent/capabilities/autonomy/autonomous_agents/) | Full autonomy examples with marketplace integration |
+| [Agent Handoffs](single_agent/capabilities/autonomy/handoffs/) | Agent handoff patterns and examples |
 | [Marketplace Integration](single_agent/integrations/marketplace/) | Marketplace prompt integration examples |
 | [Reasoning Agents](single_agent/reasoning/) | Advanced reasoning patterns including consistency, GPK, iterative, and reasoning duo |
 | [Vision Agents](single_agent/capabilities/vision/multimodal_example.py) | Vision and multimodal capabilities |
@@ -331,22 +331,22 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [External Agents](single_agent/integrations/external_agents/) | External agent integrations |
 | [Onboarding](single_agent/getting_started/onboarding/) | Agent onboarding examples |
 | [Tools Integration](single_agent/capabilities/tools/) | Comprehensive tool integration examples |
-| [Voice Agents](voice_agents/) | Speech-enabled agent examples |
+| [Voice Agents](guides/voice_agents/) | Speech-enabled agent examples |
 
 ### Tool Integrations
 
 | Example | Description |
 |---------|-------------|
 | [Agent as Tools](tools/agent_as_tools.py) | Using agents as tools |
-| [Browser Automation](tools/browser_use_as_tool.py) | Browser control |
-| [Browser Demo](tools/browser_use_demo.py) | Browser automation demonstration |
-| [Claude as Tool](tools/claude_as_a_tool.py) | Claude model as a tool |
+| [Browser Automation](tools/browser_use/browser_use_as_tool.py) | Browser control |
+| [Browser Demo](tools/browser_use/browser_use_demo.py) | Browser automation demonstration |
+| [Claude as Tool](tools/claude/claude_as_a_tool.py) | Claude model as a tool |
 | [Exa Search](tools/exa_search/exa_search_agent.py) | Search integration |
 | [Exa Search Quant](tools/exa_search/exa_search_agent_quant.py) | Exa search with quantitative analysis |
-| [Firecrawl](tools/firecrawl_agents_example.py) | Firecrawl web scraping integration |
+| [Firecrawl](tools/firecrawl/firecrawl_agents_example.py) | Firecrawl web scraping integration |
 | [Stagehand](tools/stagehand/) | UI automation |
 | [Base Tools](tools/base_tool_examples/) | Base tool implementation examples |
-| [Multi-Tool Use](tools/multii_tool_use/) | Multi-tool usage examples |
+| [Multi-Tool Use](tools/multi_tool_use/) | Multi-tool usage examples |
 
 ### Model Integration Examples
 
@@ -368,7 +368,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 |---------|-------------|
 | [Marketplace Prompt](single_agent/integrations/marketplace/marketplace_prompt_example.py) | Using marketplace prompts with agents |
 | [Quant Trader Agent](single_agent/integrations/marketplace/quant_trader_agent.py) | Quantitative trader agent with marketplace prompts |
-| [Zia Agent](marketplace/zia_agent.py) | Zia agent with marketplace prompt integration |
+| [Zia Agent](single_agent/integrations/marketplace/zia_agent.py) | Zia agent with marketplace prompt integration |
 
 ### CLI Examples
 
