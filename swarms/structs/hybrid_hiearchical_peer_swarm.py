@@ -1,5 +1,4 @@
 import copy
-import os
 from typing import List
 from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.agent import Agent
@@ -229,7 +228,6 @@ class HybridHierarchicalClusterSwarm:
         results = run_concurrently(
             lambda task: copy.copy(self).run(task),
             tasks,
-            max_workers=os.cpu_count() * 2,
             return_exceptions=True,
         )
         # A failed task still gets a slot, so results[i] is always tasks[i].
