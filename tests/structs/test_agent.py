@@ -1980,16 +1980,69 @@ def test_clone_has_own_conversation_and_client_and_same_config():
     )
     assert clone.llm is not agent.llm
     assert clone.id != agent.id
+    assert clone.saved_state_path != agent.saved_state_path
     assert (clone.agent_name, clone.system_prompt) == (
         "A",
         agent.system_prompt,
     )
 
-    with patch.object(
-        Agent, "run", autospec=True, side_effect=lambda s, task: s
-    ):
-        runners = Agent.run_concurrent_tasks(agent, ["t1", "t2"])
+    def run(self, task):
+        self._add_usage({"total_tokens": 5})
+        return self
+
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        with patch.object(
+            Agent, "run", autospec=True, side_effect=run
+        ):
+            runners = Agent.run_concurrent_tasks(agent, ["t1", "t2"])
+
     assert len({id(r) for r in runners + [agent]}) == 3
+    assert agent.usage["total_tokens"] == 10
+
+
+class _KeywordAgent(Agent):
+    """An Agent subclass that takes its settings through keywords."""
+
+    def __init__(self, agent_name: str = "K", **kwargs):
+        super().__init__(agent_name=agent_name, **kwargs)
+
+
+@pytest.mark.parametrize(
+    "agent_class, settings",
+    [
+        (Agent, {"system_prompt": "Be brief.", "max_loops": "auto"}),
+        (Agent, {"system_prompt": "Be brief.", "handoffs": "helper"}),
+        (Agent, {"tools": [_math_tool], "dynamic_tools": True}),
+        (_KeywordAgent, {"max_loops": 3, "temperature": 0.2}),
+    ],
+)
+def test_clone_sends_the_same_prompt_and_keeps_its_settings(
+    agent_class, settings
+):
+    """The clone was rebuilt from finished values, so its prompts were
+    appended twice, and a subclass fell back to default settings."""
+    if settings.get("handoffs"):
+        settings = {**settings, "handoffs": [_patched_agent("H")]}
+
+    with patch("swarms.agents.tool_manager.LiteLLM"):
+        agent = agent_class(
+            print_on=False, persistent_memory=False, **settings
+        )
+        clone = agent.clone()
+
+    def sent(member):
+        return [
+            (row["role"], str(row["content"]))
+            for row in member.short_memory.conversation_history
+        ]
+
+    assert type(clone) is agent_class
+    assert sent(clone) == sent(agent)
+    assert clone.system_prompt == agent.system_prompt
+    assert (clone.max_loops, clone.temperature) == (
+        agent.max_loops,
+        agent.temperature,
+    )
 
 
 class TestConcurrentExecutionPool:
@@ -2010,6 +2063,7 @@ class TestConcurrentExecutionPool:
         """A bare Agent — no __init__, so no client or provider calls."""
         agent = Agent.__new__(Agent)
         agent.agent_name = name
+        agent._usage = litellm_wrapper.empty_usage()
         return agent
 
     def test_no_executor_attribute_is_required(self):
