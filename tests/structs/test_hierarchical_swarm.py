@@ -627,38 +627,6 @@ def test_run_marks_only_the_last_step_as_final(monkeypatch):
     assert final_flags == [False, True]
 
 
-@pytest.mark.parametrize(
-    "output_type, expected",
-    [
-        ("final", "loop 2 answer"),
-        ("last", "loop 2 answer"),
-        ("list-final", ["loop 2 answer"]),
-        (
-            "dict-final",
-            {"role": "Worker", "content": "loop 2 answer"},
-        ),
-    ],
-)
-def test_final_output_is_the_last_answer_not_a_loop_marker(
-    output_type, expected
-):
-    order = OrderBatch(
-        orders=[HierarchicalOrder(agent_name="Worker", task="Do it")]
-    )
-    swarm = make_recovery_swarm(
-        StubAgent("Director", [RuntimeError("director down"), order]),
-        [StubAgent("Worker", ["loop 2 answer"])],
-        max_loops=2,
-        output_type=output_type,
-    )
-
-    assert swarm.run("task") == expected
-    assert (
-        "--- Loop 1/2 failed: director down ---"
-        in swarm.conversation.get_str()
-    )
-
-
 def test_batched_run_forwards_utility_options(monkeypatch):
     swarm = make_recovery_swarm(
         StubAgent("Director", []),
@@ -1187,6 +1155,38 @@ def test_second_run_does_not_send_the_director_the_first_task():
     sent = " ".join(str(m.get("content")) for m in second_run)
     assert "second task" in sent, sent
     assert "first task" not in sent, sent
+
+
+@pytest.mark.parametrize(
+    "output_type, expected",
+    [
+        ("final", "loop 2 answer"),
+        ("last", "loop 2 answer"),
+        ("list-final", ["loop 2 answer"]),
+        (
+            "dict-final",
+            {"role": "Worker", "content": "loop 2 answer"},
+        ),
+    ],
+)
+def test_final_output_is_the_last_answer_not_a_loop_marker(
+    output_type, expected
+):
+    order = OrderBatch(
+        orders=[HierarchicalOrder(agent_name="Worker", task="Do it")]
+    )
+    swarm = make_recovery_swarm(
+        StubAgent("Director", [RuntimeError("director down"), order]),
+        [StubAgent("Worker", ["loop 2 answer"])],
+        max_loops=2,
+        output_type=output_type,
+    )
+
+    assert swarm.run("task") == expected
+    assert (
+        "--- Loop 1/2 failed: director down ---"
+        in swarm.conversation.get_str()
+    )
 
 
 def test_task_queue_pending_count_tracks_dependency_readiness():
