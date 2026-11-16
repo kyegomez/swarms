@@ -931,8 +931,8 @@ class LiteLLM:
 
         Uses direct URL passing when the model supports it; otherwise converts
         the image (file path, URL, data URI, or raw base64) to a base64 data
-        URI via `get_image_base64` and annotates it with its MIME type. A PDF
-        becomes a `file` block.
+        URI via get_image_base64 and annotates it with its MIME type. A PDF
+        becomes a file block.
         """
         if self._should_use_direct_url(image):
             image_block = {

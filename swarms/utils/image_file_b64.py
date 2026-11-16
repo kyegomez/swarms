@@ -165,7 +165,7 @@ def get_image_base64(image_source: str) -> str:
     Convert image data from a URL, local file path, data URI, or raw base64 string to a base64-encoded string in data URI format.
 
     If the input is already an image data URI, it is returned unchanged. A base64 PDF data URI is rewritten to
-    `data:application/pdf;base64,...`, and any other data URI raises ValueError. If it's a raw base64 string (without data URI prefix),
+    start with data:application/pdf;base64, and any other data URI raises ValueError. If it's a raw base64 string (without data URI prefix),
     it is converted to a data URI format. Otherwise, the image is loaded from the specified source, encoded as base64,
     and returned as a data URI with the appropriate MIME type.
 
