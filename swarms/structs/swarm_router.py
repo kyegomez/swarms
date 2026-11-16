@@ -871,12 +871,7 @@ class SwarmRouter(SerializableMixin):
                 to ``self.swarm_type``; fallbacks pass their own.
         """
         swarm_type = swarm_type or self.swarm_type
-        agent_ids = tuple(
-            getattr(a, "agent_name", None)
-            or getattr(a, "__name__", None)
-            or id(a)
-            for a in (self.agents or [])
-        )
+        agent_ids = tuple(id(a) for a in (self.agents or []))
         config = (
             self.name,
             self.description,
@@ -892,6 +887,12 @@ class SwarmRouter(SerializableMixin):
             self.heavy_swarm_max_loops,
             self.heavy_swarm_timeout,
             self.council_judge_model_name,
+            self.multi_agent_collab_prompt,
+            self.list_all_agents,
+            self.director_model_name,
+            self.director_settings,
+            self.worker_tools,
+            self.channel,
         )
         try:
             config_hash = hash(config)
