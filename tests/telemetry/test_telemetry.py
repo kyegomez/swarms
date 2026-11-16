@@ -552,7 +552,7 @@ class TestHelpers:
                 "wss://<redacted>@mcp.example.com/ws",
                 "http://mcp",
             ],
-            "note": "see https://x.io/?token=abc in the docs",
+            "note": "see https://x.io/?token=<redacted> in the docs",
         }
 
 
@@ -662,6 +662,39 @@ class TestCaptureRun:
             len([e for e in span.events if e.name == "exception"])
             == 1
         )
+
+    def test_no_attribute_or_event_carries_a_credential(
+        self, spans, monkeypatch
+    ):
+        """Keys reached the exporter through inputs, output, errors and tracebacks."""
+        monkeypatch.setenv("ACME_API_KEY", "acme-env-secret-9f3k")
+        secrets = [
+            "sk-proj-AbCdEf0123456789XYZ",
+            "hunter2pass",
+            "acme-env-secret-9f3k",
+            "tok-in-query-77",
+        ]
+        url = "https://user:hunter2pass@mcp.example.com/mcp?token=tok-in-query-77"
+
+        with pytest.raises(ConnectionError):
+            with capture_run(
+                "Op.run", None, task=f"use {secrets[0]}", img=url
+            ) as handle:
+                handle.record_json("swarms.inputs", {"note": url})
+                handle.record_output("key is acme-env-secret-9f3k")
+                raise ConnectionError(f"cannot reach {url}")
+
+        span = _by_name(spans, "Op.run")
+        sent = json.dumps(
+            [
+                _attrs(span),
+                [dict(event.attributes) for event in span.events],
+                span.status.description,
+            ]
+        )
+
+        assert not [secret for secret in secrets if secret in sent]
+        assert "mcp.example.com/mcp" in sent
 
 
 # ===========================================================================
