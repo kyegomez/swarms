@@ -6,8 +6,6 @@ from swarms.structs.broadcast import broadcast
 from swarms.structs.swarming_architectures import (
     circular_swarm,
     grid_swarm,
-    mesh_swarm,
-    star_swarm,
 )
 
 
@@ -113,54 +111,6 @@ def run_healthcare_grid_swarm():
     print(result)
 
 
-def run_healthcare_star_swarm():
-    """Complex medical case management using star swarm"""
-    print_separator()
-    print("HEALTHCARE - COMPLEX CASE MANAGEMENT (Star Swarm)")
-
-    agents = create_healthcare_agents()
-    tasks = [
-        "Complex case: Patient with multiple chronic conditions",
-        "Develop integrated care plan",
-    ]
-
-    print("\nTasks:")
-    for i, task in enumerate(tasks, 1):
-        print(f"{i}. {task}")
-
-    result = star_swarm(agents, tasks)
-    print("\nResults:")
-    for log in result["history"]:
-        print(f"\n{log['agent_name']}:")
-        print(f"Task: {log['task']}")
-        print(f"Response: {log['response']}")
-
-
-def run_finance_mesh_swarm():
-    """Market risk assessment using mesh swarm"""
-    print_separator()
-    print("FINANCE - MARKET RISK ASSESSMENT (Mesh Swarm)")
-
-    agents = create_finance_agents()
-    tasks = [
-        "Analyze global market conditions",
-        "Assess currency exchange risks",
-        "Evaluate sector-specific risks",
-        "Review portfolio exposure",
-    ]
-
-    print("\nTasks:")
-    for i, task in enumerate(tasks, 1):
-        print(f"{i}. {task}")
-
-    result = mesh_swarm(agents, tasks)
-    print("\nResults:")
-    for log in result["history"]:
-        print(f"\n{log['agent_name']}:")
-        print(f"Task: {log['task']}")
-        print(f"Response: {log['response']}")
-
-
 async def run_communication_examples():
     """Communication patterns for emergency scenarios"""
     print_separator()
@@ -203,11 +153,9 @@ async def run_all_examples():
 
     # Finance examples
     run_finance_circular_swarm()
-    run_finance_mesh_swarm()
 
     # Healthcare examples
     run_healthcare_grid_swarm()
-    run_healthcare_star_swarm()
 
     # Communication examples
     await run_communication_examples()
