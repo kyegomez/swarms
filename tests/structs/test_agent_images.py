@@ -1,24 +1,45 @@
-"""Images given to an Agent reach the model request."""
+"""Images given to an Agent reach the model.
+
+The first part stubs the provider and checks the request. The live part
+calls OpenAI and Anthropic, and is skipped when the key is not set.
+"""
 
 import asyncio
 import base64
+import os
 import struct
 import zlib
 from types import SimpleNamespace
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import patch
 
 import pytest
+from dotenv import load_dotenv
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
 from swarms.schemas.agent_errors import AgentLLMError
 
 
-def _png(size: int = 16) -> bytes:
-    """Build a small valid PNG, long enough to be read as raw base64."""
+load_dotenv()
+
+LIVE_MODELS = [
+    ("gpt-4.1", "OPENAI_API_KEY"),
+    ("claude-sonnet-4-6", "ANTHROPIC_API_KEY"),
+]
+
+
+def _png(
+    size: int = 16, colour: Optional[Tuple[int, int, int]] = None
+) -> bytes:
+    """Build a valid PNG: one solid colour, or a gradient when none is given."""
     rows = b"".join(
-        b"\x00" + bytes((x * y) % 256 for x in range(size * 3))
+        b"\x00"
+        + (
+            bytes(colour) * size
+            if colour
+            else bytes((x * y) % 256 for x in range(size * 3))
+        )
         for y in range(size)
     )
 
@@ -43,6 +64,11 @@ PNG_BYTES = _png()
 RAW_BASE64 = base64.b64encode(PNG_BYTES).decode()
 DATA_URI = f"data:image/png;base64,{RAW_BASE64}"
 URL = "https://example.com/chart.png"
+RED_PNG = _png(64, (255, 0, 0))
+BLUE_PNG = _png(64, (0, 0, 255))
+COLOUR_TASK = (
+    "Name the colour that fills each image. Use one word per image."
+)
 TASK = "What is in this image?"
 
 
@@ -70,7 +96,11 @@ def _agent(model_name: str = "gpt-4.1", **kwargs: Any) -> Agent:
 
 def _requests(run: Any) -> List[List[Dict[str, Any]]]:
     """Run with the provider stubbed and return each request's messages."""
-    with patch.object(
+    fake_keys = {
+        "OPENAI_API_KEY": "test",
+        "ANTHROPIC_API_KEY": "test",
+    }
+    with patch.dict(os.environ, fake_keys), patch.object(
         litellm_wrapper, "completion", side_effect=_reply
     ) as completion, patch.object(
         litellm_wrapper, "acompletion", side_effect=_async_reply
@@ -89,12 +119,6 @@ def _image_urls(messages: List[Dict[str, Any]]) -> List[str]:
         for part in message["content"]
         if part["type"] == "image_url"
     ]
-
-
-@pytest.fixture(autouse=True)
-def _offline(monkeypatch):
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
 
 @pytest.mark.parametrize(
@@ -193,3 +217,57 @@ def test_model_without_vision_raises_instead_of_dropping_the_image():
         AgentLLMError, match="does not support vision"
     ):
         _requests(lambda: agent.run(TASK, img=URL))
+
+
+def _data_uri(png: bytes) -> str:
+    return "data:image/png;base64," + base64.b64encode(png).decode()
+
+
+def _live_agent(model_name: str, key: str) -> Agent:
+    """A real agent for one provider, or a skip when its key is not set."""
+    if not os.getenv(key):
+        pytest.skip(f"{key} is not set")
+    return _agent(model_name=model_name, output_type="final")
+
+
+@pytest.mark.parametrize("model_name, key", LIVE_MODELS)
+def test_live_model_names_the_colour_and_bills_the_image(
+    model_name, key
+):
+    agent = _live_agent(model_name, key)
+
+    text_only = _live_agent(model_name, key)
+
+    answer = agent.run(COLOUR_TASK, img=_data_uri(RED_PNG))
+    text_only.run(COLOUR_TASK)
+
+    assert "red" in str(answer).lower()
+    assert (
+        agent.usage["input_tokens"] > text_only.usage["input_tokens"]
+    )
+
+
+@pytest.mark.parametrize("model_name, key", LIVE_MODELS)
+def test_live_model_names_the_colours_of_two_images(model_name, key):
+    agent = _live_agent(model_name, key)
+
+    answer = agent.run(
+        COLOUR_TASK,
+        imgs=[_data_uri(RED_PNG), _data_uri(BLUE_PNG)],
+    )
+
+    assert "red" in str(answer).lower()
+    assert "blue" in str(answer).lower()
+
+
+@pytest.mark.parametrize("model_name, key", LIVE_MODELS)
+def test_live_model_reads_an_image_file_through_arun(
+    model_name, key, tmp_path
+):
+    agent = _live_agent(model_name, key)
+    path = tmp_path / "blue.png"
+    path.write_bytes(BLUE_PNG)
+
+    answer = asyncio.run(agent.arun(COLOUR_TASK, img=str(path)))
+
+    assert "blue" in str(answer).lower()
