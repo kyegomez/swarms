@@ -660,21 +660,24 @@ class LiteLLM:
                 continue
             base.append(m)
 
+        images = [
+            i for i in ([img] if img else []) + (imgs or []) if i
+        ]
+        if images:
+            self.check_if_model_supports_vision(img=images[0])
+
         # A prebuilt body is already structured, so only this instance's system prompt is added.
         if messages is not None:
             prepared = base + list(messages)
+            if images:
+                self._attach_images(prepared, images)
             if self.prompt_caching and prepared:
                 self._apply_prompt_caching(prepared)
             return prepared
 
         messages = base
 
-        # Check if model supports vision if any image is provided
-        images = [
-            i for i in ([img] if img else []) + (imgs or []) if i
-        ]
         if images:
-            self.check_if_model_supports_vision(img=images[0])
             # Handle vision case - this includes the task and every image
             messages = self.vision_processing(
                 task=task, image=images, messages=messages
@@ -974,6 +977,38 @@ class LiteLLM:
             "role": "user",
             "content": [{"type": "text", "text": task}]
             + [self._build_image_block(i) for i in images],
+        }
+
+    def _attach_images(
+        self, messages: List[dict], images: List[str]
+    ) -> None:
+        """
+        Add the images to the last user message of a prebuilt body.
+
+        Args:
+            messages: The request messages, changed in place.
+            images: Image sources in any supported format.
+        """
+        blocks = [self._build_image_block(image) for image in images]
+        users = [
+            index
+            for index, message in enumerate(messages)
+            if message.get("role") == "user"
+        ]
+
+        if not users:
+            messages.append({"role": "user", "content": blocks})
+            return
+
+        last = messages[users[-1]]
+        content = last.get("content")
+        if isinstance(content, str):
+            content = [{"type": "text", "text": content}]
+
+        # A new dict, so the caller's own message is left as it was.
+        messages[users[-1]] = {
+            **last,
+            "content": list(content or []) + blocks,
         }
 
     def _should_use_direct_url(self, image: str) -> bool:

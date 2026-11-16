@@ -606,3 +606,65 @@ class TestGeminiProvider:
         )
         result = agent.run(SIMPLE_TASK)
         assert result is not None
+
+
+def test_prepare_messages_attaches_images_to_prebuilt_body():
+    llm = LiteLLM(
+        model_name=OPENAI_MODEL, system_prompt=SIMPLE_PROMPT
+    )
+    urls = ["https://example.com/a.png", "https://example.com/b.png"]
+    messages = llm._prepare_messages(
+        img=urls[0],
+        imgs=urls[1:],
+        messages=[
+            {"role": "user", "content": SIMPLE_TASK},
+            {"role": "assistant", "content": "ok"},
+        ],
+    )
+    assert messages[-1] == {"role": "assistant", "content": "ok"}
+    assert messages[1]["content"][0] == {
+        "type": "text",
+        "text": SIMPLE_TASK,
+    }
+    assert [
+        p["image_url"]["url"] for p in messages[1]["content"][1:]
+    ] == urls
+
+
+@pytest.mark.parametrize(
+    "body, expected_roles, expected_types",
+    [
+        (
+            [
+                {
+                    "role": "user",
+                    "content": [{"type": "text", "text": "hi"}],
+                }
+            ],
+            ["system", "user"],
+            ["text", "image_url"],
+        ),
+        (
+            [{"role": "assistant", "content": "ok"}],
+            ["system", "assistant", "user"],
+            ["image_url"],
+        ),
+    ],
+)
+def test_prepare_messages_attaches_images_to_any_prebuilt_body(
+    body, expected_roles, expected_types
+):
+    llm = LiteLLM(
+        model_name=OPENAI_MODEL, system_prompt=SIMPLE_PROMPT
+    )
+    original = [dict(message) for message in body]
+
+    messages = llm._prepare_messages(
+        img="https://example.com/a.png", messages=body
+    )
+
+    assert [m["role"] for m in messages] == expected_roles
+    assert [p["type"] for p in messages[-1]["content"]] == (
+        expected_types
+    )
+    assert body == original
