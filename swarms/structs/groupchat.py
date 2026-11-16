@@ -69,6 +69,7 @@ from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import capture_init, trace_run
@@ -104,7 +105,7 @@ RESPOND_TOOL = {
     },
 }
 
-RESPOND_CHOICE = {"type": "function", "function": {"name": "respond"}}
+RESPOND_CHOICE = forced_tool_choice(RESPOND_TOOL)
 
 
 def _extract_args(tool_output: Any) -> Tuple[float, str]:
@@ -311,12 +312,14 @@ class GroupChat(SerializableMixin):
         previous_output_type = getattr(agent, "output_type", None)
         agent.output_type = "final"
         llm = getattr(agent, "llm", None)
-        forced = isinstance(llm, LiteLLM) and not (
-            llm.reasoning_effort or llm.reasoning_enabled
-        )
+        forced = isinstance(llm, LiteLLM)
         if forced:
             previous_tool_choice = llm.tool_choice
-            llm.tool_choice = RESPOND_CHOICE
+            llm.tool_choice = forced_tool_choice(
+                RESPOND_TOOL,
+                llm.reasoning_effort,
+                llm.reasoning_enabled,
+            )
         try:
             # Typed turns let the agent tell its own prior speech from a peer's.
             tool_output = agent.run(
