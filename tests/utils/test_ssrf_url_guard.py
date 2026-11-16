@@ -143,11 +143,12 @@ def _stub_fetch(monkeypatch, gets, safe=True):
 
     class _Resp:
         content = b"\xff\xd8\xff\xe0fake-jpeg-bytes"
+        is_redirect = False
 
         def raise_for_status(self):
             return None
 
-    def _get(url, timeout=None):
+    def _get(url, timeout=None, allow_redirects=True):
         gets.append(url)
         return _Resp()
 
@@ -221,3 +222,44 @@ def test_cache_hit_skips_the_guard_but_new_urls_are_still_checked(
             "https://example.com/other.jpg"
         )
     assert len(gets) == 1
+
+
+@pytest.mark.parametrize(
+    "location, followed",
+    [
+        ("http://169.254.169.254/latest/meta-data/", None),
+        ("/real.jpg", "http://93.184.215.14/real.jpg"),
+    ],
+)
+def test_redirect_targets_pass_the_guard(
+    monkeypatch, location, followed
+):
+    """Each redirect hop is checked, so a public URL cannot bounce inward."""
+    start = "http://93.184.215.14/cat.jpg"
+    gets = []
+
+    class _Resp:
+        content = b"\xff\xd8\xff\xe0fake-jpeg-bytes"
+
+        def __init__(self, url):
+            self.is_redirect = url == start
+            self.headers = {"location": location}
+
+        def raise_for_status(self):
+            return None
+
+    def _get(url, timeout=None, allow_redirects=True):
+        assert allow_redirects is False
+        gets.append(url)
+        return _Resp(url)
+
+    monkeypatch.setattr(image_file_b64.requests, "get", _get)
+
+    if followed is None:
+        with pytest.raises(ValueError, match="Blocked URL"):
+            image_file_b64.get_image_base64(start)
+        assert gets == [start]
+    else:
+        uri = image_file_b64.get_image_base64(start)
+        assert uri.startswith("data:image/jpeg;base64,")
+        assert gets == [start, followed]

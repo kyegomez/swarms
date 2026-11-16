@@ -60,8 +60,8 @@ model_recommendations = {
         ],
         "provider": "anthropic",
     },
-    "gemini-2.5-pro": {
-        "description": "Google's Gemini Pro model with a 1M-token context window and strong multimodal skills",
+    "gemini-3.8-flash": {
+        "description": "Google's most capable Flash model, with a 1M-token context window and text, image, video, audio and PDF input, at Flash speed and cost",
         "best_for": [
             "Multimodal tasks",
             "Code generation",
@@ -84,6 +84,15 @@ model_recommendations = {
             "Complex software engineering",
             "Long-horizon agent tasks",
             "Step-by-step reasoning",
+        ],
+        "provider": "openrouter",
+    },
+    "z-ai/glm-5.3-flash": {
+        "description": "Z.ai's fast, low-cost GLM 5.3 model served through OpenRouter, with a 1M-token context window, for coding and agent tasks at high volume",
+        "best_for": [
+            "Low-cost coding",
+            "High-volume agent tasks",
+            "Long documents on a budget",
         ],
         "provider": "openrouter",
     },
@@ -194,7 +203,6 @@ class ModelRouter:
         max_tokens (int): Maximum tokens for model outputs
         temperature (float): Temperature parameter for model randomness
         max_workers (int): Maximum concurrent workers for batch processing
-        model_output (ModelOutput): Pydantic model for structured outputs
         model_caller (LiteLLM): Function calling interface
     """
 
@@ -227,7 +235,6 @@ class ModelRouter:
             self.max_tokens = max_tokens
             self.temperature = temperature
             self.max_workers = max_workers
-            self.model_output = ModelOutput
             self.max_loops = max_loops
 
             if self.max_workers == "auto":
@@ -267,7 +274,9 @@ class ModelRouter:
         selected_provider = model_router_output.provider
         routed_task = model_router_output.task
         rationale = model_router_output.rationale
-        max_tokens = model_router_output.max_tokens
+        max_tokens = model_router_output.max_tokens or self.max_tokens
+        if self.max_tokens:
+            max_tokens = min(max_tokens, self.max_tokens)
         temperature = model_router_output.temperature
         system_prompt = model_router_output.system_prompt
 

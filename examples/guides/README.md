@@ -21,7 +21,6 @@ This directory contains comprehensive guides and tutorials for using Swarms effe
 - [graph_workflow_technical_guide.md](graphworkflow_guide/graph_workflow_technical_guide.md) - Technical documentation
 - [quick_start_guide.py](graphworkflow_guide/quick_start_guide.py) - Quick start implementation
 - [README.md](graphworkflow_guide/README.md) - Main documentation
-- [setup_and_test.py](graphworkflow_guide/setup_and_test.py) - Setup and testing utilities
 
 ## Hierarchical Marketing Team
 - [hiearchical_marketing_team.py](hiearchical_marketing_team.py) - Marketing team hierarchy example

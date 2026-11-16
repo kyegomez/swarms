@@ -57,6 +57,18 @@ DECISION_MODEL_PROVIDERS = {
         "api_key_env": "OPENAI_API_KEY",
         "models_url": "https://api.openai.com/v1/models",
     },
+    "google": {
+        "prefix": "gemini-decision",
+        "models": ["gemini-decision-1"],
+        "prices": {
+            "gemini-decision-1": {"input": 0.10, "output": 0.0},
+        },
+        "base_url": "https://generativelanguage.googleapis.com/v1beta",
+        "endpoint": "/decisions",
+        "api_key_env": "GEMINI_API_KEY",
+        "api_key_header": "x-goog-api-key",
+        "models_url": "https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000",
+    },
 }
 
 
@@ -134,12 +146,12 @@ def _fetch_provider_models(
     try:
         response = httpx.get(
             _fill_from_env(provider["models_url"]),
-            headers={"Authorization": f"Bearer {api_key}"},
+            headers=_auth_headers(provider, api_key),
             timeout=10.0,
         )
         response.raise_for_status()
         data = response.json()
-        # TypeSafe lists under models; Cloudflare under result, as @cf/cloudflare/<name>; OpenAI under data, by id.
+        # TypeSafe and Google list under models, Google as models/<name>; Cloudflare under result, as @cf/cloudflare/<name>; OpenAI under data, by id.
         entries = (
             data.get("models")
             or data.get("result")
@@ -147,9 +159,9 @@ def _fetch_provider_models(
             or []
         )
         models = {
-            str(
-                entry.get("name") or entry.get("id") or ""
-            ).removeprefix("@cf/cloudflare/"): entry
+            str(entry.get("name") or entry.get("id") or "")
+            .removeprefix("@cf/cloudflare/")
+            .removeprefix("models/"): entry
             for entry in entries
             if isinstance(entry, dict)
         }
@@ -170,6 +182,16 @@ def _provider_for(model_name: str) -> str:
             return name
     # Anything else, such as the gateway id ~typesafe/jev-latest, goes to TypeSafe.
     return "typesafe"
+
+
+def _auth_headers(
+    provider: Dict[str, Any], api_key: str
+) -> Dict[str, str]:
+    # Google takes the key in its own header; the others take a bearer token.
+    header = provider.get("api_key_header")
+    if header:
+        return {header: api_key}
+    return {"Authorization": f"Bearer {api_key}"}
 
 
 def _fill_from_env(template: str) -> str:
@@ -286,6 +308,54 @@ def _openai_answers(
     return converted
 
 
+GEMINI_CONTENT_TYPES = frozenset(
+    {"text", "image", "audio", "video", "document"}
+)
+
+
+def _gemini_input(state: State) -> Union[str, List[Any]]:
+    # A list of content blocks passes through so it can carry images, audio, video and PDFs.
+    if (
+        isinstance(state, list)
+        and state
+        and all(
+            isinstance(block, dict)
+            and block.get("type") in GEMINI_CONTENT_TYPES
+            for block in state
+        )
+    ):
+        return state
+    return _as_text(state)
+
+
+def _gemini_question(question: Dict[str, Any]) -> Dict[str, Any]:
+    converted = {
+        **question,
+        "instructions": _as_text(question.get("instructions", "")),
+    }
+    criteria = question.get("criteria")
+    if question["type"] == "noul" and isinstance(criteria, dict):
+        # Gemini names the yes/no descriptions true_description and false_description.
+        converted["criteria"] = {
+            (
+                f"{key}_description"
+                if key in ("true", "false")
+                else key
+            ): value
+            for key, value in criteria.items()
+        }
+    return converted
+
+
+def _gemini_usage(usage: Dict[str, Any]) -> Dict[str, Any]:
+    # Gemini reports total_input_tokens and total_output_tokens.
+    return {
+        **usage,
+        "input_tokens": usage.get("total_input_tokens") or 0,
+        "output_tokens": usage.get("total_output_tokens") or 0,
+    }
+
+
 class DecisionModel:
     """
     Client for decision models that answer typed questions about a state.
@@ -357,7 +427,7 @@ class DecisionModel:
         Ask every question about the state in one request.
 
         Args:
-            state: Text, JSON object or list the questions are asked about. OpenAI models also take a list of user messages with input_image parts.
+            state: Text, JSON object or list the questions are asked about. OpenAI models also take a list of user messages with input_image parts, and Gemini models a list of content blocks.
             questions: Question dictionaries keyed by an id of your choosing.
 
         Returns:
@@ -376,7 +446,7 @@ class DecisionModel:
         Ask every question about the state in one asynchronous request.
 
         Args:
-            state: Text, JSON object or list the questions are asked about. OpenAI models also take a list of user messages with input_image parts.
+            state: Text, JSON object or list the questions are asked about. OpenAI models also take a list of user messages with input_image parts, and Gemini models a list of content blocks.
             questions: Question dictionaries keyed by an id of your choosing.
 
         Returns:
@@ -535,7 +605,10 @@ class DecisionModel:
             The headers to send.
         """
         return {
-            "Authorization": f"Bearer {self._api_key}",
+            **_auth_headers(
+                DECISION_MODEL_PROVIDERS[self._provider_name],
+                self._api_key,
+            ),
             "Content-Type": "application/json",
             **self._headers,
         }
@@ -590,6 +663,16 @@ class DecisionModel:
                 ],
                 **self.extra_body,
             }
+        if self._provider_name == "google":
+            return {
+                "model": self.model_name,
+                "input": _gemini_input(state),
+                "questions": {
+                    question_id: _gemini_question(question)
+                    for question_id, question in questions.items()
+                },
+                **self.extra_body,
+            }
         return {
             "model": self.model_name,
             "state": state,
@@ -620,6 +703,10 @@ class DecisionModel:
                 **data,
                 "answers": _openai_answers(data.get("answers") or []),
             }
+        if self._provider_name == "google" and isinstance(
+            data.get("usage"), dict
+        ):
+            data = {**data, "usage": _gemini_usage(data["usage"])}
 
         answers = data.get("answers") or {}
         for question_id, question in questions.items():

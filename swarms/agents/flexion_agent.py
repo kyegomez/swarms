@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Tuple
 import time
 from datetime import datetime
 
+from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.prompts.reflexion_prompts import (
@@ -193,7 +194,7 @@ class ReflexionAgent:
         self,
         agent_name: str = "reflexion-agent",
         system_prompt: str = REFLEXION_PROMPT,
-        model_name: str = "openai/o1",
+        model_name: str = DEFAULT_MODEL_NAME,
         max_loops: int = 3,
         memory_capacity: int = 100,
     ) -> None:
@@ -221,6 +222,7 @@ class ReflexionAgent:
             system_prompt=system_prompt,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
         # Evaluator agent - evaluates responses
@@ -230,6 +232,7 @@ class ReflexionAgent:
             system_prompt=REFLEXION_EVALUATOR_PROMPT,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
         # Reflector agent - generates self-reflections
@@ -239,6 +242,7 @@ class ReflexionAgent:
             system_prompt=REFLEXION_REFLECTOR_PROMPT,
             model_name=model_name,
             max_loops=1,
+            output_type="final",
         )
 
         logger.info(
@@ -277,6 +281,7 @@ class ReflexionAgent:
 
         # Generate response
         start_time = time.time()
+        self.actor.reset()
         response = self.actor.run(task=prompt)
         end_time = time.time()
 
@@ -303,6 +308,7 @@ class ReflexionAgent:
 
         logger.debug(f"Evaluating response for task: {task[:100]}...")
 
+        self.evaluator.reset()
         evaluation = self.evaluator.run(task=prompt)
 
         # Regex over prose stands in for structured output
@@ -349,6 +355,7 @@ class ReflexionAgent:
             f"Generating reflection for task: {task[:100]}..."
         )
 
+        self.reflector.reset()
         reflection = self.reflector.run(task=prompt)
 
         logger.debug(f"Reflection generated: {reflection[:100]}...")
@@ -383,6 +390,7 @@ class ReflexionAgent:
 
         logger.debug(f"Refining response for task: {task[:100]}...")
 
+        self.actor.reset()
         refined_response = self.actor.run(task=prompt)
 
         logger.debug(f"Response refined: {refined_response[:100]}...")

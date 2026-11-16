@@ -6,11 +6,13 @@ from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.structs.agent import Agent
 
 
-def _duo(monkeypatch, max_loops=1):
+def _duo(monkeypatch, max_loops=1, **kwargs):
     """A duo whose LLM answers locally, recording what each agent received."""
     calls = []
     duo = ReasoningDuo(
-        model_names=["gpt-5.4", "gpt-5.4"], max_loops=max_loops
+        model_names=["gpt-5.4", "gpt-5.4"],
+        max_loops=max_loops,
+        **kwargs,
     )
 
     def fake_call_llm(self, task=None, *args, **kwargs):
@@ -33,6 +35,13 @@ def test_the_two_agents_have_distinct_names(monkeypatch):
     assert (
         duo.reasoning_agent.agent_name != duo.main_agent.agent_name
     ), "both agents answer to one name, so neither can be attributed"
+
+
+def test_both_agents_carry_the_duo_description(monkeypatch):
+    duo, _ = _duo(monkeypatch, agent_description="Checks tax math.")
+
+    assert duo.reasoning_agent.agent_description == "Checks tax math."
+    assert duo.main_agent.agent_description == "Checks tax math."
 
 
 def test_the_main_agent_sees_the_reasoner_as_a_labelled_turn(

@@ -34,4 +34,3 @@ This directory contains examples demonstrating various tool integrations and usa
 - [4_stagehand_multi_agent_workflow.py](stagehand/4_stagehand_multi_agent_workflow.py) - Multi-agent workflow
 - [README.md](stagehand/README.md) - Stagehand documentation
 - [requirements.txt](stagehand/requirements.txt) - Stagehand dependencies
-- [tests/](stagehand/tests/) - Stagehand testing suite

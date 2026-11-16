@@ -7,6 +7,8 @@ workspace. No network and no LLM: the manager only ever touches the disk.
 
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 import pytest
 
@@ -90,6 +92,17 @@ class TestEnsureWorkspaceEnv:
         resolved = ensure_workspace_env()
         assert resolved.endswith("agent_workspace")
         assert os.environ["WORKSPACE_DIR"] == resolved
+
+    def test_a_later_change_to_the_variable_takes_effect(
+        self, monkeypatch, tmp_path
+    ):
+        monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "first"))
+        assert get_workspace_dir() == str(tmp_path / "first")
+
+        monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "second"))
+
+        assert get_workspace_dir() == str(tmp_path / "second")
+        assert ensure_workspace_env() == str(tmp_path / "second")
 
 
 class TestConversationToData:
@@ -341,3 +354,30 @@ class TestAtomicWrite:
         monkeypatch.setattr(os, "replace", real_replace)
 
         assert open(path).read() == original
+        assert not [
+            f for f in os.listdir(wm.dir) if f.endswith(".tmp")
+        ]
+
+    def test_concurrent_saves_of_one_file_all_land(self, monkeypatch):
+        wm = WorkspaceManager(FakeSwarm())
+        both_written = Barrier(2, timeout=5)
+        real_replace = os.replace
+
+        def replace_after_both_writes(src, dst):
+            both_written.wait()
+            real_replace(src, dst)
+
+        monkeypatch.setattr(os, "replace", replace_after_both_writes)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            paths = list(
+                pool.map(
+                    lambda run: wm.save_json(
+                        "state.json", {"run": run}
+                    ),
+                    range(2),
+                )
+            )
+
+        assert None not in paths
+        with open(os.path.join(wm.dir, "state.json")) as f:
+            assert json.load(f)["run"] in (0, 1)

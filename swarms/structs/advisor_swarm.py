@@ -40,6 +40,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.utils.generate_id import generate_id
+from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="advisor_swarm")
 
@@ -203,6 +204,10 @@ class AdvisorSwarm:
         self.conversation.clear()
         self.conversation.add(role="User", content=task)
         advisor_uses = 0
+        advisor_name = self.advisor_agent.agent_name or "Advisor"
+        executor_name = self.executor_agent.agent_name or "Executor"
+        if advisor_name == executor_name:
+            advisor_name, executor_name = "Advisor", "Executor"
 
         for turn in range(self.max_loops):
             if self.verbose:
@@ -220,13 +225,12 @@ class AdvisorSwarm:
                 advice = self.advisor_agent.run(
                     task=advisor_prompt,
                     messages=messages_for(
-                        self.advisor_agent.agent_name or "Advisor",
-                        self.conversation,
+                        advisor_name, self.conversation
                     ),
                 )
                 advisor_uses += 1
                 self.conversation.add(
-                    role="Advisor",
+                    role=advisor_name,
                     content=agent_answer(self.advisor_agent, advice),
                 )
 
@@ -247,12 +251,11 @@ class AdvisorSwarm:
                 img=img,
                 imgs=imgs,
                 messages=messages_for(
-                    self.executor_agent.agent_name or "Executor",
-                    self.conversation,
+                    executor_name, self.conversation
                 ),
             )
             self.conversation.add(
-                role="Executor",
+                role=executor_name,
                 content=agent_answer(self.executor_agent, output),
             )
 
@@ -282,3 +285,14 @@ class AdvisorSwarm:
     def __call__(self, task: str, *args, **kwargs) -> Any:
         """Make the swarm callable."""
         return self.run(task=task, *args, **kwargs)
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

@@ -6,7 +6,6 @@ with various Large Language Models (LLMs) through a unified interface. It suppor
 
 - Multiple model providers (OpenAI, Anthropic, Google, etc.)
 - Vision capabilities (image processing)
-- Audio processing
 - Tool/function calling
 - Reasoning models
 - Streaming responses
@@ -18,9 +17,7 @@ for various input modalities and output formats.
 """
 
 import copy
-import socket
 import traceback
-from functools import lru_cache
 from typing import Any, Callable, List, Optional, Union
 
 import requests
@@ -31,7 +28,6 @@ from swarms.utils import llm_backend
 from swarms.utils.formatter import formatter
 from swarms.utils.image_file_b64 import (
     get_image_base64,
-    get_media_base64,
     is_base64_encoded,
     save_base64_as_image,
 )
@@ -57,12 +53,6 @@ def _model_supports_vision(model: str) -> bool:
         _VISION_MODELS.add(model)
         return True
     return False
-
-
-@lru_cache(maxsize=None)
-def _model_supports_reasoning(model: str) -> bool:
-    """Cached supports_reasoning lookup (pure function of model name)."""
-    return llm_backend.supports_reasoning(model=model)
 
 
 class LiteLLMException(Exception):
@@ -203,7 +193,6 @@ class LiteLLM:
         temperature (float): Sampling temperature for generation.
         max_tokens (int): Maximum number of tokens to generate.
         messages (list): Conversation message history.
-        modalities (list): Supported input modalities.
 
     Example:
         Basic usage:
@@ -234,11 +223,9 @@ class LiteLLM:
         temperature: Optional[float] = None,
         max_tokens: int = 4000,
         ssl_verify: bool = False,
-        max_completion_tokens: int = 4000,
         tools_list_dictionary: List[dict] = None,
         tool_choice: str = "auto",
         parallel_tool_calls: bool = False,
-        audio: str = None,
         retries: int = 3,
         verbose: bool = False,
         caching: bool = False,
@@ -279,8 +266,6 @@ class LiteLLM:
                 response. Defaults to 4000.
             ssl_verify (bool, optional): Whether to verify SSL certificates when making
                 API requests. Set to False for self-signed certificates. Defaults to False.
-            max_completion_tokens (int, optional): Maximum number of completion tokens.
-                Defaults to 4000.
             tools_list_dictionary (List[dict], optional): List of tool/function definitions
                 for function calling. Each dict should follow the OpenAI function calling
                 format. Defaults to None.
@@ -288,8 +273,6 @@ class LiteLLM:
                 a specific tool name. Defaults to "auto".
             parallel_tool_calls (bool, optional): Whether to enable parallel tool calls
                 when multiple tools are available. Defaults to False.
-            audio (str, optional): Path to audio input file. Supported for models with
-                audio capabilities. Defaults to None.
             retries (int, optional): Number of retry attempts for failed API calls.
                 Defaults to 3.
             verbose (bool, optional): Whether to enable verbose logging for debugging.
@@ -367,7 +350,6 @@ class LiteLLM:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.ssl_verify = ssl_verify
-        self.max_completion_tokens = max_completion_tokens
         self.tools_list_dictionary = tools_list_dictionary
         self.tool_choice = tool_choice
         self.parallel_tool_calls = parallel_tool_calls
@@ -377,7 +359,6 @@ class LiteLLM:
         self.mcp_call = mcp_call
         self.top_p = top_p
         self.functions = functions
-        self.audio = audio
         self.return_all = return_all
         self.base_url = base_url
         self.api_key = api_key
@@ -394,15 +375,14 @@ class LiteLLM:
         self.last_response_model: Optional[str] = None
         self.last_request: Optional[dict] = None
         self.last_response: Any = None
-        self.modalities = []
         self.messages = []  # Initialize messages list
 
         # litellm reads these from module globals shared by every agent; RouteHub takes them per call.
         self._backend_options = {}
+        self.retries = retries
         backend_options = {
             "set_verbose": verbose,
             "ssl_verify": ssl_verify,
-            "num_retries": retries,
             "drop_params": drop_params,
         }
         if llm_backend.BACKEND == "litellm":
@@ -428,58 +408,6 @@ class LiteLLM:
         # Store additional args and kwargs for use in run method
         self.init_args = args
         self.init_kwargs = kwargs
-
-    def reasoning_check(self):
-        """
-        Check if reasoning is enabled and supported by the model, and adjust parameters accordingly.
-
-        This method validates reasoning configuration and automatically adjusts model parameters
-        for optimal reasoning performance. It performs the following checks:
-
-        1. Verifies if the model supports reasoning capabilities
-        2. Adjusts temperature to 1.0 for reasoning models (some models require this)
-        3. For Anthropic models, ensures thinking_tokens is set and adjusts top_p to 0.95
-        4. Logs warnings if reasoning is enabled but not supported by the model
-
-        The method is called automatically when reasoning_enabled is True, but can also be
-        called manually to validate configuration.
-
-        Raises:
-            No exceptions are raised, but warnings are logged if configuration is invalid.
-
-        Note:
-            For Anthropic reasoning models, thinking_tokens is mandatory. If not provided,
-            it will be automatically set to max_tokens / 4.
-        """
-        if self.reasoning_enabled:
-            supports_reasoning = _model_supports_reasoning(
-                self.model_name
-            )
-            uses_anthropic = self.check_if_model_name_uses_anthropic(
-                model_name=self.model_name
-            )
-            if supports_reasoning:
-                logger.info(
-                    f"Model {self.model_name} supports reasoning and reasoning enabled is set to {self.reasoning_enabled}. Temperature will be set to 1 for better reasoning as some models may not work with low temperature."
-                )
-                self.temperature = 1
-            else:
-                logger.warning(
-                    f"Model {self.model_name} does not support reasoning and reasoning enabled is set to {self.reasoning_enabled}. Temperature will not be set to 1."
-                )
-                logger.warning(
-                    f"Model {self.model_name} may or may not support reasoning and reasoning enabled is set to {self.reasoning_enabled}"
-                )
-            if uses_anthropic:
-                if self.thinking_tokens is None:
-                    logger.info(
-                        f"Model {self.model_name} is an Anthropic model and reasoning enabled is set to {self.reasoning_enabled}. Thinking tokens is mandatory for Anthropic models."
-                    )
-                    self.thinking_tokens = self.max_tokens / 4
-                logger.info(
-                    "top_p must be greater than 0.95 for Anthropic models with reasoning enabled"
-                )
-                self.top_p = 0.95
 
     def _process_additional_args(
         self, completion_params: dict, runtime_args: tuple
@@ -732,21 +660,24 @@ class LiteLLM:
                 continue
             base.append(m)
 
+        images = [
+            i for i in ([img] if img else []) + (imgs or []) if i
+        ]
+        if images:
+            self.check_if_model_supports_vision(img=images[0])
+
         # A prebuilt body is already structured, so only this instance's system prompt is added.
         if messages is not None:
             prepared = base + list(messages)
+            if images:
+                self._attach_images(prepared, images)
             if self.prompt_caching and prepared:
                 self._apply_prompt_caching(prepared)
             return prepared
 
         messages = base
 
-        # Check if model supports vision if any image is provided
-        images = [
-            i for i in ([img] if img else []) + (imgs or []) if i
-        ]
         if images:
-            self.check_if_model_supports_vision(img=images[0])
             # Handle vision case - this includes the task and every image
             messages = self.vision_processing(
                 task=task, image=images, messages=messages
@@ -1048,6 +979,38 @@ class LiteLLM:
             + [self._build_image_block(i) for i in images],
         }
 
+    def _attach_images(
+        self, messages: List[dict], images: List[str]
+    ) -> None:
+        """
+        Add the images to the last user message of a prebuilt body.
+
+        Args:
+            messages: The request messages, changed in place.
+            images: Image sources in any supported format.
+        """
+        blocks = [self._build_image_block(image) for image in images]
+        users = [
+            index
+            for index, message in enumerate(messages)
+            if message.get("role") == "user"
+        ]
+
+        if not users:
+            messages.append({"role": "user", "content": blocks})
+            return
+
+        last = messages[users[-1]]
+        content = last.get("content")
+        if isinstance(content, str):
+            content = [{"type": "text", "text": content}]
+
+        # A new dict, so the caller's own message is left as it was.
+        messages[users[-1]] = {
+            **last,
+            "content": list(content or []) + blocks,
+        }
+
     def _should_use_direct_url(self, image: str) -> bool:
         """
         Determine if we should use direct URL passing instead of base64 conversion.
@@ -1144,127 +1107,22 @@ class LiteLLM:
     anthropic_vision_processing = vision_processing
     openai_vision_processing = vision_processing
 
-    def audio_processing(self, task: str, audio: str):
-        """
-        Process audio input for the given task.
-
-        This method processes audio files for models that support audio input (e.g., Whisper-based
-        models). The audio file is converted to base64 format and added to the message history
-        along with the associated text task.
-
-        Args:
-            task (str): The text task/prompt associated with the audio input.
-            audio (str): The path to the audio file or URL. Supported formats depend on the model,
-                but typically include WAV, MP3, and other common audio formats.
-
-        Note:
-            The audio is automatically converted to base64 format and added to the message
-            history. The format is set to "wav" by default. Ensure your model supports
-            audio input before using this method.
-
-        Raises:
-            requests.HTTPError: If fetching audio from a URL fails.
-            FileNotFoundError: If the local audio file does not exist.
-        """
-        encoded_string = get_media_base64(audio)
-
-        # Append audio message
-        self.messages.append(
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": task},
-                    {
-                        "type": "input_audio",
-                        "input_audio": {
-                            "data": encoded_string,
-                            "format": "wav",
-                        },
-                    },
-                ],
-            }
-        )
-
     def check_if_model_supports_vision(self, img: str = None):
         """
-        Check if the model supports vision capabilities.
+        Warn when the backend cannot confirm that the model accepts images.
 
-        This method uses LiteLLM's built-in `supports_vision` function to verify
-        that the model can handle image inputs before processing. It's called
-        automatically when an image is provided to prevent errors from unsupported
-        models.
+        The image is sent either way: model catalogs lag behind providers,
+        so a missing entry is not proof that the model is text-only.
 
         Args:
-            img (str, optional): Image path/URL to validate against model capabilities.
-                If None, the check is skipped. Defaults to None.
-
-        Raises:
-            ValueError: If the model doesn't support vision and an image is provided.
-                The error message includes the model name for clarity.
-
-        Note:
-            This method only performs the check if `img` is not None. It uses
-            LiteLLM's model capability detection to determine vision support.
-            Models that support vision include GPT-4 Vision, Claude 3, Gemini Pro Vision,
-            and other vision-capable models.
+            img (str, optional): The image about to be sent. None skips the check.
         """
-        if img is not None:
-            out = _model_supports_vision(self.model_name)
+        if img is None or _model_supports_vision(self.model_name):
+            return
 
-            # RouteHub's catalog comes from the network, so a model it can't find may still take images.
-            if (
-                out is False
-                and llm_backend.BACKEND == "routehub"
-                and self.model_name not in llm_backend.model_list
-            ):
-                logger.warning(
-                    f"Can't confirm that {self.model_name} accepts images, sending the image anyway."
-                )
-            elif out is False:
-                raise ValueError(
-                    f"Model {self.model_name} does not support vision"
-                )
-
-    @staticmethod
-    def check_if_model_name_uses_anthropic(model_name: str) -> bool:
-        """
-        Check if the model name indicates an Anthropic (Claude) model.
-
-        Example:
-            >>> LiteLLM.check_if_model_name_uses_anthropic("claude-3-opus")
-            True
-            >>> LiteLLM.check_if_model_name_uses_anthropic("gpt-4")
-            False
-        """
-        name = (model_name or "").lower()
-        return "claude" in name or "anthropic" in name
-
-    @staticmethod
-    def check_internet_connection(
-        host: str = "8.8.8.8", port: int = 53, timeout: int = 3
-    ) -> bool:
-        """
-        Check if there is an active internet connection.
-
-        This method attempts to establish a socket connection to a DNS server
-        (default is Google's DNS at 8.8.8.8) to verify internet connectivity.
-
-        Args:
-            host (str, optional): The host to connect to for checking connectivity.
-                Defaults to "8.8.8.8" (Google DNS).
-            port (int, optional): The port to use for the connection. Defaults to 53 (DNS).
-            timeout (int, optional): Connection timeout in seconds. Defaults to 3.
-
-        Returns:
-            bool: True if internet connection is available, False otherwise.
-        """
-        try:
-            with socket.create_connection(
-                (host, port), timeout=timeout
-            ):
-                return True
-        except OSError:
-            return False
+        logger.warning(
+            f"Can't confirm that {self.model_name} accepts images, sending the image anyway."
+        )
 
     def _build_completion_params(
         self,
@@ -1297,6 +1155,8 @@ class LiteLLM:
             "stream": self.stream,
             self._output_token_key(): self.max_tokens,
             "caching": self.caching,
+            # Per request: litellm drops its module-level count after the first retried call.
+            "num_retries": self.retries,
         }
 
         # Only include temperature if explicitly set (None = provider
@@ -1349,9 +1209,6 @@ class LiteLLM:
             completion_params["response_format"] = (
                 self.response_format
             )
-
-        if self.modalities and len(self.modalities) >= 2:
-            completion_params["modalities"] = self.modalities
 
         # Forwarded even for models LiteLLM's registry lacks, drop_params covers the rest
         if self.reasoning_effort is not None:
@@ -1436,19 +1293,46 @@ class LiteLLM:
         self.last_finish_reason = None
         self.last_response_model = None
         for chunk in stream:
-            choices = _field(chunk, "choices") or []
-            if choices and _field(choices[0], "finish_reason"):
-                self.last_finish_reason = _field(
-                    choices[0], "finish_reason"
-                )
-            self.last_response_model = (
-                _field(chunk, "model") or self.last_response_model
+            if self._note_stream_chunk(chunk):
+                yield chunk
+
+    async def _atrack_streaming_usage(self, stream: any):
+        """Yield an async stream's chunks, recording the trailing usage chunk.
+
+        Args:
+            stream: The async chunk stream from the provider.
+
+        Yields:
+            Any: Each chunk that carries choices.
+        """
+        self.last_finish_reason = None
+        self.last_response_model = None
+        async for chunk in stream:
+            if self._note_stream_chunk(chunk):
+                yield chunk
+
+    def _note_stream_chunk(self, chunk: any) -> bool:
+        """Record one chunk's finish reason, model and usage.
+
+        Args:
+            chunk: A chunk from the provider stream.
+
+        Returns:
+            bool: False for the usage-only trailing chunk, which is not forwarded.
+        """
+        choices = _field(chunk, "choices") or []
+        if choices and _field(choices[0], "finish_reason"):
+            self.last_finish_reason = _field(
+                choices[0], "finish_reason"
             )
-            if _field(chunk, "usage"):
-                self._accumulate_usage(usage_from_response(chunk))
-                if not choices:
-                    continue
-            yield chunk
+        self.last_response_model = (
+            _field(chunk, "model") or self.last_response_model
+        )
+        if _field(chunk, "usage"):
+            self._accumulate_usage(usage_from_response(chunk))
+            if not choices:
+                return False
+        return True
 
     def _process_response(self, response: any):
         """
@@ -1489,21 +1373,15 @@ class LiteLLM:
     def _raise_network_error(self, network_error: Exception):
         """
         Convert a low-level network exception into a NetworkConnectionError
-        with a troubleshooting message tailored to the failure mode.
+        that keeps the original error and adds troubleshooting guidance.
         """
-        if not self.check_internet_connection():
-            error_msg = (
-                f"No internet connection detected while trying to use model '{self.model_name}'.\n\n"
-                "Check your connection, or use a local model instead (e.g., Ollama):\n"
-                "  model = LiteLLM(model_name='ollama/llama2')\n"
-            )
-        else:
-            error_msg = (
-                f"Network error occurred while connecting to '{self.model_name}': {network_error}\n\n"
-                "The endpoint may be temporarily unavailable, the connection timed out,\n"
-                "or a firewall/proxy is blocking it. Consider a local model as a fallback:\n"
-                "  model = LiteLLM(model_name='ollama/llama2')\n"
-            )
+        error_msg = (
+            f"Network error while connecting to '{self.model_name}': "
+            f"{type(network_error).__name__}: {network_error}\n\n"
+            "Check your connection, base_url, proxy and TLS settings, or\n"
+            "consider a local model as a fallback:\n"
+            "  model = LiteLLM(model_name='ollama/llama2')\n"
+        )
         logger.error(error_msg)
         raise NetworkConnectionError(error_msg) from network_error
 
@@ -1518,7 +1396,6 @@ class LiteLLM:
     def run(
         self,
         task: Optional[str] = None,
-        audio: Optional[str] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
         messages: Optional[List[dict]] = None,
@@ -1530,8 +1407,6 @@ class LiteLLM:
 
         Args:
             task (str): The text task or prompt to send to the model.
-            audio (Optional[str]): Path or URL of an audio input, for
-                audio-capable models.
             img (Optional[str]): Image file path, URL, data URI, or base64
                 string, for vision-capable models.
             *args: If a single dictionary is passed, it is merged into the
@@ -1587,7 +1462,11 @@ class LiteLLM:
                 self.last_response = response
             self._record_usage(response)
             return self._process_response(response)
-        except self._NETWORK_ERRORS as network_error:
+        except (
+            *self._NETWORK_ERRORS,
+            llm_backend.APIConnectionError,
+            llm_backend.Timeout,
+        ) as network_error:
             self._raise_network_error(network_error)
         except LiteLLMException as error:
             logger.error(
@@ -1603,7 +1482,6 @@ class LiteLLM:
     async def arun(
         self,
         task: Optional[str] = None,
-        audio: Optional[str] = None,
         img: Optional[str] = None,
         imgs: Optional[List[str]] = None,
         messages: Optional[List[dict]] = None,
@@ -1614,7 +1492,8 @@ class LiteLLM:
         Async version of `run`, using litellm's acompletion.
 
         Accepts the same arguments and returns the same output types as
-        `run` (see its docstring).
+        `run` (see its docstring), except that stream=True returns an
+        async generator of chunks.
         """
         self.last_request = None
         self.last_response = None
@@ -1644,8 +1523,15 @@ class LiteLLM:
             if not self.stream:
                 self.last_response = response
             self._record_usage(response)
+            # An async stream needs an async generator around it.
+            if self.stream and response:
+                return self._atrack_streaming_usage(response)
             return self._process_response(response)
-        except self._NETWORK_ERRORS as network_error:
+        except (
+            *self._NETWORK_ERRORS,
+            llm_backend.APIConnectionError,
+            llm_backend.Timeout,
+        ) as network_error:
             self._raise_network_error(network_error)
         except LiteLLMException as error:
             logger.error(

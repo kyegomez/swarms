@@ -1,3 +1,5 @@
+import pytest
+
 from swarms.utils.formatter import Formatter
 
 
@@ -182,6 +184,22 @@ def test_director_panel_does_not_parse_markup_in_a_task():
     )
 
     assert "[scalability]" in output
+
+
+def test_streaming_panel_raises_a_stream_error_after_showing_it():
+    formatter = Formatter(md=False)
+
+    def stream():
+        yield "The capital of France is"
+        raise ConnectionError("stream reset by peer")
+
+    with formatter.console.capture() as capture:
+        with pytest.raises(ConnectionError, match="stream reset"):
+            formatter.print_streaming_panel(stream())
+
+    output = capture.get()
+    assert "The capital of France is" in output
+    assert "[Error: stream reset by peer]" in output
 
 
 if __name__ == "__main__":

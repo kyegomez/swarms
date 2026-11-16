@@ -58,17 +58,3 @@ You have the ability to delegate tasks to specialized agents when appropriate. T
 
 Remember: Handoffs are a powerful tool for collaboration, but use them judiciously. Only delegate when it truly improves task completion quality or efficiency.
 """
-
-
-def get_handoffs_instruction_prompt() -> str:
-    """
-    Get a concise instruction prompt for handoffs.
-
-    Returns:
-        str: Brief instruction prompt for handoffs.
-    """
-    return """
-You can delegate tasks to specialized agents using the handoff_task tool. 
-When a task requires specific expertise or can be better handled by another agent, 
-use the handoff_task tool to send the task to the appropriate agent(s).
-"""

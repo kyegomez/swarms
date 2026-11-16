@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 from swarms.structs.serialization import SerializableMixin
 from swarms.structs.agent import Agent
 from swarms.telemetry.otel import capture_init, trace_run
+from swarms.structs.usage_utils import total_usage
 
 
 class SelfMoASeq(SerializableMixin):
@@ -31,8 +32,6 @@ class SelfMoASeq(SerializableMixin):
         max_loops: int = 10,
         max_tokens: int = 2000,
         num_samples: int = 30,
-        enable_logging: bool = True,
-        log_level: str = "INFO",
         verbose: bool = True,
         proposer_model_name: Optional[str] = None,
         aggregator_model_name: Optional[str] = None,
@@ -40,10 +39,11 @@ class SelfMoASeq(SerializableMixin):
         retry_delay: float = 1.0,
         retry_backoff_multiplier: float = 2.0,
         retry_max_delay: float = 60.0,
-        additional_kwargs: Dict[str, Any] = {},
         top_p: Optional[float] = None,
     ):
         # Store parameters
+        self.name = name
+        self.description = description
         self.model_name = model_name
         self.temperature = temperature
         self.window_size = window_size
@@ -51,8 +51,6 @@ class SelfMoASeq(SerializableMixin):
         self.max_loops = max_loops
         self.max_tokens = max_tokens
         self.num_samples = num_samples
-        self.enable_logging = enable_logging
-        self.log_level = log_level
         self.verbose = verbose
 
         # Retry configuration
@@ -82,6 +80,7 @@ class SelfMoASeq(SerializableMixin):
             ),
             model_name=proposer_model,
             temperature=self.temperature,
+            max_tokens=self.max_tokens,
             max_loops=1,
             verbose=self.verbose,
             top_p=top_p,
@@ -99,6 +98,7 @@ class SelfMoASeq(SerializableMixin):
             ),
             model_name=aggregator_model,
             temperature=0.0,  # Deterministic aggregation
+            max_tokens=self.max_tokens,
             max_loops=1,
             verbose=self.verbose,
             top_p=top_p,
@@ -169,9 +169,7 @@ class SelfMoASeq(SerializableMixin):
                 self._log(
                     "debug", f"Generating sample {i+1}/{num_samples}"
                 )
-                self.proposer.short_memory = (
-                    self.proposer.short_memory_init()
-                )
+                self.proposer.reset()
                 sample = self.proposer.run(task)
                 samples.append(sample)
                 self.metrics["total_samples_generated"] += 1
@@ -250,9 +248,7 @@ class SelfMoASeq(SerializableMixin):
                 best_so_far,
             )
 
-            self.aggregator.short_memory = (
-                self.aggregator.short_memory_init()
-            )
+            self.aggregator.reset()
             aggregated = self.aggregator.run(prompt)
             self.metrics["total_aggregations"] += 1
 
@@ -274,7 +270,8 @@ class SelfMoASeq(SerializableMixin):
         Execute Self-MoA-Seq on the given task.
 
         This method implements the sequential aggregation algorithm:
-        1. Generate num_samples from the proposer model
+        1. Generate num_samples from the proposer model, but no more
+           than max_loops windows can aggregate
         2. Use sliding window to aggregate in chunks
         3. Progressively synthesize outputs, biasing aggregator toward best
         4. Return final synthesized output
@@ -302,7 +299,12 @@ class SelfMoASeq(SerializableMixin):
 
             # Phase 1: Generate samples
             self._log("info", "Phase 1: Generating initial samples")
-            samples = self._generate_samples(task, self.num_samples)
+            usable = 1 + self.max_loops * (
+                self.window_size - self.reserved_slots
+            )
+            samples = self._generate_samples(
+                task, min(self.num_samples, usable)
+            )
 
             # Phase 2: Sequential aggregation with sliding window
             self._log("info", "Phase 2: Sequential aggregation")
@@ -379,3 +381,14 @@ class SelfMoASeq(SerializableMixin):
     def get_metrics(self) -> Dict[str, Any]:
         """Get current performance metrics."""
         return self.metrics.copy()
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

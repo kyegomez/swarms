@@ -37,7 +37,7 @@ jobs:
             };
             const AGENT_TEXT = [
               ["Claude", /generated with \[?claude code|claude\.(?:ai|com)\/(?:code|claude-code)|co-authored-by:\s*claude|noreply@anthropic\.com/i],
-              ["Codex", /chatgpt\.com\/codex/i],
+              ["Codex", /(?:chatgpt|openai)\.com\/codex|co-authored-by:\s*codex\b|noreply@openai\.com/i],
               ["Copilot", /co-authored-by:\s*copilot|copilot-swe-agent/i],
               ["Cursor", /co-authored-by:\s*cursor|cursoragent@cursor\.com/i],
               ["Devin", /app\.devin\.ai|devin-ai-integration/i],

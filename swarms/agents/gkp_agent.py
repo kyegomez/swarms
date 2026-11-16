@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Union
 
 from loguru import logger
 
+from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 
@@ -24,7 +25,7 @@ class KnowledgeGenerator:
         self,
         agent_name: str = "knowledge-generator",
         description: str = "Generates factual, relevant knowledge to assist with answering queries",
-        model_name: str = "openai/o1",
+        model_name: str = DEFAULT_MODEL_NAME,
         num_knowledge_items: int = 2,
     ) -> None:
         """
@@ -105,6 +106,7 @@ class KnowledgeGenerator:
         logger.debug(f"Generating knowledge for query: {query}")
         start_time = time.time()
 
+        self.agent.reset()
         response = self.agent.run(task=prompt)
 
         end_time = time.time()
@@ -183,7 +185,7 @@ class Reasoner:
     def __init__(
         self,
         agent_name: str = "knowledge-reasoner",
-        model_name: str = "openai/o1",
+        model_name: str = DEFAULT_MODEL_NAME,
     ) -> None:
         """
         Initialize the reasoner component.
@@ -260,6 +262,7 @@ class Reasoner:
         logger.debug(f"Reasoning about query: {query}")
         start_time = time.time()
 
+        self.agent.reset()
         response = self.agent.run(task=prompt)
 
         end_time = time.time()
@@ -330,7 +333,7 @@ class GKPAgent:
     def __init__(
         self,
         agent_name: str = "gkp-agent",
-        model_name: str = "openai/o1",
+        model_name: str = DEFAULT_MODEL_NAME,
         num_knowledge_items: int = 6,
     ) -> None:
         """
@@ -491,6 +494,7 @@ class GKPAgent:
         prompt = "\n".join(prompt_parts)
 
         logger.debug("Coordinating multiple reasoning paths")
+        self.coordinator.reset()
         response = self.coordinator.run(task=prompt)
 
         # Parse the coordinated response

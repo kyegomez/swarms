@@ -1,6 +1,5 @@
 import concurrent.futures
 import json
-import os
 import threading
 import time
 import traceback
@@ -22,6 +21,10 @@ from swarms.schemas.planner_worker_schemas import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.context_utils import messages_for
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.conversation import Conversation
 from swarms.tools.base_tool import BaseTool
 from swarms.utils.workspace_manager import WorkspaceManager
@@ -29,11 +32,13 @@ from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
 from swarms.utils.output_types import OutputType
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
+from swarms.structs.usage_utils import total_usage
 
 
 class TaskQueue:
@@ -378,9 +383,7 @@ class WorkerPool:
         self.task_queue = task_queue
         self.conversation = conversation
         self.img = img
-        self.max_workers = max_workers or min(
-            len(agents), os.cpu_count() or 4
-        )
+        self.max_workers = max_workers or len(agents)
         self.poll_interval = poll_interval
         self.task_timeout = task_timeout
         self._stop_event = threading.Event()
@@ -452,7 +455,7 @@ class WorkerPool:
 
             try:
                 # Reset agent memory so prior tasks don't leak into this one
-                agent.short_memory = agent.short_memory_init()
+                agent.reset()
 
                 # Build context: worker focus prompt + task description + dependency results
                 dep_context = self.task_queue.get_dependency_results(
@@ -514,6 +517,17 @@ class WorkerPool:
                         task.id, str(e), current.version
                     )
 
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)
+
 
 class PlannerWorkerSwarm:
     """A swarm that separates planning from execution.
@@ -567,6 +581,7 @@ class PlannerWorkerSwarm:
         output_type: OutputType = "dict-all-except-first",
         autosave: bool = False,
         verbose: bool = False,
+        channel: Optional[CommsChannel] = None,
         *args,
         **kwargs,
     ):
@@ -593,8 +608,14 @@ class PlannerWorkerSwarm:
 
         # Internal state
         self.task_queue = TaskQueue()
-        self.conversation = Conversation(time_enabled=False)
+        self.channel = channel
+        claim_agents(self.agents, channel, self.name)
+        self.conversation = Conversation(
+            time_enabled=False, channel=channel
+        )
         self._original_task: Optional[str] = None
+        # Planners and judges are built per call, so their usage is kept here.
+        self._single_use_usage = empty_usage()
 
         self._reliability_checks()
 
@@ -732,7 +753,10 @@ class PlannerWorkerSwarm:
             f"[PlannerWorkerSwarm] Running {planner_name} (depth={depth})"
         )
 
-        raw_output = planner.run(task=task, img=img)
+        try:
+            raw_output = planner.run(task=task, img=img)
+        finally:
+            self._keep_usage(planner)
 
         spec = self._parse_structured_output(
             raw_output, PlannerTaskSpec
@@ -786,6 +810,19 @@ class PlannerWorkerSwarm:
 
         return added_tasks
 
+    def _keep_usage(self, agent: Agent) -> None:
+        """
+        Add a single-use agent's usage to the swarm total.
+
+        Args:
+            agent: The planner or judge that just ran.
+        """
+        for key, value in (
+            getattr(agent, "usage", None) or {}
+        ).items():
+            if key in self._single_use_usage:
+                self._single_use_usage[key] += value
+
     def _run_judge(self, img: Optional[str] = None) -> CycleVerdict:
         """Run the judge agent to evaluate cycle results."""
         schema = BaseTool().base_model_to_dict(CycleVerdict)
@@ -819,11 +856,16 @@ class PlannerWorkerSwarm:
         # The history goes as typed turns rather than inside the task string:
         # the judge's own earlier verdicts come back as assistant turns, so a
         # second cycle can tell its own reasoning from the planner's.
-        raw_output = judge.run(
-            task=eval_task,
-            img=img,
-            messages=messages_for("CycleJudge", self.conversation),
-        )
+        try:
+            raw_output = judge.run(
+                task=eval_task,
+                img=img,
+                messages=messages_for(
+                    "CycleJudge", self.conversation
+                ),
+            )
+        finally:
+            self._keep_usage(judge)
 
         try:
             verdict = self._parse_structured_output(
@@ -894,7 +936,9 @@ class PlannerWorkerSwarm:
 
         self._original_task = task
         self.task_queue.clear()
-        self.conversation.clear()
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
         self.conversation.add(role="User", content=task)
 
         verdict = None
@@ -960,3 +1004,14 @@ class PlannerWorkerSwarm:
             conversation=self.conversation,
             type=self.output_type,
         )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

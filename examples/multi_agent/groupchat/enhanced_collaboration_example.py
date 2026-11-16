@@ -66,7 +66,6 @@ def _make_chat(name: str, description: str):
         agents=create_collaborative_agents(),
         max_loops=12,
         threshold=0.5,
-        idle_timeout=8.0,
     )
 
 

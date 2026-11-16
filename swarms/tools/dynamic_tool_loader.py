@@ -132,6 +132,7 @@ _STOPWORDS = frozenset(
     """
     a an the and or of to in on for with from by at as is are be it its
     this that these those any some all please can could would should
+    am you your who
     """.split()
 )
 
@@ -322,7 +323,7 @@ class DynamicToolLoader:
         """
         matches = self.search(
             query,
-            limit=max_results or 5,
+            limit=int(max_results or 5),
             min_score_ratio=min_score_ratio,
         )
         if not matches:

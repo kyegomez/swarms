@@ -1,10 +1,13 @@
 from typing import Callable, Union, List
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
+from swarms.structs.deep_discussion import one_on_one_debate
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.structs.usage_utils import total_usage
 
 
 class OneOnOneDebate:
@@ -46,8 +49,6 @@ class OneOnOneDebate:
         Raises:
             ValueError: If the `agents` list does not contain exactly two Agent instances.
         """
-        conversation = Conversation()
-
         if len(self.agents) != 2:
             raise ValueError(
                 "There must be exactly two agents in the dialogue."
@@ -64,22 +65,24 @@ class OneOnOneDebate:
         agent1.run(task=agent1_intro)
         agent2.run(task=agent2_intro)
 
-        message = task
-        speaker = agent1
-        other = agent2
-
-        for i in range(self.max_loops):
-            # Current speaker responds
-            response = speaker.run(task=message, img=self.img)
-            conversation.add(speaker.agent_name, response)
-
-            # Swap roles
-            message = response
-            speaker, other = other, speaker
-
-        return history_output_formatter(
-            conversation=conversation, type=self.output_type
+        return one_on_one_debate(
+            max_loops=self.max_loops,
+            task=task,
+            agents=self.agents,
+            img=self.img,
+            output_type=self.output_type,
         )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)
 
 
 class ExpertPanelDiscussion:
@@ -153,8 +156,9 @@ class ExpertPanelDiscussion:
             moderator_prompt = (
                 f"Round {round_num + 1}: {current_topic}"
             )
-            moderator_response = self.moderator.run(
-                task=moderator_prompt
+            moderator_response = agent_answer(
+                self.moderator,
+                fallback=self.moderator.run(task=moderator_prompt),
             )
             conversation.add(
                 self.moderator.agent_name, moderator_response
@@ -163,7 +167,9 @@ class ExpertPanelDiscussion:
             # Each expert responds
             for i, expert in enumerate(self.agents):
                 expert_prompt = f"Expert {expert.agent_name}, please respond to: {moderator_response}"
-                expert_response = expert.run(task=expert_prompt)
+                expert_response = agent_answer(
+                    expert, fallback=expert.run(task=expert_prompt)
+                )
                 conversation.add(expert.agent_name, expert_response)
 
             # Moderator synthesizes and asks follow-up
@@ -177,7 +183,10 @@ class ExpertPanelDiscussion:
                 "Synthesize the expert responses below and ask a "
                 f"follow-up question.\n\n{transcript}"
             )
-            synthesis = self.moderator.run(task=synthesis_prompt)
+            synthesis = agent_answer(
+                self.moderator,
+                fallback=self.moderator.run(task=synthesis_prompt),
+            )
             conversation.add(self.moderator.agent_name, synthesis)
 
             current_topic = synthesis
@@ -185,3 +194,14 @@ class ExpertPanelDiscussion:
         return history_output_formatter(
             conversation=conversation, type=self.output_type
         )
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)

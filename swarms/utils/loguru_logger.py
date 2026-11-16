@@ -9,7 +9,7 @@ load_dotenv()
 # Ensure handlers are only configured once to prevent conflicts between modules.
 _CONFIGURED = False
 
-# Directory that current log handlers point to; may change during early boot.
+# Log directory and SWARMS_LOG_FILES value the current handlers were built for.
 _CONFIGURED_DIR = None
 
 # Ceiling for a single per-module log file before it is rolled to ".1".
@@ -25,9 +25,9 @@ LOG_FORMAT = (
 
 def get_log_dir() -> str:
     """
-    Directory every log file is written to: ``{WORKSPACE_DIR}/logs``.
+    Directory every log file is written to: {WORKSPACE_DIR}/logs.
 
-    Falls back to ``agent_workspace`` when ``WORKSPACE_DIR`` is unset, matching
+    Falls back to agent_workspace when WORKSPACE_DIR is unset, matching
     the default used elsewhere in the package.
 
     Returns:
@@ -37,23 +37,60 @@ def get_log_dir() -> str:
     return os.path.join(workspace, "logs")
 
 
+def log_files_enabled() -> bool:
+    """
+    Whether log files should be written, read from SWARMS_LOG_FILES.
+
+    Returns:
+        bool: True when SWARMS_LOG_FILES is True; False by default.
+    """
+    value = os.getenv("SWARMS_LOG_FILES", "False")
+    return value.strip().lower() in ("true", "1", "yes", "on")
+
+
+def global_logger_enabled() -> bool:
+    """
+    Whether Swarms may log at all, read from SWARMS_GLOBAL_LOGGER_ON.
+
+    Returns:
+        bool: False when SWARMS_GLOBAL_LOGGER_ON is False; True by default.
+    """
+    value = os.getenv("SWARMS_GLOBAL_LOGGER_ON", "True")
+    return value.strip().lower() in ("true", "1", "yes", "on")
+
+
+def apply_global_logger_switch() -> bool:
+    """
+    Silence every Swarms module when the global logger is switched off.
+
+    Returns:
+        bool: True when Swarms logging is on.
+    """
+    enabled = global_logger_enabled()
+    if not enabled:
+        # By package name, so modules that import loguru directly are covered.
+        logger.disable("swarms")
+
+    return enabled
+
+
 def _module_log_router(message) -> None:
     """
     Append each record to a file named after the module that emitted it.
 
-    ``{workspace}/logs/graph_workflow.log`` then holds that module's lines and
+    {workspace}/logs/graph_workflow.log then holds that module's lines and
     nothing else, so one component can be read in isolation while the combined
     log still shows the whole call chain interleaved.
 
-    Routing on ``record["name"]`` rather than registering a handler per caller
-    of :func:`initialize_logger` is what makes this complete: most modules take
-    ``from loguru import logger`` directly and never call it, so a per-caller
-    scheme would silently miss them — ``agent`` and ``conversation`` included.
+    Routing on record["name"] rather than registering a handler per caller
+    of initialize_logger is what makes this complete: most modules import
+    logger from loguru directly and never call it, so a per-caller
+    scheme would silently miss them — agent and conversation included.
 
     Files are opened on demand, so only modules that actually log get one.
 
     Args:
-        message: The loguru message; ``message.record`` carries the metadata.
+        message: The loguru message; message.record carries the metadata.
     """
     name = message.record["name"] or ""
     if not name.startswith("swarms"):
@@ -85,26 +122,35 @@ def initialize_logger(log_folder: str = "swarms"):
         log_folder (str): Name of the calling module. Accepted for backwards
             compatibility, but no longer used as a path: treating it as one
             created a directory per module in the working directory. The module
-            is already recorded in each log line by ``{name}``.
+            is already recorded in each log line by {name}.
 
     Returns:
         logger: The logger instance.
     """
     global _CONFIGURED, _CONFIGURED_DIR
 
-    log_dir = get_log_dir()
-    if _CONFIGURED and log_dir == _CONFIGURED_DIR:
+    if not apply_global_logger_switch():
         return logger
-    try:
-        os.makedirs(log_dir, exist_ok=True)
-        file_logging = True
-    except OSError as e:
-        # WORKSPACE_DIR may be unwritable, and failing to write logs must never stop `import swarms`.
-        file_logging = False
-        log_dir_error = e
+
+    log_dir = get_log_dir()
+    write_files = log_files_enabled()
+    if _CONFIGURED and (log_dir, write_files) == _CONFIGURED_DIR:
+        return logger
+    file_logging = False
+    log_dir_error = None
+    if write_files:
+        try:
+            os.makedirs(log_dir, exist_ok=True)
+            file_logging = True
+        except OSError as e:
+            # WORKSPACE_DIR may be unwritable, and failing to write logs must never stop `import swarms`.
+            log_dir_error = e
 
     # Reset loguru handlers
     logger.remove()
+
+    # diagnose prints traceback locals, which can hold keys, so only a verbose console gets it.
+    verbose = os.getenv("SWARMS_VERBOSE_GLOBAL", "False").lower()
 
     # Add console logging
     logger.add(
@@ -113,7 +159,7 @@ def initialize_logger(log_folder: str = "swarms"):
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
         level="INFO",
         backtrace=True,
-        diagnose=True,
+        diagnose=verbose == "true",
         enqueue=True,
     )
 
@@ -128,7 +174,7 @@ def initialize_logger(log_folder: str = "swarms"):
             retention="10 days",
             level="INFO",
             backtrace=True,
-            diagnose=True,
+            diagnose=False,
             enqueue=True,
             format=LOG_FORMAT,
         )
@@ -137,14 +183,18 @@ def initialize_logger(log_folder: str = "swarms"):
         logger.add(
             _module_log_router,
             level="INFO",
+            diagnose=False,
             format=LOG_FORMAT,
         )
-    else:
+    elif log_dir_error is not None:
         logger.warning(
             f"Log directory {log_dir!r} is unavailable "
             f"({log_dir_error}); logging to the console only."
         )
 
     _CONFIGURED = True
-    _CONFIGURED_DIR = log_dir
+    _CONFIGURED_DIR = (log_dir, write_files)
     return logger
+
+
+apply_global_logger_switch()

@@ -1285,38 +1285,3 @@ def test_6_observability():
     ), "Missing failure log"
     assert "Shut down" in logs, "Missing shutdown log"
     print("  PASSED")
-
-
-if __name__ == "__main__":
-    print("=" * 60)
-    print("INTEGRATION TEST: All 6 Async Subagent Features")
-    print("Real Agent instances, real LLM calls (gpt-4.1-nano)")
-    print("=" * 60)
-
-    tests = [
-        test_1_async_execution,
-        test_2_background_task_registry,
-        test_3_recursive_subagent_trees,
-        test_4_result_aggregation,
-        test_5_error_handling,
-        test_6_observability,
-    ]
-
-    passed = 0
-    failed = 0
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except Exception as e:
-            print(f"  FAILED: {e}")
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    print("\n" + "=" * 60)
-    print(
-        f"RESULTS: {passed} passed, {failed} failed out of {len(tests)}"
-    )
-    print("=" * 60)

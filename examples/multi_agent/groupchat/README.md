@@ -17,6 +17,6 @@ This directory contains examples demonstrating the dynamic `GroupChat` — an as
 
 ## Overview
 
-`GroupChat` is an asynchronous, self-selecting agent room. There is no turn order, no speaker selection function, and no fixed number of rounds. When a message is posted, every other agent independently evaluates the message via a forced `respond(score, message)` tool call and broadcasts a reply only when its self-rated desire to speak clears the configured `threshold`. The conversation ends when either `max_loops` total messages have been posted or no new message arrives for `idle_timeout` seconds.
+`GroupChat` is an asynchronous, self-selecting agent room. There is no turn order, no speaker selection function, and no fixed number of rounds. When a message is posted, every other agent independently evaluates the message via a forced `respond(score, message)` tool call and broadcasts a reply only when its self-rated desire to speak clears the configured `threshold`. The conversation ends when either `max_loops` total messages have been posted or no agent's reply clears `threshold`.
 
 Every participating agent must be configured with `tools_list_dictionary=[RESPOND_TOOL]` (imported from `swarms.structs.groupchat`) so that it returns the structured speaking decision the chat depends on.

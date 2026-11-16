@@ -12,6 +12,7 @@ from swarms.prompts.heavy_swarm_prompts import (
     grok_schema,
     schema,
 )
+from swarms.structs.agent import reset_agents
 from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
@@ -123,8 +124,6 @@ class HeavySwarm(SerializableMixin):
             name (str, optional): Identifier name for the swarm instance. Defaults to "HeavySwarm".
             description (str, optional): Description of the swarm's purpose and capabilities.
                 Defaults to standard description.
-            agents (List[Agent], optional): Pre-configured agent list (currently unused as agents
-                are created internally). Defaults to None.
             timeout (int, optional): Maximum execution time per agent in seconds. Defaults to 300.
             question_agent_model_name (str, optional): Language model for
                 question generation. Defaults to "gpt-5.4".
@@ -322,6 +321,7 @@ class HeavySwarm(SerializableMixin):
             self.dashboard.show_task_init(task)
 
         self.conversation.clear()
+        reset_agents(self.agents.values())
 
         # Add initial task to conversation
         self.conversation.add(
@@ -389,7 +389,7 @@ class HeavySwarm(SerializableMixin):
                         if "error" in questions:
                             error_msg = f"Error in question generation: {questions['error']}"
                             self._log("ERROR", error_msg)
-                            return error_msg
+                            raise RuntimeError(error_msg)
 
                     except Exception as e:
                         error_msg = f"Failed to generate questions in loop {current_loop + 1}: {str(e)}"
@@ -398,7 +398,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Agent execution phase
                     try:
@@ -439,7 +439,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Synthesis phase
                     try:
@@ -488,7 +488,7 @@ class HeavySwarm(SerializableMixin):
                             "ERROR",
                             f"Traceback: {traceback.format_exc()}",
                         )
-                        return error_msg
+                        raise
 
                     # Store the result for next loop context
                     last_output = final_result
@@ -506,7 +506,7 @@ class HeavySwarm(SerializableMixin):
                         "ERROR",
                         f"Traceback: {traceback.format_exc()}",
                     )
-                    return error_msg
+                    raise
 
         except Exception as e:
             error_msg = (
@@ -514,7 +514,7 @@ class HeavySwarm(SerializableMixin):
             )
             self._log("ERROR", error_msg)
             self._log("ERROR", f"Traceback: {traceback.format_exc()}")
-            return error_msg
+            raise
 
         # Final completion message
         if self.show_dashboard:
@@ -1455,6 +1455,20 @@ class HeavySwarm(SerializableMixin):
         # Parse the tool calls and return clean data
         out = self._parse_tool_calls(raw_output)
 
+        required = active_schema[0]["function"]["parameters"][
+            "required"
+        ]
+        missing = [
+            key
+            for key in required
+            if key.endswith("_question") and not out.get(key)
+        ]
+        if missing and "error" not in out:
+            out = {
+                "error": "Question generator returned no "
+                + ", ".join(missing)
+            }
+
         self._log(
             "INFO",
             f"🔍 Question Generation Output: {out} and type: {type(out)}",
@@ -1501,47 +1515,18 @@ class HeavySwarm(SerializableMixin):
         if "error" in result:
             return {"error": result["error"]}
 
-        if self.variant == "heavy":
-            heavy_keys = [
-                "harper",
-                "benjamin",
-                "lucas",
-                "olivia",
-                "james",
-                "charlotte",
-                "henry",
-                "mia",
-                "william",
-                "sebastian",
-                "jack",
-                "owen",
-                "luna",
-                "elizabeth",
-                "noah",
-            ]
-            return {
-                f"{k}_question": result.get(f"{k}_question", "")
-                for k in heavy_keys
-            }
-
-        if self.variant == "medium":
-            return {
-                "harper_question": result.get("harper_question", ""),
-                "benjamin_question": result.get(
-                    "benjamin_question", ""
-                ),
-                "lucas_question": result.get("lucas_question", ""),
-            }
+        active_schema = {
+            "heavy": grok_heavy_schema,
+            "medium": grok_schema,
+        }.get(self.variant, schema)
+        required = active_schema[0]["function"]["parameters"][
+            "required"
+        ]
 
         return {
-            "research_question": result.get("research_question", ""),
-            "analysis_question": result.get("analysis_question", ""),
-            "alternatives_question": result.get(
-                "alternatives_question", ""
-            ),
-            "verification_question": result.get(
-                "verification_question", ""
-            ),
+            key: result.get(key, "")
+            for key in required
+            if key.endswith("_question")
         }
 
     def get_questions_as_list(
@@ -1589,38 +1574,4 @@ class HeavySwarm(SerializableMixin):
         if "error" in questions:
             return [f"Error: {questions['error']}"]
 
-        if self.variant == "heavy":
-            heavy_keys = [
-                "harper",
-                "benjamin",
-                "lucas",
-                "olivia",
-                "james",
-                "charlotte",
-                "henry",
-                "mia",
-                "william",
-                "sebastian",
-                "jack",
-                "owen",
-                "luna",
-                "elizabeth",
-                "noah",
-            ]
-            return [
-                questions.get(f"{k}_question", "") for k in heavy_keys
-            ]
-
-        if self.variant == "medium":
-            return [
-                questions.get("harper_question", ""),
-                questions.get("benjamin_question", ""),
-                questions.get("lucas_question", ""),
-            ]
-
-        return [
-            questions.get("research_question", ""),
-            questions.get("analysis_question", ""),
-            questions.get("alternatives_question", ""),
-            questions.get("verification_question", ""),
-        ]
+        return list(questions.values())

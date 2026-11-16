@@ -19,6 +19,9 @@ def _remove_a_key(d: dict, remove_key: str) -> None:
         for key in list(d.keys()):
             if key == remove_key and "type" in d.keys():
                 del d[key]
+            elif key == "properties" and isinstance(d[key], dict):
+                for prop in d[key].values():
+                    _remove_a_key(prop, remove_key)
             else:
                 _remove_a_key(d[key], remove_key)
 

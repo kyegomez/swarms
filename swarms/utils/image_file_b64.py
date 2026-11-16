@@ -7,12 +7,11 @@ converting them to base64-encoded data URIs suitable for use with LLM APIs.
 
 import base64
 import ipaddress
-import re
 import socket
 import uuid
 from functools import lru_cache
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 from loguru import logger
@@ -97,6 +96,9 @@ def _is_safe_url(url: str) -> bool:
         return False
 
 
+_MAX_REDIRECTS = 5
+
+
 @lru_cache(maxsize=32)
 def _fetch_image_url(url: str) -> bytes:
     """Fetch an image URL once per process; an agent re-sends the same img
@@ -106,40 +108,25 @@ def _fetch_image_url(url: str) -> bytes:
     The guard sits inside the cache on purpose -- a hit makes no request, and
     lru_cache does not memoize the raise, so a blocked URL fails every call.
     Entries are bounded by count, not bytes: 32 images retained at most.
+    Redirects are followed here rather than by requests, so every hop
+    passes the guard, up to _MAX_REDIRECTS hops.
     """
-    if not _is_safe_url(url):
-        raise ValueError(
-            f"Blocked URL '{url}': only external HTTP/HTTPS URLs are permitted."
+    target = url
+    for _ in range(_MAX_REDIRECTS + 1):
+        if not _is_safe_url(target):
+            raise ValueError(
+                f"Blocked URL '{target}': only external HTTP/HTTPS URLs are permitted."
+            )
+        response = requests.get(
+            target, timeout=30, allow_redirects=False
         )
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
-    return response.content
-
-
-def get_media_base64(source: str) -> str:
-    """
-    Fetch any media file (URL or local path) and return its raw base64 encoding.
-
-    Unlike `get_image_base64`, this returns the bare base64 string with no data
-    URI prefix, so it works for audio and other non-image media.
-
-    Args:
-        source (str): HTTP/HTTPS URL or local file path.
-
-    Returns:
-        str: The base64-encoded file contents.
-
-    Raises:
-        ValueError: If the URL targets a blocked (non-public) address.
-        requests.HTTPError: If fetching from a URL fails.
-        FileNotFoundError: If the local file does not exist.
-    """
-    if source.startswith(("http://", "https://")):
-        data = _fetch_image_url(source)
-    else:
-        with open(source, "rb") as file:
-            data = file.read()
-    return base64.b64encode(data).decode("utf-8")
+        if not response.is_redirect:
+            response.raise_for_status()
+            return response.content
+        target = urljoin(target, response.headers["location"])
+    raise ValueError(
+        f"Too many redirects fetching '{url}' (limit {_MAX_REDIRECTS})."
+    )
 
 
 def is_base64_encoded(image_source: str) -> bool:
@@ -156,16 +143,11 @@ def is_base64_encoded(image_source: str) -> bool:
     if image_source.startswith("data:image"):
         return True
 
-    # Length plus character set, since a raw base64 string has no data URI prefix to match on.
-    if len(image_source) > 100:  # Base64 images are typically long
+    if len(image_source) > 100:
         try:
-            # Try to decode a sample to verify it's valid base64
-            base64.b64decode(image_source[:100] + "==", validate=True)
-            # Check if it contains only base64 characters (A-Z, a-z, 0-9, +, /, =)
-            base64_pattern = re.compile(r"^[A-Za-z0-9+/=]+$")
-            if base64_pattern.match(image_source):
-                return True
-        except Exception as e:
+            base64.b64decode(image_source, validate=True)
+            return True
+        except ValueError as e:
             logger.debug(f"Base64 check failed: {e}")
 
     return False

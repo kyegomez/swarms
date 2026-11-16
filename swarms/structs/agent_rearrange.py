@@ -1,6 +1,5 @@
 import asyncio
 import copy
-import os
 from concurrent.futures import as_completed
 from typing import Any, Dict, List, Optional, get_args
 
@@ -9,6 +8,10 @@ from swarms.structs.context_utils import (
     agent_answer,
     messages_for,
     split_last_turn,
+)
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
 )
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import run_concurrently
@@ -26,6 +29,8 @@ from swarms.utils.history_output_formatter import (
 )
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
+from swarms.utils.workspace_manager import WorkspaceManager
+from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="rearrange")
 
@@ -172,9 +177,9 @@ class AgentRearrange(SerializableMixin):
         flow (str): Flow pattern defining agent execution order
         max_loops (int): Maximum number of execution loops
         verbose (bool): Whether to enable verbose logging
-        memory_system (Any): Optional memory system for persistence
         output_type (OutputType): Format for output results
-        autosave (bool): Whether to automatically save execution data
+        autosave (bool): Whether to save the conversation to the workspace
+            directory after each run
         team_awareness (bool): Whether agents are aware of team structure
         time_enabled (bool): Whether to track timestamps
         message_id_on (bool): Whether to include message IDs
@@ -212,13 +217,13 @@ class AgentRearrange(SerializableMixin):
         flow: str = None,
         max_loops: int = 1,
         verbose: bool = False,
-        memory_system: Any = None,
         output_type: OutputType = "all",
-        autosave: bool = True,
+        autosave: bool = False,
         team_awareness: bool = False,
         time_enabled: bool = False,
         message_id_on: bool = False,
         collab_prompt: Optional[str] = None,
+        channel: Optional[CommsChannel] = None,
     ):
         """
         Initialize the AgentRearrange system.
@@ -241,12 +246,10 @@ class AgentRearrange(SerializableMixin):
                 Defaults to 1.
             verbose (bool): Whether to enable verbose logging.
                 Defaults to True.
-            memory_system (Any, optional): Optional memory system for persistence.
-                Defaults to None.
             output_type (OutputType): Format for output results. Can be "all", "final",
                 "list", or "dict". Defaults to "all".
-            autosave (bool): Whether to automatically save execution data.
-                Defaults to True.
+            autosave (bool): Whether to save the conversation to the
+                workspace directory after each run. Defaults to False.
             team_awareness (bool): Whether agents should be aware of team structure
                 and sequential flow. Defaults to False.
             time_enabled (bool): Whether to track timestamps in conversations.
@@ -272,7 +275,6 @@ class AgentRearrange(SerializableMixin):
         self.flow = flow if flow is not None else ""
         self.verbose = verbose
         self.max_loops = max_loops if max_loops > 0 else 1
-        self.memory_system = memory_system
         self.output_type = output_type
         self.autosave = autosave
         self.time_enabled = time_enabled
@@ -281,9 +283,18 @@ class AgentRearrange(SerializableMixin):
         self.collab_prompt = collab_prompt
 
         # Seeds team awareness itself, seeding here too doubled the system message
+        self.channel = channel
+        claim_agents(self.agents, channel, self.name)
         self._reset_conversation()
 
         self.reliability_check()
+
+        self.workspace = WorkspaceManager(
+            self,
+            name=self.name or "agent-rearrange",
+            verbose=self.verbose,
+            enabled=self.autosave,
+        )
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
@@ -615,10 +626,10 @@ class AgentRearrange(SerializableMixin):
     def _reset_conversation(self) -> None:
         """Start a fresh shared conversation, re-seeding team awareness."""
         self.conversation = Conversation(
-            name=f"{self.name}-Conversation",
             time_enabled=self.time_enabled,
             token_count=False,
             message_id_on=self.message_id_on,
+            channel=self.channel,
         )
 
         if self.team_awareness is True:
@@ -985,6 +996,8 @@ class AgentRearrange(SerializableMixin):
 
         except Exception as e:
             self._catch_error(e)
+        finally:
+            self.workspace.save_conversation(self.conversation)
 
     def __call__(self, task: str, *args, **kwargs):
         """
@@ -1012,12 +1025,13 @@ class AgentRearrange(SerializableMixin):
         """
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
+        clone.workspace = WorkspaceManager(clone, enabled=False)
 
         clone.conversation = Conversation(
-            name=f"{self.name}-Conversation",
             time_enabled=self.time_enabled,
             token_count=False,
             message_id_on=self.message_id_on,
+            channel=self.channel,
         )
 
         cloned_agents: List[Any] = []
@@ -1081,7 +1095,7 @@ class AgentRearrange(SerializableMixin):
             )
 
             # Each task gets an isolated clone; _clone_for_task survives agents a full deepcopy(self) would choke on.
-            max_workers = min(len(batch_tasks), os.cpu_count() or 4)
+            max_workers = len(batch_tasks)
             futures_ordered = []
             with ContextThreadPoolExecutor(
                 max_workers=max_workers
@@ -1435,6 +1449,17 @@ class AgentRearrange(SerializableMixin):
         t.join()
         if exc_holder[0] is not None:
             raise exc_holder[0]
+
+    @property
+    def usage(self) -> dict:
+        """
+        Provider token usage summed over every agent this structure holds.
+
+        Returns:
+            A new dict with input_tokens, output_tokens, cached_tokens,
+            reasoning_tokens and total_tokens, totalled across every run.
+        """
+        return total_usage(self)
 
 
 def rearrange(

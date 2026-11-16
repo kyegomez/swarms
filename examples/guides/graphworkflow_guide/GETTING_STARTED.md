@@ -48,18 +48,6 @@ python comprehensive_demo.py --demo finance
 python comprehensive_demo.py --demo parallel
 ```
 
-### 🛠️ Need Setup Help?
-
-Use the setup script: **[Setup and Test](setup_and_test.py)**
-
-```bash
-# Check your environment
-python setup_and_test.py --check-only
-
-# Install dependencies and run tests
-python setup_and_test.py
-```
-
 ## 📖 Documentation
 
 ### 📋 Quick Reference
@@ -207,7 +195,6 @@ GraphWorkflow delivers **40-60% better performance** than sequential execution:
 ```bash
 # Solution: Install dependencies
 uv pip install swarms
-python setup_and_test.py --install-deps
 ```
 
 **Problem**: Slow execution
@@ -235,7 +222,6 @@ if not validation['is_valid']:
 
 - 📖 **Read the docs**: [Technical Guide](graph_workflow_technical_guide.md)
 - 🔍 **Check examples**: Browse this guide directory
-- 🧪 **Run tests**: Use `python setup_and_test.py`
 - 🐛 **Report bugs**: Open an issue on GitHub
 
 ## 🎯 Next Steps

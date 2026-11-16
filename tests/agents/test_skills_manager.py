@@ -376,6 +376,25 @@ class TestDynamicLoading:
         manager.prompt_for_task("search the web for news")
         assert manager.dynamic_loader is first_loader
 
+    @pytest.mark.parametrize(
+        "frontmatter",
+        ["description: Extract text from PDF documents.", ""],
+    )
+    def test_name_falls_back_to_folder_name(
+        self, tmp_path, frontmatter
+    ):
+        skill_dir = tmp_path / "pdf-processing"
+        skill_dir.mkdir()
+        (skill_dir / "SKILL.md").write_text(
+            f"---\n{frontmatter}\n---\nBody.", encoding="utf-8"
+        )
+
+        loader = DynamicSkillsLoader(str(tmp_path))
+
+        assert [s["name"] for s in loader.skills_metadata] == [
+            "pdf-processing"
+        ]
+
 
 ########################################################
 # set_skills_dir()

@@ -42,7 +42,6 @@ from swarms.utils.litellm_tokenizer import DEFAULT_MODEL, count_tokens
 MAX_PLANNING_ATTEMPTS = 5
 MAX_SUBTASK_ITERATIONS = 100
 MAX_SUBTASK_LOOPS = 20
-MAX_CONSECUTIVE_THINKS = 2
 
 # The loop re-serializes its history into every later prompt, so one oversized tool result is paid for on every remaining call of the run.
 TOOL_OUTPUT_CONTEXT_SHARE = 0.25
@@ -1403,7 +1402,12 @@ def create_sub_agent_tool(
                 id=agent_id,
                 agent_name=agent_name,
                 agent_description=agent_description,
-                system_prompt=system_prompt,  # Use custom system prompt if provided
+                # Omitted when the spec has none, so the sub-agent keeps the default prompt rather than None.
+                **(
+                    {"system_prompt": system_prompt}
+                    if system_prompt is not None
+                    else {}
+                ),
                 model_name=agent.model_name,
                 tools=parent_tools,
                 # Finite even for an auto parent, so sub-agents cannot recurse

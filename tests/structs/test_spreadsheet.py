@@ -396,6 +396,40 @@ def test_load_from_csv_creates_agents(
         assert hasattr(agent, "system_prompt")
 
 
+def test_load_path_alone_loads_every_row_with_numeric_max_loops(
+    tmp_path, temp_workspace
+):
+    """A CSV-only swarm loads each row, reading max_loops as a number or "auto"."""
+    csv_path = tmp_path / "agents.csv"
+    csv_path.write_text(
+        "agent_name,description,system_prompt,task,max_loops\n"
+        "a1,d,p,t1,2\n"
+        "a2,d,p,t2,auto\n"
+    )
+    swarm = SpreadSheetSwarm(load_path=str(csv_path))
+    swarm.load_from_csv()
+    assert [a.max_loops for a in swarm.agents] == [2, "auto"]
+
+
+def test_csv_rows_take_agent_loader_columns_and_agent_defaults(
+    tmp_path, temp_workspace
+):
+    """A CSV row reads any AgentLoader column and leaves the rest at the Agent defaults."""
+    csv_path = tmp_path / "agents.csv"
+    csv_path.write_text(
+        "agent_name,description,system_prompt,task,temperature\n"
+        "a1,d,p,t1,0.2\n"
+    )
+    swarm = SpreadSheetSwarm(load_path=str(csv_path))
+    swarm.load_from_csv()
+    loaded = swarm.agents[0]
+    assert (loaded.model_name, loaded.temperature) == (
+        Agent(agent_name="default").model_name,
+        0.2,
+    )
+    assert swarm.agent_tasks == {"a1": "t1"}
+
+
 def test_load_from_nonexistent_csv(temp_workspace):
     """Test loading from non-existent CSV file."""
     agent = Agent(
@@ -665,8 +699,8 @@ class RecordingAgent(Agent):
         self._live = 0
         self._lock = threading.Lock()
 
-    def short_memory_init(self):
-        return []
+    def reset(self):
+        self.short_memory = []
 
     def run(self, task=None, *args, **kwargs):
         with self._lock:
@@ -1024,3 +1058,83 @@ def test_multiple_outputs_have_independent_timestamps(temp_workspace):
     ]
     assert recorded_stamps == stamps
     assert len(set(recorded_stamps)) == 3
+
+
+def test_a_second_run_reports_only_its_own_outputs(temp_workspace):
+    """Both summaries listed both tasks: one list, appended to forever."""
+    swarm, _, _ = _recording_swarm(["a", "b"], 1, temp_workspace)
+
+    first = swarm.run("summarise Q3")
+    second = swarm.run("draft the email")
+
+    assert second["tasks_completed"] == 2
+    assert [output["task"] for output in second["outputs"]] == [
+        "draft the email",
+        "draft the email",
+    ]
+    assert [output["task"] for output in first["outputs"]] == [
+        "summarise Q3",
+        "summarise Q3",
+    ]
+
+
+def test_a_second_run_from_config_reports_only_its_own_outputs(
+    temp_workspace,
+):
+    swarm, _, _ = _recording_config_swarm(
+        {"a": "task a"}, 1, temp_workspace
+    )
+
+    swarm.run_from_config()
+    second = swarm.run_from_config()
+
+    assert second["tasks_completed"] == 1
+    assert len(second["outputs"]) == 1
+
+
+def test_each_run_gets_its_own_run_id(temp_workspace):
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=True
+    )
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["reply A", "reply B"],
+    ):
+        first = swarm.run("first task")["run_id"]
+        second = swarm.run("second task")["run_id"]
+
+    assert first != second
+    with open(swarm.save_file_path, newline="") as f:
+        rows = list(csv.DictReader(f))
+    assert [row["Run ID"] for row in rows] == [first] * 2 + [
+        second
+    ] * 2
+    for run_id in (first, second):
+        path = os.path.join(
+            swarm.workspace.dir, f"{run_id}-metadata.json"
+        )
+        with open(path) as f:
+            assert json.load(f)["run_id"] == run_id
+
+
+def test_a_failed_agent_is_recorded_as_an_error(temp_workspace):
+    swarm = SpreadSheetSwarm(
+        agents=_conversation_agents(), autosave=True
+    )
+    with patch(
+        "swarms.structs.spreadsheet_swarm.run_agents_with_different_tasks",
+        return_value=["reply A", RuntimeError("provider 500")],
+    ):
+        summary = swarm.run("Summarise the market")
+
+    assert summary["tasks_completed"] == 1
+    assert [o["result"] for o in summary["outputs"]] == [
+        "reply A",
+        "Error: provider 500",
+    ]
+    assert _turns(swarm)[-1] == ("Analyst-B", "Error: provider 500")
+    path = os.path.join(
+        swarm.workspace.dir, f"{summary['run_id']}-metadata.json"
+    )
+    with open(path) as f:
+        assert json.load(f)["tasks_completed"] == 1

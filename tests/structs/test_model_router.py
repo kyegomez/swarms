@@ -41,6 +41,36 @@ def test_run_executes_the_task_on_the_model_the_router_picked(
     )
 
 
+def test_run_caps_the_routed_max_tokens_at_the_routers_max_tokens(
+    monkeypatch,
+):
+    routed = []
+
+    def fake_run(self, task):
+        if self.response_format is ModelOutput:
+            return json.dumps(
+                {
+                    "rationale": "long report",
+                    "model": "gpt-4o-mini",
+                    "provider": "openai",
+                    "task": task,
+                    "max_tokens": picked,
+                    "temperature": 0.7,
+                    "system_prompt": "Write the report.",
+                }
+            )
+        routed.append(self.max_tokens)
+        return "report"
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    router = ModelRouter(max_tokens=500)
+
+    for picked in (64000, None, 200):
+        router.run("write a report")
+
+    assert routed == [500, 500, 200]
+
+
 def test_async_run_returns_the_output_without_blocking_the_loop(
     monkeypatch,
 ):

@@ -69,11 +69,3 @@ The `cross` phase reads `witness_testimony`, a loop variable left over from the
 `testimony` phase. As a result every witness is cross-examined on the **last**
 witness's testimony, and passing a `phases` list that omits `"testimony"` raises
 `NameError`. Keep `"testimony"` before `"cross"` until this is fixed.
-
-## Tests
-
-`test_alternate_debates.py` holds the tests that moved with these structures:
-
-```bash
-pytest examples/multi_agent/alternate_debates/test_alternate_debates.py
-```

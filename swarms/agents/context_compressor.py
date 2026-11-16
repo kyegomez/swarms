@@ -10,6 +10,7 @@ budget for an unbounded run.
 from typing import Any, Optional
 
 from swarms.utils.llm_backend import completion
+from swarms.utils.litellm_wrapper import usage_from_response
 from loguru import logger
 
 
@@ -58,7 +59,8 @@ class ContextCompressor:
             threshold (float): Fraction of ``context_length`` at which to
                 trigger compression (e.g. ``0.9`` fires at 90% full).
             summarizer_model (Optional[str]): Model used to produce the
-                summary. If ``None``, the agent's own ``model_name`` is used.
+                summary. If ``None``, the agent's own ``model_name``,
+                ``llm_base_url`` and ``llm_api_key`` are used.
             summarizer_temperature (float): Temperature for the summary call.
             summarizer_max_tokens (int): Max tokens for the summary output.
         """
@@ -132,6 +134,14 @@ class ContextCompressor:
             raise ValueError(
                 "No summarizer_model configured and agent has no model_name"
             )
+        endpoint = {}
+        if self.summarizer_model is None:
+            for key, attr in (
+                ("base_url", "llm_base_url"),
+                ("api_key", "llm_api_key"),
+            ):
+                if getattr(agent, attr, None):
+                    endpoint[key] = getattr(agent, attr)
         response = completion(
             model=model,
             messages=[
@@ -150,8 +160,22 @@ class ContextCompressor:
             max_tokens=self.summarizer_max_tokens,
             # RouteHub reads this per call; litellm otherwise inherits it from the last agent built.
             drop_params=True,
+            **endpoint,
         )
-        return response.choices[0].message.content
+        call_usage = usage_from_response(response)
+        add_usage = getattr(agent, "_add_usage", None)
+        if add_usage is not None and call_usage is not None:
+            add_usage(call_usage)
+        choice = response.choices[0]
+        summary = choice.message.content
+        if not summary or not summary.strip():
+            raise ValueError(
+                f"Summarizer {model} returned no text "
+                f"(finish_reason="
+                f"{getattr(choice, 'finish_reason', None)}), "
+                f"keeping the uncompressed history"
+            )
+        return summary
 
     def compress(self, agent: Any) -> Optional[str]:
         """
@@ -181,7 +205,9 @@ class ContextCompressor:
             "stay within the context window.\n\n"
             f"{summary}"
         )
-        agent.short_memory.compact(summary=summary_content)
+        agent.short_memory.compact(
+            summary=summary_content, summary_role="user"
+        )
 
         new_tokens = agent.short_memory.count_history_tokens()
         logger.info(

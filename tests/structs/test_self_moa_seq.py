@@ -14,7 +14,6 @@ def basic_seq():
         reserved_slots=2,
         max_loops=5,
         verbose=False,
-        enable_logging=False,
     )
 
 
@@ -28,7 +27,6 @@ def custom_retry_seq():
         retry_backoff_multiplier=1.5,
         retry_max_delay=10.0,
         verbose=False,
-        enable_logging=False,
     )
 
 
@@ -49,6 +47,11 @@ def test_default_initialization():
     """Test that SelfMoASeq initializes with default parameters."""
     seq = SelfMoASeq()
 
+    assert seq.name == "SelfMoASeq"
+    assert (
+        seq.description
+        == "Self-MoA-Seq: Sequential Self-Mixture of Agents"
+    )
     assert seq.model_name == "gpt-5.4"
     assert seq.temperature == 0.7
     assert seq.window_size == 6
@@ -56,8 +59,6 @@ def test_default_initialization():
     assert seq.max_loops == 10
     assert seq.max_tokens == 2000
     assert seq.num_samples == 30
-    assert seq.enable_logging is True
-    assert seq.log_level == "INFO"
     assert seq.verbose is True
     assert seq.max_retries == 3
     assert seq.retry_delay == 1.0
@@ -68,6 +69,8 @@ def test_default_initialization():
 def test_custom_initialization():
     """Test initialization with custom parameters."""
     seq = SelfMoASeq(
+        name="custom-name",
+        description="custom description",
         model_name="custom-model",
         temperature=0.5,
         window_size=8,
@@ -75,8 +78,6 @@ def test_custom_initialization():
         max_loops=15,
         max_tokens=3000,
         num_samples=20,
-        enable_logging=False,
-        log_level="DEBUG",
         verbose=False,
         proposer_model_name="proposer-model",
         aggregator_model_name="aggregator-model",
@@ -86,6 +87,8 @@ def test_custom_initialization():
         retry_max_delay=120.0,
     )
 
+    assert seq.name == "custom-name"
+    assert seq.description == "custom description"
     assert seq.model_name == "custom-model"
     assert seq.temperature == 0.5
     assert seq.window_size == 8
@@ -93,8 +96,6 @@ def test_custom_initialization():
     assert seq.max_loops == 15
     assert seq.max_tokens == 3000
     assert seq.num_samples == 20
-    assert seq.enable_logging is False
-    assert seq.log_level == "DEBUG"
     assert seq.verbose is False
     assert seq.max_retries == 5
     assert seq.retry_delay == 2.0
@@ -464,6 +465,33 @@ def test_run_max_loops_reached(basic_seq, mock_agents):
         assert result["aggregation_steps"] <= 1
 
 
+def test_max_tokens_reaches_both_agents():
+    """max_tokens caps the proposer's and the aggregator's responses."""
+    seq = SelfMoASeq(max_tokens=123, verbose=False)
+
+    assert seq.proposer.max_tokens == 123
+    assert seq.aggregator.max_tokens == 123
+
+
+def test_run_generates_only_samples_max_loops_can_aggregate(
+    basic_seq, mock_agents
+):
+    """Samples past the last window max_loops reaches are never requested."""
+    proposer, aggregator = mock_agents
+    proposer.run.return_value = "Generated sample"
+    aggregator.run.return_value = "Aggregated result"
+    basic_seq.num_samples = 10
+    basic_seq.max_loops = 1
+
+    with patch.object(basic_seq, "proposer", proposer), patch.object(
+        basic_seq, "aggregator", aggregator
+    ):
+        result = basic_seq.run("Test task")
+
+    assert proposer.run.call_count == 3
+    assert len(result["all_samples"]) == 3
+
+
 def test_generate_samples_exception_propagation(
     basic_seq, mock_agents
 ):
@@ -584,7 +612,6 @@ def test_full_integration_small_samples():
         reserved_slots=1,
         max_loops=2,
         verbose=False,
-        enable_logging=False,
     )
 
     proposer, aggregator = Mock(), Mock()
@@ -611,7 +638,6 @@ def test_model_name_overrides():
         proposer_model_name="proposer-model",
         aggregator_model_name="aggregator-model",
         verbose=False,
-        enable_logging=False,
     )
 
     # The agents should be initialized with the override names
@@ -621,9 +647,7 @@ def test_model_name_overrides():
 
 def test_temperature_settings():
     """Test that temperature settings are applied correctly."""
-    seq = SelfMoASeq(
-        temperature=0.5, verbose=False, enable_logging=False
-    )
+    seq = SelfMoASeq(temperature=0.5, verbose=False)
 
     assert seq.proposer.temperature == 0.5
     assert (
@@ -644,7 +668,6 @@ def test_minimum_valid_configuration():
         max_loops=1,
         num_samples=2,
         verbose=False,
-        enable_logging=False,
     )
 
     assert seq.window_size == 2
@@ -659,7 +682,6 @@ def test_zero_retries():
         max_retries=0,
         num_samples=2,
         verbose=False,
-        enable_logging=False,
     )
 
     assert seq.max_retries == 0
@@ -688,7 +710,6 @@ def test_large_configuration():
         retry_backoff_multiplier=3.0,
         retry_max_delay=300.0,
         verbose=False,
-        enable_logging=False,
     )
 
     assert seq.window_size == 20
@@ -708,9 +729,9 @@ class _TranscriptAgent:
         self.calls = 0
         self.inits = 0
 
-    def short_memory_init(self):
+    def reset(self):
         self.inits += 1
-        return []
+        self.short_memory = []
 
     def run(self, task, *args, **kwargs):
         self.calls += 1

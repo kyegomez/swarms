@@ -10,6 +10,7 @@ from swarms import (
     MajorityVoting,
     MixtureOfAgents,
     MultiAgentRouter,
+    Prompt,
     SwarmRouter,
 )
 from swarms.agents.agent_judge import AgentJudge
@@ -61,6 +62,7 @@ BUILDERS = {
     "MultiAgentRouter": lambda: MultiAgentRouter(
         agents=[_agent("mar")]
     ),
+    "Prompt": lambda: Prompt(content="x"),
 }
 
 CLASSES = {
@@ -177,6 +179,7 @@ def test_swarm_explicit_id():
         ("SwarmRouter", "swarm-router-"),
         ("MixtureOfAgents", "mixture-of-agents-"),
         ("MultiAgentRouter", "multi-agent-router-"),
+        ("Prompt", "prompt-"),
     ],
 )
 def test_ids_are_prefixed_by_component(name, prefix):

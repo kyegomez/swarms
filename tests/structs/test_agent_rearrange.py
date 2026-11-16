@@ -458,6 +458,31 @@ def test_run_basic():
     assert result is not None
 
 
+def test_saved_conversation_does_not_leak_into_later_runs(
+    monkeypatch, tmp_path
+):
+    """A saved transcript must not seed the next run or a new pipeline."""
+    monkeypatch.chdir(tmp_path)
+    pipeline = _make_pipeline("A", "B")
+    pipeline.output_type = "dict"
+
+    pipeline.run("first task")
+    pipeline.conversation.save_as_json()
+
+    second = pipeline.run("second task")
+    fresh = _make_pipeline("A", "B")
+    fresh.output_type = "dict"
+    third = fresh.run("third task")
+
+    for messages, task in (
+        (second, "second task"),
+        (third, "third task"),
+    ):
+        contents = " ".join(str(m["content"]) for m in messages)
+        assert task in contents
+        assert "first task" not in contents
+
+
 def test_run_with_different_output_types():
     """Test run with different output types."""
     agents = create_sample_agents()
@@ -1060,13 +1085,15 @@ class TestBatchRunConcurrency:
         pipeline = _make_pipeline("AgentA", "AgentB")
         tasks = [f"t{i}" for i in range(6)]
 
-        with patch(
+        with patch("os.cpu_count", return_value=1), patch(
             "swarms.structs.agent_rearrange.ContextThreadPoolExecutor",
             wraps=ContextThreadPoolExecutor,
         ) as mock_tpe:
             pipeline.batch_run(tasks=tasks, batch_size=2)
             # 6 tasks / batch_size=2 -> 3 batches -> 3 executor instances
             assert mock_tpe.call_count == 3
+            # batch_size, not the CPU count, sizes each batch's pool.
+            assert mock_tpe.call_args.kwargs == {"max_workers": 2}
 
 
 # ============================================================================

@@ -16,7 +16,7 @@ def set_logger_level(logger_name: str) -> None:
 
 def disable_logging():
     """
-    Disables logging for specific modules and sets up file and stream handlers.
+    Disables logging for specific modules and sets up a stream handler.
     Runs in a separate thread to avoid blocking the main thread.
     """
     warnings.filterwarnings("ignore", category=UserWarning)
@@ -52,20 +52,6 @@ def disable_logging():
 
     # Remove all existing handlers
     logging.getLogger().handlers = []
-
-    # Get the workspace directory from the environment variables
-    workspace_dir = os.getenv("WORKSPACE_DIR") or "agent_workspace"
-
-    # Check if the workspace directory exists, if not, create it
-    if not os.path.exists(workspace_dir):
-        os.makedirs(workspace_dir)
-
-    # Create a file handler to log errors to the file
-    file_handler = logging.FileHandler(
-        os.path.join(workspace_dir, "error.txt")
-    )
-    file_handler.setLevel(logging.ERROR)
-    logging.getLogger().addHandler(file_handler)
 
     # Create a stream handler to log errors to the terminal
     stream_handler = logging.StreamHandler()

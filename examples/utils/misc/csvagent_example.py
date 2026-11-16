@@ -1,9 +1,6 @@
 # Example usage
-from pathlib import Path
-from swarms.structs.agent_loader import (
-    CSVAgentLoader,
-    AgentValidationError,
-)
+from swarms import AgentLoader
+from pydantic import ValidationError
 
 
 if __name__ == "__main__":
@@ -29,14 +26,13 @@ if __name__ == "__main__":
     ]
 
     try:
-        # Initialize CSV manager
-        csv_manager = CSVAgentLoader(Path("agents.csv"))
+        loader = AgentLoader()
 
         # Create CSV with initial agents
-        csv_manager.create_agent_file(agent_configs)
+        loader.create_agent_file("agents.csv", agent_configs)
 
         # Load agents from CSV
-        agents = csv_manager.load_agents()
+        agents = loader.load_agents_from_csv("agents.csv")
 
         # Use an agent
         if agents:
@@ -45,7 +41,7 @@ if __name__ == "__main__":
                 "How can I establish a ROTH IRA to buy stocks and get a tax break?"
             )
 
-    except AgentValidationError as e:
+    except ValidationError as e:
         print(f"Validation error: {e}")
     except Exception as e:
         print(f"Unexpected error: {e}")

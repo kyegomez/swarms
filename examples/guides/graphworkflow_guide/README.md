@@ -73,9 +73,6 @@ python comprehensive_demo.py --demo finance
 | File | Description | Complexity |
 |------|-------------|------------|
 | `test_parallel_processing_example.py` | Comprehensive parallel processing patterns | ⭐⭐ Intermediate |
-| `test_graphviz_visualization.py` | Visualization capabilities and layouts | ⭐⭐ Intermediate |
-| `test_graph_workflow_caching.py` | Performance optimization and caching | ⭐⭐ Intermediate |
-| `test_enhanced_json_export.py` | Serialization and persistence features | ⭐⭐ Intermediate |
 | `test_graphworlfolw_validation.py` | Workflow validation and error handling | ⭐⭐ Intermediate |
 
 ## 🎯 Key Features Demonstrated

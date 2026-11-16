@@ -7,6 +7,7 @@ in the module's namespace so nothing is fetched.
 
 import importlib
 import importlib.util
+import socket
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -21,7 +22,6 @@ from swarms.utils.litellm_wrapper import LiteLLM
 BACKEND_OPTIONS = (
     "set_verbose",
     "ssl_verify",
-    "num_retries",
     "drop_params",
 )
 
@@ -123,7 +123,6 @@ class TestOptionsPerCall:
         assert {name: sent[name] for name in BACKEND_OPTIONS} == {
             "set_verbose": False,
             "ssl_verify": False,
-            "num_retries": 5,
             "drop_params": True,
         }
 
@@ -133,7 +132,14 @@ class TestOptionsPerCall:
         sent = self._sent()
 
         assert not set(BACKEND_OPTIONS) & set(sent)
-        assert llm_backend.backend_module().num_retries == 5
+
+    @pytest.mark.parametrize("backend", ["litellm", "routehub"])
+    def test_retries_travel_with_every_request(
+        self, monkeypatch, backend
+    ):
+        """litellm clears its module-level count after the first retried call, so each request carries it."""
+        _use_backend(monkeypatch, backend)
+        assert self._sent()["num_retries"] == 5
 
 
 class TestVisionCheck:
@@ -146,30 +152,25 @@ class TestVisionCheck:
         )
         return LiteLLM(model_name=model)
 
-    def test_routehub_sends_images_to_a_model_it_cannot_find(
-        self, monkeypatch
+    @pytest.mark.parametrize(
+        "backend, known_models, model",
+        [
+            ("routehub", [], "lab/unlisted"),
+            ("routehub", ["lab/text-only"], "lab/text-only"),
+            ("litellm", [], "openrouter/openai/gpt-5.4-mini"),
+        ],
+    )
+    def test_an_unconfirmed_model_warns_and_still_gets_the_image(
+        self, monkeypatch, backend, known_models, model
     ):
-        llm = self._llm(monkeypatch, "routehub", [], "lab/unlisted")
-        llm.check_if_model_supports_vision(img="photo.png")
+        llm = self._llm(monkeypatch, backend, known_models, model)
 
-    def test_a_listed_text_only_model_is_still_refused(
-        self, monkeypatch
-    ):
-        llm = self._llm(
-            monkeypatch,
-            "routehub",
-            ["lab/text-only"],
-            "lab/text-only",
+        with patch("swarms.utils.litellm_wrapper.logger") as log:
+            llm.check_if_model_supports_vision(img="photo.png")
+
+        assert (
+            "sending the image anyway" in log.warning.call_args[0][0]
         )
-        with pytest.raises(ValueError, match="does not support"):
-            llm.check_if_model_supports_vision(img="photo.png")
-
-    def test_litellm_refuses_an_unlisted_model_as_before(
-        self, monkeypatch
-    ):
-        llm = self._llm(monkeypatch, "litellm", [], "lab/unlisted-2")
-        with pytest.raises(ValueError, match="does not support"):
-            llm.check_if_model_supports_vision(img="photo.png")
 
     def test_a_no_is_asked_again(self, monkeypatch):
         answers = iter([False, True])
@@ -180,13 +181,16 @@ class TestVisionCheck:
         )
         llm = LiteLLM(model_name="lab/catalog-was-down")
 
-        with pytest.raises(ValueError):
+        with patch("swarms.utils.litellm_wrapper.logger") as log:
             llm.check_if_model_supports_vision(img="photo.png")
-        llm.check_if_model_supports_vision(img="photo.png")
+            llm.check_if_model_supports_vision(img="photo.png")
+
+        assert log.warning.call_count == 1
 
 
 class TestUnknownModelWarning:
     def _warnings(self, monkeypatch, known_models):
+        monkeypatch.setenv("SWARMS_STRICT_MODEL_CHECK", "true")
         _use_backend(
             monkeypatch,
             "routehub",
@@ -218,6 +222,28 @@ class TestUnknownModelWarning:
     ):
         warnings = self._warnings(monkeypatch, ["lab/other"])
         assert "may not be supported" in warnings
+
+    def test_building_an_agent_opens_no_connection(self, monkeypatch):
+        routehub = pytest.importorskip("routehub")
+        monkeypatch.delenv("SWARMS_STRICT_MODEL_CHECK", raising=False)
+        _use_backend(monkeypatch, "routehub", _module=routehub)
+        routehub.clear_model_cache()
+        opened = []
+
+        def guard(address, *args, **kwargs):
+            opened.append(address)
+            raise OSError("network is off in this test")
+
+        monkeypatch.setattr(socket, "create_connection", guard)
+        Agent(
+            agent_name="Offline",
+            model_name="gpt-4o-mini",
+            max_tokens=4096,
+            context_length=128000,
+            print_on=False,
+            persistent_memory=False,
+        )
+        assert opened == []
 
 
 if __name__ == "__main__":

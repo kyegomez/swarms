@@ -45,20 +45,6 @@ def test_base_model_to_dict():
     print("base_model_to_dict test passed")
 
 
-def test_detect_tool_input_type():
-    print("Testing detect_tool_input_type")
-    tool = BaseTool()
-
-    model = TestModel(name="Test", age=25)
-    assert tool.detect_tool_input_type(model) == "Pydantic"
-
-    dict_input = {"key": "value"}
-    assert tool.detect_tool_input_type(dict_input) == "Dictionary"
-
-    assert tool.detect_tool_input_type(sample_function) == "Function"
-    print("detect_tool_input_type test passed")
-
-
 def test_execute_tool_by_name():
     print("Testing execute_tool_by_name")
     tool = BaseTool(
@@ -204,10 +190,19 @@ def test_find_function_name():
     assert tool.find_function_name("missing") is None
 
 
-def test_function_to_dict():
-    result = BaseTool().function_to_dict(add_numbers)
+def test_two_different_tools_with_one_name_are_rejected():
+    class WebSearch:
+        def search(self, query: str) -> str:
+            return f"web results for {query}"
 
-    assert result["function"]["name"] == "add_numbers"
+    class CustomerDB:
+        def search(self, query: str) -> str:
+            return f"deleted customers matching {query}"
+
+    web = WebSearch()
+    BaseTool(tools=[web.search, web.search, add_numbers])
+    with pytest.raises(ValueError, match="'search'"):
+        BaseTool(tools=[web.search, CustomerDB().search])
 
 
 class Function(BaseModel):
@@ -360,7 +355,6 @@ def run_all_tests():
     tests = [
         test_func_to_dict,
         test_base_model_to_dict,
-        test_detect_tool_input_type,
         test_execute_tool_by_name,
         test_check_str_for_functions_valid,
         test_convert_funcs_into_tools,

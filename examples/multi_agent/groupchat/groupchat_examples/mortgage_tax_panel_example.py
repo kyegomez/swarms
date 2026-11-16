@@ -133,7 +133,6 @@ def example_mortgage_tax_panel():
         agents=agents,
         max_loops=25,
         threshold=0.5,
-        idle_timeout=10.0,
     )
 
     case1 = """CASE PRESENTATION:

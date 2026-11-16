@@ -1,5 +1,4 @@
 import concurrent.futures
-import os
 import traceback
 from typing import Callable, List, Optional, Union
 
@@ -17,7 +16,7 @@ def batch_agent_execution(
     agents: List[Union[Agent, Callable]],
     tasks: Optional[List[str]] = None,
     imgs: Optional[List[str]] = None,
-    max_workers: int = max(1, int(os.cpu_count() * 0.9)),
+    max_workers: Optional[int] = None,
 ):
     """
     Concurrently execute agents (or callables) on tasks (with optional images).
@@ -26,7 +25,7 @@ def batch_agent_execution(
         agents (List[Agent|Callable]): Agents/callables to run.
         tasks (List[str]): Tasks (one per agent).
         imgs (List[str], optional): Images for agents; None for no images.
-        max_workers (int): Thread pool size.
+        max_workers (int, optional): Thread pool size; None for one thread per agent.
 
     Returns:
         List[Any]: Results (aligned to agents, None if exception).
@@ -62,6 +61,9 @@ def batch_agent_execution(
         ]
 
         results = [None] * len(agents)
+
+        if max_workers is None:
+            max_workers = max(1, len(agents))
 
         formatter.print_panel(
             f"Executing {len(agents)} agents on {len(tasks)} tasks using {max_workers} workers"

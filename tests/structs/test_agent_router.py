@@ -9,7 +9,6 @@ def test_agent_router_initialization_default():
     router = AgentRouter()
 
     assert router.embedding_model == "text-embedding-ada-002"
-    assert router.n_agents == 1
     assert router.api_key is None
     assert router.api_base is None
     assert router.agents == []
@@ -39,14 +38,12 @@ def test_agent_router_initialization_custom():
     ]
     router = AgentRouter(
         embedding_model="text-embedding-ada-002",
-        n_agents=3,
         api_key=None,
         api_base=None,
         agents=agents,
     )
 
     assert router.embedding_model == "text-embedding-ada-002"
-    assert router.n_agents == 3
     assert len(router.agents) == 2
 
 
@@ -447,52 +444,3 @@ def test_router_find_and_run_with_streaming():
         assert (
             len(streamed_chunks) > 0 or response != ""
         ), "Best agent should stream when run"
-
-
-if __name__ == "__main__":
-    # List of all test functions
-    tests = [
-        test_agent_router_initialization_default,
-        test_agent_router_initialization_custom,
-        test_cosine_similarity_identical_vectors,
-        test_cosine_similarity_orthogonal_vectors,
-        test_cosine_similarity_opposite_vectors,
-        test_cosine_similarity_different_lengths,
-        test_generate_embedding_success,
-        test_add_agent_success,
-        test_add_agents_multiple,
-        test_find_best_agent_success,
-        test_find_best_agent_no_agents,
-        test_update_agent_history_success,
-        test_update_agent_history_agent_not_found,
-        test_update_agent_history_embeds_the_history_text,
-        test_agent_metadata_structure,
-        test_agent_router_edge_cases,
-        test_router_with_agent_streaming,
-        test_router_find_and_run_with_streaming,
-    ]
-
-    # Run all tests
-    print("Running all tests...")
-    passed = 0
-    failed = 0
-
-    for test_func in tests:
-        try:
-            print(f"\n{'='*60}")
-            print(f"Running: {test_func.__name__}")
-            print(f"{'='*60}")
-            test_func()
-            print(f"✓ PASSED: {test_func.__name__}")
-            passed += 1
-        except Exception as e:
-            print(f"✗ FAILED: {test_func.__name__}")
-            print(f"  Error: {str(e)}")
-            import traceback
-
-            traceback.print_exc()
-            failed += 1
-
-    print(f"\n{'='*60}")
-    print(f"Test Summary: {passed} passed, {failed} failed")
-    print(f"{'='*60}")

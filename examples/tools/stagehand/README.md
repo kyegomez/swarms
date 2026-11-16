@@ -205,14 +205,6 @@ browser_agent.cleanup()  # For wrapper agents
 
 5. **Rate Limiting**: Be respectful of websites - add delays between requests when necessary
 
-## Testing
-
-Run the test suite to verify the integration:
-
-```bash
-pytest tests/stagehand/test_stagehand_integration.py -v
-```
-
 ## Troubleshooting
 
 ### Common Issues

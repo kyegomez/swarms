@@ -1,3 +1,4 @@
+import copy
 import traceback
 from typing import (
     Any,
@@ -18,6 +19,7 @@ from swarms.prompts.multi_agent_collab_prompt import (
 )
 from swarms.structs.agent import Agent
 from swarms.structs.agent_rearrange import AgentRearrange
+from swarms.structs.comms_channel import CommsChannel
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.debate_with_judge import DebateWithJudge
@@ -97,10 +99,6 @@ def _msg_max_loops_zero() -> str:
 
 def _msg_config_error(err: Exception, tb: str) -> str:
     return f"SwarmRouterConfigError: {err} Full Traceback: {tb}"
-
-
-def _msg_fetch_history_error(err: Exception) -> str:
-    return f"Error fetching message history as string: {err}"
 
 
 def _msg_invalid_factory_type(swarm_type: str, valid_types) -> str:
@@ -304,7 +302,6 @@ class SwarmRouter(SerializableMixin):
             about every other agent at start of run. Defaults to ``False``.
         conversation (Any, optional): Pre-existing conversation object to seed
             the swarm with.
-        agents_config (Dict, optional): Optional config overrides per agent.
         heavy_swarm_question_agent_model_name (str, optional): Model for the
             ``HeavySwarm`` question agent.
         heavy_swarm_worker_model_name (str, optional): Model for ``HeavySwarm``
@@ -384,7 +381,7 @@ class SwarmRouter(SerializableMixin):
         multi_agent_collab_prompt: bool = False,
         list_all_agents: bool = False,
         conversation: Any = None,
-        agents_config: Optional[Dict[Any, Any]] = None,
+        channel: Optional[CommsChannel] = None,
         heavy_swarm_question_agent_model_name: str = "gpt-5.4",
         heavy_swarm_worker_model_name: str = "gpt-5.4",
         heavy_swarm_swarm_show_output: bool = True,
@@ -431,7 +428,7 @@ class SwarmRouter(SerializableMixin):
         self.multi_agent_collab_prompt = multi_agent_collab_prompt
         self.list_all_agents = list_all_agents
         self.conversation = conversation
-        self.agents_config = agents_config
+        self.channel = channel
         self.heavy_swarm_question_agent_model_name = (
             heavy_swarm_question_agent_model_name
         )
@@ -616,7 +613,9 @@ class SwarmRouter(SerializableMixin):
         candidates = list(self.agents or [])
         for swarm in self._swarm_cache.values():
             for value in vars(swarm).values():
-                if isinstance(value, (list, tuple)):
+                if isinstance(value, dict):
+                    candidates.extend(value.values())
+                elif isinstance(value, (list, tuple)):
                     candidates.extend(value)
                 else:
                     candidates.append(value)
@@ -626,25 +625,6 @@ class SwarmRouter(SerializableMixin):
             if isinstance(candidate, Agent):
                 seen.setdefault(id(candidate), candidate)
         return list(seen.values())
-
-    def fetch_message_history_as_string(self):
-        """Return the underlying swarm's conversation history as a string.
-
-        Reads from ``self.swarm.conversation`` and excludes the first message
-        (typically the system prompt). Requires ``run()`` to have been called
-        at least once so that ``self.swarm`` exists.
-
-        Returns:
-            str | None: The serialized history, or ``None`` if no history is
-            available or the read fails.
-        """
-        try:
-            return (
-                self.swarm.conversation.return_all_except_first_string()
-            )
-        except Exception as e:
-            self._log("error", _msg_fetch_history_error(e))
-            return None
 
     def _initialize_swarm_factory(self) -> Dict[str, Callable]:
         """Build the dispatch table used to instantiate swarm types.
@@ -732,6 +712,7 @@ class SwarmRouter(SerializableMixin):
             **self._base_kwargs(
                 flow=self.rearrange_flow,
                 collab_prompt=self._collab_preamble(),
+                channel=self.channel,
             ),
             **kwargs,
         )
@@ -752,6 +733,7 @@ class SwarmRouter(SerializableMixin):
             **self._base_kwargs(
                 director_model_name=self.director_model_name,
                 director_settings=self.director_settings,
+                channel=self.channel,
             ),
             **kwargs,
         )
@@ -761,23 +743,32 @@ class SwarmRouter(SerializableMixin):
         return MixtureOfAgents(
             name=self.name,
             description=self.description,
-            agents=self.agents,
+            agents=self.agents[:-1] or self.agents,
             aggregator_agent=self.agents[-1],
             layers=self.max_loops,
             output_type=self.output_type,
+            channel=self.channel,
             *args,
             **kwargs,
         )
 
     def _create_majority_voting(self, *args, **kwargs):
         """Create a ``MajorityVoting`` swarm from the configured agents."""
-        return MajorityVoting(*args, **self._base_kwargs(), **kwargs)
+        return MajorityVoting(
+            *args,
+            **self._base_kwargs(channel=self.channel),
+            **kwargs,
+        )
 
     def _create_group_chat(self, *args, **kwargs):
         """Create a ``GroupChat`` from the configured agents."""
         return GroupChat(
             *args,
-            **self._base_kwargs(verbose=self.verbose),
+            **self._base_kwargs(
+                max_loops=self.max_loops + 1,
+                verbose=self.verbose,
+                channel=self.channel,
+            ),
             **kwargs,
         )
 
@@ -827,25 +818,32 @@ class SwarmRouter(SerializableMixin):
                     self._collab_preamble() is not None
                 ),
                 collab_prompt=self._collab_preamble(),
+                channel=self.channel,
             ),
             **kwargs,
         )
 
     def _create_concurrent_workflow(self, *args, **kwargs):
-        """Create a ``ConcurrentWorkflow`` from the configured agents."""
+        """Create a ``ConcurrentWorkflow`` from the configured agents.
+
+        When a fallback swarm follows ``ConcurrentWorkflow`` in the
+        router's chain, a failing agent raises (``on_error="raise"``) so
+        the router can fall back, unless ``on_error`` is passed explicitly.
+        """
+        chain = [self.swarm_type, *(self.fallback_swarms or [])]
+        if "ConcurrentWorkflow" in chain[:-1]:
+            kwargs.setdefault("on_error", "raise")
         return ConcurrentWorkflow(
-            *args, **self._base_kwargs(), **kwargs
+            *args,
+            **self._base_kwargs(channel=self.channel),
+            **kwargs,
         )
 
     def _create_round_robin_swarm(self, *args, **kwargs):
         """Create a ``RoundRobinSwarm`` from the configured agents."""
         return RoundRobinSwarm(
-            name=self.name,
-            description=self.description,
-            agents=self.agents,
-            max_loops=self.max_loops,
-            verbose=self.verbose,
             *args,
+            **self._base_kwargs(verbose=self.verbose),
             **kwargs,
         )
 
@@ -853,7 +851,9 @@ class SwarmRouter(SerializableMixin):
         """Create a ``PlannerWorkerSwarm`` from the configured agents."""
         return PlannerWorkerSwarm(
             *args,
-            **self._base_kwargs(verbose=self.verbose),
+            **self._base_kwargs(
+                verbose=self.verbose, channel=self.channel
+            ),
             **kwargs,
         )
 
@@ -1230,9 +1230,16 @@ class SwarmRouter(SerializableMixin):
             f"SwarmRouter '{self.name}': Executing {len(tasks)} task(s) concurrently",
         )
 
+        def run_on_copy(task: str, *run_args, **run_kwargs) -> Any:
+            # One swarm, and so one conversation, per concurrent task.
+            router = copy.copy(self)
+            router._swarm_cache = {}
+            router.swarm = None
+            return router.run(task, *run_args, **run_kwargs)
+
         try:
             return run_concurrently(
-                self.run, tasks, *args, imgs=imgs, **kwargs
+                run_on_copy, tasks, *args, imgs=imgs, **kwargs
             )
         except Exception as e:
             self._log(
