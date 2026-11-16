@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import Agent
-from swarms.schemas.agent_errors import AgentLLMError
 
 
 load_dotenv()
@@ -210,13 +209,12 @@ def test_image_is_not_written_into_the_conversation():
     assert RAW_BASE64 not in history
 
 
-def test_model_without_vision_raises_instead_of_dropping_the_image():
+def test_model_the_catalog_calls_text_only_still_gets_the_image():
     agent = _agent(model_name="gpt-3.5-turbo")
 
-    with pytest.raises(
-        AgentLLMError, match="does not support vision"
-    ):
-        _requests(lambda: agent.run(TASK, img=URL))
+    (messages,) = _requests(lambda: agent.run(TASK, img=DATA_URI))
+
+    assert _image_urls(messages) == [DATA_URI]
 
 
 def _data_uri(png: bytes) -> str:
