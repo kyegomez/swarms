@@ -979,10 +979,10 @@ class Conversation:
 
         Args:
             value (Any): An attachment part, or a value nested in one.
-            key (str, optional): The key `value` is stored under.
+            key (str, optional): The key the value is stored under.
 
         Returns:
-            Any: A copy of `value` without the embedded data.
+            Any: A copy of the value without the embedded data.
         """
         if isinstance(value, dict):
             return {
