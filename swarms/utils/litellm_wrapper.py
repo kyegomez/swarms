@@ -1109,43 +1109,20 @@ class LiteLLM:
 
     def check_if_model_supports_vision(self, img: str = None):
         """
-        Check if the model supports vision capabilities.
+        Warn when the backend cannot confirm that the model accepts images.
 
-        This method uses LiteLLM's built-in `supports_vision` function to verify
-        that the model can handle image inputs before processing. It's called
-        automatically when an image is provided to prevent errors from unsupported
-        models.
+        The image is sent either way: model catalogs lag behind providers,
+        so a missing entry is not proof that the model is text-only.
 
         Args:
-            img (str, optional): Image path/URL to validate against model capabilities.
-                If None, the check is skipped. Defaults to None.
-
-        Raises:
-            ValueError: If the model doesn't support vision and an image is provided.
-                The error message includes the model name for clarity.
-
-        Note:
-            This method only performs the check if `img` is not None. It uses
-            LiteLLM's model capability detection to determine vision support.
-            Models that support vision include GPT-4 Vision, Claude 3, Gemini Pro Vision,
-            and other vision-capable models.
+            img (str, optional): The image about to be sent. None skips the check.
         """
-        if img is not None:
-            out = _model_supports_vision(self.model_name)
+        if img is None or _model_supports_vision(self.model_name):
+            return
 
-            # RouteHub's catalog comes from the network, so a model it can't find may still take images.
-            if (
-                out is False
-                and llm_backend.BACKEND == "routehub"
-                and self.model_name not in llm_backend.model_list
-            ):
-                logger.warning(
-                    f"Can't confirm that {self.model_name} accepts images, sending the image anyway."
-                )
-            elif out is False:
-                raise ValueError(
-                    f"Model {self.model_name} does not support vision"
-                )
+        logger.warning(
+            f"Can't confirm that {self.model_name} accepts images, sending the image anyway."
+        )
 
     def _build_completion_params(
         self,
