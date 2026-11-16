@@ -1499,3 +1499,13 @@ def test_director_sends_temperature_and_top_p_only_when_set(
         sampling(director_settings={"temperature": 0.3})
         == [{"temperature": 0.3}] * 2
     )
+
+    sampling()
+    assert sent[0]["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "OrderBatch"},
+    }
+    reasoning = {"reasoning_effort": "low"}
+    for settings in (reasoning, {"llm_args": reasoning}):
+        sampling(director_settings=settings)
+        assert sent[0]["tool_choice"] == "auto"
