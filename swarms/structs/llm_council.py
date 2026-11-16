@@ -26,6 +26,7 @@ from swarms.prompts.llm_council_prompts import (
 )
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent, reset_agents
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
@@ -270,7 +271,9 @@ class LLMCouncil:
 
         # Map results to member names
         evaluations = {
-            member.agent_name: evaluation_results[i]
+            member.agent_name: agent_answer(
+                member, fallback=evaluation_results[i]
+            )
             for i, member in enumerate(self.council_members)
         }
 
