@@ -17,6 +17,7 @@ from typing import (
     Optional,
     Sequence,
 )
+from urllib.parse import unquote_plus, urlsplit
 
 from loguru import logger
 from pydantic import BaseModel
@@ -29,6 +30,8 @@ _SECRET_KEY = re.compile(
     r"key$|secret|password|token$|authorization|oauth|headers$|^env$",
     re.IGNORECASE,
 )
+
+_URL = re.compile(r"(?:https?|wss?)://\S+", re.IGNORECASE)
 
 TELEMETRY_BASE_URL = "https://telemetry.swarms.world"
 
@@ -87,6 +90,41 @@ def _truncate(value: Any, limit: int = MAX_PAYLOAD_CHARS) -> str:
     if len(text) > limit:
         return text[:limit] + "…[truncated]"
     return text
+
+
+def _redact_url(text: str) -> str:
+    """Hide the credentials an http(s) or ws(s) URL carries.
+
+    Args:
+        text (str): Any string. Anything that is not such a URL is returned
+            unchanged.
+
+    Returns:
+        str: The URL with its user info and every query value whose name
+        looks like a credential replaced by "<redacted>".
+    """
+    if not _URL.fullmatch(text):
+        return text
+    try:
+        parts = urlsplit(text)
+    except ValueError:
+        return text
+    netloc = parts.netloc
+    if "@" in netloc:
+        netloc = "<redacted>@" + netloc.rpartition("@")[2]
+    query = "&".join(
+        (
+            f"{pair.partition('=')[0]}=<redacted>"
+            if _SECRET_KEY.search(
+                unquote_plus(pair.partition("=")[0])
+            )
+            else pair
+        )
+        for pair in parts.query.split("&")
+    )
+    if netloc == parts.netloc and query == parts.query:
+        return text
+    return parts._replace(netloc=netloc, query=query).geturl()
 
 
 class _CyclicReference(Exception):
@@ -157,14 +195,18 @@ def _sanitize(value: Any, seen: frozenset = frozenset()) -> Any:
 
     Returns:
         Any: A JSON-encodable structure. Containers that reference themselves
-        collapse to ``"<unserializable ClassName>"``.
+        collapse to ``"<unserializable ClassName>"``, and URLs lose their
+        credentials.
 
     Raises:
         _CyclicReference: Internally only, to unwind to the outermost container
             of a cycle. Never escapes :func:`init_config`.
     """
-    if value is None or isinstance(value, (bool, int, float, str)):
+    if value is None or isinstance(value, (bool, int, float)):
         return value
+
+    if isinstance(value, str):
+        return _redact_url(value)
 
     if isinstance(value, BaseModel):
         value = value.model_dump()
