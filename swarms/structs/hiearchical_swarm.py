@@ -59,6 +59,10 @@ from swarms.structs.usage_utils import total_usage
 
 _ORDER_BATCH_SCHEMA = BaseTool().base_model_to_dict(OrderBatch)
 _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
+_ORDER_BATCH_CHOICE = {
+    "type": "function",
+    "function": {"name": _ORDER_BATCH_SCHEMA["function"]["name"]},
+}
 
 # The plan is recorded under this role so the director reads it as new context.
 PLANNER_ROLE = "Planner"
@@ -314,6 +318,19 @@ class HierarchicalSwarm:
                 }
             )
             settings["output_type"] = "final"
+
+            # Reasoning models reject a forced choice, so they keep auto.
+            llm_args = settings.get("llm_args") or {}
+            sent = {**settings, **llm_args}
+            if not (
+                sent.get("reasoning_effort")
+                or sent.get("reasoning_enabled")
+            ):
+                settings["llm_args"] = {
+                    "tool_choice": _ORDER_BATCH_CHOICE,
+                    **llm_args,
+                }
+
             return Agent(**settings)
 
         except Exception as e:
