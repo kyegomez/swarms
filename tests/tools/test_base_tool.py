@@ -117,6 +117,32 @@ def test_func_to_dict_resolves_nested_model_refs():
     assert params["$defs"]["LineItem"]["required"] == ["sku", "qty"]
 
 
+def search_web(query: str, *args, **kwargs) -> str:
+    """Search the web."""
+    return query
+
+
+def fetch_page(
+    url: str, *args: str, timeout: int = 30, **kwargs: str
+) -> str:
+    """Fetch a page."""
+    return url
+
+
+def test_func_to_dict_leaves_out_var_args_and_kwargs():
+    search, fetch = BaseTool().multiple_functions_to_dict(
+        [search_web, fetch_page]
+    )
+
+    search_params = search["function"]["parameters"]
+    assert list(search_params["properties"]) == ["query"]
+    assert search_params["required"] == ["query"]
+
+    fetch_params = fetch["function"]["parameters"]
+    assert list(fetch_params["properties"]) == ["url", "timeout"]
+    assert fetch_params["required"] == ["url"]
+
+
 def add_numbers(a: int, b: int) -> int:
     """Add two numbers.
 
