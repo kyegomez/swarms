@@ -69,6 +69,7 @@ from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.structs.usage_utils import total_usage
@@ -102,6 +103,8 @@ RESPOND_TOOL = {
         },
     },
 }
+
+RESPOND_CHOICE = {"type": "function", "function": {"name": "respond"}}
 
 
 def _extract_args(tool_output: Any) -> Tuple[float, str]:
@@ -263,6 +266,10 @@ class GroupChat(SerializableMixin):
         client bakes ``tools_list_dictionary`` in at construction time, so
         after appending the schema the client is rebuilt via
         ``llm_handling()``.
+
+        Each agent's client is then set to force a respond() call, unless
+        reasoning or thinking is on: Anthropic rejects a forced tool choice
+        with thinking enabled, so those agents keep auto.
         """
         for agent in self.agents:
             tools = agent.tools_list_dictionary or []
@@ -278,6 +285,13 @@ class GroupChat(SerializableMixin):
                 "info",
                 f"Injected respond tool into {agent.agent_name}",
             )
+
+        for agent in self.agents:
+            llm = getattr(agent, "llm", None)
+            if isinstance(llm, LiteLLM) and not (
+                llm.reasoning_effort or llm.reasoning_enabled
+            ):
+                llm.tool_choice = RESPOND_CHOICE
 
     def _other_agents(self, exclude: str) -> str:
         """Return a comma-separated list of peers visible to one agent."""
@@ -325,7 +339,14 @@ class GroupChat(SerializableMixin):
             return 0.0, ""
         finally:
             agent.output_type = previous_output_type
-        return _extract_args(tool_output)
+
+        score, reply = _extract_args(tool_output)
+        self._log(
+            "info",
+            f"{agent.agent_name} bid {score:.2f}, returned: "
+            f"{str(tool_output)[:200]!r}",
+        )
+        return score, reply
 
     def _post(
         self,

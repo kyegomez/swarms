@@ -16,11 +16,15 @@ back, which is exactly the case that previously went silent.
 
 import json
 import threading
+from unittest.mock import MagicMock
 
+import litellm
 import pytest
 
+from swarms import Agent
 from swarms.structs.groupchat import (
     GroupChat,
+    RESPOND_CHOICE,
     RESPOND_TOOL,
     _extract_args,
 )
@@ -361,6 +365,48 @@ class TestScheduling:
         chat.run("topic")
 
         assert "still works" in contents(chat)
+
+    @pytest.mark.parametrize(
+        "agent_kwargs, sent_choice",
+        [({}, RESPOND_CHOICE), ({"reasoning_effort": "low"}, "auto")],
+    )
+    def test_bids_force_respond_and_log_each_reply_when_verbose(
+        self, monkeypatch, agent_kwargs, sent_choice
+    ):
+        sent = []
+
+        def completion(**params):
+            sent.append(params["tool_choice"])
+            return litellm.completion(
+                **params, mock_response="Just text."
+            )
+
+        log = MagicMock()
+        monkeypatch.setattr(
+            "swarms.utils.litellm_wrapper.completion", completion
+        )
+        monkeypatch.setattr(
+            "swarms.structs.serialization.logger", log
+        )
+        agents = [
+            Agent(
+                agent_name=name,
+                model_name="gpt-4o-mini",
+                max_loops=1,
+                print_on=False,
+                **agent_kwargs,
+            )
+            for name in ("A", "B")
+        ]
+        GroupChat(agents=agents, verbose=True).run("topic")
+
+        assert sent == [sent_choice, sent_choice]
+        assert "A bid 0.00, returned: 'Just text.'" in str(
+            log.mock_calls
+        )
+        assert "B bid 0.00, returned: 'Just text.'" in str(
+            log.mock_calls
+        )
 
 
 # --------------------------------------------------------------------------
