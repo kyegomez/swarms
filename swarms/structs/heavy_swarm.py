@@ -16,6 +16,7 @@ from swarms.structs.agent import reset_agents
 from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
 from swarms.utils.get_cpu_cores import max_workers_95_percent
@@ -1445,7 +1446,7 @@ class HeavySwarm(SerializableMixin):
             tools_list_dictionary=active_schema,
             max_tokens=max_tokens,
             top_p=None,  # Anthropic rejects temperature and top_p together
-            tool_choice="auto",
+            tool_choice=forced_tool_choice(active_schema[0]),
             usage_hook=self._add_question_usage,
         )
 

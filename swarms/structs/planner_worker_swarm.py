@@ -27,6 +27,7 @@ from swarms.structs.comms_channel import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.tools.base_tool import BaseTool
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -645,6 +646,7 @@ class PlannerWorkerSwarm:
             max_loops=1,
             base_model=PlannerTaskSpec,
             tools_list_dictionary=[schema],
+            llm_args={"tool_choice": forced_tool_choice(schema)},
             output_type="dict-all-except-first",
         )
 

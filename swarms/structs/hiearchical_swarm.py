@@ -48,6 +48,7 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.tools.base_tool import BaseTool
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -314,6 +315,18 @@ class HierarchicalSwarm:
                 }
             )
             settings["output_type"] = "final"
+
+            llm_args = settings.get("llm_args") or {}
+            sent = {**settings, **llm_args}
+            settings["llm_args"] = {
+                "tool_choice": forced_tool_choice(
+                    _ORDER_BATCH_SCHEMA,
+                    sent.get("reasoning_effort"),
+                    sent.get("reasoning_enabled"),
+                ),
+                **llm_args,
+            }
+
             return Agent(**settings)
 
         except Exception as e:

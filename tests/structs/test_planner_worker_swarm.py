@@ -1,6 +1,8 @@
 import types
 from unittest.mock import patch
 
+import pytest
+
 from swarms import Agent, PlannerWorkerSwarm
 from swarms.structs.planner_worker_swarm import WorkerPool
 
@@ -49,6 +51,27 @@ def test_usage_counts_the_single_use_planner_and_judge():
         "cached_tokens": 0,
         "reasoning_tokens": 0,
         "total_tokens": 165,
+    }
+
+
+def test_planner_request_forces_the_plan_tool(monkeypatch):
+    sent = []
+
+    def capture(**params):
+        sent.append(params)
+        raise RuntimeError("captured")
+
+    monkeypatch.setattr(
+        "swarms.utils.litellm_wrapper.completion", capture
+    )
+    swarm = PlannerWorkerSwarm(agents=[_usage_agent("Worker", 1, 1)])
+
+    with pytest.raises(RuntimeError):
+        swarm._create_planner_agent().llm.run(task="plan")
+
+    assert sent[0]["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "PlannerTaskSpec"},
     }
 
 

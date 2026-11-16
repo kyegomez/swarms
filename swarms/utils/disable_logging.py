@@ -16,16 +16,15 @@ def set_logger_level(logger_name: str) -> None:
 
 def disable_logging():
     """
-    Disables logging for specific modules and sets up a stream handler.
-    Runs in a separate thread to avoid blocking the main thread.
+    Silences noisy third-party loggers by raising their levels.
+
+    The root logger belongs to the application importing swarms, so it is
+    left untouched.
     """
     warnings.filterwarnings("ignore", category=UserWarning)
 
     # disable tensorflow warnings
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
-    # Set the logging level for the entire module
-    logging.basicConfig(level=logging.ERROR)
 
     try:
         log = logging.getLogger("pytorch")
@@ -49,11 +48,3 @@ def disable_logging():
     # Set the level for each logger sequentially, no concurrent futures
     for logger_name in logger_names:
         set_logger_level(logger_name)
-
-    # Remove all existing handlers
-    logging.getLogger().handlers = []
-
-    # Create a stream handler to log errors to the terminal
-    stream_handler = logging.StreamHandler()
-    stream_handler.setLevel(logging.ERROR)
-    logging.getLogger().addHandler(stream_handler)

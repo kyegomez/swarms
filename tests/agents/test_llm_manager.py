@@ -232,6 +232,16 @@ class TestBuild:
         result = agent.llm_manager.build()
         assert result.init_kwargs == {"custom": 123}
 
+    def test_llm_args_tool_choice_survives_the_tool_list(self, agent):
+        forced = {"type": "function", "function": {"name": "f1"}}
+        agent.tools_list_dictionary = [
+            {"type": "function", "function": {"name": "f1"}}
+        ]
+        assert agent.llm_manager.build().tool_choice == "auto"
+
+        agent.llm_args = {"tool_choice": forced}
+        assert agent.llm_manager.build().tool_choice == forced
+
     def test_parallel_tool_calls_true_with_two_or_more_tools(
         self, agent
     ):
