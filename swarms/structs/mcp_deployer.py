@@ -286,6 +286,7 @@ class MCPDeployer:
                 f"got {transport!r}."
             )
 
+        self.extra_tools = list(extra_tools or [])
         self.tools: Dict[str, ServedTool] = {}
         self._register_targets(targets, tool_name, description)
         self.name = name or self.tool_name
@@ -301,7 +302,6 @@ class MCPDeployer:
         self.public_paths = tuple(
             public_paths or DEFAULT_PUBLIC_PATHS
         )
-        self.extra_tools = list(extra_tools or [])
         self.timeout = timeout
         self.json_response = json_response
         self.stateless_http = stateless_http
@@ -378,7 +378,9 @@ class MCPDeployer:
             target=target,
             description=description or _default_description(target),
         )
-        if tool.name in self.tools:
+        if tool.name in self.tools or any(
+            fn.__name__ == tool.name for fn in self.extra_tools
+        ):
             raise ValueError(
                 f"A tool named {tool.name!r} is already registered; "
                 "pass a dict to give each target its own name."

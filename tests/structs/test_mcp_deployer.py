@@ -121,6 +121,29 @@ def test_duplicate_tool_names_are_rejected():
         MCPDeployer([EchoAgent(), EchoAgent()], api_keys=["k"])
 
 
+def echo_agent(query: str) -> str:
+    return query
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: MCPDeployer(
+            EchoAgent(), api_keys=["k"], extra_tools=[echo_agent]
+        ),
+        lambda: MCPDeployer(
+            {"x": EchoAgent()},
+            api_keys=["k"],
+            extra_tools=[echo_agent],
+        ).add_tool(EchoAgent()),
+    ],
+    ids=["constructor", "add_tool"],
+)
+def test_target_named_like_an_extra_tool_is_rejected(build):
+    with pytest.raises(ValueError, match="already registered"):
+        build()
+
+
 def test_tool_name_and_description_need_a_single_target():
     with pytest.raises(ValueError, match="single target"):
         MCPDeployer([EchoAgent()], api_keys=["k"], tool_name="x")
