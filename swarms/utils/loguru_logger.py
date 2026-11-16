@@ -48,6 +48,32 @@ def log_files_enabled() -> bool:
     return value.strip().lower() in ("true", "1", "yes", "on")
 
 
+def global_logger_enabled() -> bool:
+    """
+    Whether Swarms may log at all, read from SWARMS_GLOBAL_LOGGER_ON.
+
+    Returns:
+        bool: False when SWARMS_GLOBAL_LOGGER_ON is False; True by default.
+    """
+    value = os.getenv("SWARMS_GLOBAL_LOGGER_ON", "True")
+    return value.strip().lower() in ("true", "1", "yes", "on")
+
+
+def apply_global_logger_switch() -> bool:
+    """
+    Silence every Swarms module when the global logger is switched off.
+
+    Returns:
+        bool: True when Swarms logging is on.
+    """
+    enabled = global_logger_enabled()
+    if not enabled:
+        # By package name, so modules that import loguru directly are covered.
+        logger.disable("swarms")
+
+    return enabled
+
+
 def _module_log_router(message) -> None:
     """
     Append each record to a file named after the module that emitted it.
@@ -102,6 +128,9 @@ def initialize_logger(log_folder: str = "swarms"):
         logger: The logger instance.
     """
     global _CONFIGURED, _CONFIGURED_DIR
+
+    if not apply_global_logger_switch():
+        return logger
 
     log_dir = get_log_dir()
     write_files = log_files_enabled()
@@ -166,3 +195,6 @@ def initialize_logger(log_folder: str = "swarms"):
     _CONFIGURED = True
     _CONFIGURED_DIR = (log_dir, write_files)
     return logger
+
+
+apply_global_logger_switch()
