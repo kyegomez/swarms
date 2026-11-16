@@ -1,4 +1,5 @@
 import os
+import time
 
 from loguru import logger
 
@@ -900,3 +901,23 @@ def test_agent_registry_thread_safety():
             f"Error in test_agent_registry_thread_safety: {str(e)}"
         )
         raise
+
+
+def test_agent_registry_stamps_the_time_each_agent_is_added(
+    monkeypatch,
+):
+    agent = Agent(
+        agent_name="Stamped-Agent",
+        model_name="gpt-5.4",
+        max_loops=1,
+        verbose=False,
+        print_on=False,
+    )
+    added_at = time.gmtime(1893553445)
+    monkeypatch.setattr(time, "gmtime", lambda *args: added_at)
+
+    registry = AgentRegistry(agents=[agent])
+
+    stamp = time.strftime("%Y-%m-%d %H:%M:%S", added_at)
+    assert registry.agent_registry.time_registry_creatd == stamp
+    assert registry.agent_registry.agents[0].time_added == stamp

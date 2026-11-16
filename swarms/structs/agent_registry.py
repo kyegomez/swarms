@@ -24,7 +24,9 @@ class AgentConfigSchema(BaseModel):
     name: str = None
     description: str = None
     time_added: str = Field(
-        time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
+        default_factory=lambda: time.strftime(
+            "%Y-%m-%d %H:%M:%S", time.gmtime()
+        ),
         description="Time when the agent was added to the registry.",
     )
     config: Dict[Any, Any] = None
@@ -35,7 +37,9 @@ class AgentRegistrySchema(BaseModel):
     description: str
     agents: List[AgentConfigSchema]
     time_registry_creatd: str = Field(
-        time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
+        default_factory=lambda: time.strftime(
+            "%Y-%m-%d %H:%M:%S", time.gmtime()
+        ),
         description="Time when the registry was created.",
     )
     number_of_agents: int = Field(
