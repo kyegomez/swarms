@@ -8,6 +8,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.broadcast import broadcast
 from swarms.structs.swarming_architectures import (
     circular_swarm,
+    mesh_swarm,
     star_swarm,
 )
 
@@ -134,6 +135,45 @@ def test_nothing_is_handed_a_flattened_role_colon_blob():
         assert "User: " not in str(
             call["task"]
         ), f"{call['agent']} received flattened prose: {call['task']}"
+
+
+class _NamedLLM:
+    def __init__(self, name):
+        self.name = name
+
+    def run(self, task, *args, **kwargs):
+        return f"{self.name}-answer"
+
+
+def test_star_and_mesh_record_each_answer_not_the_agents_transcript():
+    def agents(*names):
+        return [
+            Agent(
+                agent_name=name,
+                llm=_NamedLLM(name),
+                max_loops=1,
+                print_on=False,
+            )
+            for name in names
+        ]
+
+    star = star_swarm(agents("Centre", "X"), ["one", "two"])
+    mesh = mesh_swarm(agents("A", "B"), ["t1", "t2", "t3", "t4"])
+
+    assert [(m["role"], m["content"]) for m in star] == [
+        ("User", "one"),
+        ("Centre", "Centre-answer"),
+        ("X", "X-answer"),
+        ("User", "two"),
+        ("Centre", "Centre-answer"),
+        ("X", "X-answer"),
+    ]
+    assert [m["content"] for m in mesh[1:]] == [
+        "A-answer",
+        "B-answer",
+        "A-answer",
+        "B-answer",
+    ]
 
 
 if __name__ == "__main__":
