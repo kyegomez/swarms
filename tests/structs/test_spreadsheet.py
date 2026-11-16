@@ -430,24 +430,12 @@ def test_csv_rows_take_agent_loader_columns_and_agent_defaults(
     assert swarm.agent_tasks == {"a1": "t1"}
 
 
-def test_load_from_nonexistent_csv(temp_workspace):
-    """Test loading from non-existent CSV file."""
-    agent = Agent(
-        agent_name="test_agent",
-        system_prompt="Test prompt",
-        model_name="gpt-5.4",
-        max_loops=1,
-    )
+def test_run_raises_when_the_load_path_csv_is_missing(temp_workspace):
+    """A missing load_path fails the run instead of reporting zero tasks done."""
+    swarm = SpreadSheetSwarm(load_path="nonexistent_file.csv")
 
-    swarm = SpreadSheetSwarm(
-        agents=[agent],
-        load_path="nonexistent_file.csv",
-    )
-
-    # Error is caught and logged, not raised
-    swarm._load_from_csv()
-    # Should still have the original agent
-    assert len(swarm.agents) == 1
+    with pytest.raises(FileNotFoundError):
+        swarm.run("Summarise Q3")
 
 
 def test_save_to_csv_creates_file(temp_workspace):
