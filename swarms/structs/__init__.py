@@ -21,6 +21,7 @@ from swarms.structs.broadcast import Broadcast, broadcast
 from swarms.structs.comms_channel import CommsChannel
 from swarms.structs.agentmail_channel import AgentMailChannel
 from swarms.structs.file_channel import FileChannel
+from swarms.structs.gated_channel import GatedChannel, spec_gate
 from swarms.structs.http_channel import HttpChannel
 from swarms.structs.queue_channel import QueueChannel
 from swarms.structs.smtp_channel import SmtpChannel
@@ -116,6 +117,7 @@ __all__ = [
     "CommsChannel",
     "AgentMailChannel",
     "FileChannel",
+    "GatedChannel",
     "HttpChannel",
     "QueueChannel",
     "SmtpChannel",
@@ -180,6 +182,7 @@ __all__ = [
     "DecisionModel",
     "get_decision_model_prices",
     "get_decision_models",
+    "spec_gate",
     "PlannerGeneratorEvaluator",
     "StepContract",
     "EvaluationReport",
