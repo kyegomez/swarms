@@ -669,15 +669,8 @@ class LiteLLM:
         # A prebuilt body is already structured, so only this instance's system prompt is added.
         if messages is not None:
             prepared = base + list(messages)
-            users = [
-                i
-                for i, m in enumerate(prepared)
-                if m.get("role") == "user"
-            ]
-            if images and users:
-                prepared[users[-1]] = self._build_vision_message(
-                    prepared[users[-1]]["content"], images
-                )
+            if images:
+                self._attach_images(prepared, images)
             if self.prompt_caching and prepared:
                 self._apply_prompt_caching(prepared)
             return prepared
@@ -984,6 +977,38 @@ class LiteLLM:
             "role": "user",
             "content": [{"type": "text", "text": task}]
             + [self._build_image_block(i) for i in images],
+        }
+
+    def _attach_images(
+        self, messages: List[dict], images: List[str]
+    ) -> None:
+        """
+        Add the images to the last user message of a prebuilt body.
+
+        Args:
+            messages: The request messages, changed in place.
+            images: Image sources in any supported format.
+        """
+        blocks = [self._build_image_block(image) for image in images]
+        users = [
+            index
+            for index, message in enumerate(messages)
+            if message.get("role") == "user"
+        ]
+
+        if not users:
+            messages.append({"role": "user", "content": blocks})
+            return
+
+        last = messages[users[-1]]
+        content = last.get("content")
+        if isinstance(content, str):
+            content = [{"type": "text", "text": content}]
+
+        # A new dict, so the caller's own message is left as it was.
+        messages[users[-1]] = {
+            **last,
+            "content": list(content or []) + blocks,
         }
 
     def _should_use_direct_url(self, image: str) -> bool:

@@ -629,3 +629,42 @@ def test_prepare_messages_attaches_images_to_prebuilt_body():
     assert [
         p["image_url"]["url"] for p in messages[1]["content"][1:]
     ] == urls
+
+
+@pytest.mark.parametrize(
+    "body, expected_roles, expected_types",
+    [
+        (
+            [
+                {
+                    "role": "user",
+                    "content": [{"type": "text", "text": "hi"}],
+                }
+            ],
+            ["system", "user"],
+            ["text", "image_url"],
+        ),
+        (
+            [{"role": "assistant", "content": "ok"}],
+            ["system", "assistant", "user"],
+            ["image_url"],
+        ),
+    ],
+)
+def test_prepare_messages_attaches_images_to_any_prebuilt_body(
+    body, expected_roles, expected_types
+):
+    llm = LiteLLM(
+        model_name=OPENAI_MODEL, system_prompt=SIMPLE_PROMPT
+    )
+    original = [dict(message) for message in body]
+
+    messages = llm._prepare_messages(
+        img="https://example.com/a.png", messages=body
+    )
+
+    assert [m["role"] for m in messages] == expected_roles
+    assert [p["type"] for p in messages[-1]["content"]] == (
+        expected_types
+    )
+    assert body == original
