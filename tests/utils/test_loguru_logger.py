@@ -289,3 +289,33 @@ def test_turning_log_files_on_rebuilds_handlers(
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+@pytest.mark.parametrize(
+    "value, swarms_logs",
+    [("False", False), ("True", True), (None, True)],
+)
+def test_global_logger_switch_silences_only_swarms_modules(
+    monkeypatch, value, swarms_logs
+):
+    if value is None:
+        monkeypatch.delenv("SWARMS_GLOBAL_LOGGER_ON", raising=False)
+    else:
+        monkeypatch.setenv("SWARMS_GLOBAL_LOGGER_ON", value)
+    seen = []
+
+    try:
+        log = initialize_logger()
+        log.add(seen.append, format="{message}")
+        for module in ("swarms.fake", "app"):
+            exec(
+                f"logger.info('from {module}')",
+                {"__name__": module, "logger": log},
+            )
+    finally:
+        logger.enable("swarms")
+
+    assert any("from swarms.fake" in line for line in seen) is (
+        swarms_logs
+    )
+    assert any("from app" in line for line in seen)
