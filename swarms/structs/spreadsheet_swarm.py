@@ -134,18 +134,14 @@ class SpreadSheetSwarm:
         """
         Load the agents and their tasks from the CSV file at load_path.
         """
-        try:
-            self.agents.extend(
-                AgentLoader().load_agents_from_csv(self.load_path)
-            )
-            with open(self.load_path, newline="") as file:
-                for row in csv.DictReader(file):
+        self.agents.extend(
+            AgentLoader().load_agents_from_csv(self.load_path)
+        )
+        with open(self.load_path, newline="") as file:
+            for row in csv.DictReader(file):
+                if "task" in row:
                     self.agent_tasks[row["agent_name"]] = row["task"]
-            logger.info(
-                f"Loaded {len(self.agents)} agent configurations"
-            )
-        except Exception as e:
-            logger.error(f"Error loading agent configurations: {e}")
+        logger.info(f"Loaded {len(self.agents)} agent configurations")
 
     def load_from_csv(self):
         self._load_from_csv()
