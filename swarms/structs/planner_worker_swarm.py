@@ -645,6 +645,12 @@ class PlannerWorkerSwarm:
             max_loops=1,
             base_model=PlannerTaskSpec,
             tools_list_dictionary=[schema],
+            llm_args={
+                "tool_choice": {
+                    "type": "function",
+                    "function": {"name": schema["function"]["name"]},
+                }
+            },
             output_type="dict-all-except-first",
         )
 
