@@ -437,6 +437,34 @@ def test_graph_workflow_backend_entry_end_points(backend):
     assert agent3.agent_name in workflow.end_points
 
 
+@pytest.mark.parametrize("backend", ["networkx", "rustworkx"])
+def test_graph_workflow_backend_repeated_edge_sends_output_once(
+    backend,
+):
+    """Adding the same edge twice passes the source's output on once."""
+    if backend == "rustworkx" and not RUSTWORKX_AVAILABLE:
+        pytest.skip("rustworkx not available")
+    from unittest.mock import MagicMock
+
+    writer, editor = MagicMock(), MagicMock()
+    writer.agent_name, editor.agent_name = "Writer", "Editor"
+    writer.run.return_value = "draft"
+    editor.run.return_value = "edited"
+
+    workflow = GraphWorkflow(backend=backend)
+    workflow.add_nodes([writer, editor])
+    workflow.add_edge("Writer", "Editor")
+    workflow.add_edge("Writer", "Editor")
+    workflow.run("Write a post")
+
+    assert workflow.graph_backend.in_degree("Editor") == 1
+    sent = editor.run.call_args.kwargs["messages"]
+    assert [m["content"] for m in sent] == [
+        "Write a post",
+        "Writer: draft",
+    ]
+
+
 def test_graph_workflow_rustworkx_specific():
     """Test rustworkx-specific features"""
     if not RUSTWORKX_AVAILABLE:
