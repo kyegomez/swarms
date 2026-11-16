@@ -730,6 +730,41 @@ class TestConcurrentRun:
         with pytest.raises(ValueError, match="nope"):
             r.concurrent_run(["a"])
 
+    def test_each_task_gets_its_own_transcript(self):
+        """Every task ran on one swarm, so they shared one conversation."""
+        import threading
+
+        from swarms import Agent, SwarmRouter
+
+        all_running = threading.Barrier(3, timeout=5)
+
+        class WaitingModel:
+            def run(self, task=None, *args, **kwargs):
+                all_running.wait()
+                return "done"
+
+        agent = Agent(
+            agent_name="A",
+            llm=WaitingModel(),
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+        router = SwarmRouter(
+            agents=[agent],
+            swarm_type="SequentialWorkflow",
+            autosave=False,
+            output_type="str",
+        )
+        tasks = ["TASK-AAA", "TASK-BBB", "TASK-CCC"]
+
+        results = router.concurrent_run(tasks)
+
+        for task, result in zip(tasks, results):
+            others = [other for other in tasks if other != task]
+            assert task in result
+            assert not any(other in result for other in others)
+
 
 def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
     from swarms import Agent
