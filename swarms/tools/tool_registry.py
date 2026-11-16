@@ -1,3 +1,4 @@
+import functools
 import os
 from typing import Any, Callable, Dict, List, Optional
 import time
@@ -195,6 +196,7 @@ def tool_registry(storage: ToolStorage = None) -> Callable:
         logger.info(f"Registering tool: {name}")
         storage.add_tool(func)
 
+        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             try:
                 result = func(*args, **kwargs)
