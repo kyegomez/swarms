@@ -374,6 +374,7 @@ def test_second_run_does_not_resend_the_first(monkeypatch):
 
     assert len(requests) == 5
     assert not any("FIRSTTASK" in r for r in requests)
+    assert requests[-1].count("SECONDTASK") == 1
 
 
 def test_default_members_reach_their_own_providers_api():
