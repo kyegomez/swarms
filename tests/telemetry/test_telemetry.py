@@ -532,6 +532,29 @@ class TestHelpers:
         assert cfg["mcp_url"]["url"] == "http://mcp"
         assert cfg["max_tokens"] == 1024
 
+    def test_init_config_redacts_credentials_in_urls(self):
+        class Holder:
+            def __init__(self, mcp_url, mcp_urls, note):
+                self.mcp_url = mcp_url
+                self.mcp_urls = mcp_urls
+                self.note = note
+
+        holder = Holder(
+            "https://mcp.example.com/mcp?api_key=sk-one&profile=dev",
+            ["wss://user:sk-two@mcp.example.com/ws", "http://mcp"],
+            "see https://x.io/?token=abc in the docs",
+        )
+        cfg = json.loads(init_config(holder))
+
+        assert cfg == {
+            "mcp_url": "https://mcp.example.com/mcp?api_key=<redacted>&profile=dev",
+            "mcp_urls": [
+                "wss://<redacted>@mcp.example.com/ws",
+                "http://mcp",
+            ],
+            "note": "see https://x.io/?token=abc in the docs",
+        }
+
 
 # ===========================================================================
 # _SpanHandle
