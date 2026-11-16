@@ -2,6 +2,7 @@ from typing import List, Union, Dict, Any
 
 
 from swarms.structs.context_utils import (
+    agent_answer,
     run_on_conversation as _run_on_conversation,
 )
 from swarms.structs.omni_agent_types import AgentListType
@@ -144,7 +145,7 @@ def star_swarm(
 
         # Other agents process the same task
         for agent in agents[1:]:
-            response = agent.run(task)
+            response = agent_answer(agent, fallback=agent.run(task))
             conversation.add(
                 role=agent.agent_name,
                 content=response,
@@ -189,7 +190,9 @@ def mesh_swarm(
         for agent in agents:
             if task_queue:
                 task = task_queue.pop(0)
-                response = agent.run(task)
+                response = agent_answer(
+                    agent, fallback=agent.run(task)
+                )
                 conversation.add(
                     role=agent.agent_name,
                     content=response,
