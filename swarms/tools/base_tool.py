@@ -464,14 +464,13 @@ class BaseTool(BaseModel):
         """
         Convert all functions in the tools list into OpenAI function calling format.
 
-        This method processes all functions in the tools list, validates them for
-        proper documentation and type hints, and converts them to OpenAI schemas.
-        It also creates a function map for execution.
+        This method validates every function in the tools list for documentation
+        and type hints by converting it to an OpenAI schema, then creates a
+        function map for execution.
 
         Raises:
-            ToolValidationError: If tools are not properly configured
-            ToolDocumentationError: If functions lack required documentation
-            ToolTypeHintError: If functions lack required type hints
+            ToolValidationError: If tools is an empty list
+            FunctionSchemaError: If any function lacks documentation or type hints, or fails to convert
 
         Examples:
             >>> tool = BaseTool(tools=[func1, func2])
@@ -483,48 +482,11 @@ class BaseTool(BaseModel):
             )
             return
 
-        if not isinstance(self.tools, list) or len(self.tools) == 0:
-            raise ToolValidationError(
-                "Tools must be a non-empty list"
-            )
+        self.convert_tool_into_openai_schema()
 
-        try:
-            self._log_if_verbose(
-                "info",
-                f"Converting {len(self.tools)} functions into tools",
-            )
-            self._log_if_verbose(
-                "info",
-                "Ensure functions have documentation and type hints for reliable execution",
-            )
-
-            # Transform the tools into OpenAI schema
-            schema_result = self.convert_tool_into_openai_schema()
-
-            if schema_result:
-                self._log_if_verbose(
-                    "info",
-                    "Successfully converted tools to OpenAI schema",
-                )
-
-            # Create function calling map for all tools
-            self.function_map = {
-                tool.__name__: tool for tool in self.tools
-            }
-
-            self._log_if_verbose(
-                "info",
-                f"Created function map with {len(self.function_map)} tools",
-            )
-
-        except Exception as e:
-            self._log_if_verbose(
-                "error",
-                f"Failed to convert functions into tools: {e}",
-            )
-            raise ToolValidationError(
-                f"Failed to convert functions into tools: {e}"
-            ) from e
+        self.function_map = {
+            tool.__name__: tool for tool in self.tools
+        }
 
     def convert_tool_into_openai_schema(self) -> dict[str, Any]:
         """
@@ -804,24 +766,12 @@ class BaseTool(BaseModel):
                 )
 
         try:
-            self._log_if_verbose(
-                "info",
-                f"Converting {len(funcs)} functions to dictionaries",
-            )
-            result = (
+            return (
                 convert_multiple_functions_to_openai_function_schema(
                     funcs
                 )
             )
-            self._log_if_verbose(
-                "info",
-                f"Successfully converted {len(funcs)} functions",
-            )
-            return result
         except Exception as e:
-            self._log_if_verbose(
-                "error", f"Failed to convert multiple functions: {e}"
-            )
             raise FunctionSchemaError(
                 f"Failed to convert multiple functions: {e}"
             ) from e
