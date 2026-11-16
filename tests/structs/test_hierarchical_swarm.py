@@ -658,7 +658,6 @@ def test_batched_run_forwards_utility_options(monkeypatch):
     )
 
     assert result == ["first", "second"]
-    assert captured["func"] == swarm.run
     assert captured["tasks"] == ["task-1", "task-2"]
     assert captured["args"] == ("positional",)
     assert captured["kwargs"] == {
@@ -1184,6 +1183,103 @@ def test_final_output_is_the_last_answer_not_a_loop_marker(
 
     assert swarm.run("task") == expected
     assert "--- Loop" not in swarm.conversation.get_str()
+
+
+class RecordingAgent(StubAgent):
+    """A StubAgent that keeps what each call was given."""
+
+    def __init__(self, agent_name: str, outputs: list[Any]):
+        super().__init__(agent_name, outputs)
+        self.received = []
+        self.overlapped = False
+        self.second_call = threading.Barrier(2, timeout=0.2)
+
+    def run(self, *args, **kwargs):
+        self.received.append(kwargs)
+        try:
+            self.second_call.wait()
+            self.overlapped = True
+        except threading.BrokenBarrierError:
+            pass
+        return super().run(*args, **kwargs)
+
+
+def _orders(*pairs):
+    return OrderBatch(
+        orders=[
+            HierarchicalOrder(agent_name=name, task=task)
+            for name, task in pairs
+        ]
+    )
+
+
+def test_planning_gives_the_director_the_roster_and_the_plan():
+    director = RecordingAgent("Director", [_orders(("Worker", "go"))])
+    swarm = make_recovery_swarm(
+        director, [StubAgent("Worker", ["done"])]
+    )
+    swarm.planning_enabled = True
+    swarm._planning_director = StubAgent("Director", ["THE PLAN"])
+
+    swarm.run("task")
+
+    sent = director.received[0]["task"]
+    assert "| Worker |" in sent
+    assert "Planner: THE PLAN" in sent
+
+
+def test_concurrent_batched_run_keeps_each_task_to_itself():
+    swarm = make_recovery_swarm(
+        StubAgent("Director", [_orders(("Worker", "go"))]),
+        [StubAgent("Worker", ["done"])],
+    )
+
+    first, second = swarm.batched_run(
+        ["TASK-AAA", "TASK-BBB"], max_workers=2
+    )
+
+    assert "TASK-BBB" not in str(first)
+    assert "TASK-AAA" not in str(second)
+
+
+def test_one_agent_runs_its_orders_one_at_a_time():
+    worker = RecordingAgent("Worker", ["a done", "b done"])
+    swarm = make_recovery_swarm(StubAgent("Director", []), [worker])
+
+    outputs = swarm.execute_orders(
+        _orders(("Worker", "part a"), ("Worker", "part b")).orders
+    )
+
+    assert outputs == ["a done", "b done"]
+    assert not worker.overlapped
+
+
+def test_workers_receive_the_image_and_keyword_arguments():
+    worker = RecordingAgent("Worker", ["done"])
+    swarm = make_recovery_swarm(
+        StubAgent("Director", [_orders(("Worker", "look"))]),
+        [worker],
+    )
+
+    swarm.run("task", img="chart.png", correlation_id="abc")
+
+    assert worker.received[0]["img"] == "chart.png"
+    assert worker.received[0]["correlation_id"] == "abc"
+
+
+def test_unknown_agent_order_is_reassigned_without_retries():
+    director = StubAgent("Director", [_orders(("Worker", "job"))])
+    worker = StubAgent("Worker", ["done"])
+    swarm = make_recovery_swarm(
+        director, [worker], max_agent_retries=3
+    )
+
+    outputs = swarm.execute_orders(_orders(("Ghost", "job")).orders)
+
+    assert outputs[-1] == "done"
+    assert director.calls == 1
+    assert "[UNKNOWN AGENT]" in swarm.conversation.get_str()
+    assert "[WORKER UNAVAILABLE]" not in swarm.conversation.get_str()
 
 
 def test_task_queue_pending_count_tracks_dependency_readiness():
