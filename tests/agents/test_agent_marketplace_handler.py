@@ -1010,3 +1010,40 @@ class TestAgentErrorHierarchy:
             pytest.fail(
                 "expected AgentInitializationError to be raised"
             )
+
+
+########################################################
+# Import cost
+########################################################
+
+
+def test_handler_does_not_import_httpx_at_module_level():
+    # httpx (and click and rich through it) is loaded where a request is
+    # made, not when ``swarms.structs.agent`` imports the handler (#2933).
+    import ast
+    import inspect
+
+    import swarms.agents.agent_marketplace_handler as handler_module
+
+    tree = ast.parse(inspect.getsource(handler_module))
+    top_level_imports = [
+        alias.name
+        for node in tree.body
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    ] + [
+        node.module
+        for node in tree.body
+        if isinstance(node, ast.ImportFrom)
+    ]
+    assert "httpx" not in top_level_imports
+
+
+def test_fetch_still_maps_http_errors_with_lazy_httpx(
+    api_key, monkeypatch
+):
+    install_get_transport(
+        monkeypatch, lambda request: httpx.Response(500, text="boom")
+    )
+    with pytest.raises(httpx.HTTPStatusError):
+        AgentMarketplaceHandler.fetch(prompt_id="abc")
