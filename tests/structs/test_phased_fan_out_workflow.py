@@ -721,7 +721,11 @@ def test_overlapping_runs_each_keep_their_own_lead():
             {
                 "title": "P",
                 "steps": [
-                    {"id": "a", "agent": "worker", "prompt": "x {task}"}
+                    {
+                        "id": "a",
+                        "agent": "worker",
+                        "prompt": "x {task}",
+                    }
                 ],
             }
         ],
