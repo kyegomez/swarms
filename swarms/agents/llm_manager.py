@@ -372,7 +372,9 @@ class LLMManager:
                 additional_args.update(
                     {
                         "tools_list_dictionary": tools_list,
-                        "tool_choice": "auto",
+                        "tool_choice": additional_args.get(
+                            "tool_choice", "auto"
+                        ),
                         "parallel_tool_calls": parallel_tool_calls,
                     }
                 )
