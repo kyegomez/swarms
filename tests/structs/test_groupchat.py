@@ -399,8 +399,10 @@ class TestScheduling:
             for name in ("A", "B")
         ]
         GroupChat(agents=agents, verbose=True).run("topic")
+        agents[0].run("again")
 
-        assert sent == [sent_choice, sent_choice]
+        assert sent[:2] == [sent_choice, sent_choice]
+        assert sent[-1] == "auto"
         assert "A bid 0.00, returned: 'Just text.'" in str(
             log.mock_calls
         )

@@ -266,10 +266,6 @@ class GroupChat(SerializableMixin):
         client bakes ``tools_list_dictionary`` in at construction time, so
         after appending the schema the client is rebuilt via
         ``llm_handling()``.
-
-        Each agent's client is then set to force a respond() call, unless
-        reasoning or thinking is on: Anthropic rejects a forced tool choice
-        with thinking enabled, so those agents keep auto.
         """
         for agent in self.agents:
             tools = agent.tools_list_dictionary or []
@@ -285,13 +281,6 @@ class GroupChat(SerializableMixin):
                 "info",
                 f"Injected respond tool into {agent.agent_name}",
             )
-
-        for agent in self.agents:
-            llm = getattr(agent, "llm", None)
-            if isinstance(llm, LiteLLM) and not (
-                llm.reasoning_effort or llm.reasoning_enabled
-            ):
-                llm.tool_choice = RESPOND_CHOICE
 
     def _other_agents(self, exclude: str) -> str:
         """Return a comma-separated list of peers visible to one agent."""
@@ -321,6 +310,13 @@ class GroupChat(SerializableMixin):
         )
         previous_output_type = getattr(agent, "output_type", None)
         agent.output_type = "final"
+        llm = getattr(agent, "llm", None)
+        forced = isinstance(llm, LiteLLM) and not (
+            llm.reasoning_effort or llm.reasoning_enabled
+        )
+        if forced:
+            previous_tool_choice = llm.tool_choice
+            llm.tool_choice = RESPOND_CHOICE
         try:
             # Typed turns let the agent tell its own prior speech from a peer's.
             tool_output = agent.run(
@@ -339,6 +335,8 @@ class GroupChat(SerializableMixin):
             return 0.0, ""
         finally:
             agent.output_type = previous_output_type
+            if forced:
+                llm.tool_choice = previous_tool_choice
 
         score, reply = _extract_args(tool_output)
         self._log(
