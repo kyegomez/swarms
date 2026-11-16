@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import threading
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import lru_cache
@@ -17,6 +18,7 @@ from typing import (
     Optional,
     Sequence,
 )
+from urllib.parse import unquote_plus, urlsplit
 
 from loguru import logger
 from pydantic import BaseModel
@@ -26,9 +28,49 @@ if TYPE_CHECKING:  # pragma: no cover - typing only, no runtime import
 
 
 _SECRET_KEY = re.compile(
-    r"key$|secret|password|token$|authorization|oauth|headers$|^env$",
+    r"key$|secret|password|passwd|token$|authorization|oauth|headers$"
+    r"|^env$|credential|signature|^sig$|cookie|session_?id$",
     re.IGNORECASE,
 )
+
+_URL = re.compile(r"(?:https?|wss?)://[^\s\"'<>`\\]+", re.IGNORECASE)
+
+# Well-known credential formats, matched wherever they appear.
+_TOKEN_SHAPES = re.compile(
+    r"\b(?:sk|pk|rk)-[A-Za-z0-9_\-]{16,}"
+    r"|\bgh[pousr]_[A-Za-z0-9]{20,}"
+    r"|\bgithub_pat_[A-Za-z0-9_]{20,}"
+    r"|\bxox[abprs]-[A-Za-z0-9\-]{10,}"
+    r"|\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"
+    r"|\bAIza[0-9A-Za-z_\-]{30,}"
+    r"|\bhf_[A-Za-z0-9]{30,}"
+    r"|\beyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}"
+    r"|(?<!\d)\d{8,10}:[A-Za-z0-9_\-]{35}\b"
+)
+
+# Needs a digit or "=" so prose such as "basic understanding" is left alone.
+_BEARER = re.compile(
+    r"\b(bearer|basic)\s+(?=[A-Za-z0-9._~+/\-]*[0-9=])"
+    r"[A-Za-z0-9._~+/=\-]{8,}",
+    re.IGNORECASE,
+)
+
+# A secret-named field assigned a value, as in "api_key=..." or "password": "...".
+_ASSIGNED = re.compile(
+    r"((?:api|secret|access|private|client)[_-]?key|apikey|secret"
+    r"|password|passwd|(?:access|auth|refresh|bearer|session|id)[_-]?token"
+    r"|\btoken|authorization|credentials?)"
+    r"([\"']?\s*[:=]\s*[\"']?)([^\s\"',;&}<]{4,})",
+    re.IGNORECASE,
+)
+
+# Environment variables whose values are always scrubbed from telemetry.
+_SECRET_ENV = re.compile(
+    r"KEY$|TOKEN$|SECRET|PASSWORD|PASSWD|CREDENTIAL|_AUTH$",
+    re.IGNORECASE,
+)
+
+REDACTED = "<redacted>"
 
 TELEMETRY_BASE_URL = "https://telemetry.swarms.world"
 
@@ -80,13 +122,133 @@ def _truncate(value: Any, limit: int = MAX_PAYLOAD_CHARS) -> str:
             :data:`MAX_PAYLOAD_CHARS`.
 
     Returns:
-        str: ``value`` as a string, truncated with an ``"…[truncated]"`` marker
-        when it exceeds ``limit``.
+        str: ``value`` as a string with credentials removed, truncated with an
+        ``"…[truncated]"`` marker when it exceeds ``limit``.
     """
-    text = value if isinstance(value, str) else str(value)
+    text = _scrub(value if isinstance(value, str) else str(value))
     if len(text) > limit:
         return text[:limit] + "…[truncated]"
     return text
+
+
+def _redact_url(text: str) -> str:
+    """Hide the credentials an http(s) or ws(s) URL carries.
+
+    Args:
+        text (str): One URL. Anything that is not such a URL is returned
+            unchanged.
+
+    Returns:
+        str: The URL with its user info, and every query or fragment value
+        whose name looks like a credential, replaced by "<redacted>".
+    """
+    if not _URL.fullmatch(text):
+        return text
+    try:
+        parts = urlsplit(text)
+    except ValueError:
+        return text
+
+    netloc = parts.netloc
+    if "@" in netloc:
+        netloc = f"{REDACTED}@" + netloc.rpartition("@")[2]
+
+    query = _redact_params(parts.query)
+    fragment = _redact_params(parts.fragment)
+    if (netloc, query, fragment) == (
+        parts.netloc,
+        parts.query,
+        parts.fragment,
+    ):
+        return text
+
+    return parts._replace(
+        netloc=netloc, query=query, fragment=fragment
+    ).geturl()
+
+
+def _redact_params(params: str) -> str:
+    """Hide the values of credential-named pairs in a query or fragment.
+
+    Args:
+        params (str): A query or fragment, such as "a=1&token=x".
+
+    Returns:
+        str: The same pairs, with credential values replaced by "<redacted>".
+    """
+    if "=" not in params:
+        return params
+
+    return "&".join(
+        (
+            f"{pair.partition('=')[0]}={REDACTED}"
+            if _SECRET_KEY.search(
+                unquote_plus(pair.partition("=")[0])
+            )
+            else pair
+        )
+        for pair in params.split("&")
+    )
+
+
+def _redact_url_match(match: "re.Match[str]") -> str:
+    """Redact one URL found in text, keeping punctuation that ends a sentence.
+
+    Args:
+        match: A match of the URL pattern.
+
+    Returns:
+        str: The redacted URL followed by any trailing punctuation.
+    """
+    url = match.group(0)
+    stripped = url.rstrip(".,:;!?)]")
+
+    return _redact_url(stripped) + url[len(stripped) :]
+
+
+def _secret_env_values() -> List[str]:
+    """Values of credential-named environment variables, longest first.
+
+    Returns:
+        List[str]: Every such value of at least eight characters.
+    """
+    values = {
+        value.strip()
+        for name, value in os.environ.items()
+        if _SECRET_ENV.search(name) and len(value.strip()) >= 8
+    }
+    return sorted(values, key=len, reverse=True)
+
+
+def _scrub(text: str) -> str:
+    """Remove credentials from a string before it leaves the process.
+
+    Hides credentials inside URLs, well-known key formats, bearer tokens,
+    secret-named assignments, and the value of every credential-named
+    environment variable, wherever they appear in the text.
+
+    Args:
+        text (str): Any text bound for a span attribute or event.
+
+    Returns:
+        str: The text with every credential found replaced by "<redacted>".
+    """
+    if not text:
+        return text
+
+    for secret in _secret_env_values():
+        if secret in text:
+            text = text.replace(secret, REDACTED)
+
+    text = _URL.sub(_redact_url_match, text)
+    text = _TOKEN_SHAPES.sub(REDACTED, text)
+    text = _BEARER.sub(
+        lambda match: f"{match.group(1)} {REDACTED}", text
+    )
+
+    return _ASSIGNED.sub(
+        lambda match: match.group(1) + match.group(2) + REDACTED, text
+    )
 
 
 class _CyclicReference(Exception):
@@ -245,6 +407,25 @@ def init_config(obj: Any) -> str:
     return _truncate(rendered, limit=MAX_CONFIG_CHARS)
 
 
+def _record_exception(span: "Span", exc: BaseException) -> None:
+    """Add the standard exception event to a span, with credentials removed.
+
+    Args:
+        span: The span to record on.
+        exc: The exception raised.
+    """
+    stacktrace = "".join(
+        traceback.format_exception(type(exc), exc, exc.__traceback__)
+    )
+    span.record_exception(
+        exc,
+        attributes={
+            "exception.message": _truncate(str(exc)),
+            "exception.stacktrace": _truncate(stacktrace),
+        },
+    )
+
+
 class _SpanHandle:
     """Fail-safe wrapper around a live span (or nothing, when telemetry is off).
 
@@ -302,7 +483,9 @@ class _SpanHandle:
         try:
             self._span.set_attribute(
                 "swarms.output",
-                result if isinstance(result, str) else str(result),
+                _scrub(
+                    result if isinstance(result, str) else str(result)
+                ),
             )
         except Exception:
             pass
@@ -360,7 +543,7 @@ class _SpanHandle:
             import json
 
             self._span.set_attribute(
-                key, json.dumps(_sanitize(value), default=str)
+                key, _scrub(json.dumps(_sanitize(value), default=str))
             )
         except Exception:
             pass
@@ -408,8 +591,10 @@ class _SpanHandle:
             self._span.set_attribute(
                 "swarms.error.message", _truncate(str(exc))
             )
-            self._span.record_exception(exc)
-            self._span.set_status(Status(StatusCode.ERROR, str(exc)))
+            _record_exception(self._span, exc)
+            self._span.set_status(
+                Status(StatusCode.ERROR, _scrub(str(exc)))
+            )
             self._done = True
         except Exception:
             pass
@@ -681,7 +866,7 @@ class SwarmTelemetry:
                 obj, "name", None
             )
             if name is not None:
-                span.set_attribute("swarms.name", str(name))
+                span.set_attribute("swarms.name", _scrub(str(name)))
 
             obj_id = getattr(obj, "id", None)
             if obj_id is not None:
@@ -691,7 +876,7 @@ class SwarmTelemetry:
             swarm_type = getattr(obj, "swarm_type", None)
             if swarm_type is not None:
                 span.set_attribute(
-                    "swarms.swarm_type", str(swarm_type)
+                    "swarms.swarm_type", _scrub(str(swarm_type))
                 )
         except Exception:
             pass
@@ -831,8 +1016,10 @@ class SwarmTelemetry:
                     span.set_attribute(
                         f"swarms.{key}", _truncate(value)
                     )
-            span.record_exception(exc)
-            span.set_status(Status(StatusCode.ERROR, str(exc)))
+            _record_exception(span, exc)
+            span.set_status(
+                Status(StatusCode.ERROR, _scrub(str(exc)))
+            )
             span.end()
         except Exception:
             pass
