@@ -19,7 +19,7 @@ print(json.dumps({
 """
 
 
-def run_probe(cwd, env_overrides, extra=""):
+def run_probe(cwd, env_overrides, extra="", prefix=""):
     """Import swarms in a fresh interpreter and report what it resolved."""
     env = dict(os.environ)
     env["PYTHONPATH"] = str(REPO_ROOT)
@@ -31,7 +31,7 @@ def run_probe(cwd, env_overrides, extra=""):
             env[key] = value
 
     result = subprocess.run(
-        [sys.executable, "-c", PROBE + extra],
+        [sys.executable, "-c", prefix + PROBE + extra],
         cwd=str(cwd),
         env=env,
         capture_output=True,
@@ -76,6 +76,21 @@ def test_relative_workspace_dir_is_left_alone(tmp_path):
     out = run_probe(tmp_path, {"WORKSPACE_DIR": "my_ws"})
 
     assert out["workspace"] == "my_ws"
+
+
+def test_import_keeps_the_application_root_logger(tmp_path):
+    """Importing swarms leaves the handlers the app configured in place."""
+    out = run_probe(
+        tmp_path,
+        {},
+        "root = logging.getLogger()\n"
+        "print(json.dumps({'kept': root.handlers == [app_handler]}))",
+        prefix="import logging\n"
+        "logging.basicConfig(level=logging.INFO)\n"
+        "app_handler = logging.getLogger().handlers[0]\n",
+    )
+
+    assert out == {"kept": True}
 
 
 @pytest.mark.parametrize("kind", ["file", "unwritable"])
