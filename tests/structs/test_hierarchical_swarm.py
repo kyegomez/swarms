@@ -1183,10 +1183,7 @@ def test_final_output_is_the_last_answer_not_a_loop_marker(
     )
 
     assert swarm.run("task") == expected
-    assert (
-        "--- Loop 1/2 failed: director down ---"
-        in swarm.conversation.get_str()
-    )
+    assert "--- Loop" not in swarm.conversation.get_str()
 
 
 def test_task_queue_pending_count_tracks_dependency_readiness():

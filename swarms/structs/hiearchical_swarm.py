@@ -645,10 +645,6 @@ class HierarchicalSwarm:
                     logger.error(
                         f"[ERROR] Loop execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
                     )
-                    self.conversation.add(
-                        role="System",
-                        content=f"--- Loop {current_loop + 1}/{self.max_loops} failed: {e} ---",
-                    )
 
                 current_loop += 1
 
