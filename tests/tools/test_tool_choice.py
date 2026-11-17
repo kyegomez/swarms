@@ -1,3 +1,6 @@
+import asyncio
+from types import SimpleNamespace
+
 import litellm
 import pytest
 
@@ -9,6 +12,8 @@ from swarms import (
 )
 from swarms.structs.groupchat import RESPOND_TOOL, GroupChat
 from swarms.tools.tool_choice import forced_tool_choice
+from swarms.utils import llm_backend
+from swarms.utils.litellm_wrapper import LiteLLM
 
 SCHEMA = {"type": "function", "function": {"name": "respond"}}
 FORCED = {"type": "function", "function": {"name": "respond"}}
@@ -17,7 +22,7 @@ NO_FORCE = "anthropic/test-model-without-forced-tools"
 
 @pytest.fixture(autouse=True)
 def listed_models(monkeypatch):
-    """Two models in LiteLLM's model list, one that rejects a forced choice."""
+    """Models in LiteLLM's model list, including an entry that does not say either way."""
     monkeypatch.setitem(
         litellm.model_cost,
         "test-model-without-forced-tools",
@@ -27,6 +32,11 @@ def listed_models(monkeypatch):
         litellm.model_cost,
         "test-model-with-forced-tools",
         {"supports_forced_tool_use": True},
+    )
+    monkeypatch.setitem(
+        litellm.model_cost,
+        "reseller/test-model-without-forced-tools",
+        {"max_tokens": 1000},
     )
 
 
@@ -50,6 +60,13 @@ def listed_models(monkeypatch):
             FORCED,
         ),
         (SCHEMA, {"model_name": "unlisted-model"}, FORCED),
+        (
+            SCHEMA,
+            {
+                "model_name": "reseller/test-model-without-forced-tools"
+            },
+            "auto",
+        ),
     ],
 )
 def test_forced_tool_choice_names_the_tool_unless_reasoning_is_on_or_the_model_cannot_be_forced(
@@ -135,3 +152,58 @@ def test_every_forced_call_sends_auto_to_a_model_that_cannot_be_forced(
         pass
 
     assert sent and sent[0]["tool_choice"] == "auto"
+
+
+def test_the_routehub_backend_never_reads_litellm(monkeypatch):
+    """Reading the list on RouteHub loaded LiteLLM and fetched its model registry."""
+
+    def no_litellm():
+        raise AssertionError("LiteLLM was loaded")
+
+    monkeypatch.setattr(llm_backend, "BACKEND", "routehub")
+    monkeypatch.setattr(llm_backend, "backend_module", no_litellm)
+
+    assert forced_tool_choice(SCHEMA, model_name=NO_FORCE) == FORCED
+
+
+@pytest.mark.parametrize("entry", ["run", "arun"])
+def test_a_rejected_forced_choice_is_retried_once_with_auto(
+    monkeypatch, entry
+):
+    """A model the list does not cover, as with LiteLLM's bundled list, still gets its call."""
+    sent = []
+
+    def completion(**params):
+        sent.append(params["tool_choice"])
+        if isinstance(params["tool_choice"], dict):
+            raise RuntimeError(
+                'AnthropicException - tool_choice: type "tool" and "any" '
+                "are not supported for this model."
+            )
+        message = SimpleNamespace(content="ok", tool_calls=None)
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=message)], usage=None
+        )
+
+    async def acompletion(**params):
+        return completion(**params)
+
+    monkeypatch.setattr(
+        "swarms.utils.litellm_wrapper.completion", completion
+    )
+    monkeypatch.setattr(
+        "swarms.utils.litellm_wrapper.acompletion", acompletion
+    )
+    llm = LiteLLM(
+        model_name="anthropic/unlisted-claude-model",
+        tools_list_dictionary=[SCHEMA],
+        tool_choice=forced_tool_choice(
+            SCHEMA, model_name="anthropic/unlisted-claude-model"
+        ),
+    )
+
+    result = getattr(llm, entry)("hi")
+    if asyncio.iscoroutine(result):
+        result = asyncio.run(result)
+
+    assert sent == [FORCED, "auto"]

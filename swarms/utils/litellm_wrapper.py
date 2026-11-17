@@ -18,7 +18,7 @@ for various input modalities and output formats.
 
 import copy
 import traceback
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 import requests
 from loguru import logger
@@ -773,6 +773,51 @@ class LiteLLM:
             return swapped
         return None
 
+    @staticmethod
+    def _auto_tool_choice_for(
+        error: Exception, params: dict
+    ) -> Optional[dict]:
+        """Params with tool_choice set to auto, if the error rejects a forced choice.
+
+        Claude Sonnet 5.5 and similar models reject a named tool_choice, and the
+        model list may not say so. Returns None when the error is about something else.
+
+        Args:
+            error: The provider's error.
+            params: The completion params that were sent.
+
+        Returns:
+            The params with tool_choice auto, or None.
+        """
+        if not isinstance(params.get("tool_choice"), dict):
+            return None
+        if "tool_choice" not in str(error):
+            return None
+        return {**params, "tool_choice": "auto"}
+
+    @classmethod
+    def _retry_params_for(
+        cls, error: Exception, params: dict
+    ) -> Optional[Tuple[dict, str]]:
+        """Params to retry once with, and what the provider rejected.
+
+        Args:
+            error: The provider's error.
+            params: The completion params that were sent.
+
+        Returns:
+            A (params, rejected setting) pair, or None when no retry fits.
+        """
+        swapped = cls._swap_token_key_for(error, params)
+        if swapped is not None:
+            return swapped, "the output-token key"
+
+        unforced = cls._auto_tool_choice_for(error, params)
+        if unforced is not None:
+            return unforced, "a forced tool_choice"
+
+        return None
+
     def _is_anthropic_model(self) -> bool:
         """
         Whether the configured model is in the Anthropic Claude family, incl.
@@ -1448,13 +1493,14 @@ class LiteLLM:
             try:
                 response = completion(**completion_params)
             except Exception as error:
-                retry_params = self._swap_token_key_for(
+                retry = self._retry_params_for(
                     error, completion_params
                 )
-                if retry_params is None:
+                if retry is None:
                     raise
+                retry_params, rejected = retry
                 logger.warning(
-                    f"{self.model_name} rejected the output-token key, retrying: {error}"
+                    f"{self.model_name} rejected {rejected}, retrying: {error}"
                 )
                 self.last_request = retry_params
                 response = completion(**retry_params)
@@ -1510,13 +1556,14 @@ class LiteLLM:
             try:
                 response = await acompletion(**completion_params)
             except Exception as error:
-                retry_params = self._swap_token_key_for(
+                retry = self._retry_params_for(
                     error, completion_params
                 )
-                if retry_params is None:
+                if retry is None:
                     raise
+                retry_params, rejected = retry
                 logger.warning(
-                    f"{self.model_name} rejected the output-token key, retrying: {error}"
+                    f"{self.model_name} rejected {rejected}, retrying: {error}"
                 )
                 self.last_request = retry_params
                 response = await acompletion(**retry_params)
