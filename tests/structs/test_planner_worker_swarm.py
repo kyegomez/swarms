@@ -75,6 +75,21 @@ def test_planner_request_forces_the_plan_tool(monkeypatch):
     }
 
 
+def test_judge_request_forces_the_verdict_tool():
+    swarm = PlannerWorkerSwarm(agents=[_usage_agent("Worker", 1, 1)])
+
+    with patch(
+        "swarms.structs.planner_worker_swarm.Agent",
+        side_effect=RuntimeError,
+    ) as built, pytest.raises(RuntimeError):
+        swarm._run_judge()
+
+    assert built.call_args.kwargs["llm_args"]["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "CycleVerdict"},
+    }
+
+
 def test_worker_pool_defaults_to_one_worker_per_agent():
     """Workers wait on model calls, so the CPU count does not cap the pool."""
     agents = [object()] * 8
