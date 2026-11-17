@@ -1,6 +1,8 @@
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from swarms.structs.auto_agent_builder import AutoAgentBuilder
 from swarms.utils import litellm_wrapper
 
@@ -64,3 +66,22 @@ def test_usage_adds_up_every_build_configs_call(monkeypatch):
 
     builder.run("Research EVs again.")
     assert builder.usage == {k: 2 * v for k, v in once.items()}
+
+
+def test_builder_request_forces_the_build_agents_tool(monkeypatch):
+    """A builder answering in prose returned no roster, so the run failed."""
+    sent = []
+
+    def capture(**params):
+        sent.append(params)
+        raise RuntimeError("captured")
+
+    monkeypatch.setattr(litellm_wrapper, "completion", capture)
+
+    with pytest.raises(RuntimeError):
+        AutoAgentBuilder()._builder_agent().llm.run(task="build")
+
+    assert sent[0]["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "build_agents"},
+    }
