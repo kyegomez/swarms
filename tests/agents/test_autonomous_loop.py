@@ -798,6 +798,24 @@ class TestMutablePlan:
             "a"
         ], "a finished dependency was dropped"
 
+    def test_revision_drops_a_dependency_on_a_removed_pending_step(
+        self,
+    ):
+        agent = build_agent()
+        loop = AutonomousAgentLoop(agent)
+        loop._create_plan_tool("t", [{"step_id": "a"}])
+
+        loop._create_plan_tool(
+            "t", [{"step_id": "b", "dependencies": ["a"]}]
+        )
+
+        assert [s["step_id"] for s in agent.autonomous_subtasks] == [
+            "b"
+        ]
+        assert agent.autonomous_subtasks[0]["dependencies"] == []
+        nxt = loop._get_next_executable_subtask()
+        assert nxt is not None and nxt["step_id"] == "b"
+
 
 # --------------------------------------------------------------------------
 # think_tool parameter
