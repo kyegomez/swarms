@@ -12,6 +12,7 @@ from typing import Union, Callable
 from swarms.utils.history_output_formatter import HistoryOutputType
 from swarms.utils.str_to_dict import str_to_dict
 from swarms.structs.usage_utils import total_usage
+from swarms.tools.tool_choice import forced_tool_choice
 
 tools = [
     {
@@ -126,6 +127,7 @@ class HybridHierarchicalClusterSwarm:
             agent_description="A router agent that routes tasks to the appropriate swarms.",
             system_prompt=f"{router_system_prompt}\n\n{get_swarms_info(swarms=self.swarms)}",
             tools_list_dictionary=tools,
+            llm_args={"tool_choice": forced_tool_choice(tools[0])},
             model_name=router_agent_model_name,
             max_loops=1,
             output_type="final",
