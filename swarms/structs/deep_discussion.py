@@ -1,6 +1,6 @@
 from typing import Callable, Union
 
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.utils.history_output_formatter import (
@@ -21,6 +21,9 @@ def one_on_one_debate(
     Each agent alternately responds to the previous message, with the conversation
     history being tracked and available for both agents to reference. The debate
     starts with the provided `task` as the initial message.
+
+    Both agents start from a clean history, and each one's first turn opens
+    with who it is debating, so a reused pair does not resend the last debate.
 
     Args:
         max_loops (int): The number of conversational turns (each agent speaks per loop).
@@ -46,14 +49,23 @@ def one_on_one_debate(
 
     agent1 = agents[0]
     agent2 = agents[1]
+    reset_agents(agents)
 
     message = task
     speaker = agent1
     other = agent2
 
     for i in range(max_loops):
+        prompt = message
+        if i < 2:
+            prompt = (
+                f"You are {speaker.agent_name} debating against "
+                f"{other.agent_name}. Your role is to engage in a "
+                f"thoughtful debate.\n\n{message}"
+            )
+
         # Current speaker responds
-        response = speaker.run(task=message, img=img)
+        response = speaker.run(task=prompt, img=img)
         answer = agent_answer(speaker, fallback=response)
         conversation.add(speaker.agent_name, answer)
 
