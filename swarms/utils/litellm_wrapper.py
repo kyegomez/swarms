@@ -17,6 +17,7 @@ for various input modalities and output formats.
 """
 
 import copy
+import re
 import traceback
 from typing import Any, Callable, List, Optional, Tuple, Union
 
@@ -36,6 +37,12 @@ from swarms.utils.llm_backend import acompletion, completion
 
 # Only a yes is remembered: RouteHub answers no while OpenRouter's model list is unreachable.
 _VISION_MODELS = set()
+
+_UNSUPPORTED_TOOL_CHOICE = re.compile(
+    r"tool[\s_.]?choice.{0,80}?(?:not supported|unsupported|does not support|doesn't support)"
+    r"|(?:not supported|unsupported|does not support|doesn't support).{0,80}?tool[\s_.]?choice",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def _model_supports_vision(model: str) -> bool:
@@ -780,7 +787,9 @@ class LiteLLM:
         """Params with tool_choice set to auto, if the error rejects a forced choice.
 
         Claude Sonnet 5.5 and similar models reject a named tool_choice, and the
-        model list may not say so. Returns None when the error is about something else.
+        model list may not say so. Only an error saying the choice is unsupported
+        qualifies; any other tool_choice error, such as a tool name that is not
+        in the tools, still raises. Returns None when no retry fits.
 
         Args:
             error: The provider's error.
@@ -791,7 +800,7 @@ class LiteLLM:
         """
         if not isinstance(params.get("tool_choice"), dict):
             return None
-        if "tool_choice" not in str(error):
+        if not _UNSUPPORTED_TOOL_CHOICE.search(str(error)):
             return None
         return {**params, "tool_choice": "auto"}
 

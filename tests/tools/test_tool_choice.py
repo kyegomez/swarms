@@ -166,20 +166,42 @@ def test_the_routehub_backend_never_reads_litellm(monkeypatch):
     assert forced_tool_choice(SCHEMA, model_name=NO_FORCE) == FORCED
 
 
+UNSUPPORTED = (
+    'AnthropicException - tool_choice: type "tool" and "any" '
+    "are not supported for this model."
+)
+
+
 @pytest.mark.parametrize("entry", ["run", "arun"])
-def test_a_rejected_forced_choice_is_retried_once_with_auto(
-    monkeypatch, entry
+@pytest.mark.parametrize(
+    "error, expected_sent",
+    [
+        (UNSUPPORTED, [FORCED, "auto"]),
+        (
+            "Invalid tool_choice: function 'respond' was not found in tools",
+            [FORCED],
+        ),
+        (
+            "tool_choice must be one of none, auto, required, or a function",
+            [FORCED],
+        ),
+    ],
+    ids=[
+        "unsupported",
+        "unknown_tool_name",
+        "other_tool_choice_error",
+    ],
+)
+def test_only_an_unsupported_forced_choice_is_retried_with_auto(
+    monkeypatch, entry, error, expected_sent
 ):
-    """A model the list does not cover, as with LiteLLM's bundled list, still gets its call."""
+    """A model the list does not cover still gets its call; any other tool_choice error still raises."""
     sent = []
 
     def completion(**params):
         sent.append(params["tool_choice"])
         if isinstance(params["tool_choice"], dict):
-            raise RuntimeError(
-                'AnthropicException - tool_choice: type "tool" and "any" '
-                "are not supported for this model."
-            )
+            raise RuntimeError(error)
         message = SimpleNamespace(content="ok", tool_calls=None)
         return SimpleNamespace(
             choices=[SimpleNamespace(message=message)], usage=None
@@ -202,8 +224,11 @@ def test_a_rejected_forced_choice_is_retried_once_with_auto(
         ),
     )
 
-    result = getattr(llm, entry)("hi")
-    if asyncio.iscoroutine(result):
-        result = asyncio.run(result)
+    try:
+        result = getattr(llm, entry)("hi")
+        if asyncio.iscoroutine(result):
+            asyncio.run(result)
+    except RuntimeError:
+        assert len(expected_sent) == 1
 
-    assert sent == [FORCED, "auto"]
+    assert sent == expected_sent
