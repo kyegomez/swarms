@@ -10,6 +10,7 @@ from swarms import (
     HierarchicalSwarm,
     PlannerWorkerSwarm,
 )
+from swarms.structs.auto_agent_builder import AutoAgentBuilder
 from swarms.structs.groupchat import RESPOND_TOOL, GroupChat
 from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils import llm_backend
@@ -108,6 +109,12 @@ def _question_request():
     swarm.execute_question_generation("A task")
 
 
+def _builder_request():
+    AutoAgentBuilder(model_name=NO_FORCE)._builder_agent().llm.run(
+        task="build"
+    )
+
+
 def _bid_request():
     agents = [
         Agent(
@@ -128,9 +135,16 @@ def _bid_request():
         _planner_request,
         _director_request,
         _question_request,
+        _builder_request,
         _bid_request,
     ],
-    ids=["planner", "director", "questions", "groupchat_bid"],
+    ids=[
+        "planner",
+        "director",
+        "questions",
+        "builder",
+        "groupchat_bid",
+    ],
 )
 def test_every_forced_call_sends_auto_to_a_model_that_cannot_be_forced(
     monkeypatch, request_tool_call

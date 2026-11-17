@@ -302,7 +302,9 @@ class AutoAgentBuilder:
             print_on=False,
             tools_list_dictionary=[BUILD_AGENTS_TOOL],
             llm_args={
-                "tool_choice": forced_tool_choice(BUILD_AGENTS_TOOL)
+                "tool_choice": forced_tool_choice(
+                    BUILD_AGENTS_TOOL, model_name=self.model_name
+                )
             },
         )
 
