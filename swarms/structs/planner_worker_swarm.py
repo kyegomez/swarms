@@ -837,6 +837,7 @@ class PlannerWorkerSwarm:
             max_loops=1,
             base_model=CycleVerdict,
             tools_list_dictionary=[schema],
+            llm_args={"tool_choice": forced_tool_choice(schema)},
             output_type="dict-all-except-first",
         )
 
