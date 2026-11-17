@@ -677,3 +677,32 @@ def test_one_on_one_debate_forwards_the_answer_not_the_transcript():
         ] * len(
             agent.prompts[1:]
         ), f"{agent.agent_name} prompts: {agent.prompts}"
+
+
+def test_debate_reruns_from_a_clean_history_in_max_loops_calls(
+    monkeypatch, tmp_path
+):
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    requests = []
+
+    def fake_run(self, *args, **kwargs):
+        requests.append(repr((args, kwargs)))
+        return "an answer"
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    agents = [
+        Agent(agent_name=name, max_loops=1, print_on=False)
+        for name in ("Pro", "Con")
+    ]
+    debate = OneOnOneDebate(agents=agents, max_loops=2)
+
+    debate.run("FIRSTTASK")
+    requests.clear()
+    debate.run("SECONDTASK")
+
+    assert len(requests) == 2
+    assert not any("FIRSTTASK" in r for r in requests)
+    assert "Pro debating against Con" in requests[0]
+    assert "Con debating against Pro" in requests[1]
