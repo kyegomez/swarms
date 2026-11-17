@@ -449,16 +449,14 @@ class BaseTool(BaseModel):
         Convert tools into OpenAI function calling schema format.
 
         This method processes all tools and converts them into a unified OpenAI
-        function calling schema. Results are cached for performance.
+        function calling schema.
 
         Returns:
             dict[str, Any]: Combined OpenAI function calling schema
 
         Raises:
-            ToolValidationError: If tools validation fails
-            ToolDocumentationError: If tool documentation is missing
-            ToolTypeHintError: If tool type hints are missing
-            FunctionSchemaError: If schema conversion fails
+            ToolValidationError: If tools is None or an empty list
+            FunctionSchemaError: If any tool lacks documentation or type hints, or fails to convert
 
         Examples:
             >>> tool = BaseTool(tools=[func1, func2])
@@ -475,85 +473,40 @@ class BaseTool(BaseModel):
             )
 
         try:
-            self._log_if_verbose(
-                "info",
-                "Converting tools into OpenAI function calling schema",
-            )
-
             tool_schemas = []
             failed_tools = []
 
             for tool in self.tools:
                 try:
-                    # Validate tool has documentation and type hints
-                    if not self.check_func_if_have_docs(tool):
-                        failed_tools.append(
-                            f"{tool.__name__} (missing documentation)"
-                        )
-                        continue
-
-                    if not self.check_func_if_have_type_hints(tool):
-                        failed_tools.append(
-                            f"{tool.__name__} (missing type hints)"
-                        )
-                        continue
-
-                    name = tool.__name__
-                    description = tool.__doc__
-
-                    self._log_if_verbose(
-                        "info", f"Converting tool: {name}"
-                    )
-
-                    tool_schema = (
+                    self.check_func_if_have_docs(tool)
+                    self.check_func_if_have_type_hints(tool)
+                    tool_schemas.append(
                         get_openai_function_schema_from_func(
-                            tool, name=name, description=description
+                            tool,
+                            name=tool.__name__,
+                            description=tool.__doc__,
                         )
                     )
-
-                    self._log_if_verbose(
-                        "info", f"Tool {name} converted successfully"
-                    )
-                    tool_schemas.append(tool_schema)
-
                 except Exception as e:
                     failed_tools.append(
                         f"{tool.__name__} (conversion error: {e})"
                     )
-                    self._log_if_verbose(
-                        "error",
-                        f"Failed to convert tool {tool.__name__}: {e}",
-                    )
 
             if failed_tools:
-                error_msg = f"Failed to convert tools: {', '.join(failed_tools)}"
-                self._log_if_verbose("error", error_msg)
-                raise FunctionSchemaError(error_msg)
-
-            if not tool_schemas:
-                raise ToolValidationError(
-                    "No tools were successfully converted"
+                raise FunctionSchemaError(
+                    f"Failed to convert tools: {', '.join(failed_tools)}"
                 )
 
-            # Combine all tool schemas into a single schema
-            combined_schema = {
+            return {
                 "type": "function",
                 "functions": [
                     schema["function"] for schema in tool_schemas
                 ],
             }
 
-            self._log_if_verbose(
-                "info",
-                f"Successfully combined {len(tool_schemas)} tool schemas",
-            )
-            return combined_schema
-
+        except FunctionSchemaError:
+            raise
         except Exception as e:
-            if isinstance(
-                e, (ToolValidationError, FunctionSchemaError)
-            ):
-                raise
             self._log_if_verbose(
                 "error",
                 f"Unexpected error during schema conversion: {e}",
