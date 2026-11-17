@@ -77,6 +77,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import batched_run
 from swarms.tools.base_tool import BaseTool
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -1197,9 +1198,17 @@ class TreeOfThoughts:
             The validated call arguments, or None if the call failed or
             returned no valid call. Failures are logged as warnings.
         """
+        llm_args = self.agent_kwargs.get("llm_args") or {}
+        sent = {**self.agent_kwargs, **llm_args}
+        tool_choice = forced_tool_choice(
+            _TOOL_SCHEMAS[schema],
+            sent.get("reasoning_effort"),
+            sent.get("reasoning_enabled"),
+        )
         agent = Agent(
             **{
                 **self.agent_kwargs,
+                "llm_args": {"tool_choice": tool_choice, **llm_args},
                 "agent_name": f"{self.name}-{role}",
                 "system_prompt": self.system_prompt,
                 "model_name": self.model_name,

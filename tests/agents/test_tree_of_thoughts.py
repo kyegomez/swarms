@@ -443,11 +443,24 @@ def test_agent_kwargs_cannot_replace_the_tool(model, monkeypatch):
     monkeypatch.setattr(Agent, "__init__", spy)
 
     _agent(
-        agent_kwargs={"tools_list_dictionary": [], "max_tokens": 321}
+        agent_kwargs={
+            "tools_list_dictionary": [],
+            "max_tokens": 321,
+            "llm_args": {"top_k": 5},
+        }
     ).run("task")
+    forced = list(built)
+    _agent(agent_kwargs={"reasoning_effort": "low"}).run("task")
 
-    assert built and all(k["max_tokens"] == 321 for k in built)
+    assert all(k["max_tokens"] == 321 for k in forced)
     assert all(len(k["tools_list_dictionary"]) == 1 for k in built)
+    assert all(
+        k["llm_args"]["tool_choice"]["function"]["name"]
+        == k["tools_list_dictionary"][0]["function"]["name"]
+        and k["llm_args"]["top_k"] == 5
+        for k in forced
+    )
+    assert built[-1]["llm_args"]["tool_choice"] == "auto"
 
 
 def test_no_temperature_is_sent_unless_set(model, monkeypatch):
