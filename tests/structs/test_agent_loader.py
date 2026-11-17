@@ -436,6 +436,34 @@ def test_loader_concurrent_false_loads_in_the_calling_thread():
     assert threads == [threading.current_thread()] * 2
 
 
+def test_load_agents_from_markdown_skips_every_oversized_file():
+    class Recording(AgentLoader):
+        def load_agent_from_markdown(self, file_path, **kwargs):
+            return SimpleNamespace(
+                agent_name=os.path.basename(file_path)
+            )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        paths = []
+        for name, size in (
+            ("big1.md", 4000),
+            ("big2.md", 4000),
+            ("small.md", 10),
+        ):
+            path = os.path.join(tmpdir, name)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("x" * size)
+            paths.append(path)
+        given = list(paths)
+
+        agents = Recording(
+            concurrent=False
+        ).load_agents_from_markdown(paths, max_file_size_mb=0.001)
+
+    assert [agent.agent_name for agent in agents] == ["small.md"]
+    assert paths == given
+
+
 def test_agent_files_accept_max_loops_auto():
     with tempfile.TemporaryDirectory() as tmpdir:
         md_file = os.path.join(tmpdir, "researcher.md")
