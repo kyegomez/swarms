@@ -2040,7 +2040,8 @@ Subtask Breakdown:
                 )
 
             # Generate the plan using the LLM
-            plan = self.llm.run(task=planning_prompt, *args, **kwargs)
+            plan = self.call_llm(planning_prompt, *args, **kwargs)
+            self.llm_manager.stream_mid_line = False
 
             # Store the generated plan in short-term memory
             self.short_memory.add(role=self.agent_name, content=plan)
@@ -2074,14 +2075,10 @@ Subtask Breakdown:
             )
             planning_prompt = f"{history}\n\n{prompt}\n\nTask: {task}"
 
-            if hasattr(self.llm, "arun"):
-                plan = await self.llm.arun(
-                    planning_prompt, *args, **kwargs
-                )
-            else:
-                plan = await asyncio.to_thread(
-                    self.llm.run, planning_prompt, *args, **kwargs
-                )
+            plan = await self.acall_llm(
+                planning_prompt, *args, **kwargs
+            )
+            self.llm_manager.stream_mid_line = False
             self.short_memory.add(role=self.agent_name, content=plan)
         except Exception as error:
             logger.error(
