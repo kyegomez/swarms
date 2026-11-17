@@ -243,7 +243,7 @@ class SequentialWorkflow:
                             f"Two different agents are named '{agent_name}'. "
                             "SequentialWorkflow runs each step by name, so "
                             "only the first of them would run. Give each "
-                            "agent its own agent_name."
+                            "one its own name."
                         )
                     agent_names.append(agent_name)
                 except AttributeError:
