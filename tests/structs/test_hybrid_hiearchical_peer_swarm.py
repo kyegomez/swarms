@@ -52,3 +52,26 @@ def test_each_task_gets_its_own_conversation():
         ["a", "answer to a"],
         ["b", "answer to b"],
     ]
+
+
+def test_router_request_forces_the_select_swarm_tool(monkeypatch):
+    sent = []
+
+    def capture(**params):
+        sent.append(params)
+        raise RuntimeError("captured")
+
+    monkeypatch.setattr(
+        "swarms.utils.litellm_wrapper.completion", capture
+    )
+    swarm = HybridHierarchicalClusterSwarm(swarms=[Writers()])
+
+    try:
+        swarm.router_agent.llm.run(task="route")
+    except RuntimeError:
+        pass
+
+    assert sent[0]["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "select_swarm"},
+    }
