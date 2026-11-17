@@ -130,10 +130,12 @@ class DynamicSkillsLoader:
                 if content.startswith("---"):
                     parts = content.split("---", 2)
                     if len(parts) >= 3:
-                        frontmatter = yaml.safe_load(parts[1])
+                        frontmatter = yaml.safe_load(parts[1]) or {}
                         skills.append(
                             {
-                                "name": frontmatter.get("name", ""),
+                                "name": frontmatter.get(
+                                    "name", skill_folder
+                                ),
                                 "description": frontmatter.get(
                                     "description", ""
                                 ),

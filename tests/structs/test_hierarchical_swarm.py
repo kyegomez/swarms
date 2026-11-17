@@ -1,4 +1,5 @@
 import os
+import threading
 from typing import Any
 
 import pytest
@@ -657,7 +658,6 @@ def test_batched_run_forwards_utility_options(monkeypatch):
     )
 
     assert result == ["first", "second"]
-    assert captured["func"] == swarm.run
     assert captured["tasks"] == ["task-1", "task-2"]
     assert captured["args"] == ("positional",)
     assert captured["kwargs"] == {
@@ -785,14 +785,25 @@ class StubFlatOrchestrator:
         return next(self.outputs)
 
 
-def test_max_workers_defaults_to_cpu_heuristic():
-    swarm = make_recovery_swarm(
-        StubAgent("Director", []),
-        [StubAgent("Worker", ["done"])],
-    )
-    assert swarm.max_workers == max(
-        1, int((os.cpu_count() or 1) * 0.95)
-    )
+def test_orders_run_at_once_unless_max_workers_caps_them(monkeypatch):
+    monkeypatch.setattr(os, "cpu_count", lambda: 2)
+    orders = [
+        HierarchicalOrder(agent_name=f"W{i}", task="Wait.")
+        for i in range(3)
+    ]
+    for max_workers, failed in ((None, 0), (1, 3)):
+        barrier = threading.Barrier(3, timeout=0.5)
+        workers = [StubAgent(f"W{i}", []) for i in range(3)]
+        for worker in workers:
+            worker.run = lambda *args, **kwargs: str(barrier.wait())
+        swarm = make_recovery_swarm(
+            StubAgent("Director", []),
+            workers,
+            max_workers=max_workers,
+            max_agent_retries=0,
+        )
+        _, failures = swarm._execute_orders_once(orders)
+        assert len(failures) == failed
 
 
 def test_max_workers_override_is_used():
@@ -1145,6 +1156,132 @@ def test_second_run_does_not_send_the_director_the_first_task():
     assert "first task" not in sent, sent
 
 
+@pytest.mark.parametrize(
+    "output_type, expected",
+    [
+        ("final", "loop 2 answer"),
+        ("last", "loop 2 answer"),
+        ("list-final", ["loop 2 answer"]),
+        (
+            "dict-final",
+            {"role": "Worker", "content": "loop 2 answer"},
+        ),
+    ],
+)
+def test_final_output_is_the_last_answer_not_a_loop_marker(
+    output_type, expected
+):
+    order = OrderBatch(
+        orders=[HierarchicalOrder(agent_name="Worker", task="Do it")]
+    )
+    swarm = make_recovery_swarm(
+        StubAgent("Director", [RuntimeError("director down"), order]),
+        [StubAgent("Worker", ["loop 2 answer"])],
+        max_loops=2,
+        output_type=output_type,
+    )
+
+    assert swarm.run("task") == expected
+    assert "--- Loop" not in swarm.conversation.get_str()
+
+
+class RecordingAgent(StubAgent):
+    """A StubAgent that keeps what each call was given."""
+
+    def __init__(self, agent_name: str, outputs: list[Any]):
+        super().__init__(agent_name, outputs)
+        self.received = []
+        self.overlapped = False
+        self.second_call = threading.Barrier(2, timeout=0.2)
+
+    def run(self, *args, **kwargs):
+        self.received.append(kwargs)
+        try:
+            self.second_call.wait()
+            self.overlapped = True
+        except threading.BrokenBarrierError:
+            pass
+        return super().run(*args, **kwargs)
+
+
+def _orders(*pairs):
+    return OrderBatch(
+        orders=[
+            HierarchicalOrder(agent_name=name, task=task)
+            for name, task in pairs
+        ]
+    )
+
+
+def test_planning_gives_the_director_the_roster_and_the_plan():
+    director = RecordingAgent("Director", [_orders(("Worker", "go"))])
+    swarm = make_recovery_swarm(
+        director, [StubAgent("Worker", ["done"])]
+    )
+    swarm.planning_enabled = True
+    swarm._planning_director = StubAgent("Director", ["THE PLAN"])
+
+    swarm.run("task")
+
+    sent = director.received[0]["task"]
+    assert "| Worker |" in sent
+    assert "Planner: THE PLAN" in sent
+
+
+def test_concurrent_batched_run_keeps_each_task_to_itself():
+    swarm = make_recovery_swarm(
+        StubAgent("Director", [_orders(("Worker", "go"))]),
+        [StubAgent("Worker", ["done"])],
+    )
+
+    first, second = swarm.batched_run(
+        ["TASK-AAA", "TASK-BBB"], max_workers=2
+    )
+
+    assert "TASK-BBB" not in str(first)
+    assert "TASK-AAA" not in str(second)
+
+
+def test_one_agent_runs_its_orders_one_at_a_time():
+    worker = RecordingAgent("Worker", ["a done", "b done"])
+    swarm = make_recovery_swarm(StubAgent("Director", []), [worker])
+
+    outputs = swarm.execute_orders(
+        _orders(("Worker", "part a"), ("Worker", "part b")).orders
+    )
+
+    assert outputs == ["a done", "b done"]
+    assert not worker.overlapped
+
+
+def test_workers_receive_the_image_and_keyword_arguments():
+    worker = RecordingAgent("Worker", ["done"])
+    swarm = make_recovery_swarm(
+        StubAgent("Director", [_orders(("Worker", "look"))]),
+        [worker],
+    )
+
+    swarm.run("task", img="chart.png", correlation_id="abc")
+
+    assert worker.received[0]["img"] == "chart.png"
+    assert worker.received[0]["correlation_id"] == "abc"
+
+
+def test_unknown_agent_order_is_reassigned_without_retries():
+    director = StubAgent("Director", [_orders(("Worker", "job"))])
+    worker = StubAgent("Worker", ["done"])
+    swarm = make_recovery_swarm(
+        director, [worker], max_agent_retries=3
+    )
+
+    outputs = swarm.execute_orders(_orders(("Ghost", "job")).orders)
+
+    assert outputs[-1] == "done"
+    assert director.calls == 1
+    assert "[UNKNOWN AGENT]" in swarm.conversation.get_str()
+    assert "[WORKER UNAVAILABLE]" not in swarm.conversation.get_str()
+
+
 def test_task_queue_pending_count_tracks_dependency_readiness():
     """get_pending_count only counts PENDING tasks whose dependencies are done."""
     queue = TaskQueue()
@@ -1322,3 +1459,53 @@ def test_harness_result_reflects_conversation_state(tmp_path):
     assert after["conversation"][-1]["role"] == "System"
     assert after["conversation"][-1]["content"] == "step one passed"
     assert after["id"] == before["id"]
+
+
+def test_director_sends_temperature_and_top_p_only_when_set(
+    monkeypatch,
+):
+    sent = []
+
+    def capture(**params):
+        sent.append(params)
+        raise RuntimeError("captured")
+
+    monkeypatch.setattr(
+        "swarms.utils.litellm_wrapper.completion", capture
+    )
+
+    def sampling(**kwargs):
+        swarm = HierarchicalSwarm(
+            agents=[StubAgent("Worker", [])], autosave=False, **kwargs
+        )
+        sent.clear()
+        for director in (
+            swarm.director,
+            swarm._get_planning_director(),
+        ):
+            with pytest.raises(RuntimeError):
+                director.llm.run(task="plan")
+        return [
+            {k: p[k] for k in ("temperature", "top_p") if k in p}
+            for p in sent
+        ]
+
+    assert sampling() == [{}, {}]
+    assert (
+        sampling(director_temperature=0.2, director_top_p=0.5)
+        == [{"temperature": 0.2, "top_p": 0.5}] * 2
+    )
+    assert (
+        sampling(director_settings={"temperature": 0.3})
+        == [{"temperature": 0.3}] * 2
+    )
+
+    sampling()
+    assert sent[0]["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "OrderBatch"},
+    }
+    reasoning = {"reasoning_effort": "low"}
+    for settings in (reasoning, {"llm_args": reasoning}):
+        sampling(director_settings=settings)
+        assert sent[0]["tool_choice"] == "auto"

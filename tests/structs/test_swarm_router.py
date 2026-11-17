@@ -730,6 +730,41 @@ class TestConcurrentRun:
         with pytest.raises(ValueError, match="nope"):
             r.concurrent_run(["a"])
 
+    def test_each_task_gets_its_own_transcript(self):
+        """Every task ran on one swarm, so they shared one conversation."""
+        import threading
+
+        from swarms import Agent, SwarmRouter
+
+        all_running = threading.Barrier(3, timeout=5)
+
+        class WaitingModel:
+            def run(self, task=None, *args, **kwargs):
+                all_running.wait()
+                return "done"
+
+        agent = Agent(
+            agent_name="A",
+            llm=WaitingModel(),
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+        router = SwarmRouter(
+            agents=[agent],
+            swarm_type="SequentialWorkflow",
+            autosave=False,
+            output_type="str",
+        )
+        tasks = ["TASK-AAA", "TASK-BBB", "TASK-CCC"]
+
+        results = router.concurrent_run(tasks)
+
+        for task, result in zip(tasks, results):
+            others = [other for other in tasks if other != task]
+            assert task in result
+            assert not any(other in result for other in others)
+
 
 def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
     from swarms import Agent
@@ -1184,6 +1219,28 @@ def test_each_swarm_type_is_cached_under_its_own_key():
         "SequentialWorkflow",
         "ConcurrentWorkflow",
     }
+
+
+def test_cached_swarm_is_rebuilt_when_agents_or_settings_change():
+    """A same-named new agent or a changed setting gets a new swarm."""
+    old_agents, old_calls = _collab_recording_agents(["A"])
+    new_agents, new_calls = _collab_recording_agents(["A"])
+    router = SwarmRouter(
+        agents=old_agents, swarm_type="SequentialWorkflow"
+    )
+
+    router.run("one")
+    router.agents = new_agents
+    router.run("two")
+    router.multi_agent_collab_prompt = True
+    router.run("three")
+
+    assert [len(old_calls), len(new_calls)] == [1, 2]
+    system_turns = [
+        [m for m in call["messages"] if m["role"] == "system"]
+        for call in new_calls
+    ]
+    assert [bool(turns) for turns in system_turns] == [False, True]
 
 
 def test_fallback_swarms_must_be_a_list():

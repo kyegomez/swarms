@@ -1,3 +1,4 @@
+import copy
 import inspect
 import json
 import traceback
@@ -24,7 +25,7 @@ from swarms.schemas.hs_schemas import (
     OrderBatch,
     SwarmSpec as SwarmSpec,
 )
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import (
     messages_for,
     new_context_for,
@@ -47,9 +48,9 @@ from swarms.telemetry.otel import (
     trace_run,
 )
 from swarms.tools.base_tool import BaseTool
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.formatter import formatter
-from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -60,9 +61,18 @@ from swarms.structs.usage_utils import total_usage
 _ORDER_BATCH_SCHEMA = BaseTool().base_model_to_dict(OrderBatch)
 _JUDGE_REPORT_SCHEMA = BaseTool().base_model_to_dict(JudgeReport)
 
+# The plan is recorded under this role so the director reads it as new context.
+PLANNER_ROLE = "Planner"
+
 
 class HierarchicalSwarm:
     """Coordinate a director and workers across iterative task loops."""
+
+    _HELPER_AGENTS = (
+        "_planning_director",
+        "_feedback_director",
+        "_judge_agent",
+    )
 
     def __init__(
         self,
@@ -80,8 +90,8 @@ class HierarchicalSwarm:
         interactive: bool = False,
         director_system_prompt: str = HIEARCHICAL_SWARM_SYSTEM_PROMPT,
         multi_agent_prompt_improvements: bool = False,
-        director_temperature: float = 0.7,
-        director_top_p: float = 0.9,
+        director_temperature: Optional[float] = None,
+        director_top_p: Optional[float] = None,
         planning_enabled: bool = False,
         autosave: bool = False,
         verbose: bool = False,
@@ -114,14 +124,14 @@ class HierarchicalSwarm:
             interactive: Prompt for a missing task.
             director_system_prompt: Director instructions.
             multi_agent_prompt_improvements: Enrich worker prompts.
-            director_temperature: Director temperature.
-            director_top_p: Director nucleus sampling.
+            director_temperature: Director temperature, sent only when set.
+            director_top_p: Director nucleus sampling, sent only when set.
             planning_enabled: Run a planning pass.
             autosave: Save conversation history.
             verbose: Enable verbose output.
             print_on: Print the director's plan and orders each step.
             parallel_execution: Execute orders concurrently.
-            max_workers: Worker thread limit.
+            max_workers: Cap on orders run at once; None runs them all.
             agent_as_judge: Evaluate worker outputs.
             judge_agent_model_name: Judge model.
             director_settings: Additional director settings.
@@ -176,11 +186,7 @@ class HierarchicalSwarm:
         self.verbose = verbose
         self.print_on = print_on
         self.parallel_execution = parallel_execution
-        self.max_workers = (
-            max_workers
-            if max_workers is not None
-            else max_workers_95_percent()
-        )
+        self.max_workers = max_workers
         self.agent_as_judge = agent_as_judge
         self.judge_agent_model_name = judge_agent_model_name
         self._feedback_director = None
@@ -309,6 +315,18 @@ class HierarchicalSwarm:
                 }
             )
             settings["output_type"] = "final"
+
+            llm_args = settings.get("llm_args") or {}
+            sent = {**settings, **llm_args}
+            settings["llm_args"] = {
+                "tool_choice": forced_tool_choice(
+                    _ORDER_BATCH_SCHEMA,
+                    sent.get("reasoning_effort"),
+                    sent.get("reasoning_enabled"),
+                ),
+                **llm_args,
+            }
+
             return Agent(**settings)
 
         except Exception as e:
@@ -374,7 +392,7 @@ class HierarchicalSwarm:
                 "max_reassignment_attempts must be greater than or equal to 0."
             )
 
-        if self.max_workers <= 0:
+        if self.max_workers is not None and self.max_workers <= 0:
             raise ValueError(
                 "max_workers must be greater than 0 when provided."
             )
@@ -481,18 +499,21 @@ class HierarchicalSwarm:
         """
         try:
             if self.planning_enabled is True:
+                # A copy of the cursors, so the director still gets this context.
+                planning_context = new_context_for(
+                    self.director.agent_name,
+                    self.conversation,
+                    dict(self._delivered),
+                    empty_message="(no new messages)",
+                )
                 out = self.setup_director_with_planning(
                     task=AGENT_TASK_TEMPLATE.format(
-                        history=self._context_for(
-                            self.director.agent_name
-                        ),
+                        history=planning_context,
                         task=task,
                     ),
                     img=img,
                 )
-                self.conversation.add(
-                    role=self.director.agent_name, content=out
-                )
+                self.conversation.add(role=PLANNER_ROLE, content=out)
 
             # Run the director with the context
             function_call = self.director.run(
@@ -557,7 +578,11 @@ class HierarchicalSwarm:
         if not orders:
             return []
 
-        outputs = self.execute_orders(orders)
+        worker_kwargs = dict(kwargs)
+        if img is not None:
+            worker_kwargs["img"] = img
+
+        outputs = self.execute_orders(orders, *args, **worker_kwargs)
 
         if self.agent_as_judge:
             return self.run_judge_agent(outputs)
@@ -605,14 +630,14 @@ class HierarchicalSwarm:
                 time_enabled=False, channel=self.channel
             )
             self._delivered = {}
-            for agent in (
-                self.director,
-                self._planning_director,
-                self._feedback_director,
-                self._judge_agent,
-            ):
-                if isinstance(agent, Agent):
-                    agent.reset()
+            reset_agents(
+                (
+                    self.director,
+                    self._planning_director,
+                    self._feedback_director,
+                    self._judge_agent,
+                )
+            )
             self.add_context_to_director()
 
             if task is not None:
@@ -652,17 +677,6 @@ class HierarchicalSwarm:
                     )
 
                 current_loop += 1
-
-                # Add loop completion marker to conversation
-                self.conversation.add(
-                    role="System",
-                    content=(
-                        f"--- Loop {current_loop}/{self.max_loops} failed: {last_error} ---"
-                        if last_output is None
-                        and last_error is not None
-                        else f"--- Loop {current_loop}/{self.max_loops} completed ---"
-                    ),
-                )
 
             if not any_loop_succeeded and last_error is not None:
                 raise last_error
@@ -775,12 +789,14 @@ class HierarchicalSwarm:
             worker_task, worker_extra = self._worker_run_payload(
                 agent, agent_name, task
             )
+            run_kwargs = {**kwargs, **worker_extra}
+            if not self._agent_run_accepts(agent, "img"):
+                run_kwargs.pop("img", None)
 
             output = agent.run(
                 *args,
                 task=worker_task,
-                **worker_extra,
-                **kwargs,
+                **run_kwargs,
             )
             if _add_to_conversation:
                 self.conversation.add(role=agent_name, content=output)
@@ -824,12 +840,67 @@ class HierarchicalSwarm:
         )
         return failure
 
+    def _record_unknown_agent(
+        self, order: HierarchicalOrder
+    ) -> Dict[str, Any]:
+        """Record an order whose agent name matches no worker.
+
+        Args:
+            order: The order that could not be run.
+
+        Returns:
+            The failure handed to the director for reassignment.
+        """
+        valid_names = [
+            self._agent_display_name(agent)
+            for agent in (self.agents or [])
+        ]
+        error = (
+            f"No agent is named {order.agent_name!r}. "
+            f"Valid agent names: {valid_names}"
+        )
+        self.conversation.add(
+            role="System",
+            content=(
+                f"[UNKNOWN AGENT] Task {order.task!r} was not run. {error}."
+            ),
+        )
+        logger.warning(
+            f"Order skipped, unknown agent {order.agent_name!r}"
+        )
+        return {
+            "status": "failed",
+            "agent_name": order.agent_name,
+            "task": order.task,
+            "error": error,
+            "attempts": 0,
+        }
+
     def _execute_order_with_retries(
         self,
         order: HierarchicalOrder,
         add_to_conversation: bool = True,
+        *args,
+        **kwargs,
     ):
-        """Execute one order and return an explicit failure if retries expire."""
+        """Execute one order and return an explicit failure if retries expire.
+
+        Args:
+            order: The order to run.
+            add_to_conversation: Record the output in the conversation.
+            *args: Worker positional arguments.
+            **kwargs: Worker keyword arguments.
+
+        Returns:
+            The output and None, or the failure twice.
+        """
+        try:
+            self._find_worker(order.agent_name)
+        except ValueError:
+            # Retrying cannot help; the director is asked to reassign instead.
+            failure = self._record_unknown_agent(order)
+            return failure, failure
+
         attempts = self.max_agent_retries + 1
         last_error = None
 
@@ -838,8 +909,10 @@ class HierarchicalSwarm:
                 output = self.call_single_agent(
                     order.agent_name,
                     order.task,
-                    _add_to_conversation=add_to_conversation,
-                    _raise_on_failure=True,
+                    add_to_conversation,
+                    True,
+                    *args,
+                    **kwargs,
                 )
                 return output, None
             except Exception as error:
@@ -894,44 +967,64 @@ class HierarchicalSwarm:
     def _execute_orders_once(
         self,
         orders: List[HierarchicalOrder],
+        *args,
+        **kwargs,
     ):
-        """Execute a set of orders without triggering reassignment."""
+        """Execute a set of orders without triggering reassignment.
+
+        Args:
+            orders: Orders to execute.
+            *args: Worker positional arguments.
+            **kwargs: Worker keyword arguments.
+
+        Returns:
+            The outputs in order, and the failures.
+        """
         results = [None] * len(orders)
         failures = []
 
         if self.parallel_execution:
-            futures_map = {}
-            with ContextThreadPoolExecutor(
-                max_workers=self.max_workers
-            ) as executor:
-                for index, order in enumerate(orders):
-                    future = executor.submit(
-                        self._execute_order_with_retries,
-                        order,
-                        False,
-                    )
-                    futures_map[future] = (index, order)
+            # One agent cannot run two orders at once on its single memory.
+            indexes_by_agent: Dict[str, List[int]] = {}
+            for index, order in enumerate(orders):
+                indexes_by_agent.setdefault(
+                    order.agent_name, []
+                ).append(index)
 
-                for future in as_completed(futures_map):
-                    index, order = futures_map[future]
-                    output, failure = future.result()
-                    results[index] = output
-                    if failure is not None:
-                        failures.append(failure)
+            def run_agent_orders(indexes: List[int]) -> None:
+                for index in indexes:
+                    results[index] = self._execute_order_with_retries(
+                        orders[index], False, *args, **kwargs
+                    )
+
+            pool_size = min(
+                len(indexes_by_agent),
+                self.max_workers or len(indexes_by_agent),
+            )
+            with ContextThreadPoolExecutor(
+                max_workers=max(1, pool_size)
+            ) as executor:
+                futures = [
+                    executor.submit(run_agent_orders, indexes)
+                    for indexes in indexes_by_agent.values()
+                ]
+                for future in as_completed(futures):
+                    future.result()
 
             for index, order in enumerate(orders):
-                if results[index] is not None and not (
-                    isinstance(results[index], dict)
-                    and results[index].get("status") == "failed"
-                ):
+                output, failure = results[index]
+                results[index] = output
+                if failure is not None:
+                    failures.append(failure)
+                elif output is not None:
                     self.conversation.add(
                         role=order.agent_name,
-                        content=results[index],
+                        content=output,
                     )
         else:
             for index, order in enumerate(orders):
                 output, failure = self._execute_order_with_retries(
-                    order,
+                    order, True, *args, **kwargs
                 )
                 results[index] = output
                 if failure is not None:
@@ -1033,11 +1126,15 @@ class HierarchicalSwarm:
     def execute_orders(
         self,
         orders: list,
+        *args,
+        **kwargs,
     ):
         """Execute orders and recover failed assignments.
 
         Args:
             orders: Orders to execute.
+            *args: Worker positional arguments.
+            **kwargs: Worker keyword arguments.
 
         Returns:
             Order outputs.
@@ -1047,7 +1144,7 @@ class HierarchicalSwarm:
         """
         try:
             outputs, failures = self._execute_orders_once(
-                orders=orders
+                orders, *args, **kwargs
             )
             unavailable_agents = {
                 failure["agent_name"] for failure in failures
@@ -1078,7 +1175,7 @@ class HierarchicalSwarm:
 
                 replacement_outputs, failures = (
                     self._execute_orders_once(
-                        orders=replacement_orders,
+                        replacement_orders, *args, **kwargs
                     )
                 )
                 outputs.extend(replacement_outputs)
@@ -1110,6 +1207,66 @@ class HierarchicalSwarm:
             )
             return []
 
+    @staticmethod
+    def _copy_member(member: Any) -> Any:
+        """Copy one agent for a concurrent task.
+
+        Args:
+            member: A director, worker or nested swarm.
+
+        Returns:
+            The copy, or the member itself when it cannot be copied.
+        """
+        clone = getattr(member, "clone", None)
+        try:
+            return (
+                clone() if callable(clone) else copy.deepcopy(member)
+            )
+        except Exception:
+            return member
+
+    def _copy_for_task(self) -> "HierarchicalSwarm":
+        """Build a copy of this swarm that runs one task on its own agents.
+
+        Returns:
+            The copy, with its own conversation, cursors and agents.
+        """
+        swarm = copy.copy(self)
+        swarm._delivered = {}
+        swarm.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
+        swarm.director = self._copy_member(self.director)
+        swarm.agents = [
+            self._copy_member(agent) for agent in self.agents
+        ]
+
+        for helper in self._HELPER_AGENTS:
+            original = getattr(self, helper)
+            if original is not None:
+                setattr(swarm, helper, self._copy_member(original))
+
+        return swarm
+
+    def _return_usage(self, swarm: "HierarchicalSwarm") -> None:
+        """Add the usage of a copy's agents to this swarm's agents.
+
+        Args:
+            swarm: A copy built for one task, after it has run.
+        """
+        pairs = [
+            (self.director, swarm.director),
+            *zip(self.agents, swarm.agents),
+            *(
+                (getattr(self, helper), getattr(swarm, helper))
+                for helper in self._HELPER_AGENTS
+            ),
+        ]
+
+        for original, member in pairs:
+            if member is not original and isinstance(original, Agent):
+                original._add_usage(getattr(member, "usage", {}))
+
     def batched_run(
         self,
         tasks: List[str],
@@ -1140,17 +1297,49 @@ class HierarchicalSwarm:
             ValueError: If batch utility arguments are invalid.
             Exception: If a task fails and exceptions are not returned.
         """
-        return batched_run(
-            self.run,
-            tasks,
-            *args,
-            img=img,
-            imgs=imgs,
-            max_workers=max_workers,
-            return_agent_output_dict=return_agent_output_dict,
-            return_exceptions=return_exceptions,
-            **kwargs,
-        )
+        if max_workers is None:
+            return batched_run(
+                self.run,
+                tasks,
+                *args,
+                img=img,
+                imgs=imgs,
+                return_agent_output_dict=return_agent_output_dict,
+                return_exceptions=return_exceptions,
+                **kwargs,
+            )
+
+        # Helpers are built first so every copy's usage has somewhere to return.
+        if self.planning_enabled:
+            self._get_planning_director()
+        if self.agent_as_judge:
+            self._get_judge_agent()
+        if self.director_feedback_on:
+            self._get_feedback_director()
+
+        copies: List[HierarchicalSwarm] = []
+
+        def run_on_copy(task: str, *run_args, **run_kwargs) -> Any:
+            # Concurrent tasks each need their own conversation and agents.
+            swarm = self._copy_for_task()
+            copies.append(swarm)
+            return swarm.run(task, *run_args, **run_kwargs)
+
+        try:
+            return batched_run(
+                run_on_copy,
+                tasks,
+                *args,
+                img=img,
+                imgs=imgs,
+                max_workers=max_workers,
+                return_agent_output_dict=return_agent_output_dict,
+                return_exceptions=return_exceptions,
+                **kwargs,
+            )
+        finally:
+            for swarm in copies:
+                self._return_usage(swarm)
 
     @property
     def usage(self) -> dict:

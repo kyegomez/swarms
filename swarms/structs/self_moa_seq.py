@@ -32,8 +32,6 @@ class SelfMoASeq(SerializableMixin):
         max_loops: int = 10,
         max_tokens: int = 2000,
         num_samples: int = 30,
-        enable_logging: bool = True,
-        log_level: str = "INFO",
         verbose: bool = True,
         proposer_model_name: Optional[str] = None,
         aggregator_model_name: Optional[str] = None,
@@ -53,8 +51,6 @@ class SelfMoASeq(SerializableMixin):
         self.max_loops = max_loops
         self.max_tokens = max_tokens
         self.num_samples = num_samples
-        self.enable_logging = enable_logging
-        self.log_level = log_level
         self.verbose = verbose
 
         # Retry configuration
@@ -173,9 +169,7 @@ class SelfMoASeq(SerializableMixin):
                 self._log(
                     "debug", f"Generating sample {i+1}/{num_samples}"
                 )
-                self.proposer.short_memory = (
-                    self.proposer.short_memory_init()
-                )
+                self.proposer.reset()
                 sample = self.proposer.run(task)
                 samples.append(sample)
                 self.metrics["total_samples_generated"] += 1
@@ -254,9 +248,7 @@ class SelfMoASeq(SerializableMixin):
                 best_so_far,
             )
 
-            self.aggregator.short_memory = (
-                self.aggregator.short_memory_init()
-            )
+            self.aggregator.reset()
             aggregated = self.aggregator.run(prompt)
             self.metrics["total_aggregations"] += 1
 

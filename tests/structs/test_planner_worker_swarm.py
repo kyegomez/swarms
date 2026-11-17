@@ -1,8 +1,10 @@
 import types
 from unittest.mock import patch
 
-from swarms import Agent
-from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
+import pytest
+
+from swarms import Agent, PlannerWorkerSwarm
+from swarms.structs.planner_worker_swarm import WorkerPool
 
 
 def _usage_agent(name, input_tokens, output_tokens, output="ok"):
@@ -50,3 +52,36 @@ def test_usage_counts_the_single_use_planner_and_judge():
         "reasoning_tokens": 0,
         "total_tokens": 165,
     }
+
+
+def test_planner_request_forces_the_plan_tool(monkeypatch):
+    sent = []
+
+    def capture(**params):
+        sent.append(params)
+        raise RuntimeError("captured")
+
+    monkeypatch.setattr(
+        "swarms.utils.litellm_wrapper.completion", capture
+    )
+    swarm = PlannerWorkerSwarm(agents=[_usage_agent("Worker", 1, 1)])
+
+    with pytest.raises(RuntimeError):
+        swarm._create_planner_agent().llm.run(task="plan")
+
+    assert sent[0]["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "PlannerTaskSpec"},
+    }
+
+
+def test_worker_pool_defaults_to_one_worker_per_agent():
+    """Workers wait on model calls, so the CPU count does not cap the pool."""
+    agents = [object()] * 8
+
+    with patch("os.cpu_count", return_value=2):
+        assert WorkerPool(agents, None, None).max_workers == 8
+        assert (
+            WorkerPool(agents, None, None, max_workers=3).max_workers
+            == 3
+        )

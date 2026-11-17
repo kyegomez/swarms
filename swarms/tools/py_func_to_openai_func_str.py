@@ -401,21 +401,19 @@ def get_openai_function_schema_from_func(
 
     Examples:
 
-    ```python
-    def f(a: Annotated[str, "Parameter a"], b: int = 2, c: Annotated[float, "Parameter c"] = 0.1) -> None:
-        pass
+        def f(a: Annotated[str, "Parameter a"], b: int = 2, c: Annotated[float, "Parameter c"] = 0.1) -> None:
+            pass
 
-    get_function_schema(f, description="function f")
+        get_function_schema(f, description="function f")
 
-    #   {'type': 'function',
-    #    'function': {'description': 'function f',
-    #        'name': 'f',
-    #        'parameters': {'type': 'object',
-    #           'properties': {'a': {'type': 'str', 'description': 'Parameter a'},
-    #               'b': {'type': 'int', 'description': 'b'},
-    #               'c': {'type': 'float', 'description': 'Parameter c'}},
-    #           'required': ['a']}}}
-    ```
+        #   {'type': 'function',
+        #    'function': {'description': 'function f',
+        #        'name': 'f',
+        #        'parameters': {'type': 'object',
+        #           'properties': {'a': {'type': 'str', 'description': 'Parameter a'},
+        #               'b': {'type': 'int', 'description': 'b'},
+        #               'c': {'type': 'float', 'description': 'Parameter c'}},
+        #           'required': ['a']}}}
 
     """
     typed_signature = get_typed_signature(function)

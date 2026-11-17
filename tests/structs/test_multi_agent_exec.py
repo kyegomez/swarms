@@ -1,9 +1,15 @@
 import asyncio
+import os
+import threading
+from types import SimpleNamespace
 
 import pytest
 
 from swarms.structs.multi_agent_exec import (
+    batched_grid_agent_execution,
+    run_agents_concurrently,
     run_agents_concurrently_async,
+    run_agents_with_different_tasks,
 )
 
 
@@ -40,3 +46,16 @@ def test_run_agents_concurrently_async_awaits_arun_within_the_bound(
 
     assert results == [f"a{i}:t" for i in range(5)]
     assert gauge["peak"] == peak
+
+
+def test_default_pool_has_one_thread_per_agent():
+    count = (os.cpu_count() or 1) + 5
+    barrier = threading.Barrier(count, timeout=5)
+    agent = SimpleNamespace(run=lambda task=None: barrier.wait())
+    agents, tasks = [agent] * count, ["t"] * count
+    done = set(range(count))
+
+    assert set(run_agents_concurrently(agents, "t")) == done
+    assert set(batched_grid_agent_execution(agents, tasks)) == done
+    pairs = list(zip(agents, tasks))
+    assert set(run_agents_with_different_tasks(pairs, count)) == done

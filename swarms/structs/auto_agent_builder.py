@@ -7,6 +7,7 @@ from swarms.prompts.auto_agent_builder_prompt import (
 from swarms.structs.agent import Agent
 from swarms.structs.execution_utils import batched_run
 from swarms.telemetry.otel import capture_init, trace_run
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.loguru_logger import initialize_logger
 
@@ -300,6 +301,9 @@ class AutoAgentBuilder:
             top_p=None,
             print_on=False,
             tools_list_dictionary=[BUILD_AGENTS_TOOL],
+            llm_args={
+                "tool_choice": forced_tool_choice(BUILD_AGENTS_TOOL)
+            },
         )
 
     @property

@@ -60,9 +60,6 @@ class ToolTypeHintError(BaseToolError):
     pass
 
 
-ToolType = Union[BaseModel, Dict[str, Any], Callable[..., Any]]
-
-
 class BaseTool(BaseModel):
     """
     A comprehensive tool management system for function calling, schema conversion, and execution.
@@ -134,14 +131,10 @@ class BaseTool(BaseModel):
         Convert a callable function to OpenAI function calling schema dictionary.
 
         This method transforms a Python function into a dictionary format compatible
-        with OpenAI's function calling API. Results are cached for performance.
+        with OpenAI's function calling API.
 
         Args:
             function (Callable[..., Any]): The function to convert
-            name (Optional[str]): Override name for the function
-            description (str): Override description for the function
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
 
         Returns:
             Dict[str, Any]: OpenAI function calling schema dictionary
@@ -157,26 +150,30 @@ class BaseTool(BaseModel):
             >>> tool = BaseTool()
             >>> schema = tool.func_to_dict(add)
         """
-        return self.function_to_dict(function)
+        if not callable(function):
+            raise ToolValidationError("Input must be callable")
+
+        try:
+            return get_openai_function_schema_from_func(function)
+        except Exception as e:
+            raise FunctionSchemaError(
+                f"Failed to convert function to dict: {e}"
+            ) from e
 
     def base_model_to_dict(
         self,
         pydantic_type: type[BaseModel],
         output_str: bool = False,
-        *args: Any,
-        **kwargs: Any,
     ) -> Union[dict[str, Any], str]:
         """
         Convert a Pydantic BaseModel to OpenAI function calling schema dictionary.
 
         This method transforms a Pydantic model into a dictionary format compatible
-        with OpenAI's function calling API. Results are cached for performance.
+        with OpenAI's function calling API.
 
         Args:
             pydantic_type (type[BaseModel]): The Pydantic model class to convert
             output_str (bool): Whether to return string output format
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
 
         Returns:
             Union[dict[str, Any], str]: OpenAI function calling schema dictionary or JSON string
@@ -197,57 +194,29 @@ class BaseTool(BaseModel):
                 "Pydantic type parameter cannot be None"
             )
 
-        if not issubclass(pydantic_type, BaseModel):
+        if not isinstance(pydantic_type, type) or not issubclass(
+            pydantic_type, BaseModel
+        ):
             raise ToolValidationError(
                 "pydantic_type must be a subclass of BaseModel"
             )
 
         try:
-            self._log_if_verbose(
-                "info",
-                f"Converting Pydantic model {pydantic_type.__name__} to schema",
-            )
-
-            # Get the base function schema
             base_result = base_model_to_openai_function(
-                pydantic_type, output_str=output_str, *args, **kwargs
+                pydantic_type, output_str=output_str
             )
-
-            # If output_str is True, return the string directly
-            if output_str and isinstance(base_result, str):
-                return base_result
-
-            # Extract the function definition from the functions array
-            if (
-                "functions" in base_result
-                and len(base_result["functions"]) > 0
-            ):
-                function_def = base_result["functions"][0]
-
-                # Return in proper OpenAI function calling format
-                result = {
-                    "type": "function",
-                    "function": function_def,
-                }
-            else:
-                raise FunctionSchemaError(
-                    "Failed to extract function definition from base_model_to_openai_function result"
-                )
-
-            self._log_if_verbose(
-                "info",
-                f"Successfully converted model {pydantic_type.__name__}",
-            )
-            return result
-
         except Exception as e:
-            self._log_if_verbose(
-                "error",
-                f"Failed to convert model {pydantic_type.__name__}: {e}",
-            )
             raise FunctionSchemaError(
                 f"Failed to convert Pydantic model to schema: {e}"
             ) from e
+
+        if output_str:
+            return base_result
+
+        return {
+            "type": "function",
+            "function": base_result["functions"][0],
+        }
 
     def multi_base_models_to_dict(
         self, base_models: List[BaseModel], output_str: bool = False
@@ -278,53 +247,14 @@ class BaseTool(BaseModel):
                 "base_models must be set and be a non-empty list before calling this method"
             )
 
-        try:
-            results = [
-                self.base_model_to_dict(model)
-                for model in base_models
-            ]
+        results = [
+            self.base_model_to_dict(model) for model in base_models
+        ]
 
-            # If output_str is True, return the string directly
-            if output_str:
-                import json
+        if output_str:
+            return json.dumps(results, indent=2)
 
-                return json.dumps(results, indent=2)
-
-            return results
-        except Exception as e:
-            self._log_if_verbose(
-                "error", f"Failed to convert multiple models: {e}"
-            )
-            raise FunctionSchemaError(
-                f"Failed to convert multiple Pydantic models: {e}"
-            ) from e
-
-    def detect_tool_input_type(self, input: ToolType) -> str:
-        """
-        Detect the type of tool input for appropriate processing.
-
-        This method analyzes the input and determines whether it's a Pydantic model,
-        dictionary, function, or unknown type. Results are cached for performance.
-
-        Args:
-            input (ToolType): The input to analyze
-
-        Returns:
-            str: Type of the input ("Pydantic", "Dictionary", "Function", or "Unknown")
-
-        Examples:
-            >>> tool = BaseTool()
-            >>> input_type = tool.detect_tool_input_type(my_function)
-            >>> print(input_type)  # "Function"
-        """
-        if isinstance(input, BaseModel):
-            return "Pydantic"
-        elif isinstance(input, dict):
-            return "Dictionary"
-        elif callable(input):
-            return "Function"
-        else:
-            return "Unknown"
+        return results
 
     def execute_tool_by_name(
         self,
@@ -490,14 +420,13 @@ class BaseTool(BaseModel):
         """
         Convert all functions in the tools list into OpenAI function calling format.
 
-        This method processes all functions in the tools list, validates them for
-        proper documentation and type hints, and converts them to OpenAI schemas.
-        It also creates a function map for execution.
+        This method validates every function in the tools list for documentation
+        and type hints by converting it to an OpenAI schema, then creates a
+        function map for execution.
 
         Raises:
-            ToolValidationError: If tools are not properly configured
-            ToolDocumentationError: If functions lack required documentation
-            ToolTypeHintError: If functions lack required type hints
+            ToolValidationError: If tools is an empty list
+            FunctionSchemaError: If any function lacks documentation or type hints, or fails to convert
 
         Examples:
             >>> tool = BaseTool(tools=[func1, func2])
@@ -509,48 +438,11 @@ class BaseTool(BaseModel):
             )
             return
 
-        if not isinstance(self.tools, list) or len(self.tools) == 0:
-            raise ToolValidationError(
-                "Tools must be a non-empty list"
-            )
+        self.convert_tool_into_openai_schema()
 
-        try:
-            self._log_if_verbose(
-                "info",
-                f"Converting {len(self.tools)} functions into tools",
-            )
-            self._log_if_verbose(
-                "info",
-                "Ensure functions have documentation and type hints for reliable execution",
-            )
-
-            # Transform the tools into OpenAI schema
-            schema_result = self.convert_tool_into_openai_schema()
-
-            if schema_result:
-                self._log_if_verbose(
-                    "info",
-                    "Successfully converted tools to OpenAI schema",
-                )
-
-            # Create function calling map for all tools
-            self.function_map = {
-                tool.__name__: tool for tool in self.tools
-            }
-
-            self._log_if_verbose(
-                "info",
-                f"Created function map with {len(self.function_map)} tools",
-            )
-
-        except Exception as e:
-            self._log_if_verbose(
-                "error",
-                f"Failed to convert functions into tools: {e}",
-            )
-            raise ToolValidationError(
-                f"Failed to convert functions into tools: {e}"
-            ) from e
+        self.function_map = {
+            tool.__name__: tool for tool in self.tools
+        }
 
     def convert_tool_into_openai_schema(self) -> dict[str, Any]:
         """
@@ -794,49 +686,6 @@ class BaseTool(BaseModel):
         )
         return None
 
-    def function_to_dict(self, func: callable) -> dict:
-        """
-        Convert a function to dictionary representation.
-
-        This method converts a callable function to its dictionary representation
-        using the litellm function_to_dict utility. Results are cached for performance.
-
-        Args:
-            func (callable): The function to convert
-
-        Returns:
-            dict: Dictionary representation of the function
-
-        Raises:
-            ToolValidationError: If func is not callable
-            FunctionSchemaError: If conversion fails
-
-        Examples:
-            >>> tool = BaseTool()
-            >>> func_dict = tool.function_to_dict(my_function)
-        """
-        if not callable(func):
-            raise ToolValidationError("Input must be callable")
-
-        try:
-            self._log_if_verbose(
-                "debug",
-                f"Converting function {func.__name__} to dict",
-            )
-            result = get_openai_function_schema_from_func(func)
-            self._log_if_verbose(
-                "debug", f"Successfully converted {func.__name__}"
-            )
-            return result
-        except Exception as e:
-            self._log_if_verbose(
-                "error",
-                f"Failed to convert function {func.__name__} to dict: {e}",
-            )
-            raise FunctionSchemaError(
-                f"Failed to convert function to dict: {e}"
-            ) from e
-
     def multiple_functions_to_dict(
         self, funcs: list[callable]
     ) -> list[dict]:
@@ -844,7 +693,7 @@ class BaseTool(BaseModel):
         Convert multiple functions to dictionary representations.
 
         This method converts a list of callable functions to their dictionary
-        representations using the function_to_dict method.
+        representations.
 
         Args:
             funcs (list[callable]): List of functions to convert
@@ -873,24 +722,12 @@ class BaseTool(BaseModel):
                 )
 
         try:
-            self._log_if_verbose(
-                "info",
-                f"Converting {len(funcs)} functions to dictionaries",
-            )
-            result = (
+            return (
                 convert_multiple_functions_to_openai_function_schema(
                     funcs
                 )
             )
-            self._log_if_verbose(
-                "info",
-                f"Successfully converted {len(funcs)} functions",
-            )
-            return result
         except Exception as e:
-            self._log_if_verbose(
-                "error", f"Failed to convert multiple functions: {e}"
-            )
             raise FunctionSchemaError(
                 f"Failed to convert multiple functions: {e}"
             ) from e

@@ -239,3 +239,32 @@ def test_each_speaker_passes_on_only_its_latest_reply():
     assert moderator.tasks[-1].endswith(
         "Economist: Economist reply 2\n\nHistorian: Historian reply 2"
     )
+
+
+def test_debate_reruns_from_a_clean_history_in_three_calls(
+    monkeypatch, tmp_path
+):
+    from swarms import DebateWithJudge
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    requests = []
+
+    def fake_run(self, *args, **kwargs):
+        requests.append(repr((args, kwargs)))
+        return "an answer"
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    agents = [
+        Agent(agent_name=name, max_loops=1, print_on=False)
+        for name in ("Pro", "Con", "Judge")
+    ]
+    debate = DebateWithJudge(agents=agents, max_loops=1)
+
+    debate.run("FIRSTTASK")
+    requests.clear()
+    debate.run("SECONDTASK")
+
+    assert len(requests) == 3
+    assert not any("FIRSTTASK" in r for r in requests)
+    assert "arguing in favor" in requests[0]

@@ -25,7 +25,8 @@ from swarms.prompts.llm_council_prompts import (
     get_synthesis_prompt,
 )
 from swarms.structs.execution_utils import batched_run
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
@@ -38,6 +39,13 @@ from swarms.utils.history_output_formatter import (
 from swarms.telemetry.otel import capture_init, trace_run
 from swarms.utils.generate_id import generate_id
 from swarms.utils.litellm_wrapper import empty_usage
+
+
+def _raise_member_failure(results) -> None:
+    """Re-raise the first exception the concurrent runner returned as a result."""
+    for result in results:
+        if isinstance(result, Exception):
+            raise result
 
 
 class LLMCouncil:
@@ -135,7 +143,8 @@ class LLMCouncil:
             agent_name="Gemini-3-Pro-Councilor",
             agent_description="Concise and well-processed AI councilor specializing in clear, structured responses",
             system_prompt=get_gemini_councilor_prompt(),
-            model_name="gemini-2.5-flash",  # Using available Gemini model
+            # Without the gemini/ prefix LiteLLM sends this to Vertex AI.
+            model_name="gemini/gemini-3.5-flash-lite",
             max_loops=1,
             verbose=False,
             temperature=0.7,
@@ -146,10 +155,9 @@ class LLMCouncil:
             agent_name="Claude-Sonnet-4.5-Councilor",
             agent_description="Thoughtful and balanced AI councilor specializing in nuanced and well-reasoned responses",
             system_prompt=get_claude_councilor_prompt(),
-            model_name="anthropic/claude-sonnet-4-5",  # Using available Claude model
+            model_name="anthropic/claude-sonnet-5-5",
             max_loops=1,
             verbose=False,
-            temperature=0.0,
             top_p=None,
         )
 
@@ -185,11 +193,14 @@ class LLMCouncil:
 
         Raises:
             ValueError: If ``task`` is not a non-empty string.
+            Exception: The first council member's error, if any member
+                fails while answering or ranking. The chairman is not run.
         """
         if not isinstance(task, str) or not task.strip():
             raise ValueError("task must be a non-empty string")
 
         self.conversation.clear()
+        reset_agents([*self.council_members, self.chairman])
 
         self.conversation.add(role="User", content=task)
 
@@ -204,6 +215,7 @@ class LLMCouncil:
             task=task,
             return_agent_output_dict=True,
         )
+        _raise_member_failure(results_dict.values())
 
         # Map results to member names
         original_responses = {
@@ -255,10 +267,13 @@ class LLMCouncil:
         evaluation_results = batched_grid_agent_execution(
             self.council_members, evaluation_tasks
         )
+        _raise_member_failure(evaluation_results)
 
         # Map results to member names
         evaluations = {
-            member.agent_name: evaluation_results[i]
+            member.agent_name: agent_answer(
+                member, fallback=evaluation_results[i]
+            )
             for i, member in enumerate(self.council_members)
         }
 

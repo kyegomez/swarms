@@ -12,9 +12,11 @@ from swarms.prompts.heavy_swarm_prompts import (
     grok_schema,
     schema,
 )
+from swarms.structs.agent import reset_agents
 from swarms.structs.context_utils import messages_for
 from swarms.structs.conversation import Conversation
 from swarms.structs.serialization import SerializableMixin
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
 from swarms.utils.get_cpu_cores import max_workers_95_percent
@@ -320,8 +322,7 @@ class HeavySwarm(SerializableMixin):
             self.dashboard.show_task_init(task)
 
         self.conversation.clear()
-        for agent in self.agents.values():
-            agent.short_memory = agent.short_memory_init()
+        reset_agents(self.agents.values())
 
         # Add initial task to conversation
         self.conversation.add(
@@ -1445,7 +1446,7 @@ class HeavySwarm(SerializableMixin):
             tools_list_dictionary=active_schema,
             max_tokens=max_tokens,
             top_p=None,  # Anthropic rejects temperature and top_p together
-            tool_choice="auto",
+            tool_choice=forced_tool_choice(active_schema[0]),
             usage_hook=self._add_question_usage,
         )
 
@@ -1515,47 +1516,18 @@ class HeavySwarm(SerializableMixin):
         if "error" in result:
             return {"error": result["error"]}
 
-        if self.variant == "heavy":
-            heavy_keys = [
-                "harper",
-                "benjamin",
-                "lucas",
-                "olivia",
-                "james",
-                "charlotte",
-                "henry",
-                "mia",
-                "william",
-                "sebastian",
-                "jack",
-                "owen",
-                "luna",
-                "elizabeth",
-                "noah",
-            ]
-            return {
-                f"{k}_question": result.get(f"{k}_question", "")
-                for k in heavy_keys
-            }
-
-        if self.variant == "medium":
-            return {
-                "harper_question": result.get("harper_question", ""),
-                "benjamin_question": result.get(
-                    "benjamin_question", ""
-                ),
-                "lucas_question": result.get("lucas_question", ""),
-            }
+        active_schema = {
+            "heavy": grok_heavy_schema,
+            "medium": grok_schema,
+        }.get(self.variant, schema)
+        required = active_schema[0]["function"]["parameters"][
+            "required"
+        ]
 
         return {
-            "research_question": result.get("research_question", ""),
-            "analysis_question": result.get("analysis_question", ""),
-            "alternatives_question": result.get(
-                "alternatives_question", ""
-            ),
-            "verification_question": result.get(
-                "verification_question", ""
-            ),
+            key: result.get(key, "")
+            for key in required
+            if key.endswith("_question")
         }
 
     def get_questions_as_list(
@@ -1603,38 +1575,4 @@ class HeavySwarm(SerializableMixin):
         if "error" in questions:
             return [f"Error: {questions['error']}"]
 
-        if self.variant == "heavy":
-            heavy_keys = [
-                "harper",
-                "benjamin",
-                "lucas",
-                "olivia",
-                "james",
-                "charlotte",
-                "henry",
-                "mia",
-                "william",
-                "sebastian",
-                "jack",
-                "owen",
-                "luna",
-                "elizabeth",
-                "noah",
-            ]
-            return [
-                questions.get(f"{k}_question", "") for k in heavy_keys
-            ]
-
-        if self.variant == "medium":
-            return [
-                questions.get("harper_question", ""),
-                questions.get("benjamin_question", ""),
-                questions.get("lucas_question", ""),
-            ]
-
-        return [
-            questions.get("research_question", ""),
-            questions.get("analysis_question", ""),
-            questions.get("alternatives_question", ""),
-            questions.get("verification_question", ""),
-        ]
+        return list(questions.values())

@@ -68,7 +68,7 @@ class OneToThree:
     """
     Facilitates one-to-three communication from one agent to exactly three agents.
 
-    A reusable wrapper around :func:`one_to_three` that holds the sender,
+    A reusable wrapper around one_to_three that holds the sender,
     the three receivers and the output format.
     """
 

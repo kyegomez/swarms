@@ -323,7 +323,7 @@ class DynamicToolLoader:
         """
         matches = self.search(
             query,
-            limit=max_results or 5,
+            limit=int(max_results or 5),
             min_score_ratio=min_score_ratio,
         )
         if not matches:

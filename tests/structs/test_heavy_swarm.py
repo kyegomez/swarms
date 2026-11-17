@@ -582,6 +582,10 @@ class TestQuestionAgentPerVariant:
 
         tool = seen["tools_list_dictionary"][0]["function"]
         assert tool["name"] == function_name
+        assert seen["tool_choice"] == {
+            "type": "function",
+            "function": {"name": function_name},
+        }
         for role in roles:
             assert (
                 f"{role}_question" in tool["parameters"]["properties"]

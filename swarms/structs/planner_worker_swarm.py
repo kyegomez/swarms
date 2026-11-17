@@ -1,6 +1,5 @@
 import concurrent.futures
 import json
-import os
 import threading
 import time
 import traceback
@@ -28,6 +27,7 @@ from swarms.structs.comms_channel import (
 )
 from swarms.structs.conversation import Conversation
 from swarms.tools.base_tool import BaseTool
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -384,9 +384,7 @@ class WorkerPool:
         self.task_queue = task_queue
         self.conversation = conversation
         self.img = img
-        self.max_workers = max_workers or min(
-            len(agents), os.cpu_count() or 4
-        )
+        self.max_workers = max_workers or len(agents)
         self.poll_interval = poll_interval
         self.task_timeout = task_timeout
         self._stop_event = threading.Event()
@@ -458,7 +456,7 @@ class WorkerPool:
 
             try:
                 # Reset agent memory so prior tasks don't leak into this one
-                agent.short_memory = agent.short_memory_init()
+                agent.reset()
 
                 # Build context: worker focus prompt + task description + dependency results
                 dep_context = self.task_queue.get_dependency_results(
@@ -648,6 +646,7 @@ class PlannerWorkerSwarm:
             max_loops=1,
             base_model=PlannerTaskSpec,
             tools_list_dictionary=[schema],
+            llm_args={"tool_choice": forced_tool_choice(schema)},
             output_type="dict-all-except-first",
         )
 

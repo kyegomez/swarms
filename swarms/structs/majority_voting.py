@@ -292,15 +292,13 @@ class MajorityVoting:
 
             if streaming_callback is not None:
 
-                def consensus_streaming_callback(chunk: str):
+                def consensus_streaming_callback(
+                    chunk: str,
+                    agent_name: str = consensus_agent_name,
+                ):
                     """Wrapper for consensus agent streaming callback."""
-                    try:
-                        if chunk is not None and chunk.strip():
-                            streaming_callback(
-                                consensus_agent_name, chunk, False
-                            )
-                    except Exception as callback_error:
-                        raise callback_error
+                    if chunk is not None and chunk.strip():
+                        streaming_callback(agent_name, chunk, False)
 
             else:
                 consensus_streaming_callback = None

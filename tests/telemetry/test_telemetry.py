@@ -532,6 +532,29 @@ class TestHelpers:
         assert cfg["mcp_url"]["url"] == "http://mcp"
         assert cfg["max_tokens"] == 1024
 
+    def test_init_config_redacts_credentials_in_urls(self):
+        class Holder:
+            def __init__(self, mcp_url, mcp_urls, note):
+                self.mcp_url = mcp_url
+                self.mcp_urls = mcp_urls
+                self.note = note
+
+        holder = Holder(
+            "https://mcp.example.com/mcp?api_key=sk-one&profile=dev",
+            ["wss://user:sk-two@mcp.example.com/ws", "http://mcp"],
+            "see https://x.io/?token=abc in the docs",
+        )
+        cfg = json.loads(init_config(holder))
+
+        assert cfg == {
+            "mcp_url": "https://mcp.example.com/mcp?api_key=<redacted>&profile=dev",
+            "mcp_urls": [
+                "wss://<redacted>@mcp.example.com/ws",
+                "http://mcp",
+            ],
+            "note": "see https://x.io/?token=<redacted> in the docs",
+        }
+
 
 # ===========================================================================
 # _SpanHandle
@@ -639,6 +662,39 @@ class TestCaptureRun:
             len([e for e in span.events if e.name == "exception"])
             == 1
         )
+
+    def test_no_attribute_or_event_carries_a_credential(
+        self, spans, monkeypatch
+    ):
+        """Keys reached the exporter through inputs, output, errors and tracebacks."""
+        monkeypatch.setenv("ACME_API_KEY", "acme-env-secret-9f3k")
+        secrets = [
+            "sk-proj-AbCdEf0123456789XYZ",
+            "hunter2pass",
+            "acme-env-secret-9f3k",
+            "tok-in-query-77",
+        ]
+        url = "https://user:hunter2pass@mcp.example.com/mcp?token=tok-in-query-77"
+
+        with pytest.raises(ConnectionError):
+            with capture_run(
+                "Op.run", None, task=f"use {secrets[0]}", img=url
+            ) as handle:
+                handle.record_json("swarms.inputs", {"note": url})
+                handle.record_output("key is acme-env-secret-9f3k")
+                raise ConnectionError(f"cannot reach {url}")
+
+        span = _by_name(spans, "Op.run")
+        sent = json.dumps(
+            [
+                _attrs(span),
+                [dict(event.attributes) for event in span.events],
+                span.status.description,
+            ]
+        )
+
+        assert not [secret for secret in secrets if secret in sent]
+        assert "mcp.example.com/mcp" in sent
 
 
 # ===========================================================================
@@ -3281,10 +3337,7 @@ class TestDebateWithJudge:
 
         agent_runs = _all_by_name(spans, "Agent.run")
         names = [_attrs(s).get("swarms.name") for s in agent_runs]
-        # Role-intro call + one debate round call, for all three agents.
-        assert names.count("Pro-Debater") == 2
-        assert names.count("Con-Debater") == 2
-        assert names.count("Debate-Judge") == 2
+        assert names == ["Pro-Debater", "Con-Debater", "Debate-Judge"]
 
     def test_member_failure_propagates(self, spans):
         debate, pro, con, judge = self._build()
@@ -3370,9 +3423,8 @@ class TestCouncilAsAJudge:
 # ===========================================================================
 # LLMCouncil — accepts pre-built council members via `council_members=[...]`;
 # the Chairman is always built internally, reached via `council.chairman`.
-# Free text throughout; a council member's failure is swallowed (the
-# exception object itself is substituted as its "response"), but a Chairman
-# failure is NOT wrapped in any try/except -> genuinely propagates.
+# Free text throughout; a council member's or the Chairman's failure
+# propagates.
 # ===========================================================================
 class TestLLMCouncil:
     def _build(self):

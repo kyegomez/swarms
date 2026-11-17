@@ -1085,13 +1085,15 @@ class TestBatchRunConcurrency:
         pipeline = _make_pipeline("AgentA", "AgentB")
         tasks = [f"t{i}" for i in range(6)]
 
-        with patch(
+        with patch("os.cpu_count", return_value=1), patch(
             "swarms.structs.agent_rearrange.ContextThreadPoolExecutor",
             wraps=ContextThreadPoolExecutor,
         ) as mock_tpe:
             pipeline.batch_run(tasks=tasks, batch_size=2)
             # 6 tasks / batch_size=2 -> 3 batches -> 3 executor instances
             assert mock_tpe.call_count == 3
+            # batch_size, not the CPU count, sizes each batch's pool.
+            assert mock_tpe.call_args.kwargs == {"max_workers": 2}
 
 
 # ============================================================================
