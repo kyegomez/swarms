@@ -1509,3 +1509,11 @@ def test_director_sends_temperature_and_top_p_only_when_set(
     for settings in (reasoning, {"llm_args": reasoning}):
         sampling(director_settings=settings)
         assert sent[0]["tool_choice"] == "auto"
+
+    swarm = HierarchicalSwarm(
+        agents=[StubAgent("Worker", [])], autosave=False
+    )
+    sent.clear()
+    with pytest.raises(RuntimeError):
+        swarm._get_judge_agent().llm.run(task="score")
+    assert sent[0]["tool_choice"]["function"]["name"] == "JudgeReport"
