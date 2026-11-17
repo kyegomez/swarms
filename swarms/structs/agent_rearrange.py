@@ -3,6 +3,7 @@ import copy
 from concurrent.futures import as_completed
 from typing import Any, Dict, List, Optional, get_args
 
+from swarms.structs.agent import Agent
 from swarms.structs.comms_channel import (
     CommsChannel,
     claim_agents,
