@@ -646,7 +646,11 @@ class PlannerWorkerSwarm:
             max_loops=1,
             base_model=PlannerTaskSpec,
             tools_list_dictionary=[schema],
-            llm_args={"tool_choice": forced_tool_choice(schema)},
+            llm_args={
+                "tool_choice": forced_tool_choice(
+                    schema, model_name=self.planner_model_name
+                )
+            },
             output_type="dict-all-except-first",
         )
 

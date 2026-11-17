@@ -319,6 +319,7 @@ class GroupChat(SerializableMixin):
                 RESPOND_TOOL,
                 llm.reasoning_effort,
                 llm.reasoning_enabled,
+                llm.model_name,
             )
         try:
             # Typed turns let the agent tell its own prior speech from a peer's.

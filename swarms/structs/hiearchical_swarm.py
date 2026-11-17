@@ -323,6 +323,7 @@ class HierarchicalSwarm:
                     _ORDER_BATCH_SCHEMA,
                     sent.get("reasoning_effort"),
                     sent.get("reasoning_enabled"),
+                    sent.get("model_name"),
                 ),
                 **llm_args,
             }
