@@ -2023,7 +2023,7 @@ Subtask Breakdown:
             None: The plan is stored in memory rather than returned
 
         Raises:
-            Exception: If planning fails, the original exception is re-raised
+            AgentLLMError: If the model call fails, chained to the provider's error.
         """
         try:
             # Get the current conversation history
@@ -2064,7 +2064,7 @@ Subtask Breakdown:
             **kwargs: Passed through to the model call.
 
         Raises:
-            Exception: If planning fails, the original exception is re-raised.
+            AgentLLMError: If the model call fails, chained to the provider's error.
         """
         try:
             history = self.short_memory.get_str()
