@@ -53,9 +53,11 @@ from swarms.schemas.mcp_schemas import (
 )
 from swarms.structs.agent_roles import agent_roles
 from swarms.structs.autonomous_loop_utils import (
+    MAX_CUT_OFF_NOTICES,
     MAX_PLANNING_ATTEMPTS,
     MAX_SUBTASK_ITERATIONS,
     MAX_SUBTASK_LOOPS,
+    get_cut_off_notice,
     get_summary_prompt,
 )
 from swarms.structs.comms_channel import CommsChannel
@@ -1491,37 +1493,66 @@ class Agent:
         )
 
         try:
-            if messages is not None:
-                call_kwargs = {
-                    "task": None,
-                    "messages": messages
-                    + [{"role": "user", "content": summary_prompt}],
-                }
-            else:
-                call_kwargs = {
-                    "task": self.short_memory.return_history_as_string()
-                }
+            request_prompt = summary_prompt
+            for attempt in range(MAX_CUT_OFF_NOTICES + 1):
+                if messages is not None:
+                    call_kwargs = {
+                        "task": None,
+                        "messages": messages
+                        + [
+                            {
+                                "role": "user",
+                                "content": request_prompt,
+                            }
+                        ],
+                    }
+                else:
+                    call_kwargs = {
+                        "task": self.short_memory.return_history_as_string()
+                    }
 
-            response = self.call_llm(
-                current_loop=0,
-                streaming_callback=streaming_callback,
-                **call_kwargs,
-            )
-
-            response = self.tool_manager.parse_llm_output(response)
-
-            # Add LLM response to memory
-            self.short_memory.add(
-                role=self.agent_name, content=str(response)
-            )
-
-            if (
-                self.tool_manager.handle_complete_task(response)
-                is not None
-            ):
-                return history_output_formatter(
-                    self.short_memory, type=self.output_type
+                response = self.call_llm(
+                    current_loop=0,
+                    streaming_callback=streaming_callback,
+                    **call_kwargs,
                 )
+
+                response = self.tool_manager.parse_llm_output(
+                    response
+                )
+
+                # Add LLM response to memory
+                self.short_memory.add(
+                    role=self.agent_name, content=str(response)
+                )
+
+                cut_off = (
+                    getattr(self.llm, "last_finish_reason", None)
+                    == "length"
+                    and attempt < MAX_CUT_OFF_NOTICES
+                )
+                if not cut_off:
+                    if (
+                        self.tool_manager.handle_complete_task(
+                            response
+                        )
+                        is not None
+                    ):
+                        return history_output_formatter(
+                            self.short_memory, type=self.output_type
+                        )
+                    break
+
+                notice = get_cut_off_notice(
+                    getattr(self.llm, "max_tokens", None)
+                    or self.max_tokens,
+                    attempt,
+                    draft_shown=False,
+                )
+                self.short_memory.add(
+                    role=self.user_name, content=notice
+                )
+                request_prompt = f"{summary_prompt}\n\n{notice}"
 
             # If complete_task wasn't called, generate summary manually
             comprehensive_summary = f"""Task Execution Summary

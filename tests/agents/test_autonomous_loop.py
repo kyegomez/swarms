@@ -491,6 +491,126 @@ class TestToolErrorFeedback:
         assert status_of(agent, "step1") != "completed"
 
 
+class TestCutOffReplies:
+    """A reply cut off at the output limit gets a notice asking for a short resend."""
+
+    @pytest.mark.parametrize(
+        "cut_at, cut_calls",
+        [
+            (
+                1,
+                [
+                    (
+                        "subtask_done",
+                        '{"task_id": "step1", "summary": "## Lo',
+                    )
+                ],
+            ),
+            (1, [("subtask_done", '{"task_id": "step1"}')]),
+            (1, "A long draft that stops mid-sen"),
+            (2, [("complete_task", '{"task_id": "main", "summ')]),
+            (2, [("complete_task", '{"task_id": "main"}')]),
+            (
+                0,
+                [
+                    (
+                        "create_plan",
+                        '{"task_description": "test task"}',
+                    )
+                ],
+            ),
+            (
+                0,
+                [
+                    (
+                        "create_plan",
+                        '{"task_description": "t", "steps": [{"step_id": "st',
+                    )
+                ],
+            ),
+            (
+                1,
+                [
+                    (
+                        "create_file",
+                        '{"file_path": "TARGET", "content": "half a fi"}',
+                    )
+                ],
+            ),
+            (
+                1,
+                [
+                    (
+                        "subtask_done",
+                        '{"task_id": "step1", "summary": "s", "success": true}',
+                    ),
+                    (
+                        "create_file",
+                        '{"file_path": "TARGET", "content": "complete"}',
+                    ),
+                ],
+            ),
+        ],
+    )
+    def test_cut_off_reply_is_retried_with_a_notice(
+        self, monkeypatch, tmp_path, cut_at, cut_calls
+    ):
+        agent = build_agent()
+        target = tmp_path / "cut_off.md"
+        done = tool_call(
+            "subtask_done",
+            task_id="step1",
+            summary="short",
+            success=True,
+        )
+        final = tool_call(
+            "complete_task",
+            task_id="main",
+            summary="short",
+            success=True,
+        )
+        cut = cut_calls
+        if isinstance(cut_calls, list):
+            cut = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "arguments": arguments.replace(
+                            "TARGET", target.as_posix()
+                        ),
+                    },
+                }
+                for name, arguments in cut_calls
+            ]
+
+        replies = [plan(("step1", [])), [done], [final]]
+        replies.insert(cut_at, cut)
+        requests = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            requests.append(
+                json.dumps(kwargs.get("messages") or task)
+            )
+            reply = replies.pop(0) if replies else "no further action"
+            agent.llm.last_finish_reason = (
+                "length" if reply is cut else "stop"
+            )
+            return reply
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+
+        agent.run("test task")
+
+        notice = "cut off at the output limit"
+        assert len(requests) == 4, "the cut-off reply was not resent"
+        assert notice not in requests[cut_at]
+        assert notice in requests[cut_at + 1]
+        assert status_of(agent, "step1") == "completed"
+        assert "complete_task result" in history(agent)
+        assert not target.exists(), "a cut-off call was run"
+
+
 # --------------------------------------------------------------------------
 # #1977 - structured transcript
 # --------------------------------------------------------------------------

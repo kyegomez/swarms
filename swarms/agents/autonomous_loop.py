@@ -36,6 +36,7 @@ from swarms.structs.autonomous_loop_utils import (
     create_sub_agent_tool,
     delete_file_tool,
     get_autonomous_planning_tools,
+    get_cut_off_notice,
     get_execution_prompt,
     get_planning_prompt,
     grep_tool,
@@ -147,6 +148,45 @@ class AutonomousAgentLoop:
     def _record_assistant(self, parsed: Any) -> List[Dict[str, Any]]:
         """Add the model's turn; return the tool calls it made."""
         return self._transcript.record_assistant(parsed)
+
+    def _cut_off_notice(self, notices_sent: int) -> Optional[str]:
+        """Return the notice for a reply cut off at the output limit.
+
+        Args:
+            notices_sent: Cut-off notices already sent for this plan or subtask.
+
+        Returns:
+            Optional[str]: The notice, or None if the last reply was not cut off.
+        """
+        finish_reason = getattr(
+            self.agent.llm, "last_finish_reason", None
+        )
+        if finish_reason != "length":
+            return None
+
+        max_tokens = getattr(
+            self.agent.llm, "max_tokens", None
+        ) or getattr(self.agent, "max_tokens", None)
+        return get_cut_off_notice(max_tokens, notices_sent)
+
+    def _answer_cut_off_reply(
+        self, calls: List[Dict[str, Any]], notice: str
+    ) -> None:
+        """Answer a cut-off reply with the notice instead of running any of its calls.
+
+        Args:
+            calls: The reply's tool calls as recorded, with their transcript ids.
+            notice: The cut-off notice to send back.
+        """
+        self.agent.short_memory.add(
+            role="Tool Executor", content=notice
+        )
+        if calls:
+            self._flush_tool_results(
+                calls, {call["id"]: notice for call in calls}
+            )
+        else:
+            self._say_user(notice, mirror=False)
 
     def _flush_tool_results(
         self, calls: List[Dict[str, Any]], results: Dict[str, Any]
@@ -485,6 +525,7 @@ class AutonomousAgentLoop:
 
             plan_created = False
             planning_attempts = 0
+            planning_cut_offs = 0
             max_planning_attempts = self.agent.max_planning_attempts
 
             while (
@@ -513,6 +554,15 @@ class AutonomousAgentLoop:
                     )
                     planning_calls = self._record_assistant(response)
                     planning_results: Dict[str, Any] = {}
+                    cut_off_notice = self._cut_off_notice(
+                        planning_cut_offs
+                    )
+                    if cut_off_notice:
+                        planning_cut_offs += 1
+                        self._answer_cut_off_reply(
+                            planning_calls, cut_off_notice
+                        )
+                        continue
 
                     # Check if response contains create_plan or handoff_task tool call
                     if isinstance(response, list):
@@ -737,6 +787,7 @@ class AutonomousAgentLoop:
 
                 # Consecutive across the subtask, not one response.
                 self.agent.think_call_count = 0
+                cut_off_notices = 0
 
                 # Once only, or the model reads duplicates as a rerun.
                 execution_prompt = get_execution_prompt(
@@ -783,9 +834,18 @@ class AutonomousAgentLoop:
                         # Answer every call before the next request.
                         turn_calls = self._record_assistant(response)
                         turn_results: Dict[str, Any] = {}
+                        cut_off_notice = self._cut_off_notice(
+                            cut_off_notices
+                        )
+
+                        if cut_off_notice:
+                            cut_off_notices += 1
+                            self._answer_cut_off_reply(
+                                turn_calls, cut_off_notice
+                            )
 
                         # Handle tool calls
-                        if isinstance(response, list):
+                        elif isinstance(response, list):
                             regular_tool_calls = []
                             # Set, not returned, so later calls run.
                             task_complete = False
@@ -812,13 +872,19 @@ class AutonomousAgentLoop:
                                         TypeError,
                                     ) as parse_error:
                                         # Report back, do not abort.
-                                        self.agent.short_memory.add(
-                                            role="Tool Executor",
-                                            content=_format_tool_error(
+                                        error_result = (
+                                            _format_tool_error(
                                                 function_name,
                                                 parse_error,
-                                            ),
+                                            )
                                         )
+                                        self.agent.short_memory.add(
+                                            role="Tool Executor",
+                                            content=error_result,
+                                        )
+                                        turn_results[
+                                            tool_call.get("id", "")
+                                        ] = error_result
                                         if self.agent.verbose:
                                             logger.warning(
                                                 f"Could not parse arguments for {function_name}: {parse_error}"
