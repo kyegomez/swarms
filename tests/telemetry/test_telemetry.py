@@ -541,8 +541,12 @@ class TestHelpers:
 
         holder = Holder(
             "https://mcp.example.com/mcp?api_key=sk-one&profile=dev",
-            ["wss://user:sk-two@mcp.example.com/ws", "http://mcp"],
-            "see https://x.io/?token=abc in the docs",
+            [
+                "wss://user:sk-two@mcp.example.com/ws",
+                "http://mcp",
+                "postgresql://admin:pw-9@db:5432/prod",
+            ],
+            "see https://x.io/?token=abc in the docs, Authorization: Token abc",
         )
         cfg = json.loads(init_config(holder))
 
@@ -551,8 +555,9 @@ class TestHelpers:
             "mcp_urls": [
                 "wss://<redacted>@mcp.example.com/ws",
                 "http://mcp",
+                "postgresql://<redacted>@db:5432/prod",
             ],
-            "note": "see https://x.io/?token=<redacted> in the docs",
+            "note": "see https://x.io/?token=<redacted> in the docs, Authorization: <redacted> <redacted>",
         }
 
 
