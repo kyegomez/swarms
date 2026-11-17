@@ -127,6 +127,28 @@ def history(agent):
     return agent.short_memory.return_history_as_string()
 
 
+def conversion_error(messages):
+    """Return the first error LiteLLM's Anthropic or Gemini converter raises on these messages, or None."""
+    factory = pytest.importorskip(
+        "litellm.litellm_core_utils.prompt_templates.factory"
+    )
+    gemini = pytest.importorskip(
+        "litellm.llms.vertex_ai.gemini.transformation"
+    )
+    try:
+        factory.anthropic_messages_pt(
+            json.loads(json.dumps(messages)),
+            model="claude-haiku-4-5",
+            llm_provider="anthropic",
+        )
+        gemini._gemini_convert_messages_with_history(
+            messages=json.loads(json.dumps(messages))
+        )
+    except Exception as error:
+        return repr(error)
+    return None
+
+
 def status_of(agent, step_id):
     for subtask in agent.autonomous_subtasks:
         if subtask["step_id"] == step_id:
@@ -457,6 +479,55 @@ class TestToolErrorFeedback:
         ), "a malformed call aborted the whole response"
         assert "ERROR: think failed" in history(agent)
 
+    def test_malformed_arguments_leave_a_convertible_history(
+        self, monkeypatch
+    ):
+        agent = build_agent()
+        bad = {
+            "type": "function",
+            "function": {"name": "think", "arguments": "{not json"},
+        }
+        replies = [
+            plan(("step1", []), ("step2", ["step1"])),
+            [
+                bad,
+                tool_call(
+                    "subtask_done",
+                    task_id="step1",
+                    summary="done",
+                    success=True,
+                ),
+            ],
+            [
+                tool_call(
+                    "subtask_done",
+                    task_id="step2",
+                    summary="done",
+                    success=True,
+                )
+            ],
+            [
+                tool_call(
+                    "complete_task",
+                    task_id="main",
+                    summary="done",
+                    success=True,
+                )
+            ],
+        ]
+        errors = []
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            if kwargs.get("messages"):
+                errors.append(conversion_error(kwargs["messages"]))
+            return replies.pop(0) if replies else "no further action"
+
+        monkeypatch.setattr(agent, "call_llm", fake_call_llm)
+        agent.run("test task")
+
+        assert len(errors) >= 3
+        assert set(errors) == {None}, errors
+
     def test_failed_subtask_done_does_not_complete_the_subtask(
         self, monkeypatch
     ):
@@ -587,11 +658,16 @@ class TestCutOffReplies:
         replies = [plan(("step1", [])), [done], [final]]
         replies.insert(cut_at, cut)
         requests = []
+        conversion_errors = []
 
         def fake_call_llm(task=None, *args, **kwargs):
             requests.append(
                 json.dumps(kwargs.get("messages") or task)
             )
+            if kwargs.get("messages"):
+                conversion_errors.append(
+                    conversion_error(kwargs["messages"])
+                )
             reply = replies.pop(0) if replies else "no further action"
             agent.llm.last_finish_reason = (
                 "length" if reply is cut else "stop"
@@ -603,6 +679,7 @@ class TestCutOffReplies:
         agent.run("test task")
 
         notice = "cut off at the output limit"
+        assert set(conversion_errors) == {None}, conversion_errors
         assert len(requests) == 4, "the cut-off reply was not resent"
         assert notice not in requests[cut_at]
         assert notice in requests[cut_at + 1]

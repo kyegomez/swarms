@@ -74,6 +74,30 @@ def _format_tool_error(function_name: str, error: Exception) -> str:
     )
 
 
+def _with_parseable_arguments(call: Any) -> Any:
+    """
+    Return the tool call with its arguments replaced by an empty object if they are not valid JSON.
+
+    Args:
+        call: One item of a parsed model reply.
+
+    Returns:
+        Any: The call unchanged, or a copy whose arguments are "{}".
+    """
+    function = (
+        call.get("function") if isinstance(call, dict) else None
+    )
+    if not isinstance(function, dict) or not isinstance(
+        function.get("arguments"), str
+    ):
+        return call
+    try:
+        json.loads(function["arguments"])
+    except json.JSONDecodeError:
+        return {**call, "function": {**function, "arguments": "{}"}}
+    return call
+
+
 # Enough for a typical plan without pulling in the whole catalog.
 PREWARM_TOOL_LIMIT = 8
 
@@ -146,7 +170,15 @@ class AutonomousAgentLoop:
             )
 
     def _record_assistant(self, parsed: Any) -> List[Dict[str, Any]]:
-        """Add the model's turn; return the tool calls it made."""
+        """Add the model's turn; return the tool calls it made.
+
+        A call whose arguments are not valid JSON is recorded with empty
+        arguments, so every provider can still convert the history.
+        """
+        if isinstance(parsed, list):
+            parsed = [
+                _with_parseable_arguments(item) for item in parsed
+            ]
         return self._transcript.record_assistant(parsed)
 
     def _cut_off_notice(self, notices_sent: int) -> Optional[str]:
@@ -169,24 +201,29 @@ class AutonomousAgentLoop:
         ) or getattr(self.agent, "max_tokens", None)
         return get_cut_off_notice(max_tokens, notices_sent)
 
-    def _answer_cut_off_reply(
-        self, calls: List[Dict[str, Any]], notice: str
+    def _record_cut_off_reply(
+        self, response: Any, notice: str
     ) -> None:
-        """Answer a cut-off reply with the notice instead of running any of its calls.
+        """Record a cut-off reply as plain text and answer it with the notice.
+
+        None of its tool calls run, and keeping them out of the structured
+        history means a truncated call can never break the next request.
 
         Args:
-            calls: The reply's tool calls as recorded, with their transcript ids.
+            response: The parsed cut-off reply, a list of tool calls or text.
             notice: The cut-off notice to send back.
         """
-        self.agent.short_memory.add(
-            role="Tool Executor", content=notice
-        )
-        if calls:
-            self._flush_tool_results(
-                calls, {call["id"]: notice for call in calls}
+        if isinstance(response, list):
+            draft = "\n".join(
+                f"{call['function']['name']}({call['function'].get('arguments', '')})"
+                for call in response
+                if isinstance(call, dict)
+                and call.get("function", {}).get("name")
             )
         else:
-            self._say_user(notice, mirror=False)
+            draft = str(response or "")
+        self._transcript.add("assistant", draft or "(empty reply)")
+        self._say_user(notice)
 
     def _flush_tool_results(
         self, calls: List[Dict[str, Any]], results: Dict[str, Any]
@@ -552,17 +589,18 @@ class AutonomousAgentLoop:
                     self.agent.short_memory.add(
                         role=self.agent.agent_name, content=response
                     )
-                    planning_calls = self._record_assistant(response)
-                    planning_results: Dict[str, Any] = {}
                     cut_off_notice = self._cut_off_notice(
                         planning_cut_offs
                     )
                     if cut_off_notice:
                         planning_cut_offs += 1
-                        self._answer_cut_off_reply(
-                            planning_calls, cut_off_notice
+                        self._record_cut_off_reply(
+                            response, cut_off_notice
                         )
                         continue
+
+                    planning_calls = self._record_assistant(response)
+                    planning_results: Dict[str, Any] = {}
 
                     # Check if response contains create_plan or handoff_task tool call
                     if isinstance(response, list):
@@ -832,16 +870,20 @@ class AutonomousAgentLoop:
                         )
 
                         # Answer every call before the next request.
-                        turn_calls = self._record_assistant(response)
-                        turn_results: Dict[str, Any] = {}
                         cut_off_notice = self._cut_off_notice(
                             cut_off_notices
                         )
+                        turn_calls = (
+                            []
+                            if cut_off_notice
+                            else self._record_assistant(response)
+                        )
+                        turn_results: Dict[str, Any] = {}
 
                         if cut_off_notice:
                             cut_off_notices += 1
-                            self._answer_cut_off_reply(
-                                turn_calls, cut_off_notice
+                            self._record_cut_off_reply(
+                                response, cut_off_notice
                             )
 
                         # Handle tool calls
