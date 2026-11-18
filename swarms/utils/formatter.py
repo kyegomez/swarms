@@ -400,22 +400,23 @@ class Formatter:
         )
 
     def _print_panel(
-        self, content: str, title: str = "", style: str = "bold blue"
+        self,
+        content: str,
+        title: str = "",
+        style: Optional[str] = None,
     ) -> None:
         """
-        Prints a rich panel to the console with a random color.
+        Prints a rich panel to the console.
 
         Args:
             content (str): The content of the panel.
             title (str, optional): The title of the panel. Defaults to "".
-            style (str, optional): The style of the panel. Defaults to "bold blue".
+            style (str, optional): Border style, a random color if None.
         """
-        random_color = choose_random_color()
-
         panel = Panel(
             Text(content, style=DEFAULT_CONTENT_STYLE),
             title=title,
-            border_style=f"bold {random_color}",
+            border_style=style or f"bold {choose_random_color()}",
         )
         self.console.print(panel)
 
@@ -423,14 +424,15 @@ class Formatter:
         self,
         content: str,
         title: str = "",
-        style: str = "bold blue",
+        style: Optional[str] = None,
     ) -> None:
         """Print content in a panel with a title and style.
 
         Args:
             content (str): The content to display in the panel
             title (str): The title of the panel
-            style (str): The style to apply to the panel
+            style (str): The border style of the panel. If None, markdown
+                panels use "bold blue" and plain panels a random color.
         """
         # Handle None content
         if content is None:
@@ -443,7 +445,7 @@ class Formatter:
         # Use markdown rendering if enabled
         if self.markdown_handler:
             self.markdown_handler.render_markdown_output(
-                content, title, style
+                content, title, style or "bold blue"
             )
         else:
             # Fallback to original panel printing
