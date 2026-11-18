@@ -569,7 +569,8 @@ class GroupChat(SerializableMixin):
             if selection is None:
                 # No reply at all on the first turn is almost never a lull; it is a bad model name or missing key.
                 if message_count == 1 and not any(
-                    score or reply for _, score, reply in bids
+                    (score if self.score_only_bids else reply)
+                    for _, score, reply in bids
                 ):
                     logger.warning(
                         f"[{self.name}] No agent produced a reply on the first "

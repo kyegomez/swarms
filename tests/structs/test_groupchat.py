@@ -431,12 +431,9 @@ class TestScheduling:
         chat = make_chat([winner, other], score_only_bids=True)
         chat.run("topic")
 
+        bid, floor = ["score"], ["score", "message"]
         assert contents(chat) == ["topic", "full reply"]
-        assert winner.asked == [
-            ["score"],
-            ["score", "message"],
-            ["score"],
-        ]
+        assert winner.asked == [bid, floor, bid]
         assert winner.llm.tools_list_dictionary == [RESPOND_TOOL]
 
 
