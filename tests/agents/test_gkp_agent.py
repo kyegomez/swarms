@@ -1,4 +1,4 @@
-from swarms.agents.gkp_agent import GKPAgent
+from swarms.agents.gkp_agent import GKPAgent, KnowledgeGenerator
 from swarms.structs.agent import Agent
 
 
@@ -62,3 +62,9 @@ def test_each_call_sees_only_its_own_prompt(monkeypatch):
     assert len(requests) == 8
     for name, prompts in requests:
         assert len(prompts) == 1, f"{name} also saw {prompts[:-1]}"
+
+
+def test_knowledge_generator_passes_its_description_to_the_agent():
+    generator = KnowledgeGenerator(description="Finds dates.")
+
+    assert generator.agent.agent_description == "Finds dates."
