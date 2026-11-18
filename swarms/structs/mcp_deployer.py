@@ -174,7 +174,9 @@ class _AuthMiddleware:
             await self.app(scope, receive, send)
             return
 
-        path = scope.get("path", "")
+        path = scope.get("path", "").removeprefix(
+            scope.get("root_path", "")
+        )
         if path in self.deployer.public_paths:
             await self.app(scope, receive, send)
             return

@@ -1,5 +1,7 @@
 from httpx import MockTransport, Response
 from pytest import mark, raises
+from starlette.applications import Starlette
+from starlette.routing import Mount
 from starlette.testclient import TestClient
 
 from swarms.structs.a2a_client import A2AClient
@@ -82,6 +84,25 @@ def test_server_public_card_and_send_message_round_trip():
     assert SERVER.post(url, json=BODY).status_code == 401
     headers = {"a2a-version": "1.0", "x-api-key": "k"}
     reply = SERVER.post(url, json=BODY, headers=headers).json()
+    assert reply["result"]["message"]["parts"] == [{"text": "HI"}]
+
+
+def test_server_card_and_health_stay_public_under_a_mount():
+    server = A2AServer(str.upper, api_keys=["k"])
+    host = Starlette(routes=[Mount("/agents/up", app=server.app)])
+    client = TestClient(host)
+
+    health = client.get("/agents/up/health")
+    assert health.status_code == 200
+    assert client.post("/agents/up/mcp").status_code == 401
+    card = client.get("/agents/up/.well-known/agent-card.json")
+    assert card.status_code == 200
+    assert card.json()["name"] == "upper"
+    url = card.json()["supportedInterfaces"][0]["url"]
+    assert url == "http://testserver/agents/up/a2a"
+    assert client.post(url, json=BODY).status_code == 401
+    headers = {"a2a-version": "1.0", "x-api-key": "k"}
+    reply = client.post(url, json=BODY, headers=headers).json()
     assert reply["result"]["message"]["parts"] == [{"text": "HI"}]
 
 
