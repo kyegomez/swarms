@@ -449,7 +449,7 @@ def test_banner_renders_for_every_auth_mode():
 def test_importing_swarms_does_not_load_the_server_stack():
     probe = (
         "import sys\n"
-        "from swarms import Agent, MCPDeployer\n"
+        "from swarms import A2AServer, Agent, MCPDeployer\n"
         "print(sorted({'anyio', 'starlette'} & set(sys.modules)))"
     )
     out = subprocess.run(
