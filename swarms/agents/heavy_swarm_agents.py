@@ -49,6 +49,16 @@ AgentSpec = Tuple[str, str, str, str, bool]
 SwarmVariant = Literal["default", "medium", "heavy"]
 
 
+# Loop-control tools only; a worker's own tools come from worker_tools.
+WORKER_LOOP_TOOLS: List[str] = [
+    "create_plan",
+    "think",
+    "subtask_done",
+    "complete_task",
+    "respond_to_user",
+]
+
+
 DEFAULT_SPECS: List[AgentSpec] = [
     (
         "research",
@@ -250,7 +260,8 @@ def _build_agent(
 
     Leaders (is_leader=True) run a single deterministic loop and always
     print, since they emit the user-facing answer. Workers run with
-    max_loops="auto" and only print when worker_prints_on is set.
+    max_loops="auto" with only the loop-control tools plus the tools
+    passed in, and only print when worker_prints_on is set.
     """
     return Agent(
         agent_name=name,
@@ -262,6 +273,7 @@ def _build_agent(
         verbose=False,
         tools=tools,
         output_type="final",
+        selected_tools="all" if is_leader else WORKER_LOOP_TOOLS,
     )
 
 
