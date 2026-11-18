@@ -672,6 +672,7 @@ class HierarchicalSwarm:
                     if (
                         self.director_feedback_on
                         and not self.agent_as_judge
+                        and last_output
                     ):
                         loop_task = (
                             f"Director feedback: {last_output}"
