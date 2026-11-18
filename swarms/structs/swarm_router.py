@@ -179,6 +179,28 @@ def _msg_collab_prompt_ignored(swarm_type: str) -> str:
     )
 
 
+def _msg_debate_needs_three_agents(count: int) -> str:
+    return (
+        "SwarmRouter: DebateWithJudge needs exactly 3 agents, "
+        f"[pro, con, judge], got {count}."
+    )
+
+
+def _msg_agents_ignored(swarm_type: str) -> str:
+    return (
+        f"SwarmRouter: swarm_type={swarm_type!r} builds its own agents, "
+        f"so the agents passed to the router are not run. It uses "
+        f"{_OWN_AGENT_MODEL_SETTINGS[swarm_type]} instead."
+    )
+
+
+# Swarm types that build their own agents, and the settings that pick their models
+_OWN_AGENT_MODEL_SETTINGS = {
+    "HeavySwarm": "heavy_swarm_question_agent_model_name and heavy_swarm_worker_model_name",
+    "CouncilAsAJudge": "council_judge_model_name",
+}
+
+
 # The only constructors that carry the collaboration preamble to the agents
 _COLLAB_PROMPT_SWARM_TYPES = frozenset(
     {"SequentialWorkflow", "AgentRearrange"}
@@ -495,6 +517,8 @@ class SwarmRouter(SerializableMixin):
             * ``max_loops != 0``.
             * ``fallback_swarms``, if given, is a list of valid swarm types,
               and ``rearrange_flow`` is set if it includes ``AgentRearrange``.
+            * Exactly 3 agents are given when DebateWithJudge is the swarm
+              type or a fallback.
 
         On success, calls :meth:`setup` to apply collaboration prompts and
         agent listing.
@@ -563,6 +587,15 @@ class SwarmRouter(SerializableMixin):
                         _msg_fallback_rearrange_flow_required()
                     )
 
+            agent_count = len(self.agents or [])
+            if (
+                "DebateWithJudge" in self._swarm_type_chain()
+                and agent_count != 3
+            ):
+                raise SwarmRouterConfigError(
+                    _msg_debate_needs_three_agents(agent_count)
+                )
+
             self.setup()
 
         except SwarmRouterConfigError as e:
@@ -589,6 +622,19 @@ class SwarmRouter(SerializableMixin):
             logger.warning(
                 _msg_collab_prompt_ignored(self.swarm_type)
             )
+
+        if self.agents:
+            for swarm_type in self._swarm_type_chain():
+                if swarm_type in _OWN_AGENT_MODEL_SETTINGS:
+                    logger.warning(_msg_agents_ignored(swarm_type))
+
+    def _swarm_type_chain(self) -> List[str]:
+        """List the swarm type and its fallbacks, in the order run tries them.
+
+        Returns:
+            The primary swarm type followed by every fallback swarm type.
+        """
+        return [self.swarm_type] + list(self.fallback_swarms or [])
 
     @property
     def usage(self) -> dict:
@@ -1018,7 +1064,7 @@ class SwarmRouter(SerializableMixin):
         if img is not None:
             run_kwargs["img"] = img
 
-        chain = [self.swarm_type] + list(self.fallback_swarms or [])
+        chain = self._swarm_type_chain()
         self.fallback_attempts = []
 
         for position, swarm_type in enumerate(chain):
