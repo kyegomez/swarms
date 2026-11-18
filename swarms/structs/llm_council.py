@@ -192,7 +192,7 @@ class LLMCouncil:
             with all council member responses, evaluations, and final synthesis.
 
         Raises:
-            ValueError: If ``task`` is not a non-empty string.
+            ValueError: If task is not a non-empty string.
             Exception: The first council member's error, if any member
                 fails while answering or ranking. The chairman is not run.
         """

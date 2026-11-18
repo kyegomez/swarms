@@ -26,7 +26,7 @@ def _segment(value: str) -> str:
 class AgentMailChannel(CommsChannel):
     """A conversation kept as one email thread in an AgentMail inbox.
 
-    Each post is an email from the inbox to the people in `to`: the first
+    Each post is an email from the inbox to the recipients: the first
     starts the thread and the rest reply in it. AgentMail adds its own
     footer and the quoted thread to the body, so two headers let
     messages() read a post back exactly: X-Swarms-Agent names the speaker

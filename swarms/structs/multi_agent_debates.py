@@ -47,7 +47,7 @@ class OneOnOneDebate:
             list: The formatted conversation history.
 
         Raises:
-            ValueError: If the `agents` list does not contain exactly two Agent instances.
+            ValueError: If the agents list does not contain exactly two Agent instances.
         """
         return one_on_one_debate(
             max_loops=self.max_loops,

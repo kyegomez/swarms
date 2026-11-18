@@ -37,7 +37,7 @@ class FileChannel(CommsChannel):
         Initialize a FileChannel instance.
 
         Args:
-            path (str): Path to the .md or .txt file. The file will be created on the first `post` if it doesn't exist.
+            path (str): Path to the .md or .txt file. The file will be created on the first post if it doesn't exist.
 
         Raises:
             ValueError: If the file does not have a .md or .txt extension.
