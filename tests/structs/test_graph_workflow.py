@@ -1568,6 +1568,47 @@ def test_predecessor_outputs_are_typed_turns_not_one_user_blob():
     assert "OUT_A" not in prompt and "OUT_B" not in prompt
 
 
+def test_each_node_passes_on_only_its_answer_on_every_run():
+    """A node hands on its answer, not its history, however many runs."""
+
+    class CountingModel:
+        def __init__(self, name):
+            self.name = name
+            self.requests = []
+
+        def run(self, task=None, *args, messages=None, **kwargs):
+            self.requests.append(messages or [])
+            return f"{self.name}-answer-{len(self.requests)}"
+
+    models = {name: CountingModel(name) for name in ("A", "B")}
+    wf = GraphWorkflow.from_spec(
+        agents=[
+            Agent(
+                agent_name=name,
+                llm=model,
+                max_loops=1,
+                print_on=False,
+                persistent_memory=False,
+            )
+            for name, model in models.items()
+        ],
+        edges=[("A", "B")],
+    )
+
+    for run in (1, 2):
+        results = wf.run(f"task {run}")
+
+        assert results == {
+            "A": f"A-answer-{run}",
+            "B": f"B-answer-{run}",
+        }
+        sent_to_b = models["B"].requests[-1][:-1]
+        assert [m["content"] for m in sent_to_b] == [
+            f"task {run}",
+            f"A: A-answer-{run}",
+        ]
+
+
 def _usage_agent(name, input_tokens=0, output_tokens=0):
     """An offline Agent whose run() reports a fixed usage per call through the real hook."""
     from unittest.mock import patch
