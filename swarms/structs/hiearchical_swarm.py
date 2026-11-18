@@ -572,6 +572,7 @@ class HierarchicalSwarm:
         """
         director_output = self.run_director(task=task, img=img)
         plan, orders = self.parse_orders(director_output)
+        self._record_dispatch(orders)
 
         if self.print_on:
             formatter.print_director_task_distribution(
@@ -1081,6 +1082,7 @@ class HierarchicalSwarm:
                 content=output,
             )
             _, orders = self.parse_orders(output)
+            self._record_dispatch(orders)
         except Exception as error:
             self.conversation.add(
                 role="System",
@@ -1107,6 +1109,38 @@ class HierarchicalSwarm:
                 ),
             )
         return valid_orders
+
+    def _record_dispatch(
+        self, orders: List[HierarchicalOrder]
+    ) -> None:
+        """Store the dispatched orders as the director's tool result.
+
+        Args:
+            orders: The orders parsed from the director's latest reply.
+        """
+        memory = getattr(self.director, "short_memory", None)
+        history = getattr(memory, "conversation_history", None) or []
+        tool_turn = next(
+            (
+                message
+                for message in reversed(history)
+                if "tool_results" in message
+            ),
+            None,
+        )
+        if tool_turn is None:
+            return
+
+        if orders:
+            result = "Dispatched: " + "; ".join(
+                f"{order.agent_name}: {order.task}"
+                for order in orders
+            )
+        else:
+            result = "No orders dispatched."
+
+        for call in tool_turn["tool_calls"]:
+            tool_turn["tool_results"].setdefault(call["id"], result)
 
     def parse_orders(self, output):
         """Parse a director response into a plan and orders.
