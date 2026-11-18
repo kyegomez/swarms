@@ -1082,7 +1082,6 @@ class HierarchicalSwarm:
                 content=output,
             )
             _, orders = self.parse_orders(output)
-            self._record_dispatch(orders)
         except Exception as error:
             self.conversation.add(
                 role="System",
@@ -1100,6 +1099,7 @@ class HierarchicalSwarm:
             for order in orders
             if order.agent_name in valid_agent_names
         ]
+        self._record_dispatch(valid_orders)
         if len(valid_orders) != len(orders):
             self.conversation.add(
                 role="System",
