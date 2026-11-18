@@ -4,6 +4,7 @@ import json
 import os
 import threading
 import time
+import uuid
 from contextlib import nullcontext
 from functools import cached_property, lru_cache
 from typing import (
@@ -2255,7 +2256,7 @@ Subtask Breakdown:
                 )
 
             backup_path = full_path + ".backup"
-            temp_path = full_path + ".temp"
+            temp_path = f"{full_path}.{uuid.uuid4().hex}.temp"
 
             # Ensure directory exists
             os.makedirs(os.path.dirname(full_path), exist_ok=True)

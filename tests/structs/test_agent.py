@@ -5,6 +5,7 @@ import re
 import tempfile
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -177,6 +178,24 @@ class TestBasicAgent:
 
         assert restored.max_loops == 3
         assert restored.agent_name == "basic-flow"
+
+    def test_concurrent_saves_of_one_agent_both_land(
+        self, basic_flow, monkeypatch, tmp_path
+    ):
+        file_path = str(tmp_path / "agent_state.json")
+        both_written = threading.Barrier(2, timeout=5)
+        real_replace = os.replace
+
+        def replace_after_both_writes(src, dst):
+            both_written.wait()
+            real_replace(src, dst)
+
+        monkeypatch.setattr(os, "replace", replace_after_both_writes)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            list(pool.map(basic_flow.save, [file_path] * 2))
+
+        with open(file_path) as f:
+            assert json.load(f)["agent_name"] == "basic-flow"
 
     def test_flow_call(self, basic_flow):
         """__call__ forwards to run() rather than doing its own thing.
