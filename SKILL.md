@@ -230,7 +230,7 @@ agent = Agent(
 
 Inspect the full list at runtime with `agent.get_all_selected_tools()`.
 
-⚠️ **`run_bash` and `delete_file` are real.** In autonomous mode the agent can modify and delete files and execute shell commands. Scope `selected_tools` and set `WORKSPACE_DIR` deliberately.
+⚠️ **`run_bash` and `delete_file` are real.** In autonomous mode the agent can modify and delete files and execute shell commands. Scope `selected_tools` and set `WORKSPACE_DIR` deliberately, or pass `on_tool_call`, a function `(tool_name, arguments) -> "allow" | "deny"`, to approve each `create_file`, `update_file`, `delete_file` and `run_bash` call. Anything but `"allow"` blocks the call and the denial goes back to the model.
 
 ---
 
