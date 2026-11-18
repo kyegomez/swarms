@@ -856,9 +856,7 @@ class PlannerWorkerSwarm:
             "If not, identify specific gaps and provide instructions for the next planning cycle."
         )
 
-        # The history goes as typed turns rather than inside the task string:
-        # the judge's own earlier verdicts come back as assistant turns, so a
-        # second cycle can tell its own reasoning from the planner's.
+        # Typed turns, so the judge's past verdicts read as its own.
         try:
             raw_output = judge.run(
                 task=eval_task,

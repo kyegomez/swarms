@@ -1430,8 +1430,7 @@ class HeavySwarm(SerializableMixin):
         """
             active_schema = schema
 
-        # Named so the decomposer treats the image as part of the task
-        # rather than guessing at what the sentence refers to.
+        # Named so the decomposer reads the image as part of the task.
         if img:
             prompt += (
                 "\n        An image accompanies this task. Read it and write "

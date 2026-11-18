@@ -328,10 +328,6 @@ class MCPDeployer:
         self._uvicorn = None
         self._thread: Optional[threading.Thread] = None
 
-    # ------------------------------------------------------------------
-    # Targets
-    # ------------------------------------------------------------------
-
     def _register_targets(
         self,
         targets: Any,
@@ -433,10 +429,6 @@ class MCPDeployer:
         """The first registered tool's description."""
         return self.tools[self.tool_name].description
 
-    # ------------------------------------------------------------------
-    # Auth
-    # ------------------------------------------------------------------
-
     @staticmethod
     def _collect_api_keys(
         api_keys: Optional[Iterable[str]], api_key_env: Optional[str]
@@ -517,10 +509,6 @@ class MCPDeployer:
             return AuthResult(method="api_key")
         return None
 
-    # ------------------------------------------------------------------
-    # Tool
-    # ------------------------------------------------------------------
-
     def _invoke(
         self, name: str, task: str, img: Optional[str] = None
     ) -> str:
@@ -585,18 +573,13 @@ class MCPDeployer:
     def _register_on_server(self, tool: ServedTool) -> None:
         name = tool.name
 
-        # The closure carries no `self` in its signature so the schema is
-        # just (task, img).
+        # Leave self out so the tool schema is just (task, img).
         async def run(task: str, img: Optional[str] = None) -> str:
             return await self._call(name, task, img)
 
         run.__name__ = name
         run.__doc__ = tool.description
         self.server.tool(name=name, description=tool.description)(run)
-
-    # ------------------------------------------------------------------
-    # App and lifecycle
-    # ------------------------------------------------------------------
 
     @property
     def url(self) -> str:
@@ -609,8 +592,7 @@ class MCPDeployer:
 
         if self.host in ("127.0.0.1", "localhost"):
             return None
-        # The default rebinding guard only admits localhost Host headers,
-        # which would reject every request to a server bound elsewhere.
+        # The default guard only admits localhost Host headers.
         return TransportSecuritySettings(
             enable_dns_rebinding_protection=False
         )

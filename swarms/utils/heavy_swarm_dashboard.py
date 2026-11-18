@@ -94,8 +94,6 @@ class HeavySwarmDashboard:
     def __init__(self, console: Optional[Console] = None) -> None:
         self.console = console or Console()
 
-    # ----- Static panels ---------------------------------------------------
-
     def show_config(
         self,
         *,
