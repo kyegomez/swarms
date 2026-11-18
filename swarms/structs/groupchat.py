@@ -115,9 +115,7 @@ SCORE_ONLY_TOOL = {
         "parameters": {
             "type": "object",
             "properties": {
-                "score": RESPOND_TOOL["function"]["parameters"][
-                    "properties"
-                ]["score"],
+                "score": {"type": "number"},
             },
             "required": ["score"],
         },
@@ -256,10 +254,8 @@ class GroupChat(SerializableMixin):
                 so every agent can produce a machine-readable speaking bid.
                 Set to ``False`` if your agents already declare the tool
                 themselves.
-            score_only_bids: When True, agents bid with a score alone and
-                only the winner is then asked for its reply. Output tokens
-                drop to about one reply per posted message, at the cost of
-                one extra model call of latency per turn.
+            score_only_bids: When True, agents bid a score alone and only
+                the winner writes a reply, at one extra call per turn.
 
         Raises:
             ValueError: If fewer than two agents are provided.
@@ -573,7 +569,7 @@ class GroupChat(SerializableMixin):
             if selection is None:
                 # No reply at all on the first turn is almost never a lull; it is a bad model name or missing key.
                 if message_count == 1 and not any(
-                    reply for _, _, reply in bids
+                    score or reply for _, score, reply in bids
                 ):
                     logger.warning(
                         f"[{self.name}] No agent produced a reply on the first "
@@ -600,6 +596,9 @@ class GroupChat(SerializableMixin):
                     True,
                 )
                 if not reply:
+                    logger.warning(
+                        f"[{self.name}] {agent.agent_name} gave no reply"
+                    )
                     break
             self._post(
                 sender=agent.agent_name,
