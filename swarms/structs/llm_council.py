@@ -256,6 +256,7 @@ class LLMCouncil:
             )
 
         # Every member ranks all responses, concurrently
+        reset_agents(self.council_members)
         evaluation_tasks = [
             get_evaluation_prompt(
                 task, anonymous_responses, member.agent_name
