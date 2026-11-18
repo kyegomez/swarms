@@ -492,7 +492,8 @@ class GroupChat(SerializableMixin):
         """Pick the single agent that takes the floor this turn.
 
         The winner is the highest *recency-adjusted* bid that (a) carries a
-        non-empty reply and (b) clears ``threshold``. Agents that spoke within
+        non-empty reply, unless score_only_bids is set, and (b) clears
+        ``threshold``. Agents that spoke within
         the last ``recency_window`` turns have ``recency_penalty`` subtracted
         from their score, so the floor passes around instead of one agent
         monologuing. Returns ``None`` when nobody clears the bar — a lull that
