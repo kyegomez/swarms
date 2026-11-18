@@ -127,7 +127,11 @@ class HybridHierarchicalClusterSwarm:
             agent_description="A router agent that routes tasks to the appropriate swarms.",
             system_prompt=f"{router_system_prompt}\n\n{get_swarms_info(swarms=self.swarms)}",
             tools_list_dictionary=tools,
-            llm_args={"tool_choice": forced_tool_choice(tools[0])},
+            llm_args={
+                "tool_choice": forced_tool_choice(
+                    tools[0], model_name=router_agent_model_name
+                )
+            },
             model_name=router_agent_model_name,
             max_loops=1,
             output_type="final",

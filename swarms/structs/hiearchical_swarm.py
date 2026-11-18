@@ -478,7 +478,8 @@ class HierarchicalSwarm:
                 tools_list_dictionary=[_JUDGE_REPORT_SCHEMA],
                 llm_args={
                     "tool_choice": forced_tool_choice(
-                        _JUDGE_REPORT_SCHEMA
+                        _JUDGE_REPORT_SCHEMA,
+                        model_name=self.judge_agent_model_name,
                     )
                 },
                 output_type="final",

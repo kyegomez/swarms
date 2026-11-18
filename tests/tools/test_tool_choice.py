@@ -8,7 +8,9 @@ from swarms import (
     Agent,
     HeavySwarm,
     HierarchicalSwarm,
+    HybridHierarchicalClusterSwarm,
     PlannerWorkerSwarm,
+    TreeOfThoughts,
 )
 from swarms.structs.auto_agent_builder import AutoAgentBuilder
 from swarms.structs.groupchat import RESPOND_TOOL, GroupChat
@@ -129,6 +131,33 @@ def _bid_request():
     GroupChat(agents=agents).run("topic")
 
 
+def _planner_judge_request():
+    swarm = PlannerWorkerSwarm(
+        agents=[_worker()], judge_model_name=NO_FORCE
+    )
+    swarm._run_judge()
+
+
+def _hierarchical_judge_request():
+    swarm = HierarchicalSwarm(
+        agents=[_worker()],
+        judge_agent_model_name=NO_FORCE,
+        autosave=False,
+    )
+    swarm._get_judge_agent().llm.run(task="judge")
+
+
+def _router_request():
+    swarm = HybridHierarchicalClusterSwarm(
+        router_agent_model_name=NO_FORCE
+    )
+    swarm.router_agent.llm.run(task="route")
+
+
+def _tree_of_thoughts_request():
+    TreeOfThoughts(model_name=NO_FORCE).run("task")
+
+
 @pytest.mark.parametrize(
     "request_tool_call",
     [
@@ -137,6 +166,10 @@ def _bid_request():
         _question_request,
         _builder_request,
         _bid_request,
+        _planner_judge_request,
+        _hierarchical_judge_request,
+        _router_request,
+        _tree_of_thoughts_request,
     ],
     ids=[
         "planner",
@@ -144,6 +177,10 @@ def _bid_request():
         "questions",
         "builder",
         "groupchat_bid",
+        "planner_judge",
+        "hierarchical_judge",
+        "hybrid_router",
+        "tree_of_thoughts",
     ],
 )
 def test_every_forced_call_sends_auto_to_a_model_that_cannot_be_forced(
