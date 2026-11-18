@@ -792,10 +792,6 @@ def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
     assert swarm.agent_rearrange.conversation.channel is channel
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
-
-
 # ============================================================================
 # multi_agent_collab_prompt — delivered, not welded onto the caller's agents
 # ============================================================================
@@ -1493,3 +1489,224 @@ def test_run_kwargs_reach_swarm_run_not_its_constructor(monkeypatch):
 
     assert router.run("hi", streaming_callback=callback) == "done"
     assert seen["streaming_callback"] is callback
+
+
+# ============================================================================
+# Every swarm type, end to end, against a stubbed model
+# ============================================================================
+
+_STUB_ANSWER = "STUB-ANSWER"
+_STUB_AGENTS = ("Alpha", "Bravo", "Charlie")
+
+
+def _stub_fill(schema, defs, key=""):
+    """Build a value that satisfies a JSON schema, naming agents where asked.
+
+    Args:
+        schema: The JSON schema to satisfy.
+        defs: The definitions a $ref in the schema may point at.
+        key: The property name the value is for.
+
+    Returns:
+        A value valid for the schema.
+    """
+    if "$ref" in schema:
+        return _stub_fill(
+            defs[schema["$ref"].split("/")[-1]], defs, key
+        )
+    if "enum" in schema:
+        return schema["enum"][0]
+    if "anyOf" in schema:
+        options = [
+            s for s in schema["anyOf"] if s.get("type") != "null"
+        ]
+        return _stub_fill(options[0], defs, key)
+    kind = schema.get("type")
+    if kind == "object" or "properties" in schema:
+        return {
+            name: _stub_fill(sub, defs, name)
+            for name, sub in schema.get("properties", {}).items()
+        }
+    if kind == "array":
+        if "depend" in key:
+            return []
+        return [_stub_fill(schema.get("items", {}), defs, key)]
+    if kind == "integer":
+        return 1
+    if kind == "number":
+        return 0.9
+    if kind == "boolean":
+        return True
+    if "agent" in key.lower():
+        return _STUB_AGENTS[0]
+    return _STUB_ANSWER
+
+
+def _stub_tool_call(name, schema):
+    """Build one provider tool call to name with schema-valid arguments.
+
+    Args:
+        name: The function to call.
+        schema: The function's parameter schema.
+
+    Returns:
+        A LiteLLM tool-call object.
+    """
+    from litellm.types.utils import (
+        ChatCompletionMessageToolCall,
+        Function,
+    )
+
+    args = _stub_fill(schema, schema.get("$defs", {}))
+    return ChatCompletionMessageToolCall(
+        id=f"call-{name}",
+        type="function",
+        function=Function(name=name, arguments=json.dumps(args)),
+    )
+
+
+def _stub_completion(**params):
+    """Answer any request the structures make, without a network call.
+
+    Args:
+        **params: The keyword arguments LiteLLM's completion receives.
+
+    Returns:
+        A completion-shaped response.
+    """
+    from types import SimpleNamespace
+
+    tools = {
+        t["function"]["name"]: t["function"]["parameters"]
+        for t in params.get("tools") or []
+    }
+    choice = params.get("tool_choice")
+    content, tool_calls = _STUB_ANSWER, None
+
+    if isinstance(choice, dict) and tools:
+        name = choice["function"]["name"]
+        tool_calls = [_stub_tool_call(name, tools[name])]
+        content = None
+    elif "create_plan" in tools:
+        planned = any(
+            "create_plan" in json.dumps(m.get("tool_calls") or [])
+            for m in params.get("messages", [])
+        )
+        name = "complete_task" if planned else "create_plan"
+        tool_calls = [_stub_tool_call(name, tools[name])]
+        content = None
+    elif params.get("response_format") is not None:
+        schema = params["response_format"].model_json_schema()
+        content = json.dumps(
+            _stub_fill(schema, schema.get("$defs", {}))
+        )
+
+    message = SimpleNamespace(
+        content=content,
+        tool_calls=tool_calls,
+        reasoning_content=None,
+    )
+    return SimpleNamespace(
+        choices=[
+            SimpleNamespace(message=message, finish_reason="stop")
+        ],
+        usage=None,
+    )
+
+
+async def _stub_acompletion(**params):
+    """Async form of the stubbed completion.
+
+    Args:
+        **params: The keyword arguments LiteLLM's acompletion receives.
+
+    Returns:
+        A completion-shaped response.
+    """
+    return _stub_completion(**params)
+
+
+def _swarm_classes():
+    """Map every swarm type to the class SwarmRouter should build for it.
+
+    Returns:
+        Each swarm type's class and the extra router settings it needs.
+    """
+    from swarms import (
+        AgentRearrange,
+        ConcurrentWorkflow,
+        CouncilAsAJudge,
+        DebateWithJudge,
+        HeavySwarm,
+        HierarchicalSwarm,
+        LLMCouncil,
+        MajorityVoting,
+        MixtureOfAgents,
+        MultiAgentRouter,
+        PlannerWorkerSwarm,
+        RoundRobinSwarm,
+        SequentialWorkflow,
+    )
+    from swarms.structs.groupchat import GroupChat
+
+    return {
+        "AgentRearrange": (
+            AgentRearrange,
+            {"rearrange_flow": "Alpha -> Bravo -> Charlie"},
+        ),
+        "MixtureOfAgents": (MixtureOfAgents, {}),
+        "SequentialWorkflow": (SequentialWorkflow, {}),
+        "ConcurrentWorkflow": (ConcurrentWorkflow, {}),
+        "GroupChat": (GroupChat, {}),
+        "MultiAgentRouter": (MultiAgentRouter, {}),
+        "HierarchicalSwarm": (HierarchicalSwarm, {}),
+        "MajorityVoting": (MajorityVoting, {}),
+        "CouncilAsAJudge": (CouncilAsAJudge, {}),
+        "HeavySwarm": (HeavySwarm, {}),
+        "LLMCouncil": (LLMCouncil, {}),
+        "DebateWithJudge": (DebateWithJudge, {}),
+        "RoundRobin": (RoundRobinSwarm, {}),
+        "PlannerWorkerSwarm": (PlannerWorkerSwarm, {}),
+    }
+
+
+@pytest.mark.parametrize("swarm_type", get_args(SwarmType))
+def test_every_swarm_type_runs_and_returns_the_model_answer(
+    swarm_type,
+):
+    """Each swarm type builds its own structure and returns the model's answer."""
+    from swarms.utils import litellm_wrapper
+
+    expected_class, settings = _swarm_classes()[swarm_type]
+    agents = [
+        Agent(
+            agent_name=name,
+            system_prompt=f"You are {name}.",
+            model_name="gpt-5.4-mini",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+        for name in _STUB_AGENTS
+    ]
+    router = SwarmRouter(
+        agents=agents,
+        swarm_type=swarm_type,
+        max_loops=1,
+        verbose=False,
+        **settings,
+    )
+
+    with patch.object(
+        litellm_wrapper, "completion", _stub_completion
+    ), patch.object(
+        litellm_wrapper, "acompletion", _stub_acompletion
+    ):
+        output = router.run("What is the capital of France?")
+
+    assert isinstance(router.swarm, expected_class)
+    assert _STUB_ANSWER in json.dumps(output, default=str)
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
