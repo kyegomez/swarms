@@ -33,6 +33,7 @@ class KnowledgeGenerator:
 
         Args:
             agent_name (str): Name identifier for the knowledge generator agent
+            description (str): Description given to the knowledge generator agent
             model_name (str): LLM model to use for knowledge generation
             num_knowledge_items (int): Number of knowledge snippets to generate for each query
         """
@@ -46,7 +47,7 @@ class KnowledgeGenerator:
         )
         self.agent = Agent(
             agent_name=agent_name,
-            agent_description="Generates factual, relevant knowledge to assist with answering queries",
+            agent_description=description,
             system_prompt=knowledge_system_prompt,
             model_name=model_name,
             max_loops=1,
