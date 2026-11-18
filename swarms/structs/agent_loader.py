@@ -296,13 +296,13 @@ class AgentLoader:
                     f"Path {file_paths} not found."
                 )
         elif isinstance(file_paths, list):
-            paths_to_process = file_paths
+            paths_to_process = list(file_paths)
         else:
             raise ValueError(
                 "file_paths must be a string or list of strings"
             )
 
-        for file_path in paths_to_process:
+        for file_path in list(paths_to_process):
             try:
                 file_size_mb = os.path.getsize(file_path) / (
                     1024 * 1024

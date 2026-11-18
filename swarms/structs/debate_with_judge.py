@@ -280,6 +280,7 @@ class DebateWithJudge:
             raise ValueError("Task must be a non-empty string")
 
         self.conversation.clear()
+        self.conversation.add(role="User", content=task)
         reset_agents(
             (self.pro_agent, self.con_agent, self.judge_agent)
         )

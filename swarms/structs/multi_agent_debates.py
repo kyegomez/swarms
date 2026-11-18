@@ -49,22 +49,6 @@ class OneOnOneDebate:
         Raises:
             ValueError: If the `agents` list does not contain exactly two Agent instances.
         """
-        if len(self.agents) != 2:
-            raise ValueError(
-                "There must be exactly two agents in the dialogue."
-            )
-
-        agent1 = self.agents[0]
-        agent2 = self.agents[1]
-
-        # Inform agents about each other
-        agent1_intro = f"You are {agent1.agent_name} debating against {agent2.agent_name}. Your role is to engage in a thoughtful debate."
-        agent2_intro = f"You are {agent2.agent_name} debating against {agent1.agent_name}. Your role is to engage in a thoughtful debate."
-
-        # Set up initial context for both agents
-        agent1.run(task=agent1_intro)
-        agent2.run(task=agent2_intro)
-
         return one_on_one_debate(
             max_loops=self.max_loops,
             task=task,
