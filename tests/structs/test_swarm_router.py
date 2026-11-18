@@ -890,6 +890,61 @@ def test_collab_prompt_is_delivered_as_a_system_turn():
     ]
 
 
+@pytest.mark.parametrize(
+    "count, fallback, raises",
+    [
+        (2, False, True),
+        (4, False, True),
+        (3, False, False),
+        (2, True, True),
+    ],
+)
+def test_debate_with_judge_needs_exactly_three_agents(
+    count, fallback, raises
+):
+    """DebateWithJudge, as the type or a fallback, is checked at construction."""
+    agents, _ = _collab_recording_agents(
+        [f"A{i}" for i in range(count)]
+    )
+    kwargs = (
+        {
+            "swarm_type": "SequentialWorkflow",
+            "fallback_swarms": ["DebateWithJudge"],
+        }
+        if fallback
+        else {"swarm_type": "DebateWithJudge"}
+    )
+
+    if raises:
+        with pytest.raises(
+            SwarmRouterConfigError, match="exactly 3 agents"
+        ):
+            SwarmRouter(agents=agents, **kwargs)
+    else:
+        SwarmRouter(agents=agents, **kwargs)
+
+
+@pytest.mark.parametrize(
+    "swarm_type, warns",
+    [
+        ("HeavySwarm", True),
+        ("CouncilAsAJudge", True),
+        ("SequentialWorkflow", False),
+    ],
+)
+def test_router_warns_when_the_swarm_type_ignores_its_agents(
+    swarm_type, warns
+):
+    """Swarm types that build their own agents say the given ones are not run."""
+    agents, _ = _collab_recording_agents(["A", "B"])
+
+    with patch("swarms.structs.swarm_router.logger.warning") as warn:
+        SwarmRouter(agents=agents, swarm_type=swarm_type)
+
+    messages = " ".join(str(call) for call in warn.call_args_list)
+    assert ("are not run" in messages) is warns
+
+
 def test_collab_prompt_warns_when_the_swarm_type_cannot_deliver_it():
     """A flag that does nothing must say so, regardless of verbose."""
     agents, _ = _collab_recording_agents(["A", "B"])
