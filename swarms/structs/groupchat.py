@@ -107,6 +107,33 @@ RESPOND_TOOL = {
 
 RESPOND_CHOICE = forced_tool_choice(RESPOND_TOOL)
 
+SCORE_ONLY_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "respond",
+        "description": "Bid for the floor in the groupchat with a score 0..1.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "score": RESPOND_TOOL["function"]["parameters"][
+                    "properties"
+                ]["score"],
+            },
+            "required": ["score"],
+        },
+    },
+}
+
+BID_ONLY_NOTE = (
+    "\nThis turn is a bid only: call respond with your score alone."
+    " If you win the floor you will be asked for your reply next."
+)
+
+FLOOR_NOTE = (
+    "\nYou bid highest and have the floor: call respond with your"
+    " score and your full reply to the group in message."
+)
+
 
 def _extract_args(tool_output: Any) -> Tuple[float, str]:
     """Parse and normalize a forced ``respond()`` tool call.
@@ -203,6 +230,7 @@ class GroupChat(SerializableMixin):
         verbose: bool = False,
         auto_equip: bool = True,
         channel: Optional[CommsChannel] = None,
+        score_only_bids: bool = False,
     ):
         """Initialize the turn-based groupchat runtime.
 
@@ -228,6 +256,10 @@ class GroupChat(SerializableMixin):
                 so every agent can produce a machine-readable speaking bid.
                 Set to ``False`` if your agents already declare the tool
                 themselves.
+            score_only_bids: When True, agents bid with a score alone and
+                only the winner is then asked for its reply. Output tokens
+                drop to about one reply per posted message, at the cost of
+                one extra model call of latency per turn.
 
         Raises:
             ValueError: If fewer than two agents are provided.
@@ -242,6 +274,7 @@ class GroupChat(SerializableMixin):
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
+        self.score_only_bids = score_only_bids
 
         self.channel = channel
         claim_agents(self.agents, channel, self.name)
@@ -292,7 +325,11 @@ class GroupChat(SerializableMixin):
         )
 
     def _decide_sync(
-        self, agent: Agent, sender: str, message: str
+        self,
+        agent: Agent,
+        sender: str,
+        message: str,
+        floor: bool = False,
     ) -> Tuple[float, str]:
         """Ask one agent whether it wants to respond to a message.
 
@@ -309,17 +346,22 @@ class GroupChat(SerializableMixin):
             sender=sender,
             message=message,
         )
+        if self.score_only_bids:
+            prompt += FLOOR_NOTE if floor else BID_ONLY_NOTE
         previous_output_type = getattr(agent, "output_type", None)
         agent.output_type = "final"
         llm = getattr(agent, "llm", None)
         forced = isinstance(llm, LiteLLM)
         if forced:
             previous_tool_choice = llm.tool_choice
+            previous_tools = llm.tools_list_dictionary
             llm.tool_choice = forced_tool_choice(
                 RESPOND_TOOL,
                 llm.reasoning_effort,
                 llm.reasoning_enabled,
             )
+            if self.score_only_bids and not floor:
+                llm.tools_list_dictionary = [SCORE_ONLY_TOOL]
         try:
             # Typed turns let the agent tell its own prior speech from a peer's.
             tool_output = agent.run(
@@ -340,6 +382,7 @@ class GroupChat(SerializableMixin):
             agent.output_type = previous_output_type
             if forced:
                 llm.tool_choice = previous_tool_choice
+                llm.tools_list_dictionary = previous_tools
 
         score, reply = _extract_args(tool_output)
         self._log(
@@ -462,7 +505,7 @@ class GroupChat(SerializableMixin):
         best_adjusted = self.threshold
 
         for agent, score, reply in bids:
-            if not reply:
+            if not reply and not self.score_only_bids:
                 continue
             adjusted = score
             if agent.agent_name in recent:
@@ -547,6 +590,16 @@ class GroupChat(SerializableMixin):
                 break
 
             agent, score, reply = selection
+            if self.score_only_bids:
+                _, reply = await asyncio.to_thread(
+                    self._decide_sync,
+                    agent,
+                    last_sender,
+                    last_message,
+                    True,
+                )
+                if not reply:
+                    break
             self._post(
                 sender=agent.agent_name,
                 content=reply,

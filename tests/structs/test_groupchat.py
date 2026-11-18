@@ -28,6 +28,7 @@ from swarms.structs.groupchat import (
     RESPOND_TOOL,
     _extract_args,
 )
+from swarms.utils.litellm_wrapper import LiteLLM
 
 # --------------------------------------------------------------------------
 # helpers
@@ -409,6 +410,34 @@ class TestScheduling:
         assert "B bid 0.00, returned: 'Just text.'" in str(
             log.mock_calls
         )
+
+    def test_score_only_bids_ask_only_the_winner_for_a_reply(self):
+        class ToolAgent(ScriptedAgent):
+            def __init__(self, name, bids):
+                super().__init__(name, bids)
+                self.llm = LiteLLM(
+                    model_name="gpt-4o-mini",
+                    tools_list_dictionary=[RESPOND_TOOL],
+                )
+                self.asked = []
+
+            def run(self, task=None, *args, **kwargs):
+                tool = self.llm.tools_list_dictionary[0]["function"]
+                self.asked.append(tool["parameters"]["required"])
+                return super().run(task, *args, **kwargs)
+
+        winner = ToolAgent("A", [(0.9, ""), (0.0, "full reply")])
+        other = ToolAgent("B", [(0.6, "")])
+        chat = make_chat([winner, other], score_only_bids=True)
+        chat.run("topic")
+
+        assert contents(chat) == ["topic", "full reply"]
+        assert winner.asked == [
+            ["score"],
+            ["score", "message"],
+            ["score"],
+        ]
+        assert winner.llm.tools_list_dictionary == [RESPOND_TOOL]
 
 
 # --------------------------------------------------------------------------
