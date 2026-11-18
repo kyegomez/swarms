@@ -3100,7 +3100,6 @@ Subtask Breakdown:
                 for m in posted
                 if m != task_row
             ]
-            # A teammate's post carries its speaker, which to_messages puts before it.
             for message in messages:
                 if message["role"] not in (
                     self.agent_name,

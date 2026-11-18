@@ -663,8 +663,8 @@ class Conversation:
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
-                A row whose ``speaker`` is set, on the row or in its metadata, starts
-                with ``"<speaker>: "``; ``Agent`` sets it on channel posts from other speakers.
+                A row whose speaker is set, on the row or in its metadata, starts
+                with "<speaker>: "; Agent sets it on channel posts from other speakers.
         """
         messages = []
         for row in [*prefix, *self.conversation_history[start:]]:
@@ -708,7 +708,6 @@ class Conversation:
                 "System",
                 "Tool Executor",
             ):
-                # A teammate's channel post keeps its name, as messages_for does.
                 speaker = {**(row.get("metadata") or {}), **row}.get(
                     "speaker"
                 )
