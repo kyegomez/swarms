@@ -56,7 +56,9 @@ from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.structs.serialization import SerializableMixin
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.formatter import formatter
+from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -300,6 +302,12 @@ class AuctionSwarm(SerializableMixin):
                 continue
             agent.tools_list_dictionary = [*tools, BID_TOOL]
             agent.llm = agent.llm_handling()
+            if isinstance(agent.llm, LiteLLM):
+                agent.llm.tool_choice = forced_tool_choice(
+                    BID_TOOL,
+                    agent.llm.reasoning_effort,
+                    agent.llm.reasoning_enabled,
+                )
             self._log(
                 "info", f"Injected bid tool into {agent.agent_name}"
             )
