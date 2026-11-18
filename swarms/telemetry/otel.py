@@ -33,7 +33,10 @@ _SECRET_KEY = re.compile(
     re.IGNORECASE,
 )
 
-_URL = re.compile(r"(?:https?|wss?)://[^\s\"'<>`\\]+", re.IGNORECASE)
+# Any scheme; capping its length keeps long runs of letters linear.
+_URL = re.compile(
+    r"[a-z][a-z0-9+.\-]{0,31}://[^\s\"'<>`\\]+", re.IGNORECASE
+)
 
 # Well-known credential formats, matched wherever they appear.
 _TOKEN_SHAPES = re.compile(
@@ -52,6 +55,13 @@ _TOKEN_SHAPES = re.compile(
 _BEARER = re.compile(
     r"\b(bearer|basic)\s+(?=[A-Za-z0-9._~+/\-]*[0-9=])"
     r"[A-Za-z0-9._~+/=\-]{8,}",
+    re.IGNORECASE,
+)
+
+# The credential after any Authorization scheme, as in "Authorization: Token abc".
+_AUTH_SCHEME = re.compile(
+    r"(authorization[\"']?\s*[:=]\s*[\"']?[A-Za-z][\w.\-]*\s+)"
+    r"[^\s\"',;&}<]+",
     re.IGNORECASE,
 )
 
@@ -132,7 +142,7 @@ def _truncate(value: Any, limit: int = MAX_PAYLOAD_CHARS) -> str:
 
 
 def _redact_url(text: str) -> str:
-    """Hide the credentials an http(s) or ws(s) URL carries.
+    """Hide the credentials a URL of any scheme carries.
 
     Args:
         text (str): One URL. Anything that is not such a URL is returned
@@ -244,6 +254,9 @@ def _scrub(text: str) -> str:
     text = _TOKEN_SHAPES.sub(REDACTED, text)
     text = _BEARER.sub(
         lambda match: f"{match.group(1)} {REDACTED}", text
+    )
+    text = _AUTH_SCHEME.sub(
+        lambda match: match.group(1) + REDACTED, text
     )
 
     return _ASSIGNED.sub(
