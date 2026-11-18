@@ -1086,8 +1086,7 @@ class TestHierarchicalContextManagement:
         assert len(requests) == 2
         for messages in requests:
             text = "\n".join(str(m.get("content")) for m in messages)
-            newest = str(messages[-1].get("content"))
-            assert newest.count("TASK-MARKER") == 1, newest
+            assert text.count("TASK-MARKER") == 1, text
             assert all(text.count(m) <= 1 for m in markers), text
         newest = str(requests[1][-1].get("content"))
         assert all(m in newest for m in markers), newest

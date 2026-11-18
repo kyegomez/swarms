@@ -668,15 +668,15 @@ class HierarchicalSwarm:
                 if current_loop == 0:
                     loop_task = task
                 else:
-                    loop_task = LOOP_CONTINUATION_PROMPT.format(
-                        last_output=(
-                            last_output
-                            if self.director_feedback_on
-                            and not self.agent_as_judge
-                            else "(in the history above)"
-                        ),
-                        task=task,
-                    )
+                    loop_task = LOOP_CONTINUATION_PROMPT
+                    if (
+                        self.director_feedback_on
+                        and not self.agent_as_judge
+                    ):
+                        loop_task = (
+                            f"Director feedback: {last_output}"
+                            f"\n\n{loop_task}"
+                        )
 
                 # Execute one step of the swarm
                 try:
