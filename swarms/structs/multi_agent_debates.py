@@ -1,6 +1,6 @@
 from typing import Callable, Union, List
 
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.deep_discussion import one_on_one_debate
@@ -99,11 +99,15 @@ class ExpertPanelDiscussion:
         """
         Execute the expert panel discussion.
 
+        Every agent starts the run on a fresh conversation, and each
+        one's first prompt opens with who is on the panel.
+
         Args:
             task (str): The main topic for discussion.
 
         Returns:
-            list: Formatted conversation history.
+            list: Formatted conversation history. The task is its first
+                row, so the default output leaves it out and keeps every turn.
         """
         conversation = Conversation()
 
@@ -117,21 +121,21 @@ class ExpertPanelDiscussion:
                 "A moderator agent is required for panel discussion."
             )
 
-        # Create participant list for context
+        conversation.add(role="User", content=task)
+        reset_agents([self.moderator, *self.agents])
+
         expert_names = [agent.agent_name for agent in self.agents]
         participant_list = f"Panel participants: {', '.join(expert_names)}. Moderator: {self.moderator.agent_name}."
-
-        # Inform moderator about all participants
         moderator_intro = f"You are {self.moderator.agent_name}, moderating a panel discussion. {participant_list} Guide the discussion professionally."
-        self.moderator.run(task=moderator_intro)
 
-        # Inform each expert about the panel setup
+        expert_intros = []
         for i, expert in enumerate(self.agents):
             other_experts = [
                 name for j, name in enumerate(expert_names) if j != i
             ]
-            expert_intro = f"You are {expert.agent_name}, Expert {i+1} on this panel. Other experts: {', '.join(other_experts)}. Moderator: {self.moderator.agent_name}. Provide expert insights."
-            expert.run(task=expert_intro)
+            expert_intros.append(
+                f"You are {expert.agent_name}, Expert {i+1} on this panel. Other experts: {', '.join(other_experts)}. Moderator: {self.moderator.agent_name}. Provide expert insights."
+            )
 
         current_topic = task
 
@@ -140,6 +144,10 @@ class ExpertPanelDiscussion:
             moderator_prompt = (
                 f"Round {round_num + 1}: {current_topic}"
             )
+            if round_num == 0:
+                moderator_prompt = (
+                    f"{moderator_intro}\n\n{moderator_prompt}"
+                )
             moderator_response = agent_answer(
                 self.moderator,
                 fallback=self.moderator.run(task=moderator_prompt),
@@ -151,6 +159,10 @@ class ExpertPanelDiscussion:
             # Each expert responds
             for i, expert in enumerate(self.agents):
                 expert_prompt = f"Expert {expert.agent_name}, please respond to: {moderator_response}"
+                if round_num == 0:
+                    expert_prompt = (
+                        f"{expert_intros[i]}\n\n{expert_prompt}"
+                    )
                 expert_response = agent_answer(
                     expert, fallback=expert.run(task=expert_prompt)
                 )

@@ -189,6 +189,9 @@ class _RecordingAgent(Agent):
         self.tasks.append(task)
         return self.reply
 
+    def reset(self):
+        pass
+
 
 def test_moderator_synthesis_names_each_expert_and_is_not_a_list_repr():
     moderator = _RecordingAgent("Moderator", "A follow-up question.")
@@ -224,6 +227,9 @@ class _HistoryAgent(Agent):
         )
         return self.short_memory.return_all_except_first_string()
 
+    def reset(self):
+        self.short_memory = Conversation()
+
 
 def test_each_speaker_passes_on_only_its_latest_reply():
     moderator = _HistoryAgent("Moderator")
@@ -233,11 +239,13 @@ def test_each_speaker_passes_on_only_its_latest_reply():
         agents=experts, moderator=moderator, max_rounds=1
     ).run(task="Where do rates go?")
 
-    assert experts[0].tasks[-1] == (
-        "Expert Economist, please respond to: Moderator reply 2"
+    expert_prompt = experts[0].tasks[-1]
+
+    assert expert_prompt.endswith(
+        "Expert Economist, please respond to: Moderator reply 1"
     )
     assert moderator.tasks[-1].endswith(
-        "Economist: Economist reply 2\n\nHistorian: Historian reply 2"
+        "Economist: Economist reply 1\n\nHistorian: Historian reply 1"
     )
 
 
@@ -294,3 +302,61 @@ def test_debate_default_output_keeps_the_pro_argument(
     assert "PRO ARGUMENT" in result
     assert "CON ARGUMENT" in result
     assert "JUDGE VERDICT" in result
+
+
+def _panel(monkeypatch, tmp_path, fake_run):
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    experts = [
+        Agent(agent_name=name, max_loops=1, print_on=False)
+        for name in ("Economist", "Historian")
+    ]
+    moderator = Agent(
+        agent_name="Moderator", max_loops=1, print_on=False
+    )
+    return ExpertPanelDiscussion(
+        agents=experts, moderator=moderator, max_rounds=1
+    )
+
+
+def test_panel_default_output_keeps_the_moderators_opening(
+    monkeypatch, tmp_path
+):
+    def fake_run(self, task=None, *args, **kwargs):
+        prompt = kwargs["messages"][-1]["content"]
+        if "Round 1:" in prompt:
+            return "OPENING"
+        if "please respond to" in prompt:
+            return "EXPERT VIEW"
+        return "SYNTHESIS"
+
+    panel = _panel(monkeypatch, tmp_path, fake_run)
+
+    result = panel.run("Where do rates go?")
+
+    assert "Where do rates go?" not in result
+    for reply in ("OPENING", "EXPERT VIEW", "SYNTHESIS"):
+        assert reply in result
+
+
+def test_panel_reruns_from_a_clean_history_without_setup_calls(
+    monkeypatch, tmp_path
+):
+    requests = []
+
+    def fake_run(self, *args, **kwargs):
+        requests.append(repr((args, kwargs)))
+        return "an answer"
+
+    panel = _panel(monkeypatch, tmp_path, fake_run)
+
+    panel.run("FIRSTTASK")
+    requests.clear()
+    panel.run("SECONDTASK")
+
+    assert len(requests) == 4
+    assert not any("FIRSTTASK" in r for r in requests)
+    assert "moderating a panel discussion" in requests[0]
+    assert "Expert 1 on this panel" in requests[1]
