@@ -1285,7 +1285,7 @@ def glob_tool(
     Args:
         agent: The agent instance
         pattern: Glob pattern matched against each path under the root,
-            e.g. ``*.py`` or ``test_*.json``. Matched recursively.
+            e.g. *.py or test_*.json. Matched recursively.
         path: Directory to search (relative to workspace or absolute).
             Defaults to the workspace root.
         **kwargs: Additional arguments
@@ -1591,7 +1591,7 @@ def assign_task_tool(
 def _find_registry(agent: Any) -> SubagentRegistry:
     """
     Helper to access or lazily create the sub-agent registry for an agent.
-    The registry instance is stored on the agent as `_subagent_registry`.
+    The registry instance is stored on the agent as _subagent_registry.
     """
     existing = getattr(agent, "_subagent_registry", None)
     if isinstance(existing, SubagentRegistry):
