@@ -2584,35 +2584,6 @@ Subtask Breakdown:
         for tool in tools:
             self.tools.remove(tool)
 
-    def stream_response(
-        self, response: str, delay: float = 0.001
-    ) -> None:
-        """
-        Streams the response token by token.
-
-        Args:
-            response (str): The response text to be streamed.
-            delay (float, optional): Delay in seconds between printing each token. Default is 0.1 seconds.
-
-        Raises:
-            ValueError: If the response is not provided.
-            Exception: For any errors encountered during the streaming process.
-
-        Example:
-            response = "This is a sample response from the API."
-            stream_response(response)
-        """
-        # Check for required inputs
-        if not response:
-            raise ValueError("Response is required.")
-
-        try:
-            # Stream and print the response token by token
-            for token in response.split():
-                time.sleep(delay)
-        except Exception:
-            pass
-
     def _serialize_callable(
         self, attr_value: Callable
     ) -> Dict[str, Any]:
