@@ -57,3 +57,29 @@ def test_each_call_sees_only_its_own_prompt(monkeypatch):
     assert len(requests) == 12
     for name, prompts in requests:
         assert len(prompts) == 1, f"{name} also saw {prompts[:-1]}"
+
+
+def test_markdown_bold_final_score_is_read(monkeypatch):
+    calls = {"actor": 0, "evaluator": 0, "reflector": 0}
+    evaluations = [
+        "Accuracy: 4/10\n\n**Final Score:** 4/10",
+        "Accuracy: 9/10\n\nFinal Score: **9/10**",
+    ]
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        role = self.agent_name.rsplit("-", 1)[-1]
+        calls[role] += 1
+        if role == "evaluator":
+            return evaluations[calls[role] - 1]
+        return f"{role} {calls[role]}"
+
+    monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
+    agent = ReflexionAgent(
+        agent_name="rx", model_name="gpt-5.4", max_loops=2
+    )
+
+    assert agent.run(["What is 2+2?"]) == ["actor 2"]
+    assert [m["score"] for m in agent.memory.short_term_memory] == [
+        0.4,
+        0.9,
+    ]
