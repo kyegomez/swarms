@@ -1,12 +1,22 @@
 import inspect
 import json
 import os
+import re
 from datetime import datetime
 from typing import Any, Dict, Set
 from uuid import UUID
 from swarms.utils.loguru_logger import initialize_logger
 
 logger = initialize_logger()
+
+# Attribute names that hold credentials. They are never written to disk;
+# load() leaves them as the caller set them. Deliberately narrower than
+# "*token*" so settings such as ``max_tokens`` are still saved.
+_SECRET_NAME_RE = re.compile(
+    r"api_?key|secret|passw(or)?d|credential|oauth|headers$"
+    r"|authorization",
+    re.IGNORECASE,
+)
 
 
 class SafeLoaderUtils:
@@ -131,6 +141,11 @@ class SafeLoaderUtils:
         return attributes
 
     @staticmethod
+    def is_secret_name(name: str) -> bool:
+        """Return True if an attribute name looks like a credential."""
+        return bool(_SECRET_NAME_RE.search(name))
+
+    @staticmethod
     def create_state_dict(obj: Any) -> Dict[str, Any]:
         """
         Create a dictionary of safe values from an object's state.
@@ -146,6 +161,10 @@ class SafeLoaderUtils:
         for attr_name in SafeLoaderUtils.get_class_attributes(obj):
             # Skip private attributes
             if attr_name.startswith("_"):
+                continue
+
+            # Never persist credentials (API keys, auth headers, tokens)
+            if SafeLoaderUtils.is_secret_name(attr_name):
                 continue
 
             try:
