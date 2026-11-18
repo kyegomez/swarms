@@ -212,7 +212,6 @@ class ModelRouter:
         max_tokens: int = 4000,
         temperature: Optional[float] = None,
         max_workers: int = 10,
-        api_key: str = None,
         max_loops: int = 1,
         model_name: str = "gpt-5.4",
         *args,
