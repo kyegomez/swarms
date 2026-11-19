@@ -18,6 +18,7 @@ for various input modalities and output formats.
 
 import copy
 import traceback
+import warnings
 from typing import Any, Callable, List, Optional, Union
 
 import requests
@@ -277,8 +278,10 @@ class LiteLLM:
                 Defaults to 3.
             verbose (bool, optional): Whether to enable verbose logging for debugging.
                 Defaults to False.
-            caching (bool, optional): Whether to enable LiteLLM response caching for
-                identical requests (a full-response cache). Defaults to False.
+            caching (bool, optional): Deprecated and ignored. RouteHub accepts
+                it and does nothing, and litellm already follows litellm.cache
+                when the key is left out. It will be removed in the next major
+                release. Defaults to False.
             prompt_caching (bool, optional): Whether to enable provider-side prompt
                 caching. When True, ephemeral ``cache_control`` breakpoints are added to
                 the system prompt and the final message so the large, stable prefix of
@@ -353,7 +356,14 @@ class LiteLLM:
         self.tools_list_dictionary = tools_list_dictionary
         self.tool_choice = tool_choice
         self.parallel_tool_calls = parallel_tool_calls
-        self.caching = caching
+        if caching:
+            warnings.warn(
+                "LiteLLM(caching=...) is deprecated and ignored, and will "
+                "be removed in the next major release. RouteHub does not "
+                "cache responses; with litellm, set litellm.cache instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self.prompt_caching = prompt_caching
         self.cache_config = cache_config or {}
         self.mcp_call = mcp_call
@@ -1154,7 +1164,6 @@ class LiteLLM:
             ),
             "stream": self.stream,
             self._output_token_key(): self.max_tokens,
-            "caching": self.caching,
             # Per request: litellm drops its module-level count after the first retried call.
             "num_retries": self.retries,
         }
