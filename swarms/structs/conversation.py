@@ -905,7 +905,7 @@ class Conversation:
             ValueError: If filename does not end in .json, since
                 export_conversation writes any other name as text.
         """
-        if not filename.endswith(".json"):
+        if not str(filename).endswith(".json"):
             raise ValueError(
                 f"Cannot import {filename}: a text export can't be "
                 "read back. Export to a .json filename instead."
