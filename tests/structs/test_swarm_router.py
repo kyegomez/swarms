@@ -1769,7 +1769,6 @@ def test_model_name_reaches_every_internal_agent():
         "MultiAgentRouter": "model",
         "MajorityVoting": "consensus_agent.model_name",
         "PlannerWorkerSwarm": "planner_model_name judge_model_name",
-        "CouncilAsAJudge": "model_name aggregator_agent.model_name",
         "HierarchicalSwarm": "feedback_director_model_name"
         " judge_agent_model_name director_model_name",
     }

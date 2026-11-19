@@ -197,7 +197,7 @@ def _msg_agents_ignored(swarm_type: str) -> str:
 # Swarm types that build their own agents, and the settings that pick their models
 _OWN_AGENT_MODEL_SETTINGS = {
     "HeavySwarm": "heavy_swarm_question_agent_model_name and heavy_swarm_worker_model_name",
-    "CouncilAsAJudge": "council_judge_model_name or model_name",
+    "CouncilAsAJudge": "council_judge_model_name",
 }
 
 
@@ -207,10 +207,6 @@ _INTERNAL_MODEL_PARAMS: Dict[str, Dict[str, Optional[str]]] = {
     "PlannerWorkerSwarm": {
         "planner_model_name": None,
         "judge_model_name": None,
-    },
-    "CouncilAsAJudge": {
-        "model_name": "council_judge_model_name",
-        "aggregation_model_name": None,
     },
     "HierarchicalSwarm": {
         "director_model_name": "director_model_name",
@@ -344,10 +340,10 @@ class SwarmRouter(SerializableMixin):
         conversation (Any, optional): Pre-existing conversation object to seed
             the swarm with.
         model_name (str, optional): Model for the agents that
-            MultiAgentRouter, MajorityVoting, PlannerWorkerSwarm,
-            CouncilAsAJudge and HierarchicalSwarm build for themselves.
-            council_judge_model_name and director_model_name win over it,
-            and with none set each structure keeps its own default.
+            MultiAgentRouter, MajorityVoting, PlannerWorkerSwarm and
+            HierarchicalSwarm build for themselves. director_model_name
+            wins over it, and with neither set each structure keeps its
+            own default.
         heavy_swarm_question_agent_model_name (str, optional): Model for the
             ``HeavySwarm`` question agent.
         heavy_swarm_worker_model_name (str, optional): Model for ``HeavySwarm``
@@ -435,7 +431,7 @@ class SwarmRouter(SerializableMixin):
         heavy_swarm_variant: SwarmVariant = "default",
         heavy_swarm_max_loops: int = 1,
         heavy_swarm_timeout: int = 900,
-        council_judge_model_name: Optional[str] = None,
+        council_judge_model_name: str = "gpt-5.4",  # Add missing model_name attribute
         verbose: bool = False,
         worker_tools: List[Callable] = None,
         chairman_model: str = "gpt-5.1",
@@ -483,7 +479,7 @@ class SwarmRouter(SerializableMixin):
         self.heavy_swarm_worker_model_name = (
             heavy_swarm_worker_model_name
         )
-        self.council_judge_model_name = council_judge_model_name
+        self.council_judge_model_name = council_judge_model_name  # Add missing model_name attribute
         self.verbose = verbose
         self.worker_tools = worker_tools
         self.heavy_swarm_swarm_show_output = (
@@ -794,8 +790,8 @@ class SwarmRouter(SerializableMixin):
         return CouncilAsAJudge(
             name=self.name,
             description=self.description,
+            model_name=self.council_judge_model_name,
             output_type=self.output_type,
-            **self._internal_model_kwargs("CouncilAsAJudge"),
         )
 
     def _create_hierarchical_swarm(self, *args, **kwargs):
