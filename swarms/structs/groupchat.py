@@ -355,6 +355,7 @@ class GroupChat(SerializableMixin):
                 RESPOND_TOOL,
                 llm.reasoning_effort,
                 llm.reasoning_enabled,
+                llm.model_name,
             )
             if self.score_only_bids and not floor:
                 llm.tools_list_dictionary = [SCORE_ONLY_TOOL]

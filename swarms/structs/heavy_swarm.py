@@ -1445,7 +1445,10 @@ class HeavySwarm(SerializableMixin):
             tools_list_dictionary=active_schema,
             max_tokens=max_tokens,
             top_p=None,  # Anthropic rejects temperature and top_p together
-            tool_choice=forced_tool_choice(active_schema[0]),
+            tool_choice=forced_tool_choice(
+                active_schema[0],
+                model_name=self.question_agent_model_name,
+            ),
             usage_hook=self._add_question_usage,
         )
 

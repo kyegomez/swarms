@@ -1204,6 +1204,7 @@ class TreeOfThoughts:
             _TOOL_SCHEMAS[schema],
             sent.get("reasoning_effort"),
             sent.get("reasoning_enabled"),
+            self.model_name,
         )
         agent = Agent(
             **{
