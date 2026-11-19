@@ -160,24 +160,33 @@ class TestBasicAgent:
         assert str(history[0]["content"]) == "the task"
 
     def test_save_and_load(self, basic_flow, mocked_llm, tmp_path):
-        """State written by save() comes back through load().
-
-        The only save()/load() round trip at the Agent level, and it has not
-        executed since 2025-10-21 — which is how a load() crash shipped
-        unnoticed. load() restores scalar configuration and deliberately
-        preserves live instances, so the conversation is not round-tripped.
-        """
+        """save() and load() round-trip the settings and the history."""
         file_path = str(tmp_path / "agent_state.json")
+        basic_flow.run("remember this")
         basic_flow.max_loops = 3
         basic_flow.save(file_path)
 
         assert os.path.exists(file_path)
 
-        restored = _flow("basic-flow-restored", mocked_llm, tmp_path)
+        restored = _flow(
+            "basic-flow-restored",
+            mocked_llm,
+            tmp_path,
+            system_prompt="old",
+        )
         restored.load(file_path)
+        saved = basic_flow.short_memory.conversation_history
 
         assert restored.max_loops == 3
         assert restored.agent_name == "basic-flow"
+        assert restored.short_memory.conversation_history == saved
+
+        # A state file saved before the history was written still loads.
+        with open(file_path, "w") as f:
+            json.dump({"max_loops": 2}, f)
+        restored.load(file_path)
+        assert restored.max_loops == 2
+        assert restored.short_memory.conversation_history == saved
 
     def test_concurrent_saves_of_one_agent_both_land(
         self, basic_flow, monkeypatch, tmp_path
@@ -252,10 +261,6 @@ class TestAgentFeatures:
     def test_agent_state_management(self):
         """save() writes to the caller's saved_state_path, load() restores
         scalar config, and autosave writes with no explicit call.
-
-        The conversation is deliberately not round-tripped: preserve_instances
-        keeps the target's live Conversation rather than overwriting it, so
-        asserting restored history here would pin behaviour load() disclaims.
         """
         with tempfile.TemporaryDirectory() as temp_dir:
             state_path = os.path.join(temp_dir, "agent_state.json")
