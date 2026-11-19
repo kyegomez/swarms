@@ -98,3 +98,30 @@ def test_list_final_wraps_last_content(conversation):
 def test_unknown_type_raises_value_error(conversation):
     with pytest.raises(ValueError, match="Invalid type: nope"):
         history_output_formatter(conversation, "nope")
+
+
+@pytest.mark.parametrize(
+    "output_type, expected",
+    [
+        ("list", []),
+        ("dict", []),
+        ("dictionary", []),
+        ("string", ""),
+        ("str", ""),
+        ("final", ""),
+        ("last", ""),
+        ("json", "[]"),
+        ("all", ""),
+        ("yaml", "[]\n"),
+        ("dict-all-except-first", []),
+        ("str-all-except-first", ""),
+        ("dict-final", {}),
+        ("list-final", []),
+    ],
+)
+def test_empty_conversation_returns_empty_value(
+    tmp_path, monkeypatch, output_type, expected
+):
+    monkeypatch.chdir(tmp_path)
+    empty = Conversation()
+    assert history_output_formatter(empty, output_type) == expected
