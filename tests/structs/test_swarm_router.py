@@ -1771,6 +1771,9 @@ def test_model_name_reaches_every_internal_agent():
         "PlannerWorkerSwarm": "planner_model_name judge_model_name",
         "HierarchicalSwarm": "feedback_director_model_name"
         " judge_agent_model_name director_model_name",
+        "CouncilAsAJudge": "model_name aggregator_agent.model_name",
+        "HeavySwarm": "question_agent_model_name worker_model_name",
+        "LLMCouncil": "chairman.model_name",
     }
 
     for swarm_type, attrs in internal_models.items():
