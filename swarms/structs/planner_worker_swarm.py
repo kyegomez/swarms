@@ -841,17 +841,18 @@ class PlannerWorkerSwarm:
             output_type="dict-all-except-first",
         )
 
+        # The goal and each result are already in the conversation turns.
         all_tasks = self.task_queue.get_all_tasks()
         task_report = "\n".join(
             [
-                f"- [{t.status.value}] {t.title}: {t.result or t.error or 'No result'}"
+                f"- [{t.status.value}] {t.title}"
+                + ("" if t.result else f": {t.error or 'No result'}")
                 for t in all_tasks
             ]
         )
 
         eval_task = (
-            f"Original goal: {self._original_task}\n\n"
-            f"Task execution report:\n{task_report}\n\n"
+            f"Task status report:\n{task_report}\n\n"
             "Evaluate whether the goal has been achieved. "
             "If not, identify specific gaps and provide instructions for the next planning cycle."
         )

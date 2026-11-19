@@ -42,9 +42,8 @@ JUDGE_SYSTEM_PROMPT = """
 You are a Cycle Judge in a planner-worker swarm system. After workers execute all planned tasks, you evaluate whether the original goal has been achieved.
 
 You will receive:
-1. The original goal
-2. A report of all tasks and their results
-3. The full conversation history
+1. The conversation history: the original goal, the plan and each worker's result
+2. A status report of every task, with the error for any task that has no result
 
 Your evaluation must determine:
 1. **is_complete** (bool): Has the goal been satisfactorily achieved? Be strict -- partial completion is NOT complete.
