@@ -21,7 +21,9 @@ Both functions are deliberately stateless: the caller owns the cursor dict, so
 a structure can reset it per task without this module tracking anything.
 """
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
+
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY
 
 NO_NEW_MESSAGES = (
     "No new messages since your last turn. Continue from your own "
@@ -32,29 +34,6 @@ NO_NEW_MESSAGES = (
 _STRUCTURE_ROLES = frozenset({"system"})
 
 _USER_ROLES = frozenset({"user", "human"})
-
-
-class Transcript(list):
-    """Chat turns from a shared conversation that remember which one is the user's task.
-
-    An agent given a Transcript with an image attaches the image to the task
-    turn, so the image sits early in every request and the provider can cache it.
-
-    Args:
-        turns: The chat messages, oldest first.
-        task_turn: Index of the user's task turn, or None when there is none.
-    """
-
-    def __init__(
-        self,
-        turns: Iterable[Dict[str, Any]] = (),
-        task_turn: Optional[int] = None,
-    ) -> None:
-        super().__init__(turns)
-        in_range = task_turn is not None and 0 <= task_turn < len(
-            self
-        )
-        self.task_turn = task_turn if in_range else None
 
 
 def messages_for(
@@ -82,14 +61,14 @@ def messages_for(
         conversation: A :class:`~swarms.structs.conversation.Conversation`.
 
     Returns:
-        Chat-completions messages, oldest first, as a Transcript that records
-        which turn is the user's task. Structure bookkeeping (system rows
-        such as team rosters) is omitted - it belongs in a system prompt, not
-        in the conversation body.
+        Chat-completions messages, oldest first. The first user turn is
+        marked as the task turn, where an agent puts images. Structure
+        bookkeeping (system rows such as team rosters) is omitted - it
+        belongs in a system prompt, not in the conversation body.
 
     Example:
         >>> messages_for("Writer", conversation)
-        [{'role': 'user', 'content': 'draft it'},
+        [{'role': 'user', 'content': 'draft it', 'swarms_task_turn': True},
          {'role': 'assistant', 'content': 'here is a draft'},
          {'role': 'user', 'content': 'Editor: needs a stronger opening'}]
     """
@@ -97,8 +76,8 @@ def messages_for(
         getattr(conversation, "conversation_history", None) or []
     )
 
-    messages: List[Dict[str, str]] = []
-    task_turn: Optional[int] = None
+    messages: List[Dict[str, Any]] = []
+    task_marked = False
     for message in history:
         if not isinstance(message, dict):
             continue
@@ -118,15 +97,19 @@ def messages_for(
             continue
 
         if role_key in _USER_ROLES:
-            if task_turn is None:
-                task_turn = len(messages)
-            messages.append({"role": "user", "content": content})
+            turn: Dict[str, Any] = {
+                "role": "user",
+                "content": content,
+            }
+            if not task_marked:
+                turn[TASK_TURN_KEY] = task_marked = True
+            messages.append(turn)
         else:
             messages.append(
                 {"role": "user", "content": f"{role}: {content}"}
             )
 
-    return Transcript(messages, task_turn)
+    return messages
 
 
 def split_last_turn(
@@ -148,14 +131,11 @@ def split_last_turn(
     """
     if not messages:
         return [], fallback
-    prior = Transcript(
-        messages[:-1], getattr(messages, "task_turn", None)
-    )
     # A blank newest turn would reach Agent.run as an empty task, which it rejects
     task = messages[-1]["content"]
     if not str(task).strip():
-        return prior, fallback
-    return prior, task
+        return messages[:-1], fallback
+    return messages[:-1], task
 
 
 def new_context_for(

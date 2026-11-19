@@ -30,7 +30,7 @@ load_dotenv()
 
 from swarms import Agent, SequentialWorkflow
 from swarms.structs.mixture_of_agents import MixtureOfAgents
-from swarms.utils.litellm_wrapper import IMAGE_TURN_KEY, LiteLLM
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY, LiteLLM
 
 # ---------------------------------------------------------------------------
 # Provider model names
@@ -683,7 +683,7 @@ def test_images_go_on_the_marked_turn_ahead_of_its_text(
     messages = llm._prepare_messages(
         img="https://example.com/a.png",
         messages=[
-            {"role": "user", "content": "task", IMAGE_TURN_KEY: True},
+            {"role": "user", "content": "task", TASK_TURN_KEY: True},
             {"role": "user", "content": "Voter-A: yes"},
         ],
     )
@@ -694,7 +694,7 @@ def test_images_go_on_the_marked_turn_ahead_of_its_text(
         "text",
     ]
     assert "image_url" not in str(newest["content"])
-    assert not any(IMAGE_TURN_KEY in m for m in messages)
+    assert not any(TASK_TURN_KEY in m for m in messages)
     assert ("cache_control" in task_turn["content"][0]) is (
         prompt_caching
     )

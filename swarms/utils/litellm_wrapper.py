@@ -37,8 +37,8 @@ from swarms.utils.llm_backend import acompletion, completion
 # Only a yes is remembered: RouteHub answers no while OpenRouter's model list is unreachable.
 _VISION_MODELS = set()
 
-# Set by Agent on the request turn that should carry the images; removed before the request is sent.
-IMAGE_TURN_KEY = "swarms_image_turn"
+# Marks the user's task turn, where images go; removed before the request is sent.
+TASK_TURN_KEY = "swarms_task_turn"
 
 
 def _model_supports_vision(model: str) -> bool:
@@ -168,8 +168,8 @@ def usage_from_response(response: any) -> Optional[dict]:
     }
 
 
-def _pop_image_turn(messages: List[dict]) -> Optional[int]:
-    """Remove the image-turn marker from every message and return where it was.
+def _pop_task_turn(messages: List[dict]) -> Optional[int]:
+    """Remove the task-turn mark from every message and return where it was.
 
     Args:
         messages: The request messages, changed in place.
@@ -177,17 +177,17 @@ def _pop_image_turn(messages: List[dict]) -> Optional[int]:
     Returns:
         Index of the first marked message, or None when none is marked.
     """
-    image_turn = None
+    task_turn = None
     for index, message in enumerate(messages):
-        if isinstance(message, dict) and IMAGE_TURN_KEY in message:
-            if image_turn is None and message[IMAGE_TURN_KEY]:
-                image_turn = index
+        if isinstance(message, dict) and TASK_TURN_KEY in message:
+            if task_turn is None and message[TASK_TURN_KEY]:
+                task_turn = index
             messages[index] = {
                 key: value
                 for key, value in message.items()
-                if key != IMAGE_TURN_KEY
+                if key != TASK_TURN_KEY
             }
-    return image_turn
+    return task_turn
 
 
 def _image_blocks(message: Any) -> List[dict]:
@@ -716,9 +716,9 @@ class LiteLLM:
         # A prebuilt body is already structured, so only this instance's system prompt is added.
         if messages is not None:
             prepared = base + list(messages)
-            image_turn = _pop_image_turn(prepared)
+            task_turn = _pop_task_turn(prepared)
             if images:
-                self._attach_images(prepared, images, image_turn)
+                self._attach_images(prepared, images, task_turn)
             if self.prompt_caching and prepared:
                 self._apply_prompt_caching(prepared)
             return prepared
@@ -1042,7 +1042,7 @@ class LiteLLM:
         self,
         messages: List[dict],
         images: List[str],
-        image_turn: Optional[int] = None,
+        task_turn: Optional[int] = None,
     ) -> None:
         """
         Add the images to one user message of a prebuilt body.
@@ -1050,8 +1050,8 @@ class LiteLLM:
         Args:
             messages: The request messages, changed in place.
             images: Image sources in any supported format.
-            image_turn: Index of the user message to add them to. Defaults to
-                None, which picks the last user message.
+            task_turn: Index of the user's task turn, which gets them.
+                Defaults to None, which picks the last user message.
         """
         blocks = [self._build_image_block(image) for image in images]
         users = [
@@ -1064,7 +1064,7 @@ class LiteLLM:
             messages.append({"role": "user", "content": blocks})
             return
 
-        target = image_turn if image_turn in users else users[-1]
+        target = task_turn if task_turn in users else users[-1]
         message = messages[target]
         content = message.get("content")
         if isinstance(content, str):
