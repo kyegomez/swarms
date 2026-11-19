@@ -8,15 +8,11 @@ from swarms.schemas.hs_schemas import (
     OrderBatch,
     SwarmSpec,
 )
+from swarms.utils.str_to_dict import tool_call_arguments
 
 _MISSING = object()
 
 _ORDERS_ADAPTER = TypeAdapter(List[HierarchicalOrder])
-
-_ORDERS_TOKEN = '"orders"'
-_ORDERS_TOKEN_B = b'"orders"'
-
-_JSON_BYTES = (bytes, bytearray)
 
 
 def _orders(raw: Any) -> List[HierarchicalOrder]:
@@ -46,40 +42,15 @@ def _plan_and_orders(
     return payload.get("plan"), _orders(orders)
 
 
-def _json_object(
-    value: Union[str, bytes, bytearray],
-) -> Optional[Dict[str, Any]]:
-    """Decode *value* only when it can hold orders."""
-    if isinstance(value, str):
-        if _ORDERS_TOKEN not in value:
-            return None
-    elif isinstance(value, _JSON_BYTES):
-        if _ORDERS_TOKEN_B not in value:
-            return None
-    else:
-        return None
-    try:
-        decoded = json.loads(value)
-    except ValueError:
-        return None
-    return decoded if isinstance(decoded, dict) else None
-
-
 def _from_function(
     function: Any,
 ) -> Optional[Tuple[Any, List[HierarchicalOrder]]]:
     """Pull a plan out of an OpenAI-style ``function`` object."""
     if not isinstance(function, dict):
         return None
-    arguments = function.get("arguments", _MISSING)
-    if arguments is _MISSING:
+    payload = tool_call_arguments({"function": function})
+    if payload is None:
         return None
-    if isinstance(arguments, dict):
-        payload = arguments
-    else:
-        payload = _json_object(arguments)
-        if payload is None:
-            return None
     return _plan_and_orders(payload)
 
 
