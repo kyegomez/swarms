@@ -20,7 +20,6 @@ from swarms.tools.tool_choice import forced_tool_choice
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
 from swarms.utils.get_cpu_cores import max_workers_95_percent
-from swarms.utils.heavy_swarm_dashboard import HeavySwarmDashboard
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -176,6 +175,10 @@ class HeavySwarm(SerializableMixin):
         self.conversation = Conversation(
             time_enabled=True, message_id_on=True
         )
+        from swarms.utils.heavy_swarm_dashboard import (
+            HeavySwarmDashboard,
+        )
+
         self.dashboard = HeavySwarmDashboard()
         self._question_usage = empty_usage()
 
