@@ -224,7 +224,7 @@ class GroupChat(SerializableMixin):
         threshold: float = 0.5,
         recency_penalty: float = 0.3,
         recency_window: int = 1,
-        output_type: str = "str-all-except-first",
+        output_type: str = "str",
         verbose: bool = False,
         auto_equip: bool = True,
         channel: Optional[CommsChannel] = None,

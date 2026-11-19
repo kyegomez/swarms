@@ -290,10 +290,9 @@ def test_debate_default_output_keeps_the_pro_argument(
         agents=agents, max_loops=1, verbose=False
     ).run("Should AI be regulated?")
 
-    assert "Should AI be regulated?" not in result
-    assert "PRO ARGUMENT" in result
-    assert "CON ARGUMENT" in result
-    assert "JUDGE VERDICT" in result
+    assert result.endswith(
+        "Pro: PRO ARGUMENT\n\nCon: CON ARGUMENT\n\nJudge: JUDGE VERDICT"
+    )
 
 
 def test_debate_judge_gets_its_previous_synthesis_once(

@@ -455,13 +455,8 @@ class TestRunSurface:
         )
         result = chat.run("topic")
 
-        # Default output_type renders the history to a string. The
-        # second reply is asserted because the string formatter's
-        # "all except first" currently drops one more message than its
-        # dict twin (conversation.py slices [2:] vs [1:]); this holds
-        # under either slicing.
         assert isinstance(result, str)
-        assert "hello again" in result
+        assert "A: hello\n\nA: hello again" in result
         assert "hello" in contents(chat)
 
     def test_run_batch_returns_one_result_per_task(self):
