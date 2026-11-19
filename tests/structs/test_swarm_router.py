@@ -1,5 +1,6 @@
 import json
 from collections import Counter
+from operator import attrgetter
 from unittest.mock import patch
 
 import pytest
@@ -1761,6 +1762,27 @@ def test_every_swarm_type_runs_and_returns_the_model_answer(
 
     assert isinstance(router.swarm, expected_class)
     assert _STUB_ANSWER in json.dumps(output, default=str)
+
+
+def test_model_name_reaches_every_internal_agent():
+    internal_models = {
+        "MultiAgentRouter": "model",
+        "MajorityVoting": "consensus_agent.model_name",
+        "PlannerWorkerSwarm": "planner_model_name judge_model_name",
+        "HierarchicalSwarm": "feedback_director_model_name"
+        " judge_agent_model_name director_model_name",
+    }
+
+    for swarm_type, attrs in internal_models.items():
+        router = SwarmRouter(
+            agents=create_sample_agents(),
+            swarm_type=swarm_type,
+            model_name="m",
+        )
+        swarm = router._create_swarm(swarm_type=swarm_type)
+        models = [attrgetter(a)(swarm) for a in attrs.split()]
+
+        assert models == ["m"] * len(models), swarm_type
 
 
 if __name__ == "__main__":
