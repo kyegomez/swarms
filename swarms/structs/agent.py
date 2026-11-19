@@ -2261,8 +2261,14 @@ Subtask Breakdown:
             # Ensure directory exists
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
-            # First save to temporary file using SafeStateManager
-            SafeStateManager.save_state(self, temp_path)
+            # A Conversation is not a safe type, so save its messages as a list.
+            state = SafeLoaderUtils.create_state_dict(self)
+            state["short_memory"] = (
+                self.short_memory.conversation_history
+            )
+
+            with open(temp_path, "w") as f:
+                json.dump(state, f, indent=4, default=str)
 
             # If current file exists, create backup
             if os.path.exists(full_path):
@@ -2383,6 +2389,14 @@ Subtask Breakdown:
 
             # Reinitialize any necessary runtime components
             self._reinitialize_after_load()
+
+            with open(resolved_path) as f:
+                history = json.load(f).get("short_memory")
+
+            # Files saved before the history was written have none to restore.
+            if history is not None:
+                self.short_memory.clear()
+                self.short_memory.batch_add(history)
 
             if self.verbose:
                 self._log_state_info(resolved_path, saved=False)
