@@ -2958,6 +2958,27 @@ class TestIntegerLoopRequest:
 
         assert sent[1][1] == [{"role": "user", "content": "SUMMARY"}]
 
+    def test_compression_is_on_by_default_only_for_auto_loops(self):
+        cases = [
+            ({"max_loops": 1}, False),
+            ({"max_loops": 5}, False),
+            ({"max_loops": "auto"}, True),
+            ({"max_loops": 1, "dynamic_loops": True}, True),
+            ({"max_loops": 1, "context_compression": True}, True),
+            (
+                {"max_loops": "auto", "context_compression": False},
+                False,
+            ),
+        ]
+
+        for kwargs, expected in cases:
+            agent = self._agent(**kwargs)
+
+            assert agent.context_compression is expected, kwargs
+            assert (
+                agent._context_compressor is not None
+            ) is expected, kwargs
+
 
 class TestAgentOutputCleanerRemoval:
     """Tests confirming removal of unused output_cleaner parameter and op (#2719)."""

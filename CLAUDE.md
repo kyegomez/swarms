@@ -144,7 +144,7 @@ print(result)
 | `streaming_on` | bool | `False` | Stream tokens to stdout |
 | `interactive` | bool | `False` | REPL mode — prompt user for input each loop |
 | `context_length` | int | `128000` | Token budget; triggers compression at 90 %. `None` looks up the model's input window |
-| `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
+| `context_compression` | bool \| None | `None` | Auto-summarise when near context limit (v12). `None` turns it on only for `max_loops="auto"` |
 | `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
 | `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
 | `max_tokens` | int | `16384` | Max tokens per LLM call. `None` looks up the model's own output limit |
@@ -243,16 +243,17 @@ agent = Agent(
 )
 ```
 
-### `context_compression=True` (default)
+### `context_compression` (on by default only for `max_loops="auto"`)
 
-`ContextCompressor` fires automatically when token usage crosses 90 % of `context_length`. It summarises and rewrites `MEMORY.md` in place so long sessions never hit the context wall.
+`ContextCompressor` fires automatically when token usage crosses 90 % of `context_length`. It summarises and rewrites `MEMORY.md` in place so long sessions never hit the context wall. The default, `None`, turns it on when `max_loops="auto"` and leaves it off for integer `max_loops`. Pass `True` or `False` to choose either way.
 
 ```python
 agent = Agent(
     agent_name="LongSession",
     model_name="gpt-5.4",
+    max_loops=10,
     context_length=32000,
-    context_compression=True,   # default
+    context_compression=True,   # integer max_loops needs it turned on
 )
 ```
 
@@ -1280,7 +1281,7 @@ from swarms import Agent
 
 **Don't use `streaming_on=True` and `streaming_callback` together on the same agent** — `streaming_on` streams to stdout; `streaming_callback` streams to your function. Pick one.
 
-**Don't set `context_compression=False` on very long autonomous sessions** — without compression the agent will eventually hit the context limit and raise an error.
+**Don't set `context_compression=False` on very long autonomous sessions** — without compression the agent will eventually hit the context limit and raise an error. It is on by default for `max_loops="auto"`; a long integer-loop run needs `context_compression=True`.
 
 **For long-running autonomous agents in production**, always set:
 ```python
