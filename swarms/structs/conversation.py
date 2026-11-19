@@ -1232,21 +1232,24 @@ class Conversation:
         Args:
             filename (str): Filename to load from.
         """
-        if filename is not None and os.path.exists(filename):
-            try:
-                with open(filename, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+        if filename is None or not os.path.exists(filename):
+            raise FileNotFoundError(
+                f"Conversation file not found: {filename}"
+            )
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                data = json.load(f)
 
-                self._restore(data)
+            self._restore(data)
 
-                logger.info(
-                    f"Successfully loaded conversation from {filename}"
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to load conversation: {str(e)}\nTraceback: {traceback.format_exc()}"
-                )
-                raise
+            logger.info(
+                f"Successfully loaded conversation from {filename}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to load conversation: {str(e)}\nTraceback: {traceback.format_exc()}"
+            )
+            raise
 
     def load_from_yaml(self, filename: str):
         """Load the conversation history and metadata from a YAML file.
@@ -1256,21 +1259,24 @@ class Conversation:
         """
         import yaml
 
-        if filename is not None and os.path.exists(filename):
-            try:
-                with open(filename, "r", encoding="utf-8") as f:
-                    data = yaml.safe_load(f)
+        if filename is None or not os.path.exists(filename):
+            raise FileNotFoundError(
+                f"Conversation file not found: {filename}"
+            )
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
 
-                self._restore(data)
+            self._restore(data)
 
-                logger.info(
-                    f"Successfully loaded conversation from {filename}"
-                )
-            except Exception as e:
-                logger.error(
-                    f"Failed to load conversation: {str(e)}\nTraceback: {traceback.format_exc()}"
-                )
-                raise
+            logger.info(
+                f"Successfully loaded conversation from {filename}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to load conversation: {str(e)}\nTraceback: {traceback.format_exc()}"
+            )
+            raise
 
     def load(self, filename: str):
         """Load the conversation history and metadata from a file.
