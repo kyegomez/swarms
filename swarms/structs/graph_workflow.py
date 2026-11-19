@@ -31,6 +31,7 @@ from swarms.structs.comms_channel import (
 )
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -1788,7 +1789,13 @@ class GraphWorkflow:
                 if pred in prev_outputs
             ]
 
-            messages = [{"role": "user", "content": str(task)}]
+            messages = [
+                {
+                    "role": "user",
+                    "content": str(task),
+                    TASK_TURN_KEY: True,
+                }
+            ]
 
             if pred_outputs and layer_idx > 0:
                 # One turn per predecessor rather than every output joined into one block.

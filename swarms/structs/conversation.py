@@ -18,6 +18,7 @@ from typing import (
 
 from swarms.structs.comms_channel import CommsChannel
 from swarms.utils.litellm_tokenizer import count_tokens
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY
 
 if TYPE_CHECKING:
     from swarms.structs.agent import Agent
@@ -662,6 +663,7 @@ class Conversation:
         agent_name: Optional[str] = None,
         start: int = 0,
         prefix: Sequence[Dict[str, Any]] = (),
+        task_turn: bool = False,
     ) -> List[Dict[str, Any]]:
         """Build a chat request body from the history.
 
@@ -669,6 +671,7 @@ class Conversation:
             agent_name (Optional[str]): The role whose rows become assistant turns.
             start (int): Index of the first row to include.
             prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
+            task_turn (bool): Keep the mark on the user's task turn, so the model wrapper puts images there. Defaults to False.
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
@@ -707,6 +710,7 @@ class Conversation:
                             "name",
                             "tool_calls",
                             "tool_call_id",
+                            *((TASK_TURN_KEY,) if task_turn else ()),
                         )
                         if key in fields
                     }

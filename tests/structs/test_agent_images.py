@@ -17,7 +17,12 @@ import pytest
 from dotenv import load_dotenv
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
-from swarms import Agent
+from swarms import (
+    Agent,
+    AgentRearrange,
+    GraphWorkflow,
+    MajorityVoting,
+)
 
 
 load_dotenv()
@@ -215,6 +220,65 @@ def test_model_the_catalog_calls_text_only_still_gets_the_image():
     (messages,) = _requests(lambda: agent.run(TASK, img=DATA_URI))
 
     assert _image_urls(messages) == [DATA_URI]
+
+
+def _majority_voting(agents: List[Agent]) -> MajorityVoting:
+    return MajorityVoting(agents=agents, max_loops=2)
+
+
+def _agent_rearrange(agents: List[Agent]) -> AgentRearrange:
+    return AgentRearrange(
+        agents=agents,
+        flow="A -> B",
+        max_loops=2,
+        collab_prompt="Build on each other's work.",
+    )
+
+
+def _graph_workflow(agents: List[Agent]) -> GraphWorkflow:
+    workflow = GraphWorkflow(name="Images")
+    for agent in agents:
+        workflow.add_node(agent)
+    workflow.add_edge("A", "B")
+    return workflow
+
+
+@pytest.mark.parametrize(
+    "build", [_majority_voting, _agent_rearrange, _graph_workflow]
+)
+def test_structures_send_the_image_on_the_task_turn(build):
+    """The image rides on the task, ahead of the turns that change, so it stays cacheable."""
+    agents = [
+        Agent(
+            agent_name=name,
+            model_name="gpt-4.1",
+            max_loops=1,
+            print_on=False,
+            persistent_memory=False,
+        )
+        for name in ("A", "B")
+    ]
+    structure = build(agents)
+
+    requests = _requests(lambda: structure.run(TASK, img=URL))
+
+    with_image = [m for m in requests if _image_urls(m)]
+    image_turns = []
+    for messages in with_image:
+        (turn,) = [
+            i
+            for i, m in enumerate(messages)
+            if isinstance(m["content"], list)
+            and m["content"][0]["type"] == "image_url"
+        ]
+        first_user = next(
+            i for i, m in enumerate(messages) if m["role"] == "user"
+        )
+        assert turn == first_user
+        assert TASK in str(messages[turn]["content"])
+        image_turns.append(turn < len(messages) - 1)
+
+    assert any(image_turns), "no request had turns after the image"
 
 
 def _data_uri(png: bytes) -> str:

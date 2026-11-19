@@ -96,7 +96,7 @@ from swarms.utils.index import (
 )
 from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import empty_usage
+from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -1245,6 +1245,10 @@ class Agent:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
+                                    # Only this run's rows, so an earlier run's task never takes the images.
+                                    task_turn=request_start
+                                    == history_start
+                                    and isinstance(self.llm, LiteLLM),
                                 )
                             )
 
@@ -1830,6 +1834,10 @@ Subtask Breakdown:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
+                                    # Only this run's rows, so an earlier run's task never takes the images.
+                                    task_turn=request_start
+                                    == history_start
+                                    and isinstance(self.llm, LiteLLM),
                                 )
                             )
 
