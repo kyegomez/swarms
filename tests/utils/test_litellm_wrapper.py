@@ -23,6 +23,8 @@ Still uncovered by any assertion, from the dropped script: streaming via
 image handling, and image message preparation.
 """
 
+import warnings
+
 import pytest
 from dotenv import load_dotenv
 
@@ -668,3 +670,16 @@ def test_prepare_messages_attaches_images_to_any_prebuilt_body(
         expected_types
     )
     assert body == original
+
+
+def test_caching_is_deprecated_and_never_forwarded():
+    with pytest.warns(DeprecationWarning, match="caching"):
+        llm = LiteLLM(model_name=OPENAI_MODEL, caching=True)
+    assert "caching" not in llm._build_completion_params(SIMPLE_TASK)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        default = LiteLLM(model_name=OPENAI_MODEL)
+    assert "caching" not in default._build_completion_params(
+        SIMPLE_TASK
+    )
