@@ -247,6 +247,9 @@ class AgentRearrange(SerializableMixin):
         if self.flow is None or self.flow == "":
             raise ValueError("flow cannot be None or empty")
 
+        if not all(self.steps):
+            raise ValueError(f"flow {self.flow!r} has an empty step")
+
         if self.output_type is None or self.output_type == "":
             raise ValueError("output_type cannot be None or empty")
 

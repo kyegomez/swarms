@@ -313,6 +313,15 @@ def test_invalid_output_type_raises_at_init():
         )
 
 
+def test_invalid_flow_raises_at_init():
+    """A stray arrow fails at construction; a trailing comma is fine."""
+    agents = [_make_agent("A"), _make_agent("B")]
+    for flow in ("A -> B ->", "-> A"):
+        with pytest.raises(ValueError, match="empty step"):
+            AgentRearrange(agents=agents, flow=flow)
+    AgentRearrange(agents=agents, flow="A -> B, ")
+
+
 def test_set_custom_flow_validates_immediately():
     """set_custom_flow should reject an invalid flow at the call site,
     and leave the previous flow intact on failure."""
