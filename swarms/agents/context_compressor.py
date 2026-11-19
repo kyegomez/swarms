@@ -10,6 +10,7 @@ budget for an unbounded run.
 from typing import Any, Optional
 
 from swarms.utils.llm_backend import completion
+from swarms.utils.llm_backend import acompletion
 from swarms.utils.litellm_wrapper import usage_from_response
 from loguru import logger
 
@@ -126,7 +127,7 @@ class ContextCompressor:
             for message in history
         )
 
-    def _summarize(self, agent: Any, history: str) -> str:
+    def _summary_request(self, agent: Any, history: str) -> dict:
         model = self.summarizer_model or getattr(
             agent, "model_name", None
         )
@@ -142,7 +143,7 @@ class ContextCompressor:
             ):
                 if getattr(agent, attr, None):
                     endpoint[key] = getattr(agent, attr)
-        response = completion(
+        return dict(
             model=model,
             messages=[
                 {
@@ -162,6 +163,10 @@ class ContextCompressor:
             drop_params=True,
             **endpoint,
         )
+
+    def _read_summary(
+        self, agent: Any, model: str, response: Any
+    ) -> str:
         call_usage = usage_from_response(response)
         add_usage = getattr(agent, "_add_usage", None)
         if add_usage is not None and call_usage is not None:
@@ -177,12 +182,25 @@ class ContextCompressor:
             )
         return summary
 
+    def _summarize(self, agent: Any, history: str) -> str:
+        request = self._summary_request(agent, history)
+        response = completion(**request)
+        return self._read_summary(agent, request["model"], response)
+
     def compress(self, agent: Any) -> Optional[str]:
         """
         Summarize the full conversation history and replace it in the
         agent's ``short_memory``. Returns the summary string, or ``None`` if
         there is nothing to compress.
         """
+        history = self._start_compression(agent)
+        if history is None:
+            return None
+
+        summary = self._summarize(agent, history)
+        return self._store_summary(agent, summary)
+
+    def _start_compression(self, agent: Any) -> Optional[str]:
         history = agent.short_memory.return_history_as_string()
         if not history.strip():
             return None
@@ -194,9 +212,11 @@ class ContextCompressor:
             f"'{agent_name}' at {prior_tokens} / "
             f"{agent.context_length} tokens"
         )
+        return history
 
-        summary = self._summarize(agent, history)
-
+    def _store_summary(self, agent: Any, summary: str) -> str:
+        prior_tokens = agent.short_memory.count_history_tokens()
+        agent_name = getattr(agent, "agent_name", "agent")
         # Conversation.compact() also wipes and re-seeds MEMORY.md, which would otherwise grow unbounded.
         summary_content = (
             "[Compressed Memory Summary]\n"
@@ -222,6 +242,35 @@ class ContextCompressor:
             return None
         try:
             return self.compress(agent)
+        except Exception as e:
+            logger.error(
+                f"[ContextCompressor] Compression failed: {e}. "
+                f"Continuing without compression."
+            )
+            return None
+
+    async def amaybe_compress(self, agent: Any) -> Optional[str]:
+        """Await maybe_compress, sending the summary call through acompletion.
+
+        Args:
+            agent: The agent whose history may be compressed.
+
+        Returns:
+            Optional[str]: The summary, or None when nothing was compressed.
+        """
+        if not self.should_compress(agent):
+            return None
+        try:
+            history = self._start_compression(agent)
+            if history is None:
+                return None
+
+            request = self._summary_request(agent, history)
+            response = await acompletion(**request)
+            summary = self._read_summary(
+                agent, request["model"], response
+            )
+            return self._store_summary(agent, summary)
         except Exception as e:
             logger.error(
                 f"[ContextCompressor] Compression failed: {e}. "

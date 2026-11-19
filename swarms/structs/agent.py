@@ -1780,10 +1780,7 @@ Subtask Breakdown:
                 compressor = self._context_compressor
                 if (
                     compressor is not None
-                    and compressor.should_compress(self)
-                    and await asyncio.to_thread(
-                        compressor.maybe_compress, self
-                    )
+                    and await compressor.amaybe_compress(self)
                     is not None
                 ):
                     # The history is now the compressed summary, so the request starts over.
