@@ -217,13 +217,16 @@ class SafeStateManager:
             raise
 
     @staticmethod
-    def load_state(obj: Any, file_path: str) -> None:
+    def load_state(obj: Any, file_path: str) -> Dict[str, Any]:
         """
         Load state into an object while preserving class instances.
 
         Args:
             obj: Object to load state into
             file_path: Path to load state from
+
+        Returns:
+            Dict[str, Any]: The state read from the file
         """
         try:
             # Verify file exists
@@ -257,6 +260,8 @@ class SafeStateManager:
             logger.info(
                 f"Successfully loaded state from: {file_path}"
             )
+
+            return state_dict
 
         except Exception as e:
             logger.error(f"Error loading state: {e}")

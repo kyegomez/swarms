@@ -2385,15 +2385,13 @@ Subtask Breakdown:
             )
 
             # Load state using SafeStateManager
-            SafeStateManager.load_state(self, resolved_path)
+            state = SafeStateManager.load_state(self, resolved_path)
 
             # Reinitialize any necessary runtime components
             self._reinitialize_after_load()
 
-            with open(resolved_path) as f:
-                history = json.load(f).get("short_memory")
-
             # Files saved before the history was written have none to restore.
+            history = state.get("short_memory")
             if history is not None:
                 self.short_memory.clear()
                 self.short_memory.batch_add(history)

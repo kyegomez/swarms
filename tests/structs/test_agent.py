@@ -261,10 +261,6 @@ class TestAgentFeatures:
     def test_agent_state_management(self):
         """save() writes to the caller's saved_state_path, load() restores
         scalar config, and autosave writes with no explicit call.
-
-        The conversation is deliberately not round-tripped: preserve_instances
-        keeps the target's live Conversation rather than overwriting it, so
-        asserting restored history here would pin behaviour load() disclaims.
         """
         with tempfile.TemporaryDirectory() as temp_dir:
             state_path = os.path.join(temp_dir, "agent_state.json")
