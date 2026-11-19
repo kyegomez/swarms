@@ -202,7 +202,9 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
-    def _run_voters(self) -> Dict[str, Any]:
+    def _run_voters(
+        self, img: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Run every voter on the shared conversation, concurrently.
 
@@ -210,6 +212,9 @@ class MajorityVoting:
         answer. Recording ``run``'s return value instead would store the
         voter's whole conversation - which already contains this history - so
         the shared transcript would compound on every loop.
+
+        Args:
+            img (Optional[str]): Image sent to every voter with its turn.
 
         Returns:
             Maps agent name to that voter's answer.
@@ -224,7 +229,10 @@ class MajorityVoting:
                     messages_for(agent.agent_name, self.conversation)
                 )
                 future = executor.submit(
-                    agent.run, task=vote_task, messages=prior
+                    agent.run,
+                    task=vote_task,
+                    messages=prior,
+                    img=img,
                 )
                 future_to_agent[future] = agent
 
@@ -246,6 +254,7 @@ class MajorityVoting:
         streaming_callback: Optional[
             Callable[[str, str, bool], None]
         ] = None,
+        img: Optional[str] = None,
         *args,
         **kwargs,
     ) -> List[Any]:
@@ -254,6 +263,7 @@ class MajorityVoting:
 
         Args:
             task (str): The task to be performed by the agents.
+            img (Optional[str]): Image sent to every voter with the task.
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
 
@@ -274,7 +284,7 @@ class MajorityVoting:
 
         for i in range(self.max_loops):
 
-            outputs = self._run_voters()
+            outputs = self._run_voters(img=img)
 
             for agent in self.agents:
                 self.conversation.add(
