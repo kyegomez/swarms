@@ -250,7 +250,7 @@ class ContextCompressor:
             return None
 
     async def amaybe_compress(self, agent: Any) -> Optional[str]:
-        """Await maybe_compress, sending the summary call through acompletion.
+        """Compress like maybe_compress, awaiting the summary on acompletion.
 
         Args:
             agent: The agent whose history may be compressed.
