@@ -1681,6 +1681,11 @@ def test_export_conversation_writes_the_named_json_file(tmp_path):
     fresh.import_conversation(str(target))
     assert fresh.conversation_history == conv.conversation_history
 
+    text_export = tmp_path / "backup.txt"
+    conv.export_conversation(str(text_export))
+    with pytest.raises(ValueError, match="text export"):
+        fresh.import_conversation(str(text_export))
+
 
 class TestCommsChannelMirror:
     def test_adds_are_posted_and_system_rows_are_not(self, tmp_path):
