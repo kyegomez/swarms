@@ -563,7 +563,6 @@ class Formatter:
         streaming_response,
         title: str = "Agent Streaming Response",
         style: str = None,
-        collect_chunks: bool = False,
         on_chunk_callback: Optional[Callable] = None,
     ) -> str:
         """
@@ -575,7 +574,6 @@ class Formatter:
                 iterable of text parts, each a string or a (text, style) pair.
             title (str): Title of the panel.
             style (str): Style for the panel border (if None, will use random color).
-            collect_chunks (bool): Whether to collect individual chunks for conversation saving.
             on_chunk_callback (Optional[Callable]): Callback function to call for each chunk.
 
         Returns:
