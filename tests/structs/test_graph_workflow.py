@@ -1870,5 +1870,28 @@ def test_graph_workflow_on_error(tmp_path, on_error, b_output, saved):
     assert len(list(tmp_path.glob("*.json"))) == saved
 
 
+@pytest.mark.parametrize("backend", ["networkx", "rustworkx"])
+def test_overlapping_edges_send_predecessor_output_once(backend):
+    """An edge declared twice reaches the target once on every backend."""
+    if backend == "rustworkx" and not RUSTWORKX_AVAILABLE:
+        pytest.skip("rustworkx not available")
+
+    agents = [_mock_agent(name) for name in ("A", "B", "C")]
+    wf = GraphWorkflow.from_spec(
+        agents,
+        [("A", ["B", "C"]), (["A", "C"], "B")],
+        backend=backend,
+    )
+    wf.run("task")
+
+    contents = [
+        message["content"]
+        for message in agents[1].run.call_args.kwargs["messages"]
+    ]
+    assert contents.count("A: output-A") == 1
+    assert "C: output-C" in contents
+    assert wf.graph_backend.in_degree("B") == 2
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

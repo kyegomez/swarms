@@ -344,7 +344,7 @@ class RustworkxBackend(GraphBackend):
             raise ImportError(
                 "rustworkx is not installed. Install it with: pip install rustworkx"
             )
-        self.graph = rx.PyDiGraph()
+        self.graph = rx.PyDiGraph(multigraph=False)
         # Mapping from node ID (string) to node index (int)
         self._node_id_to_index: Dict[str, int] = {}
         # Mapping from node index (int) to node ID (string)
