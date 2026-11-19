@@ -520,16 +520,21 @@ class HierarchicalSwarm:
                 )
                 self.conversation.add(role=PLANNER_ROLE, content=out)
 
-            # Run the director with the context
-            function_call = self.director.run(
-                task=AGENT_TASK_TEMPLATE.format(
-                    history=self._context_for(
-                        self.director.agent_name
+            director_name = self.director.agent_name
+            if self._agent_run_accepts(self.director, "messages"):
+                # The planner reads what the director has not seen since this call.
+                self._delivered[director_name] = len(
+                    self.conversation.conversation_history
+                )
+                function_call = self._call_director(task, img=img)
+            else:
+                function_call = self.director.run(
+                    task=AGENT_TASK_TEMPLATE.format(
+                        history=self._context_for(director_name),
+                        task=task,
                     ),
-                    task=task,
-                ),
-                img=img,
-            )
+                    img=img,
+                )
             self.conversation.add(
                 role="Director",
                 content=(
@@ -546,6 +551,39 @@ class HierarchicalSwarm:
                 f"Hiearchical Swarm: Failed to run director: {e}"
             )
             raise
+
+    def _call_director(
+        self, task: str, img: Optional[str] = None
+    ) -> Any:
+        """Run the director from an empty memory on the shared conversation.
+
+        Args:
+            task: This call's instruction.
+            img: Optional image input.
+
+        Returns:
+            The director's output.
+        """
+        director_name = getattr(
+            self.director, "agent_name", self.director_name
+        )
+        reset_agents((self.director,))
+
+        prior = messages_for(director_name, self.conversation)
+        # On the first loop the task is the newest turn; send it once.
+        if prior and prior[-1].get("content") == task:
+            prior = prior[:-1]
+
+        notes = "\n\n".join(
+            str(row["content"])
+            for row in self.conversation.conversation_history
+            if str(row.get("role")).lower() == "system"
+            and row.get("content")
+        )
+        if notes:
+            prior = [{"role": "system", "content": notes}, *prior]
+
+        return self.director.run(task=task, img=img, messages=prior)
 
     def step(
         self,
@@ -649,7 +687,6 @@ class HierarchicalSwarm:
                 self.conversation.add(role="User", content=task)
 
             current_loop = 0
-            last_output = None
             last_error = None
             any_loop_succeeded = False
 
@@ -657,13 +694,11 @@ class HierarchicalSwarm:
                 if current_loop == 0:
                     loop_task = task
                 else:
-                    loop_task = LOOP_CONTINUATION_PROMPT.format(
-                        last_output=last_output, task=task
-                    )
+                    loop_task = LOOP_CONTINUATION_PROMPT
 
                 # Execute one step of the swarm
                 try:
-                    last_output = self.step(
+                    self.step(
                         task=loop_task,
                         img=img,
                         *args,
@@ -676,7 +711,6 @@ class HierarchicalSwarm:
 
                 except Exception as e:
                     last_error = e
-                    last_output = None
                     logger.error(
                         f"[ERROR] Loop execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
                     )
@@ -1065,16 +1099,7 @@ class HierarchicalSwarm:
             available_agents=available_agents,
         )
         try:
-            director_name = getattr(
-                self.director, "agent_name", self.director_name
-            )
-
-            output = self.director.run(
-                task=recovery_task,
-                messages=messages_for(
-                    director_name, self.conversation
-                ),
-            )
+            output = self._call_director(recovery_task)
 
             self.conversation.add(
                 role="Director",

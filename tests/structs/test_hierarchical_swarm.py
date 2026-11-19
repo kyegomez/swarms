@@ -976,6 +976,18 @@ class TestHierarchicalContextManagement:
         swarm.run("Build something.")
         return swarm, seen
 
+    def test_the_director_gets_each_input_once(self):
+        _, seen = self._run_two_loops()
+        director_calls = [m for name, m in seen if name == "Director"]
+
+        assert len(director_calls) == 2
+        for messages in director_calls:
+            text = "\n".join(str(m.get("content")) for m in messages)
+            assert text.count("Build something.") == 1, text
+            assert text.count("[W1-out]") <= 1, text
+            assert "no result recorded" not in text
+        assert "[W1-out]" in str(director_calls[1])
+
     def test_the_director_prompt_does_not_balloon(self):
         _, seen = self._run_two_loops()
         director_turns = [
@@ -1223,7 +1235,8 @@ def test_planning_gives_the_director_the_roster_and_the_plan():
 
     swarm.run("task")
 
-    sent = director.received[0]["task"]
+    call = director.received[0]
+    sent = str(call["task"]) + str(call.get("messages"))
     assert "| Worker |" in sent
     assert "Planner: THE PLAN" in sent
 
