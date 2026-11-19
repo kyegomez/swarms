@@ -29,7 +29,10 @@ from swarms.structs.comms_channel import (
     CommsChannel,
     claim_agents,
 )
-from swarms.structs.context_utils import agent_answer
+from swarms.structs.context_utils import (
+    Transcript,
+    agent_answer,
+)
 from swarms.structs.conversation import Conversation
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import (
@@ -1788,7 +1791,9 @@ class GraphWorkflow:
                 if pred in prev_outputs
             ]
 
-            messages = [{"role": "user", "content": str(task)}]
+            messages = Transcript(
+                [{"role": "user", "content": str(task)}], task_turn=0
+            )
 
             if pred_outputs and layer_idx > 0:
                 # One turn per predecessor rather than every output joined into one block.

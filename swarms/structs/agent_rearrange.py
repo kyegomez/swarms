@@ -8,6 +8,7 @@ from swarms.structs.comms_channel import (
     claim_agents,
 )
 from swarms.structs.context_utils import (
+    Transcript,
     agent_answer,
     messages_for,
     split_last_turn,
@@ -561,7 +562,11 @@ class AgentRearrange(SerializableMixin):
             if part
         )
         if preamble:
-            prior = [{"role": "system", "content": preamble}] + prior
+            task_turn = getattr(prior, "task_turn", None)
+            prior = Transcript(
+                [{"role": "system", "content": preamble}, *prior],
+                None if task_turn is None else task_turn + 1,
+            )
 
         return prior, task
 

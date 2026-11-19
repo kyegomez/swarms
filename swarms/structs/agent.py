@@ -96,7 +96,11 @@ from swarms.utils.index import (
 )
 from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import empty_usage
+from swarms.utils.litellm_wrapper import (
+    IMAGE_TURN_KEY,
+    LiteLLM,
+    empty_usage,
+)
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -1178,6 +1182,13 @@ class Agent:
             # A caller's messages stand in for the earlier history.
             request_start = 0 if messages is None else history_start
 
+            # A shared transcript's task turn, where images stay in the cached prefix.
+            image_turn = (
+                getattr(messages, "task_turn", None)
+                if img or imgs
+                else None
+            )
+
             # Clear the short memory
             response = None
 
@@ -1239,9 +1250,14 @@ class Agent:
                         llm_kwargs = dict(kwargs)
                         if self.transforms is None:
                             llm_kwargs["messages"] = (
-                                self.short_memory.to_messages(
-                                    self.agent_name,
+                                self._request_messages(
                                     request_start,
+                                    (
+                                        image_turn
+                                        if request_start
+                                        == history_start
+                                        else None
+                                    ),
                                 )
                             )
 
@@ -1765,6 +1781,13 @@ Subtask Breakdown:
             loop_count = 0
             # A caller's messages stand in for the earlier history.
             request_start = 0 if messages is None else history_start
+
+            # A shared transcript's task turn, where images stay in the cached prefix.
+            image_turn = (
+                getattr(messages, "task_turn", None)
+                if img or imgs
+                else None
+            )
             response = None
 
             if self.autosave:
@@ -1824,9 +1847,14 @@ Subtask Breakdown:
                         llm_kwargs = dict(kwargs)
                         if self.transforms is None:
                             llm_kwargs["messages"] = (
-                                self.short_memory.to_messages(
-                                    self.agent_name,
+                                self._request_messages(
                                     request_start,
+                                    (
+                                        image_turn
+                                        if request_start
+                                        == history_start
+                                        else None
+                                    ),
                                 )
                             )
 
@@ -2836,6 +2864,37 @@ Subtask Breakdown:
             )
         except Exception as error:
             self._raise_llm_error(error, current_loop)
+
+    def _request_messages(
+        self, start: int, image_turn: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """Build the request body and mark the turn that should carry the images.
+
+        Args:
+            start: Index of the first history row to send.
+            image_turn: Index of that turn in the body. Defaults to None,
+                which leaves the images on the newest turn.
+
+        Returns:
+            The chat messages for the model.
+        """
+        request = self.short_memory.to_messages(
+            self.agent_name, start
+        )
+
+        marked = (
+            image_turn is not None
+            and isinstance(self.llm, LiteLLM)
+            and image_turn < len(request)
+            and request[image_turn].get("role") == "user"
+        )
+        if marked:
+            request[image_turn] = {
+                **request[image_turn],
+                IMAGE_TURN_KEY: True,
+            }
+
+        return request
 
     def _apply_skills(self, task: Any, kwargs: dict) -> Any:
         """Put the loaded skills ahead of the request.

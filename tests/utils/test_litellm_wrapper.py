@@ -30,7 +30,7 @@ load_dotenv()
 
 from swarms import Agent, SequentialWorkflow
 from swarms.structs.mixture_of_agents import MixtureOfAgents
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.litellm_wrapper import IMAGE_TURN_KEY, LiteLLM
 
 # ---------------------------------------------------------------------------
 # Provider model names
@@ -622,12 +622,12 @@ def test_prepare_messages_attaches_images_to_prebuilt_body():
         ],
     )
     assert messages[-1] == {"role": "assistant", "content": "ok"}
-    assert messages[1]["content"][0] == {
+    assert messages[1]["content"][-1] == {
         "type": "text",
         "text": SIMPLE_TASK,
     }
     assert [
-        p["image_url"]["url"] for p in messages[1]["content"][1:]
+        p["image_url"]["url"] for p in messages[1]["content"][:-1]
     ] == urls
 
 
@@ -642,7 +642,7 @@ def test_prepare_messages_attaches_images_to_prebuilt_body():
                 }
             ],
             ["system", "user"],
-            ["text", "image_url"],
+            ["image_url", "text"],
         ),
         (
             [{"role": "assistant", "content": "ok"}],
@@ -668,3 +668,33 @@ def test_prepare_messages_attaches_images_to_any_prebuilt_body(
         expected_types
     )
     assert body == original
+
+
+@pytest.mark.parametrize("prompt_caching", [False, True])
+def test_images_go_on_the_marked_turn_ahead_of_its_text(
+    prompt_caching,
+):
+    llm = LiteLLM(
+        model_name="claude-sonnet-4-6",
+        system_prompt=SIMPLE_PROMPT,
+        prompt_caching=prompt_caching,
+    )
+
+    messages = llm._prepare_messages(
+        img="https://example.com/a.png",
+        messages=[
+            {"role": "user", "content": "task", IMAGE_TURN_KEY: True},
+            {"role": "user", "content": "Voter-A: yes"},
+        ],
+    )
+
+    task_turn, newest = messages[1], messages[2]
+    assert [p["type"] for p in task_turn["content"]] == [
+        "image_url",
+        "text",
+    ]
+    assert "image_url" not in str(newest["content"])
+    assert not any(IMAGE_TURN_KEY in m for m in messages)
+    assert ("cache_control" in task_turn["content"][0]) is (
+        prompt_caching
+    )

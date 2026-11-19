@@ -37,6 +37,9 @@ from swarms.utils.llm_backend import acompletion, completion
 # Only a yes is remembered: RouteHub answers no while OpenRouter's model list is unreachable.
 _VISION_MODELS = set()
 
+# Set by Agent on the request turn that should carry the images; removed before the request is sent.
+IMAGE_TURN_KEY = "swarms_image_turn"
+
 
 def _model_supports_vision(model: str) -> bool:
     """Whether the model accepts images.
@@ -163,6 +166,50 @@ def usage_from_response(response: any) -> Optional[dict]:
         "total_tokens": _field(usage, "total_tokens", 0)
         or input_tokens + output_tokens,
     }
+
+
+def _pop_image_turn(messages: List[dict]) -> Optional[int]:
+    """Remove the image-turn marker from every message and return where it was.
+
+    Args:
+        messages: The request messages, changed in place.
+
+    Returns:
+        Index of the first marked message, or None when none is marked.
+    """
+    image_turn = None
+    for index, message in enumerate(messages):
+        if isinstance(message, dict) and IMAGE_TURN_KEY in message:
+            if image_turn is None and message[IMAGE_TURN_KEY]:
+                image_turn = index
+            messages[index] = {
+                key: value
+                for key, value in message.items()
+                if key != IMAGE_TURN_KEY
+            }
+    return image_turn
+
+
+def _image_blocks(message: Any) -> List[dict]:
+    """Return the image blocks in one message.
+
+    Args:
+        message: A request message.
+
+    Returns:
+        The message's image_url blocks, in order.
+    """
+    content = (
+        message.get("content") if isinstance(message, dict) else None
+    )
+    if not isinstance(content, list):
+        return []
+    return [
+        block
+        for block in content
+        if isinstance(block, dict)
+        and block.get("type") == "image_url"
+    ]
 
 
 class LiteLLM:
@@ -669,8 +716,9 @@ class LiteLLM:
         # A prebuilt body is already structured, so only this instance's system prompt is added.
         if messages is not None:
             prepared = base + list(messages)
+            image_turn = _pop_image_turn(prepared)
             if images:
-                self._attach_images(prepared, images)
+                self._attach_images(prepared, images, image_turn)
             if self.prompt_caching and prepared:
                 self._apply_prompt_caching(prepared)
             return prepared
@@ -857,6 +905,16 @@ class LiteLLM:
                     self._add_cache_control(messages[i])
                     break
 
+        # Cache through the images, so a later request with new text after them reuses them.
+        if self._cache_opt("cache_messages", True):
+            for i, m in enumerate(messages):
+                if _image_blocks(m):
+                    messages[i] = copy.deepcopy(m)
+                    _image_blocks(messages[i])[-1][
+                        "cache_control"
+                    ] = self._cache_control_value()
+                    break
+
         # Cache through the final message for incremental multi-turn caching.
         if self._cache_opt("cache_messages", True):
             messages[-1] = copy.deepcopy(messages[-1])
@@ -973,21 +1031,27 @@ class LiteLLM:
         if isinstance(images, str):
             images = [images]
 
+        # Images before the text, so a later request with new text keeps the same prefix.
         return {
             "role": "user",
-            "content": [{"type": "text", "text": task}]
-            + [self._build_image_block(i) for i in images],
+            "content": [self._build_image_block(i) for i in images]
+            + [{"type": "text", "text": task}],
         }
 
     def _attach_images(
-        self, messages: List[dict], images: List[str]
+        self,
+        messages: List[dict],
+        images: List[str],
+        image_turn: Optional[int] = None,
     ) -> None:
         """
-        Add the images to the last user message of a prebuilt body.
+        Add the images to one user message of a prebuilt body.
 
         Args:
             messages: The request messages, changed in place.
             images: Image sources in any supported format.
+            image_turn: Index of the user message to add them to. Defaults to
+                None, which picks the last user message.
         """
         blocks = [self._build_image_block(image) for image in images]
         users = [
@@ -1000,15 +1064,16 @@ class LiteLLM:
             messages.append({"role": "user", "content": blocks})
             return
 
-        last = messages[users[-1]]
-        content = last.get("content")
+        target = image_turn if image_turn in users else users[-1]
+        message = messages[target]
+        content = message.get("content")
         if isinstance(content, str):
             content = [{"type": "text", "text": content}]
 
         # A new dict, so the caller's own message is left as it was.
-        messages[users[-1]] = {
-            **last,
-            "content": list(content or []) + blocks,
+        messages[target] = {
+            **message,
+            "content": blocks + list(content or []),
         }
 
     def _should_use_direct_url(self, image: str) -> bool:
