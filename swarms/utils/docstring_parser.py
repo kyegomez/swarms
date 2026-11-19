@@ -41,6 +41,7 @@ class DocstringInfo(NamedTuple):
 
     short_description: Optional[str]
     params: List[DocstringParam]
+    description: Optional[str]
 
 
 def parse(docstring: str) -> DocstringInfo:
@@ -54,21 +55,22 @@ def parse(docstring: str) -> DocstringInfo:
         DocstringInfo: Parsed docstring information containing short description and parameters.
     """
     if not docstring or not docstring.strip():
-        return DocstringInfo(short_description=None, params=[])
+        return DocstringInfo(
+            short_description=None, params=[], description=None
+        )
 
     # cleandoc keeps the relative indentation that separates a wrapped line from the next parameter
     lines = inspect.cleandoc(docstring).split("\n")
 
-    # Extract short description: the first prose line before any section.
-    short_description = None
+    prose = []
     for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if stripped.lower().startswith(_SECTION_HEADERS):
+        if line.strip().lower().startswith(_SECTION_HEADERS):
             break
-        short_description = stripped
-        break
+        prose.append(line)
+    description = "\n".join(prose).strip() or None
+    short_description = (
+        description.split("\n")[0].strip() if description else None
+    )
 
     # Extract parameters
     params: List[DocstringParam] = []
@@ -115,5 +117,7 @@ def parse(docstring: str) -> DocstringInfo:
         params.append(current_param)
 
     return DocstringInfo(
-        short_description=short_description, params=params
+        short_description=short_description,
+        params=params,
+        description=description,
     )

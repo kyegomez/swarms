@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+from typing import Annotated, Optional
 
 import pytest
 from pydantic import BaseModel
@@ -115,6 +115,32 @@ def test_func_to_dict_resolves_nested_model_refs():
     assert items["items"] == {"$ref": "#/$defs/LineItem"}
     assert "$defs" not in items
     assert params["$defs"]["LineItem"]["required"] == ["sku", "qty"]
+
+
+def forecast(
+    city: str,
+    days: Annotated[int, "Days ahead."] = 3,
+) -> str:
+    """Get the weather forecast.
+
+    Args:
+        city: The city to look up, for example "Paris".
+        days: Ignored because the annotation wins.
+    """
+    return city
+
+
+def test_convert_tool_into_openai_schema_uses_docstring_sections():
+    tool = BaseTool(tools=[forecast])
+    function = tool.convert_tool_into_openai_schema()["functions"][0]
+    properties = function["parameters"]["properties"]
+
+    assert function["description"] == "Get the weather forecast."
+    assert (
+        properties["city"]["description"]
+        == 'The city to look up, for example "Paris".'
+    )
+    assert properties["days"]["description"] == "Days ahead."
 
 
 def add_numbers(a: int, b: int) -> int:

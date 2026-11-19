@@ -481,11 +481,7 @@ class BaseTool(BaseModel):
                     self.check_func_if_have_docs(tool)
                     self.check_func_if_have_type_hints(tool)
                     tool_schemas.append(
-                        get_openai_function_schema_from_func(
-                            tool,
-                            name=tool.__name__,
-                            description=tool.__doc__,
-                        )
+                        get_openai_function_schema_from_func(tool)
                     )
                 except Exception as e:
                     failed_tools.append(
