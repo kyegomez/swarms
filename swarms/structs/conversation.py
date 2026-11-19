@@ -896,11 +896,20 @@ class Conversation:
                     )
 
     def import_conversation(self, filename: str):
-        """Import a conversation history from a file.
+        """Import a conversation history from a JSON export.
 
         Args:
             filename (str): Filename to import from.
+
+        Raises:
+            ValueError: If filename does not end in .json, since
+                export_conversation writes any other name as text.
         """
+        if not str(filename).endswith(".json"):
+            raise ValueError(
+                f"Cannot import {filename}: a text export can't be "
+                "read back. Export to a .json filename instead."
+            )
         self.load_from_json(filename)
 
     def count_messages_by_role(self):
