@@ -279,7 +279,7 @@ class LiteLLM:
             verbose (bool, optional): Whether to enable verbose logging for debugging.
                 Defaults to False.
             caching (bool, optional): Deprecated and ignored. RouteHub accepts
-                it and does nothing, and litellm already follows ``litellm.cache``
+                it and does nothing, and litellm already follows litellm.cache
                 when the key is left out. It will be removed in the next major
                 release. Defaults to False.
             prompt_caching (bool, optional): Whether to enable provider-side prompt
