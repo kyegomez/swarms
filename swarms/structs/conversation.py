@@ -133,6 +133,7 @@ class Conversation:
         self._cache_misses: int = 0
         self._last_cached_tokens: int = 0
         self._token_count_cache: Dict[Tuple[str, str], int] = {}
+        self._to_messages_token_cache: Dict[str, int] = {}
 
         self.setup_file_path()
         if not self.conversation_history:
@@ -657,11 +658,84 @@ class Conversation:
             )
         return added
 
+    def _to_messages_tokens(self, row: Dict[str, Any]) -> int:
+        """Count tokens for the chat messages produced by a history row.
+
+        The count is memoised per row content, so an unchanged row is not
+        recounted on every :meth:`to_messages` call.
+
+        Args:
+            row (Dict[str, Any]): A history row.
+
+        Returns:
+            int: Token count for the row's chat messages.
+        """
+        key = json.dumps(row, default=str, sort_keys=True)
+        cache = self._to_messages_token_cache
+        if key not in cache:
+            if len(cache) >= 2 * len(self.conversation_history):
+                live = {
+                    json.dumps(live_row, default=str, sort_keys=True)
+                    for live_row in self.conversation_history
+                }
+                cache = {k: cache[k] for k in live if k in cache}
+                self._to_messages_token_cache = cache
+            cache[key] = self._row_token_count(row)
+        return cache[key]
+
+    def _row_token_count(self, row: Dict[str, Any]) -> int:
+        """Token count for one history row's chat messages.
+
+        Args:
+            row (Dict[str, Any]): A history row.
+
+        Returns:
+            int: Token count for the row's chat messages.
+        """
+        if "tool_results" in row:
+            total = 0
+            for call in row.get("tool_calls") or []:
+                function = call.get("function") or {}
+                total += count_tokens(
+                    str(function.get("name") or ""),
+                    self.tokenizer_model_name,
+                )
+                total += count_tokens(
+                    str(function.get("arguments") or ""),
+                    self.tokenizer_model_name,
+                )
+                total += count_tokens(
+                    str(
+                        row["tool_results"].get(
+                            call["id"],
+                            f"(no result recorded for {function.get('name')})",
+                        )
+                    ),
+                    self.tokenizer_model_name,
+                )
+            return total
+        role, content = row.get("role"), row.get("content")
+        if role in ("system", "user", "assistant", "tool"):
+            fields = {**(row.get("metadata") or {}), **row}
+            return count_tokens(
+                str(fields.get("content") or ""),
+                self.tokenizer_model_name,
+            )
+        if content is not None and role not in (
+            "System",
+            "Tool Executor",
+        ):
+            return count_tokens(
+                str(content), self.tokenizer_model_name
+            )
+        return 0
+
     def to_messages(
         self,
         agent_name: Optional[str] = None,
         start: int = 0,
         prefix: Sequence[Dict[str, Any]] = (),
+        max_tokens: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """Build a chat request body from the history.
 
@@ -669,12 +743,43 @@ class Conversation:
             agent_name (Optional[str]): The role whose rows become assistant turns.
             start (int): Index of the first row to include.
             prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
+            max_tokens (Optional[int]): Tokens reserved for the reply; None means no reservation.
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
         """
+        history = self.conversation_history[start:]
+        if self.dynamic_context_window is True:
+            leading = []
+            rest = history
+            for index, row in enumerate(history):
+                if row.get("role") == "system":
+                    leading.append(row)
+                else:
+                    rest = history[index:]
+                    break
+            else:
+                rest = []
+
+            budget = self.context_length
+            if max_tokens is not None:
+                reserved = self.context_length - max_tokens
+                if reserved > 0:
+                    budget = reserved
+            for row in leading:
+                budget -= self._to_messages_tokens(row)
+
+            kept = []
+            for row in reversed(rest):
+                tokens = self._to_messages_tokens(row)
+                if kept and tokens > budget:
+                    break
+                kept.append(row)
+                budget -= tokens
+            history = leading + list(reversed(kept))
+
         messages = []
-        for row in [*prefix, *self.conversation_history[start:]]:
+        for row in [*prefix, *history]:
             role, content = row.get("role"), row.get("content")
             if "tool_results" in row:
                 messages.append(
