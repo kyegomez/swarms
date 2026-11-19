@@ -180,6 +180,7 @@ class Agent:
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
         context_length (Optional[int]): The model's input window in tokens. Defaults to 128000. None looks it up from the model.
+        context_compression (Optional[bool]): Summarise the history once it reaches 90 percent of context_length. Defaults to None, which turns it on only when max_loops is "auto".
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         long_term_memory (BaseVectorDatabase): The long term memory
@@ -427,7 +428,7 @@ class Agent:
         marketplace_prompt_id: Optional[str] = None,
         skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
-        context_compression: bool = True,
+        context_compression: Optional[bool] = None,
         persistent_memory: bool = False,
         messages: Optional[List[Dict[str, Any]]] = None,
         description: Optional[str] = None,
@@ -598,14 +599,7 @@ class Agent:
         # Prior turns, seeded into short_memory and re-sent as context on every run.
         self.messages = messages
 
-        # Applies to auto and integer max_loops alike
         self.context_compression = context_compression
-        if self.context_compression:
-            self._context_compressor = ContextCompressor(
-                threshold=0.9
-            )
-        else:
-            self._context_compressor = None
 
         # Initialize autonomous loop tracking structures
         self.autonomous_subtasks = []  # List of subtasks from plan
@@ -656,6 +650,15 @@ class Agent:
         self._autonomous_loop: Optional[AutonomousAgentLoop] = None
 
         self.setup_config()
+
+        # Resolved after setup_config, which can switch max_loops to "auto"
+        if self.context_compression is None:
+            self.context_compression = self.max_loops == "auto"
+        self._context_compressor = (
+            ContextCompressor(threshold=0.9)
+            if self.context_compression
+            else None
+        )
 
         if self.safety_prompt_on is True:
             self.system_prompt += f"\n\n{SAFETY_PROMPT}"
