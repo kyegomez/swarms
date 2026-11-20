@@ -1,4 +1,3 @@
-import time
 import re
 from contextlib import contextmanager
 from typing import Any, Callable, Dict, List, Optional
@@ -522,41 +521,6 @@ class Formatter:
             result = task_fn(*args, **kwargs)
             progress.update(task, completed=True)
         return result
-
-    def print_panel_token_by_token(
-        self,
-        tokens: str,
-        title: str = "Output",
-        style: str = "bold cyan",
-        delay: float = 0.01,
-        by_word: bool = False,
-    ) -> None:
-        """
-        Prints a string in real-time, token by token (character or word) inside a Rich panel.
-
-        Args:
-            tokens (str): The string to display in real-time.
-            title (str): Title of the panel.
-            style (str): Style for the panel border.
-            delay (float): Delay in seconds between displaying each token.
-            by_word (bool): If True, display by words; otherwise, display by characters.
-        """
-        text = Text(style=DEFAULT_CONTENT_STYLE)
-
-        # Split tokens into characters or words
-        token_list = tokens.split() if by_word else tokens
-
-        with Live(
-            Panel(text, title=title, border_style=style),
-            console=self.console,
-            refresh_per_second=10,
-        ) as live:
-            for token in token_list:
-                text.append(token + (" " if by_word else ""))
-                live.update(
-                    Panel(text, title=title, border_style=style)
-                )
-                time.sleep(delay)
 
     def print_streaming_panel(
         self,
