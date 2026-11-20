@@ -240,23 +240,7 @@ class AgentRearrange(SerializableMixin):
         if self.agents is None or len(self.agents) == 0:
             raise ValueError("Agents list cannot be None or empty")
 
-        owners = {}
-        for member in self.agents:
-            # Each nested swarm gets a new wrapper, so compare what was passed
-            source = (
-                member.swarm
-                if isinstance(member, _SwarmMember)
-                else member
-            )
-            if (
-                owners.setdefault(member.agent_name, source)
-                is not source
-            ):
-                raise ValueError(
-                    f"Two different agents are named '{member.agent_name}'. "
-                    "AgentRearrange runs each step by name, so only the "
-                    "first of them would run. Give each one its own name."
-                )
+        self._require_unique_agent_names()
 
         if self.max_loops == 0:
             raise ValueError("max_loops cannot be 0")
@@ -275,6 +259,36 @@ class AgentRearrange(SerializableMixin):
                 f"output_type must be one of "
                 f"{sorted(_VALID_OUTPUT_TYPES)}; got {self.output_type!r}"
             )
+
+    def _require_unique_agent_names(self) -> None:
+        """Reject two different members that share a name.
+
+        Steps run by name, so a repeated name would run only the first
+        member for every step that names it. The same member listed
+        twice is allowed.
+
+        Raises:
+            ValueError: Two different members have the same name.
+        """
+        owners: Dict[str, Any] = {}
+
+        for member in self.agents:
+            # Each nested swarm gets a new wrapper, so compare what was passed
+            source = (
+                member.swarm
+                if isinstance(member, _SwarmMember)
+                else member
+            )
+
+            if (
+                owners.setdefault(member.agent_name, source)
+                is not source
+            ):
+                raise ValueError(
+                    f"Two different agents are named '{member.agent_name}'. "
+                    "AgentRearrange runs each step by name, so only the "
+                    "first of them would run. Give each one its own name."
+                )
 
     def set_custom_flow(self, flow: str):
         """
