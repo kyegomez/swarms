@@ -76,6 +76,10 @@ class WorkflowPlan(BaseModel):
 def _json_before_prose(text: str) -> Any:
     """Parse the first JSON value in a text, allowing prose around it.
 
+    A bracket whose value closes or fails mid-line, on a line with more
+    text whose brackets outside strings are balanced, is prose, so the
+    next bracket that starts a line is tried.
+
     Args:
         text: The text holding a JSON object or array.
 
@@ -90,9 +94,21 @@ def _json_before_prose(text: str) -> Any:
         return json.loads(text)
 
     rest = text[start:]
-    value, end = json.JSONDecoder().raw_decode(rest)
-    if re.fullmatch(r"[ \t]*(\n[^\[{]*)?", rest[end:]):
-        return value
+    decoder = json.JSONDecoder()
+    trailing_prose = re.compile(r"[ \t]*(\n[^\[{]*)?")
+    for line in re.finditer(r"^[\[{].*", rest, re.MULTILINE):
+        try:
+            value, end = decoder.raw_decode(rest, line.start())
+            if trailing_prose.fullmatch(rest, end):
+                return value
+        except json.JSONDecodeError as error:
+            end = error.pos
+        prose = re.sub(r'"(?:\\.|[^"\\])*"', "", line.group())
+        balanced = len(re.findall(r"[\[{]", prose)) == len(
+            re.findall(r"[\]}]", prose)
+        )
+        if not balanced or not rest[end : line.end()].strip():
+            break
     return json.loads(rest)
 
 

@@ -268,6 +268,12 @@ def test_json_followed_by_prose_is_parsed():
         dw._parse_json(
             "I reviewed [3] files and found nothing wrong."
         )
+    for reply in [
+        '{"a": 1}\n{"b": 2}',
+        '{"a": "}]", "b": [x,\n["c"]',
+    ]:
+        with pytest.raises(json.JSONDecodeError):
+            dw._parse_json(reply)
 
 
 @pytest.mark.parametrize(
@@ -279,6 +285,8 @@ def test_json_followed_by_prose_is_parsed():
         '```json\n{"note": 1}\n```\nor\n```json\n{"other": 2}\n```',
         'Using {x}:\n```json\n{"note": 1}\nnotes\n```',
         'Plan:\n```json\n{"note": 1}\nnotes\n```\nthen {b}',
+        'Plan for [repo]:\n{"note": 1}',
+        'Step [1]:\n{"note": 1}\nDone.',
     ],
 )
 def test_parse_json_keeps_fences_inside_strings(reply):
