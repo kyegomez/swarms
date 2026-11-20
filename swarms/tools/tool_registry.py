@@ -12,7 +12,9 @@ class ToolMetadata(BaseModel):
     name: str
     documentation: Optional[str] = None
     time_created: str = Field(
-        time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
+        default_factory=lambda: time.strftime(
+            "%Y-%m-%d %H:%M:%S", time.gmtime()
+        ),
         description="Time when the tool was added to the registry.",
     )
 
@@ -22,7 +24,9 @@ class ToolStorageSchema(BaseModel):
     description: str
     tools: List[ToolMetadata]
     time_created: str = Field(
-        time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
+        default_factory=lambda: time.strftime(
+            "%Y-%m-%d %H:%M:%S", time.gmtime()
+        ),
         description="Time when the registry was created.",
     )
 
