@@ -1,6 +1,7 @@
 import json
 import traceback
-from typing import Callable, List, Optional
+from contextlib import contextmanager
+from typing import Callable, Iterator, List, Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -20,6 +21,32 @@ from swarms.telemetry.otel import (
 )
 from swarms.utils.generate_id import generate_id
 from swarms.structs.usage_utils import total_usage
+
+
+@contextmanager
+def _keep_agent_histories(
+    agents: List[Callable],
+) -> Iterator[None]:
+    """Put each agent's history back on exit, so a routed task isn't sent again with the next one.
+
+    Args:
+        agents: The agents about to run a routed task.
+    """
+    memories = [
+        getattr(agent, "short_memory", None) for agent in agents
+    ]
+    saved = [
+        (memory, list(memory.conversation_history))
+        for memory in memories
+        if isinstance(memory, Conversation)
+    ]
+
+    try:
+        yield
+    finally:
+        for memory, history in saved:
+            memory.clear()
+            memory.batch_add(history)
 
 
 class HandOffsResponse(BaseModel):
@@ -263,7 +290,8 @@ class MultiAgentRouter:
             return
 
         # Use the agent's run method directly
-        agent_response = selected_agent.run(final_task)
+        with _keep_agent_histories([selected_agent]):
+            agent_response = selected_agent.run(final_task)
 
         self.conversation.add(
             role=selected_agent.agent_name, content=agent_response
@@ -334,16 +362,18 @@ class MultiAgentRouter:
 
         # Execute agents only if there are valid tasks
         if selected_agents:
-            # The tasks are independent, in series they cost the sum of their latencies
-            with ContextThreadPoolExecutor(
-                max_workers=len(selected_agents)
-            ) as executor:
-                agent_responses = list(
-                    executor.map(
-                        lambda pair: pair[0].run(pair[1]),
-                        zip(selected_agents, final_tasks),
+            # Outside the pool, so an agent picked twice is restored after both runs
+            with _keep_agent_histories(selected_agents):
+                # The tasks are independent, in series they cost the sum of their latencies
+                with ContextThreadPoolExecutor(
+                    max_workers=len(selected_agents)
+                ) as executor:
+                    agent_responses = list(
+                        executor.map(
+                            lambda pair: pair[0].run(pair[1]),
+                            zip(selected_agents, final_tasks),
+                        )
                     )
-                )
 
             self.conversation.add(
                 role=selected_agents[0].agent_name,
