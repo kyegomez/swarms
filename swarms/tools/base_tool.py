@@ -277,11 +277,10 @@ class BaseTool(BaseModel):
         Raises:
             ToolValidationError: If parameters validation fails
             ToolNotFoundError: If the tool with the specified name is not found
-            ToolExecutionError: If tool execution fails
 
         Examples:
             >>> tool = BaseTool(function_map={"add": add_function})
-            >>> result = tool.execute_tool_by_name("add", '{"a": 1, "b": 2}')
+            >>> result = tool.execute_tool_by_name("add", '{"name": "add", "parameters": {"a": 1, "b": 2}}')
         """
         if not tool_name or not isinstance(tool_name, str):
             raise ToolValidationError(
@@ -298,45 +297,18 @@ class BaseTool(BaseModel):
                 "Function map must be set before executing tools by name"
             )
 
-        try:
-            self._log_if_verbose(
-                "info", f"Searching for tool: {tool_name}"
+        func = self.function_map.get(tool_name)
+
+        if func is None:
+            raise ToolNotFoundError(
+                f"Tool '{tool_name}' not found in function map"
             )
 
-            # Find the function in the function map
-            func = self.function_map.get(tool_name)
-
-            if func is None:
-                raise ToolNotFoundError(
-                    f"Tool '{tool_name}' not found in function map"
-                )
-
-            self._log_if_verbose(
-                "info",
-                f"Found tool {tool_name}, executing with response",
-            )
-
-            # Execute the tool
-            execution = parse_and_execute_json(
-                functions=[func],
-                json_string=response,
-                verbose=self.verbose,
-            )
-
-            self._log_if_verbose(
-                "info", f"Successfully executed tool {tool_name}"
-            )
-            return execution
-
-        except ToolNotFoundError:
-            raise
-        except Exception as e:
-            self._log_if_verbose(
-                "error", f"Failed to execute tool {tool_name}: {e}"
-            )
-            raise ToolExecutionError(
-                f"Failed to execute tool '{tool_name}': {e}"
-            ) from e
+        return parse_and_execute_json(
+            functions=[func],
+            json_string=response,
+            verbose=self.verbose,
+        )
 
     def check_str_for_functions_valid(self, output: str) -> bool:
         """
