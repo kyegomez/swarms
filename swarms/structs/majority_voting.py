@@ -3,34 +3,34 @@ import copy
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from swarms.structs.execution_utils import (
-    batched_run,
-    run_concurrently,
-)
 from swarms.structs.agent import Agent
 from swarms.structs.comms_channel import (
     CommsChannel,
     claim_agents,
 )
-from swarms.structs.conversation import Conversation
-from swarms.utils.formatter import formatter
-from swarms.utils.history_output_formatter import (
-    history_output_formatter,
-)
-from swarms.utils.output_types import OutputType
-from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.structs.context_utils import (
     agent_answer,
     messages_for,
     split_last_turn,
 )
+from swarms.structs.conversation import Conversation
+from swarms.structs.execution_utils import (
+    batched_run,
+    run_concurrently,
+)
+from swarms.structs.usage_utils import total_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
+from swarms.utils.formatter import formatter
 from swarms.utils.generate_id import generate_id
-from swarms.structs.usage_utils import total_usage
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
+from swarms.utils.output_types import OutputType
+from swarms.utils.workspace_manager import WorkspaceManager
 
 CONSENSUS_AGENT_PROMPT = """
 You are the Consensus Agent, responsible for synthesizing and evaluating the responses from a panel of expert agents. Your task is to deliver a rigorous, insightful, and actionable consensus based on their outputs.
@@ -188,16 +188,7 @@ class MajorityVoting:
         if self.max_loops <= 0:
             raise ValueError("max_loops must be greater than 0")
 
-        names = set()
-        for agent in self.agents:
-            if agent.agent_name in names:
-                raise ValueError(
-                    f"More than one voter is named '{agent.agent_name}'. "
-                    "MajorityVoting keys each vote by name, so one of "
-                    "their answers would be counted for all of them. Give "
-                    "each voter its own Agent instance and a unique name."
-                )
-            names.add(agent.agent_name)
+        self._require_unique_voter_names()
 
         # Log the agents in a more formatted, readable way
         agent_list = "\n".join(
@@ -212,6 +203,27 @@ class MajorityVoting:
             panel_content,
             title="Majority Voting",
         )
+
+    def _require_unique_voter_names(self) -> None:
+        """Reject a panel where two voters share a name.
+
+        Votes are stored by agent name, so a repeated name would
+        count one answer for every voter that shares it.
+
+        Raises:
+            ValueError: Two or more voters have the same agent name.
+        """
+        names = set()
+
+        for agent in self.agents:
+            if agent.agent_name in names:
+                raise ValueError(
+                    f"More than one voter is named '{agent.agent_name}'. "
+                    "MajorityVoting keys each vote by name, so one of "
+                    "their answers would be counted for all of them. Give "
+                    "each voter its own Agent instance and a unique name."
+                )
+            names.add(agent.agent_name)
 
     def _run_voters(
         self, img: Optional[str] = None
@@ -231,14 +243,17 @@ class MajorityVoting:
             Maps agent name to that voter's answer.
         """
         answers: Dict[str, Any] = {}
+
         with ContextThreadPoolExecutor(
             max_workers=len(self.agents)
         ) as executor:
             future_to_agent = {}
             for agent in self.agents:
+
                 prior, vote_task = split_last_turn(
                     messages_for(agent.agent_name, self.conversation)
                 )
+
                 future = executor.submit(
                     agent.run,
                     task=vote_task,
@@ -257,7 +272,7 @@ class MajorityVoting:
 
     @trace_run(
         "MajorityVoting.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img"),
     )
     def run(
         self,
