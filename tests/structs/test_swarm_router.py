@@ -1524,6 +1524,18 @@ def test_call_and_batch_run_do_not_send_an_absent_imgs():
     ]
 
 
+def test_run_with_tasks_runs_each_task_on_the_swarm():
+    router, built = _fallback_router()
+
+    results = router.run(tasks=["first", "second"])
+
+    assert results == ["SequentialWorkflow-result"] * 2
+    assert built["SequentialWorkflow"].calls == [
+        {"task": "first"},
+        {"task": "second"},
+    ]
+
+
 def test_run_kwargs_reach_swarm_run_not_its_constructor(monkeypatch):
     from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 

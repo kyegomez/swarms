@@ -1009,7 +1009,7 @@ class SwarmRouter(SerializableMixin):
 
         The task is accepted for call-site compatibility but is not part of the
         cache key and is not passed to the factory. Runtime inputs such as
-        ``task``, ``tasks``, and ``img`` are forwarded later by :meth:`_run`.
+        ``task`` and ``img`` are forwarded later by :meth:`_run`.
 
         Args:
             task (str, optional): Runtime task associated with the creation
@@ -1081,18 +1081,14 @@ class SwarmRouter(SerializableMixin):
     def _run(
         self,
         task: Optional[str] = None,
-        tasks: Optional[List[str]] = None,
         img: Optional[str] = None,
         *args,
         **kwargs,
     ) -> Any:
-        """Run the selected swarm with a single task, task list, or image.
+        """Run the selected swarm with a single task and optional image.
 
         Args:
-            task (str, optional): Single task passed to ``swarm.run`` as
-                ``task`` when ``tasks`` is not provided.
-            tasks (List[str], optional): Batch-style task list passed to
-                ``swarm.run`` as ``tasks``.
+            task (str, optional): Single task passed to swarm.run.
             img (str, optional): Image path, URL, or encoded image data passed
                 to ``swarm.run`` as ``img``.
             *args: Positional arguments forwarded while creating the swarm.
@@ -1106,12 +1102,7 @@ class SwarmRouter(SerializableMixin):
                 type, primary and fallbacks alike, fails.
             Exception: Without fallbacks, whatever the swarm raised.
         """
-        run_kwargs = {}
-
-        if tasks is not None:
-            run_kwargs["tasks"] = tasks
-        else:
-            run_kwargs["task"] = task
+        run_kwargs = {"task": task}
 
         if img is not None:
             run_kwargs["img"] = img
@@ -1153,7 +1144,6 @@ class SwarmRouter(SerializableMixin):
             execution_result=result,
             execution_metadata={
                 "task": task if task else None,
-                "tasks": tasks if tasks else None,
                 "status": "completed",
                 "swarm_type": self.active_swarm_type,
                 "fallback_attempts": [
@@ -1191,8 +1181,8 @@ class SwarmRouter(SerializableMixin):
             task (str, optional): Single task to execute.
             img (str, optional): Image path, URL, or encoded image data to pass
                 to the underlying swarm.
-            tasks (List[str], optional): Task list to pass to swarm types that
-                accept ``tasks``.
+            tasks (List[str], optional): Tasks to run one after another,
+                as batch_run does. A list of results is returned.
             *args: Positional arguments forwarded while creating the swarm.
             **kwargs: Keyword arguments forwarded to the underlying
                 ``swarm.run`` call.
@@ -1204,6 +1194,9 @@ class SwarmRouter(SerializableMixin):
             SwarmRouterRunError: Re-raised when the underlying router run error
                 is encountered.
         """
+        if tasks is not None:
+            return self.batch_run(tasks, img=img, *args, **kwargs)
+
         try:
             self._log(
                 "info",
@@ -1212,7 +1205,6 @@ class SwarmRouter(SerializableMixin):
             return self._run(
                 task=task,
                 img=img,
-                tasks=tasks,
                 *args,
                 **kwargs,
             )
