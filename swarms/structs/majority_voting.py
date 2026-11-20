@@ -188,6 +188,17 @@ class MajorityVoting:
         if self.max_loops <= 0:
             raise ValueError("max_loops must be greater than 0")
 
+        names = set()
+        for agent in self.agents:
+            if agent.agent_name in names:
+                raise ValueError(
+                    f"More than one voter is named '{agent.agent_name}'. "
+                    "MajorityVoting keys each vote by name, so one of "
+                    "their answers would be counted for all of them. Give "
+                    "each voter its own Agent instance and a unique name."
+                )
+            names.add(agent.agent_name)
+
         # Log the agents in a more formatted, readable way
         agent_list = "\n".join(
             [f"  - {agent.agent_name}" for agent in self.agents]
