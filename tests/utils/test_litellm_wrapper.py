@@ -621,7 +621,7 @@ def test_prepare_messages_attaches_images_to_prebuilt_body():
             {"role": "assistant", "content": "ok"},
         ],
     )
-    assert messages[-1] == {"role": "assistant", "content": "ok"}
+    assert messages[-1] == {"role": "user", "content": "Continue."}
     assert messages[1]["content"][-1] == {
         "type": "text",
         "text": SIMPLE_TASK,
