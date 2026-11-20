@@ -289,9 +289,15 @@ def run_scenario(
 
     wf = build_swarms(graph)
     if use_async:
-        call = lambda: asyncio.run(wf.arun("task"))
+
+        def call():
+            return asyncio.run(wf.arun("task"))
+
     else:
-        call = lambda: wf.run("task")
+
+        def call():
+            return wf.run("task")
+
     wall, threads = measure(call, repeat)
     rows.append((label, "swarms", wall, ideal, threads))
 
@@ -303,9 +309,15 @@ def run_scenario(
         }
         state = {"out": {}}
         if use_async:
-            call = lambda: asyncio.run(app.ainvoke(state, config))
+
+            def call():
+                return asyncio.run(app.ainvoke(state, config))
+
         else:
-            call = lambda: app.invoke(state, config)
+
+            def call():
+                return app.invoke(state, config)
+
         wall, threads = measure(call, repeat)
         rows.append((label, "langgraph", wall, ideal, threads))
     return rows

@@ -294,17 +294,12 @@ def test_one_on_one_debate_none_agents(sample_task):
 
 
 def test_one_on_one_debate_none_task(sample_agents):
-    try:
-        result = one_on_one_debate(
+    with pytest.raises(ValueError, match="No task provided"):
+        one_on_one_debate(
             max_loops=1,
             task=None,
             agents=sample_agents,
         )
-        assert result is not None
-        logger.info("None task test passed")
-    except Exception as e:
-        logger.error(f"Failed to test None task: {e}")
-        raise
 
 
 def test_one_on_one_debate_invalid_output_type(
