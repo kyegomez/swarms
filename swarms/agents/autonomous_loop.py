@@ -36,6 +36,7 @@ from swarms.structs.autonomous_loop_utils import (
     create_sub_agent_tool,
     delete_file_tool,
     get_autonomous_planning_tools,
+    get_cut_off_notice,
     get_execution_prompt,
     get_planning_prompt,
     grep_tool,
@@ -71,6 +72,30 @@ def _format_tool_error(function_name: str, error: Exception) -> str:
         "Review the arguments and either retry with a correction or take a "
         "different approach. Do not repeat the same call unchanged."
     )
+
+
+def _with_parseable_arguments(call: Any) -> Any:
+    """
+    Return the tool call with its arguments replaced by an empty object if they are not valid JSON.
+
+    Args:
+        call: One item of a parsed model reply.
+
+    Returns:
+        Any: The call unchanged, or a copy whose arguments are "{}".
+    """
+    function = (
+        call.get("function") if isinstance(call, dict) else None
+    )
+    if not isinstance(function, dict) or not isinstance(
+        function.get("arguments"), str
+    ):
+        return call
+    try:
+        json.loads(function["arguments"])
+    except json.JSONDecodeError:
+        return {**call, "function": {**function, "arguments": "{}"}}
+    return call
 
 
 # Enough for a typical plan without pulling in the whole catalog.
@@ -145,8 +170,60 @@ class AutonomousAgentLoop:
             )
 
     def _record_assistant(self, parsed: Any) -> List[Dict[str, Any]]:
-        """Add the model's turn; return the tool calls it made."""
+        """Add the model's turn; return the tool calls it made.
+
+        A call whose arguments are not valid JSON is recorded with empty
+        arguments, so every provider can still convert the history.
+        """
+        if isinstance(parsed, list):
+            parsed = [
+                _with_parseable_arguments(item) for item in parsed
+            ]
         return self._transcript.record_assistant(parsed)
+
+    def _cut_off_notice(self, notices_sent: int) -> Optional[str]:
+        """Return the notice for a reply cut off at the output limit.
+
+        Args:
+            notices_sent: Cut-off notices already sent for this plan or subtask.
+
+        Returns:
+            Optional[str]: The notice, or None if the last reply was not cut off.
+        """
+        finish_reason = getattr(
+            self.agent.llm, "last_finish_reason", None
+        )
+        if finish_reason != "length":
+            return None
+
+        max_tokens = getattr(
+            self.agent.llm, "max_tokens", None
+        ) or getattr(self.agent, "max_tokens", None)
+        return get_cut_off_notice(max_tokens, notices_sent)
+
+    def _record_cut_off_reply(
+        self, response: Any, notice: str
+    ) -> None:
+        """Record a cut-off reply as plain text and answer it with the notice.
+
+        None of its tool calls run, and keeping them out of the structured
+        history means a truncated call can never break the next request.
+
+        Args:
+            response: The parsed cut-off reply, a list of tool calls or text.
+            notice: The cut-off notice to send back.
+        """
+        if isinstance(response, list):
+            draft = "\n".join(
+                f"{call['function']['name']}({call['function'].get('arguments', '')})"
+                for call in response
+                if isinstance(call, dict)
+                and call.get("function", {}).get("name")
+            )
+        else:
+            draft = str(response or "")
+        self._transcript.add("assistant", draft or "(empty reply)")
+        self._say_user(notice)
 
     def _flush_tool_results(
         self, calls: List[Dict[str, Any]], results: Dict[str, Any]
@@ -485,6 +562,7 @@ class AutonomousAgentLoop:
 
             plan_created = False
             planning_attempts = 0
+            planning_cut_offs = 0
             max_planning_attempts = self.agent.max_planning_attempts
 
             while (
@@ -511,6 +589,16 @@ class AutonomousAgentLoop:
                     self.agent.short_memory.add(
                         role=self.agent.agent_name, content=response
                     )
+                    cut_off_notice = self._cut_off_notice(
+                        planning_cut_offs
+                    )
+                    if cut_off_notice:
+                        planning_cut_offs += 1
+                        self._record_cut_off_reply(
+                            response, cut_off_notice
+                        )
+                        continue
+
                     planning_calls = self._record_assistant(response)
                     planning_results: Dict[str, Any] = {}
 
@@ -737,6 +825,7 @@ class AutonomousAgentLoop:
 
                 # Consecutive across the subtask, not one response.
                 self.agent.think_call_count = 0
+                cut_off_notices = 0
 
                 # Once only, or the model reads duplicates as a rerun.
                 execution_prompt = get_execution_prompt(
@@ -781,11 +870,24 @@ class AutonomousAgentLoop:
                         )
 
                         # Answer every call before the next request.
-                        turn_calls = self._record_assistant(response)
+                        cut_off_notice = self._cut_off_notice(
+                            cut_off_notices
+                        )
+                        turn_calls = (
+                            []
+                            if cut_off_notice
+                            else self._record_assistant(response)
+                        )
                         turn_results: Dict[str, Any] = {}
 
+                        if cut_off_notice:
+                            cut_off_notices += 1
+                            self._record_cut_off_reply(
+                                response, cut_off_notice
+                            )
+
                         # Handle tool calls
-                        if isinstance(response, list):
+                        elif isinstance(response, list):
                             regular_tool_calls = []
                             # Set, not returned, so later calls run.
                             task_complete = False
@@ -812,13 +914,19 @@ class AutonomousAgentLoop:
                                         TypeError,
                                     ) as parse_error:
                                         # Report back, do not abort.
-                                        self.agent.short_memory.add(
-                                            role="Tool Executor",
-                                            content=_format_tool_error(
+                                        error_result = (
+                                            _format_tool_error(
                                                 function_name,
                                                 parse_error,
-                                            ),
+                                            )
                                         )
+                                        self.agent.short_memory.add(
+                                            role="Tool Executor",
+                                            content=error_result,
+                                        )
+                                        turn_results[
+                                            tool_call.get("id", "")
+                                        ] = error_result
                                         if self.agent.verbose:
                                             logger.warning(
                                                 f"Could not parse arguments for {function_name}: {parse_error}"
