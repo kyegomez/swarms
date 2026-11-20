@@ -10,39 +10,6 @@ def exists(val):
     return val is not None
 
 
-def format_dict_to_string(data: dict, indent_level=0, use_colon=True):
-    """
-    Recursively format a dictionary into a multi-line string.
-
-    Args:
-        data (dict): The dictionary to format.
-        indent_level (int, optional): The current indentation level for nested structures.
-        use_colon (bool, optional): If True, use "key: value" formatting;
-            if False, use "key value" formatting.
-
-    Returns:
-        str: Multi-line readable string representing the structure of the input dictionary.
-    """
-    if not isinstance(data, dict):
-        return str(data)
-
-    lines = []
-    indent = "  " * indent_level
-    separator = ": " if use_colon else " "
-
-    for key, value in data.items():
-        if isinstance(value, dict):
-            lines.append(f"{indent}{key}:")
-            nested_string = format_dict_to_string(
-                value, indent_level + 1, use_colon
-            )
-            lines.append(nested_string)
-        else:
-            lines.append(f"{indent}{key}{separator}{value}")
-
-    return "\n".join(lines)
-
-
 def format_data_structure(
     data: any, indent_level: int = 0, max_depth: int = 10
 ) -> str:
