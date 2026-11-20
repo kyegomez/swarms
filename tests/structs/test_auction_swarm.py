@@ -33,3 +33,25 @@ def test_run_raises_when_every_winner_fails(monkeypatch):
         swarm.run("Summarise the report")
 
     assert str(info.value.__cause__) == "provider down"
+
+
+def test_bid_request_forces_the_bid_tool(monkeypatch):
+    agent = Agent(
+        agent_name="A", model_name="gpt-5.4", print_on=False
+    )
+    swarm = AuctionSwarm(
+        agents=[agent], output_type="final", print_on=False
+    )
+    choices = []
+
+    def fake_run(agents, **kwargs):
+        choices.append(agent.llm.tool_choice)
+        return {agent.agent_name: "done"}
+
+    monkeypatch.setattr(
+        auction_swarm, "run_agents_concurrently", fake_run
+    )
+    swarm.run("Summarise the report")
+
+    bid = {"type": "function", "function": {"name": "bid"}}
+    assert choices == [bid, "auto"]
