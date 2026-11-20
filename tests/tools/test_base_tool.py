@@ -1,3 +1,4 @@
+import enum
 import json
 from typing import Optional
 
@@ -125,6 +126,32 @@ def test_convert_tool_into_openai_schema_uses_docstring_sections():
     assert function["description"] == "Add two numbers."
     assert properties["a"]["description"] == "First number."
     assert properties["b"]["description"] == "Second number."
+
+
+class Color(enum.Enum):
+    RED = "red"
+    BLUE = "blue"
+
+
+def paint(color: Color = Color.RED) -> str:
+    """Paint something.
+
+    Args:
+        color (Color): The color to use.
+    """
+    return color.value
+
+
+def test_convert_tool_into_openai_schema_with_enum_default():
+    tool = BaseTool(tools=[paint])
+    schema = tool.convert_tool_into_openai_schema()
+    # Schema should be JSON-serializable without raising TypeError
+    encoded = json.dumps(schema)
+    assert encoded is not None
+
+    prop = schema["functions"][0]["parameters"]["properties"]["color"]
+    assert prop["default"] == "red"
+    assert prop["enum"] == ["red", "blue"]
 
 
 def add_numbers(a: int, b: int) -> int:
