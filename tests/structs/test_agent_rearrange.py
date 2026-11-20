@@ -1757,7 +1757,9 @@ def test_two_different_members_with_one_name_are_rejected():
         AgentRearrange(
             agents=[writer, _make_agent("Writer")],
             flow="Writer -> Writer",
+            channel=MagicMock(),
         )
+    assert writer.channel is not None
     AgentRearrange(
         agents=[writer, writer, team, team], flow="Writer -> Team"
     )

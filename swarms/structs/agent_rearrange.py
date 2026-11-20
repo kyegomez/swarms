@@ -216,10 +216,9 @@ class AgentRearrange(SerializableMixin):
         self.channel = channel
         # Seeds team awareness itself, seeding here too doubled the system message
 
+        self.reliability_check()
         claim_agents(self.agents, channel, self.name)
         self._reset_conversation()
-
-        self.reliability_check()
 
         self.workspace = WorkspaceManager(
             self,
