@@ -83,3 +83,50 @@ def test_read_only_properties_survive_the_load(tmp_path):
 def test_missing_file_still_raises(tmp_path):
     with pytest.raises(FileNotFoundError):
         _agent(tmp_path, "loader").load(str(tmp_path / "nope.json"))
+
+
+def test_save_and_autosave_do_not_write_credentials(
+    tmp_path, monkeypatch
+):
+    """Secrets must not reach disk via save() or the autosave config."""
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    fakes = (
+        "FAKE-LLM-KEY",
+        "FAKE-MCP-KEY",
+        "FAKE-HEADER",
+        "FAKE-TOKEN",
+    )
+    agent = _agent(
+        tmp_path,
+        "secretive",
+        autosave=True,
+        llm_api_key=fakes[0],
+        mcp_api_key=fakes[1],
+        mcp_headers={"Authorization": f"Bearer {fakes[2]}"},
+        mcp_authorization_token=fakes[3],
+    )
+    path = tmp_path / "state.json"
+    agent.save(str(path))
+    agent._autosave_config_step(loop_count=None)
+
+    files = [path, *tmp_path.rglob("config.json")]
+    assert len(files) >= 2
+    for f in files:
+        text = f.read_text()
+        for fake in fakes:
+            assert fake not in text, f"{fake} leaked into {f.name}"
+
+
+def test_credentials_are_kept_on_load_and_non_secrets_saved(tmp_path):
+    path = str(tmp_path / "state.json")
+    _agent(
+        tmp_path, "saver", max_tokens=1234, stopping_token="<DONE>"
+    ).save(path)
+
+    restored = _agent(tmp_path, "loader", llm_api_key="MINE")
+    restored.stopping_token = None
+    restored.load(path)
+
+    assert restored.llm_api_key == "MINE"
+    assert restored.max_tokens == 1234
+    assert restored.stopping_token == "<DONE>"
