@@ -20,7 +20,7 @@ def one_on_one_debate(
 
     Each agent alternately responds to the previous message, with the conversation
     history being tracked and available for both agents to reference. The debate
-    starts with the provided `task` as the initial message.
+    starts with the provided task as the initial message.
 
     Both agents start from a clean history, and each one's first turn opens
     with who it is debating, so a reused pair does not resend the last debate.
@@ -34,11 +34,11 @@ def one_on_one_debate(
             `history_output_formatter`. Default is "str-all-except-first".
 
     Returns:
-        list: The formatted conversation history, as produced by `history_output_formatter`.
-              The format depends on the `output_type` argument.
+        list: The formatted conversation history, as produced by history_output_formatter.
+              The format depends on the output_type argument.
 
     Raises:
-        ValueError: If the `agents` list does not contain exactly two Agent instances.
+        ValueError: If the agents list does not contain exactly two Agent instances.
     """
     conversation = Conversation()
 
