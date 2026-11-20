@@ -1,8 +1,5 @@
 import uuid
-from typing import Any, Dict, List, Optional, Sequence
-
-from starlette.requests import Request
-from starlette.responses import JSONResponse
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 
 from swarms.structs.a2a_client import (
     BINDING,
@@ -12,6 +9,10 @@ from swarms.structs.a2a_client import (
     text_of,
 )
 from swarms.structs.mcp_deployer import MCPDeployer
+
+if TYPE_CHECKING:
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse
 
 RPC_PATH = "/a2a"
 AGENT_VERSION = "1.0.0"
@@ -72,7 +73,7 @@ class A2AServer(MCPDeployer):
         route(card_path, methods=["GET"])(self.agent_card)
         route(rpc_path, methods=["POST"])(self.send_message)
 
-    async def agent_card(self, request: Request) -> JSONResponse:
+    async def agent_card(self, request: "Request") -> "JSONResponse":
         """Return this server's A2A agent card.
 
         Args:
@@ -81,6 +82,8 @@ class A2AServer(MCPDeployer):
         Returns:
             JSONResponse: The card, with one JSON-RPC interface and its skills.
         """
+        from starlette.responses import JSONResponse
+
         card = {
             "name": self.name,
             "description": self.description,
@@ -93,7 +96,9 @@ class A2AServer(MCPDeployer):
         }
         return JSONResponse(card)
 
-    async def send_message(self, request: Request) -> JSONResponse:
+    async def send_message(
+        self, request: "Request"
+    ) -> "JSONResponse":
         """Run the first tool on a SendMessage request.
 
         Args:
@@ -129,7 +134,7 @@ class A2AServer(MCPDeployer):
             return self._rpc_error(rpc_id, INTERNAL_ERROR, repr(e))
         return self._rpc_result(rpc_id, output)
 
-    def _card_interface(self, request: Request) -> dict:
+    def _card_interface(self, request: "Request") -> dict:
         """Describe the JSON-RPC endpoint for the agent card.
 
         Args:
@@ -176,7 +181,7 @@ class A2AServer(MCPDeployer):
     @staticmethod
     def _rpc_error(
         rpc_id: Any, code: int, message: str
-    ) -> JSONResponse:
+    ) -> "JSONResponse":
         """Build a JSON-RPC error response.
 
         Args:
@@ -187,13 +192,15 @@ class A2AServer(MCPDeployer):
         Returns:
             JSONResponse: The error response.
         """
+        from starlette.responses import JSONResponse
+
         error = {"code": code, "message": message}
         return JSONResponse(
             {"jsonrpc": "2.0", "id": rpc_id, "error": error}
         )
 
     @staticmethod
-    def _rpc_result(rpc_id: Any, output: str) -> JSONResponse:
+    def _rpc_result(rpc_id: Any, output: str) -> "JSONResponse":
         """Build a JSON-RPC response carrying the agent's reply.
 
         Args:
@@ -203,6 +210,8 @@ class A2AServer(MCPDeployer):
         Returns:
             JSONResponse: The reply as an agent message.
         """
+        from starlette.responses import JSONResponse
+
         message = {
             "role": "ROLE_AGENT",
             "messageId": str(uuid.uuid4()),
