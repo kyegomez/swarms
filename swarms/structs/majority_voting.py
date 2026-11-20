@@ -193,9 +193,9 @@ class MajorityVoting:
             if agent.agent_name in names:
                 raise ValueError(
                     f"More than one voter is named '{agent.agent_name}'. "
-                    "MajorityVoting keys each vote by name, so only one "
-                    "of their answers would be counted. Give each voter "
-                    "its own Agent instance and a unique name."
+                    "MajorityVoting keys each vote by name, so one of "
+                    "their answers would be counted for all of them. Give "
+                    "each voter its own Agent instance and a unique name."
                 )
             names.add(agent.agent_name)
 
