@@ -3147,6 +3147,12 @@ Subtask Breakdown:
                 for m in posted
                 if m != task_row
             ]
+            for message in messages:
+                if message["role"] not in (
+                    self.agent_name,
+                    self.user_name,
+                ):
+                    message["speaker"] = message["role"]
         return task, streaming_callback, messages
 
     def _dispatch(

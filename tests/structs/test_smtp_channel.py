@@ -199,9 +199,10 @@ def test_agents_sharing_a_channel_see_answers_before_delivery(server):
     writer.run("Write the report.")
 
     request = writer.call_llm.call_args.kwargs["messages"]
-    assert {"Growth was 31%.", "Add charts."} <= {
-        m["content"] for m in request
-    }
+    assert {
+        "Researcher: Growth was 31%.",
+        "a@x.com: Add charts.",
+    } <= {m["content"] for m in request}
     speakers = [researcher.user_name, "Researcher", "Writer"]
     assert [m["X-Swarms-Agent"] for m, _ in server.sent] == speakers
     for message, _ in server.sent:
