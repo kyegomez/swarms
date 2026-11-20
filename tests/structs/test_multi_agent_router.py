@@ -529,6 +529,36 @@ def test_an_unknown_agent_raises_before_any_agent_runs():
     assert ran == [], f"an agent ran before validation failed: {ran}"
 
 
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "I would send this to A1.",
+        '{"handoffs": [{"agent_name": "A1"',
+        None,
+        '{"agent_name": "A1"}',
+        '{"handoffs": []}',
+        '["A1"]',
+    ],
+)
+def test_an_unusable_boss_reply_names_the_router_and_model(reply):
+    """A reply that was not routing JSON raised a bare JSONDecodeError, KeyError, IndexError or TypeError."""
+    router, ran = _local_router()
+    router.name = "support-router"
+    router.model = "boss-model"
+    router.function_caller = type(
+        "Boss", (), {"run": lambda self, task: reply}
+    )()
+
+    with pytest.raises(ValueError) as raised:
+        router.route_task("a task")
+
+    message = str(raised.value)
+    assert "support-router" in message
+    assert "boss-model" in message
+    assert str(reply)[:20] in message
+    assert ran == []
+
+
 def test_concurrent_batch_run_returns_results_in_input_order():
     """Results used to come back in completion order, unlike batch_run."""
     router, _ = _local_router()
