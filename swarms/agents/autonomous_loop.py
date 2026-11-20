@@ -54,6 +54,7 @@ from swarms.structs.conversation import Conversation
 from swarms.tools.dynamic_tool_loader import SEARCH_TOOL_NAME
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists, format_data_structure
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY, LiteLLM
 
 
 def _format_tool_error(function_name: str, error: Exception) -> str:
@@ -136,9 +137,24 @@ class AutonomousAgentLoop:
         self._built_llm = self.agent.llm
         self._built_llm_signature = signature
 
-    def _say_user(self, content: str, mirror: bool = True) -> None:
-        """Add a user turn to the transcript (and to short_memory)."""
-        self._transcript.add("user", str(content))
+    def _say_user(
+        self,
+        content: str,
+        mirror: bool = True,
+        task_turn: bool = False,
+    ) -> None:
+        """Add a user turn to the transcript, and to short_memory when mirrored.
+
+        Args:
+            content: The turn's text.
+            mirror: Also add it to the agent's short_memory.
+            task_turn: Mark it as the task turn, where images go.
+        """
+        self._transcript.add(
+            "user",
+            str(content),
+            metadata={TASK_TURN_KEY: True} if task_turn else None,
+        )
         if mirror:
             self.agent.short_memory.add(
                 role=self.agent.user_name, content=content
@@ -199,8 +215,20 @@ class AutonomousAgentLoop:
             "context window. Progress so far:\n\n"
             f"{summary}",
             mirror=False,
+            task_turn=True,
         )
         return True
+
+    def _request_messages(self) -> List[Dict[str, Any]]:
+        """Build a request body from the transcript.
+
+        Returns:
+            Chat messages, with the task turn marked for a LiteLLM model so
+            images stay on it instead of moving to the newest prompt.
+        """
+        return self._transcript.to_messages(
+            task_turn=isinstance(self.agent.llm, LiteLLM)
+        )
 
     def _run_autonomous_loop(
         self,
@@ -290,7 +318,7 @@ class AutonomousAgentLoop:
             self.agent.plan_created = False
             self.agent.think_call_count = 0
 
-            self._say_user(task)
+            self._say_user(task, task_turn=True)
 
             # Add planning tools to tools_list_dictionary
             planning_tools = get_autonomous_planning_tools()
@@ -498,7 +526,7 @@ class AutonomousAgentLoop:
                         img=img,
                         current_loop=0,
                         streaming_callback=streaming_callback,
-                        messages=self._transcript.to_messages(),
+                        messages=self._request_messages(),
                         *args,
                         **kwargs,
                     )
@@ -765,7 +793,7 @@ class AutonomousAgentLoop:
                             img=img,
                             current_loop=subtask_iterations,
                             streaming_callback=streaming_callback,
-                            messages=self._transcript.to_messages(),
+                            messages=self._request_messages(),
                             *args,
                             **kwargs,
                         )
@@ -1091,7 +1119,7 @@ class AutonomousAgentLoop:
                             if task_complete:
                                 return self.agent._generate_final_summary(
                                     streaming_callback=streaming_callback,
-                                    messages=self._transcript.to_messages(),
+                                    messages=self._request_messages(),
                                 )
                         else:
                             # Handle regular tool execution

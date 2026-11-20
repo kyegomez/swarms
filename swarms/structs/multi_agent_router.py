@@ -213,7 +213,10 @@ class MultiAgentRouter:
         return agent_boss_router_prompt(agent_descriptions)
 
     def handle_single_handoff(
-        self, boss_response_str: dict, task: str
+        self,
+        boss_response_str: dict,
+        task: str,
+        img: Optional[str] = None,
     ) -> None:
         """
         Execute the single agent selected by the boss and record its response.
@@ -230,6 +233,7 @@ class MultiAgentRouter:
                 ``{"agent_name": str, "task": Optional[str], ...}``.
             task (str): The original user task, used as a fallback when the
                 boss did not supply a rewritten task.
+            img (Optional[str]): Image the selected agent sees with its task.
 
         Returns:
             None: The conversation is mutated in place.
@@ -263,14 +267,17 @@ class MultiAgentRouter:
             return
 
         # Use the agent's run method directly
-        agent_response = selected_agent.run(final_task)
+        agent_response = selected_agent.run(final_task, img=img)
 
         self.conversation.add(
             role=selected_agent.agent_name, content=agent_response
         )
 
     def handle_multiple_handoffs(
-        self, boss_response_str: dict, task: str
+        self,
+        boss_response_str: dict,
+        task: str,
+        img: Optional[str] = None,
     ) -> None:
         """
         Execute every agent selected by the boss and record the first response.
@@ -288,6 +295,7 @@ class MultiAgentRouter:
                 ``{"agent_name": str, "task": Optional[str], ...}``.
             task (str): The original user task, used as a fallback when the
                 boss did not supply a rewritten task.
+            img (Optional[str]): Image every selected agent sees with its task.
 
         Returns:
             None: The conversation is mutated in place.
@@ -340,7 +348,7 @@ class MultiAgentRouter:
             ) as executor:
                 agent_responses = list(
                     executor.map(
-                        lambda pair: pair[0].run(pair[1]),
+                        lambda pair: pair[0].run(pair[1], img=img),
                         zip(selected_agents, final_tasks),
                     )
                 )
@@ -352,12 +360,15 @@ class MultiAgentRouter:
 
         # return agent_responses
 
-    def route_task(self, task: str) -> dict:
+    def route_task(
+        self, task: str, img: Optional[str] = None
+    ) -> dict:
         """
         Routes a task to the appropriate agent and returns their response.
 
         Args:
             task (str): The task to be routed.
+            img (Optional[str]): Image the boss routes on and the selected agents see.
 
         Returns:
             dict: A dictionary containing the routing result, including the selected agent, reasoning, and response.
@@ -366,7 +377,9 @@ class MultiAgentRouter:
             self.conversation.add(role="user", content=task)
 
             # Get boss decision using function calling
-            boss_response_str = self.function_caller.run(task)
+            boss_response_str = self.function_caller.run(
+                task, img=img
+            )
 
             boss_response_str = json.loads(boss_response_str)
 
@@ -377,9 +390,13 @@ class MultiAgentRouter:
                 )
 
             if len(boss_response_str["handoffs"]) > 1:
-                self.handle_multiple_handoffs(boss_response_str, task)
+                self.handle_multiple_handoffs(
+                    boss_response_str, task, img=img
+                )
             else:
-                self.handle_single_handoff(boss_response_str, task)
+                self.handle_single_handoff(
+                    boss_response_str, task, img=img
+                )
 
             return history_output_formatter(
                 conversation=self.conversation, type=self.output_type
@@ -395,19 +412,20 @@ class MultiAgentRouter:
         "MultiAgentRouter.run",
         input_params=("task", "tasks", "img", "imgs"),
     )
-    def run(self, task: str):
+    def run(self, task: str, img: Optional[str] = None):
         """
         Route a single task through the boss agent and execute the selected
         worker(s).
 
         Args:
             task (str): The task to route.
+            img (Optional[str]): Image the boss routes on and the selected agents see.
 
         Returns:
             Any: The formatted conversation history, shaped according to
             ``self.output_type`` (see ``history_output_formatter``).
         """
-        return self.route_task(task)
+        return self.route_task(task, img=img)
 
     def __call__(self, task: str):
         """
