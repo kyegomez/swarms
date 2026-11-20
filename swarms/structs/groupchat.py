@@ -77,6 +77,15 @@ from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="groupchat")
 
+
+class GroupChatNoReplyError(RuntimeError):
+    """The chat ended without a single agent reply.
+
+    Raised instead of returning an empty history so callers — including a
+    ``SwarmRouter`` fallback chain — can tell a produced answer from a run
+    where every bid stayed silent, failed to parse, or came back empty.
+    """
+
 RESPOND_TOOL = {
     # Forced tool call, so every speaking decision is machine-readable
     "type": "function",
@@ -106,31 +115,6 @@ RESPOND_TOOL = {
 }
 
 RESPOND_CHOICE = forced_tool_choice(RESPOND_TOOL)
-
-SCORE_ONLY_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "respond",
-        "description": "Bid for the floor in the groupchat with a score 0..1.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "score": {"type": "number"},
-            },
-            "required": ["score"],
-        },
-    },
-}
-
-BID_ONLY_NOTE = (
-    "\nThis turn is a bid only: call respond with your score alone."
-    " If you win the floor you will be asked for your reply next."
-)
-
-FLOOR_NOTE = (
-    "\nYou bid highest and have the floor: call respond with your"
-    " score and your full reply to the group in message."
-)
 
 
 def _extract_args(tool_output: Any) -> Tuple[float, str]:
@@ -228,7 +212,6 @@ class GroupChat(SerializableMixin):
         verbose: bool = False,
         auto_equip: bool = True,
         channel: Optional[CommsChannel] = None,
-        score_only_bids: bool = False,
     ):
         """Initialize the turn-based groupchat runtime.
 
@@ -254,8 +237,6 @@ class GroupChat(SerializableMixin):
                 so every agent can produce a machine-readable speaking bid.
                 Set to ``False`` if your agents already declare the tool
                 themselves.
-            score_only_bids: When True, agents bid a score alone and only
-                the winner writes a reply, at one extra call per turn.
 
         Raises:
             ValueError: If fewer than two agents are provided.
@@ -270,7 +251,6 @@ class GroupChat(SerializableMixin):
         self.output_type = output_type
         self.verbose = verbose
         self.auto_equip = auto_equip
-        self.score_only_bids = score_only_bids
 
         self.channel = channel
         claim_agents(self.agents, channel, self.name)
@@ -321,11 +301,7 @@ class GroupChat(SerializableMixin):
         )
 
     def _decide_sync(
-        self,
-        agent: Agent,
-        sender: str,
-        message: str,
-        floor: bool = False,
+        self, agent: Agent, sender: str, message: str
     ) -> Tuple[float, str]:
         """Ask one agent whether it wants to respond to a message.
 
@@ -342,22 +318,17 @@ class GroupChat(SerializableMixin):
             sender=sender,
             message=message,
         )
-        if self.score_only_bids:
-            prompt += FLOOR_NOTE if floor else BID_ONLY_NOTE
         previous_output_type = getattr(agent, "output_type", None)
         agent.output_type = "final"
         llm = getattr(agent, "llm", None)
         forced = isinstance(llm, LiteLLM)
         if forced:
             previous_tool_choice = llm.tool_choice
-            previous_tools = llm.tools_list_dictionary
             llm.tool_choice = forced_tool_choice(
                 RESPOND_TOOL,
                 llm.reasoning_effort,
                 llm.reasoning_enabled,
             )
-            if self.score_only_bids and not floor:
-                llm.tools_list_dictionary = [SCORE_ONLY_TOOL]
         try:
             # Typed turns let the agent tell its own prior speech from a peer's.
             tool_output = agent.run(
@@ -378,7 +349,6 @@ class GroupChat(SerializableMixin):
             agent.output_type = previous_output_type
             if forced:
                 llm.tool_choice = previous_tool_choice
-                llm.tools_list_dictionary = previous_tools
 
         score, reply = _extract_args(tool_output)
         self._log(
@@ -488,8 +458,7 @@ class GroupChat(SerializableMixin):
         """Pick the single agent that takes the floor this turn.
 
         The winner is the highest *recency-adjusted* bid that (a) carries a
-        non-empty reply, unless score_only_bids is set, and (b) clears
-        ``threshold``. Agents that spoke within
+        non-empty reply and (b) clears ``threshold``. Agents that spoke within
         the last ``recency_window`` turns have ``recency_penalty`` subtracted
         from their score, so the floor passes around instead of one agent
         monologuing. Returns ``None`` when nobody clears the bar — a lull that
@@ -502,7 +471,7 @@ class GroupChat(SerializableMixin):
         best_adjusted = self.threshold
 
         for agent, score, reply in bids:
-            if not reply and not self.score_only_bids:
+            if not reply:
                 continue
             adjusted = score
             if agent.agent_name in recent:
@@ -566,18 +535,25 @@ class GroupChat(SerializableMixin):
             bids = await self._collect_bids(last_sender, last_message)
 
             selection = self._select_speaker(bids, set(recent))
+            if selection is None and message_count == 1:
+                # The first turn is never a lull — nobody has spoken yet, so
+                # a turn where every bid stays below threshold is not a cue
+                # to stop; take the best reply even below the bar.
+                selection = max(
+                    (bid for bid in bids if bid[2]),
+                    key=lambda bid: bid[1],
+                    default=None,
+                )
             if selection is None:
-                # No reply at all on the first turn is almost never a lull; it is a bad model name or missing key.
-                if message_count == 1 and not any(
-                    (score if self.score_only_bids else reply)
-                    for _, score, reply in bids
-                ):
+                if message_count == 1:
                     logger.warning(
-                        f"[{self.name}] No agent produced a reply on the first "
-                        "turn. The chat will end immediately. Likely causes: an "
-                        "invalid model_name, a missing/invalid API key, a "
-                        "model without function-calling support, or replies "
-                        "that are not a parseable respond() tool call. Run "
+                        f"[{self.name}] No agent produced a usable reply on "
+                        "the first turn. The chat will end immediately. "
+                        "Likely causes: an invalid model_name, a "
+                        "missing/invalid API key, a model without "
+                        "function-calling support, replies that are not a "
+                        "parseable respond() tool call, or every agent "
+                        "bidding an empty message to stay silent. Run "
                         "with verbose=True to see each agent's bid."
                     )
                 else:
@@ -588,19 +564,6 @@ class GroupChat(SerializableMixin):
                 break
 
             agent, score, reply = selection
-            if self.score_only_bids:
-                _, reply = await asyncio.to_thread(
-                    self._decide_sync,
-                    agent,
-                    last_sender,
-                    last_message,
-                    True,
-                )
-                if not reply:
-                    logger.warning(
-                        f"[{self.name}] {agent.agent_name} gave no reply"
-                    )
-                    break
             self._post(
                 sender=agent.agent_name,
                 content=reply,
@@ -610,6 +573,13 @@ class GroupChat(SerializableMixin):
             recent.append(agent.agent_name)
             last_sender, last_message = agent.agent_name, reply
             message_count += 1
+
+        if message_count == 1:
+            # Only the user task was posted — surface the missing answer to
+            # the caller instead of returning a success-shaped empty run.
+            raise GroupChatNoReplyError(
+                f"[{self.name}] GroupChat ended without a single agent reply."
+            )
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
