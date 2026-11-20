@@ -1,7 +1,7 @@
 import threading
 import time
 from typing import List, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
@@ -338,6 +338,20 @@ def test_set_custom_flow_validates_immediately():
 
     # Previous flow should be restored
     assert rearrange.flow == "ResearchAgent -> WriterAgent"
+
+
+def test_validate_flow_reads_each_agent_name_once():
+    """validate_flow reads each agent name once, not once per flow name."""
+    pipeline = _make_pipeline(*(f"a{i}" for i in range(50)))
+    reads = [
+        PropertyMock(return_value=agent.agent_name)
+        for agent in pipeline.agents
+    ]
+    for agent, read in zip(pipeline.agents, reads):
+        type(agent).agent_name = read
+
+    assert pipeline.validate_flow() is True
+    assert sum(read.call_count for read in reads) == 50
 
 
 def test_explain_returns_plan_without_calling_llms():
