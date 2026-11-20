@@ -1160,14 +1160,13 @@ class SwarmRouter(SerializableMixin):
 
     @trace_run(
         "SwarmRouter.run",
-        input_params=("task", "tasks", "img"),
+        input_params=("task", "img"),
         usage=lambda router: router.usage,
     )
     def run(
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        tasks: Optional[List[str]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -1181,8 +1180,6 @@ class SwarmRouter(SerializableMixin):
             task (str, optional): Single task to execute.
             img (str, optional): Image path, URL, or encoded image data to pass
                 to the underlying swarm.
-            tasks (List[str], optional): Tasks to run one after another,
-                as batch_run does. A list of results is returned.
             *args: Positional arguments forwarded while creating the swarm.
             **kwargs: Keyword arguments forwarded to the underlying
                 ``swarm.run`` call.
@@ -1194,9 +1191,6 @@ class SwarmRouter(SerializableMixin):
             SwarmRouterRunError: Re-raised when the underlying router run error
                 is encountered.
         """
-        if tasks is not None:
-            return self.batch_run(tasks, img=img, *args, **kwargs)
-
         try:
             self._log(
                 "info",
