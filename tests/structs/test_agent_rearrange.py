@@ -1748,3 +1748,18 @@ def test_nested_swarm_without_a_name_is_rejected():
     """A swarm needs a name for the flow to reference it."""
     with pytest.raises(ValueError, match="needs a name"):
         AgentRearrange(agents=[_RecordingSwarm("")], flow="x")
+
+
+def test_two_different_members_with_one_name_are_rejected():
+    """Two members sharing a name raise; one member listed twice is fine."""
+    writer, team = _make_agent("Writer"), _RecordingSwarm("Team")
+    with pytest.raises(ValueError, match="'Writer'"):
+        AgentRearrange(
+            agents=[writer, _make_agent("Writer")],
+            flow="Writer -> Writer",
+            channel=MagicMock(),
+        )
+    assert writer.channel is not None
+    AgentRearrange(
+        agents=[writer, writer, team, team], flow="Writer -> Team"
+    )
