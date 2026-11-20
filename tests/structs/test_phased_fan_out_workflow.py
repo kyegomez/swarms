@@ -665,3 +665,53 @@ def test_identical_steps_in_a_phase_are_rejected():
         )
     )
     assert any("Steps 'a' and 'b'" in e for e in errors)
+
+
+class CopiedLead(FakeLead):
+    """Lead whose every copy is a new object, recorded in copies."""
+
+    def __init__(self, plans, copies):
+        super().__init__(plans)
+        self.copies = copies
+
+    def __deepcopy__(self, memo):
+        copy = CopiedLead([], self.copies)
+        copy.plans = self.plans
+        self.copies.append(copy)
+        return copy
+
+
+def test_each_run_plans_and_combines_with_its_own_lead():
+    one_step = plan(
+        [
+            {
+                "title": "P",
+                "steps": [
+                    {
+                        "id": "a",
+                        "agent": "worker",
+                        "prompt": "x {task}",
+                    }
+                ],
+            }
+        ],
+        ["a"],
+    )
+    copies = []
+    workflow = PhasedFanOutWorkflow(
+        lead_agent=CopiedLead([one_step] * 3, copies)
+    )
+
+    assert workflow.plan("plan-only").phases[0].title == "P"
+
+    def worker(agent, task):
+        if "task-A" in task:
+            workflow.run("task-B")
+        return "done"
+
+    FakeAgent.handler = worker
+    workflow.run("task-A")
+
+    for name, copy in zip(["task-A", "task-B"], copies[1:]):
+        assert all(name in prompt for prompt in copy.prompts)
+        assert len(copy.prompts) == 2
