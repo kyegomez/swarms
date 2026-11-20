@@ -241,6 +241,24 @@ class AgentRearrange(SerializableMixin):
         if self.agents is None or len(self.agents) == 0:
             raise ValueError("Agents list cannot be None or empty")
 
+        owners = {}
+        for member in self.agents:
+            # Each nested swarm gets a new wrapper, so compare what was passed
+            source = (
+                member.swarm
+                if isinstance(member, _SwarmMember)
+                else member
+            )
+            if (
+                owners.setdefault(member.agent_name, source)
+                is not source
+            ):
+                raise ValueError(
+                    f"Two different agents are named '{member.agent_name}'. "
+                    "AgentRearrange runs each step by name, so only the "
+                    "first of them would run. Give each one its own name."
+                )
+
         if self.max_loops == 0:
             raise ValueError("max_loops cannot be 0")
 
