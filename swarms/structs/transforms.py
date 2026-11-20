@@ -230,18 +230,6 @@ class MessageTransforms:
         if current_tokens <= max_tokens:
             return messages
 
-        # First try to compress message count if we have too many messages
-        if (
-            len(messages) > 50
-        ):  # Arbitrary threshold for when to try message count compression first
-            messages = self._compress_message_count(
-                messages, len(messages) // 2
-            )
-
-        current_tokens = self._count_total_tokens(messages)
-        if current_tokens <= max_tokens:
-            return messages
-
         # Apply middle-out compression with token awareness
         return self._middle_out_compress_tokens(messages, max_tokens)
 
