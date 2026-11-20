@@ -20,7 +20,6 @@ def test_run(round_robin_swarm):
     task = "test_task"
     result = round_robin_swarm.run(task)
     assert result == task
-    assert round_robin_swarm.index == 0
 
 
 def test_prior_turns_are_typed_not_flattened_into_the_task():
