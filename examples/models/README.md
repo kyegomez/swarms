@@ -2,7 +2,7 @@
 
 Examples demonstrating how to run Swarms agents against different model providers. Each subfolder is a **provider** (or model family) and contains runnable, self-contained scripts.
 
-Set the matching API key as an environment variable before running any example (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `AZURE_API_KEY`, `GROQ_API_KEY`).
+Set the matching API key as an environment variable before running any example (e.g. `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `AZURE_API_KEY`, `GROQ_API_KEY`, `TEAMOROUTER_API_KEY`).
 
 ## Providers
 
@@ -67,6 +67,10 @@ Set the matching API key as an environment variable before running any example (
 
 ### Qwen
 - [qwen_3_base.py](qwen/qwen_3_base.py) — Qwen 3 base model
+
+### TeamoRouter
+- [glm_teamorouter.py](teamorouter/glm_teamorouter.py) — GLM 5.3 via TeamoRouter's OpenAI-compatible endpoint
+- [kimi_teamorouter.py](teamorouter/kimi_teamorouter.py) — Kimi K3.1 Pro via TeamoRouter
 
 ### vLLM
 - [vllm_example.py](vllm/vllm_example.py) — vLLM integration
