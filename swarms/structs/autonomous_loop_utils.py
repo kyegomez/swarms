@@ -509,7 +509,7 @@ def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "glob",
-                "description": "Find files by name pattern, newest first. Returns paths relative to the search root. Prefer this over run_bash find for locating files.",
+                "description": "Find files by name pattern, newest first. Returns paths that read_file accepts as is. Prefer this over run_bash find for locating files.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -1291,15 +1291,16 @@ def glob_tool(
         **kwargs: Additional arguments
 
     Returns:
-        str: Matching paths relative to the search root, one per line, or a
+        str: Matching paths joined onto path as given, one per line, or a
             message saying nothing matched
 
     Notes:
         Newest first, because a model looking for "the file I just wrote" or
         "what changed" wants recency, and an alphabetical listing buries it.
 
-        Paths come back relative to the search root rather than absolute:
-        that is the form the other file tools accept back, so a result can be
+        Paths come back joined onto path as given: relative to the
+        workspace when path is relative, absolute when it is absolute. That
+        is the form the other file tools accept back, so a result can be
         passed straight to read_file without editing.
     """
     try:
@@ -1330,7 +1331,8 @@ def glob_tool(
         matches.sort(key=lambda m: m.stat().st_mtime, reverse=True)
 
         listing = "\n".join(
-            str(match.relative_to(root)) for match in matches
+            str(Path(path) / match.relative_to(root))
+            for match in matches
         )
 
         output = truncate_tool_output(
