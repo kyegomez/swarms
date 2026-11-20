@@ -288,11 +288,13 @@ def run_scenario(
     rows = []
 
     wf = build_swarms(graph)
-    if use_async:
-        call = lambda: asyncio.run(wf.arun("task"))
-    else:
-        call = lambda: wf.run("task")
-    wall, threads = measure(call, repeat)
+
+    def run_swarms() -> object:
+        if use_async:
+            return asyncio.run(wf.arun("task"))
+        return wf.run("task")
+
+    wall, threads = measure(run_swarms, repeat)
     rows.append((label, "swarms", wall, ideal, threads))
 
     if LANGGRAPH:
@@ -302,11 +304,13 @@ def run_scenario(
             "recursion_limit": len(graph[0]) + 10,
         }
         state = {"out": {}}
-        if use_async:
-            call = lambda: asyncio.run(app.ainvoke(state, config))
-        else:
-            call = lambda: app.invoke(state, config)
-        wall, threads = measure(call, repeat)
+
+        def run_langgraph() -> object:
+            if use_async:
+                return asyncio.run(app.ainvoke(state, config))
+            return app.invoke(state, config)
+
+        wall, threads = measure(run_langgraph, repeat)
         rows.append((label, "langgraph", wall, ideal, threads))
     return rows
 
