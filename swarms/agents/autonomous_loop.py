@@ -1374,9 +1374,14 @@ class AutonomousAgentLoop:
 
         incoming: Dict[str, Dict[str, Any]] = {}
         incoming_order: List[str] = []
+        finished = {
+            step_id
+            for step_id, subtask in existing.items()
+            if subtask["status"] in ("completed", "failed", "skipped")
+        }
         known_step_ids = {step.get("step_id", "") for step in steps}
         # Finished work stays a valid dependency target.
-        known_step_ids |= set(existing)
+        known_step_ids |= finished
 
         for step in steps:
             step_id = step.get("step_id", "")
@@ -1413,11 +1418,7 @@ class AutonomousAgentLoop:
 
         for subtask in self.agent.autonomous_subtasks:
             step_id = subtask["step_id"]
-            terminal = subtask["status"] in (
-                "completed",
-                "failed",
-                "skipped",
-            )
+            terminal = step_id in finished
             if step_id in incoming:
                 if terminal:
                     # Finished work is not re-opened by a revision.
