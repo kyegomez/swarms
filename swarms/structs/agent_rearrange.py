@@ -365,6 +365,7 @@ class AgentRearrange(SerializableMixin):
             agent (Any): The agent or swarm to be added.
         """
         agent = _as_member(agent)
+        claim_agents([agent], self.channel, self.name)
         self._log(
             "info", f"Adding agent {agent.agent_name} to the swarm."
         )
@@ -396,7 +397,8 @@ class AgentRearrange(SerializableMixin):
         Args:
             agents (List[Any]): The agents or swarms to be added.
         """
-        self.agents.extend(_as_member(a) for a in agents)
+        for agent in agents:
+            self.add_agent(agent)
 
     @property
     def steps(self) -> List[List[str]]:
