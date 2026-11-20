@@ -3384,29 +3384,6 @@ Subtask Breakdown:
             for task, img in zip(tasks, imgs)
         ]
 
-    def showcase_config(self):
-
-        # Convert all values in config_dict to concise string representations
-        config_dict = self.to_dict()
-        for key, value in config_dict.items():
-            if isinstance(value, list):
-                # Format list as a comma-separated string
-                config_dict[key] = ", ".join(
-                    str(item) for item in value
-                )
-            elif isinstance(value, dict):
-                # Format dict as key-value pairs in a single string
-                config_dict[key] = ", ".join(
-                    f"{k}: {v}" for k, v in value.items()
-                )
-            else:
-                # Ensure any non-iterable value is a string
-                config_dict[key] = str(value)
-
-        return formatter.print_table(
-            f"Agent: {self.agent_name} Configuration", config_dict
-        )
-
     def talk_to(
         self, agent: Any, task: str, img: str = None, *args, **kwargs
     ) -> Any:
