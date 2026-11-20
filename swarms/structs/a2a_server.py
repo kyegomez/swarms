@@ -1,5 +1,6 @@
+import json
 import uuid
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, NoReturn, Optional, Sequence
 
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -18,9 +19,23 @@ AGENT_VERSION = "1.0.0"
 TEXT_MODES = ("text/plain",)
 
 VERSION_NOT_SUPPORTED = -32009
+PARSE_ERROR = -32700
+INVALID_REQUEST = -32600
 METHOD_NOT_FOUND = -32601
 INVALID_PARAMS = -32602
 INTERNAL_ERROR = -32603
+
+
+def _reject_constant(name: str) -> NoReturn:
+    """Refuse NaN and Infinity, which are not valid JSON.
+
+    Args:
+        name (str): The constant the parser met.
+
+    Raises:
+        ValueError: Always.
+    """
+    raise ValueError(f"{name} is not valid JSON")
 
 
 class A2AServer(MCPDeployer):
@@ -102,7 +117,19 @@ class A2AServer(MCPDeployer):
         Returns:
             JSONResponse: The tool output as an agent message, or a JSON-RPC error.
         """
-        body = await request.json()
+        try:
+            body = json.loads(
+                await request.body(), parse_constant=_reject_constant
+            )
+        except (ValueError, RecursionError):
+            return self._rpc_error(
+                None, PARSE_ERROR, "Invalid JSON payload"
+            )
+        if not isinstance(body, dict):
+            return self._rpc_error(
+                None, INVALID_REQUEST, "Request must be a JSON object"
+            )
+
         rpc_id = body.get("id")
 
         version = self.protocol_version
