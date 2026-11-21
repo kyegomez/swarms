@@ -123,13 +123,11 @@ def set_random_models_for_agents(
     if agents is None:
         return random.choice(model_names)
 
-    if isinstance(agents, list):
-        for agent in agents:
-            setattr(agent, "model_name", random.choice(model_names))
-        return agents
-    else:
-        setattr(agents, "model_name", random.choice(model_names))
-        return agents
+    for agent in agents if isinstance(agents, list) else [agents]:
+        agent.model_name = random.choice(model_names)
+        if hasattr(agent, "llm_handling"):
+            agent.llm_handling()
+    return agents
 
 
 def create_agent_map(
