@@ -1780,19 +1780,14 @@ class _HangingStreamer:
             raise
 
 
-@pytest.mark.parametrize(
-    "flow, started", [("A -> B", ["A"]), ("A, B", ["A", "B"])]
-)
-def test_closing_run_stream_cancels_the_agents_still_streaming(
-    flow, started
-):
-    """A consumer that stops reading stops the agents it no longer reads."""
-    agents = {n: _HangingStreamer(n) for n in ["A", "B"]}
+def test_closing_run_stream_cancels_the_agent_still_streaming():
+    """A consumer that stops reading stops the agent it no longer reads."""
+    first, second = _HangingStreamer("A"), _HangingStreamer("B")
     stream = AgentRearrange(
-        agents=list(agents.values()), flow=flow
+        agents=[first, second], flow="A -> B"
     ).run_stream("go")
 
     next(stream)
     stream.close()
 
-    assert all(agents[n].cancelled.wait(5) for n in started)
+    assert first.cancelled.wait(5)

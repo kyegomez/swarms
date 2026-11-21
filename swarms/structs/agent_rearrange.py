@@ -1224,6 +1224,8 @@ class AgentRearrange(SerializableMixin):
                         }
                     continue
                 if kind is ERROR:
+                    for t in producer_tasks:
+                        t.cancel()
                     raise payload
                 if with_events:
                     yield {
@@ -1236,8 +1238,6 @@ class AgentRearrange(SerializableMixin):
                 # Yield so the consumer does not drain one agent's full burst before the scheduler hops.
                 await asyncio.sleep(0)
         finally:
-            for t in producer_tasks:
-                t.cancel()
             await asyncio.gather(
                 *producer_tasks, return_exceptions=True
             )
