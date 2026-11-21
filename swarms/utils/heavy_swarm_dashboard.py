@@ -11,6 +11,7 @@ from contextlib import contextmanager
 from typing import Callable, Iterator, List, Optional, Tuple
 
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.progress import (
     Progress,
@@ -112,11 +113,13 @@ class HeavySwarmDashboard:
         info_table.add_column("Parameter", style="white", width=25)
         info_table.add_column("Value", style="bright_white", width=40)
 
-        info_table.add_row("Swarm Name", name)
-        info_table.add_row("Description", description)
+        info_table.add_row("Swarm Name", escape(name))
+        info_table.add_row("Description", escape(description))
         info_table.add_row("Timeout", f"{timeout}s")
-        info_table.add_row("Question Model", question_model)
-        info_table.add_row("Worker Model", worker_model)
+        info_table.add_row(
+            "Question Model", escape(str(question_model))
+        )
+        info_table.add_row("Worker Model", escape(str(worker_model)))
         info_table.add_row("Max Workers", str(max_workers))
 
         self.console.print(
@@ -143,7 +146,7 @@ class HeavySwarmDashboard:
         self.console.print(
             Panel(
                 f"[bold red]⚡ Completing Task[/bold red]\n"
-                f"[white]Task: {task}[/white]",
+                f"[white]Task: {escape(task)}[/white]",
                 title="[bold red]Initializing HeavySwarm[/bold red]",
                 border_style="red",
             )

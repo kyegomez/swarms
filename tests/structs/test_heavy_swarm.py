@@ -839,6 +839,18 @@ class TestUsage:
 
         assert swarm.usage["input_tokens"] == 30 + 100 * 5
 
+    def test_dashboard_prints_a_task_with_brackets_as_written(
+        self, monkeypatch, capsys
+    ):
+        self._fake_question_llm(monkeypatch)
+        swarm = self._swarm()
+        swarm.show_dashboard = True
+        self._stub_agents(swarm)
+
+        swarm.run("Why does [/usr/local/bin] break?")
+
+        assert "[/usr/local/bin]" in capsys.readouterr().out
+
 
 @pytest.mark.parametrize("variant", ["default", "medium", "heavy"])
 def test_workers_get_only_loop_tools_and_their_own(variant):
