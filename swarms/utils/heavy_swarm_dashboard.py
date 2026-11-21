@@ -116,8 +116,10 @@ class HeavySwarmDashboard:
         info_table.add_row("Swarm Name", escape(name))
         info_table.add_row("Description", escape(description))
         info_table.add_row("Timeout", f"{timeout}s")
-        info_table.add_row("Question Model", escape(question_model))
-        info_table.add_row("Worker Model", escape(worker_model))
+        info_table.add_row(
+            "Question Model", escape(str(question_model))
+        )
+        info_table.add_row("Worker Model", escape(str(worker_model)))
         info_table.add_row("Max Workers", str(max_workers))
 
         self.console.print(

@@ -393,7 +393,7 @@ class Formatter:
             ...     response = agent.call_llm(task=task_prompt)
         """
         return self.console.status(
-            f"[bold cyan]{message}[/bold cyan]",
+            Text(message, style="bold cyan"),
             spinner=spinner,
             spinner_style=spinner_style,
         )

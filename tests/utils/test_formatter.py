@@ -212,6 +212,7 @@ NAME = "Ops [/prod]"
         lambda f: f.print_streaming_panel(["hi"], title=NAME),
         lambda f: f.display_hierarchy("D", "m", [], NAME),
         lambda f: f.print_director_task_distribution(NAME, []),
+        lambda f: f.console.print(f.loading_status(NAME).renderable),
     ],
 )
 def test_panel_titles_show_a_bracketed_name_as_written(render):
