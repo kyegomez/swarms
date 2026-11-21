@@ -43,6 +43,10 @@ MAX_PLANNING_ATTEMPTS = 5
 MAX_SUBTASK_ITERATIONS = 100
 MAX_SUBTASK_LOOPS = 20
 
+READONLY_PLANNING_TOOLS = frozenset(
+    {"read_file", "grep", "list_directory"}
+)
+
 # The loop re-serializes its history into every later prompt, so one oversized tool result is paid for on every remaining call of the run.
 TOOL_OUTPUT_CONTEXT_SHARE = 0.25
 
