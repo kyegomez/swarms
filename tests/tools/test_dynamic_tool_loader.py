@@ -141,7 +141,36 @@ class TestSearch:
         assert first == second
 
     def test_limit_is_respected(self, loader):
-        assert len(loader.search("city recipient file", limit=1)) == 1
+        assert (
+            len(
+                loader.search("weather city email recipient", limit=1)
+            )
+            == 1
+        )
+
+    def test_an_unsatisfiable_query_matches_nothing(self, loader):
+        """
+        A long query about something the catalog cannot do used to come back
+        with its best weak matches, because any term that happened to appear
+        in some description scored above zero. In #2298 that handed an agent
+        looking for market data the two file tools, which it then reported
+        itself blocked by.
+
+        Only "rows" here appears in the catalog at all, in `read_csv`'s
+        description. One incidental word out of thirteen is not a match.
+        """
+        query = (
+            "web browser fetch webpage financial market data ETF "
+            "fund holdings performance quote screener rows"
+        )
+        assert loader.search(query) == []
+
+    def test_a_single_term_query_may_match_on_description_alone(
+        self, loader
+    ):
+        """One word is all a one-term query has, so the floor does not apply
+        to it."""
+        assert [t.name for t in loader.search("rows")] == ["read_csv"]
 
 
 class TestSelectByName:
@@ -158,7 +187,17 @@ class TestSearchResultText:
     def test_reports_what_it_loaded(self, loader):
         result = loader.run_search("weather")
         assert "get_weather" in result
-        assert "callable from your next turn" in result
+        assert "callable from your next tool call" in result
+        assert "carry on with the subtask" in result
+
+    def test_an_unsatisfiable_query_reports_a_miss(self, loader):
+        result = loader.run_search(
+            "web browser fetch webpage financial market data ETF "
+            "fund holdings performance quote screener rows"
+        )
+        assert "No tools matched" in result
+        assert "read_csv" in result
+        assert loader.loaded_names == []
 
     def test_repeat_search_does_not_reload(self, loader):
         loader.run_search("weather")
