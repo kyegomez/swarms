@@ -810,7 +810,9 @@ class AutoSwarmBuilder:
 
             if rules:
                 agent_data["system_prompt"] = "\n\n".join(
-                    filter(None, [agent_data.get("system_prompt"), rules])
+                    filter(
+                        None, [agent_data.get("system_prompt"), rules]
+                    )
                 )
 
             # Create agent from processed data
