@@ -1056,6 +1056,41 @@ class TestHierarchicalContextManagement:
             "user" not in roles
         ), f"stale messages loaded from disk: {roles}"
 
+    @pytest.mark.parametrize(
+        "feedback_on, markers",
+        [
+            (False, ["[W1-out]"]),
+            (True, ["[W1-out]", "[Feedback-out]"]),
+        ],
+    )
+    def test_the_director_gets_each_input_once(
+        self, feedback_on, markers
+    ):
+        from swarms import HierarchicalSwarm
+
+        seen = []
+        swarm = HierarchicalSwarm(
+            director=_scripted_hs_agent(
+                "Director", seen, director=True
+            ),
+            agents=[_scripted_hs_agent("W1", seen)],
+            max_loops=2,
+            director_feedback_on=feedback_on,
+        )
+        swarm._feedback_director = _scripted_hs_agent(
+            "Feedback", seen
+        )
+        swarm.run("TASK-MARKER build a widget")
+
+        requests = [msgs for name, msgs in seen if name == "Director"]
+        assert len(requests) == 2
+        for messages in requests:
+            text = "\n".join(str(m.get("content")) for m in messages)
+            assert text.count("TASK-MARKER") == 1, text
+            assert all(text.count(m) <= 1 for m in markers), text
+        newest = str(requests[1][-1].get("content"))
+        assert all(m in newest for m in markers), newest
+
 
 def _swarm_with_one_order(print_on):
     """A swarm whose director always issues a single order."""

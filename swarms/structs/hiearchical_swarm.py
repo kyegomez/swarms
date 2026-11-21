@@ -521,12 +521,23 @@ class HierarchicalSwarm:
                 self.conversation.add(role=PLANNER_ROLE, content=out)
 
             # Run the director with the context
+            director_name = self.director.agent_name
+            pending = (self.conversation.conversation_history or [])[
+                self._delivered.get(director_name, 0) :
+            ]
+            history = self._context_for(director_name)
+            task_in_history = any(
+                message.get("role") == "User"
+                and message.get("content") == task
+                for message in pending
+            )
             function_call = self.director.run(
-                task=AGENT_TASK_TEMPLATE.format(
-                    history=self._context_for(
-                        self.director.agent_name
-                    ),
-                    task=task,
+                task=(
+                    history
+                    if task_in_history
+                    else AGENT_TASK_TEMPLATE.format(
+                        history=history, task=task
+                    )
                 ),
                 img=img,
             )
@@ -657,9 +668,16 @@ class HierarchicalSwarm:
                 if current_loop == 0:
                     loop_task = task
                 else:
-                    loop_task = LOOP_CONTINUATION_PROMPT.format(
-                        last_output=last_output, task=task
-                    )
+                    loop_task = LOOP_CONTINUATION_PROMPT
+                    if (
+                        self.director_feedback_on
+                        and not self.agent_as_judge
+                        and last_output
+                    ):
+                        loop_task = (
+                            f"Director feedback: {last_output}"
+                            f"\n\n{loop_task}"
+                        )
 
                 # Execute one step of the swarm
                 try:
