@@ -192,8 +192,14 @@ def get_image_base64(image_source: str) -> str:
     if is_base64_encoded(
         image_source
     ) and not image_source.startswith(("http://", "https://")):
-        # Default to JPEG when the format cannot be determined.
-        mime_type = "image/jpeg"  # Default MIME type
+        head = base64.b64decode(image_source[:16])
+        mime_type = "image/jpeg"
+        if head.startswith(b"\x89PNG"):
+            mime_type = "image/png"
+        elif head.startswith(b"GIF8"):
+            mime_type = "image/gif"
+        elif head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+            mime_type = "image/webp"
         return f"data:{mime_type};base64,{image_source}"
 
     # Handle URLs
