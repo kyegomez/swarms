@@ -1462,15 +1462,29 @@ class Agent:
 
         Returns:
             The agent's final answer once it determines the task is complete.
+
+        Raises:
+            Exception: Whatever the loop raised, after dropping the turns
+                this attempt added to short_memory, so a fallback model
+                starts from the history the run began with.
         """
-        return self.autonomous_loop._run_autonomous_loop(
-            task=task,
-            img=img,
-            streaming_callback=streaming_callback,
-            messages=messages,
-            *args,
-            **kwargs,
-        )
+        history_start = len(self.short_memory.conversation_history)
+        try:
+            return self.autonomous_loop._run_autonomous_loop(
+                task=task,
+                img=img,
+                streaming_callback=streaming_callback,
+                messages=messages,
+                *args,
+                **kwargs,
+            )
+        except Exception:
+            while (
+                len(self.short_memory.conversation_history)
+                > history_start
+            ):
+                self.short_memory.delete(-1)
+            raise
 
     def _generate_final_summary(
         self,
