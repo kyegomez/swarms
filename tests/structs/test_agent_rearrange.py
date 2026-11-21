@@ -1,3 +1,4 @@
+import asyncio
 import threading
 import time
 from typing import List, Optional
@@ -1763,3 +1764,35 @@ def test_two_different_members_with_one_name_are_rejected():
     AgentRearrange(
         agents=[writer, writer, team, team], flow="Writer -> Team"
     )
+
+
+class _HangingStreamer:
+    def __init__(self, name):
+        self.agent_name = name
+        self.cancelled = threading.Event()
+
+    async def arun_stream(self, task=None, messages=None, **kwargs):
+        yield f"{self.agent_name}-token"
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            self.cancelled.set()
+            raise
+
+
+@pytest.mark.parametrize(
+    "flow, started", [("A -> B", ["A"]), ("A, B", ["A", "B"])]
+)
+def test_closing_run_stream_cancels_the_agents_still_streaming(
+    flow, started
+):
+    """A consumer that stops reading stops the agents it no longer reads."""
+    agents = {n: _HangingStreamer(n) for n in ["A", "B"]}
+    stream = AgentRearrange(
+        agents=list(agents.values()), flow=flow
+    ).run_stream("go")
+
+    next(stream)
+    stream.close()
+
+    assert all(agents[n].cancelled.wait(5) for n in started)
