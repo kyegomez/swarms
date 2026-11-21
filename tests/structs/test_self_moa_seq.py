@@ -553,6 +553,31 @@ def test_metrics_initialization(basic_seq):
     assert metrics["execution_time_seconds"] == 0
 
 
+def test_run_reports_metrics_for_that_run_only(
+    basic_seq, mock_agents
+):
+    """A reused instance reports each run's counts, not a running total."""
+    proposer, aggregator = mock_agents
+    proposer.run.return_value = "Sample"
+    aggregator.run.return_value = "Aggregated"
+
+    with patch.object(basic_seq, "proposer", proposer), patch.object(
+        basic_seq, "aggregator", aggregator
+    ):
+        first = basic_seq.run("First task")
+        second = basic_seq.run("Second task")
+
+    for result in (first, second):
+        assert result["metrics"]["total_samples_generated"] == len(
+            result["all_samples"]
+        )
+        assert (
+            result["metrics"]["total_aggregations"]
+            == result["aggregation_steps"]
+        )
+    assert basic_seq.get_metrics()["total_samples_generated"] == 3
+
+
 def test_metrics_tracking(basic_seq, mock_agents):
     """Test that metrics are properly tracked during execution."""
     proposer, aggregator = mock_agents

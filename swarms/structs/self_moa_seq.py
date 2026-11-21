@@ -284,13 +284,14 @@ class SelfMoASeq(SerializableMixin):
                 - final_output: The best synthesized response
                 - all_samples: List of generated samples
                 - aggregation_steps: Number of aggregation iterations
-                - metrics: Performance metrics
+                - metrics: Performance metrics for this run only
         """
         self._log(
             "info",
             f"Starting Self-MoA-Seq run with {self.num_samples} samples",
         )
         start_time = datetime.now()
+        self.metrics = dict.fromkeys(self.metrics, 0)
 
         try:
             # Validate input
