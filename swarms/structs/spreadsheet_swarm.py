@@ -374,7 +374,12 @@ class SpreadSheetSwarm:
         # Check if file exists before opening it
         file_exists = os.path.exists(self.save_file_path)
 
-        with open(self.save_file_path, mode="a", newline="") as file:
+        with open(
+            self.save_file_path,
+            mode="a",
+            newline="",
+            encoding="utf-8",
+        ) as file:
             writer = csv.writer(file)
 
             # Write header if file doesn't exist
