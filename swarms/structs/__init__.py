@@ -28,6 +28,7 @@ from swarms.structs.check_models import (
 )
 from swarms.structs.comms_channel import CommsChannel
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
+from swarms.structs.context_tree import ContextTree
 from swarms.structs.conversation import Conversation
 from swarms.structs.council_as_judge import CouncilAsAJudge
 from swarms.structs.cron_job import CronJob
@@ -115,6 +116,7 @@ __all__ = [
     "QueueChannel",
     "SmtpChannel",
     "SqliteChannel",
+    "ContextTree",
     "Conversation",
     "GroupChat",
     "MajorityVoting",
