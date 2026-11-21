@@ -1457,8 +1457,9 @@ class Conversation:
     def to_json(self):
         """Convert the conversation history to a JSON string.
 
-        Values JSON cannot hold, such as dates, tuples or Pydantic models,
-        are written the way save_as_json writes them: as their str().
+        Tuples become lists. Other values JSON cannot hold, such as dates
+        or Pydantic models, are written as their str(), as save_as_json
+        does.
 
         Returns:
             str: The conversation history as a JSON string.
