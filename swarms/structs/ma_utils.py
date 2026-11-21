@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from swarms.prompts.collaborative_prompts import (
     get_multi_agent_collaboration_prompt_one,
 )
+from swarms.utils.litellm_wrapper import LiteLLM
 
 
 def list_all_agents(
@@ -125,8 +126,11 @@ def set_random_models_for_agents(
 
     for agent in agents if isinstance(agents, list) else [agents]:
         agent.model_name = random.choice(model_names)
-        if hasattr(agent, "llm_handling"):
+
+        # A client the caller passed in is theirs to keep
+        if isinstance(getattr(agent, "llm", None), LiteLLM):
             agent.llm_handling()
+
     return agents
 
 
