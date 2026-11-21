@@ -14,9 +14,7 @@ from swarms.prompts.agent_conversation_aggregator import (
 )
 
 
-def aggregator_agent_task_prompt(
-    task: str, workers: List[Agent], conversation: Conversation
-):
+def aggregator_agent_task_prompt(task: str, workers: List[Agent]):
     """The aggregator's instruction. The conversation itself is sent
     alongside it as chat turns, not pasted in here as one string."""
     return f"""
@@ -76,9 +74,7 @@ def aggregate(
         )
 
     final_result = aggregator_agent.run(
-        task=aggregator_agent_task_prompt(
-            task, workers, conversation
-        ),
+        task=aggregator_agent_task_prompt(task, workers),
         messages=messages_for("Aggregator", conversation),
     )
 
