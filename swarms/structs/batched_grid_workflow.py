@@ -116,7 +116,7 @@ class BatchedGridWorkflow:
 
     @trace_run(
         "BatchedGridWorkflow.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("tasks",),
     )
     def run(self, tasks: List[str]):
         """
