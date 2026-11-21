@@ -202,5 +202,26 @@ def test_streaming_panel_raises_a_stream_error_after_showing_it():
     assert "[Error: stream reset by peer]" in output
 
 
+NAME = "Ops [/prod]"
+
+
+@pytest.mark.parametrize(
+    "render",
+    [
+        lambda f: f.print_thinking_panel("x", title=NAME),
+        lambda f: f.print_streaming_panel(["hi"], title=NAME),
+        lambda f: f.display_hierarchy("D", "m", [], NAME),
+        lambda f: f.print_director_task_distribution(NAME, []),
+    ],
+)
+def test_panel_titles_show_a_bracketed_name_as_written(render):
+    formatter = Formatter(md=False)
+
+    with formatter.console.capture() as capture:
+        render(formatter)
+
+    assert NAME in capture.get()
+
+
 if __name__ == "__main__":
     test_formatter()

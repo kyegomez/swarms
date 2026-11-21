@@ -591,9 +591,9 @@ class Formatter:
         streaming_text = Text()
 
         def render(is_complete: bool) -> Panel:
-            panel_title = f"[{DEFAULT_CONTENT_STYLE}]{title}[/]"
+            panel_title = Text(title, style=DEFAULT_CONTENT_STYLE)
             if is_complete:
-                panel_title += " [bold green]✅[/bold green]"
+                panel_title.append(" ✅", style="bold green")
             display_text = Text.from_markup("")
             display_text.append_text(streaming_text)
             if not is_complete:
@@ -870,7 +870,10 @@ class Formatter:
         # Create a panel with the tree
         panel = Panel(
             tree,
-            title=f"[bold white]HierarchicalSwarm Hierarchy: {swarm_name}[/bold white]",
+            title=Text(
+                f"HierarchicalSwarm Hierarchy: {swarm_name}",
+                style="bold white",
+            ),
             border_style="red",
             padding=(1, 2),
         )
@@ -898,7 +901,7 @@ class Formatter:
         """
         title = title or f"Director Name: {director_name}"
         tree = Tree(
-            f"[bold red]🎯 {director_name}[/bold red]",
+            Text(f"🎯 {director_name}", style="bold red"),
             guide_style="bold red",
         )
 
@@ -937,7 +940,7 @@ class Formatter:
 
         panel = Panel(
             body,
-            title=f"[bold white]{title}[/bold white]",
+            title=Text(title, style="bold white"),
             border_style="red",
             padding=(0, 1),
             expand=False,
@@ -961,7 +964,7 @@ class Formatter:
         text = Text(content, style="dim italic")
         panel = Panel(
             text,
-            title=f"[bold magenta]{title}[/bold magenta]",
+            title=Text(title, style="bold magenta"),
             border_style="magenta",
             padding=(0, 1),
         )
