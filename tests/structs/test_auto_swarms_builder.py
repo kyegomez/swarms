@@ -809,11 +809,7 @@ def test_build_and_run_swarm_gives_generated_rules_to_agents(
     AutoSwarmBuilder().build_and_run_swarm("Write a report")
 
     for agent in captured["agents"]:
-        contents = [
-            message["content"]
-            for message in agent.short_memory.conversation_history
-        ]
-        assert rules in contents
+        assert rules in agent.llm.system_prompt
 
 
 def test_run_execute_true_routes_to_build_and_run_swarm(

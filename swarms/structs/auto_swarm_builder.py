@@ -760,8 +760,7 @@ class AutoSwarmBuilder:
             agents_dictionary: Dictionary containing agent specifications
                 (under an ``"agents"`` key), or an object exposing an
                 ``.agents`` attribute (e.g. ``Agents``/``SwarmRouterConfig``).
-            rules: Rules given to every created agent, which sends them
-                to the model after its system prompt.
+            rules: Rules appended to every created agent's system prompt.
 
         Returns:
             List[Agent]: List of created agents.
@@ -809,8 +808,13 @@ class AutoSwarmBuilder:
                     "description"
                 )
 
+            if rules:
+                agent_data["system_prompt"] = "\n\n".join(
+                    filter(None, [agent_data.get("system_prompt"), rules])
+                )
+
             # Create agent from processed data
-            agent = Agent(**agent_data, rules=rules)
+            agent = Agent(**agent_data)
             agents.append(agent)
 
         return agents
