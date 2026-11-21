@@ -282,7 +282,7 @@ class HeavySwarm(SerializableMixin):
 
     @trace_run(
         "HeavySwarm.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img"),
     )
     def run(self, task: str, img: Optional[str] = None) -> str:
         """
