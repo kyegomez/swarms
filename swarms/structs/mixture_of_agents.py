@@ -305,7 +305,7 @@ class MixtureOfAgents:
 
     @trace_run(
         "MixtureOfAgents.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img"),
     )
     def run(
         self,
