@@ -61,6 +61,15 @@ turns = [
             [system, memory, turns[2], *turns[-2:]],
         ),
         (
+            TransformConfig(
+                enabled=True,
+                max_messages=3,
+                preserve_recent_messages=3,
+            ),
+            [system, *turns],
+            [system, *turns[-2:]],
+        ),
+        (
             TransformConfig(enabled=True, max_tokens=10),
             [system, memory, summary, *turns[:2]],
             [system, memory, summary, turns[1]],
