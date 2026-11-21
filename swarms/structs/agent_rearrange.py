@@ -866,7 +866,7 @@ class AgentRearrange(SerializableMixin):
 
     @trace_run(
         "AgentRearrange.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img"),
     )
     def run(
         self,
