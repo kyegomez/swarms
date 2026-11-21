@@ -774,6 +774,44 @@ def test_build_and_run_swarm_uses_single_consistent_spec(
     assert "multi_agent_collab_prompt" not in captured
 
 
+def test_build_and_run_swarm_gives_generated_rules_to_agents(
+    monkeypatch,
+):
+    rules = "Cite a source for every claim."
+    patch_scripted_llm(
+        monkeypatch,
+        [
+            json.dumps(
+                minimal_router_config(
+                    agents=[
+                        {"agent_name": "Researcher"},
+                        {"agent_name": "Writer"},
+                    ],
+                    rules=rules,
+                )
+            )
+        ],
+    )
+    captured = {}
+
+    class FakeSwarmRouter:
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+
+        def run(self, task):
+            return "ok"
+
+    monkeypatch.setattr(
+        "swarms.structs.auto_swarm_builder.SwarmRouter",
+        FakeSwarmRouter,
+    )
+
+    AutoSwarmBuilder().build_and_run_swarm("Write a report")
+
+    for agent in captured["agents"]:
+        assert rules in agent.llm.system_prompt
+
+
 def test_run_execute_true_routes_to_build_and_run_swarm(
     monkeypatch,
 ):
