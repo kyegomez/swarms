@@ -103,6 +103,20 @@ def test_import_swarms_loads_neither_library():
     assert out.stdout.split()[-2:] == ["False", "False"]
 
 
+def test_import_swarms_does_not_load_httpx():
+    code = (
+        "import sys, swarms; from swarms import Agent; "
+        "print('httpx' in sys.modules)"
+    )
+    out = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert out.stdout.split()[-1] == "False"
+
+
 class TestOptionsPerCall:
     def _sent(self):
         llm = LiteLLM(

@@ -2,8 +2,6 @@
 
 from typing import Any, Dict, List, Optional
 
-import httpx
-
 from swarms.structs.comms_channel import CommsChannel
 
 
@@ -27,6 +25,8 @@ class HttpChannel(CommsChannel):
         headers: Optional[Dict[str, str]] = None,
         timeout: float = 30.0,
     ):
+        import httpx
+
         self.url = url
         self.client = httpx.Client(
             headers=headers or {}, timeout=timeout

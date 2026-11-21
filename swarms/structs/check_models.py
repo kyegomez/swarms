@@ -1,7 +1,6 @@
 import time
 from typing import Any, Dict, Iterable, List, Optional
 
-import httpx
 from loguru import logger
 
 from swarms.utils import llm_backend
@@ -59,6 +58,8 @@ def fetch_openrouter_models() -> List[str]:
     if _openrouter_cache_is_fresh():
         return _openrouter_models_cache
 
+    import httpx
+
     models = []
     try:
         with httpx.Client(
@@ -78,6 +79,8 @@ async def afetch_openrouter_models() -> List[str]:
     """Async form of :func:`fetch_openrouter_models`, sharing its cache."""
     if _openrouter_cache_is_fresh():
         return _openrouter_models_cache
+
+    import httpx
 
     models: List[str] = []
     try:

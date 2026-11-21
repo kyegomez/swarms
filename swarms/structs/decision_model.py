@@ -5,12 +5,14 @@ import random
 import re
 import threading
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-import httpx
 from loguru import logger
 
 from swarms.telemetry.otel import capture_init, trace_run
+
+if TYPE_CHECKING:
+    import httpx
 
 RETRYABLE_STATUSES = frozenset({408, 429, 500, 502, 503, 504, 529})
 
@@ -142,6 +144,8 @@ def _fetch_provider_models(
     api_key = (os.getenv(provider["api_key_env"]) or "").strip()
     if not api_key:
         return {}
+
+    import httpx
 
     try:
         response = httpx.get(
@@ -406,7 +410,7 @@ class DecisionModel:
             api_key or os.getenv(self.api_key_env) or ""
         ).strip()
         self._headers = headers or {}
-        self._client: Optional[httpx.Client] = None
+        self._client: Optional["httpx.Client"] = None
         self._price: Optional[Dict[str, float]] = None
         self._usage = {"input_tokens": 0, "output_tokens": 0}
         self._usage_lock = threading.Lock()
@@ -755,6 +759,8 @@ class DecisionModel:
         path: str,
         payload: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
+        import httpx
+
         if self._client is None:
             self._client = httpx.Client(timeout=self.timeout)
 
@@ -780,6 +786,8 @@ class DecisionModel:
         path: str,
         payload: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
+        import httpx
+
         # A fresh client per call, since a pooled one breaks across asyncio.run event loops.
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             for attempt in range(self.max_retries + 1):
@@ -801,7 +809,7 @@ class DecisionModel:
                 )
 
     def _should_retry(
-        self, attempt: int, response: Optional[httpx.Response]
+        self, attempt: int, response: Optional["httpx.Response"]
     ) -> bool:
         if attempt >= self.max_retries:
             return False
@@ -811,7 +819,7 @@ class DecisionModel:
         )
 
     def _retry_delay(
-        self, attempt: int, response: Optional[httpx.Response]
+        self, attempt: int, response: Optional["httpx.Response"]
     ) -> float:
         delay = min(0.5 * 2**attempt, 8.0) * random.uniform(0.75, 1.0)
         headers = response.headers if response is not None else {}
@@ -835,7 +843,9 @@ class DecisionModel:
         )
         return delay
 
-    def _decode(self, response: httpx.Response) -> Dict[str, Any]:
+    def _decode(self, response: "httpx.Response") -> Dict[str, Any]:
+        import httpx
+
         if response.is_error:
             # The body names the offending field on a 422, which raise_for_status drops.
             raise httpx.HTTPStatusError(
