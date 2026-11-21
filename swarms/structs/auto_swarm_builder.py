@@ -630,7 +630,7 @@ class AutoSwarmBuilder:
         """
         config = self._build_validated_router_config(task)
         agents = self.create_agents_from_specs(
-            {"agents": config.agents}
+            {"agents": config.agents}, rules=config.rules
         )
 
         logger.info(
@@ -645,7 +645,6 @@ class AutoSwarmBuilder:
             max_loops=self.max_loops,
             swarm_type=config.swarm_type,
             rearrange_flow=config.rearrange_flow,
-            rules=config.rules,
             agents=agents,
             output_type="dict",
         )
@@ -753,7 +752,7 @@ class AutoSwarmBuilder:
         return batched_run(self.run, tasks)
 
     def create_agents_from_specs(
-        self, agents_dictionary: Any
+        self, agents_dictionary: Any, rules: Optional[str] = None
     ) -> List[Agent]:
         """Create agents from agent specifications.
 
@@ -761,6 +760,8 @@ class AutoSwarmBuilder:
             agents_dictionary: Dictionary containing agent specifications
                 (under an ``"agents"`` key), or an object exposing an
                 ``.agents`` attribute (e.g. ``Agents``/``SwarmRouterConfig``).
+            rules: Rules given to every created agent, which sends them
+                to the model after its system prompt.
 
         Returns:
             List[Agent]: List of created agents.
@@ -809,7 +810,7 @@ class AutoSwarmBuilder:
                 )
 
             # Create agent from processed data
-            agent = Agent(**agent_data)
+            agent = Agent(**agent_data, rules=rules)
             agents.append(agent)
 
         return agents
