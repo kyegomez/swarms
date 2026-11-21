@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import copy
 from concurrent.futures import as_completed
 from typing import Any, Dict, List, Optional, get_args
@@ -1312,9 +1313,11 @@ class AgentRearrange(SerializableMixin):
         q: _queue.Queue = _queue.Queue()
         DONE = object()
         exc_holder: List[Optional[Exception]] = [None]
+        consumer: List[asyncio.Task] = []
 
         def runner():
             async def consume():
+                consumer.append(asyncio.current_task())
                 async for evt in self.arun_stream(
                     task=task,
                     img=img,
@@ -1325,6 +1328,8 @@ class AgentRearrange(SerializableMixin):
 
             try:
                 asyncio.run(consume())
+            except asyncio.CancelledError:
+                pass
             except Exception as e:  # noqa: BLE001
                 exc_holder[0] = e
             finally:
@@ -1332,11 +1337,19 @@ class AgentRearrange(SerializableMixin):
 
         t = threading.Thread(target=runner, daemon=True)
         t.start()
-        while True:
-            item = q.get()
-            if item is DONE:
-                break
-            yield item
+        finished = False
+        try:
+            while True:
+                item = q.get()
+                if item is DONE:
+                    finished = True
+                    break
+                yield item
+        finally:
+            if not finished:
+                run = consumer[0]
+                with contextlib.suppress(RuntimeError):
+                    run.get_loop().call_soon_threadsafe(run.cancel)
         t.join()
         if exc_holder[0] is not None:
             raise exc_holder[0]
