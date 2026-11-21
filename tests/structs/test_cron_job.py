@@ -289,6 +289,29 @@ def test_the_agent_can_stop_its_own_job():
     assert job.schedule.jobs == []
 
 
+@pytest.mark.parametrize("stopped_by", ["stop", "error budget"])
+def test_a_stopped_job_runs_no_more_tasks_from_the_same_tick(
+    stopped_by,
+):
+    calls = []
+
+    def agent(task):
+        calls.append(task)
+        if stopped_by == "stop":
+            job.stop()
+        else:
+            raise ValueError("provider down")
+
+    job = CronJob(
+        agent=agent, interval="1hour", max_consecutive_errors=1
+    )
+    for task in ("A", "B", "C"):
+        job._interval_method(task)
+    job.schedule.run_all()
+
+    assert calls == ["A"]
+
+
 def test_without_a_budget_the_job_retries_indefinitely():
     agent = FailingAgent(fail_times=99)
     job = CronJob(agent=agent, interval="1second")
