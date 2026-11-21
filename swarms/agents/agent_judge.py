@@ -1,14 +1,14 @@
 import traceback
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 from swarms.structs.agent import Agent
-from swarms.structs.context_utils import (
-    agent_answer,
-    messages_for,
-)
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.utils.generate_id import generate_id
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY
+
+REFINE_EVALUATION_PROMPT = "Review your previous evaluation against the output and refine it."
 
 # Prompt functions.
 
@@ -283,34 +283,33 @@ class AgentJudge:
             ```
         """
         try:
-
-            # Use the predefined task evaluation prompt
-            task_instruction = get_task_evaluation_prompt(
-                outputs=task
-            )
-
-            # Add evaluation criteria if provided
-            if self.evaluation_criteria:
-                criteria_str = "\n\nPlease use these specific evaluation criteria with their respective weights:\n"
-                for (
-                    criterion,
-                    weight,
-                ) in self.evaluation_criteria.items():
-                    criteria_str += (
-                        f"- {criterion}: weight = {weight}\n"
-                    )
-                task_instruction += criteria_str
-
-            response = self.agent.run(
-                task=task_instruction,
+            return self.agent.run(
+                task=self._task_instruction(task),
                 img=img,
                 messages=messages,
             )
-
-            return response
         except Exception as e:
             error_message = f"AgentJudge: {self.agent_name} encountered an error: {e}\n Traceback: {traceback.format_exc()}"
             raise AgentJudgeExecutionError(error_message)
+
+    def _task_instruction(self, task: Optional[str]) -> str:
+        """Build the evaluation prompt for one output.
+
+        Args:
+            task: The output to evaluate.
+
+        Returns:
+            The evaluation prompt, with the weighted criteria when set.
+        """
+        task_instruction = get_task_evaluation_prompt(outputs=task)
+
+        if self.evaluation_criteria:
+            criteria_str = "\n\nPlease use these specific evaluation criteria with their respective weights:\n"
+            for criterion, weight in self.evaluation_criteria.items():
+                criteria_str += f"- {criterion}: weight = {weight}\n"
+            task_instruction += criteria_str
+
+        return task_instruction
 
     def run(
         self,
@@ -346,22 +345,30 @@ class AgentJudge:
         try:
             # The agent will run in a loop, remembering and updating the conversation context at each step.
             self.conversation.add(role="user", content=task)
+
+            # This run's turns only: the evaluation prompt first, so images stay on it.
+            turns: List[Dict[str, Any]] = []
+            prompt = self._task_instruction(task)
+
             for _ in range(self.max_loops):
-                # Prior verdicts as assistant turns; [1:] drops the task, which step() re-sends.
-                prior = messages_for(
-                    self.agent.agent_name, self.conversation
-                )[1:]
-                current_response = self.step(
-                    task=task,
-                    img=img,
-                    messages=prior,
+                current_response = self.agent.run(
+                    task=prompt, img=img, messages=turns
+                )
+                answer = agent_answer(
+                    self.agent, fallback=current_response
                 )
                 self.conversation.add(
-                    role=self.agent.agent_name,
-                    content=agent_answer(
-                        self.agent, fallback=current_response
-                    ),
+                    role=self.agent.agent_name, content=answer
                 )
+
+                user_turn = {"role": "user", "content": prompt}
+                if not turns:
+                    user_turn[TASK_TURN_KEY] = True
+                turns += [
+                    user_turn,
+                    {"role": "assistant", "content": answer},
+                ]
+                prompt = REFINE_EVALUATION_PROMPT
 
             # After all loops, return either the reward or the full conversation
             if self.return_score:
