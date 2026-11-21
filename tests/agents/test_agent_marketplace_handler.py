@@ -771,7 +771,7 @@ class TestPublish:
         with pytest.raises(AgentInitializationError):
             agent.marketplace.publish()
 
-    def test_posts_name_conversation_description_and_merged_tags(
+    def test_posts_name_system_prompt_description_and_merged_tags(
         self, api_key, monkeypatch
     ):
         seen = {}
@@ -784,17 +784,19 @@ class TestPublish:
         agent = make_offline_agent(
             agent_name="PublishedAgent",
             agent_description="A published agent",
+            system_prompt="You review Python code.",
             use_cases=[{"title": "T", "description": "D"}],
             tags=["tag1"],
             capabilities=["cap1"],
         )
+        agent.short_memory.add(role="User", content="private task")
 
         result = agent.marketplace.publish(category="content")
 
         body = seen["body"]
         assert body["name"] == "PublishedAgent"
         assert body["description"] == "A published agent"
-        assert body["prompt"] == agent.short_memory.get_str()
+        assert body["prompt"] == "You review Python code."
         assert body["useCases"] == [
             {"title": "T", "description": "D"}
         ]
@@ -920,6 +922,37 @@ class TestAgentIntegration:
         assert seen.get("called") is True
         assert seen["body"]["name"] == "AutoPublishAgent"
         assert agent.publish_to_marketplace is True
+
+    def test_published_prompt_loads_back_as_the_same_system_prompt(
+        self, api_key, monkeypatch
+    ):
+        published = {}
+
+        def handler(request):
+            if request.method == "GET":
+                return json_response(200, published)
+            published.update(json.loads(request.content))
+            return json_response(200, {"id": "round-trip"})
+
+        install_post_transport(monkeypatch, handler)
+        Agent(
+            agent_name="Reviewer",
+            system_prompt="You review Python code.",
+            model_name="gpt-4o-mini",
+            persistent_memory=False,
+            print_on=False,
+            publish_to_marketplace=True,
+            use_cases=[{"title": "T", "description": "D"}],
+        )
+
+        loaded = Agent(
+            model_name="gpt-4o-mini",
+            persistent_memory=False,
+            print_on=False,
+            marketplace_prompt_id="round-trip",
+        )
+
+        assert loaded.system_prompt == "You review Python code."
 
     def test_handle_publish_to_marketplace_delegates(
         self, api_key, monkeypatch
