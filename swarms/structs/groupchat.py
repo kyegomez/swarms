@@ -615,9 +615,7 @@ class GroupChat(SerializableMixin):
             conversation=self.conversation, type=self.output_type
         )
 
-    @trace_run(
-        "GroupChat.run", input_params=("task", "tasks", "img", "imgs")
-    )
+    @trace_run("GroupChat.run", input_params=("task",))
     def run(
         self,
         task: str,
