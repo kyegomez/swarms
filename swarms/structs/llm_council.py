@@ -178,7 +178,7 @@ class LLMCouncil:
 
     @trace_run(
         "LLMCouncil.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task",),
     )
     def run(self, task: str):
         """
