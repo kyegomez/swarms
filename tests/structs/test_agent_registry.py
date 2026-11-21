@@ -921,3 +921,26 @@ def test_agent_registry_stamps_the_time_each_agent_is_added(
     stamp = time.strftime("%Y-%m-%d %H:%M:%S", added_at)
     assert registry.agent_registry.time_registry_creatd == stamp
     assert registry.agent_registry.agents[0].time_added == stamp
+
+
+def test_agent_registry_get_returns_agent_updated_under_new_name():
+    registry = AgentRegistry()
+    registry.add(
+        Agent(
+            agent_name="Researcher",
+            model_name="gpt-5.4",
+            max_loops=1,
+            print_on=False,
+        )
+    )
+    renamed = Agent(
+        agent_name="Researcher-v2",
+        model_name="gpt-5.4",
+        max_loops=1,
+        print_on=False,
+    )
+
+    registry.update_agent("Researcher", renamed)
+
+    assert registry.list_agents() == ["Researcher"]
+    assert registry.get("Researcher") is renamed
