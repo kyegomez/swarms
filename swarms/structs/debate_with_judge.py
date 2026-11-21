@@ -104,8 +104,8 @@ class DebateWithJudge:
             agents (Optional[List[Agent]]): A list of exactly 3 agents in order:
                 [pro_agent, con_agent, judge_agent]. Takes precedence over individual
                 agent parameters if provided.
-            preset_agents (bool): If True, creates default pro, con, and judge agents
-                automatically. Used when no agents are provided. Defaults to False.
+            preset_agents (bool): If True, creates the default agent for each of
+                pro, con and judge that is not passed. Defaults to True.
             max_loops (int): Maximum number of debate loops to execute. Defaults to 3.
             output_type (str): Format for the output conversation history.
                 Defaults to "str-all-except-first".
@@ -165,7 +165,7 @@ class DebateWithJudge:
         Priority order:
         1. agents list (if provided and valid)
         2. Individual agent parameters (if all provided)
-        3. preset_agents (if True)
+        3. preset_agents (if True), for the roles not provided
 
         Args:
             pro_agent: The pro agent (optional).
@@ -211,7 +211,9 @@ class DebateWithJudge:
 
         # Option 3: Create preset agents
         if preset_agents:
-            self._create_preset_agents()
+            self._create_preset_agents(
+                pro_agent, con_agent, judge_agent
+            )
             if self.verbose:
                 logger.info("Using preset agents")
             return
@@ -224,14 +226,19 @@ class DebateWithJudge:
             "3. Set preset_agents=True to use default agents"
         )
 
-    def _create_preset_agents(self) -> None:
+    def _create_preset_agents(
+        self,
+        pro_agent: Optional[Agent] = None,
+        con_agent: Optional[Agent] = None,
+        judge_agent: Optional[Agent] = None,
+    ) -> None:
         """
         Create preset agents with default configurations.
 
-        Creates three agents (Pro, Con, Judge) with predefined system prompts
-        optimized for debate scenarios.
+        Creates the Pro, Con and Judge agents with predefined system prompts
+        optimized for debate scenarios, keeping any of them that is passed.
         """
-        self.pro_agent = Agent(
+        self.pro_agent = pro_agent or Agent(
             agent_name="Pro-Debater",
             agent_description="Expert debater arguing in favor of propositions",
             system_prompt=PRO_AGENT_SYSTEM_PROMPT,
@@ -240,7 +247,7 @@ class DebateWithJudge:
             verbose=self.verbose,
         )
 
-        self.con_agent = Agent(
+        self.con_agent = con_agent or Agent(
             agent_name="Con-Debater",
             agent_description="Expert debater arguing against propositions",
             system_prompt=CON_AGENT_SYSTEM_PROMPT,
@@ -249,7 +256,7 @@ class DebateWithJudge:
             verbose=self.verbose,
         )
 
-        self.judge_agent = Agent(
+        self.judge_agent = judge_agent or Agent(
             agent_name="Debate-Judge",
             agent_description="Impartial judge evaluating debate arguments",
             system_prompt=JUDGE_AGENT_SYSTEM_PROMPT,
