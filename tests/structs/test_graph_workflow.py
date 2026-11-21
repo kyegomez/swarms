@@ -856,6 +856,40 @@ def test_graph_workflow_from_topology_spec_not_a_dict():
         GraphWorkflow.from_topology_spec("not-a-dict", {})
 
 
+def test_from_topology_spec_posts_each_answer_to_the_channel_once(
+    tmp_path,
+):
+    from swarms.structs.file_channel import FileChannel
+
+    channel = FileChannel(tmp_path / "run.md")
+
+    def make(name):
+        agent = create_test_agent(name)
+        agent.channel = channel
+        agent.call_llm = lambda *args, **kwargs: f"{name}-answer"
+        return agent
+
+    spec = {
+        "nodes": [
+            {"id": "Writer", "agent_name": "Writer"},
+            {"id": "Editor", "agent_name": "Editor"},
+        ],
+        "edges": [{"source": "Writer", "target": "Editor"}],
+    }
+    registry = {name: make(name) for name in ("Writer", "Editor")}
+    workflow = GraphWorkflow.from_topology_spec(
+        spec, registry, channel=channel
+    )
+    workflow.run("Draft a note.")
+
+    assert [
+        (m["agent_name"], m["content"]) for m in channel.messages()
+    ] == [
+        ("Writer", "Writer-answer"),
+        ("Editor", "Editor-answer"),
+    ]
+
+
 def test_graph_workflow_backend_fallback():
     """Test backend fallback when rustworkx unavailable"""
     workflow = GraphWorkflow(
