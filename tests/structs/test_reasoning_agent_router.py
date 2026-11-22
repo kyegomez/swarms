@@ -338,7 +338,7 @@ def test_run_calls_swarm_run_with_task():
         router, "select_swarm", return_value=mock_swarm
     ):
         out = router.run("What is 2+2?")
-    mock_swarm.run.assert_called_once_with(task="What is 2+2?")
+    mock_swarm.run.assert_called_once_with("What is 2+2?")
     assert out == "result"
 
 
@@ -352,7 +352,7 @@ def test_run_calls_reflexion_with_tasks_list():
         router, "select_swarm", return_value=mock_swarm
     ):
         out = router.run("Do something")
-    mock_swarm.run.assert_called_once_with(tasks=["Do something"])
+    mock_swarm.run.assert_called_once_with(["Do something"])
     assert out == "reflex_result"
 
 
@@ -366,7 +366,9 @@ def test_run_passes_args_kwargs():
         router, "select_swarm", return_value=mock_swarm
     ):
         router.run("task", "extra_arg", key="value")
-    mock_swarm.run.assert_called_once_with(task="task", key="value")
+    mock_swarm.run.assert_called_once_with(
+        "task", "extra_arg", key="value"
+    )
 
 
 def test_run_raises_executor_error_on_swarm_failure():

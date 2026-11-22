@@ -287,9 +287,9 @@ class ReasoningAgentRouter:
             swarm = self.select_swarm()
 
             if self.swarm_type == "ReflexionAgent":
-                return swarm.run(tasks=[task], *args, **kwargs)
+                return swarm.run([task], *args, **kwargs)
             else:
-                return swarm.run(task=task, *args, **kwargs)
+                return swarm.run(task, *args, **kwargs)
         except Exception as e:
             raise ReasoningAgentExecutorError(
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
@@ -307,4 +307,7 @@ class ReasoningAgentRouter:
         Returns:
             A list of reasoning process results for each task.
         """
-        return batched_run(self.run, tasks)
+        # The helper would keep max_workers and split a list img itself.
+        return batched_run(
+            lambda task: self.run(task, *args, **kwargs), tasks
+        )
