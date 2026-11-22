@@ -12,6 +12,7 @@ from swarms.prompts.hierarchical_swarm_prompts import (
     AGENT_TASK_TEMPLATE,
     DIRECTOR_FEEDBACK_PROMPT,
     DIRECTOR_PLANNING_PROMPT,
+    FIRST_LOOP_PROMPT,
     HIEARCHICAL_SWARM_SYSTEM_PROMPT,
     HIERARCHICAL_SWARM_JUDGE_PROMPT,
     LOOP_CONTINUATION_PROMPT,
@@ -655,21 +656,20 @@ class HierarchicalSwarm:
                 self.conversation.add(role="User", content=task)
 
             current_loop = 0
-            last_output = None
             last_error = None
             any_loop_succeeded = False
 
             while current_loop < self.max_loops:
-                if current_loop == 0:
-                    loop_task = task
-                else:
-                    loop_task = LOOP_CONTINUATION_PROMPT.format(
-                        last_output=last_output, task=task
-                    )
+                # The task and earlier results are already in the director's history
+                loop_task = (
+                    FIRST_LOOP_PROMPT
+                    if current_loop == 0
+                    else LOOP_CONTINUATION_PROMPT
+                )
 
                 # Execute one step of the swarm
                 try:
-                    last_output = self.step(
+                    self.step(
                         task=loop_task,
                         img=img,
                         *args,
@@ -682,7 +682,6 @@ class HierarchicalSwarm:
 
                 except Exception as e:
                     last_error = e
-                    last_output = None
                     logger.error(
                         f"[ERROR] Loop execution failed: {e} | Traceback: {traceback.format_exc()} | If this issue persists, please report it at: https://github.com/kyegomez/swarms/issues"
                     )
