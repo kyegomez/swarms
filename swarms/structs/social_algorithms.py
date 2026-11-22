@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.loguru_logger import initialize_logger
@@ -269,7 +270,7 @@ class SocialAlgorithms:
 
     def _recorded_run(self, agent: Agent) -> Callable:
         """
-        Build a run replacement that logs the agent's output.
+        Build a run replacement that logs the agent's final answer.
 
         Args:
             agent (Agent): The agent being wrapped, before it is patched.
@@ -282,7 +283,9 @@ class SocialAlgorithms:
 
         def run(task, *args, **kwargs):
             result = original(task, *args, **kwargs)
-            self._log_communication(agent.agent_name, result)
+            self._log_communication(
+                agent.agent_name, agent_answer(agent, result)
+            )
             return result
 
         return run
