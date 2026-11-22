@@ -68,8 +68,9 @@ _AUTH_SCHEME = re.compile(
 # A secret-named field assigned a value, as in "api_key=..." or "password": "...".
 _ASSIGNED = re.compile(
     r"(?<![\w-])([\w-]+)([\"']?\s*[:=]\s*[\"']?)"
-    r"(?=([^\s\"',;&}<]{4,}))"
+    r"(?=[^\s\"',;&}<]{4})"
 )
+_VALUE = re.compile(r"[^\s\"',;&}<]+")
 
 # Environment variables whose values are always scrubbed from telemetry.
 _SECRET_ENV = re.compile(
@@ -262,7 +263,7 @@ def _scrub(text: str) -> str:
             match.group(1)
         ):
             parts += [text[end : match.end()], REDACTED]
-            end = match.end() + len(match.group(3))
+            end = _VALUE.match(text, match.end()).end()
     return "".join(parts) + text[end:]
 
 
