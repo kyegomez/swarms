@@ -93,6 +93,8 @@ class LLMCouncil:
         else:
             self.council_members = council_members
 
+        self._require_unique_agent_names()
+
         # Create Chairman agent
         self.chairman = Agent(
             agent_name="Chairman",
@@ -118,6 +120,29 @@ class LLMCouncil:
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
+
+    def _require_unique_agent_names(self) -> None:
+        """Reject a council where two members share a name.
+
+        Answers are stored by agent name, so of the members that share
+        a name, only one answer would reach the ranking and the chairman.
+
+        Raises:
+            ValueError: Two or more members have the same agent name.
+        """
+        names = set()
+
+        for member in self.council_members:
+            if member.agent_name in names:
+                raise ValueError(
+                    f"More than one council member is named '{member.agent_name}'. "
+                    "LLMCouncil keys each answer by name, so only one of "
+                    "their answers would reach the ranking and the chairman. "
+                    "Give each member its own Agent instance and a unique "
+                    "name; an Agent without agent_name is named "
+                    "swarm-worker-01."
+                )
+            names.add(member.agent_name)
 
     def _create_default_council(self) -> List[Agent]:
         """

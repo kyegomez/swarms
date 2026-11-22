@@ -468,5 +468,15 @@ def test_member_failure_raises_before_the_chairman(failing_call):
     assert chairman_tasks == []
 
 
+def test_members_that_share_a_name_are_rejected():
+    first, second = (
+        Agent(agent_name="Member", print_on=False) for _ in range(2)
+    )
+
+    for members in ([first, second], [first, first]):
+        with pytest.raises(ValueError, match="'Member'"):
+            LLMCouncil(council_members=members, verbose=False)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
