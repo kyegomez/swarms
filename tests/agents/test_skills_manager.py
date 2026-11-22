@@ -364,6 +364,12 @@ class TestDynamicLoading:
         # metadata is only overwritten when something is found.
         assert manager.metadata == []
 
+    def test_shared_stopwords_alone_select_nothing(self, manager):
+        prompt = manager._dynamic_prompt(
+            "Write a poem about the sea and the moon for the team."
+        )
+        assert prompt == ""
+
     def test_loader_built_lazily(self, manager):
         assert manager.dynamic_loader is None
         manager.prompt_for_task("extract text from a pdf document")
