@@ -378,8 +378,8 @@ class WorkerPool:
         max_workers: Optional[int] = None,
         poll_interval: float = 0.1,
         task_timeout: Optional[float] = None,
-        img: Optional[str] = None,
         goal: Optional[str] = None,
+        img: Optional[str] = None,
     ):
         self.agents = agents
         self.task_queue = task_queue
