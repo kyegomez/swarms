@@ -1022,6 +1022,17 @@ class TestHierarchicalContextManagement:
             own[0]["role"] == "assistant"
         ), f"own output arrived as {own[0]['role']!r}, not 'assistant'"
 
+    def test_a_worker_is_not_sent_the_directors_orders(self):
+        _, seen = self._run_two_loops()
+        worker_calls = [m for name, m in seen if name == "W1"]
+
+        assert worker_calls, "the worker never ran"
+        for messages in worker_calls:
+            assert not any(
+                str(m["content"]).startswith("Director: ")
+                for m in messages
+            ), messages
+
     def test_the_director_tool_call_is_stored_readably(self):
         """
         A raw tool-call list renders as a Python repr in the history that
