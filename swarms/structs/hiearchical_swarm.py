@@ -2,6 +2,7 @@ import copy
 import inspect
 import json
 import traceback
+from types import SimpleNamespace
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -423,12 +424,17 @@ class HierarchicalSwarm:
     def _worker_run_payload(
         self, agent: Any, agent_name: str, task: str
     ) -> tuple:
-        """Build a worker payload without duplicating conversation history."""
+        """Build a worker payload, leaving out the director's orders to every worker."""
         if not self._agent_run_accepts(agent, "messages"):
             return task, {}
-        return task, {
-            "messages": messages_for(agent_name, self.conversation)
-        }
+        history = SimpleNamespace(
+            conversation_history=[
+                message
+                for message in self.conversation.conversation_history
+                if message.get("role") != "Director"
+            ]
+        )
+        return task, {"messages": messages_for(agent_name, history)}
 
     def _format_worker_responses(self, outputs: list) -> str:
         """Current-step worker results, not the full conversation log."""
