@@ -86,6 +86,7 @@ from swarms.structs.planner_generator_evaluator import (
 from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 from swarms.structs.queue_channel import QueueChannel
 from swarms.structs.round_robin import RoundRobinSwarm
+from swarms.structs.self_assembling_swarm import SelfAssemblingSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.self_organize import SelfOrganizingSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
@@ -167,6 +168,7 @@ __all__ = [
     "load_agents_from_markdown",
     "BatchedGridWorkflow",
     "SelfMoASeq",
+    "SelfAssemblingSwarm",
     "SelfOrganizingSwarm",
     "DebateWithJudge",
     "DecisionModel",
