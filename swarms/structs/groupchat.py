@@ -297,20 +297,26 @@ class GroupChat(SerializableMixin):
         its own tool list on every request. The client is not rebuilt, so
         an llm the caller passed in keeps its model, endpoint and key.
         """
-        for agent in self.agents:
-            tools = agent.tools_list_dictionary or []
-            if any(
+
+        def has_respond(tools: List[dict]) -> bool:
+            return any(
                 tool.get("function", {}).get("name") == "respond"
                 for tool in tools
                 if isinstance(tool, dict)
-            ):
+            )
+
+        for agent in self.agents:
+            tools = agent.tools_list_dictionary or []
+            if has_respond(tools):
                 continue
             agent.tools_list_dictionary = [*tools, RESPOND_TOOL]
             if isinstance(agent.llm, LiteLLM):
-                agent.llm.tools_list_dictionary = [
-                    *(agent.llm.tools_list_dictionary or []),
-                    RESPOND_TOOL,
-                ]
+                llm_tools = agent.llm.tools_list_dictionary or []
+                if not has_respond(llm_tools):
+                    agent.llm.tools_list_dictionary = [
+                        *llm_tools,
+                        RESPOND_TOOL,
+                    ]
             self._log(
                 "info",
                 f"Injected respond tool into {agent.agent_name}",
