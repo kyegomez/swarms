@@ -183,8 +183,32 @@ class MixtureOfAgents:
         if not self.layers:
             raise ValueError("No layers provided.")
 
+        self._require_unique_agent_names()
+
         logger.info("Reliability check passed.")
         logger.info("Mixture of Agents class is ready for use.")
+
+    def _require_unique_agent_names(self) -> None:
+        """Reject two workers that share a name.
+
+        Worker answers are stored by agent name, so a repeated name
+        would pass only one of their answers to the aggregator.
+
+        Raises:
+            ValueError: Two or more workers have the same agent name.
+        """
+        names = set()
+
+        for agent in self.agents:
+            if agent.agent_name in names:
+                raise ValueError(
+                    f"More than one agent is named '{agent.agent_name}'. "
+                    "MixtureOfAgents keys each answer by name, so only one "
+                    "of their answers would reach the aggregator. An Agent "
+                    "with no agent_name is named 'swarm-worker-01'. Give "
+                    "each worker its own Agent instance and a unique name."
+                )
+            names.add(agent.agent_name)
 
     def aggregator_agent_setup(self):
         """Create the default aggregator agent.

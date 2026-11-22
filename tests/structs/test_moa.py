@@ -196,6 +196,10 @@ def test_mixture_of_agents_error_handling():
     except ValueError as e:
         assert "No aggregator system prompt" in str(e)
 
+    twin = Agent(agent_name="Test-Analyst", model_name="gpt-4o")
+    with pytest.raises(ValueError, match="named 'Test-Analyst'"):
+        MixtureOfAgents(agents=[analyst, twin])
+
 
 def test_mixture_of_agents_real_world_scenario():
     """Test MixtureOfAgents in a realistic business scenario"""
