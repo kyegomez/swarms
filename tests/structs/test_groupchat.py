@@ -518,7 +518,30 @@ class TestGroupChatSilenceBias:
         )
         assert "AgentA" in formatted
         assert "AgentB, AgentC" in formatted
-        assert "Initial question" in formatted
+
+    def test_each_bid_carries_the_latest_message_once(self):
+        """The latest message is already the last turn, so the prompt does not quote it."""
+        requests = []
+
+        class RecordingAgent(ScriptedAgent):
+            def run(self, task=None, *args, **kwargs):
+                requests.append(task + json.dumps(kwargs["messages"]))
+                return super().run(task, *args, **kwargs)
+
+        chat = make_chat(
+            [
+                RecordingAgent("A", [(0.9, "first-reply-9c2e")]),
+                RecordingAgent("B"),
+            ],
+            max_loops=3,
+        )
+        chat.run("task-marker-7f3a")
+
+        task_counts = [r.count("task-marker-7f3a") for r in requests]
+        reply_counts = [r.count("first-reply-9c2e") for r in requests]
+
+        assert task_counts == [1, 1, 1, 1]
+        assert reply_counts == [0, 0, 1, 1]
 
     def test_prompt_does_not_contain_hardcoded_silence_threshold(
         self,
