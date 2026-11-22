@@ -67,11 +67,8 @@ _AUTH_SCHEME = re.compile(
 
 # A secret-named field assigned a value, as in "api_key=..." or "password": "...".
 _ASSIGNED = re.compile(
-    r"((?:api|secret|access|private|client)[_-]?key|apikey|secret"
-    r"|password|passwd|(?:access|auth|refresh|bearer|session|id)[_-]?token"
-    r"|\btoken|authorization|credentials?)"
-    r"([\"']?\s*[:=]\s*[\"']?)([^\s\"',;&}<]{4,})",
-    re.IGNORECASE,
+    r"(?<![\w-])([\w-]+)([\"']?\s*[:=]\s*[\"']?)"
+    r"(?=([^\s\"',;&}<]{4,}))"
 )
 
 # Environment variables whose values are always scrubbed from telemetry.
@@ -259,9 +256,14 @@ def _scrub(text: str) -> str:
         lambda match: match.group(1) + REDACTED, text
     )
 
-    return _ASSIGNED.sub(
-        lambda match: match.group(1) + match.group(2) + REDACTED, text
-    )
+    parts, end = [], 0
+    for match in _ASSIGNED.finditer(text):
+        if match.start() >= end and _SECRET_KEY.search(
+            match.group(1)
+        ):
+            parts += [text[end : match.end()], REDACTED]
+            end = match.end() + len(match.group(3))
+    return "".join(parts) + text[end:]
 
 
 class _CyclicReference(Exception):

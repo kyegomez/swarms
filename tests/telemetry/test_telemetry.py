@@ -560,6 +560,22 @@ class TestHelpers:
             "note": "see https://x.io/?token=<redacted> in the docs, Authorization: <redacted> <redacted>",
         }
 
+    def test_scrub_redacts_every_secret_name_a_dict_key_would(self):
+        config = {
+            "api_token": "r8_Zq4Lm9Tx2W",
+            "github_token": "Zq4Lm9Tx2Wv7",
+            "openai_key": "Zq4Lm9Tx2Wv7",
+            "max_tokens": 4000,
+        }
+        assert otel._scrub(json.dumps(config)) == json.dumps(
+            otel._sanitize(config)
+        )
+        assert otel._scrub(
+            'REPLICATE_API_TOKEN=r8_Zq4Lm9Tx2W "query": "token=Zq4Lm9Tx2Wv7"'
+        ) == (
+            'REPLICATE_API_TOKEN=<redacted> "query": "token=<redacted>"'
+        )
+
 
 # ===========================================================================
 # _SpanHandle
