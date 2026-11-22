@@ -292,10 +292,10 @@ class GroupChat(SerializableMixin):
         """Inject ``RESPOND_TOOL`` into agents that do not already carry it.
 
         Without the ``respond`` tool an agent's speaking decision can never be
-        parsed, so it would sit silent for the whole chat. The agent's LLM
-        client bakes ``tools_list_dictionary`` in at construction time, so
-        after appending the schema the client is rebuilt via
-        ``llm_handling()``.
+        parsed, so it would sit silent for the whole chat. The schema is
+        also appended to the agent's existing LiteLLM client, which sends
+        its own tool list on every request. The client is not rebuilt, so
+        an llm the caller passed in keeps its model, endpoint and key.
         """
         for agent in self.agents:
             tools = agent.tools_list_dictionary or []
@@ -306,7 +306,11 @@ class GroupChat(SerializableMixin):
             ):
                 continue
             agent.tools_list_dictionary = [*tools, RESPOND_TOOL]
-            agent.llm = agent.llm_handling()
+            if isinstance(agent.llm, LiteLLM):
+                agent.llm.tools_list_dictionary = [
+                    *(agent.llm.tools_list_dictionary or []),
+                    RESPOND_TOOL,
+                ]
             self._log(
                 "info",
                 f"Injected respond tool into {agent.agent_name}",
