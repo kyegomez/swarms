@@ -121,3 +121,25 @@ def test_worker_pool_defaults_to_one_worker_per_agent():
             WorkerPool(agents, None, None, max_workers=3).max_workers
             == 3
         )
+
+
+def test_worker_gets_the_original_task_with_its_step():
+    plan = {
+        "plan": "p",
+        "tasks": [{"title": "Compare pricing", "description": "d"}],
+    }
+    judge = MagicMock(usage={})
+    judge.run.return_value = "not a verdict"
+    worker = MagicMock(agent_name="Worker", usage={})
+    worker.run.return_value = "ok"
+    swarm = PlannerWorkerSwarm(agents=[worker])
+
+    with patch(
+        "swarms.structs.planner_worker_swarm.Agent",
+        side_effect=[_usage_agent("Planner", 1, 1, plan), judge],
+    ):
+        swarm.run("TASK-MARK")
+
+    prompt = worker.run.call_args.kwargs["task"]
+    assert "TASK-MARK" in prompt
+    assert "Compare pricing" in prompt

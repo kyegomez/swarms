@@ -379,11 +379,13 @@ class WorkerPool:
         poll_interval: float = 0.1,
         task_timeout: Optional[float] = None,
         img: Optional[str] = None,
+        goal: Optional[str] = None,
     ):
         self.agents = agents
         self.task_queue = task_queue
         self.conversation = conversation
         self.img = img
+        self.goal = goal
         self.max_workers = max_workers or len(agents)
         self.poll_interval = poll_interval
         self.task_timeout = task_timeout
@@ -462,8 +464,12 @@ class WorkerPool:
                 dep_context = self.task_queue.get_dependency_results(
                     task.id
                 )
-                context_parts = [
-                    WORKER_SYSTEM_PROMPT.strip(),
+                context_parts = [WORKER_SYSTEM_PROMPT.strip()]
+                if self.goal:
+                    context_parts.append(
+                        f"\nOverall goal: {self.goal}"
+                    )
+                context_parts += [
                     f"\nTask: {task.title}",
                     f"Description: {task.description}",
                 ]
@@ -972,6 +978,7 @@ class PlannerWorkerSwarm:
                 agents=self.agents,
                 task_queue=self.task_queue,
                 conversation=self.conversation,
+                goal=task,
                 max_workers=self.max_workers,
                 task_timeout=self.task_timeout,
                 img=img,
