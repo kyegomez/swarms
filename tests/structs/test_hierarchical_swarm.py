@@ -1033,6 +1033,23 @@ class TestHierarchicalContextManagement:
                 for m in messages
             ), messages
 
+    def test_the_director_gets_the_task_and_each_output_once(self):
+        _, seen = self._run_two_loops()
+        director_calls = [
+            " ".join(str(m.get("content")) for m in messages)
+            for name, messages in seen
+            if name == "Director"
+        ]
+
+        assert len(director_calls) == 2
+        assert [
+            c.count("Build something.") for c in director_calls
+        ] == [
+            1,
+            1,
+        ]
+        assert director_calls[1].count("[W1-out]") == 1
+
     def test_the_director_tool_call_is_stored_readably(self):
         """
         A raw tool-call list renders as a Python repr in the history that
