@@ -1,35 +1,22 @@
 from swarms import Agent, SelfAssemblingSwarm
 
-specialists = [
-    ("Market-Researcher", "You size markets and find competitors."),
-    ("Data-Analyst", "You turn numbers into clear findings."),
-    ("Product-Strategist", "You turn findings into product bets."),
-    ("Copywriter", "You write crisp, persuasive prose."),
-]
-
 agents = [
     Agent(
         agent_name=name,
-        agent_description=prompt,
         system_prompt=prompt,
-        model_name="gpt-5.4",
+        model_name="gpt-5.4-mini",
         max_loops=1,
+        print_on=True,
     )
-    for name, prompt in specialists
+    for name, prompt in [
+        ("Researcher", "You find facts and sources."),
+        ("Analyst", "You compare options and weigh trade-offs."),
+        ("Writer", "You write clear, structured prose."),
+        ("Critic", "You find errors and gaps."),
+    ]
 ]
 
-swarm = SelfAssemblingSwarm(
-    agents=agents,
-    max_loops=2,
-    max_team_size=2,
-)
+swarm = SelfAssemblingSwarm(agents=agents, max_loops=1, verbose=True)
 
-answer = swarm.run(
-    "Write a one-page launch brief for an AI note-taking app for doctors."
-)
-
-for team in swarm.teams:
-    members = ", ".join(agent.agent_name for agent in team.members)
-    print(f"{team.name} ({team.subtask}): {members}")
-
-print(answer)
+print(swarm.run("Compare PostgreSQL and MongoDB for a new SaaS app."))
+print(swarm.harness["teams"])

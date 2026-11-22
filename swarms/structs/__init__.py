@@ -94,6 +94,7 @@ from swarms.structs.smtp_channel import SmtpChannel
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.sqlite_channel import SqliteChannel
+from swarms.structs.team_formation_swarm import TeamFormationSwarm
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -170,6 +171,7 @@ __all__ = [
     "SelfMoASeq",
     "SelfAssemblingSwarm",
     "SelfOrganizingSwarm",
+    "TeamFormationSwarm",
     "DebateWithJudge",
     "DecisionModel",
     "get_decision_model_prices",

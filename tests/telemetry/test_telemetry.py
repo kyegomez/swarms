@@ -1299,6 +1299,7 @@ def _load_arch_classes():
         SpreadSheetSwarm,
         SocialAlgorithms,
         SwarmRouter,
+        TeamFormationSwarm,
     )
     from swarms.structs.batched_grid_workflow import (
         BatchedGridWorkflow,
@@ -1330,6 +1331,7 @@ def _load_arch_classes():
         "LLMCouncil": LLMCouncil,
         "SelfMoASeq": SelfMoASeq,
         "SelfAssemblingSwarm": SelfAssemblingSwarm,
+        "TeamFormationSwarm": TeamFormationSwarm,
         "SpreadSheetSwarm": SpreadSheetSwarm,
         "AutoSwarmBuilder": AutoSwarmBuilder,
         "AutoAgentBuilder": AutoAgentBuilder,
