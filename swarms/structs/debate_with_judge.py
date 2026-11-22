@@ -428,6 +428,10 @@ class DebateWithJudge:
         """
         is_final_round = round_num == self.max_loops - 1
 
+        if round_num > 0:
+            # The judge already holds its previous synthesis as its last turn.
+            topic = f"your synthesis from loop {round_num}"
+
         prompt = JUDGE_ROUND_PROMPT.format(
             loop_number=round_num + 1,
             max_loops=self.max_loops,

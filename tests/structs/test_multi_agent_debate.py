@@ -294,3 +294,26 @@ def test_debate_default_output_keeps_the_pro_argument(
     assert "PRO ARGUMENT" in result
     assert "CON ARGUMENT" in result
     assert "JUDGE VERDICT" in result
+
+
+def test_debate_judge_gets_its_previous_synthesis_once(
+    monkeypatch, tmp_path
+):
+    from swarms import DebateWithJudge
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    requests = []
+
+    def fake_run(self, *args, **kwargs):
+        requests.append(repr((args, kwargs)))
+        return f"REPLY-{len(requests)}"
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    agents = [
+        Agent(agent_name=name, max_loops=1, print_on=False)
+        for name in ("Pro", "Con", "Judge")
+    ]
+    DebateWithJudge(agents=agents, max_loops=2).run("TOPIC")
+
+    assert requests[5].count("REPLY-3") == 1
