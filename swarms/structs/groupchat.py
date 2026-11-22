@@ -258,7 +258,8 @@ class GroupChat(SerializableMixin):
                 the winner writes a reply, at one extra call per turn.
 
         Raises:
-            ValueError: If fewer than two agents are provided.
+            ValueError: If fewer than two agents are provided, or two
+                agents share a name.
         """
         self.name = name
         self.description = description
@@ -282,11 +283,35 @@ class GroupChat(SerializableMixin):
         if self.agents is None or len(self.agents) < 2:
             raise ValueError("GroupChat requires at least 2 agents.")
 
+        self._require_unique_agent_names()
+
         if self.auto_equip:
             self._ensure_respond_tool()
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
+
+    def _require_unique_agent_names(self) -> None:
+        """Reject a chat where two agents share a name.
+
+        Posts are stored under the speaker's name, so agents that
+        share one would read each other's posts as their own.
+
+        Raises:
+            ValueError: Two or more agents have the same agent name.
+        """
+        names = set()
+
+        for agent in self.agents:
+            if agent.agent_name in names:
+                raise ValueError(
+                    f"More than one agent is named '{agent.agent_name}'. "
+                    "GroupChat stores each post under its speaker's name, "
+                    "so these agents would read each other's posts as "
+                    "their own. Give each agent its own name; an Agent "
+                    "built without agent_name is named swarm-worker-01."
+                )
+            names.add(agent.agent_name)
 
     def _ensure_respond_tool(self) -> None:
         """Inject ``RESPOND_TOOL`` into agents that do not already carry it.

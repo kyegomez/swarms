@@ -198,6 +198,11 @@ class TestConstructorValidation:
         with pytest.raises(ValueError, match="at least 2"):
             GroupChat(agents=None)
 
+    def test_agents_that_share_a_name_are_rejected(self):
+        twins = [ScriptedAgent("Twin"), ScriptedAgent("Twin")]
+        with pytest.raises(ValueError, match="'Twin'.*its own name"):
+            make_chat(twins)
+
     def test_auto_equip_injects_the_respond_tool(self):
         bare_a, bare_b = BareAgent("A"), BareAgent("B")
         make_chat([bare_a, bare_b])
