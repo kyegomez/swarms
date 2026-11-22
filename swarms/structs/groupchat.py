@@ -273,17 +273,17 @@ class GroupChat(SerializableMixin):
         self.auto_equip = auto_equip
         self.score_only_bids = score_only_bids
 
-        self.channel = channel
-        claim_agents(self.agents, channel, self.name)
-        self.conversation = Conversation(
-            time_enabled=False, channel=channel
-        )
-
         # agents may be None, the documented error is ValueError not TypeError
         if self.agents is None or len(self.agents) < 2:
             raise ValueError("GroupChat requires at least 2 agents.")
 
         self._require_unique_agent_names()
+
+        self.channel = channel
+        claim_agents(self.agents, channel, self.name)
+        self.conversation = Conversation(
+            time_enabled=False, channel=channel
+        )
 
         if self.auto_equip:
             self._ensure_respond_tool()

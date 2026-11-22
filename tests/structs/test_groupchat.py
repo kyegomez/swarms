@@ -21,7 +21,7 @@ from unittest.mock import MagicMock
 import litellm
 import pytest
 
-from swarms import Agent
+from swarms import Agent, QueueChannel
 from swarms.structs.groupchat import (
     GroupChat,
     RESPOND_CHOICE,
@@ -200,8 +200,10 @@ class TestConstructorValidation:
 
     def test_agents_that_share_a_name_are_rejected(self):
         twins = [ScriptedAgent("Twin"), ScriptedAgent("Twin")]
+        twins[0].channel = own = QueueChannel()
         with pytest.raises(ValueError, match="'Twin'.*its own name"):
-            make_chat(twins)
+            make_chat(twins, channel=QueueChannel())
+        assert twins[0].channel is own
 
     def test_auto_equip_injects_the_respond_tool(self):
         bare_a, bare_b = BareAgent("A"), BareAgent("B")
