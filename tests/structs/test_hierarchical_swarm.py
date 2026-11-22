@@ -824,6 +824,16 @@ def test_max_workers_must_be_positive():
         )
 
 
+def test_two_workers_that_share_a_name_are_rejected():
+    worker = StubAgent("Worker", [])
+    with pytest.raises(ValueError, match="'Worker'"):
+        make_recovery_swarm(
+            StubAgent("Director", []),
+            [worker, StubNestedSwarm("Worker", [])],
+        )
+    make_recovery_swarm(StubAgent("Director", []), [worker, worker])
+
+
 def test_nested_swarm_worker_is_called():
     sub_team = StubNestedSwarm("SubTeam", ["sub-team result"])
     director = StubAgent("Director", [])

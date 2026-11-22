@@ -379,6 +379,8 @@ class HierarchicalSwarm:
                 "No agents found in the swarm. At least one agent must be provided to create a hierarchical swarm."
             )
 
+        self._require_unique_agent_names()
+
         if self.max_loops <= 0:
             raise ValueError(
                 "Max loops must be greater than 0. Please set a valid number of loops."
@@ -401,6 +403,30 @@ class HierarchicalSwarm:
 
         if self.director is None:
             self.director = self.setup_director()
+
+    def _require_unique_agent_names(self) -> None:
+        """Reject two different workers that share a name.
+
+        Orders name their worker, so a repeated name would send every
+        order to the first worker with it. The same worker listed
+        twice is allowed.
+
+        Raises:
+            ValueError: Two different workers have the same name.
+        """
+        owners: Dict[str, Any] = {}
+
+        for agent in self.agents:
+            name = self._agent_display_name(agent)
+
+            if owners.setdefault(name, agent) is not agent:
+                raise ValueError(
+                    f"Two different agents are named '{name}'. "
+                    "HierarchicalSwarm sends each order to a worker by "
+                    "name, so only the first of them would run. Give "
+                    "each one its own name; an Agent created without "
+                    "agent_name is named 'swarm-worker-01'."
+                )
 
     def agents_no_print(self):
         for agent in self.agents:
