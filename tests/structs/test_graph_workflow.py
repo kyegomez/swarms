@@ -1893,5 +1893,30 @@ def test_overlapping_edges_send_predecessor_output_once(backend):
     assert wf.graph_backend.in_degree("B") == 2
 
 
+def test_failed_fan_out_attaches_no_edges():
+    """A fan-out with one bad target adds none of its edges."""
+    agents = [_mock_agent(name) for name in ("A", "B", "C")]
+    wf = GraphWorkflow.from_spec(agents, [])
+
+    with pytest.raises(ValueError):
+        wf.add_edges_from_source("A", ["B", "Typo"])
+
+    assert wf.edges == []
+    assert wf.graph_backend.in_degree("B") == 0
+
+    wf.add_edges_from_source("A", ["B", "C"])
+    wf.run("task")
+
+    assert [(e.source, e.target) for e in wf.edges] == [
+        ("A", "B"),
+        ("A", "C"),
+    ]
+    contents = [
+        message["content"]
+        for message in agents[1].run.call_args.kwargs["messages"]
+    ]
+    assert contents.count("A: output-A") == 1
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
