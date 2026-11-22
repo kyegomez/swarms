@@ -329,7 +329,7 @@ def test_select_swarm_invalid_type():
 
 
 def test_run_calls_swarm_run_with_task():
-    """run selects swarm and calls run(task=task) for non-ReflexionAgent."""
+    """run selects swarm and calls run(task) for non-ReflexionAgent."""
     router = ReasoningAgentRouter(swarm_type="reasoning-duo")
     mock_swarm = MagicMock()
     mock_swarm.run.return_value = "result"
@@ -343,7 +343,7 @@ def test_run_calls_swarm_run_with_task():
 
 
 def test_run_calls_reflexion_with_tasks_list():
-    """run calls swarm.run(tasks=[task]) for ReflexionAgent."""
+    """run calls swarm.run([task]) for ReflexionAgent."""
     router = ReasoningAgentRouter(swarm_type="ReflexionAgent")
     mock_swarm = MagicMock()
     mock_swarm.run.return_value = "reflex_result"
