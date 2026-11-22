@@ -1,6 +1,6 @@
 import json
 import traceback
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -162,6 +162,7 @@ class MultiAgentRouter:
         self.system_prompt = system_prompt
         self.skip_null_tasks = skip_null_tasks
         self.agents = list(agents) if agents else []
+        self._require_unique_agent_names()
         self.conversation = Conversation()
 
         router_system_prompt = ""
@@ -195,6 +196,31 @@ class MultiAgentRouter:
             ``MultiAgentRouter(name=<name>, agents=[<names>])``.
         """
         return f"MultiAgentRouter(name={self.name}, agents={[a.agent_name for a in self.agents]})"
+
+    def _require_unique_agent_names(self) -> None:
+        """Reject two different agents that share a name.
+
+        The boss picks agents by name, so a repeated name would always
+        route to the first of them. The same agent listed twice is
+        allowed.
+
+        Raises:
+            ValueError: Two different agents have the same name.
+        """
+        owners: Dict[str, Callable] = {}
+
+        for agent in self.agents:
+            if (
+                owners.setdefault(agent.agent_name, agent)
+                is not agent
+            ):
+                raise ValueError(
+                    f"Two different agents are named '{agent.agent_name}'. "
+                    "MultiAgentRouter routes each task by name, so only "
+                    "the first of them could ever run. Give each one its "
+                    "own name; an Agent created without agent_name is "
+                    "named 'swarm-worker-01'."
+                )
 
     def _create_boss_system_prompt(self) -> str:
         """
