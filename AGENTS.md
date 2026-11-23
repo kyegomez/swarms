@@ -42,6 +42,6 @@ print(agent.run("Summarise the current state of LLM research."))
 - Keep comments to a minimum. When a line is hard to follow, give it one short, plain comment, never a multi-line block.
 - Removing unused code (a method, parameter, attribute or line) needs no new unit test. Delete the tests that only exercised it and run the module's existing tests.
 - Not every change needs a unit test. When you add one, keep it small and fast: one table-driven test per behaviour, stubbed model and network, no near-copies.
-- User-visible changes need a matching PR in [swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs).
+- Non-negotiable: every PR that affects a public-facing parameter or method, including every new method or parameter, or that could affect the docs in any way, must come with its own PR to [swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs), linked both ways. A framework PR without its docs PR will not be merged, and a docs issue does not count in its place.
 
 `CLAUDE.md` has the full contribution rules.
