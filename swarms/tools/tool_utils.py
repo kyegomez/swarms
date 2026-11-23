@@ -7,7 +7,7 @@ from swarms.utils.formatter import formatter
 
 def scrape_tool_func_docs(fn: Callable) -> str:
     """
-    Scrape the docstrings and parameters of a function decorated with `tool` and return a formatted string.
+    Scrape the docstrings and parameters of a function decorated with the tool decorator and return a formatted string.
 
     Args:
         fn (Callable): The function to scrape.

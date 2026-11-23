@@ -392,7 +392,7 @@ class AgentMarketplaceHandler:
 
         return self.add_prompt(
             name=agent.agent_name,
-            prompt=agent.short_memory.get_str(),
+            prompt=agent.system_prompt,
             description=agent.agent_description,
             tags=self.build_tags(),
             category=category,

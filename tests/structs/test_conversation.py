@@ -1529,6 +1529,18 @@ def test_token_count_cache_prune_does_not_iterate_the_shared_cache():
     }
 
 
+def test_return_dict_final_returns_last_message_dict():
+    conv = Conversation()
+    conv.add("user", "First")
+    conv.add("assistant", "Last")
+
+    result = conv.return_dict_final()
+
+    assert isinstance(result, dict)
+    assert result["role"] == "assistant"
+    assert result["content"] == "Last"
+
+
 def _tool_call(name, call_id="call_1", **arguments):
     return {
         "id": call_id,
@@ -1666,8 +1678,13 @@ def test_export_conversation_writes_the_named_json_file(tmp_path):
     conv.export_conversation(str(target))
 
     fresh = Conversation(conversations_dir=str(tmp_path))
-    fresh.import_conversation(str(target))
+    fresh.import_conversation(target)
     assert fresh.conversation_history == conv.conversation_history
+
+    text_export = tmp_path / "backup.txt"
+    conv.export_conversation(str(text_export))
+    with pytest.raises(ValueError, match="text export"):
+        fresh.import_conversation(str(text_export))
 
 
 class TestCommsChannelMirror:

@@ -115,9 +115,7 @@ def judge_system_prompt() -> str:
 
 
 @lru_cache(maxsize=128)
-def build_judge_prompt(
-    dimension_name: str, task: str, task_response: str
-) -> str:
+def build_judge_prompt(dimension_name: str, task: str) -> str:
     """
     Builds a prompt for evaluating a specific dimension.
     Cached to avoid repeated string creation for same inputs.
@@ -125,7 +123,6 @@ def build_judge_prompt(
     Args:
         dimension_name (str): Name of the evaluation dimension
         task (str): The task containing the response to evaluate
-        task_response (str): The response within the task to evaluate
 
     Returns:
         str: The formatted evaluation prompt
@@ -153,13 +150,9 @@ def build_judge_prompt(
     4. Suggest specific improvements where applicable
     5. Maintain a technical, analytical tone
 
-    --- BEGIN TASK ---
+    --- BEGIN TASK AND RESPONSE ---
     {task}
-    --- END TASK ---
-
-    --- BEGIN RESPONSE ---
-    {task_response}
-    --- END RESPONSE ---
+    --- END TASK AND RESPONSE ---
 
     ### Technical Analysis ({dimension_name.upper()} Dimension):
     Provide a comprehensive analysis that would be valuable for response improvement.
@@ -389,10 +382,8 @@ class CouncilAsAJudge:
             DimensionEvaluationError: If evaluation fails
         """
         try:
-            prompt = build_judge_prompt(dim, task, task)
             result = agent.run(
-                f"{prompt} \n\n Evaluate the following response for the {dim} dimension: {task}.",
-                messages=[],
+                build_judge_prompt(dim, task), messages=[]
             )
 
             self.conversation.add(
@@ -408,7 +399,7 @@ class CouncilAsAJudge:
 
     @trace_run(
         "CouncilAsAJudge.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task",),
     )
     def run(self, task: str) -> None:
         """
@@ -509,12 +500,11 @@ class CouncilAsAJudge:
         )
 
         async def _judge(dim: str, agent: Agent) -> Tuple[str, str]:
-            prompt = build_judge_prompt(dim, task, task)
+            prompt = build_judge_prompt(dim, task)
             async with semaphore:
                 try:
                     return agent.agent_name, await agent.arun(
-                        f"{prompt} \n\n Evaluate the following response for the {dim} dimension: {task}.",
-                        messages=[],
+                        prompt, messages=[]
                     )
                 except Exception as e:
                     raise DimensionEvaluationError(

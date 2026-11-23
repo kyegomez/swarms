@@ -366,6 +366,42 @@ class TestWorkerContributions:
             ), f"{worker.agent_name} still holds the first task"
             assert "Previous layer synthesis" in request
 
+    @pytest.mark.parametrize("entry", ["run", "arun"])
+    def test_each_layer_sends_workers_only_that_layers_input(
+        self, entry
+    ):
+        requests = []
+
+        def worker(name):
+            agent = Agent(agent_name=name, print_on=False)
+
+            def run(task=None, messages=None, **kwargs):
+                requests.append((name, messages))
+                return f"[{name}-out]"
+
+            async def arun(task=None, messages=None, **kwargs):
+                return run(task, messages)
+
+            agent.llm.run = run
+            agent.llm.arun = arun
+            return agent
+
+        moa = MixtureOfAgents(
+            agents=[worker("W1"), worker("W2")],
+            aggregator_agent=worker("Agg"),
+            layers=3,
+        )
+
+        if entry == "run":
+            moa.run("Question?")
+        else:
+            asyncio.run(moa.arun("Question?"))
+
+        worker_requests = [m for name, m in requests if name != "Agg"]
+        assert len(worker_requests) == 6
+        for messages in worker_requests:
+            assert [m["role"] for m in messages] == ["user"], messages
+
     def test_the_conversation_starts_clean(self):
         """
         Conversation used to auto-load a default-named file from disk, so
@@ -601,3 +637,14 @@ def test_arun_matches_run_under_max_concurrency_keeping_failed_workers(
     assert imgs.count("chart.png") == 6
     assert sorted(calls, key=str) == sorted(sync_calls, key=str)
     assert "W2 (layer 1/2): Error: division by zero" in str(calls)
+
+
+def test_default_aggregator_model_is_not_retired():
+    import inspect
+
+    default = (
+        inspect.signature(MixtureOfAgents.__init__)
+        .parameters["aggregator_model_name"]
+        .default
+    )
+    assert default == "claude-sonnet-5-5"

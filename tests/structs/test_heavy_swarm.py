@@ -582,6 +582,10 @@ class TestQuestionAgentPerVariant:
 
         tool = seen["tools_list_dictionary"][0]["function"]
         assert tool["name"] == function_name
+        assert seen["tool_choice"] == {
+            "type": "function",
+            "function": {"name": function_name},
+        }
         for role in roles:
             assert (
                 f"{role}_question" in tool["parameters"]["properties"]
@@ -834,6 +838,43 @@ class TestUsage:
         swarm.run("task")
 
         assert swarm.usage["input_tokens"] == 30 + 100 * 5
+
+
+@pytest.mark.parametrize("variant", ["default", "medium", "heavy"])
+def test_workers_get_only_loop_tools_and_their_own(variant):
+    """Workers get the loop-control tools and worker_tools, nothing else."""
+
+    def lookup(query: str) -> str:
+        """Look something up.
+
+        Args:
+            query: What to look up.
+
+        Returns:
+            The answer.
+        """
+        return query
+
+    swarm = HeavySwarm(
+        worker_model_name=MODEL,
+        question_agent_model_name=MODEL,
+        variant=variant,
+        worker_tools=[lookup],
+    )
+    allowed = {
+        "create_plan",
+        "subtask_done",
+        "complete_task",
+        "respond_to_user",
+        "lookup",
+    }
+
+    workers = [
+        a for a in swarm.agents.values() if a.max_loops == "auto"
+    ]
+    assert workers
+    for worker in workers:
+        assert set(worker.list_tools()) == allowed, worker.agent_name
 
 
 def test_the_synthesis_row_is_the_answer(monkeypatch):

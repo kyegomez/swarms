@@ -29,7 +29,9 @@ from swarms.structs.comms_channel import (
     CommsChannel,
     claim_agents,
 )
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -343,7 +345,7 @@ class RustworkxBackend(GraphBackend):
             raise ImportError(
                 "rustworkx is not installed. Install it with: pip install rustworkx"
             )
-        self.graph = rx.PyDiGraph()
+        self.graph = rx.PyDiGraph(multigraph=False)
         # Mapping from node ID (string) to node index (int)
         self._node_id_to_index: Dict[str, int] = {}
         # Mapping from node index (int) to node ID (string)
@@ -857,7 +859,6 @@ class GraphWorkflow:
         self._compiled = False
         self._sorted_layers = []
         self._execution_plan = []
-        self._successors_map = {}
         self._predecessors_cache = {}
         self.max_parallel_nodes = max_parallel_nodes
         # Nodes are network-bound LLM calls, so the default is layer width, not CPU count.
@@ -964,7 +965,6 @@ class GraphWorkflow:
         self._compiled = False
         self._sorted_layers = []
         self._execution_plan = []
-        self._successors_map = {}
         self._compilation_timestamp = None
 
         # Clear predecessors cache when graph structure changes
@@ -1017,7 +1017,6 @@ class GraphWorkflow:
 
             # Built once, reused for validation and per-node predecessor lookups
             succ, pred = self.graph_backend.adjacency()
-            self._successors_map = succ
             self._predecessors_cache = {
                 node_id: tuple(parents)
                 for node_id, parents in pred.items()
@@ -1511,29 +1510,7 @@ class GraphWorkflow:
         Args:
             entry_points (List[str]): List of node IDs to serve as entry points.
         """
-        if self.verbose:
-            logger.debug(f"Setting entry points: {entry_points}")
-
-        try:
-            for node_id in entry_points:
-                if node_id not in self.nodes:
-                    error_msg = f"Entry point node '{node_id}' does not exist in GraphWorkflow"
-                    logger.error(error_msg)
-                    raise ValueError(error_msg)
-
-            self.entry_points = entry_points
-            self._invalidate_compilation()
-
-            if self.verbose:
-                logger.success(
-                    f"Successfully set entry points: {entry_points}"
-                )
-
-        except Exception as e:
-            logger.exception(
-                f"Error in GraphWorkflow.set_entry_points: {e}"
-            )
-            raise e
+        self._set_points("entry", entry_points)
 
     def set_end_points(self, end_points: List[str]) -> None:
         """
@@ -1542,27 +1519,30 @@ class GraphWorkflow:
         Args:
             end_points (List[str]): List of node IDs to serve as end points.
         """
+        self._set_points("end", end_points)
+
+    def _set_points(self, role: str, node_ids: List[str]) -> None:
         if self.verbose:
-            logger.debug(f"Setting end points: {end_points}")
+            logger.debug(f"Setting {role} points: {node_ids}")
 
         try:
-            for node_id in end_points:
+            for node_id in node_ids:
                 if node_id not in self.nodes:
-                    error_msg = f"End point node '{node_id}' does not exist in GraphWorkflow"
+                    error_msg = f"{role.capitalize()} point node '{node_id}' does not exist in GraphWorkflow"
                     logger.error(error_msg)
                     raise ValueError(error_msg)
 
-            self.end_points = end_points
+            setattr(self, f"{role}_points", node_ids)
             self._invalidate_compilation()
 
             if self.verbose:
                 logger.success(
-                    f"Successfully set end points: {end_points}"
+                    f"Successfully set {role} points: {node_ids}"
                 )
 
         except Exception as e:
             logger.exception(
-                f"Error in GraphWorkflow.set_end_points: {e}"
+                f"Error in GraphWorkflow.set_{role}_points: {e}"
             )
             raise e
 
@@ -1809,7 +1789,13 @@ class GraphWorkflow:
                 if pred in prev_outputs
             ]
 
-            messages = [{"role": "user", "content": str(task)}]
+            messages = [
+                {
+                    "role": "user",
+                    "content": str(task),
+                    TASK_TURN_KEY: True,
+                }
+            ]
 
             if pred_outputs and layer_idx > 0:
                 # One turn per predecessor rather than every output joined into one block.
@@ -1989,7 +1975,7 @@ class GraphWorkflow:
 
     @trace_run(
         "GraphWorkflow.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img"),
     )
     def run(
         self,
@@ -2275,12 +2261,15 @@ class GraphWorkflow:
                                 _prompt=prompt,
                                 _messages=messages,
                             ):
-                                return _agent.run(
+                                output = _agent.run(
                                     task=_prompt,
                                     img=img,
                                     messages=_messages,
                                     *args,
                                     **kwargs,
+                                )
+                                return agent_answer(
+                                    _agent, fallback=output
                                 )
 
                             return _run_agent
@@ -2297,12 +2286,15 @@ class GraphWorkflow:
                                     _nid, token
                                 )
                             )
-                            return _agent.run(
+                            output = _agent.run(
                                 task=_prompt,
                                 img=img,
                                 messages=_messages,
                                 *args,
                                 **call_kwargs,
+                            )
+                            return agent_answer(
+                                _agent, fallback=output
                             )
 
                         return _run_agent_streaming
@@ -3189,7 +3181,6 @@ class GraphWorkflow:
         path: str,
         payload: Dict[str, Any],
         overwrite: bool = True,
-        ensure_extension: bool = False,
     ) -> str:
         """
         Write ``payload`` as JSON, creating parent directories.
@@ -3198,7 +3189,6 @@ class GraphWorkflow:
             path: Destination path.
             payload: The dict to write.
             overwrite: When ``False``, refuse to replace an existing file.
-            ensure_extension: Append ``.json`` when ``path`` lacks it.
 
         Returns:
             The path actually written.
@@ -3206,9 +3196,6 @@ class GraphWorkflow:
         Raises:
             FileExistsError: If the file exists and ``overwrite`` is ``False``.
         """
-        if ensure_extension and not path.endswith(".json"):
-            path += ".json"
-
         if os.path.exists(path) and not overwrite:
             raise FileExistsError(
                 f"File {path} already exists. Set overwrite=True to replace it."
@@ -3629,16 +3616,16 @@ class GraphWorkflow:
         Raises:
             FileExistsError: If the file exists and ``overwrite`` is ``False``.
         """
+        if not filepath.endswith(".json"):
+            filepath += ".json"
+
         try:
-            return self._write_json(
+            return self.save(
                 filepath,
-                self.to_dict(
-                    shallow=False,
-                    include_conversation=include_conversation,
-                    include_runtime_state=include_runtime_state,
-                ),
+                shallow=False,
+                include_conversation=include_conversation,
+                include_runtime_state=include_runtime_state,
                 overwrite=overwrite,
-                ensure_extension=True,
             )
         except FileExistsError:
             raise

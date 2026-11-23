@@ -144,7 +144,7 @@ print(result)
 | `streaming_on` | bool | `False` | Stream tokens to stdout |
 | `interactive` | bool | `False` | REPL mode — prompt user for input each loop |
 | `context_length` | int | `128000` | Token budget; triggers compression at 90 %. `None` looks up the model's input window |
-| `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
+| `context_compression` | bool \| None | `None` | Auto-summarise when near context limit (v12). `None` turns it on only for `max_loops="auto"` |
 | `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
 | `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
 | `max_tokens` | int | `16384` | Max tokens per LLM call. `None` looks up the model's own output limit |
@@ -243,16 +243,17 @@ agent = Agent(
 )
 ```
 
-### `context_compression=True` (default)
+### `context_compression` (on by default only for `max_loops="auto"`)
 
-`ContextCompressor` fires automatically when token usage crosses 90 % of `context_length`. It summarises and rewrites `MEMORY.md` in place so long sessions never hit the context wall.
+`ContextCompressor` fires automatically when token usage crosses 90 % of `context_length`. It summarises and rewrites `MEMORY.md` in place so long sessions never hit the context wall. The default, `None`, turns it on when `max_loops="auto"` and leaves it off for integer `max_loops`. Pass `True` or `False` to choose either way.
 
 ```python
 agent = Agent(
     agent_name="LongSession",
     model_name="gpt-5.4",
+    max_loops=10,
     context_length=32000,
-    context_compression=True,   # default
+    context_compression=True,   # integer max_loops needs it turned on
 )
 ```
 
@@ -1169,9 +1170,68 @@ When you do add a test, keep it small, compact and fast:
 
 ---
 
+## Code style: clean, typed and readable
+
+Write code a reviewer can read top to bottom without stopping.
+
+- **Docstrings:** every public class, function and method gets one. Start with a short phrase saying what it does, then `Args` and `Returns`. Leave out long explanations and design history.
+- **Types:** annotate every parameter and every return value. Use `Optional[...]` when `None` is allowed, and prefer a specific type to `Any`.
+- **Spacing:** don't pack code together. Put a blank line between methods, and between the logical steps inside a function: setup, the main work, the result.
+- **Names:** say what a value is (`agent_outputs`, not `res`). Keep functions short enough to do one thing; split one that needs internal sections.
+- **Comments:** keep them to a minimum. See the next section.
+
+```python
+def collect_answers(
+    agents: List[Agent], task: str
+) -> Dict[str, str]:
+    """Run each agent on the task and collect its answer.
+
+    Args:
+        agents: The agents to run.
+        task: The task given to every agent.
+
+    Returns:
+        Each agent's answer, keyed by agent name.
+    """
+    answers: Dict[str, str] = {}
+
+    for agent in agents:
+        answers[agent.agent_name] = agent.run(task)
+
+    return answers
+```
+
+---
+
+## Docstrings: no backticks
+
+Never put a backtick in a docstring, anywhere in the repo: source, tests and examples alike. That covers single backticks around a name, double backticks, and Sphinx roles such as `` :meth:`close` `` or `` :class:`Agent` ``. Write names as plain words.
+
+A docstring is read as plain text in an editor, in `help()` and in tool schemas sent to a model, where backticks are only noise. Backticks are still fine in Markdown files, comments and the docs site.
+
+```python
+# Good
+def close(self) -> None:
+    """Release one open call; the last release closes every session.
+
+    Waits up to the manager's timeout, or 30 seconds when unset.
+    """
+```
+
+```python
+# Bad
+def close(self) -> None:
+    """Release one :meth:`open`; the last release closes every session.
+
+    Waits up to the manager's ``timeout``, or `30` when unset.
+    """
+```
+
+---
+
 ## Comments: one line, only when needed
 
-A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all.
+A comment is one line. If it needs a paragraph, it belongs in the docstring. Do not write multi-line comment blocks, banner comments, section dividers, or narration of what the code plainly does. Most code needs no comment at all. When a line really is hard to follow, give it one short, plain comment saying why it is there.
 
 ```python
 # Good
@@ -1221,7 +1281,7 @@ from swarms import Agent
 
 **Don't use `streaming_on=True` and `streaming_callback` together on the same agent** — `streaming_on` streams to stdout; `streaming_callback` streams to your function. Pick one.
 
-**Don't set `context_compression=False` on very long autonomous sessions** — without compression the agent will eventually hit the context limit and raise an error.
+**Don't set `context_compression=False` on very long autonomous sessions** — without compression the agent will eventually hit the context limit and raise an error. It is on by default for `max_loops="auto"`; a long integer-loop run needs `context_compression=True`.
 
 **For long-running autonomous agents in production**, always set:
 ```python

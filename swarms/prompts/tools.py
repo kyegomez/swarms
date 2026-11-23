@@ -34,7 +34,6 @@ commands: {
 """
 
 
-########### FEW SHOT EXAMPLES ################
 SCENARIOS = """
 commands: {
     "tools": {

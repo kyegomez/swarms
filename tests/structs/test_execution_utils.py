@@ -231,6 +231,20 @@ class TestRunConcurrently:
         run_concurrently(slow, list("abcdef"), max_workers=6)
         assert time.time() - start < 0.2
 
+    def test_default_is_one_thread_per_task(self, monkeypatch):
+        import threading
+
+        monkeypatch.setattr("os.cpu_count", lambda: 1)
+        barrier = threading.Barrier(4, timeout=0.3)
+
+        def meet(task):
+            barrier.wait()
+            return task
+
+        assert run_concurrently(meet, list("abcd")) == list("abcd")
+        with pytest.raises(threading.BrokenBarrierError):
+            run_concurrently(meet, list("abcd"), max_workers=1)
+
     def test_matches_batched_run_results(self):
         tasks = [str(i) for i in range(10)]
         assert run_concurrently(plain, tasks) == batched_run(

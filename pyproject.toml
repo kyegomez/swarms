@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swarms"
-version = "17.0.0"
+version = "17.0.3"
 description = "Multi-agent orchestration framework: build agents, workflows and swarms over any LLM"
 license = "Apache-2.0"
 authors = ["Kye Gomez <kye@swarms.world>"]

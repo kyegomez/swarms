@@ -79,8 +79,14 @@ def test_judges_and_aggregator_send_no_temperature(
             usage=None,
         )
 
+    async def fake_acompletion(**params):
+        return fake_completion(**params)
+
     monkeypatch.setattr(
         litellm_wrapper, "completion", fake_completion
+    )
+    monkeypatch.setattr(
+        litellm_wrapper, "acompletion", fake_acompletion
     )
 
     council = CouncilAsAJudge(
@@ -95,3 +101,40 @@ def test_judges_and_aggregator_send_no_temperature(
     assert not [
         r["temperature"] for r in requests if "temperature" in r
     ]
+
+
+@pytest.mark.parametrize("entry", ["run", "arun"])
+def test_every_request_carries_the_task_once(monkeypatch, entry):
+    counts = []
+
+    def fake_completion(**params):
+        counts.append(str(params["messages"]).count("TASK-MARK"))
+        message = SimpleNamespace(
+            content="ok", tool_calls=None, reasoning_content=None
+        )
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(message=message, finish_reason="stop")
+            ],
+            usage=None,
+        )
+
+    async def fake_acompletion(**params):
+        return fake_completion(**params)
+
+    monkeypatch.setattr(
+        litellm_wrapper, "completion", fake_completion
+    )
+    monkeypatch.setattr(
+        litellm_wrapper, "acompletion", fake_acompletion
+    )
+
+    council = CouncilAsAJudge(
+        model_name="gpt-4o-mini",
+        aggregation_model_name="gpt-4o-mini",
+    )
+    result = getattr(council, entry)("TASK-MARK")
+    if asyncio.iscoroutine(result):
+        asyncio.run(result)
+
+    assert counts == [1] * (len(council.judge_agents) + 1)

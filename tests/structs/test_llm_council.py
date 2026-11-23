@@ -374,6 +374,66 @@ def test_second_run_does_not_resend_the_first(monkeypatch):
 
     assert len(requests) == 5
     assert not any("FIRSTTASK" in r for r in requests)
+    assert requests[-1].count("SECONDTASK") == 1
+
+
+def test_members_rank_without_their_own_answer(monkeypatch):
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    ranking_histories = []
+
+    def fake_run(self, task=None, *args, messages=None, **kwargs):
+        request = str(messages) + str(task)
+        if "You are evaluating responses" in request:
+            ranking_histories.append(messages or [])
+        return "Use Postgres."
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    members = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Member-A", "Member-B")
+    ]
+    council = LLMCouncil(council_members=members, verbose=False)
+
+    council.run("Pick a database.")
+
+    assert len(ranking_histories) == 2
+    for history in ranking_histories:
+        assert [m for m in history if m["role"] == "assistant"] == []
+
+
+def test_default_members_reach_their_own_providers_api():
+    import litellm
+
+    council = LLMCouncil(verbose=False)
+
+    providers = {
+        member.agent_name: litellm.get_llm_provider(
+            member.model_name
+        )[1]
+        for member in council.council_members
+    }
+
+    assert providers == {
+        "GPT-5.1-Councilor": "openai",
+        "Gemini-3-Pro-Councilor": "gemini",
+        "Claude-Sonnet-4.5-Councilor": "anthropic",
+        "Grok-4-Councilor": "xai",
+    }
+
+
+def test_default_claude_member_sends_no_temperature():
+    council = LLMCouncil(verbose=False)
+    claude = next(
+        member
+        for member in council.council_members
+        if member.agent_name == "Claude-Sonnet-4.5-Councilor"
+    )
+
+    params = claude.llm._build_completion_params("Pick a database.")
+
+    assert params["model"] == "anthropic/claude-sonnet-5-5"
+    assert "temperature" not in params
 
 
 @pytest.mark.parametrize(

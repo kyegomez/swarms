@@ -1,10 +1,10 @@
-"""Rich-based dashboard UI for ``HeavySwarm``.
+"""Rich-based dashboard UI for HeavySwarm.
 
-All Rich (``rich.*``) presentation logic for ``HeavySwarm`` lives here so the
-orchestration code in ``swarms/structs/heavy_swarm.py`` does not need to know
+All Rich (rich.*) presentation logic for HeavySwarm lives here so the
+orchestration code in swarms/structs/heavy_swarm.py does not need to know
 how panels, tables, or progress bars are rendered. Each helper is a no-op
 unless explicit dashboard methods are invoked — callers gate on
-``show_dashboard`` themselves.
+show_dashboard themselves.
 """
 
 from contextlib import contextmanager
@@ -28,7 +28,7 @@ AgentConfig = Tuple[
 class AgentProgressTracker:
     """Per-agent progress updater used during parallel agent execution.
 
-    Backed by a single Rich ``Progress`` instance; each agent gets one task
+    Backed by a single Rich Progress instance; each agent gets one task
     row that worker threads update through the phase methods below.
     """
 
@@ -89,12 +89,10 @@ class AgentProgressTracker:
 
 
 class HeavySwarmDashboard:
-    """Encapsulates every Rich-rendered surface used by ``HeavySwarm``."""
+    """Encapsulates every Rich-rendered surface used by HeavySwarm."""
 
     def __init__(self, console: Optional[Console] = None) -> None:
         self.console = console or Console()
-
-    # ----- Static panels ---------------------------------------------------
 
     def show_config(
         self,
@@ -197,7 +195,7 @@ class HeavySwarmDashboard:
     def reliability_progress(
         self, total: int = 4
     ) -> Iterator[Callable[[str], None]]:
-        """Yield a ``step(description)`` callable that advances the bar by 1."""
+        """Yield a step(description) callable that advances the bar by 1."""
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -247,10 +245,10 @@ class HeavySwarmDashboard:
     def synthesis_progress(
         self, synth_name: str
     ) -> Iterator[Callable[[str], None]]:
-        """Yield an ``update(stage)`` callback for the synthesis phase.
+        """Yield an update(stage) callback for the synthesis phase.
 
-        ``stage`` is one of: ``"integrating"``, ``"summarizing"``,
-        ``"generating"``, ``"complete"``.
+        stage is one of: "integrating", "summarizing",
+        "generating", "complete".
         """
         dots = "••••••••••••••••••••••••••••••••"
         stages = {
@@ -292,7 +290,7 @@ class HeavySwarmDashboard:
     def agent_progress_tracker(
         self, agent_configs: List[AgentConfig]
     ) -> Iterator[AgentProgressTracker]:
-        """Yield an ``AgentProgressTracker`` for live per-agent phase updates."""
+        """Yield an AgentProgressTracker for live per-agent phase updates."""
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),

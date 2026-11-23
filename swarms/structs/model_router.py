@@ -60,8 +60,8 @@ model_recommendations = {
         ],
         "provider": "anthropic",
     },
-    "gemini-2.5-pro": {
-        "description": "Google's Gemini Pro model with a 1M-token context window and strong multimodal skills",
+    "gemini-3.8-flash": {
+        "description": "Google's most capable Flash model, with a 1M-token context window and text, image, video, audio and PDF input, at Flash speed and cost",
         "best_for": [
             "Multimodal tasks",
             "Code generation",
@@ -212,7 +212,6 @@ class ModelRouter:
         max_tokens: int = 4000,
         temperature: Optional[float] = None,
         max_workers: int = 10,
-        api_key: str = None,
         max_loops: int = 1,
         model_name: str = "gpt-5.4",
         *args,
@@ -274,7 +273,9 @@ class ModelRouter:
         selected_provider = model_router_output.provider
         routed_task = model_router_output.task
         rationale = model_router_output.rationale
-        max_tokens = model_router_output.max_tokens
+        max_tokens = model_router_output.max_tokens or self.max_tokens
+        if self.max_tokens:
+            max_tokens = min(max_tokens, self.max_tokens)
         temperature = model_router_output.temperature
         system_prompt = model_router_output.system_prompt
 

@@ -93,7 +93,7 @@ class SequentialWorkflow:
         verbose: bool = False,
         drift_detection: bool = False,
         drift_threshold: float = 0.75,
-        drift_model: str = "claude-sonnet-4-5",
+        drift_model: str = "claude-sonnet-5-5",
         drift_max_retries: int = 3,
         channel: Optional[CommsChannel] = None,
         *args,
@@ -120,7 +120,7 @@ class SequentialWorkflow:
             drift_threshold (float, optional): Minimum alignment score (0–1) to consider output acceptable.
                 A warning is logged when the score falls below this value. Defaults to 0.75.
             drift_model (str, optional): Model used by the drift detection judge agent.
-                Defaults to "claude-sonnet-4-5".
+                Defaults to "claude-sonnet-5-5".
             drift_max_retries (int, optional): Maximum number of pipeline reruns when the
                 drift score stays below drift_threshold. Once exhausted the last output is
                 returned with a warning instead of rerunning forever. 0 disables reruns, so
@@ -227,6 +227,7 @@ class SequentialWorkflow:
         """
         if self.agents:
             agent_names = []
+            owners = {}
             for agent in self.agents:
                 try:
                     # Try to get agent_name, fallback to name if not available
@@ -234,6 +235,16 @@ class SequentialWorkflow:
                         getattr(agent, "agent_name", None)
                         or agent.name
                     )
+                    if (
+                        owners.setdefault(agent_name, agent)
+                        is not agent
+                    ):
+                        raise ValueError(
+                            f"Two different agents are named '{agent_name}'. "
+                            "SequentialWorkflow runs each step by name, so "
+                            "only the first of them would run. Give each "
+                            "one its own name."
+                        )
                     agent_names.append(agent_name)
                 except AttributeError:
                     logger.warning(
@@ -266,9 +277,7 @@ class SequentialWorkflow:
         budget is spent.
         """
         for attempt in range(self.drift_max_retries + 1):
-            self.drift_agent.short_memory = (
-                self.drift_agent.short_memory_init()
-            )
+            self.drift_agent.reset()
             try:
                 raw = self.drift_agent.run(
                     f"Original task: {task}\n\nFinal output: {result}"

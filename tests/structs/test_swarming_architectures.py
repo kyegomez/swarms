@@ -8,7 +8,6 @@ from swarms.structs.agent import Agent
 from swarms.structs.broadcast import broadcast
 from swarms.structs.swarming_architectures import (
     circular_swarm,
-    star_swarm,
 )
 
 
@@ -92,16 +91,6 @@ def test_the_task_is_recorded_once_per_task_not_once_per_agent():
         _contents(last).count("do it") + [last["task"]].count("do it")
         == 1
     ), f"the task appears more than once: {last}"
-
-
-def test_star_swarm_centre_receives_typed_turns():
-    calls = []
-    star_swarm(agents=_agents(["Centre", "X"], calls), tasks=["go"])
-
-    centre = calls[0]
-    assert centre["agent"] == "Centre"
-    assert centre["task"] == "go"
-    assert isinstance(centre["messages"], list)
 
 
 def test_broadcast_agents_see_the_sender_as_a_labelled_turn():

@@ -268,3 +268,52 @@ def test_debate_reruns_from_a_clean_history_in_three_calls(
     assert len(requests) == 3
     assert not any("FIRSTTASK" in r for r in requests)
     assert "arguing in favor" in requests[0]
+
+
+def test_debate_default_output_keeps_the_pro_argument(
+    monkeypatch, tmp_path
+):
+    from swarms import DebateWithJudge
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    replies = iter(["PRO ARGUMENT", "CON ARGUMENT", "JUDGE VERDICT"])
+    monkeypatch.setattr(
+        LiteLLM, "run", lambda self, *a, **k: next(replies)
+    )
+    agents = [
+        Agent(agent_name=name, max_loops=1, print_on=False)
+        for name in ("Pro", "Con", "Judge")
+    ]
+
+    result = DebateWithJudge(
+        agents=agents, max_loops=1, verbose=False
+    ).run("Should AI be regulated?")
+
+    assert "Should AI be regulated?" not in result
+    assert "PRO ARGUMENT" in result
+    assert "CON ARGUMENT" in result
+    assert "JUDGE VERDICT" in result
+
+
+def test_debate_judge_gets_its_previous_synthesis_once(
+    monkeypatch, tmp_path
+):
+    from swarms import DebateWithJudge
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    requests = []
+
+    def fake_run(self, *args, **kwargs):
+        requests.append(repr((args, kwargs)))
+        return f"REPLY-{len(requests)}"
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    agents = [
+        Agent(agent_name=name, max_loops=1, print_on=False)
+        for name in ("Pro", "Con", "Judge")
+    ]
+    DebateWithJudge(agents=agents, max_loops=2).run("TOPIC")
+
+    assert requests[5].count("REPLY-3") == 1

@@ -2,7 +2,7 @@ import asyncio
 from typing import Any, Dict, List, Optional
 
 from swarms.prompts.ag_prompt import AGGREGATOR_SYSTEM_PROMPT_MAIN
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import (
     agent_answer,
     get_final_agent_answer,
@@ -88,7 +88,7 @@ class MixtureOfAgents:
         layers: int = 3,
         max_loops: int = 1,
         output_type: OutputType = "final",
-        aggregator_model_name: str = "claude-sonnet-4-20250514",
+        aggregator_model_name: str = "claude-sonnet-5-5",
         max_workers: Optional[int] = None,
         aggegrator_args: Dict[str, Any] = None,
         channel: Optional[CommsChannel] = None,
@@ -249,8 +249,6 @@ class MixtureOfAgents:
         """
 
         self._reset_conversation()
-        for agent in self.agents:
-            agent.reset()
 
         self.conversation.add(role="User", content=task)
 
@@ -259,6 +257,8 @@ class MixtureOfAgents:
         prev_layer_output: Optional[str] = None
 
         for i in range(self.layers):
+            reset_agents(self.agents)
+
             if prev_layer_output is not None:
                 worker_input = (
                     f"Original task: {task}\n\n"
@@ -305,7 +305,7 @@ class MixtureOfAgents:
 
     @trace_run(
         "MixtureOfAgents.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img"),
     )
     def run(
         self,
@@ -366,13 +366,13 @@ class MixtureOfAgents:
             return agent.agent_name, agent_answer(agent, output)
 
         self._reset_conversation()
-        for agent in self.agents:
-            agent.reset()
 
         self.conversation.add(role="User", content=task)
 
         worker_input = task
         for i in range(self.layers):
+            reset_agents(self.agents)
+
             step_output = dict(
                 await asyncio.gather(
                     *(_answer(a, worker_input) for a in self.agents)

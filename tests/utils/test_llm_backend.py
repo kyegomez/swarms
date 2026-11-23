@@ -152,30 +152,25 @@ class TestVisionCheck:
         )
         return LiteLLM(model_name=model)
 
-    def test_routehub_sends_images_to_a_model_it_cannot_find(
-        self, monkeypatch
+    @pytest.mark.parametrize(
+        "backend, known_models, model",
+        [
+            ("routehub", [], "lab/unlisted"),
+            ("routehub", ["lab/text-only"], "lab/text-only"),
+            ("litellm", [], "openrouter/openai/gpt-5.4-mini"),
+        ],
+    )
+    def test_an_unconfirmed_model_warns_and_still_gets_the_image(
+        self, monkeypatch, backend, known_models, model
     ):
-        llm = self._llm(monkeypatch, "routehub", [], "lab/unlisted")
-        llm.check_if_model_supports_vision(img="photo.png")
+        llm = self._llm(monkeypatch, backend, known_models, model)
 
-    def test_a_listed_text_only_model_is_still_refused(
-        self, monkeypatch
-    ):
-        llm = self._llm(
-            monkeypatch,
-            "routehub",
-            ["lab/text-only"],
-            "lab/text-only",
+        with patch("swarms.utils.litellm_wrapper.logger") as log:
+            llm.check_if_model_supports_vision(img="photo.png")
+
+        assert (
+            "sending the image anyway" in log.warning.call_args[0][0]
         )
-        with pytest.raises(ValueError, match="does not support"):
-            llm.check_if_model_supports_vision(img="photo.png")
-
-    def test_litellm_refuses_an_unlisted_model_as_before(
-        self, monkeypatch
-    ):
-        llm = self._llm(monkeypatch, "litellm", [], "lab/unlisted-2")
-        with pytest.raises(ValueError, match="does not support"):
-            llm.check_if_model_supports_vision(img="photo.png")
 
     def test_a_no_is_asked_again(self, monkeypatch):
         answers = iter([False, True])
@@ -186,9 +181,11 @@ class TestVisionCheck:
         )
         llm = LiteLLM(model_name="lab/catalog-was-down")
 
-        with pytest.raises(ValueError):
+        with patch("swarms.utils.litellm_wrapper.logger") as log:
             llm.check_if_model_supports_vision(img="photo.png")
-        llm.check_if_model_supports_vision(img="photo.png")
+            llm.check_if_model_supports_vision(img="photo.png")
+
+        assert log.warning.call_count == 1
 
 
 class TestUnknownModelWarning:

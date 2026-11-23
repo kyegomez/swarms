@@ -313,6 +313,15 @@ def test_invalid_output_type_raises_at_init():
         )
 
 
+def test_invalid_flow_raises_at_init():
+    """A stray arrow fails at construction; a trailing comma is fine."""
+    agents = [_make_agent("A"), _make_agent("B")]
+    for flow in ("A -> B ->", "-> A"):
+        with pytest.raises(ValueError, match="empty step"):
+            AgentRearrange(agents=agents, flow=flow)
+    AgentRearrange(agents=agents, flow="A -> B, ")
+
+
 def test_set_custom_flow_validates_immediately():
     """set_custom_flow should reject an invalid flow at the call site,
     and leave the previous flow intact on failure."""
@@ -1085,13 +1094,15 @@ class TestBatchRunConcurrency:
         pipeline = _make_pipeline("AgentA", "AgentB")
         tasks = [f"t{i}" for i in range(6)]
 
-        with patch(
+        with patch("os.cpu_count", return_value=1), patch(
             "swarms.structs.agent_rearrange.ContextThreadPoolExecutor",
             wraps=ContextThreadPoolExecutor,
         ) as mock_tpe:
             pipeline.batch_run(tasks=tasks, batch_size=2)
             # 6 tasks / batch_size=2 -> 3 batches -> 3 executor instances
             assert mock_tpe.call_count == 3
+            # batch_size, not the CPU count, sizes each batch's pool.
+            assert mock_tpe.call_args.kwargs == {"max_workers": 2}
 
 
 # ============================================================================
@@ -1737,3 +1748,18 @@ def test_nested_swarm_without_a_name_is_rejected():
     """A swarm needs a name for the flow to reference it."""
     with pytest.raises(ValueError, match="needs a name"):
         AgentRearrange(agents=[_RecordingSwarm("")], flow="x")
+
+
+def test_two_different_members_with_one_name_are_rejected():
+    """Two members sharing a name raise; one member listed twice is fine."""
+    writer, team = _make_agent("Writer"), _RecordingSwarm("Team")
+    with pytest.raises(ValueError, match="'Writer'"):
+        AgentRearrange(
+            agents=[writer, _make_agent("Writer")],
+            flow="Writer -> Writer",
+            channel=MagicMock(),
+        )
+    assert writer.channel is not None
+    AgentRearrange(
+        agents=[writer, writer, team, team], flow="Writer -> Team"
+    )

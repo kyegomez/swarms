@@ -6,9 +6,7 @@ from swarms.structs.one_to_one import one_to_one
 from swarms.structs.swarming_architectures import (
     circular_swarm,
     grid_swarm,
-    mesh_swarm,
     pyramid_swarm,
-    star_swarm,
 )
 
 
@@ -57,40 +55,6 @@ def test_grid_swarm():
 
     assert isinstance(result, list)
     assert len(result) > 0
-
-
-def test_star_swarm():
-    """Test star swarm with central and peripheral agents"""
-    agents = create_test_agents(4)
-    tasks = ["Coordinate workflow", "Process data"]
-
-    result = star_swarm(agents, tasks)
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-    for log in result:
-        assert "role" in log
-        assert "content" in log
-
-
-def test_mesh_swarm():
-    """Test mesh swarm interconnected processing"""
-    agents = create_test_agents(3)
-    tasks = [
-        "Analyze data",
-        "Process information",
-        "Generate insights",
-    ]
-
-    result = mesh_swarm(agents, tasks)
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-    for log in result:
-        assert "role" in log
-        assert "content" in log
 
 
 def test_pyramid_swarm():

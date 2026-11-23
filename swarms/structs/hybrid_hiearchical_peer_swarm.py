@@ -1,5 +1,4 @@
 import copy
-import os
 from typing import List
 from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.agent import Agent
@@ -13,6 +12,7 @@ from typing import Union, Callable
 from swarms.utils.history_output_formatter import HistoryOutputType
 from swarms.utils.str_to_dict import str_to_dict
 from swarms.structs.usage_utils import total_usage
+from swarms.tools.tool_choice import forced_tool_choice
 
 tools = [
     {
@@ -127,6 +127,7 @@ class HybridHierarchicalClusterSwarm:
             agent_description="A router agent that routes tasks to the appropriate swarms.",
             system_prompt=f"{router_system_prompt}\n\n{get_swarms_info(swarms=self.swarms)}",
             tools_list_dictionary=tools,
+            llm_args={"tool_choice": forced_tool_choice(tools[0])},
             model_name=router_agent_model_name,
             max_loops=1,
             output_type="final",
@@ -229,7 +230,6 @@ class HybridHierarchicalClusterSwarm:
         results = run_concurrently(
             lambda task: copy.copy(self).run(task),
             tasks,
-            max_workers=os.cpu_count() * 2,
             return_exceptions=True,
         )
         # A failed task still gets a slot, so results[i] is always tasks[i].

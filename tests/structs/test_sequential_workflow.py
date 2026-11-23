@@ -279,6 +279,31 @@ def test_sequential_workflow_agent_names_extraction():
     assert workflow.flow == expected_flow
 
 
+def test_two_different_agents_with_one_name_are_rejected():
+    first = Agent(
+        agent_name="Writer", model_name="gpt-4o", max_loops=1
+    )
+    second = Agent(
+        agent_name="Writer", model_name="gpt-4o", max_loops=1
+    )
+
+    with pytest.raises(ValueError, match="'Writer'"):
+        SequentialWorkflow(agents=[first, second])
+
+    with pytest.raises(ValueError, match="'SequentialWorkflow'"):
+        SequentialWorkflow(
+            agents=[
+                SequentialWorkflow(agents=[first]),
+                SequentialWorkflow(agents=[second]),
+            ]
+        )
+
+    assert (
+        SequentialWorkflow(agents=[first, first]).flow
+        == "Writer -> Writer"
+    )
+
+
 def test_sequential_workflow_team_awareness():
     """Test SequentialWorkflow with team awareness enabled"""
     agent1 = Agent(
@@ -421,11 +446,17 @@ def test_workflow_drift_agent_is_agent_when_enabled():
     assert wf.drift_agent.agent_name == "DriftDetector"
 
 
-def test_workflow_drift_agent_uses_custom_model():
-    wf = _make_workflow(
-        drift_detection=True, drift_model="gpt-4o-mini"
-    )
-    assert wf.drift_agent.model_name == "gpt-4o-mini"
+@pytest.mark.parametrize(
+    "drift_kwargs, expected_model",
+    [
+        ({}, "claude-sonnet-5-5"),
+        ({"drift_model": "gpt-4o-mini"}, "gpt-4o-mini"),
+    ],
+    ids=["default", "custom"],
+)
+def test_workflow_drift_agent_model(drift_kwargs, expected_model):
+    wf = _make_workflow(drift_detection=True, **drift_kwargs)
+    assert wf.drift_agent.model_name == expected_model
 
 
 def test_workflow_drift_threshold_stored():

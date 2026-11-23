@@ -3,34 +3,34 @@ import copy
 from concurrent.futures import as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from swarms.structs.execution_utils import (
-    batched_run,
-    run_concurrently,
-)
 from swarms.structs.agent import Agent
 from swarms.structs.comms_channel import (
     CommsChannel,
     claim_agents,
 )
-from swarms.structs.conversation import Conversation
-from swarms.utils.formatter import formatter
-from swarms.utils.history_output_formatter import (
-    history_output_formatter,
-)
-from swarms.utils.output_types import OutputType
-from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.structs.context_utils import (
     agent_answer,
     messages_for,
     split_last_turn,
 )
+from swarms.structs.conversation import Conversation
+from swarms.structs.execution_utils import (
+    batched_run,
+    run_concurrently,
+)
+from swarms.structs.usage_utils import total_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
     trace_run,
 )
+from swarms.utils.formatter import formatter
 from swarms.utils.generate_id import generate_id
-from swarms.structs.usage_utils import total_usage
+from swarms.utils.history_output_formatter import (
+    history_output_formatter,
+)
+from swarms.utils.output_types import OutputType
+from swarms.utils.workspace_manager import WorkspaceManager
 
 CONSENSUS_AGENT_PROMPT = """
 You are the Consensus Agent, responsible for synthesizing and evaluating the responses from a panel of expert agents. Your task is to deliver a rigorous, insightful, and actionable consensus based on their outputs.
@@ -191,6 +191,8 @@ class MajorityVoting:
         if self.max_loops <= 0:
             raise ValueError("max_loops must be greater than 0")
 
+        self._require_unique_voter_names()
+
         if not self.verbose:
             return
 
@@ -208,7 +210,30 @@ class MajorityVoting:
             title="Majority Voting",
         )
 
-    def _run_voters(self) -> Dict[str, Any]:
+    def _require_unique_voter_names(self) -> None:
+        """Reject a panel where two voters share a name.
+
+        Votes are stored by agent name, so a repeated name would
+        count one answer for every voter that shares it.
+
+        Raises:
+            ValueError: Two or more voters have the same agent name.
+        """
+        names = set()
+
+        for agent in self.agents:
+            if agent.agent_name in names:
+                raise ValueError(
+                    f"More than one voter is named '{agent.agent_name}'. "
+                    "MajorityVoting keys each vote by name, so one of "
+                    "their answers would be counted for all of them. Give "
+                    "each voter its own Agent instance and a unique name."
+                )
+            names.add(agent.agent_name)
+
+    def _run_voters(
+        self, img: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Run every voter on the shared conversation, concurrently.
 
@@ -217,20 +242,29 @@ class MajorityVoting:
         voter's whole conversation - which already contains this history - so
         the shared transcript would compound on every loop.
 
+        Args:
+            img (Optional[str]): Image sent to every voter with its turn.
+
         Returns:
             Maps agent name to that voter's answer.
         """
         answers: Dict[str, Any] = {}
+
         with ContextThreadPoolExecutor(
             max_workers=len(self.agents)
         ) as executor:
             future_to_agent = {}
             for agent in self.agents:
+
                 prior, vote_task = split_last_turn(
                     messages_for(agent.agent_name, self.conversation)
                 )
+
                 future = executor.submit(
-                    agent.run, task=vote_task, messages=prior
+                    agent.run,
+                    task=vote_task,
+                    messages=prior,
+                    img=img,
                 )
                 future_to_agent[future] = agent
 
@@ -244,7 +278,7 @@ class MajorityVoting:
 
     @trace_run(
         "MajorityVoting.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img"),
     )
     def run(
         self,
@@ -252,6 +286,7 @@ class MajorityVoting:
         streaming_callback: Optional[
             Callable[[str, str, bool], None]
         ] = None,
+        img: Optional[str] = None,
         *args,
         **kwargs,
     ) -> List[Any]:
@@ -260,6 +295,7 @@ class MajorityVoting:
 
         Args:
             task (str): The task to be performed by the agents.
+            img (Optional[str]): Image sent to every voter with the task.
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
 
@@ -280,7 +316,7 @@ class MajorityVoting:
 
         for i in range(self.max_loops):
 
-            outputs = self._run_voters()
+            outputs = self._run_voters(img=img)
 
             for agent in self.agents:
                 self.conversation.add(
@@ -298,15 +334,13 @@ class MajorityVoting:
 
             if streaming_callback is not None:
 
-                def consensus_streaming_callback(chunk: str):
+                def consensus_streaming_callback(
+                    chunk: str,
+                    agent_name: str = consensus_agent_name,
+                ):
                     """Wrapper for consensus agent streaming callback."""
-                    try:
-                        if chunk is not None and chunk.strip():
-                            streaming_callback(
-                                consensus_agent_name, chunk, False
-                            )
-                    except Exception as callback_error:
-                        raise callback_error
+                    if chunk is not None and chunk.strip():
+                        streaming_callback(agent_name, chunk, False)
 
             else:
                 consensus_streaming_callback = None

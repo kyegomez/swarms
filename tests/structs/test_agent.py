@@ -1,9 +1,11 @@
 import asyncio
 import json
 import os
+import re
 import tempfile
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -21,6 +23,7 @@ from swarms.structs.agent import DEFAULT_AGENT_DESCRIPTION
 from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
+    AgentOutputSchemaError,
     AgentToolExecutionError,
 )
 from swarms.tools.base_tool import BaseTool
@@ -102,7 +105,6 @@ class TestBasicAgent:
         assert basic_flow.max_loops == 1
         assert basic_flow.stopping_condition is None
         assert basic_flow.retry_attempts == 3
-        assert basic_flow.task is None
         assert basic_flow.stopping_token is None
         assert not basic_flow.interactive
 
@@ -158,24 +160,51 @@ class TestBasicAgent:
         assert str(history[0]["content"]) == "the task"
 
     def test_save_and_load(self, basic_flow, mocked_llm, tmp_path):
-        """State written by save() comes back through load().
-
-        The only save()/load() round trip at the Agent level, and it has not
-        executed since 2025-10-21 — which is how a load() crash shipped
-        unnoticed. load() restores scalar configuration and deliberately
-        preserves live instances, so the conversation is not round-tripped.
-        """
+        """save() and load() round-trip the settings and the history."""
         file_path = str(tmp_path / "agent_state.json")
+        basic_flow.run("remember this")
         basic_flow.max_loops = 3
         basic_flow.save(file_path)
 
         assert os.path.exists(file_path)
 
-        restored = _flow("basic-flow-restored", mocked_llm, tmp_path)
+        restored = _flow(
+            "basic-flow-restored",
+            mocked_llm,
+            tmp_path,
+            system_prompt="old",
+        )
         restored.load(file_path)
+        saved = basic_flow.short_memory.conversation_history
 
         assert restored.max_loops == 3
         assert restored.agent_name == "basic-flow"
+        assert restored.short_memory.conversation_history == saved
+
+        # A state file saved before the history was written still loads.
+        with open(file_path, "w") as f:
+            json.dump({"max_loops": 2}, f)
+        restored.load(file_path)
+        assert restored.max_loops == 2
+        assert restored.short_memory.conversation_history == saved
+
+    def test_concurrent_saves_of_one_agent_both_land(
+        self, basic_flow, monkeypatch, tmp_path
+    ):
+        file_path = str(tmp_path / "agent_state.json")
+        both_written = threading.Barrier(2, timeout=5)
+        real_replace = os.replace
+
+        def replace_after_both_writes(src, dst):
+            both_written.wait()
+            real_replace(src, dst)
+
+        monkeypatch.setattr(os, "replace", replace_after_both_writes)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            list(pool.map(basic_flow.save, [file_path] * 2))
+
+        with open(file_path) as f:
+            assert json.load(f)["agent_name"] == "basic-flow"
 
     def test_flow_call(self, basic_flow):
         """__call__ forwards to run() rather than doing its own thing.
@@ -232,10 +261,6 @@ class TestAgentFeatures:
     def test_agent_state_management(self):
         """save() writes to the caller's saved_state_path, load() restores
         scalar config, and autosave writes with no explicit call.
-
-        The conversation is deliberately not round-tripped: preserve_instances
-        keeps the target's live Conversation rather than overwriting it, so
-        asserting restored history here would pin behaviour load() disclaims.
         """
         with tempfile.TemporaryDirectory() as temp_dir:
             state_path = os.path.join(temp_dir, "agent_state.json")
@@ -879,7 +904,13 @@ class TestConstructorWindows:
         assert agent.saved_state_path == "/tmp/chosen-state.json"
 
     def test_saved_state_path_defaults_when_unset(self):
-        assert self._agent().saved_state_path.endswith("_state.json")
+        paths = {self._agent().saved_state_path for _ in range(2)}
+
+        assert len(paths) == 2
+        for path in paths:
+            assert re.fullmatch(
+                r"agent-[0-9a-f]{32}_state\.json", path
+            )
 
     def test_unknown_model_falls_back_for_both(self):
         """An unrecognised model must not raise out of __init__."""
@@ -1080,11 +1111,35 @@ class TestAutonomousAgentLoop:
             **kwargs,
         )
 
-    def test_loop_is_constructed_and_back_references_agent(self):
-        """Every agent owns a loop, and the loop can reach its agent."""
-        agent = self._agent()
-        assert isinstance(agent.autonomous_loop, AutonomousAgentLoop)
-        assert agent.autonomous_loop.agent is agent
+    def test_loop_is_built_on_first_read_and_back_references_agent(
+        self,
+    ):
+        """The loop and its transcript are built on first read, once."""
+        with patch(
+            "swarms.agents.autonomous_loop.Conversation"
+        ) as transcript:
+            agent = self._agent(max_loops=1)
+            assert transcript.call_count == 0
+            loop = agent.autonomous_loop
+        assert isinstance(loop, AutonomousAgentLoop)
+        assert loop.agent is agent
+        assert agent.autonomous_loop is loop
+
+    def test_unused_helpers_are_built_on_first_read(self, mocked_llm):
+        """A plain agent builds its optional helpers only when read."""
+        lazy = ("skills", "marketplace", "tool_struct", "mcp_manager")
+        agent = self._agent(max_loops=1, llm=mocked_llm)
+        agent.run("hi")
+        assert agent.mcp_enabled is False and agent.skills_dir is None
+        assert not set(lazy) & set(vars(agent))
+        for name in lazy:
+            assert getattr(agent, name) is getattr(agent, name)
+        assert agent.marketplace.agent is agent
+        assert not set(lazy) - set(vars(agent))
+        with_tools = self._agent(llm=mocked_llm, tools=[_add])
+        assert "tool_struct" in vars(with_tools)
+        with pytest.raises(Exception, match="oauth must be"):
+            self._agent(llm=mocked_llm, mcp_oauth=1)
 
     def test_loop_owns_the_tool_methods_not_the_agent(self):
         """The moved methods live on the loop; Agent must not regrow them."""
@@ -1177,9 +1232,16 @@ class TestAutonomousAgentLoop:
         agent.autonomous_subtasks[1]["status"] = "completed"
         assert loop._get_next_executable_subtask() is None
 
-    def test_loop_drives_plan_then_execution_against_a_stub_llm(self):
+    @pytest.mark.parametrize("entry", ["run", "arun"])
+    def test_loop_drives_plan_then_execution_against_a_stub_llm(
+        self, entry
+    ):
         """A canned LLM carries the loop from planning through completion."""
         prompts = []
+        tokens = []
+
+        async def on_token(token):
+            tokens.append(token)
 
         step = {
             "step_id": "s1",
@@ -1200,6 +1262,8 @@ class TestAutonomousAgentLoop:
 
         def fake_call_llm(self, task=None, *args, **kwargs):
             prompts.append(task)
+            if kwargs.get("streaming_callback"):
+                kwargs["streaming_callback"]("tok")
             if len(prompts) == 1:
                 return call("create_plan", plan)
             if len(prompts) <= 3:
@@ -1208,7 +1272,17 @@ class TestAutonomousAgentLoop:
 
         agent = self._agent()
         with patch.object(Agent, "call_llm", fake_call_llm):
-            output = agent.run("exercise the loop")
+            if entry == "run":
+                output = agent.run("exercise the loop")
+            else:
+                # arun hands the worker thread a bridge to the async callback.
+                output = asyncio.run(
+                    agent.arun(
+                        "exercise the loop",
+                        streaming_callback=on_token,
+                    )
+                )
+                assert tokens and set(tokens) == {"tok"}
 
         assert prompts, "the loop never called the LLM"
         assert output is not None
@@ -1220,61 +1294,170 @@ class TestAutonomousAgentLoop:
         assert agent.subtask_status["s1"] == "completed"
 
 
-class TestArunForwarding:
-    """arun() must forward its arguments to run(), not await a sync method."""
+def _stream_chunk(content=None, tool=None):
+    tool_calls = None
+    if tool:
+        tool_calls = [
+            SimpleNamespace(
+                index=0,
+                id=tool.get("id"),
+                function=SimpleNamespace(
+                    name=tool.get("name"),
+                    arguments=tool.get("arguments"),
+                ),
+            )
+        ]
+    delta = SimpleNamespace(
+        content=content, tool_calls=tool_calls, reasoning_content=None
+    )
+    return SimpleNamespace(
+        choices=[SimpleNamespace(delta=delta, finish_reason=None)],
+        model="stub",
+        usage=None,
+    )
+
+
+def _add(a: int, b: int) -> str:
+    """Add two numbers.
+
+    Args:
+        a: The first number.
+        b: The second number.
+    """
+    return str(a + b)
+
+
+class TestArunNative:
+    """arun() awaits the provider on the event loop instead of threading run()."""
 
     def _bare_agent(self):
-        # No LLM/model setup — these tests only exercise arun's plumbing.
         agent = Agent.__new__(Agent)
         agent.autosave = False
         agent.agent_name = "arun-test"
         agent.to_dict = lambda: {}
         return agent
 
-    def test_extra_positional_args_reach_run(self):
-        """`task=`/`img=` as keywords alongside *args made every extra
-        positional collide with `task`: arun(task, img, extra) raised
-        `TypeError: got multiple values for argument 'task'`.
-        """
-        agent = self._bare_agent()
-        seen = {}
+    @staticmethod
+    def _provider(turns, seen_threads, gate=None):
+        """An acompletion stub replaying one list of chunks per call."""
+        turns = iter(turns)
 
-        def fake_run(*args, **kwargs):
-            seen["args"] = args
-            seen["kwargs"] = kwargs
-            return "ok"
+        async def acompletion(**params):
+            seen_threads.add(threading.current_thread())
+            chunks = next(turns)
+            if not params.get("stream"):
+                message = SimpleNamespace(
+                    content=chunks, tool_calls=None
+                )
+                return SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(
+                            message=message, finish_reason="stop"
+                        )
+                    ],
+                    model="stub",
+                    usage=None,
+                )
 
-        agent.run = fake_run
+            async def stream():
+                for i, chunk in enumerate(chunks):
+                    # The consumer opens the gate only once it holds the first token.
+                    if gate is not None and i == 1:
+                        await asyncio.wait_for(gate.wait(), 5)
+                    yield chunk
 
-        result = asyncio.run(Agent.arun(agent, "T", "I", "EXTRA"))
+            return stream()
 
-        assert result == "ok"
-        assert seen["args"] == ("T", "I", "EXTRA")
+        return acompletion
 
-    def test_error_path_does_not_await_a_sync_handler(self):
-        """`_handle_run_error` is sync and re-raises; the await was harmless
-        only because it always raises before returning.
-        """
-        import inspect
+    def _run(self, turns, body, gate=None, **agent_kwargs):
+        threads = set()
+        with (
+            patch.object(
+                litellm_wrapper,
+                "acompletion",
+                self._provider(turns, threads, gate),
+            ),
+            patch.object(
+                litellm_wrapper,
+                "completion",
+                side_effect=AssertionError(
+                    "blocking completion used"
+                ),
+            ),
+        ):
+            agent = Agent(
+                agent_name="native",
+                model_name="gpt-5.4",
+                max_loops=agent_kwargs.pop("max_loops", 1),
+                print_on=False,
+                verbose=False,
+                **agent_kwargs,
+            )
+            result = body(agent)
+        assert threads == {threading.main_thread()}
+        return agent, result
 
-        assert not inspect.iscoroutinefunction(
-            Agent._handle_run_error
+    def test_arun_awaits_the_provider_on_the_loop(self):
+        _, result = self._run(
+            ["4"], lambda agent: asyncio.run(agent.arun("2+2?"))
         )
-        assert (
-            "await self._handle_run_error"
-            not in inspect.getsource(Agent.arun)
+        assert result == "4"
+
+    def test_arun_stream_yields_tokens_before_the_stream_ends(self):
+        async def consume(agent, gate):
+            tokens = []
+            async for token in agent.arun_stream("hi"):
+                tokens.append(token)
+                gate.set()
+            return tokens
+
+        # The provider waits on the gate, so a buffered stream would time out.
+        gate = asyncio.Event()
+
+        async def run(agent):
+            return await consume(agent, gate)
+
+        _, tokens = self._run(
+            [[_stream_chunk("Hel"), _stream_chunk("lo")]],
+            lambda agent: asyncio.run(run(agent)),
+            gate=gate,
         )
+        assert tokens == ["Hel", "lo"]
 
+    @pytest.mark.parametrize("is_async", [True, False])
+    def test_arun_streams_to_sync_and_async_callbacks_through_a_tool_call(
+        self, is_async
+    ):
+        tokens = []
+
+        async def async_callback(token):
+            tokens.append(token)
+
+        callback = async_callback if is_async else tokens.append
+        call = {
+            "id": "c1",
+            "name": "_add",
+            "arguments": '{"a": 2, "b": 3}',
+        }
+        agent, _ = self._run(
+            [[_stream_chunk(tool=call)], [_stream_chunk("5")]],
+            lambda agent: asyncio.run(
+                agent.arun("add", streaming_callback=callback)
+            ),
+            max_loops=2,
+            tools=[_add],
+        )
+        assert tokens[-1] == "5" and "_add" in tokens
+        history = agent.short_memory.conversation_history
+        assert any("result:\n5" in str(m["content"]) for m in history)
+
+    def test_arun_raises_the_original_error(self):
         agent = self._bare_agent()
+        agent.interactive = False
 
-        def boom(*args, **kwargs):
-            raise ValueError("boom")
-
-        agent.run = boom
-
-        # The original error surfaces — not a TypeError from awaiting None.
-        with pytest.raises(ValueError, match="boom"):
-            asyncio.run(Agent.arun(agent, "T"))
+        with pytest.raises(ValueError, match="No task provided"):
+            asyncio.run(Agent.arun(agent, None))
 
     def test_handle_run_error_tolerates_braces_in_provider_message(
         self,
@@ -1841,6 +2024,33 @@ class TestConcurrentExecutionPool:
 
         # Order matters: results are zipped against the caller's task list.
         assert results == ["ran:t1", "ran:t2", "ran:t3"]
+
+    def test_concurrent_paths_run_every_item_at_once_on_few_cpus(
+        self,
+    ):
+        """#2713: the pool was os.cpu_count() wide, so on a 1-CPU host
+        I/O-bound runs went one at a time."""
+        agent = self._agent()
+        others = [self._agent(n) for n in "BCDE"]
+        barrier = threading.Barrier(4, timeout=5)
+
+        def wait(*a, **kw):
+            barrier.wait()
+            return "ok"
+
+        with patch("os.cpu_count", return_value=1):
+            with patch.object(Agent, "run", side_effect=wait):
+                assert (
+                    Agent.run_concurrent_tasks(
+                        agent, ["a", "b", "c", "d"]
+                    )
+                    == ["ok"] * 4
+                )
+            with patch.object(Agent, "talk_to", side_effect=wait):
+                assert (
+                    Agent.talk_to_multiple_agents(agent, others, "hi")
+                    == ["ok"] * 4
+                )
 
     def test_run_concurrent_tasks_propagates_failure(self):
         """The except branch logged and fell through, so a failed batch
@@ -2748,6 +2958,27 @@ class TestIntegerLoopRequest:
 
         assert sent[1][1] == [{"role": "user", "content": "SUMMARY"}]
 
+    def test_compression_is_on_by_default_only_for_auto_loops(self):
+        cases = [
+            ({"max_loops": 1}, False),
+            ({"max_loops": 5}, False),
+            ({"max_loops": "auto"}, True),
+            ({"max_loops": 1, "dynamic_loops": True}, True),
+            ({"max_loops": 1, "context_compression": True}, True),
+            (
+                {"max_loops": "auto", "context_compression": False},
+                False,
+            ),
+        ]
+
+        for kwargs, expected in cases:
+            agent = self._agent(**kwargs)
+
+            assert agent.context_compression is expected, kwargs
+            assert (
+                agent._context_compressor is not None
+            ) is expected, kwargs
+
 
 class TestAgentOutputCleanerRemoval:
     """Tests confirming removal of unused output_cleaner parameter and op (#2719)."""
@@ -2776,3 +3007,57 @@ class TestAgentOutputCleanerRemoval:
         assert isinstance(result, str)
         cleaned = result.upper()
         assert "RAW OUTPUT" in cleaned
+
+
+class _Report(BaseModel):
+    title: str
+    score: float
+
+
+_VALID_REPORT = '{"title": "Plan", "score": 0.8}'
+_INVALID_REPORT = '{"title": "Plan"}'
+
+
+@pytest.mark.parametrize("use_arun", [False, True])
+@pytest.mark.parametrize(
+    "replies",
+    [[_VALID_REPORT], [_INVALID_REPORT]],
+    ids=["valid", "invalid"],
+)
+def test_output_schema_returns_a_validated_model(use_arun, replies):
+    sent = []
+
+    def completion(**params):
+        sent.append(params)
+        message = SimpleNamespace(
+            content=replies[len(sent) - 1], tool_calls=None
+        )
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=message)]
+        )
+
+    async def acompletion(**params):
+        return completion(**params)
+
+    agent = Agent(max_loops=1, print_on=False, output_schema=_Report)
+
+    def run(task):
+        if use_arun:
+            return asyncio.run(agent.arun(task))
+        return agent.run(task)
+
+    with (
+        patch.object(litellm_wrapper, "completion", completion),
+        patch.object(litellm_wrapper, "acompletion", acompletion),
+    ):
+        if replies[-1] == _INVALID_REPORT:
+            with pytest.raises(AgentOutputSchemaError) as raised:
+                run("Rate this plan.")
+            assert raised.value.raw_output == _INVALID_REPORT
+        else:
+            assert run("Rate this plan.") == _Report(
+                title="Plan", score=0.8
+            )
+
+    assert len(sent) == 1
+    assert sent[0]["response_format"] is _Report

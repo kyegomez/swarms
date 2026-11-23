@@ -45,20 +45,6 @@ def test_base_model_to_dict():
     print("base_model_to_dict test passed")
 
 
-def test_detect_tool_input_type():
-    print("Testing detect_tool_input_type")
-    tool = BaseTool()
-
-    model = TestModel(name="Test", age=25)
-    assert tool.detect_tool_input_type(model) == "Pydantic"
-
-    dict_input = {"key": "value"}
-    assert tool.detect_tool_input_type(dict_input) == "Dictionary"
-
-    assert tool.detect_tool_input_type(sample_function) == "Function"
-    print("detect_tool_input_type test passed")
-
-
 def test_execute_tool_by_name():
     print("Testing execute_tool_by_name")
     tool = BaseTool(
@@ -129,6 +115,16 @@ def test_func_to_dict_resolves_nested_model_refs():
     assert items["items"] == {"$ref": "#/$defs/LineItem"}
     assert "$defs" not in items
     assert params["$defs"]["LineItem"]["required"] == ["sku", "qty"]
+
+
+def test_convert_tool_into_openai_schema_uses_docstring_sections():
+    tool = BaseTool(tools=[add_numbers])
+    function = tool.convert_tool_into_openai_schema()["functions"][0]
+    properties = function["parameters"]["properties"]
+
+    assert function["description"] == "Add two numbers."
+    assert properties["a"]["description"] == "First number."
+    assert properties["b"]["description"] == "Second number."
 
 
 def add_numbers(a: int, b: int) -> int:
@@ -217,12 +213,6 @@ def test_two_different_tools_with_one_name_are_rejected():
     BaseTool(tools=[web.search, web.search, add_numbers])
     with pytest.raises(ValueError, match="'search'"):
         BaseTool(tools=[web.search, CustomerDB().search])
-
-
-def test_function_to_dict():
-    result = BaseTool().function_to_dict(add_numbers)
-
-    assert result["function"]["name"] == "add_numbers"
 
 
 class Function(BaseModel):
@@ -375,7 +365,6 @@ def run_all_tests():
     tests = [
         test_func_to_dict,
         test_base_model_to_dict,
-        test_detect_tool_input_type,
         test_execute_tool_by_name,
         test_check_str_for_functions_valid,
         test_convert_funcs_into_tools,

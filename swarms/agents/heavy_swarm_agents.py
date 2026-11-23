@@ -1,9 +1,9 @@
-"""Agent factories for ``HeavySwarm``.
+"""Agent factories for HeavySwarm.
 
-This module owns every Agent specification used by ``HeavySwarm`` — the
+This module owns every Agent specification used by HeavySwarm — the
 default 5-agent layout, the 4-agent Grok variant, and the 16-agent Grok
-Heavy variant — plus a single ``build_heavy_swarm_agents`` dispatcher.
-Keeps the orchestration class in ``swarms/structs/heavy_swarm.py`` free
+Heavy variant — plus a single build_heavy_swarm_agents dispatcher.
+Keeps the orchestration class in swarms/structs/heavy_swarm.py free
 of prompt imports and per-role boilerplate.
 """
 
@@ -47,6 +47,16 @@ AgentSpec = Tuple[str, str, str, str, bool]
 
 # All swarm variants
 SwarmVariant = Literal["default", "medium", "heavy"]
+
+
+# Loop-control tools only; a worker's own tools come from worker_tools.
+WORKER_LOOP_TOOLS: List[str] = [
+    "create_plan",
+    "think",
+    "subtask_done",
+    "complete_task",
+    "respond_to_user",
+]
 
 
 DEFAULT_SPECS: List[AgentSpec] = [
@@ -248,9 +258,10 @@ def _build_agent(
 ) -> Agent:
     """Construct a HeavySwarm worker or leader agent.
 
-    Leaders (``is_leader=True``) run a single deterministic loop and always
+    Leaders (is_leader=True) run a single deterministic loop and always
     print, since they emit the user-facing answer. Workers run with
-    ``max_loops="auto"`` and only print when ``worker_prints_on`` is set.
+    max_loops="auto" with only the loop-control tools plus the tools
+    passed in, and only print when worker_prints_on is set.
     """
     return Agent(
         agent_name=name,
@@ -262,6 +273,7 @@ def _build_agent(
         verbose=False,
         tools=tools,
         output_type="final",
+        selected_tools="all" if is_leader else WORKER_LOOP_TOOLS,
     )
 
 
@@ -281,8 +293,8 @@ def build_heavy_swarm_agents(
 ) -> Dict[str, Agent]:
     """Build the dict of named agents for a HeavySwarm variant.
 
-    ``variant`` picks the spec table:
-    ``"default"`` (5 agents), ``"medium"`` (4 agents), ``"heavy"`` (16 agents).
+    variant picks the spec table:
+    "default" (5 agents), "medium" (4 agents), "heavy" (16 agents).
     """
     try:
         specs = _SPECS_BY_VARIANT[variant]

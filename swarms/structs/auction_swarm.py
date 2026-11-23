@@ -52,7 +52,7 @@ import json
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 from swarms.structs.execution_utils import batched_run
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.structs.serialization import SerializableMixin
@@ -394,8 +394,7 @@ class AuctionSwarm(SerializableMixin):
                 self._remove_bid_tool()
 
         # Bidding leaves the bid prompt in short_memory, which would leak ahead of a later run's real response.
-        for agent in self.agents:
-            agent.short_memory = agent.short_memory_init()
+        reset_agents(self.agents)
 
         if self.print_on:
             bid_summary = "\n".join(

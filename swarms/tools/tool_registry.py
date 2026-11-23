@@ -60,9 +60,6 @@ class ToolStorage:
             tools=[],
         )
 
-        # Pool
-        self.pool = ThreadPoolExecutor(max_workers=os.cpu_count())
-
     def add_tool(self, func: Callable) -> None:
         """
         Adds a tool to the storage.

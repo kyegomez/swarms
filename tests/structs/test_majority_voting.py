@@ -337,7 +337,7 @@ def test_streaming_majority_voting():
             streaming_on=True,  # if concurrent agents want to be streamed
         )
 
-        swarm = MajorityVoting(agents=[agent, agent, agent])
+        swarm = MajorityVoting(agents=[agent])
 
         result = swarm.run(
             "Create a table of super high growth opportunities for AI. I have $40k to invest in ETFs, index funds, and more. Please create a table in markdown.",
@@ -368,6 +368,7 @@ def _record(agent, calls):
                 "agent": name,
                 "task": task,
                 "messages": list(messages or []),
+                "img": kwargs.get("img"),
                 "answer": answer,
             }
         )
@@ -455,6 +456,27 @@ def test_votes_recorded_are_answers_not_transcripts():
         assert not any(
             task in content for content in recorded
         ), f"{name} echoed the task back into the shared conversation"
+
+
+def test_voters_that_share_a_name_are_rejected():
+    agents, _ = _recording_agents(["Voter", "Voter"])
+
+    with pytest.raises(ValueError, match="'Voter'"):
+        MajorityVoting(agents=agents)
+
+    with pytest.raises(ValueError, match="'Voter'"):
+        MajorityVoting(agents=[agents[0], agents[0]])
+
+
+def test_every_voter_gets_the_image_on_every_loop():
+    mv, calls = _voting_system(["Voter-A", "Voter-B"], max_loops=2)
+
+    mv.run("What does the chart show?", img="chart.png")
+
+    voter_imgs = [
+        c["img"] for c in calls if c["agent"].startswith("Voter")
+    ]
+    assert voter_imgs == ["chart.png"] * 4
 
 
 def test_failing_voter_raises_instead_of_casting_its_error_as_a_vote():

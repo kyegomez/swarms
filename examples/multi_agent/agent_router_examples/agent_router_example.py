@@ -3,7 +3,6 @@ from swarms.structs.agent_router import AgentRouter
 
 agent_router = AgentRouter(
     embedding_model="text-embedding-ada-002",
-    n_agents=1,
     agents=[
         Agent(
             agent_name="Symptom Checker",

@@ -1,8 +1,9 @@
-import concurrent.futures
+import asyncio
 import time
-from typing import Callable, List, Optional, Union
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Callable, List, Optional, Union
 
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.comms_channel import (
     CommsChannel,
@@ -25,6 +26,9 @@ from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="concurrent_workflow")
+
+# Kept to tell when run or arun has been replaced on Agent, a subclass or an instance.
+AGENT_RUN, AGENT_ARUN = Agent.run, Agent.arun
 
 
 class ConcurrentWorkflow:
@@ -53,9 +57,9 @@ class ConcurrentWorkflow:
         on_error (str): Failure policy for an agent that raises. ``"store"``
             records the error string as that agent's output and lets the other
             agents finish; ``"raise"`` propagates the exception and aborts the run
-        max_workers (Optional[int]): Thread pool size for concurrent agent
-            execution. Agent calls are network-bound, so this defaults to
-            ``len(agents)`` rather than deriving from CPU count.
+        max_workers (Optional[int]): Most agents running at once. Agent calls
+            are network-bound, so this defaults to ``len(agents)`` rather
+            than deriving from CPU count.
         swarm_workspace_dir (Optional[str]): Resolved workspace directory used for
             autosave, or None when autosave is disabled or setup failed
         conversation (Conversation): Conversation object for storing agent interactions
@@ -129,10 +133,9 @@ class ConcurrentWorkflow:
                 records the error string as that agent's output and lets the
                 remaining agents finish; ``"raise"`` propagates the exception and
                 aborts the run.
-            max_workers (Optional[int]): Thread pool size for concurrent agent
-                execution. Agent calls are network-bound rather than CPU-bound,
-                so when omitted the pool is sized at ``len(agents)``. Set it to
-                throttle large rosters. See :meth:`_resolve_max_workers`.
+            max_workers (Optional[int]): Most agents running at once. Agent
+                calls are network-bound rather than CPU-bound, so when omitted
+                every agent runs at once. Set it to throttle large rosters.
 
         Raises:
             ValueError: If no agents are provided or the agents list is empty.
@@ -307,146 +310,59 @@ class ConcurrentWorkflow:
         Returns:
             Union[Dict, List, str]: Formatted conversation history based on output_type.
         """
-        try:
-            self.conversation.add(role="User", content=task)
+        display = (
+            self.display_agent_dashboard
+            if self.show_dashboard
+            else lambda *args, **kwargs: None
+        )
 
-            # Reset agent statuses
+        def run_agent_with_status(
+            agent, task, img, imgs, streaming_callback
+        ):
+            status = self.agent_statuses[agent.agent_name]
+            status["status"] = "running"
+            display()
+            last_update_time = [0]
+
+            def dashboard_callback(name, chunk, is_final):
+                if chunk and not is_final:
+                    status["output"] += chunk
+                    if time.time() - last_update_time[0] >= 0.1:
+                        display()
+                        last_update_time[0] = time.time()
+                if streaming_callback:
+                    streaming_callback(name, chunk, is_final)
+
+            try:
+                output = self._run_agent_with_streaming(
+                    agent, task, img, imgs, dashboard_callback
+                )
+            except Exception as e:
+                status.update(status="error", output=f"Error: {e}")
+                display()
+                raise
+            status.update(status="completed", output=output)
+            display()
+            return output
+
+        try:
             for agent in self.agents:
                 self.agent_statuses[agent.agent_name] = {
                     "status": "pending",
                     "output": "",
                 }
-
-            if self.show_dashboard:
-                self.display_agent_dashboard()
-
-            futures = []
-            results = []
-
-            def run_agent_with_status(agent, task, img, imgs):
-                try:
-                    self.agent_statuses[agent.agent_name][
-                        "status"
-                    ] = "running"
-                    if self.show_dashboard:
-                        self.display_agent_dashboard()
-
-                    last_update_time = [0]
-                    update_interval = 0.1
-
-                    def agent_streaming_callback(chunk: str):
-                        try:
-                            if self.show_dashboard and chunk:
-                                current_output = self.agent_statuses[
-                                    agent.agent_name
-                                ]["output"]
-                                self.agent_statuses[agent.agent_name][
-                                    "output"
-                                ] = (current_output + chunk)
-
-                                current_time = time.time()
-                                if (
-                                    current_time - last_update_time[0]
-                                    >= update_interval
-                                ):
-                                    self.display_agent_dashboard()
-                                    last_update_time[0] = current_time
-
-                            if (
-                                streaming_callback
-                                and chunk is not None
-                            ):
-                                streaming_callback(
-                                    agent.agent_name, chunk, False
-                                )
-                        except Exception as callback_error:
-                            logger.warning(
-                                f"Dashboard streaming callback failed for {agent.agent_name}: {str(callback_error)}"
-                            )
-
-                    output = agent.run(
-                        task=task,
-                        img=img,
-                        imgs=imgs,
-                        streaming_callback=agent_streaming_callback,
-                    )
-
-                    self.agent_statuses[agent.agent_name][
-                        "status"
-                    ] = "completed"
-                    self.agent_statuses[agent.agent_name][
-                        "output"
-                    ] = output
-                    if self.show_dashboard:
-                        self.display_agent_dashboard()
-
-                    if streaming_callback:
-                        streaming_callback(agent.agent_name, "", True)
-
-                    return output
-                except Exception as e:
-                    self.agent_statuses[agent.agent_name][
-                        "status"
-                    ] = "error"
-                    self.agent_statuses[agent.agent_name][
-                        "output"
-                    ] = f"Error: {str(e)}"
-                    if self.show_dashboard:
-                        self.display_agent_dashboard()
-
-                    if streaming_callback:
-                        streaming_callback(
-                            agent.agent_name, f"Error: {str(e)}", True
-                        )
-
-                    raise
-
-            with ContextThreadPoolExecutor(
-                max_workers=self._resolve_max_workers()
-            ) as executor:
-                futures = [
-                    executor.submit(
-                        run_agent_with_status, agent, task, img, imgs
-                    )
-                    for agent in self.agents
-                ]
-                concurrent.futures.wait(futures)
-
-                for future, agent in zip(futures, self.agents):
-                    try:
-                        output = agent_answer(
-                            agent, fallback=future.result()
-                        )
-                        results.append((agent.agent_name, output))
-                    except Exception as e:
-                        # Same failure policy as _run: the dashboard must not revoke on_error.
-                        if self.on_error == "raise":
-                            raise
-                        capture_error(
-                            e,
-                            self,
-                            name="ConcurrentWorkflow.agent_error",
-                            agent=getattr(agent, "agent_name", None),
-                        )
-                        logger.error(
-                            f"Agent {agent.agent_name} failed: {str(e)}"
-                        )
-                        results.append(
-                            (agent.agent_name, f"Error: {str(e)}")
-                        )
-
-            for agent_name, output in results:
-                self.conversation.add(role=agent_name, content=output)
-
-            if self.show_dashboard:
-                self.display_agent_dashboard(
-                    "Final ConcurrentWorkflow Dashboard",
-                    is_final=True,
-                )
-
-            return history_output_formatter(
-                conversation=self.conversation, type=self.output_type
+            display()
+            result = self._run(
+                task,
+                img,
+                imgs,
+                streaming_callback,
+                run_agent_with_status,
             )
+            display(
+                "Final ConcurrentWorkflow Dashboard", is_final=True
+            )
+            return result
         finally:
             if self.show_dashboard:
                 formatter.stop_dashboard()
@@ -459,31 +375,35 @@ class ConcurrentWorkflow:
         streaming_callback: Optional[
             Callable[[str, str, bool], None]
         ] = None,
+        run_agent: Optional[Callable] = None,
     ):
         """
-        Execute agents concurrently without dashboard.
+        Execute agents concurrently.
 
-        Internal method that runs all agents concurrently using ThreadPoolExecutor
-        without displaying the dashboard. This is the core execution logic used when
-        dashboard mode is disabled.
+        Internal method that runs all agents concurrently using ThreadPoolExecutor.
+        This is the core execution logic for both the plain and the dashboard runs.
 
         Args:
             task (str): The task to be executed by all agents.
             img (Optional[str]): Single image path for agents that support image input.
             imgs (Optional[List[str]]): List of image paths for agents that support multiple images.
             streaming_callback (Optional[Callable[[str, str, bool], None]]): Callback function for streaming updates.
+            run_agent (Optional[Callable]): Runs one agent, with the same arguments as
+                :meth:`_run_agent_with_streaming`, which is the default. The dashboard
+                passes one that updates each agent's status.
 
         Returns:
             Union[Dict, List, str]: Formatted conversation history based on output_type.
         """
         self.conversation.add(role="User", content=task)
+        run_agent = run_agent or self._run_agent_with_streaming
 
         with ContextThreadPoolExecutor(
             max_workers=self._resolve_max_workers()
         ) as executor:
             futures = [
                 executor.submit(
-                    self._run_agent_with_streaming,
+                    run_agent,
                     agent,
                     task,
                     img,
@@ -495,33 +415,177 @@ class ConcurrentWorkflow:
 
             for future, agent in zip(futures, self.agents):
                 try:
-                    output = agent_answer(
-                        agent, fallback=future.result()
-                    )
-                    self.conversation.add(
-                        role=agent.agent_name, content=output
-                    )
-                except Exception as e:
-                    if self.on_error == "raise":
-                        raise
-                    # Track the swallowed per-agent failure so it isn't lost.
-                    capture_error(
-                        e,
-                        self,
-                        name="ConcurrentWorkflow.agent_error",
-                        agent=getattr(agent, "agent_name", None),
-                    )
-                    logger.error(
-                        f"Agent {agent.agent_name} failed: {str(e)}"
-                    )
-                    self.conversation.add(
-                        role=f"{agent.agent_name} (failed)",
-                        content=f"Error: {str(e)}",
-                    )
+                    outcome = future.result()
+                except Exception as error:
+                    outcome = error
+                self._record_outcome(agent, outcome)
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
         )
+
+    def _record_outcome(
+        self, agent: Union[Agent, Callable], outcome: Any
+    ) -> None:
+        """
+        Add one agent's answer or failure to the conversation.
+
+        Args:
+            agent (Union[Agent, Callable]): The agent that ran.
+            outcome (Any): What the agent returned, or the exception it raised.
+
+        Raises:
+            BaseException: The agent's exception, when on_error is "raise".
+        """
+        if not isinstance(outcome, BaseException):
+            self.conversation.add(
+                role=agent.agent_name,
+                content=agent_answer(agent, fallback=outcome),
+            )
+            return
+
+        if self.on_error == "raise" or not isinstance(
+            outcome, Exception
+        ):
+            raise outcome
+
+        # Track the swallowed per-agent failure so it isn't lost.
+        capture_error(
+            outcome,
+            self,
+            name="ConcurrentWorkflow.agent_error",
+            agent=getattr(agent, "agent_name", None),
+        )
+        logger.error(f"Agent {agent.agent_name} failed: {outcome}")
+        self.conversation.add(
+            role=f"{agent.agent_name} (failed)",
+            content=f"Error: {outcome}",
+        )
+
+    def _runs_on_event_loop(self) -> bool:
+        """
+        Decide whether this run can await every agent on one event loop.
+
+        Returns:
+            bool: True when no event loop is running in this thread and every
+                agent is an Agent that uses its own run and arun.
+        """
+        try:
+            asyncio.get_running_loop()
+            return False
+        except RuntimeError:
+            pass
+
+        return all(
+            isinstance(agent, Agent)
+            and type(agent).run is AGENT_RUN
+            and type(agent).arun is AGENT_ARUN
+            and not {"run", "arun"} & vars(agent).keys()
+            for agent in self.agents
+        )
+
+    async def _arun(
+        self,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ):
+        """
+        Execute agents concurrently on the running event loop.
+
+        Args:
+            task (str): The task to be executed by all agents.
+            img (Optional[str]): Single image path for agents that support image input.
+            imgs (Optional[List[str]]): List of image paths for agents that support multiple images.
+            streaming_callback (Optional[Callable[[str, str, bool], None]]): Callback function for streaming updates.
+
+        Returns:
+            Union[Dict, List, str]: Formatted conversation history based on output_type.
+        """
+        limit = self._resolve_max_workers()
+        # A blocking step inside an agent still gets its own thread, as on the thread path.
+        asyncio.get_running_loop().set_default_executor(
+            ThreadPoolExecutor(max_workers=limit)
+        )
+        self.conversation.add(role="User", content=task)
+        semaphore = asyncio.Semaphore(limit)
+
+        async def run_agent(agent: Agent) -> Any:
+            async with semaphore:
+                return await self._arun_agent_with_streaming(
+                    agent, task, img, imgs, streaming_callback
+                )
+
+        outcomes = await asyncio.gather(
+            *(run_agent(agent) for agent in self.agents),
+            return_exceptions=True,
+        )
+
+        for agent, outcome in zip(self.agents, outcomes):
+            self._record_outcome(agent, outcome)
+
+        return history_output_formatter(
+            conversation=self.conversation, type=self.output_type
+        )
+
+    async def _arun_agent_with_streaming(
+        self,
+        agent: Agent,
+        task: str,
+        img: Optional[str] = None,
+        imgs: Optional[List[str]] = None,
+        streaming_callback: Optional[
+            Callable[[str, str, bool], None]
+        ] = None,
+    ):
+        """
+        Await a single agent with streaming support.
+
+        Args:
+            agent (Agent): The agent to execute.
+            task (str): The task to be executed by the agent.
+            img (Optional[str]): Single image path for agents that support image input.
+            imgs (Optional[List[str]]): List of image paths for agents that support multiple images.
+            streaming_callback (Optional[Callable[[str, str, bool], None]]): Callback function for streaming updates.
+
+        Returns:
+            str: The output from the agent.
+
+        Raises:
+            Exception: If the agent execution fails.
+        """
+        if streaming_callback is None:
+            return await agent.arun(task=task, img=img, imgs=imgs)
+
+        def emit(chunk: str, is_final: bool) -> None:
+            try:
+                streaming_callback(agent.agent_name, chunk, is_final)
+            except Exception as callback_error:
+                logger.warning(
+                    f"Streaming callback failed for {agent.agent_name}: {str(callback_error)}"
+                )
+
+        def agent_streaming_callback(chunk: str) -> None:
+            if chunk is not None:
+                emit(chunk, False)
+
+        try:
+            output = await agent.arun(
+                task=task,
+                img=img,
+                imgs=imgs,
+                streaming_callback=agent_streaming_callback,
+            )
+        except Exception as e:
+            logger.error(f"Agent {agent.agent_name} failed: {str(e)}")
+            emit(f"Error: {str(e)}", True)
+            raise
+
+        emit("", True)
+        return output
 
     def _run_agent_with_streaming(
         self,
@@ -613,6 +677,11 @@ class ConcurrentWorkflow:
         simultaneously on the given task, with optional dashboard monitoring and
         streaming callbacks. Automatically cleans up resources after execution.
 
+        Agents are awaited on one event loop, so a model call holds no thread
+        while it waits. The run uses one thread per agent instead when the
+        dashboard is on, when an event loop is already running in the calling
+        thread, or when an agent is not a plain Agent.
+
         Args:
             task (str): The task to be executed by all agents.
             img (Optional[str]): Single image path for agents that support image input.
@@ -628,13 +697,15 @@ class ConcurrentWorkflow:
             >>> result = workflow.run("Analyze this data")
         """
         self.conversation = self._new_conversation()
-        for agent in self.agents:
-            if isinstance(agent, Agent):
-                agent.reset()
+        reset_agents(self.agents)
         try:
             if self.show_dashboard:
                 result = self.run_with_dashboard(
                     task, img, imgs, streaming_callback
+                )
+            elif self._runs_on_event_loop():
+                result = asyncio.run(
+                    self._arun(task, img, imgs, streaming_callback)
                 )
             else:
                 result = self._run(

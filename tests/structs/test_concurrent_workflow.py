@@ -1,10 +1,13 @@
+import asyncio
 import os
+import threading
 import time
 from types import SimpleNamespace
 
 import pytest
 
 from swarms import Agent
+from swarms.schemas.agent_errors import AgentLLMError
 from swarms.structs.concurrent_workflow import ConcurrentWorkflow
 from swarms.utils.workspace_utils import get_workspace_dir
 
@@ -610,7 +613,11 @@ def test_concurrent_workflow_does_not_resend_earlier_runs(
         )
         return "an answer"
 
+    async def fake_arun(self, *args, **kwargs):
+        return fake_run(self, *args, **kwargs)
+
     monkeypatch.setattr(LiteLLM, "run", fake_run)
+    monkeypatch.setattr(LiteLLM, "arun", fake_arun)
     agents = [
         Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
         for name in ("Alpha", "Beta")
@@ -710,6 +717,70 @@ def test_comms_channel_records_answers_in_agent_order(tmp_path):
         ("B", "B-answer"),
         ("A", "A-answer"),
     ]
+
+
+class _LoopModel:
+    """Model stub that records the thread of each call and how many overlap."""
+
+    def __init__(self, calls: dict, fail: bool = False):
+        self.calls = calls
+        self.fail = fail
+
+    def run(self, task=None, *args, **kwargs) -> str:
+        self.calls["threads"].append(threading.get_ident())
+        return "done"
+
+    async def arun(self, task=None, *args, **kwargs) -> str:
+        self.calls["threads"].append(threading.get_ident())
+        self.calls["running"] += 1
+        self.calls["peak"] = max(
+            self.calls["peak"], self.calls["running"]
+        )
+        await asyncio.sleep(0.01)
+        self.calls["running"] -= 1
+        if self.fail:
+            raise RuntimeError("boom")
+        return "done"
+
+
+@pytest.mark.parametrize(
+    "max_workers, on_error, peak",
+    [(None, "store", 4), (2, "store", 2), (None, "raise", 4)],
+)
+def test_concurrent_workflow_awaits_agents_on_the_callers_thread(
+    max_workers, on_error, peak
+):
+    calls = {"threads": [], "running": 0, "peak": 0}
+    workflow = ConcurrentWorkflow(
+        agents=[
+            Agent(
+                agent_name=f"agent-{i}",
+                llm=_LoopModel(calls, fail=i == 1),
+                max_loops=1,
+                print_on=False,
+            )
+            for i in range(4)
+        ],
+        max_workers=max_workers,
+        on_error=on_error,
+        output_type="dict",
+    )
+
+    if on_error == "raise":
+        with pytest.raises(AgentLLMError):
+            workflow.run("task")
+    else:
+        result = workflow.run("task")
+        assert [message["role"] for message in result] == [
+            "User",
+            "agent-0",
+            "agent-1 (failed)",
+            "agent-2",
+            "agent-3",
+        ]
+
+    assert set(calls["threads"]) == {threading.get_ident()}
+    assert calls["peak"] == peak
 
 
 if __name__ == "__main__":

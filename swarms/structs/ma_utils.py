@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from swarms.prompts.collaborative_prompts import (
     get_multi_agent_collaboration_prompt_one,
 )
+from swarms.utils.litellm_wrapper import LiteLLM
 
 
 def list_all_agents(
@@ -95,18 +96,15 @@ def list_all_agents(
 
 
 models = [
-    "anthropic/claude-3-sonnet-20240229",
-    "openai/gpt-4o-mini",
-    "openai/gpt-4o",
-    "groq/deepseek-r1-distill-qwen-32b",
-    "groq/moonshotai/kimi-k2-instruct",
-    "openai/o3-mini",
-    "o4-mini",
-    "claude-sonnet-4-20250514",
-    "o3",
-    "gpt-5.4",
-    "groq/llama-3.1-8b-instant",
-    "gpt-4.1-nano",
+    "anthropic/claude-sonnet-5-5",
+    "openai/gpt-6-luna",
+    "groq/openai/gpt-oss-120b",
+    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-terra",
+    "openai/gpt-6.1-sol",
+    "openai/gpt-5.4",
+    "groq/openai/gpt-oss-20b",
+    "openai/gpt-5.6-luna",
 ]
 
 
@@ -126,13 +124,14 @@ def set_random_models_for_agents(
     if agents is None:
         return random.choice(model_names)
 
-    if isinstance(agents, list):
-        for agent in agents:
-            setattr(agent, "model_name", random.choice(model_names))
-        return agents
-    else:
-        setattr(agents, "model_name", random.choice(model_names))
-        return agents
+    for agent in agents if isinstance(agents, list) else [agents]:
+        agent.model_name = random.choice(model_names)
+
+        # A client the caller passed in is theirs to keep
+        if isinstance(getattr(agent, "llm", None), LiteLLM):
+            agent.llm_handling()
+
+    return agents
 
 
 def create_agent_map(

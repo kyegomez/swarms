@@ -30,7 +30,7 @@ load_dotenv()
 
 from swarms import Agent, SequentialWorkflow
 from swarms.structs.mixture_of_agents import MixtureOfAgents
-from swarms.utils.litellm_wrapper import LiteLLM
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY, LiteLLM
 
 # ---------------------------------------------------------------------------
 # Provider model names
@@ -606,3 +606,95 @@ class TestGeminiProvider:
         )
         result = agent.run(SIMPLE_TASK)
         assert result is not None
+
+
+def test_prepare_messages_attaches_images_to_prebuilt_body():
+    llm = LiteLLM(
+        model_name=OPENAI_MODEL, system_prompt=SIMPLE_PROMPT
+    )
+    urls = ["https://example.com/a.png", "https://example.com/b.png"]
+    messages = llm._prepare_messages(
+        img=urls[0],
+        imgs=urls[1:],
+        messages=[
+            {"role": "user", "content": SIMPLE_TASK},
+            {"role": "assistant", "content": "ok"},
+        ],
+    )
+    assert messages[-1] == {"role": "assistant", "content": "ok"}
+    assert messages[1]["content"][-1] == {
+        "type": "text",
+        "text": SIMPLE_TASK,
+    }
+    assert [
+        p["image_url"]["url"] for p in messages[1]["content"][:-1]
+    ] == urls
+
+
+@pytest.mark.parametrize(
+    "body, expected_roles, expected_types",
+    [
+        (
+            [
+                {
+                    "role": "user",
+                    "content": [{"type": "text", "text": "hi"}],
+                }
+            ],
+            ["system", "user"],
+            ["image_url", "text"],
+        ),
+        (
+            [{"role": "assistant", "content": "ok"}],
+            ["system", "assistant", "user"],
+            ["image_url"],
+        ),
+    ],
+)
+def test_prepare_messages_attaches_images_to_any_prebuilt_body(
+    body, expected_roles, expected_types
+):
+    llm = LiteLLM(
+        model_name=OPENAI_MODEL, system_prompt=SIMPLE_PROMPT
+    )
+    original = [dict(message) for message in body]
+
+    messages = llm._prepare_messages(
+        img="https://example.com/a.png", messages=body
+    )
+
+    assert [m["role"] for m in messages] == expected_roles
+    assert [p["type"] for p in messages[-1]["content"]] == (
+        expected_types
+    )
+    assert body == original
+
+
+@pytest.mark.parametrize("prompt_caching", [False, True])
+def test_images_go_on_the_marked_turn_ahead_of_its_text(
+    prompt_caching,
+):
+    llm = LiteLLM(
+        model_name="claude-sonnet-4-6",
+        system_prompt=SIMPLE_PROMPT,
+        prompt_caching=prompt_caching,
+    )
+
+    messages = llm._prepare_messages(
+        img="https://example.com/a.png",
+        messages=[
+            {"role": "user", "content": "task", TASK_TURN_KEY: True},
+            {"role": "user", "content": "Voter-A: yes"},
+        ],
+    )
+
+    task_turn, newest = messages[1], messages[2]
+    assert [p["type"] for p in task_turn["content"]] == [
+        "image_url",
+        "text",
+    ]
+    assert "image_url" not in str(newest["content"])
+    assert not any(TASK_TURN_KEY in m for m in messages)
+    assert ("cache_control" in task_turn["content"][0]) is (
+        prompt_caching
+    )

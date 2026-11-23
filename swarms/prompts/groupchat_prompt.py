@@ -12,8 +12,7 @@ or resolved. Your own earlier contributions appear as your own replies. Do
 not repeat one of those contributions merely because it remains relevant; add
 something new, correct an important error, or advance the work.
 
-Latest message from {sender}:
-{message}
+The latest message is the last one above, from {sender}.
 
 First assess the state of the discussion before deciding to speak:
 

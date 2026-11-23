@@ -35,7 +35,7 @@ HELP_EXAMPLES: List[str] = [
     "chat --model-name gpt-5.4",
     "chat --model-name claude-opus-4-6",
     "chat --model-name gpt-4o",
-    "chat --model-name gemini/gemini-2.0-flash",
+    "chat --model-name gemini/gemini-3.6-flash",
     "agent --name 'MyAgent' --task 'Summarize this'",
     "autoswarm --task 'analyze data' --model gpt-4",
     "heavy-swarm --task 'complex analysis'",

@@ -37,6 +37,9 @@ from swarms.utils.llm_backend import acompletion, completion
 # Only a yes is remembered: RouteHub answers no while OpenRouter's model list is unreachable.
 _VISION_MODELS = set()
 
+# Marks the user's task turn, where images go; removed before the request is sent.
+TASK_TURN_KEY = "swarms_task_turn"
+
 
 def _model_supports_vision(model: str) -> bool:
     """Whether the model accepts images.
@@ -163,6 +166,50 @@ def usage_from_response(response: any) -> Optional[dict]:
         "total_tokens": _field(usage, "total_tokens", 0)
         or input_tokens + output_tokens,
     }
+
+
+def _pop_task_turn(messages: List[dict]) -> Optional[int]:
+    """Remove the task-turn mark from every message and return where it was.
+
+    Args:
+        messages: The request messages, changed in place.
+
+    Returns:
+        Index of the first marked message, or None when none is marked.
+    """
+    task_turn = None
+    for index, message in enumerate(messages):
+        if isinstance(message, dict) and TASK_TURN_KEY in message:
+            if task_turn is None and message[TASK_TURN_KEY]:
+                task_turn = index
+            messages[index] = {
+                key: value
+                for key, value in message.items()
+                if key != TASK_TURN_KEY
+            }
+    return task_turn
+
+
+def _image_blocks(message: Any) -> List[dict]:
+    """Return the image blocks in one message.
+
+    Args:
+        message: A request message.
+
+    Returns:
+        The message's image_url blocks, in order.
+    """
+    content = (
+        message.get("content") if isinstance(message, dict) else None
+    )
+    if not isinstance(content, list):
+        return []
+    return [
+        block
+        for block in content
+        if isinstance(block, dict)
+        and block.get("type") == "image_url"
+    ]
 
 
 class LiteLLM:
@@ -660,21 +707,25 @@ class LiteLLM:
                 continue
             base.append(m)
 
+        images = [
+            i for i in ([img] if img else []) + (imgs or []) if i
+        ]
+        if images:
+            self.check_if_model_supports_vision(img=images[0])
+
         # A prebuilt body is already structured, so only this instance's system prompt is added.
         if messages is not None:
             prepared = base + list(messages)
+            task_turn = _pop_task_turn(prepared)
+            if images:
+                self._attach_images(prepared, images, task_turn)
             if self.prompt_caching and prepared:
                 self._apply_prompt_caching(prepared)
             return prepared
 
         messages = base
 
-        # Check if model supports vision if any image is provided
-        images = [
-            i for i in ([img] if img else []) + (imgs or []) if i
-        ]
         if images:
-            self.check_if_model_supports_vision(img=images[0])
             # Handle vision case - this includes the task and every image
             messages = self.vision_processing(
                 task=task, image=images, messages=messages
@@ -854,6 +905,16 @@ class LiteLLM:
                     self._add_cache_control(messages[i])
                     break
 
+        # Cache through the images, so a later request with new text after them reuses them.
+        if self._cache_opt("cache_messages", True):
+            for i, m in enumerate(messages):
+                if _image_blocks(m):
+                    messages[i] = copy.deepcopy(m)
+                    _image_blocks(messages[i])[-1][
+                        "cache_control"
+                    ] = self._cache_control_value()
+                    break
+
         # Cache through the final message for incremental multi-turn caching.
         if self._cache_opt("cache_messages", True):
             messages[-1] = copy.deepcopy(messages[-1])
@@ -970,10 +1031,49 @@ class LiteLLM:
         if isinstance(images, str):
             images = [images]
 
+        # Images before the text, so a later request with new text keeps the same prefix.
         return {
             "role": "user",
-            "content": [{"type": "text", "text": task}]
-            + [self._build_image_block(i) for i in images],
+            "content": [self._build_image_block(i) for i in images]
+            + [{"type": "text", "text": task}],
+        }
+
+    def _attach_images(
+        self,
+        messages: List[dict],
+        images: List[str],
+        task_turn: Optional[int] = None,
+    ) -> None:
+        """
+        Add the images to one user message of a prebuilt body.
+
+        Args:
+            messages: The request messages, changed in place.
+            images: Image sources in any supported format.
+            task_turn: Index of the user's task turn, which gets them.
+                Defaults to None, which picks the last user message.
+        """
+        blocks = [self._build_image_block(image) for image in images]
+        users = [
+            index
+            for index, message in enumerate(messages)
+            if message.get("role") == "user"
+        ]
+
+        if not users:
+            messages.append({"role": "user", "content": blocks})
+            return
+
+        target = task_turn if task_turn in users else users[-1]
+        message = messages[target]
+        content = message.get("content")
+        if isinstance(content, str):
+            content = [{"type": "text", "text": content}]
+
+        # A new dict, so the caller's own message is left as it was.
+        messages[target] = {
+            **message,
+            "content": blocks + list(content or []),
         }
 
     def _should_use_direct_url(self, image: str) -> bool:
@@ -1074,43 +1174,20 @@ class LiteLLM:
 
     def check_if_model_supports_vision(self, img: str = None):
         """
-        Check if the model supports vision capabilities.
+        Warn when the backend cannot confirm that the model accepts images.
 
-        This method uses LiteLLM's built-in `supports_vision` function to verify
-        that the model can handle image inputs before processing. It's called
-        automatically when an image is provided to prevent errors from unsupported
-        models.
+        The image is sent either way: model catalogs lag behind providers,
+        so a missing entry is not proof that the model is text-only.
 
         Args:
-            img (str, optional): Image path/URL to validate against model capabilities.
-                If None, the check is skipped. Defaults to None.
-
-        Raises:
-            ValueError: If the model doesn't support vision and an image is provided.
-                The error message includes the model name for clarity.
-
-        Note:
-            This method only performs the check if `img` is not None. It uses
-            LiteLLM's model capability detection to determine vision support.
-            Models that support vision include GPT-4 Vision, Claude 3, Gemini Pro Vision,
-            and other vision-capable models.
+            img (str, optional): The image about to be sent. None skips the check.
         """
-        if img is not None:
-            out = _model_supports_vision(self.model_name)
+        if img is None or _model_supports_vision(self.model_name):
+            return
 
-            # RouteHub's catalog comes from the network, so a model it can't find may still take images.
-            if (
-                out is False
-                and llm_backend.BACKEND == "routehub"
-                and self.model_name not in llm_backend.model_list
-            ):
-                logger.warning(
-                    f"Can't confirm that {self.model_name} accepts images, sending the image anyway."
-                )
-            elif out is False:
-                raise ValueError(
-                    f"Model {self.model_name} does not support vision"
-                )
+        logger.warning(
+            f"Can't confirm that {self.model_name} accepts images, sending the image anyway."
+        )
 
     def _build_completion_params(
         self,
@@ -1281,19 +1358,46 @@ class LiteLLM:
         self.last_finish_reason = None
         self.last_response_model = None
         for chunk in stream:
-            choices = _field(chunk, "choices") or []
-            if choices and _field(choices[0], "finish_reason"):
-                self.last_finish_reason = _field(
-                    choices[0], "finish_reason"
-                )
-            self.last_response_model = (
-                _field(chunk, "model") or self.last_response_model
+            if self._note_stream_chunk(chunk):
+                yield chunk
+
+    async def _atrack_streaming_usage(self, stream: any):
+        """Yield an async stream's chunks, recording the trailing usage chunk.
+
+        Args:
+            stream: The async chunk stream from the provider.
+
+        Yields:
+            Any: Each chunk that carries choices.
+        """
+        self.last_finish_reason = None
+        self.last_response_model = None
+        async for chunk in stream:
+            if self._note_stream_chunk(chunk):
+                yield chunk
+
+    def _note_stream_chunk(self, chunk: any) -> bool:
+        """Record one chunk's finish reason, model and usage.
+
+        Args:
+            chunk: A chunk from the provider stream.
+
+        Returns:
+            bool: False for the usage-only trailing chunk, which is not forwarded.
+        """
+        choices = _field(chunk, "choices") or []
+        if choices and _field(choices[0], "finish_reason"):
+            self.last_finish_reason = _field(
+                choices[0], "finish_reason"
             )
-            if _field(chunk, "usage"):
-                self._accumulate_usage(usage_from_response(chunk))
-                if not choices:
-                    continue
-            yield chunk
+        self.last_response_model = (
+            _field(chunk, "model") or self.last_response_model
+        )
+        if _field(chunk, "usage"):
+            self._accumulate_usage(usage_from_response(chunk))
+            if not choices:
+                return False
+        return True
 
     def _process_response(self, response: any):
         """
@@ -1453,7 +1557,8 @@ class LiteLLM:
         Async version of `run`, using litellm's acompletion.
 
         Accepts the same arguments and returns the same output types as
-        `run` (see its docstring).
+        `run` (see its docstring), except that stream=True returns an
+        async generator of chunks.
         """
         self.last_request = None
         self.last_response = None
@@ -1483,6 +1588,9 @@ class LiteLLM:
             if not self.stream:
                 self.last_response = response
             self._record_usage(response)
+            # An async stream needs an async generator around it.
+            if self.stream and response:
+                return self._atrack_streaming_usage(response)
             return self._process_response(response)
         except (
             *self._NETWORK_ERRORS,

@@ -1,7 +1,10 @@
 import types
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from swarms import Agent, PlannerWorkerSwarm
+from swarms.structs.planner_worker_swarm import WorkerPool
 
 
 def _usage_agent(name, input_tokens, output_tokens, output="ok"):
@@ -49,3 +52,72 @@ def test_usage_counts_the_single_use_planner_and_judge():
         "reasoning_tokens": 0,
         "total_tokens": 165,
     }
+
+
+def test_planner_request_forces_the_plan_tool(monkeypatch):
+    sent = []
+
+    def capture(**params):
+        sent.append(params)
+        raise RuntimeError("captured")
+
+    monkeypatch.setattr(
+        "swarms.utils.litellm_wrapper.completion", capture
+    )
+    swarm = PlannerWorkerSwarm(agents=[_usage_agent("Worker", 1, 1)])
+
+    with pytest.raises(RuntimeError):
+        swarm._create_planner_agent().llm.run(task="plan")
+
+    assert sent[0]["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "PlannerTaskSpec"},
+    }
+
+
+def test_judge_request_forces_the_verdict_tool():
+    swarm = PlannerWorkerSwarm(agents=[_usage_agent("Worker", 1, 1)])
+
+    with patch(
+        "swarms.structs.planner_worker_swarm.Agent",
+        side_effect=RuntimeError,
+    ) as built, pytest.raises(RuntimeError):
+        swarm._run_judge()
+
+    assert built.call_args.kwargs["llm_args"]["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "CycleVerdict"},
+    }
+
+
+def test_judge_gets_the_goal_and_each_result_once():
+    plan = {
+        "plan": "p",
+        "tasks": [{"title": "t1", "description": "d"}],
+    }
+    judge = MagicMock(usage={})
+    judge.run.return_value = "not a verdict"
+    worker = _usage_agent("Worker", 1, 1, "WORKER-RESULT")
+    swarm = PlannerWorkerSwarm(agents=[worker])
+
+    with patch(
+        "swarms.structs.planner_worker_swarm.Agent",
+        side_effect=[_usage_agent("Planner", 1, 1, plan), judge],
+    ):
+        swarm.run("TASK-MARK")
+
+    text = str(judge.run.call_args.kwargs)
+    counts = (text.count("TASK-MARK"), text.count("WORKER-RESULT"))
+    assert counts == (1, 1)
+
+
+def test_worker_pool_defaults_to_one_worker_per_agent():
+    """Workers wait on model calls, so the CPU count does not cap the pool."""
+    agents = [object()] * 8
+
+    with patch("os.cpu_count", return_value=2):
+        assert WorkerPool(agents, None, None).max_workers == 8
+        assert (
+            WorkerPool(agents, None, None, max_workers=3).max_workers
+            == 3
+        )

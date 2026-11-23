@@ -18,6 +18,7 @@ from typing import (
 
 from swarms.structs.comms_channel import CommsChannel
 from swarms.utils.litellm_tokenizer import count_tokens
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY
 
 if TYPE_CHECKING:
     from swarms.structs.agent import Agent
@@ -160,21 +161,7 @@ class Conversation:
                 f"Invalid export_method: {self.export_method}. Must be 'json' or 'yaml'"
             )
 
-        # Set default save filepath if not provided
-        if not self.save_filepath:
-            # Ensure extension matches export method
-            extension = (
-                ".json" if self.export_method == "json" else ".yaml"
-            )
-            # Under conversations_dir, not CWD: same-named conversations must not collide.
-            self.save_filepath = os.path.join(
-                self.conversations_dir or get_conversation_dir(),
-                f"conversation_{self.name}{extension}",
-            )
-            logger.debug(
-                f"Setting default save filepath to: {self.save_filepath}"
-            )
-        else:
+        if self._save_filepath:
             # Validate that provided filepath extension matches export method
             file_ext = os.path.splitext(self.save_filepath)[1].lower()
             expected_ext = (
@@ -201,7 +188,9 @@ class Conversation:
 
         path = self.load_filepath
         if not path or not os.path.exists(path):
-            path = self.save_filepath
+            path = self._save_filepath or self._default_save_filepath(
+                "conversations"
+            )
         if wants_persistence and os.path.exists(path):
             logger.debug(
                 f"Found existing conversation file at: {path}"
@@ -212,6 +201,27 @@ class Conversation:
             logger.debug(
                 f"No existing conversation file found at: {path}"
             )
+
+    @property
+    def save_filepath(self):
+        if not self._save_filepath:
+            self._save_filepath = self._default_save_filepath(
+                get_conversation_dir()
+            )
+        return self._save_filepath
+
+    @save_filepath.setter
+    def save_filepath(self, value):
+        self._save_filepath = value
+
+    def _default_save_filepath(self, conversations_dir):
+        extension = (
+            ".json" if self.export_method == "json" else ".yaml"
+        )
+        return os.path.join(
+            self.conversations_dir or conversations_dir,
+            f"conversation_{self.name}{extension}",
+        )
 
     def _initialize_new_conversation(self):
         """Initialize a new conversation with system prompt and rules."""
@@ -653,6 +663,7 @@ class Conversation:
         agent_name: Optional[str] = None,
         start: int = 0,
         prefix: Sequence[Dict[str, Any]] = (),
+        task_turn: bool = False,
     ) -> List[Dict[str, Any]]:
         """Build a chat request body from the history.
 
@@ -660,6 +671,7 @@ class Conversation:
             agent_name (Optional[str]): The role whose rows become assistant turns.
             start (int): Index of the first row to include.
             prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
+            task_turn (bool): Keep the mark on the user's task turn, so the model wrapper puts images there. Defaults to False.
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
@@ -698,6 +710,7 @@ class Conversation:
                             "name",
                             "tool_calls",
                             "tool_call_id",
+                            *((TASK_TURN_KEY,) if task_turn else ()),
                         )
                         if key in fields
                     }
@@ -887,11 +900,20 @@ class Conversation:
                     )
 
     def import_conversation(self, filename: str):
-        """Import a conversation history from a file.
+        """Import a conversation history from a JSON export.
 
         Args:
             filename (str): Filename to import from.
+
+        Raises:
+            ValueError: If filename does not end in .json, since
+                export_conversation writes any other name as text.
         """
+        if not str(filename).endswith(".json"):
+            raise ValueError(
+                f"Cannot import {filename}: a text export can't be "
+                "read back. Export to a .json filename instead."
+            )
         self.load_from_json(filename)
 
     def count_messages_by_role(self):
@@ -1077,13 +1099,6 @@ class Conversation:
                     "or enable autosave by setting autosave=True when creating the Conversation."
                 )
                 return
-
-            # Ensure we have a valid save path
-            if not self.save_filepath:
-                self.save_filepath = os.path.join(
-                    self.conversations_dir or os.getcwd(),
-                    f"conversation_{self.id}.json",
-                )
 
             # Create directory if it doesn't exist
             save_dir = os.path.dirname(self.save_filepath)
@@ -1680,10 +1695,7 @@ class Conversation:
 
     def return_dict_final(self):
         """Return the final message as a dictionary."""
-        return (
-            self.conversation_history[-1]["content"],
-            self.conversation_history[-1]["content"],
-        )
+        return self.conversation_history[-1]
 
     def return_list_final(self):
         """Return the final message as a list."""

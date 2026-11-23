@@ -1,7 +1,7 @@
 """
 Tips & tricks for the Swarms CLI.
 
-Centralizes the rotating tip pool so the startup banner, the ``swarms tips``
+Centralizes the rotating tip pool so the startup banner, the swarms tips
 subcommand, and any future "next step" prompts pull from the same source.
 
 Every tip here is about using the **CLI** — commands, flags, env vars,
@@ -115,7 +115,7 @@ MODEL_FLAG_TIPS: List[str] = [
     "Any LiteLLM-supported model works in [bold]--model-name[/bold] — OpenAI, Anthropic, Groq, Gemini, Mistral, Cohere…",
     "[bold]--model-name claude-opus-4-7[/bold] picks the latest frontier Anthropic model",
     "[bold]--model-name groq/llama-3.3-70b-versatile[/bold] is the fastest open-weight option",
-    "[bold]--model-name gemini/gemini-2.5-pro[/bold] gives you million-token context natively",
+    "[bold]--model-name gemini/gemini-3.6-flash[/bold] gives you million-token context natively",
     "Local models work via Ollama or vLLM — point [bold]--model-name[/bold] at the endpoint",
     "Different commands have different defaults: [bold]swarms agent[/bold] uses gpt-4, [bold]swarms chat[/bold] uses gpt-5.4",
 ]
@@ -177,7 +177,7 @@ def _all_tips(category: Optional[str] = None) -> List[str]:
 
 
 def pick_random_label() -> tuple[str, str, str]:
-    """Pick a random ``(emoji, label, style)`` triple for the next tip."""
+    """Pick a random (emoji, label, style) triple for the next tip."""
     return random.choice(TIP_LABELS)
 
 
@@ -191,16 +191,16 @@ def render_tip(
     category: Optional[str] = None,
 ) -> Text:
     """
-    Build a Rich ``Text`` with a randomized prefix label and a random tip body.
+    Build a Rich Text with a randomized prefix label and a random tip body.
 
     Args:
         body: Optional explicit tip string. If omitted, one is picked from
-            the registry (filtered by ``category`` if provided).
-        category: Restrict random selection to one of ``TIP_CATEGORIES``.
-            Ignored when ``body`` is given.
+            the registry (filtered by category if provided).
+        category: Restrict random selection to one of TIP_CATEGORIES.
+            Ignored when body is given.
 
     Returns:
-        Rich ``Text`` ready to ``console.print(...)``.
+        Rich Text ready to console.print(...).
     """
     emoji, label, style = pick_random_label()
     tip_body = body if body is not None else pick_random_tip(category)
@@ -213,7 +213,7 @@ def render_random_tips(
     n: int = 1,
     category: Optional[str] = None,
 ) -> List[Text]:
-    """Return ``n`` distinct random tips, each with its own random label."""
+    """Return n distinct random tips, each with its own random label."""
     pool = list(_all_tips(category))
     n = max(1, min(n, len(pool)))
     chosen: Iterable[str] = random.sample(pool, n)

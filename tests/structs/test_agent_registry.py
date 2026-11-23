@@ -1,4 +1,5 @@
 import os
+import time
 
 from loguru import logger
 
@@ -67,8 +68,6 @@ def test_agent_registry_initialization():
         registry2 = AgentRegistry(
             name="Test Registry",
             description="Test description",
-            return_json=False,
-            auto_save=True,
         )
         assert (
             registry2.name == "Test Registry"
@@ -76,10 +75,6 @@ def test_agent_registry_initialization():
         assert (
             registry2.description == "Test description"
         ), "Custom description should be set"
-        assert (
-            registry2.return_json is False
-        ), "return_json should be False"
-        assert registry2.auto_save is True, "auto_save should be True"
 
         logger.info("✓ AgentRegistry initialization test passed")
 
@@ -906,3 +901,23 @@ def test_agent_registry_thread_safety():
             f"Error in test_agent_registry_thread_safety: {str(e)}"
         )
         raise
+
+
+def test_agent_registry_stamps_the_time_each_agent_is_added(
+    monkeypatch,
+):
+    agent = Agent(
+        agent_name="Stamped-Agent",
+        model_name="gpt-5.4",
+        max_loops=1,
+        verbose=False,
+        print_on=False,
+    )
+    added_at = time.gmtime(1893553445)
+    monkeypatch.setattr(time, "gmtime", lambda *args: added_at)
+
+    registry = AgentRegistry(agents=[agent])
+
+    stamp = time.strftime("%Y-%m-%d %H:%M:%S", added_at)
+    assert registry.agent_registry.time_registry_creatd == stamp
+    assert registry.agent_registry.agents[0].time_added == stamp

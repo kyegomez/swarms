@@ -1,8 +1,8 @@
 """System prompt for the Auto Agent Builder.
 
-Used by :class:`~swarms.structs.auto_agent_builder.AutoAgentBuilder` to drive the
+Used by AutoAgentBuilder to drive the
 single builder agent that designs an agent roster for a task. The builder is
-forced to answer through the ``build_agents`` function call, so this prompt is
+forced to answer through the build_agents function call, so this prompt is
 concerned with *judgment* — how many agents, split along what lines, with what
 personas and models — rather than with output formatting, which the tool schema
 already enforces.

@@ -16,7 +16,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [agent_router_examples/](multi_agent/agent_router_examples/) | Agent routing and routing patterns |
 | [asb/](multi_agent/asb/) | Auto Swarm Builder (ASB) examples and implementations |
 | [batched_grid_workflow/](multi_agent/batched_grid_workflow/) | Batched grid workflow examples |
-| [caching_examples/](multi_agent/caching_examples/) | Agent caching examples |
 | [concurrent_examples/](multi_agent/concurrent_examples/) | Concurrent processing and parallel execution examples |
 | [council/](multi_agent/council/) | Council pattern examples with judge evaluation |
 | [council_of_judges/](multi_agent/council_of_judges/) | Council of judges pattern implementations |
@@ -55,6 +54,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [capabilities/rag/](single_agent/capabilities/rag/) | Retrieval-augmented generation with Pinecone and Qdrant |
 | [capabilities/vision/](single_agent/capabilities/vision/) | Vision and multimodal agents, batch image processing |
 | [capabilities/streaming/](single_agent/capabilities/streaming/) | Token streaming, streaming with tools and loops |
+| [capabilities/output_schema/](single_agent/capabilities/output_schema/) | Validated Pydantic output with `output_schema` |
 | [capabilities/prompt_caching/](single_agent/capabilities/prompt_caching/) | Provider-side prompt caching (Anthropic, OpenAI) |
 | [reasoning/](single_agent/reasoning/) | Reasoning agents: judges, consistency, iterative, reasoning duo/router |
 | [autonomy/autonomous_agents/](single_agent/autonomy/autonomous_agents/) | Autonomous loops, sub-agents, `run_bash` looper |
@@ -219,10 +219,9 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [utils/](utils/) | Utility functions and helper implementations including agent loader, communication examples, concurrent wrappers, miscellaneous utilities, and telemetry |
+| [utils/](utils/) | Utility functions and helper implementations including agent loader, concurrent wrappers, miscellaneous utilities, and telemetry |
 | [README.md](utils/README.md) | Utils documentation |
 | [agent_loader/](utils/agent_loader/) | Agent loading utilities |
-| [communication_examples/](utils/communication_examples/) | Agent communication patterns including DuckDB, Pulsar, Redis, and SQLite |
 | [fetch_prompt.py](utils/fetch_prompt.py) | Prompt fetching utilities |
 | [litellm_connect_issue.py](utils/litellm_connect_issue.py) | LiteLLM connection issue examples |
 | [litellm_network_error_handling.py](utils/litellm_network_error_handling.py) | LiteLLM network error handling |
@@ -294,7 +293,6 @@ This directory contains comprehensive examples demonstrating various capabilitie
 | [Tree Swarm](multi_agent/tree_swarm_new_updates.py) | Tree swarm with latest updates |
 | [Agent Rearrange](multi_agent/agent_rearrange_examples/) | Agent rearrangement patterns |
 | [Agent Router](multi_agent/agent_router_examples/) | Agent routing implementations |
-| [Agent GRPO](multi_agent/agent_grpo_examples/) | Agent GRPO examples for math and physics problems |
 | [Auto Swarm Builder](multi_agent/asb/) | Auto Swarm Builder (ASB) examples |
 | [Batched Grid Workflow](multi_agent/batched_grid_workflow/) | Batched grid workflow patterns |
 | [Concurrent Processing](multi_agent/concurrent_examples/) | Concurrent and parallel execution |

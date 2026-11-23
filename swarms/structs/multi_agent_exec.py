@@ -8,7 +8,6 @@ from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.omni_agent_types import AgentType
 from swarms.telemetry.otel import ContextThreadPoolExecutor
-from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 
 def run_single_agent(
@@ -119,13 +118,13 @@ def run_agents_concurrently(
 
     This function runs agent tasks in parallel threads, benefitting I/O-bound or mixed-load scenarios.
     Each agent receives the same 'task' (and optional 'img' argument) and runs its .run() method.
-    The number of worker threads defaults to 95% of the available CPU cores, unless otherwise specified.
+    The number of worker threads defaults to one per agent, unless otherwise specified.
 
     Args:
         agents (List[AgentType]): List of agent instances to execute concurrently.
         task (str): Task string to pass to all agent run() methods.
         img (Optional[str]): Optional image data to pass to agent run() if supported.
-        max_workers (Optional[int]): Maximum threads for the executor (default: 95% of CPU cores).
+        max_workers (Optional[int]): Maximum threads for the executor (default: one per agent).
         return_agent_output_dict (bool): If True, returns a dict mapping agent names to outputs.
                                          Otherwise returns a list of results in input order.
 
@@ -137,7 +136,7 @@ def run_agents_concurrently(
 
     Notes:
         - ThreadPoolExecutor is used for efficient, parallel execution.
-        - By default, utilizes nearly all available CPU cores for optimal performance.
+        - By default, every agent gets its own thread, so none waits for another's model call.
         - Any Exception during agent execution is caught and included in the results.
         - If return_agent_output_dict is True, the results dict preserves agent input order.
         - Otherwise, the results list is in input order, so results[i] is agents[i]'s.
@@ -154,7 +153,7 @@ def run_agents_concurrently(
     """
     try:
         if max_workers is None:
-            max_workers = max_workers_95_percent()
+            max_workers = max(1, len(agents))
 
         futures = []
 
@@ -266,7 +265,7 @@ def batched_grid_agent_execution(
         agents (List[AgentType]): List of agent instances to execute
         tasks (List[str]): List of task strings, one for each agent. Must match the number of agents
         max_workers (int, optional): Maximum number of threads to use.
-                                   Defaults to 90% of available CPU cores for optimal performance
+                                   Defaults to one thread per agent
 
     Returns:
         List[Any]: List of results from each agent in the same order as input agents.
@@ -276,7 +275,7 @@ def batched_grid_agent_execution(
         ValueError: If the number of agents doesn't match the number of tasks
 
     Note:
-        - Uses 90% of CPU cores by default for optimal resource utilization
+        - Runs one thread per agent by default
         - Results maintain the same order as input agents
         - Handles exceptions gracefully by including them in results
 
@@ -289,7 +288,7 @@ def batched_grid_agent_execution(
     """
 
     if max_workers is None:
-        max_workers = max_workers_95_percent()
+        max_workers = max(1, len(agents))
 
     logger.info(
         f"Batch Grid Execution with {len(agents)} agents and number of tasks: {len(tasks)}"
@@ -357,9 +356,6 @@ def run_agents_with_different_tasks(
         ...     agent, task = pairs[i]
         ...     print(f"Agent {agent.agent_name} with {task}: {result}")
     """
-    if max_workers is None:
-        max_workers = max_workers_95_percent()
-
     if not agent_task_pairs:
         return []
 

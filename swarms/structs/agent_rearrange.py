@@ -1,23 +1,22 @@
 import asyncio
 import copy
-import os
 from concurrent.futures import as_completed
 from typing import Any, Dict, List, Optional, get_args
 
-from swarms.structs.agent import Agent
+from swarms.structs.comms_channel import (
+    CommsChannel,
+    claim_agents,
+)
 from swarms.structs.context_utils import (
     agent_answer,
     messages_for,
     split_last_turn,
 )
-from swarms.structs.comms_channel import (
-    CommsChannel,
-    claim_agents,
-)
 from swarms.structs.conversation import Conversation
 from swarms.structs.execution_utils import run_concurrently
 from swarms.structs.ma_blocks import find_agent_by_name
 from swarms.structs.serialization import SerializableMixin
+from swarms.structs.usage_utils import total_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
     capture_init,
@@ -31,16 +30,15 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.loguru_logger import initialize_logger
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
-from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="rearrange")
 
 
 def _split_steps(segments: List[str]) -> List[List[str]]:
-    """Split ``->`` segments into their comma-separated agent names.
+    """Split arrow segments into their comma-separated agent names.
 
     Args:
-        segments (List[str]): Flow segments, already split on ``->``.
+        segments (List[str]): Flow segments, already split on the arrow.
 
     Returns:
         List[List[str]]: One inner list of agent names per segment.
@@ -88,7 +86,6 @@ class _SwarmMember:
         Returns:
             str: The swarm's output.
         """
-        # A swarm takes no chat history, so the turns travel as text, its own labelled by name.
         turns = [
             (
                 f"{self.name}: {m['content']}"
@@ -153,22 +150,21 @@ class AgentRearrange(SerializableMixin):
 
     The AgentRearrange class enables complex workflows where multiple agents can work
     sequentially or concurrently based on a defined flow pattern. It supports both
-    sequential execution (using '->') and concurrent execution (using ',') within
-    the same workflow.
+    sequential execution and concurrent execution within the same workflow.
 
     Key Features:
     - Sequential and concurrent agent execution
     - Nested swarms as steps of the flow, referenced by name
-    - Custom flow patterns with arrow (->) and comma (,) syntax
+    - Custom flow patterns with arrow and comma syntax
     - Team awareness and sequential flow information
     - Memory system support
     - Batch and concurrent processing capabilities
     - Comprehensive error handling and logging
 
     Flow Syntax:
-    - Use '->' to define sequential execution: "agent1 -> agent2 -> agent3"
-    - Use ',' to define concurrent execution: "agent1, agent2 -> agent3"
-    - Combine both: "agent1 -> agent2, agent3 -> agent4"
+    - Use an arrow to define sequential execution
+    - Use a comma to define concurrent execution
+    - Combine both in one flow
 
     Attributes:
         id (str): Unique identifier for the agent rearrange system
@@ -185,28 +181,6 @@ class AgentRearrange(SerializableMixin):
         time_enabled (bool): Whether to track timestamps
         message_id_on (bool): Whether to include message IDs
         conversation (Conversation): Conversation history management
-
-    Example:
-        >>> from swarms import Agent, AgentRearrange
-        >>>
-        >>> # Create agents
-        >>> agent1 = Agent(name="researcher", ...)
-        >>> agent2 = Agent(name="writer", ...)
-        >>> agent3 = Agent(name="reviewer", ...)
-        >>>
-        >>> # Define flow: agent1 runs first, then agent2 and agent3 run concurrently
-        >>> flow = "researcher -> writer, reviewer"
-        >>>
-        >>> # Create rearrange system
-        >>> rearrange_system = AgentRearrange(
-        ...     agents=[agent1, agent2, agent3],
-        ...     flow=flow,
-        ...     max_loops=1,
-        ...     team_awareness=True
-        ... )
-        >>>
-        >>> # Execute task
-        >>> result = rearrange_system.run("Research and write a report")
     """
 
     def __init__(
@@ -226,49 +200,6 @@ class AgentRearrange(SerializableMixin):
         collab_prompt: Optional[str] = None,
         channel: Optional[CommsChannel] = None,
     ):
-        """
-        Initialize the AgentRearrange system.
-
-        Args:
-            id (str): Unique identifier for the agent rearrange system.
-                Defaults to a generated swarm ID.
-            name (str): Human-readable name for the system.
-                Defaults to "AgentRearrange".
-            description (str): Description of the system's purpose.
-                Defaults to "A swarm of agents for rearranging tasks.".
-            agents (List[Any], optional): The agents to include in the
-                system. A nested swarm with a name and a run method can stand
-                in for an agent and is referenced in the flow by its name.
-                Defaults to None.
-            flow (str, optional): Flow pattern defining agent execution order.
-                Uses '->' for sequential and ',' for concurrent execution.
-                Defaults to None.
-            max_loops (int): Maximum number of execution loops. Must be > 0.
-                Defaults to 1.
-            verbose (bool): Whether to enable verbose logging.
-                Defaults to True.
-            output_type (OutputType): Format for output results. Can be "all", "final",
-                "list", or "dict". Defaults to "all".
-            autosave (bool): Whether to save the conversation to the
-                workspace directory after each run. Defaults to False.
-            team_awareness (bool): Whether agents should be aware of team structure
-                and sequential flow. Defaults to False.
-            time_enabled (bool): Whether to track timestamps in conversations.
-                Defaults to False.
-            message_id_on (bool): Whether to include message IDs in conversations.
-                Defaults to False.
-            collab_prompt (str, optional): Guidance prepended as a system turn
-                for every agent. Not written to the shared conversation.
-                Defaults to None.
-
-        Raises:
-            ValueError: If agents list is None or empty, max_loops is 0,
-                flow is None or empty, or output_type is None or empty.
-
-        Note:
-            Name-based lookups use ``find_agent_by_name``, which maintains a
-            cached name → agent index over ``self.agents``.
-        """
         self.name = name
         self.description = description
         self.id = id or generate_id("agent-rearrange")
@@ -282,13 +213,12 @@ class AgentRearrange(SerializableMixin):
         self.message_id_on = message_id_on
         self.team_awareness = team_awareness
         self.collab_prompt = collab_prompt
-
-        # Seeds team awareness itself, seeding here too doubled the system message
         self.channel = channel
-        claim_agents(self.agents, channel, self.name)
-        self._reset_conversation()
+        # Seeds team awareness itself, seeding here too doubled the system message
 
         self.reliability_check()
+        claim_agents(self.agents, channel, self.name)
+        self._reset_conversation()
 
         self.workspace = WorkspaceManager(
             self,
@@ -306,26 +236,20 @@ class AgentRearrange(SerializableMixin):
 
         Performs comprehensive validation checks on critical parameters including
         agents list, max_loops, flow pattern, and output_type to prevent runtime errors.
-
-        Raises:
-            ValueError: If any of the following conditions are met:
-                - agents list is None or empty
-                - max_loops is 0
-                - flow is None or empty string
-                - output_type is None or empty string
-
-        Note:
-            This method is called automatically during initialization to ensure
-            the system is properly configured before execution.
         """
         if self.agents is None or len(self.agents) == 0:
             raise ValueError("Agents list cannot be None or empty")
+
+        self._require_unique_agent_names()
 
         if self.max_loops == 0:
             raise ValueError("max_loops cannot be 0")
 
         if self.flow is None or self.flow == "":
             raise ValueError("flow cannot be None or empty")
+
+        if not all(self.steps):
+            raise ValueError(f"flow {self.flow!r} has an empty step")
 
         if self.output_type is None or self.output_type == "":
             raise ValueError("output_type cannot be None or empty")
@@ -336,27 +260,50 @@ class AgentRearrange(SerializableMixin):
                 f"{sorted(_VALID_OUTPUT_TYPES)}; got {self.output_type!r}"
             )
 
+    def _require_unique_agent_names(self) -> None:
+        """Reject two different members that share a name.
+
+        Steps run by name, so a repeated name would run only the first
+        member for every step that names it. The same member listed
+        twice is allowed.
+
+        Raises:
+            ValueError: Two different members have the same name.
+        """
+        owners: Dict[str, Any] = {}
+
+        for member in self.agents:
+            # Each nested swarm gets a new wrapper, so compare what was passed
+            source = (
+                member.swarm
+                if isinstance(member, _SwarmMember)
+                else member
+            )
+
+            if (
+                owners.setdefault(member.agent_name, source)
+                is not source
+            ):
+                raise ValueError(
+                    f"Two different agents are named '{member.agent_name}'. "
+                    "AgentRearrange runs each step by name, so only the "
+                    "first of them would run. Give each one its own name."
+                )
+
     def set_custom_flow(self, flow: str):
         """
         Sets a custom flow pattern for agent execution.
 
         Allows dynamic modification of the execution flow after initialization.
         The flow pattern defines how agents should be executed in sequence or
-        parallel using the standard syntax ('->' for sequential, ',' for concurrent).
+        parallel using an arrow for sequential execution and a comma for
+        concurrent execution.
 
         The new flow is validated immediately so typos surface at the call site
-        rather than at the next ``run()``.
+        rather than at the next run.
 
         Args:
             flow (str): The new flow pattern to use for agent execution.
-                Examples: ``"agent1 -> agent2, agent3 -> agent4"``,
-                ``"agent1, agent2"`` (pure fan-out).
-
-        Raises:
-            ValueError: If the new flow is empty or references unregistered agents.
-
-        Example:
-            >>> rearrange_system.set_custom_flow("researcher -> writer, editor")
         """
         previous_flow = self.flow
         self.flow = flow
@@ -374,24 +321,12 @@ class AgentRearrange(SerializableMixin):
         step as sequential or parallel. Does NOT invoke any agents or LLMs.
         Useful for CI smoke tests, debugging, and pre-flight verification.
 
-        Validates the flow first; raises if invalid.
-
         Args:
             return_str: When True, returns the plan as a string. When False
                 (default), prints it and returns None.
 
         Returns:
-            The plan string if ``return_str=True``; otherwise ``None``.
-
-        Example:
-            >>> rearrange.explain()
-            Flow: Ingestor -> Tech, Business, Legal -> Synthesizer
-
-            Step 1: Ingestor                          [sequential]
-            Step 2: Tech, Business, Legal             [parallel, 3 agents]
-            Step 3: Synthesizer                       [sequential]
-
-            3 steps, 5 agent invocations across 1 loop(s).
+            The plan string if return_str is True; otherwise None.
         """
         self.validate_flow()
 
@@ -441,9 +376,6 @@ class AgentRearrange(SerializableMixin):
 
         Args:
             agent_name (str): The name of the agent to be removed.
-
-        Raises:
-            ValueError: If no agent in the swarm has that name.
         """
         for index, agent in enumerate(self.agents):
             if agent.agent_name == agent_name:
@@ -470,12 +402,13 @@ class AgentRearrange(SerializableMixin):
     def steps(self) -> List[List[str]]:
         """The flow as steps, each a list of agent names that run together.
 
-        ``"a -> b, c"`` parses to ``[["a"], ["b", "c"]]``. Cached against the
-        flow string, so reassigning ``flow`` (as ``set_custom_flow`` does)
-        re-parses on next access without an explicit invalidation call.
+        Each arrow separates a step, and names inside a step run together.
+        Cached against the flow string, so reassigning flow (as
+        set_custom_flow does) re-parses on next access without an explicit
+        invalidation call.
 
         Returns:
-            List[List[str]]: One inner list per ``->`` step.
+            List[List[str]]: One inner list per arrow step.
         """
         if getattr(self, "_steps_for", None) != self.flow:
             self._steps = _split_steps((self.flow or "").split("->"))
@@ -487,14 +420,9 @@ class AgentRearrange(SerializableMixin):
         Validates the flow pattern.
 
         A valid flow is a non-empty string built from one or more steps
-        separated by ``->`` (sequential dependence). Each step is one or
+        separated by an arrow (sequential dependence). Each step is one or
         more comma-separated agent names that execute concurrently.
-        Pure-concurrent flows (e.g. ``"a, b, c"``) and pure-sequential
-        flows (e.g. ``"a -> b -> c"``) are both valid.
-
-        Raises:
-            ValueError: If the flow is empty or references an agent name
-                that is not registered.
+        Pure-concurrent flows and pure-sequential flows are both valid.
 
         Returns:
             bool: True if the flow pattern is valid.
@@ -532,12 +460,12 @@ class AgentRearrange(SerializableMixin):
         Args:
             agent_name (str): The name of the current agent.
             steps (List[List[str]]): The parsed flow, one list of agent names
-                per step. Passed in rather than read from ``self.steps`` so a
-                ``custom_tasks`` run reflects the spliced flow it executes.
+                per step. Passed in rather than read from self.steps so a
+                custom_tasks run reflects the spliced flow it executes.
             task_idx (int, optional): The exact position index of this agent invocation
                 in the flow. When provided, uses this directly instead of searching by name.
-                This is essential for repeated agents (e.g., "writer -> reviewer -> writer")
-                so each occurrence gets correct positional awareness.
+                This is essential for repeated agents so each occurrence gets
+                correct positional awareness.
 
         Returns:
             str: A string describing the agents ahead and behind in the sequence.
@@ -651,8 +579,8 @@ class AgentRearrange(SerializableMixin):
                 the shared conversation, so other agents never see it.
 
         Returns:
-            ``(prior_messages, task)`` - the conversation prefix as chat
-            messages, and the newest turn as this run's task.
+            A tuple of prior messages and task: the conversation prefix as
+            chat messages, and the newest turn as this run's task.
         """
         prior, task = split_last_turn(
             messages_for(agent_name, self.conversation)
@@ -693,10 +621,6 @@ class AgentRearrange(SerializableMixin):
         Returns:
             Dict[str, str]: Dictionary mapping agent names to their execution results.
                 Keys are agent names, values are their respective outputs.
-
-        Note:
-            This method uses the run_agents_concurrently utility function
-            to handle the actual parallel execution and result collection.
         """
         self._log(
             "info", f"Running agents in parallel: {agent_names}"
@@ -780,11 +704,6 @@ class AgentRearrange(SerializableMixin):
 
         Returns:
             str: The result from the agent's execution, converted to string format.
-
-        Note:
-            If team_awareness is enabled, this method will add sequential awareness
-            information to the conversation before executing the agent, informing
-            the agent about its position in the workflow sequence.
         """
         self._log("info", f"Running agent sequentially: {agent_name}")
 
@@ -859,15 +778,6 @@ class AgentRearrange(SerializableMixin):
                 - "final": Only the final agent's response
                 - "list": List of all agent responses
                 - "dict": Dict mapping agent names to their responses
-
-        Raises:
-            ValueError: If flow validation fails or configuration is invalid.
-            Exception: For any other errors during execution.
-
-        Note:
-            This method handles both sequential and concurrent execution patterns
-            based on the flow syntax. It also supports custom task injection
-            and multiple execution loops as configured.
         """
         # A reused instance would otherwise carry the previous task's transcript
         self._reset_conversation()
@@ -956,7 +866,7 @@ class AgentRearrange(SerializableMixin):
 
     @trace_run(
         "AgentRearrange.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img"),
     )
     def run(
         self,
@@ -1013,16 +923,15 @@ class AgentRearrange(SerializableMixin):
         """Build an isolated clone of this orchestrator for one task.
 
         Each clone gets:
-        - A fresh ``Conversation`` so per-task history does not bleed across
+        - A fresh Conversation so per-task history does not bleed across
           parallel workers and the original conversation is never mutated.
-        - A per-agent ``deepcopy`` where the agent supports it (so stateful
+        - A per-agent deepcopy where the agent supports it (so stateful
           agents do not race), falling back to the original instance when
-          deepcopy fails (e.g. the agent holds a ``_thread.lock``, an HTTP
+          deepcopy fails (for example the agent holds a thread lock, an HTTP
           connection pool, or other non-picklable resources).
 
-        This replaces a previous ``copy.deepcopy(self)`` strategy that raised
-        ``TypeError: cannot pickle '_thread.lock' object`` whenever any agent
-        contained non-picklable internals.
+        This replaces a previous full deepcopy of the orchestrator that
+        raised TypeError whenever any agent contained non-picklable internals.
         """
         clone = self.__class__.__new__(self.__class__)
         clone.__dict__.update(self.__dict__)
@@ -1072,11 +981,6 @@ class AgentRearrange(SerializableMixin):
 
         Returns:
             List[str]: List of results corresponding to input tasks in the same order.
-
-        Note:
-            This method processes tasks in batches to manage resource usage.
-            Each batch is processed sequentially, but individual tasks within
-            a batch may run concurrently depending on the flow configuration.
         """
         if batch_size <= 0:
             raise ValueError(
@@ -1096,7 +1000,7 @@ class AgentRearrange(SerializableMixin):
             )
 
             # Each task gets an isolated clone; _clone_for_task survives agents a full deepcopy(self) would choke on.
-            max_workers = min(len(batch_tasks), os.cpu_count() or 4)
+            max_workers = len(batch_tasks)
             futures_ordered = []
             with ContextThreadPoolExecutor(
                 max_workers=max_workers
@@ -1145,11 +1049,6 @@ class AgentRearrange(SerializableMixin):
 
         Returns:
             List[str]: List of results corresponding to input tasks in the same order.
-
-        Note:
-            This method uses ThreadPoolExecutor for true parallel execution.
-            The number of concurrent executions is limited by max_workers parameter.
-            Each task runs independently through the full agent workflow.
         """
 
         def run_isolated(task, *run_args, **run_kwargs):
@@ -1189,13 +1088,6 @@ class AgentRearrange(SerializableMixin):
 
         Returns:
             Any: The result of the task execution, format depends on output_type setting.
-
-        Raises:
-            Exception: If an error occurs during task execution.
-
-        Note:
-            This method uses asyncio.to_thread to run the synchronous run method
-            asynchronously, allowing integration with async/await patterns.
         """
 
         try:
@@ -1216,8 +1108,8 @@ class AgentRearrange(SerializableMixin):
     ):
         """Stream a single sequential agent.
 
-        Yields ``(agent_name, token)`` tuples by default, or structured event
-        dicts when ``with_events=True``.
+        Yields agent name and token pairs by default, or structured event
+        dicts when with_events is True.
         """
         agent = find_agent_by_name(self.agents, agent_name)
 
@@ -1273,10 +1165,10 @@ class AgentRearrange(SerializableMixin):
     ):
         """Run agents in parallel, interleaving their tokens.
 
-        ``await asyncio.sleep(0)`` after each yielded token forces a scheduler
-        hop so concurrent producers get fair time on the event loop — this is
-        what gives you fine-grained ``A,B,A,B`` interleaving rather than
-        ``AAAA…BBBB…``.
+        Yielding control after each token forces a scheduler hop so
+        concurrent producers get fair time on the event loop, which
+        interleaves tokens from each agent instead of draining one
+        agent fully before the next.
         """
         q: asyncio.Queue = asyncio.Queue()
         DONE = object()
@@ -1361,21 +1253,19 @@ class AgentRearrange(SerializableMixin):
     ):
         """Stream tokens from each agent in flow order.
 
-        - Sequential segments (``A -> B``) stream tokens one agent at a time.
-        - Parallel segments (``A, B``) interleave tokens from concurrent
-          agents fairly via ``asyncio.sleep(0)`` between yields.
+        - Sequential segments stream tokens one agent at a time.
+        - Parallel segments interleave tokens from concurrent agents
+          fairly by yielding control between tokens.
 
         Args:
             task: Initial task fed into the first agent in the flow.
             img: Optional image input forwarded to every agent.
-            with_events: When False (default), yield ``(agent_name, token)``
-                tuples. When True, yield structured event dicts:
-                ``{"type": "agent_start", "agent": ...}``,
-                ``{"type": "token", "agent": ..., "token": ...}``,
-                ``{"type": "agent_end", "agent": ..., "output": ...}``.
+            with_events: When False (default), yield agent name and token
+                pairs. When True, yield structured event dicts for agent
+                start, each token, and agent end.
 
-        Not yet supported in streaming mode: ``max_loops > 1``,
-        ``custom_tasks``. Use ``run()`` for those.
+        Not yet supported in streaming mode: max_loops greater than 1,
+        and custom_tasks. Use run for those.
         """
         # A reused instance would otherwise carry the previous task's transcript
         self._reset_conversation()
@@ -1412,9 +1302,9 @@ class AgentRearrange(SerializableMixin):
     ):
         """Sync generator version of arun_stream.
 
-        Bridges the async generator to a sync iterator using a thread + queue.
-        Use ``arun_stream`` directly when you already have a running event
-        loop (e.g. inside a FastAPI handler).
+        Bridges the async generator to a sync iterator using a thread and queue.
+        Use arun_stream directly when you already have a running event
+        loop (for example inside a FastAPI handler).
         """
         import queue as _queue
         import threading
@@ -1461,32 +1351,3 @@ class AgentRearrange(SerializableMixin):
             reasoning_tokens and total_tokens, totalled across every run.
         """
         return total_usage(self)
-
-
-def rearrange(
-    name: str = None,
-    description: str = None,
-    agents: List[Agent] = None,
-    flow: str = None,
-    task: str = None,
-    img: str = None,
-    *args,
-    **kwargs,
-):
-    """
-    Convenience function to create and execute an AgentRearrange system in one call.
-
-    This function provides a simplified interface for creating an AgentRearrange
-    instance and immediately executing a task with it. It's useful for quick
-    prototyping or when you don't need to reuse the rearrange system.
-
-    """
-    agent_system = AgentRearrange(
-        name=name,
-        description=description,
-        agents=agents,
-        flow=flow,
-        *args,
-        **kwargs,
-    )
-    return agent_system.run(task=task, img=img)

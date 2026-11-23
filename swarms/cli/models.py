@@ -1,15 +1,15 @@
 """
 Model discovery for the Swarms CLI.
 
-Backs the ``swarms models`` command:
+Backs the swarms models command:
 
-- ``swarms models``                  list every model, grouped by provider
-- ``swarms models --provider X``     restrict the list to one provider
-- ``swarms models --search opus``    fuzzy-search by name
-- ``swarms models --info <name>``    show context window, capabilities, pricing
+- swarms models                  list every model, grouped by provider
+- swarms models --provider X     restrict the list to one provider
+- swarms models --search opus    fuzzy-search by name
+- swarms models --info <name>    show context window, capabilities, pricing
 
-All metadata comes from the LLM backend's ``model_list`` and
-``get_model_info``: litellm's bundled table, or OpenRouter's live list when
+All metadata comes from the LLM backend's model_list and
+get_model_info: litellm's bundled table, or OpenRouter's live list when
 RouteHub is installed. Either way it stays in sync as providers ship models.
 """
 

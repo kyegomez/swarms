@@ -19,10 +19,10 @@ def skill_dirs(
     skills_dir: Optional[Union[str, List[str]]],
 ) -> List[str]:
     """
-    Normalise a ``skills_dir`` setting to a list of directories.
+    Normalise a skills_dir setting to a list of directories.
 
     Args:
-        skills_dir: One directory, a list of directories, or ``None``.
+        skills_dir: One directory, a list of directories, or None.
 
     Returns:
         The directories in the order given.
@@ -130,10 +130,12 @@ class DynamicSkillsLoader:
                 if content.startswith("---"):
                     parts = content.split("---", 2)
                     if len(parts) >= 3:
-                        frontmatter = yaml.safe_load(parts[1])
+                        frontmatter = yaml.safe_load(parts[1]) or {}
                         skills.append(
                             {
-                                "name": frontmatter.get("name", ""),
+                                "name": frontmatter.get(
+                                    "name", skill_folder
+                                ),
                                 "description": frontmatter.get(
                                     "description", ""
                                 ),
