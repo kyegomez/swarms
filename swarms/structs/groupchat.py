@@ -295,8 +295,8 @@ class GroupChat(SerializableMixin):
         parsed, so it would sit silent for the whole chat. The schema is
         also appended to the agent's LiteLLM client whenever that client's
         own tool list lacks it, since the client sends only its own list.
-        The client is not rebuilt, so
-        an llm the caller passed in keeps its model, endpoint and key.
+        The client is not rebuilt, so an llm the caller passed in keeps its
+        model, endpoint and key.
         """
 
         def has_respond(tools: List[dict]) -> bool:
