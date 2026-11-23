@@ -89,7 +89,7 @@ def aggregation_agent(
         model_name (str, optional): Model to use for aggregation.
                                    Defaults to "gpt-5.4".
         on_usage (Optional[Callable[[dict], None]], optional): Called with
-                                   the aggregation agent's ``usage`` after it runs.
+                                   the aggregation agent's usage after it runs.
 
     Returns:
         str: The aggregated final answer
