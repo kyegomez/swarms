@@ -6,6 +6,7 @@ from loguru import logger
 from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_wrapper import empty_usage
 
 
 def _sections(response: str, labels: List[str]) -> Dict[str, str]:
@@ -73,6 +74,11 @@ class KnowledgeGenerator:
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage of this component's agent."""
+        return dict(self.agent.usage)
 
     def _create_knowledge_system_prompt(self) -> str:
         """
@@ -231,6 +237,11 @@ class Reasoner:
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
 
+    @property
+    def usage(self) -> dict:
+        """Provider token usage of this component's agent."""
+        return dict(self.agent.usage)
+
     def _create_reasoning_system_prompt(self) -> str:
         """
         Create the system prompt for the reasoner.
@@ -368,6 +379,23 @@ class GKPAgent:
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the knowledge generator, reasoner and coordinator."""
+        total = empty_usage()
+        agents = {
+            id(agent): agent
+            for agent in (
+                self.knowledge_generator.agent,
+                self.reasoner.agent,
+                self.coordinator,
+            )
+        }
+        for agent in agents.values():
+            for key, value in agent.usage.items():
+                total[key] += value
+        return total
 
     def _create_coordinator_system_prompt(self) -> str:
         """
