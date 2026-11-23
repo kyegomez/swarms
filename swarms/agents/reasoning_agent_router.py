@@ -183,11 +183,9 @@ class ReasoningAgentRouter:
             description=self.description,
             model_name=self.model_name,
             system_prompt=self.system_prompt,
-            max_loops=self.max_loops,
             num_samples=self.num_samples,
             output_type=self.output_type,
             eval=self.eval,
-            random_models_on=self.random_models_on,
             majority_voting_prompt=self.majority_voting_prompt,
         )
 

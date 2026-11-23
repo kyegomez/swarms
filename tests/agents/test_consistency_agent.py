@@ -83,3 +83,54 @@ def test_usage_counts_samples_when_eval_returns_early():
         assert agent.run("task", answer="missing") is None
 
     assert agent.usage == _totals(2)
+
+
+@pytest.mark.parametrize(
+    "preset_agents, aggregator_agent, message",
+    [
+        (True, object(), "set preset_agents=False"),
+        (False, None, "needs an aggregator_agent"),
+    ],
+    ids=["aggregator-with-presets", "no-aggregator-without-presets"],
+)
+def test_preset_agents_and_aggregator_agent_must_agree(
+    preset_agents, aggregator_agent, message
+):
+    with pytest.raises(ValueError, match=message):
+        SelfConsistencyAgent(
+            preset_agents=preset_agents,
+            aggregator_agent=aggregator_agent,
+        )
+
+
+class _CallerAggregator:
+    def __init__(self):
+        self.tasks = []
+        self.resets = 0
+        self.usage = _totals(5)
+
+    def reset(self):
+        self.resets += 1
+
+    def run(self, task, *args, **kwargs):
+        self.tasks.append(task)
+        self.usage = _totals(5 + len(self.tasks))
+        return "voted"
+
+
+def test_caller_aggregator_votes_and_counts_only_its_own_calls():
+    aggregator = _CallerAggregator()
+    agent = SelfConsistencyAgent(
+        num_samples=2,
+        preset_agents=False,
+        aggregator_agent=aggregator,
+        output_type="final",
+    )
+
+    with patch("swarms.agents.consistency_agent.Agent", _UsageAgent):
+        assert agent.run("task") == "voted"
+        agent.run("task")
+
+    assert aggregator.resets == 2
+    assert all(task.count("sample") == 2 for task in aggregator.tasks)
+    assert agent.usage == _totals(2 * 2 + 2)
