@@ -5,6 +5,7 @@ from datetime import datetime
 from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.prompts.reflexion_prompts import (
     REFLEXION_PROMPT,
     REFLEXION_EVALUATOR_PROMPT,
@@ -248,6 +249,19 @@ class ReflexionAgent:
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the actor, evaluator and reflector."""
+        total = empty_usage()
+        agents = {
+            id(agent): agent
+            for agent in (self.actor, self.evaluator, self.reflector)
+        }
+        for agent in agents.values():
+            for key, value in agent.usage.items():
+                total[key] += value
+        return total
 
     def act(
         self,
