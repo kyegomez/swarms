@@ -18,6 +18,7 @@ from swarms.structs.execution_utils import (
     batched_run,
     run_concurrently,
 )
+from swarms.structs.ma_utils import check_duplicate_agent_names
 from swarms.structs.usage_utils import total_usage
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -188,7 +189,7 @@ class MajorityVoting:
         if self.max_loops <= 0:
             raise ValueError("max_loops must be greater than 0")
 
-        self._require_unique_voter_names()
+        check_duplicate_agent_names(self.agents)
 
         # Log the agents in a more formatted, readable way
         agent_list = "\n".join(
@@ -203,27 +204,6 @@ class MajorityVoting:
             panel_content,
             title="Majority Voting",
         )
-
-    def _require_unique_voter_names(self) -> None:
-        """Reject a panel where two voters share a name.
-
-        Votes are stored by agent name, so a repeated name would
-        count one answer for every voter that shares it.
-
-        Raises:
-            ValueError: Two or more voters have the same agent name.
-        """
-        names = set()
-
-        for agent in self.agents:
-            if agent.agent_name in names:
-                raise ValueError(
-                    f"More than one voter is named '{agent.agent_name}'. "
-                    "MajorityVoting keys each vote by name, so one of "
-                    "their answers would be counted for all of them. Give "
-                    "each voter its own Agent instance and a unique name."
-                )
-            names.add(agent.agent_name)
 
     def _run_voters(
         self, img: Optional[str] = None

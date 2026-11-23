@@ -190,3 +190,39 @@ def create_agent_map(
         agent_map[name] = agent
 
     return agent_map
+
+
+def check_duplicate_agent_names(
+    agents: List[Any], allow_repeats: bool = False
+) -> None:
+    """Raise ValueError when two agents in a list share a name.
+
+    An agent's name is its agent_name, or name when it has no
+    agent_name, as a nested swarm does.
+
+    Args:
+        agents: The agents given to a multi-agent structure.
+        allow_repeats: Allow the same agent to be listed more than once.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: Two agents in the list share a name.
+    """
+    seen: Dict[str, Any] = {}
+
+    for agent in agents:
+        name = getattr(
+            agent, "agent_name", getattr(agent, "name", None)
+        )
+
+        if name in seen and not (
+            allow_repeats and seen[name] is agent
+        ):
+            raise ValueError(
+                f"More than one agent is named {name!r}. "
+                "Agent names must be unique."
+            )
+
+        seen[name] = agent

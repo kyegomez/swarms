@@ -18,7 +18,10 @@ from swarms.structs.execution_utils import (
     batched_run,
     run_concurrently,
 )
-from swarms.structs.ma_utils import list_all_agents
+from swarms.structs.ma_utils import (
+    check_duplicate_agent_names,
+    list_all_agents,
+)
 from swarms.structs.multi_agent_exec import run_agents_concurrently
 from swarms.telemetry.otel import (
     capture_init,
@@ -167,8 +170,9 @@ class MixtureOfAgents:
         """Validate required configuration before the workflow starts.
 
         Raises:
-            ValueError: If the worker-agent list is empty, the aggregator
-                prompt is missing, or ``layers`` is falsy.
+            ValueError: If the worker-agent list is empty, two workers
+                share a name, the aggregator prompt is missing, or layers
+                is falsy.
         """
         logger.info(
             "Checking the reliability of the Mixture of Agents class."
@@ -176,6 +180,8 @@ class MixtureOfAgents:
 
         if len(self.agents) == 0:
             raise ValueError("No agents provided.")
+
+        check_duplicate_agent_names(self.agents)
 
         if not self.aggregator_system_prompt:
             raise ValueError("No aggregator system prompt provided.")
