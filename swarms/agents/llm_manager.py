@@ -289,6 +289,7 @@ class LLMManager:
         if (
             agent.output_schema is None
             or agent.tools_list_dictionary
+            or (agent.llm_args or {}).get("tools_list_dictionary")
             or agent.mcp_enabled
             or not _model_supports_function_calling(agent.model_name)
             or llm_backend.supports_response_schema(agent.model_name)
