@@ -78,7 +78,11 @@ def test_usage_sums_generation_reasoning_and_coordination_across_runs(
     def fake_call_llm(self, task=None, *args, **kwargs):
         calls.append(self.agent_name)
         self._add_usage(
-            {"input_tokens": 10, "output_tokens": 2, "total_tokens": 12}
+            {
+                "input_tokens": 10,
+                "output_tokens": 2,
+                "total_tokens": 12,
+            }
         )
         if self.agent_name.endswith("knowledge-generator"):
             return "Knowledge 1: one.\n\nKnowledge 2: two."
