@@ -4,6 +4,7 @@ import pytest
 
 from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.structs.agent import Agent
+from swarms.utils.litellm_wrapper import empty_usage
 
 
 def _duo(monkeypatch, max_loops=1, **kwargs):
@@ -122,3 +123,41 @@ def test_a_second_run_starts_from_an_empty_conversation(monkeypatch):
         for message in call["messages"]
     ]
     assert not any("2 + 2" in content for content in later), later
+
+
+def test_usage_sums_both_agents_across_runs(monkeypatch):
+    duo = ReasoningDuo(model_names=["gpt-5.4", "gpt-5.4"])
+    spend = {
+        duo.reasoning_agent.agent_name: {
+            "input_tokens": 100,
+            "output_tokens": 40,
+            "reasoning_tokens": 30,
+            "total_tokens": 140,
+        },
+        duo.main_agent.agent_name: {
+            "input_tokens": 200,
+            "output_tokens": 10,
+            "cached_tokens": 50,
+            "total_tokens": 210,
+        },
+    }
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        self._add_usage(spend[self.agent_name])
+        return f"{self.agent_name}-out"
+
+    monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
+    assert duo.usage == empty_usage()
+
+    duo.run("think about it")
+    one_run = {
+        "input_tokens": 300,
+        "output_tokens": 50,
+        "cached_tokens": 50,
+        "reasoning_tokens": 30,
+        "total_tokens": 350,
+    }
+    assert duo.usage == one_run
+
+    duo.batched_run(["a", "b"])
+    assert duo.usage == {k: 3 * v for k, v in one_run.items()}
