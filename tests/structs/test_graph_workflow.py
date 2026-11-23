@@ -1041,6 +1041,85 @@ def _mock_agent(name: str, response: str = None):
     return a
 
 
+@pytest.mark.parametrize(
+    "backend",
+    [
+        "networkx",
+        pytest.param(
+            "rustworkx",
+            marks=pytest.mark.skipif(
+                not RUSTWORKX_AVAILABLE,
+                reason="rustworkx not installed",
+            ),
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "builder, invalid, valid, expected",
+    [
+        (
+            "add_edges_from_source",
+            ("A", ["B", "Typo"]),
+            ("A", ["B", "C"]),
+            [("A", "B"), ("A", "C")],
+        ),
+        (
+            "add_edges_to_target",
+            (["A", "Typo"], "C"),
+            (["A", "B"], "C"),
+            [("A", "C"), ("B", "C")],
+        ),
+        (
+            "add_parallel_chain",
+            (["A", "B"], ["C", "Typo"]),
+            (["A", "B"], ["C"]),
+            [("A", "C"), ("B", "C")],
+        ),
+    ],
+)
+def test_batch_edges_validate_before_mutating_workflow(
+    backend: str,
+    builder: str,
+    invalid: tuple[str | list[str], str | list[str]],
+    valid: tuple[str | list[str], str | list[str]],
+    expected: list[tuple[str, str]],
+) -> None:
+    """Keep the graph and execution plan intact when an endpoint is missing."""
+    workflow = GraphWorkflow(backend=backend)
+    for name in ("A", "B", "C", "D"):
+        workflow.add_node(_mock_agent(name))
+    workflow.add_edge("C", "D")
+    workflow.compile()
+    original_plan = workflow._sorted_layers
+    add_edges = getattr(workflow, builder)
+
+    with pytest.raises(
+        ValueError, match="node 'Typo' does not exist"
+    ):
+        add_edges(*invalid)
+
+    assert [
+        (edge.source, edge.target) for edge in workflow.edges
+    ] == [("C", "D")]
+    assert all(
+        not list(workflow.graph_backend.predecessors(node))
+        for node in ("A", "B", "C")
+    )
+    assert list(workflow.graph_backend.predecessors("D")) == ["C"]
+    assert workflow._compiled
+    assert workflow._sorted_layers is original_plan
+
+    new_edges = add_edges(*valid)
+
+    assert [
+        (edge.source, edge.target) for edge in new_edges
+    ] == expected
+    assert [
+        (edge.source, edge.target) for edge in workflow.edges
+    ] == [("C", "D"), *expected]
+    assert not workflow._compiled
+
+
 def test_node_from_subgraph_creates_subgraph_node():
     """Node.from_subgraph returns a SUBGRAPH-typed node with the inner workflow."""
     inner = GraphWorkflow(name="inner")
