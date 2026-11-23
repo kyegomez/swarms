@@ -6,6 +6,7 @@ from loguru import logger
 from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.usage_utils import total_usage
 
 
 def _sections(response: str, labels: List[str]) -> Dict[str, str]:
@@ -73,6 +74,11 @@ class KnowledgeGenerator:
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage of this component's agent."""
+        return total_usage(self)
 
     def _create_knowledge_system_prompt(self) -> str:
         """
@@ -231,6 +237,11 @@ class Reasoner:
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
 
+    @property
+    def usage(self) -> dict:
+        """Provider token usage of this component's agent."""
+        return total_usage(self)
+
     def _create_reasoning_system_prompt(self) -> str:
         """
         Create the system prompt for the reasoner.
@@ -368,6 +379,11 @@ class GKPAgent:
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the knowledge generator, reasoner and coordinator."""
+        return total_usage(self)
 
     def _create_coordinator_system_prompt(self) -> str:
         """

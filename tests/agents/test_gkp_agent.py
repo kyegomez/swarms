@@ -68,3 +68,52 @@ def test_knowledge_generator_passes_its_description_to_the_agent():
     generator = KnowledgeGenerator(description="Finds dates.")
 
     assert generator.agent.agent_description == "Finds dates."
+
+
+def test_usage_sums_generation_reasoning_and_coordination_across_runs(
+    monkeypatch,
+):
+    calls = []
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        calls.append(self.agent_name)
+        self._add_usage(
+            {
+                "input_tokens": 10,
+                "output_tokens": 2,
+                "total_tokens": 12,
+            }
+        )
+        if self.agent_name.endswith("knowledge-generator"):
+            return "Knowledge 1: one.\n\nKnowledge 2: two."
+        if self.agent_name.endswith("coordinator"):
+            return "Analysis: agree.\nFinal Answer: Paris"
+        return "Explanation: e.\nConfidence: high\nAnswer: Paris"
+
+    monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
+    gkp = GKPAgent(
+        agent_name="gkp", model_name="gpt-5.4", num_knowledge_items=2
+    )
+    assert gkp.usage == {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 0,
+    }
+
+    gkp.run("What is the capital of France?")
+    first = len(calls)
+    assert gkp.knowledge_generator.usage["input_tokens"] > 0
+    assert gkp.reasoner.usage["input_tokens"] > 0
+    assert gkp.coordinator.usage["input_tokens"] > 0
+    gkp.run("What is the capital of France?")
+
+    assert len(calls) == 2 * first
+    assert gkp.usage == {
+        "input_tokens": 10 * len(calls),
+        "output_tokens": 2 * len(calls),
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 12 * len(calls),
+    }
