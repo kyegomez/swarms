@@ -1141,16 +1141,20 @@ These markers are also what labels a PR or issue `ai-generated`, so never strip 
 
 ---
 
-## Contributing: Update the framework docs (required)
+## Contributing: Update the framework docs (required, non-negotiable)
 
-The docs site lives in a separate repo, [The-Swarm-Corporation/swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs). Every change to the framework that users can see must come with a matching docs update there:
+The docs site lives in a separate repo, [The-Swarm-Corporation/swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs). **Every PR that affects a public-facing parameter or method, or that could make any page of the docs wrong or incomplete, must come with its own PR to swarms-framework-docs.** This is non-negotiable: a framework PR without its docs PR will not be merged.
 
+It applies to every one of these:
+
+- **New methods and parameters:** every new public method, function or parameter, however small.
 - **New features:** a new class, structure, function or module gets its own page, or a section on the page it belongs to.
 - **Input parameters:** an added, removed or renamed parameter, or a changed default.
 - **Output:** a changed return value, return type or output format.
+- **Behaviour:** a change in what a documented method does, raises or sends to the model.
 - **Removals and renames:** delete or rename the page, and add a redirect in `docs.json` so old links still work.
 
-Open the docs PR alongside the framework PR and link each from the other. If the docs can't change until the framework PR merges, open a docs issue that links the framework PR instead, and link that issue from the framework PR. Changes users can't see, such as tests or a refactor that keeps the same API, need no docs update.
+Open the docs PR at the same time as the framework PR and link each from the other. If the docs must wait for the framework PR to merge, still open the docs PR now; it is held until the framework PR merges. A docs issue in place of a PR does not count. Only changes users cannot see, such as tests, comments, or a refactor that keeps the same API and behaviour, need no docs PR, and the framework PR should say so.
 
 The docs are a Mintlify site: pages are `.mdx` files and the navigation is in `docs.json`. Run `mint broken-links` and `mint validate` in the docs repo before opening the PR.
 
