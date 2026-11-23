@@ -293,8 +293,9 @@ class GroupChat(SerializableMixin):
 
         Without the ``respond`` tool an agent's speaking decision can never be
         parsed, so it would sit silent for the whole chat. The schema is
-        also appended to the agent's existing LiteLLM client, which sends
-        its own tool list on every request. The client is not rebuilt, so
+        also appended to the agent's LiteLLM client whenever that client's
+        own tool list lacks it, since the client sends only its own list.
+        The client is not rebuilt, so
         an llm the caller passed in keeps its model, endpoint and key.
         """
 
