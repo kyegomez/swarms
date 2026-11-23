@@ -307,20 +307,19 @@ class GroupChat(SerializableMixin):
 
         for agent in self.agents:
             tools = agent.tools_list_dictionary or []
-            if has_respond(tools):
-                continue
-            agent.tools_list_dictionary = [*tools, RESPOND_TOOL]
-            if isinstance(agent.llm, LiteLLM):
+            if not has_respond(tools):
+                agent.tools_list_dictionary = [*tools, RESPOND_TOOL]
+                self._log(
+                    "info",
+                    f"Injected respond tool into {agent.agent_name}",
+                )
+            if isinstance(getattr(agent, "llm", None), LiteLLM):
                 llm_tools = agent.llm.tools_list_dictionary or []
                 if not has_respond(llm_tools):
                     agent.llm.tools_list_dictionary = [
                         *llm_tools,
                         RESPOND_TOOL,
                     ]
-            self._log(
-                "info",
-                f"Injected respond tool into {agent.agent_name}",
-            )
 
     def _other_agents(self, exclude: str) -> str:
         """Return a comma-separated list of peers visible to one agent."""

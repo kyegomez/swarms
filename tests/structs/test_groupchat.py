@@ -243,10 +243,11 @@ class TestConstructorValidation:
                     model_name="groq/llama-3.3-70b-versatile",
                     base_url="https://api.groq.com/openai/v1",
                 ),
+                tools_list_dictionary=tools,
                 max_loops=1,
                 print_on=False,
             )
-            for name in ("A", "B")
+            for name, tools in (("A", None), ("B", [RESPOND_TOOL]))
         ]
         GroupChat(agents=agents).run("topic")
 
