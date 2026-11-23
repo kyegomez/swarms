@@ -22,7 +22,7 @@ License: MIT
 """
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Optional, Union, Dict, Any
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 
@@ -34,6 +34,7 @@ from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
+from swarms.utils.litellm_wrapper import empty_usage
 
 # System prompt for the reasoning agent that generates individual responses
 CONSISTENCY_SYSTEM_PROMPT = """
@@ -72,6 +73,7 @@ def aggregation_agent(
     responses: List[str],
     prompt: str = majority_voting_prompt,
     model_name: str = "gpt-5.4",
+    on_usage: Optional[Callable[[dict], None]] = None,
 ) -> str:
     """
     Aggregates a list of responses into a single final answer using an AI-powered aggregation agent.
@@ -86,6 +88,8 @@ def aggregation_agent(
                                Defaults to the majority_voting_prompt.
         model_name (str, optional): Model to use for aggregation.
                                    Defaults to "gpt-5.4".
+        on_usage (Optional[Callable[[dict], None]], optional): Called with
+                                   the aggregation agent's usage after it runs.
 
     Returns:
         str: The aggregated final answer
@@ -107,6 +111,9 @@ def aggregation_agent(
     )
 
     final_answer = agent.run(task)
+
+    if on_usage is not None:
+        on_usage(agent.usage)
 
     return final_answer
 
@@ -214,6 +221,16 @@ class SelfConsistencyAgent:
         self.conversation = Conversation()
         self.args = args
         self.kwargs = kwargs
+        self._usage = empty_usage()
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every sample and aggregation agent this instance has run."""
+        return dict(self._usage)
+
+    def _add_usage(self, call_usage: dict) -> None:
+        for key in self._usage:
+            self._usage[key] += call_usage.get(key, 0)
 
     def run(
         self,
@@ -260,18 +277,23 @@ class SelfConsistencyAgent:
 
         # Generate multiple independent responses concurrently
         with ThreadPoolExecutor() as executor:
+            agents = [
+                self._create_reasoning_agent()
+                for _ in range(self.num_samples)
+            ]
             futures = {
                 executor.submit(
-                    self._create_reasoning_agent().run,
+                    agent.run,
                     task=task,
                     img=img,
                     *args,
                     **kwargs,
-                ): i
-                for i in range(self.num_samples)
+                ): agent
+                for agent in agents
             }
             for future in as_completed(futures):
                 response = future.result()
+                self._add_usage(futures[future].usage)
                 responses.append(response)
 
         self.conversation.add(role=self.name, content=responses)
@@ -295,6 +317,7 @@ class SelfConsistencyAgent:
             prompt=self.majority_voting_prompt
             or majority_voting_prompt,
             model_name=self.model_name,
+            on_usage=self._add_usage,
         )
 
         self.conversation.add(
