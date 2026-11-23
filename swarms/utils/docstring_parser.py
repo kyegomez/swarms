@@ -27,6 +27,8 @@ _SECTION_HEADERS = (
 )
 
 _PARAM_RE = re.compile(r"^(\w+)\s*(?:\([^)]*\))?\s*:\s*(.+)$")
+_NUMPY_PARAM_RE = re.compile(r"^(\w+)(?:\s*:\s*.+)?$")
+_ARG_HEADERS = ("args:", "arguments:", "parameters:")
 
 
 class DocstringParam(NamedTuple):
@@ -61,10 +63,18 @@ def parse(docstring: str) -> DocstringInfo:
 
     # cleandoc keeps the relative indentation that separates a wrapped line from the next parameter
     lines = inspect.cleandoc(docstring).split("\n")
+    numpy_headers = {
+        index: f"{line.rstrip().lower()}:"
+        for index, line in enumerate(lines[:-1])
+        if f"{line.rstrip().lower()}:" in _SECTION_HEADERS
+        and re.fullmatch(r"-+", lines[index + 1].rstrip())
+    }
 
     prose = []
-    for line in lines:
-        if line.strip().lower().startswith(_SECTION_HEADERS):
+    for index, line in enumerate(lines):
+        if numpy_headers.get(index, line.strip().lower()).startswith(
+            _SECTION_HEADERS
+        ):
             break
         prose.append(line)
     description = "\n".join(prose).strip() or None
@@ -75,41 +85,44 @@ def parse(docstring: str) -> DocstringInfo:
     # Extract parameters
     params: List[DocstringParam] = []
     in_args_section = False
+    numpy_args = False
     current_param = None
     param_indent = 0
 
-    for line in lines:
+    for index, line in enumerate(lines):
         stripped = line.strip()
         if not stripped:
             continue
         indent = len(line) - len(line.lstrip())
-        lowered = stripped.lower()
+        header = numpy_headers.get(index, stripped.lower())
 
         if not in_args_section:
-            if lowered.startswith(
-                ("args:", "arguments:", "parameters:")
-            ):
+            if header.startswith(_ARG_HEADERS):
                 in_args_section = True
+                numpy_args = index in numpy_headers
             continue
 
         # Checked before the parameter pattern, which a wrapped line with a colon would match
         if current_param is not None and indent > param_indent:
             current_param = DocstringParam(
                 arg_name=current_param.arg_name,
-                description=f"{current_param.description} {stripped}",
+                description=f"{current_param.description} {stripped}".lstrip(),
             )
             continue
 
-        if lowered.startswith(_SECTION_HEADERS):
+        if header.startswith(_SECTION_HEADERS):
             break
 
-        param_match = _PARAM_RE.match(stripped)
+        pattern = _NUMPY_PARAM_RE if numpy_args else _PARAM_RE
+        param_match = pattern.match(stripped)
         if param_match:
             if current_param:
                 params.append(current_param)
             current_param = DocstringParam(
                 arg_name=param_match.group(1),
-                description=param_match.group(2).strip(),
+                description=(
+                    "" if numpy_args else param_match.group(2).strip()
+                ),
             )
             param_indent = indent
 

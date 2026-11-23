@@ -137,6 +137,39 @@ def add_numbers(a: int, b: int) -> int:
     return a + b
 
 
+def test_tool_schema_uses_numpy_docstring() -> None:
+    """Use NumPy parameter prose in the generated tool schema."""
+
+    def add(a: int, b: int) -> int:
+        """Add two numbers.
+
+        Parameters
+        ----------
+        a : int
+            First number.
+            For example: 10.
+        b : int
+            Second number.
+
+        Returns
+        -------
+        int
+            The sum.
+        """
+        return a + b
+
+    schema = BaseTool(tools=[add]).convert_tool_into_openai_schema()
+    function = schema["functions"][0]
+    properties = function["parameters"]["properties"]
+
+    assert function["description"] == "Add two numbers."
+    assert (
+        properties["a"]["description"]
+        == "First number. For example: 10."
+    )
+    assert properties["b"]["description"] == "Second number."
+
+
 def get_weather(location: str, unit: str = "celsius") -> dict:
     """Get the weather for a location."""
     return {"location": location, "unit": unit}
