@@ -12,6 +12,7 @@ from swarms.structs.context_utils import (
     split_last_turn,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.usage_utils import total_usage
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -180,3 +181,7 @@ class ReasoningDuo:
             ValueError: If ``imgs`` is given and is not one per task.
         """
         return batched_run(self.run, tasks, imgs=imgs)
+
+    @property
+    def usage(self) -> dict:
+        return total_usage(self.reasoning_agent, self.main_agent)
