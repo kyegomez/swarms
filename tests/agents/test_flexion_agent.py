@@ -65,7 +65,11 @@ def test_usage_sums_every_agent_call_across_runs(monkeypatch):
     def fake_call_llm(self, task=None, *args, **kwargs):
         calls.append(self.agent_name)
         self._add_usage(
-            {"input_tokens": 10, "output_tokens": 2, "total_tokens": 12}
+            {
+                "input_tokens": 10,
+                "output_tokens": 2,
+                "total_tokens": 12,
+            }
         )
         if self.agent_name.endswith("evaluator"):
             return "Final score: 3"
