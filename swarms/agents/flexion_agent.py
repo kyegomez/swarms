@@ -317,7 +317,7 @@ class ReflexionAgent:
             import re
 
             score_matches = re.findall(
-                r"(?:final|overall)\s+score:?\s*(\d+(?:\.\d+)?)",
+                r"(?:final|overall)\s+score[\s:*_]*(\d+(?:\.\d+)?)",
                 evaluation.lower(),
             )
             score = float(score_matches[-1]) if score_matches else 5.0
