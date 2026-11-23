@@ -111,3 +111,27 @@ def test_ire_agent_steps_read_only_the_latest_reply():
 
     assert simulated == ["Approach A", "Approach B", "Approach A"]
     assert result == "Final plan"
+
+
+def test_ire_agent_usage_sums_every_call_across_runs(monkeypatch):
+    from swarms.structs.agent import Agent
+    from swarms.utils.litellm_wrapper import empty_usage
+
+    calls = []
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        calls.append(1)
+        self._add_usage({"input_tokens": 10, "total_tokens": 12})
+        return "Approach A\nScore: 0.9"
+
+    monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
+    agent = IterativeReflectiveExpansion(max_loops=1)
+    assert agent.usage == empty_usage()
+
+    agent.run("Plan a picnic")
+    first = len(calls)
+    assert agent.usage["input_tokens"] == 10 * first
+
+    agent.run("Plan a party")
+    assert len(calls) == 2 * first
+    assert agent.usage["total_tokens"] == 12 * len(calls)
