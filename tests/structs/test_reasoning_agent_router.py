@@ -190,10 +190,8 @@ def test_create_consistency_agent():
         description="Desc",
         model_name="gpt-5.4",
         system_prompt="SP",
-        max_loops=3,
         num_samples=5,
         eval=True,
-        random_models_on=True,
         majority_voting_prompt="Vote",
     )
     agent = router._create_consistency_agent()
@@ -202,10 +200,8 @@ def test_create_consistency_agent():
     assert agent.description == "Desc"
     assert agent.model_name == "gpt-5.4"
     assert agent.system_prompt == "SP"
-    assert agent.max_loops == 3
     assert agent.num_samples == 5
     assert agent.eval is True
-    assert agent.random_models_on is True
     assert agent.majority_voting_prompt == "Vote"
 
 
