@@ -1071,15 +1071,28 @@ class TestAgentWrapperDelegation:
         agent.llm_manager.get_parameters = Mock(return_value="params")
         assert agent.get_llm_parameters() == "params"
 
-    def test_call_llm_delegates(self, agent):
+    @pytest.mark.parametrize(
+        "image_options",
+        [{}, {"imgs": ["first.png", "second.png"]}],
+        ids=["no-images", "multiple-images"],
+    )
+    def test_call_llm_delegates(
+        self, agent: Agent, image_options: dict[str, list[str]]
+    ) -> None:
+        """Forward image options to the manager and return its result."""
         agent.llm_manager.call = Mock(return_value="response")
         result = agent.call_llm(
-            "task", img=None, current_loop=2, streaming_callback=None
+            "task",
+            img=None,
+            current_loop=2,
+            streaming_callback=None,
+            **image_options,
         )
         assert result == "response"
         agent.llm_manager.call.assert_called_once_with(
             task="task",
             img=None,
+            imgs=image_options.get("imgs"),
             current_loop=2,
             streaming_callback=None,
         )
