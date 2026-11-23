@@ -34,6 +34,8 @@ from loguru import logger
 
 from swarms.schemas.agent_errors import AgentLLMInitializationError
 from swarms.telemetry.otel import swarm_telemetry
+from swarms.tools.base_tool import BaseTool
+from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils import llm_backend
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists
@@ -274,6 +276,26 @@ class LLMManager:
 
     # Construction and configuration.
 
+    def output_schema_tool(self) -> Optional[dict]:
+        """Build output_schema as one tool for a model without structured output.
+
+        Only a model the registry knows has tool calls but no structured
+        output gets the tool, and only on an agent with no other tools.
+
+        Returns:
+            Optional[dict]: The tool schema, or None when response_format is sent instead.
+        """
+        agent = self.agent
+        if (
+            agent.output_schema is None
+            or agent.tools_list_dictionary
+            or agent.mcp_enabled
+            or not _model_supports_function_calling(agent.model_name)
+            or llm_backend.supports_response_schema(agent.model_name)
+        ):
+            return None
+        return BaseTool().base_model_to_dict(agent.output_schema)
+
     def build(self, *args, **kwargs) -> Optional[LiteLLM]:
         """
         Build the LiteLLM instance from every configuration source.
@@ -358,6 +380,17 @@ class LLMManager:
 
                 tools_list.extend(mcp_tools)
 
+            tool_choice = "auto"
+            schema_tool = self.output_schema_tool()
+            if schema_tool is not None:
+                common_args["response_format"] = None
+                tools_list.append(schema_tool)
+                tool_choice = forced_tool_choice(
+                    schema_tool,
+                    agent.reasoning_effort,
+                    agent.reasoning_enabled,
+                )
+
             # Additional arguments for LiteLLM initialization
             additional_args = {}
 
@@ -373,7 +406,7 @@ class LLMManager:
                     {
                         "tools_list_dictionary": tools_list,
                         "tool_choice": additional_args.get(
-                            "tool_choice", "auto"
+                            "tool_choice", tool_choice
                         ),
                         "parallel_tool_calls": parallel_tool_calls,
                     }

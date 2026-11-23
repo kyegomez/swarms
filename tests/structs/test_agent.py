@@ -3020,17 +3020,28 @@ _INVALID_REPORT = '{"title": "Plan"}'
 
 @pytest.mark.parametrize("use_arun", [False, True])
 @pytest.mark.parametrize(
+    "as_tool", [False, True], ids=["native", "tool"]
+)
+@pytest.mark.parametrize(
     "replies",
     [[_VALID_REPORT], [_INVALID_REPORT]],
     ids=["valid", "invalid"],
 )
-def test_output_schema_returns_a_validated_model(use_arun, replies):
+def test_output_schema_returns_a_validated_model(
+    use_arun, as_tool, replies
+):
     sent = []
 
     def completion(**params):
         sent.append(params)
+        reply = replies[len(sent) - 1]
+        call = {
+            "id": "c1",
+            "function": {"name": "_Report", "arguments": reply},
+        }
         message = SimpleNamespace(
-            content=replies[len(sent) - 1], tool_calls=None
+            content=None if as_tool else reply,
+            tool_calls=[call] if as_tool else None,
         )
         return SimpleNamespace(
             choices=[SimpleNamespace(message=message)]
@@ -3039,9 +3050,10 @@ def test_output_schema_returns_a_validated_model(use_arun, replies):
     async def acompletion(**params):
         return completion(**params)
 
-    agent = Agent(max_loops=1, print_on=False, output_schema=_Report)
-
     def run(task):
+        agent = Agent(
+            max_loops=1, print_on=False, output_schema=_Report
+        )
         if use_arun:
             return asyncio.run(agent.arun(task))
         return agent.run(task)
@@ -3049,6 +3061,14 @@ def test_output_schema_returns_a_validated_model(use_arun, replies):
     with (
         patch.object(litellm_wrapper, "completion", completion),
         patch.object(litellm_wrapper, "acompletion", acompletion),
+        patch(
+            "swarms.agents.llm_manager._model_supports_function_calling",
+            lambda model: True,
+        ),
+        patch(
+            "swarms.utils.llm_backend.supports_response_schema",
+            lambda model: not as_tool,
+        ),
     ):
         if replies[-1] == _INVALID_REPORT:
             with pytest.raises(AgentOutputSchemaError) as raised:
@@ -3060,4 +3080,11 @@ def test_output_schema_returns_a_validated_model(use_arun, replies):
             )
 
     assert len(sent) == 1
-    assert sent[0]["response_format"] is _Report
+    assert sent[0].get("response_format") is (
+        None if as_tool else _Report
+    )
+    assert sent[0].get("tool_choice") == (
+        {"type": "function", "function": {"name": "_Report"}}
+        if as_tool
+        else None
+    )
