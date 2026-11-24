@@ -450,10 +450,16 @@ class HierarchicalSwarm:
             )
             if message.get("role") in names
         ]
-        if named:
-            if outputs:
-                named = named[-len(outputs) :]
-            return "\n\n".join(named)
+        succeeded = [
+            output
+            for output in outputs
+            if not (
+                isinstance(output, dict)
+                and output.get("status") == "failed"
+            )
+        ]
+        if named and succeeded:
+            return "\n\n".join(named[-len(succeeded) :])
         if not outputs:
             return "(no worker outputs)"
         return any_to_str(outputs)

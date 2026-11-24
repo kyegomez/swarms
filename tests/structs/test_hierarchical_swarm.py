@@ -584,6 +584,40 @@ def test_step_skips_feedback_on_final_loop(monkeypatch):
     assert feedback_calls == [["done"]]
 
 
+def test_feedback_skips_a_failed_workers_earlier_output():
+    orders = {
+        "orders": [
+            {"agent_name": "A", "task": "t"},
+            {"agent_name": "B", "task": "t"},
+        ],
+    }
+    swarm = make_recovery_swarm(
+        StubAgent("Director", [orders, orders, {"orders": []}]),
+        [
+            StubAgent("A", ["a-loop1", "a-loop2"]),
+            StubAgent(
+                "B",
+                [
+                    "b-loop1",
+                    RuntimeError("down"),
+                    RuntimeError("down"),
+                ],
+            ),
+        ],
+        max_loops=3,
+        max_reassignment_attempts=0,
+    )
+    swarm.director_feedback_on = True
+    seen = []
+    swarm.feedback_director = lambda outputs: seen.append(
+        swarm._format_worker_responses(outputs)
+    )
+
+    swarm.run("task")
+
+    assert seen == ["A: a-loop1\n\nB: b-loop1", "A: a-loop2"]
+
+
 def test_step_returns_immediately_when_director_has_no_orders(
     monkeypatch,
 ):
