@@ -15,6 +15,8 @@ from swarms.agents.i_agent import (
 from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.structs.agent import Agent
 from swarms.structs.execution_utils import batched_run
+from swarms.structs.usage_utils import total_usage
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
 
 #: Supported agent type literals for ReasoningAgentRouter
@@ -120,6 +122,7 @@ class ReasoningAgentRouter:
             self_reflexion_preset_agents
         )
         self.aggregator_agent = aggregator_agent
+        self._usage = empty_usage()
 
         self.reliability_check()
 
@@ -275,6 +278,15 @@ class ReasoningAgentRouter:
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
             )
 
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every swarm this router has run.
+
+        Returns:
+            A new dict with the keys Agent.usage has.
+        """
+        return dict(self._usage)
+
     def run(self, task: str, *args, **kwargs):
         """
         Execute the reasoning process of the selected swarm on a given task.
@@ -287,6 +299,7 @@ class ReasoningAgentRouter:
         Returns:
             The result of the reasoning process (format depends on agent and output_type).
         """
+        swarm = None
         try:
             swarm = self.select_swarm()
 
@@ -298,6 +311,9 @@ class ReasoningAgentRouter:
             raise ReasoningAgentExecutorError(
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
             )
+        finally:
+            if swarm is not None:
+                self._usage = total_usage(self._usage, swarm.usage)
 
     def batched_run(self, tasks: List[str], *args, **kwargs):
         """
