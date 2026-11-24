@@ -8,6 +8,7 @@ from swarms.structs.agent import Agent
 from swarms.structs.broadcast import broadcast
 from swarms.structs.swarming_architectures import (
     circular_swarm,
+    pyramid_swarm,
 )
 
 
@@ -123,6 +124,24 @@ def test_nothing_is_handed_a_flattened_role_colon_blob():
         assert "User: " not in str(
             call["task"]
         ), f"{call['agent']} received flattened prose: {call['task']}"
+
+
+def test_pyramid_swarm_records_only_the_new_answer_on_reuse(
+    monkeypatch,
+):
+    replies = iter(["A1", "B1", "C1", "A2", "B2", "C2"])
+    monkeypatch.setattr(
+        Agent, "call_llm", lambda self, *a, **k: next(replies)
+    )
+    agents = [
+        Agent(agent_name=name, max_loops=1, print_on=False)
+        for name in "ABC"
+    ]
+
+    pyramid_swarm(agents, ["t1", "t2", "t3"])
+    second = pyramid_swarm(agents, ["u1", "u2", "u3"])
+
+    assert [row["content"] for row in second] == ["A2", "B2", "C2"]
 
 
 if __name__ == "__main__":

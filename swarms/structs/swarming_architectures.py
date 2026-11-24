@@ -2,6 +2,7 @@ from typing import List, Union, Dict, Any
 
 
 from swarms.structs.context_utils import (
+    agent_answer,
     run_on_conversation as _run_on_conversation,
 )
 from swarms.structs.omni_agent_types import AgentListType
@@ -142,10 +143,11 @@ def pyramid_swarm(
             if tasks:
                 task = tasks.pop(0)
                 agent_index = int(i * (i + 1) / 2 + j)
-                response = agents[agent_index].run(task)
+                agent = agents[agent_index]
+                response = agent.run(task)
                 conversation.add(
-                    role=agents[agent_index].agent_name,
-                    content=response,
+                    role=agent.agent_name,
+                    content=agent_answer(agent, response),
                 )
 
     return history_output_formatter(conversation, output_type)
