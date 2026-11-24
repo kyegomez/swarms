@@ -325,7 +325,7 @@ def test_select_swarm_invalid_type():
 
 
 def test_run_calls_swarm_run_with_task():
-    """run selects swarm and calls run(task=task) for non-ReflexionAgent."""
+    """run selects swarm and calls run(task) for non-ReflexionAgent."""
     router = ReasoningAgentRouter(swarm_type="reasoning-duo")
     mock_swarm = MagicMock()
     mock_swarm.run.return_value = "result"
@@ -334,12 +334,12 @@ def test_run_calls_swarm_run_with_task():
         router, "select_swarm", return_value=mock_swarm
     ):
         out = router.run("What is 2+2?")
-    mock_swarm.run.assert_called_once_with(task="What is 2+2?")
+    mock_swarm.run.assert_called_once_with("What is 2+2?")
     assert out == "result"
 
 
 def test_run_calls_reflexion_with_tasks_list():
-    """run calls swarm.run(tasks=[task]) for ReflexionAgent."""
+    """run calls swarm.run([task]) for ReflexionAgent."""
     router = ReasoningAgentRouter(swarm_type="ReflexionAgent")
     mock_swarm = MagicMock()
     mock_swarm.run.return_value = "reflex_result"
@@ -348,7 +348,7 @@ def test_run_calls_reflexion_with_tasks_list():
         router, "select_swarm", return_value=mock_swarm
     ):
         out = router.run("Do something")
-    mock_swarm.run.assert_called_once_with(tasks=["Do something"])
+    mock_swarm.run.assert_called_once_with(["Do something"])
     assert out == "reflex_result"
 
 
@@ -362,7 +362,9 @@ def test_run_passes_args_kwargs():
         router, "select_swarm", return_value=mock_swarm
     ):
         router.run("task", "extra_arg", key="value")
-    mock_swarm.run.assert_called_once_with(task="task", key="value")
+    mock_swarm.run.assert_called_once_with(
+        "task", "extra_arg", key="value"
+    )
 
 
 def test_run_raises_executor_error_on_swarm_failure():
