@@ -4,6 +4,7 @@ import pytest
 
 from swarms.agents.agent_judge import AgentJudge
 from swarms.structs.agent import Agent
+from swarms.utils.litellm_wrapper import empty_usage
 
 
 def _judge(monkeypatch, max_loops=1):
@@ -17,6 +18,7 @@ def _judge(monkeypatch, max_loops=1):
         calls.append(
             {"task": task, "messages": kwargs.get("messages") or []}
         )
+        self._add_usage({"input_tokens": 10, "total_tokens": 12})
         return f"verdict-{len(calls)}"
 
     monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
@@ -78,6 +80,21 @@ def test_a_single_loop_sends_only_the_instruction(monkeypatch):
     assert len(calls) == 1
     assert len(calls[0]["messages"]) == 1
     assert "rate this answer" in calls[0]["messages"][0]["content"]
+
+
+def test_usage_sums_every_call_across_runs(monkeypatch):
+    judge, calls = _judge(monkeypatch, max_loops=2)
+    assert judge.usage == empty_usage()
+
+    judge.run(task="rate this answer")
+    judge.run(task="rate this answer")
+
+    assert len(calls) == 4
+    assert judge.usage == {
+        **empty_usage(),
+        "input_tokens": 40,
+        "total_tokens": 48,
+    }
 
 
 if __name__ == "__main__":
