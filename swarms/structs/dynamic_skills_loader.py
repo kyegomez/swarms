@@ -8,11 +8,13 @@ cosine similarity to determine which skills should be loaded into the agent.
 
 import math
 import os
-import re
+from collections import Counter
 from typing import Callable, Dict, List, Optional, Union
 
 import yaml
 from loguru import logger
+
+from swarms.tools.dynamic_tool_loader import _tokenize
 
 
 def skill_dirs(
@@ -153,24 +155,12 @@ class DynamicSkillsLoader:
 
         return skills
 
-    def _tokenize_text(self, text: str) -> List[str]:
-        """
-        Tokenize text into words, removing punctuation and converting to lowercase.
-
-        Args:
-            text: Input text to tokenize
-
-        Returns:
-            List of lowercase tokens
-        """
-        # Remove punctuation and convert to lowercase
-        text = re.sub(r"[^\w\s]", "", text.lower())
-        # Split into words and filter out empty strings
-        return [word for word in text.split() if word]
-
     def _create_embedding(self, text: str) -> Dict[str, float]:
         """
         Create a simple term frequency embedding for the text.
+
+        Stopwords and single characters are dropped, so two texts only
+        score as similar when they share words that carry meaning.
 
         Args:
             text: Input text to embed
@@ -178,13 +168,7 @@ class DynamicSkillsLoader:
         Returns:
             Dictionary mapping words to their frequencies
         """
-        tokens = self._tokenize_text(text)
-        embedding = {}
-
-        for token in tokens:
-            embedding[token] = embedding.get(token, 0) + 1
-
-        return embedding
+        return dict(Counter(_tokenize(text)))
 
     def _cosine_similarity(
         self,
