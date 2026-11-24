@@ -1,7 +1,7 @@
 """Two agents share a conversation kept on another server, reached over HTTP.
 
 Start the server first in another terminal:
-    python examples/channel_examples/http_channel_server.py
+    python examples/channel_examples/http_channel/http_channel_server.py
 """
 
 from swarms import Agent, HttpChannel
