@@ -75,3 +75,28 @@ def test_router_request_forces_the_select_swarm_tool(monkeypatch):
         "type": "function",
         "function": {"name": "select_swarm"},
     }
+
+
+def test_router_routes_each_task_without_earlier_ones():
+    swarm = HybridHierarchicalClusterSwarm(swarms=[Writers()])
+    router = swarm.router_agent
+    router.print_on = False
+    requests = []
+
+    def call_llm(*args, **kwargs):
+        requests.append(router.short_memory.get_str())
+        return json.dumps(
+            {
+                "reasoning": "There is one swarm.",
+                "swarm_name": "Writers",
+                "task_description": "write it",
+            }
+        )
+
+    router.call_llm = call_llm
+
+    swarm.run("first-task")
+    swarm.run("second-task")
+
+    assert "second-task" in requests[1]
+    assert "first-task" not in requests[1]
