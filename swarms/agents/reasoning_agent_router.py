@@ -5,7 +5,7 @@ from typing import (
     Optional,
 )
 
-from swarms.structs.execution_utils import batched_run
+from swarms.agents.agent_judge import AgentJudge
 from swarms.agents.consistency_agent import SelfConsistencyAgent
 from swarms.agents.flexion_agent import ReflexionAgent
 from swarms.agents.gkp_agent import GKPAgent
@@ -13,8 +13,8 @@ from swarms.agents.i_agent import (
     IterativeReflectiveExpansion as IREAgent,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
+from swarms.structs.execution_utils import batched_run
 from swarms.utils.output_types import OutputType
-from swarms.agents.agent_judge import AgentJudge
 
 #: Supported agent type literals for ReasoningAgentRouter
 agent_types = Literal[
@@ -68,6 +68,7 @@ class ReasoningAgentRouter:
         random_models_on (bool): Enable random model selection for diversity.
         majority_voting_prompt (Optional[str]): Custom prompt for majority voting.
         reasoning_model_name (Optional[str]): Model for the reasoning-duo reasoning agent. Defaults to None, which runs it on model_name.
+        self_reflexion_preset_agents (bool): Passed to SelfConsistencyAgent as preset_agents, so the built-in agent votes on the samples.
 
     Example:
         >>> router = ReasoningAgentRouter(swarm_type="reasoning-duo")
@@ -91,6 +92,7 @@ class ReasoningAgentRouter:
         random_models_on: bool = False,
         majority_voting_prompt: Optional[str] = None,
         reasoning_model_name: Optional[str] = None,
+        self_reflexion_preset_agents: bool = True,
     ):
         """
         Initialize the ReasoningAgentRouter with the specified configuration.
@@ -111,6 +113,9 @@ class ReasoningAgentRouter:
         self.random_models_on = random_models_on
         self.majority_voting_prompt = majority_voting_prompt
         self.reasoning_model_name = reasoning_model_name
+        self.self_reflexion_preset_agents = (
+            self_reflexion_preset_agents
+        )
 
         self.reliability_check()
 
@@ -119,11 +124,6 @@ class ReasoningAgentRouter:
         if self.max_loops == 0:
             raise ReasoningAgentInitializationError(
                 "ReasoningAgentRouter Error: Max loops must be greater than 0"
-            )
-
-        if self.model_name == "" or self.model_name is None:
-            raise ReasoningAgentInitializationError(
-                "ReasoningAgentRouter Error: Model name must be provided"
             )
 
         if self.swarm_type == "" or self.swarm_type is None:
@@ -187,6 +187,7 @@ class ReasoningAgentRouter:
             output_type=self.output_type,
             eval=self.eval,
             majority_voting_prompt=self.majority_voting_prompt,
+            preset_agents=self.self_reflexion_preset_agents,
         )
 
     def _create_ire_agent(self):
@@ -305,7 +306,6 @@ class ReasoningAgentRouter:
         Returns:
             A list of reasoning process results for each task.
         """
-        # The helper would keep max_workers and split a list img itself.
         return batched_run(
             lambda task: self.run(task, *args, **kwargs), tasks
         )

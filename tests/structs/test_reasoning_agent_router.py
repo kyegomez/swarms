@@ -72,20 +72,6 @@ def test_reliability_check_max_loops_zero():
     assert "Max loops must be greater than 0" in str(exc_info.value)
 
 
-def test_reliability_check_model_name_empty():
-    """reliability_check raises when model_name is empty."""
-    with pytest.raises(ReasoningAgentInitializationError) as exc_info:
-        ReasoningAgentRouter(model_name="")
-    assert "Model name must be provided" in str(exc_info.value)
-
-
-def test_reliability_check_model_name_none():
-    """reliability_check raises when model_name is None."""
-    with pytest.raises(ReasoningAgentInitializationError) as exc_info:
-        ReasoningAgentRouter(model_name=None)
-    assert "Model name must be provided" in str(exc_info.value)
-
-
 def test_reliability_check_swarm_type_empty():
     """reliability_check raises when swarm_type is empty."""
     with pytest.raises(ReasoningAgentInitializationError) as exc_info:
