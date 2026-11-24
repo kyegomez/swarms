@@ -3410,39 +3410,40 @@ Subtask Breakdown:
         **kwargs,
     ) -> Any:
         """
-        Talk to multiple agents.
+        Run this agent on the task once and send its reply to every agent.
 
         Args:
             agents (List[Union[Any, Callable]]): The agents to talk to.
-            task (str): The message to send to each agent.
+            task (str): The task this agent answers before messaging.
 
         Returns:
             List[Any]: One entry per agent, in the order the agents were given.
-                An agent whose conversation raised contributes None.
+                An agent whose run raised contributes None.
+
+        Raises:
+            Exception: Whatever this agent's own run raises.
         """
+        output = self.run(
+            f"{self.agent_name}: {task}", *args, **kwargs
+        )
+        message = f"From {self.agent_name}: Message: {output}"
+
         # Scoped to the call, see run_concurrent_tasks for why
         with ContextThreadPoolExecutor(
             max_workers=max(1, len(agents))
         ) as executor:
-            # Create futures for each agent conversation
             futures = [
-                executor.submit(
-                    self.talk_to, agent, task, *args, **kwargs
-                )
+                executor.submit(agent.run, message, *args, **kwargs)
                 for agent in agents
             ]
 
-            # Wait for all futures to complete and collect results
             outputs = []
             for future in futures:
                 try:
-                    result = future.result()
-                    outputs.append(result)
+                    outputs.append(future.result())
                 except Exception as e:
                     logger.error(f"Error in agent communication: {e}")
-                    outputs.append(
-                        None
-                    )  # or handle error case as needed
+                    outputs.append(None)
 
         return outputs
 
