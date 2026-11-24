@@ -110,9 +110,9 @@ class MixtureOfAgents:
             output_type: Desired formatted output type.
             aggregator_model_name: Model used for the default aggregator.
             max_workers: Cap on concurrent worker agents per layer.
-            aggegrator_args: Extra keyword arguments forwarded to the
-                default aggregator agent. Ignored when ``aggregator_agent``
-                is supplied.
+            aggegrator_args: Keyword arguments for the default
+                aggregator agent, overriding its defaults. Ignored
+                when aggregator_agent is supplied.
 
         Raises:
             ValueError: If no agents, aggregator system prompt, or layers
@@ -194,14 +194,16 @@ class MixtureOfAgents:
                 the shared conversation context.
         """
         return Agent(
-            agent_name="Aggregator Agent",
-            agent_description="An agent that aggregates the responses of the other agents.",
-            system_prompt=self.aggregator_system_prompt,
-            model_name=self.aggregator_model_name,
-            max_loops=1,
-            output_type="final",
-            dynamic_context_window=True,
-            **self.aggegrator_args,
+            **{
+                "agent_name": "Aggregator Agent",
+                "agent_description": "An agent that aggregates the responses of the other agents.",
+                "system_prompt": self.aggregator_system_prompt,
+                "model_name": self.aggregator_model_name,
+                "max_loops": 1,
+                "output_type": "final",
+                "dynamic_context_window": True,
+                **self.aggegrator_args,
+            }
         )
 
     def step(
