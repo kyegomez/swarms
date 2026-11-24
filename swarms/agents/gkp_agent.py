@@ -175,14 +175,10 @@ class KnowledgeGenerator:
                     p = p[len("Knowledge:") :].strip()
                 knowledge_items.append(p)
 
-        # Ensure we have the requested number of knowledge items
-        while len(knowledge_items) < self.num_knowledge_items:
+        if len(knowledge_items) < self.num_knowledge_items:
             logger.warning(
                 f"Only generated {len(knowledge_items)} knowledge items, expected {self.num_knowledge_items}"
             )
-            knowledge_items.append(
-                ""
-            )  # Add empty string as placeholder
 
         # Truncate if we have too many
         knowledge_items = knowledge_items[: self.num_knowledge_items]
