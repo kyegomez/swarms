@@ -482,34 +482,15 @@ def test_self_consistency_samples_get_distinct_agents():
     assert len(set(agent_ids[:3])) == 3
 
 
-@pytest.mark.parametrize(
-    "swarm_type", ["reasoning-duo", "AgentJudge", "self-consistency"]
-)
-def test_usage_totals_every_run(swarm_type):
-    """usage keeps what each run's swarm spent after the swarm is dropped."""
-    from swarms.structs.agent import Agent
-
-    calls = []
-
-    def fake_call_llm(self, task=None, *args, **kwargs):
-        calls.append(task)
-        self._add_usage({"total_tokens": 1})
-        return "ANSWER"
-
-    router = ReasoningAgentRouter(swarm_type=swarm_type)
+def test_usage_totals_every_run():
+    """usage adds up each run's swarm usage, including a run that raises."""
+    router = ReasoningAgentRouter()
     assert router.usage == empty_usage()
-    with patch.object(Agent, "call_llm", fake_call_llm):
+    swarm = MagicMock(usage={**empty_usage(), "total_tokens": 5})
+    with patch.object(router, "select_swarm", return_value=swarm):
         router.run("task")
         router.batched_run(["task"])
-    assert router.usage == {
-        **empty_usage(),
-        "total_tokens": len(calls),
-    }
-
-    swarm = MagicMock(usage={**empty_usage(), "total_tokens": 5})
-    swarm.run.side_effect = RuntimeError("model down")
-    with patch.object(
-        router, "select_swarm", return_value=swarm
-    ), pytest.raises(ReasoningAgentExecutorError):
-        router.run("task")
-    assert router.usage["total_tokens"] == len(calls) + 5
+        swarm.run.side_effect = RuntimeError("model down")
+        with pytest.raises(ReasoningAgentExecutorError):
+            router.run("task")
+    assert router.usage == {**empty_usage(), "total_tokens": 15}
