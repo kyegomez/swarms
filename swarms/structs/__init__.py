@@ -100,7 +100,6 @@ from swarms.structs.swarm_router import (
 from swarms.structs.swarming_architectures import (
     circular_swarm,
     grid_swarm,
-    pyramid_swarm,
 )
 
 __all__ = [
@@ -135,7 +134,6 @@ __all__ = [
     "OneToOne",
     "OneToThree",
     "Broadcast",
-    "pyramid_swarm",
     "SpreadSheetSwarm",
     "SwarmRouter",
     "SwarmType",
