@@ -15,6 +15,7 @@ from swarms.agents.i_agent import (
 from swarms.agents.reasoning_duo import ReasoningDuo
 from swarms.structs.agent import Agent
 from swarms.structs.execution_utils import batched_run
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
 
 #: Supported agent type literals for ReasoningAgentRouter
@@ -120,6 +121,7 @@ class ReasoningAgentRouter:
             self_reflexion_preset_agents
         )
         self.aggregator_agent = aggregator_agent
+        self._swarm = None
 
         self.reliability_check()
 
@@ -275,6 +277,20 @@ class ReasoningAgentRouter:
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
             )
 
+    @property
+    def usage(self) -> dict:
+        """Token usage of the swarm the latest run built.
+
+        Each run builds a new swarm, so this covers only the latest run.
+
+        Returns:
+            That swarm's usage, or zeros before the first run.
+        """
+        if self._swarm is None:
+            return empty_usage()
+
+        return self._swarm.usage
+
     def run(self, task: str, *args, **kwargs):
         """
         Execute the reasoning process of the selected swarm on a given task.
@@ -289,6 +305,7 @@ class ReasoningAgentRouter:
         """
         try:
             swarm = self.select_swarm()
+            self._swarm = swarm
 
             if self.swarm_type == "ReflexionAgent":
                 return swarm.run([task], *args, **kwargs)

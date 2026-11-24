@@ -7,6 +7,7 @@ from swarms.agents.reasoning_agent_router import (
     ReasoningAgentRouter,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
+from swarms.utils.litellm_wrapper import empty_usage
 
 
 def test_router_init_default():
@@ -479,3 +480,19 @@ def test_self_consistency_samples_get_distinct_agents():
         router.run("What is 2 + 2?")
 
     assert len(set(agent_ids[:3])) == 3
+
+
+def test_usage_reads_the_latest_swarm():
+    """usage is the usage of the latest run's swarm, even when it raised."""
+    router = ReasoningAgentRouter()
+    assert router.usage == empty_usage()
+    first = MagicMock(usage={**empty_usage(), "total_tokens": 5})
+    failing = MagicMock(usage={**empty_usage(), "total_tokens": 7})
+    failing.run.side_effect = RuntimeError("model down")
+    with patch.object(
+        router, "select_swarm", side_effect=[first, failing]
+    ):
+        router.run("task")
+        with pytest.raises(ReasoningAgentExecutorError):
+            router.run("task")
+    assert router.usage == failing.usage
