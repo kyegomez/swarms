@@ -61,6 +61,10 @@ from swarms.structs.majority_voting import (
     MajorityVoting,
 )
 from swarms.structs.mcp_deployer import MCPDeployer, deploy_as_mcp
+from swarms.structs.message_board import (
+    BoardThreadChannel,
+    MessageBoard,
+)
 from swarms.structs.mixture_of_agents import MixtureOfAgents
 from swarms.structs.model_router import ModelRouter
 from swarms.structs.multi_agent_exec import (
@@ -114,6 +118,8 @@ __all__ = [
     "QueueChannel",
     "SmtpChannel",
     "SqliteChannel",
+    "MessageBoard",
+    "BoardThreadChannel",
     "Conversation",
     "GroupChat",
     "MajorityVoting",

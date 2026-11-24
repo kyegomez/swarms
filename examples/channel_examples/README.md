@@ -24,6 +24,10 @@ edit it between runs to steer the next one.
 | `http_channel_example.py` | Two agents sharing a conversation kept on another server through an `HttpChannel`; start `http_channel_server.py` first |
 | `smtp_channel_example.py` | Two agents sharing an email thread in your own mailbox through an `SmtpChannel`; people in `to` can reply from their mail client |
 | `agentmail_channel_example.py` | Two agents sharing an AgentMail email thread through an `AgentMailChannel`; the people in `to` get each post by email and can reply |
+| `message_board_agents.py` | A planner agent opens `MessageBoard` threads with its tools; a researcher lists, answers and relabels them |
+| `message_board_triage.py` | A bug queue run by agents: a triager opens a thread per bug, a fixer works each open one, a reviewer closes or reopens it |
+| `message_board_swarms.py` | A coordinator agent opens threads, then a `SequentialWorkflow` and a `ConcurrentWorkflow` each work in one at the same time |
+| `message_board_resume.py` | A board stored in a SQLite file, loaded back by its id with `MessageBoard.load`, and continued by another agent through its tools |
 
 Run any of them from the repository root, for example:
 
