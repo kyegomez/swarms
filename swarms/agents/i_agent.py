@@ -22,6 +22,7 @@ from typing import List, Tuple
 from loguru import logger
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.usage_utils import total_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -76,6 +77,11 @@ class IterativeReflectiveExpansion:
             max_loops=1,
             output_type="final",
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every call the agent has made."""
+        return total_usage(self)
 
     def generate_initial_hypotheses(self, task: str) -> List[str]:
         """
