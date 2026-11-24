@@ -13,6 +13,7 @@ from swarms.agents.i_agent import (
     IterativeReflectiveExpansion as IREAgent,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
+from swarms.structs.agent import Agent
 from swarms.structs.execution_utils import batched_run
 from swarms.utils.output_types import OutputType
 
@@ -69,6 +70,7 @@ class ReasoningAgentRouter:
         majority_voting_prompt (Optional[str]): Custom prompt for majority voting.
         reasoning_model_name (Optional[str]): Model for the reasoning-duo reasoning agent. Defaults to None, which runs it on model_name.
         self_reflexion_preset_agents (bool): Passed to SelfConsistencyAgent as preset_agents, so the built-in agent votes on the samples.
+        aggregator_agent (Optional[Agent]): Your own agent that votes on the self-consistency samples. Needs self_reflexion_preset_agents=False. Defaults to None.
 
     Example:
         >>> router = ReasoningAgentRouter(swarm_type="reasoning-duo")
@@ -93,6 +95,7 @@ class ReasoningAgentRouter:
         majority_voting_prompt: Optional[str] = None,
         reasoning_model_name: Optional[str] = None,
         self_reflexion_preset_agents: bool = True,
+        aggregator_agent: Optional[Agent] = None,
     ):
         """
         Initialize the ReasoningAgentRouter with the specified configuration.
@@ -116,6 +119,7 @@ class ReasoningAgentRouter:
         self.self_reflexion_preset_agents = (
             self_reflexion_preset_agents
         )
+        self.aggregator_agent = aggregator_agent
 
         self.reliability_check()
 
@@ -188,6 +192,7 @@ class ReasoningAgentRouter:
             eval=self.eval,
             majority_voting_prompt=self.majority_voting_prompt,
             preset_agents=self.self_reflexion_preset_agents,
+            aggregator_agent=self.aggregator_agent,
         )
 
     def _create_ire_agent(self):

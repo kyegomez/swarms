@@ -191,6 +191,29 @@ def test_create_consistency_agent():
     assert agent.majority_voting_prompt == "Vote"
 
 
+@pytest.mark.parametrize(
+    "swarm_type", ["self-consistency", "consistency-agent"]
+)
+def test_consistency_votes_with_the_callers_aggregator(swarm_type):
+    """self_reflexion_preset_agents=False hands the router's aggregator_agent to SelfConsistencyAgent."""
+    from swarms.structs.agent import Agent
+
+    voter = Agent(
+        agent_name="Voter",
+        llm=MagicMock(),
+        max_loops=1,
+        print_on=False,
+    )
+    router = ReasoningAgentRouter(
+        swarm_type=swarm_type,
+        self_reflexion_preset_agents=False,
+        aggregator_agent=voter,
+    )
+    agent = router.select_swarm()
+    assert agent.preset_agents is False
+    assert agent.aggregator_agent is voter
+
+
 def test_create_ire_agent():
     """_create_ire_agent returns IREAgent with correct config."""
     from swarms.agents.i_agent import (
