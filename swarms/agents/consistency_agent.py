@@ -373,7 +373,7 @@ class SelfConsistencyAgent:
             >>> print(found)  # True
         """
         pattern = re.compile(
-            rf"(?<!\w)(?<!\d\.){re.escape(answer)}(?!\w)(?!\.\d)"
+            rf"(?<![\w+-])(?<!\d[.,/]){re.escape(answer)}(?!\w)(?![.,/]\d)"
         )
         if any(pattern.search(response) for response in responses):
             return True

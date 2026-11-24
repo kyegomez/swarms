@@ -145,6 +145,9 @@ def test_caller_aggregator_votes_and_counts_only_its_own_calls():
         ("The answer is 42.", False),
         ("I get 0.4", False),
         ("I get 4.5", False),
+        ("The answer is -4.", False),
+        ("The total is 4,000", False),
+        ("The ratio is 3/4", False),
     ],
 )
 def test_eval_accepts_only_the_whole_answer(sample, accepted):
