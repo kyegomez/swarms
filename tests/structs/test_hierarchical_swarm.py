@@ -1304,6 +1304,31 @@ def test_concurrent_batched_run_keeps_each_task_to_itself():
     assert "TASK-AAA" not in str(second)
 
 
+def test_concurrent_batched_run_autosaves_the_task_conversation(
+    monkeypatch, tmp_path
+):
+    get_workspace_dir.cache_clear()
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+    swarm = HierarchicalSwarm(
+        director=StubAgent("Director", [_orders(("Worker", "go"))]),
+        agents=[StubAgent("Worker", ["WORKER-ANSWER"])],
+        autosave=True,
+        planning_enabled=False,
+        add_collaboration_prompt=False,
+    )
+
+    swarm.batched_run(["TASK-AAA"], max_workers=1)
+
+    path = os.path.join(
+        swarm.swarm_workspace_dir, "conversation_history.json"
+    )
+    with open(path) as f:
+        saved = f.read()
+    assert "TASK-AAA" in saved
+    assert "WORKER-ANSWER" in saved
+    get_workspace_dir.cache_clear()
+
+
 def test_one_agent_runs_its_orders_one_at_a_time():
     worker = RecordingAgent("Worker", ["a done", "b done"])
     swarm = make_recovery_swarm(StubAgent("Director", []), [worker])
