@@ -334,58 +334,15 @@ class BaseTool(BaseModel):
             raise ToolValidationError("Output must be a string")
 
         if self.function_map is None:
-            self._log_if_verbose(
-                "warning",
-                "Function map is None, cannot validate function names",
-            )
             return False
 
         try:
-            self._log_if_verbose(
-                "debug",
-                f"Validating output string: {output[:100]}...",
-            )
-
-            # Parse the output as JSON
-            try:
-                data = json.loads(output)
-            except json.JSONDecodeError:
-                self._log_if_verbose(
-                    "debug", "Output is not valid JSON"
-                )
-                return False
-
-            # Check if the output matches the expected schema
-            if (
+            data = json.loads(output)
+            return (
                 data.get("type") == "function"
-                and "function" in data
-                and "name" in data["function"]
-            ):
-                # Check if the function name matches any name in the function map
-                function_name = data["function"]["name"]
-                if function_name in self.function_map:
-                    self._log_if_verbose(
-                        "debug",
-                        f"Valid function call for {function_name}",
-                    )
-                    return True
-                else:
-                    self._log_if_verbose(
-                        "debug",
-                        f"Function {function_name} not found in function map",
-                    )
-                    return False
-            else:
-                self._log_if_verbose(
-                    "debug",
-                    "Output does not match expected function call schema",
-                )
-                return False
-
-        except Exception as e:
-            self._log_if_verbose(
-                "error", f"Error validating output: {e}"
+                and data["function"]["name"] in self.function_map
             )
+        except Exception:
             return False
 
     def convert_funcs_into_tools(self) -> None:
@@ -510,15 +467,11 @@ class BaseTool(BaseModel):
         if not callable(func):
             raise ToolValidationError("Input must be callable")
 
-        if func.__doc__ is not None and func.__doc__.strip():
-            self._log_if_verbose(
-                "debug", f"Function {func.__name__} has documentation"
+        if not (func.__doc__ or "").strip():
+            raise ToolDocumentationError(
+                f"Function {func.__name__} does not have documentation"
             )
-            return True
-        else:
-            error_msg = f"Function {func.__name__} does not have documentation"
-            self._log_if_verbose("error", error_msg)
-            raise ToolDocumentationError(error_msg)
+        return True
 
     def check_func_if_have_type_hints(self, func: callable) -> bool:
         """
@@ -547,17 +500,11 @@ class BaseTool(BaseModel):
         if not callable(func):
             raise ToolValidationError("Input must be callable")
 
-        if func.__annotations__ and len(func.__annotations__) > 0:
-            self._log_if_verbose(
-                "debug", f"Function {func.__name__} has type hints"
-            )
-            return True
-        else:
-            error_msg = (
+        if not func.__annotations__:
+            raise ToolTypeHintError(
                 f"Function {func.__name__} does not have type hints"
             )
-            self._log_if_verbose("error", error_msg)
-            raise ToolTypeHintError(error_msg)
+        return True
 
     def find_function_name(
         self, func_name: str
@@ -591,20 +538,9 @@ class BaseTool(BaseModel):
                 "Tools must be set before searching for functions"
             )
 
-        self._log_if_verbose(
-            "debug", f"Searching for function: {func_name}"
-        )
-
         for func in self.tools:
             if func.__name__ == func_name:
-                self._log_if_verbose(
-                    "debug", f"Found function: {func_name}"
-                )
                 return func
-
-        self._log_if_verbose(
-            "debug", f"Function {func_name} not found"
-        )
         return None
 
     def multiple_functions_to_dict(
