@@ -709,6 +709,37 @@ class TestCLIUtils:
         passed, _, message = check_swarms_api_key()
         assert passed and expected in message
 
+    def test_check_dependencies_passes_on_this_install(self):
+        from swarms.cli.utils import check_dependencies
+
+        assert check_dependencies() == (
+            True,
+            "✓",
+            "All required dependencies available",
+        )
+
+    def test_check_dependencies_names_a_missing_requirement(
+        self, monkeypatch
+    ):
+        import importlib.metadata
+
+        from swarms.cli.utils import check_dependencies
+
+        monkeypatch.setattr(
+            importlib.metadata,
+            "requires",
+            lambda name: [
+                "rich",
+                "not-a-real-swarms-dep (>=1.0)",
+                'routehub[fast] (>=0.4.0) ; extra == "fast"',
+            ],
+        )
+        passed, _, message = check_dependencies()
+        assert not passed
+        assert message == (
+            "Missing dependencies: not-a-real-swarms-dep"
+        )
+
 
 # ===========================================================================
 # 12. show_ascii_art smoke test
