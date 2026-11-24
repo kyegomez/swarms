@@ -482,15 +482,17 @@ def test_self_consistency_samples_get_distinct_agents():
     assert len(set(agent_ids[:3])) == 3
 
 
-def test_usage_totals_every_run():
-    """usage adds up each run's swarm usage, including a run that raises."""
+def test_usage_reads_the_latest_swarm():
+    """usage is the usage of the latest run's swarm, even when it raised."""
     router = ReasoningAgentRouter()
     assert router.usage == empty_usage()
-    swarm = MagicMock(usage={**empty_usage(), "total_tokens": 5})
-    with patch.object(router, "select_swarm", return_value=swarm):
+    first = MagicMock(usage={**empty_usage(), "total_tokens": 5})
+    failing = MagicMock(usage={**empty_usage(), "total_tokens": 7})
+    failing.run.side_effect = RuntimeError("model down")
+    with patch.object(
+        router, "select_swarm", side_effect=[first, failing]
+    ):
         router.run("task")
-        router.batched_run(["task"])
-        swarm.run.side_effect = RuntimeError("model down")
         with pytest.raises(ReasoningAgentExecutorError):
             router.run("task")
-    assert router.usage == {**empty_usage(), "total_tokens": 15}
+    assert router.usage == failing.usage
