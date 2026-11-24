@@ -250,7 +250,9 @@ class SelfConsistencyAgent:
         """
         responses = []
 
-        self.conversation.add(role="User", content=task)
+        conversation = Conversation()
+        self.conversation = conversation
+        conversation.add(role="User", content=task)
 
         # Generate multiple independent responses concurrently
         with ThreadPoolExecutor() as executor:
@@ -273,7 +275,7 @@ class SelfConsistencyAgent:
                 self._add_usage(futures[future].usage)
                 responses.append(response)
 
-        self.conversation.add(role=self.name, content=responses)
+        conversation.add(role=self.name, content=responses)
 
         # Optional evaluation against known answer
         if self.eval:
@@ -290,12 +292,12 @@ class SelfConsistencyAgent:
 
         final_answer = self._aggregate(responses)
 
-        self.conversation.add(
+        conversation.add(
             role="Majority Voting Agent", content=final_answer
         )
 
         return history_output_formatter(
-            self.conversation, self.output_type
+            conversation, self.output_type
         )
 
     def _aggregate(self, responses: List[str]) -> str:
