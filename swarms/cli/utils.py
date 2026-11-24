@@ -211,8 +211,6 @@ def check_swarms_version(verbose: bool = False) -> str:
         str: Current version string
     """
     try:
-        import importlib.metadata
-
         current_version = importlib.metadata.version("swarms")
     except Exception as e:
         if verbose:
@@ -307,7 +305,7 @@ def check_dependencies() -> Tuple[bool, str, str]:
         Tuple containing (success, status_icon, message)
     """
     missing_deps = []
-    for requirement in importlib.metadata.requires("swarms") or []:
+    for requirement in importlib.metadata.requires("swarms"):
         if "extra ==" in requirement:
             continue
         name = re.split(r"[\s;<>=!~\[(]", requirement, maxsplit=1)[0]
