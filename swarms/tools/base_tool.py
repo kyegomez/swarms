@@ -1,4 +1,5 @@
 import json
+from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -304,8 +305,12 @@ class BaseTool(BaseModel):
                 f"Tool '{tool_name}' not found in function map"
             )
 
+        # parse_and_execute_json looks functions up by __name__, which can differ from the map key.
+        named = partial(func)
+        named.__name__ = tool_name
+
         return parse_and_execute_json(
-            functions=[func],
+            functions=[named],
             json_string=response,
             verbose=self.verbose,
         )

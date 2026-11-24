@@ -61,6 +61,20 @@ def test_execute_tool_by_name():
     print("execute_tool_by_name test passed")
 
 
+@pytest.mark.parametrize(
+    "func", [sample_function, lambda x, y: x + y]
+)
+def test_execute_tool_by_name_finds_the_map_key(func):
+    tool = BaseTool(function_map={"add": func})
+    response = json.dumps(
+        {"name": "add", "parameters": {"x": 1, "y": 2}}
+    )
+
+    result = tool.execute_tool_by_name("add", response)
+
+    assert json.loads(result)["results"] == {"add": "3"}
+
+
 def test_check_str_for_functions_valid():
     print("Testing check_str_for_functions_valid")
     tool = BaseTool(function_map={"test_func": lambda x: x})
