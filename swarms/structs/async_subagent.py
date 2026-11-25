@@ -243,9 +243,12 @@ class SubagentRegistry:
             for st in already_done
         ]
         for future in done:
+            st = pending_futures[future]
+            if st.status == TaskStatus.FAILED:
+                results.append(st.error)
+                continue
             try:
-                result = future.result(timeout=0)
-                results.append(result)
+                results.append(future.result(timeout=0))
             except Exception as e:
                 results.append(e)
 

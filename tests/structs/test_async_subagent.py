@@ -9,6 +9,7 @@ import pytest
 from dotenv import load_dotenv
 from loguru import logger
 
+from swarms.structs import async_subagent
 from swarms.structs.agent import Agent
 from swarms.structs.async_subagent import (
     SubagentRegistry,
@@ -200,6 +201,38 @@ class TestSubagentRegistry:
         st = reg.get_task(task_id)
         assert st.status == TaskStatus.FAILED
         assert st.error is not None
+        reg.shutdown()
+
+    @pytest.mark.parametrize("fails_before_gather", [True, False])
+    def test_gather_returns_error_of_failed_task(
+        self, monkeypatch, fails_before_gather
+    ):
+        gate = threading.Event()
+
+        def boom(task):
+            gate.wait(5)
+            raise RuntimeError("boom")
+
+        agent = MagicMock()
+        agent.agent_name = "boom-agent-gather"
+        agent.run = MagicMock(side_effect=boom)
+        reg = SubagentRegistry()
+        task_id = reg.spawn(agent, "task", fail_fast=False)
+        if fails_before_gather:
+            gate.set()
+            reg.get_task(task_id).future.result()
+        else:
+            real_wait = async_subagent.wait
+
+            def release_then_wait(*args, **kwargs):
+                gate.set()
+                return real_wait(*args, **kwargs)
+
+            monkeypatch.setattr(
+                async_subagent, "wait", release_then_wait
+            )
+        (result,) = reg.gather()
+        assert isinstance(result, RuntimeError)
         reg.shutdown()
 
     def test_fail_fast_true_raises_in_result(self):
