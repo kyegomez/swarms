@@ -2435,7 +2435,14 @@ Subtask Breakdown:
                     rules=self.rules,
                 )
 
-            # Nothing to restore: concurrent work builds its own call-scoped pool.
+            if isinstance(self.llm, LiteLLM):
+                self.llm_handling()
+
+            self._context_compressor = (
+                ContextCompressor(threshold=0.9)
+                if self.context_compression
+                else None
+            )
 
         except Exception as e:
             logger.error(f"Error reinitializing components: {e}")
