@@ -548,3 +548,41 @@ def test_concurrent_batch_run_returns_results_in_input_order():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+def test_route_task_uses_isolated_conversation(monkeypatch):
+    """Each route_task call must get its own Conversation (issue #2612)."""
+    from unittest.mock import MagicMock
+
+    agents = _minimal_agents()
+    router = MultiAgentRouter(agents=agents, print_on=False)
+
+    assert not hasattr(router, "conversation") or router.__dict__.get("conversation") is None
+
+    handoff = {
+        "handoffs": [
+            {"agent_name": "Agent1", "task": "do thing", "reasoning": "because"}
+        ]
+    }
+
+    def fake_run(_task):
+        import json
+
+        return json.dumps(handoff)
+
+    monkeypatch.setattr(router.function_caller, "run", fake_run)
+    monkeypatch.setattr(agents[0], "run", lambda task: f"resp:{task}")
+
+    first = router.route_task("task-one")
+    second = router.route_task("task-two")
+
+    # Results must not accumulate prior-task history
+    def _flatten(result):
+        if isinstance(result, dict):
+            return str(result)
+        if isinstance(result, list):
+            return str(result)
+        return str(result)
+
+    assert "task-one" not in _flatten(second)
+    assert "task-two" not in _flatten(first)
