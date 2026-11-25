@@ -873,9 +873,7 @@ class TestConstructorWindows:
         assert agent.max_tokens == 500
 
     def test_max_tokens_none_uses_the_model_output_window(self):
-        agent = self._agent(
-            model_name="gpt-5.4-mini", max_tokens=None
-        )
+        agent = self._agent(model_name="gpt-4o-mini", max_tokens=None)
 
         assert agent.max_tokens > 500
 

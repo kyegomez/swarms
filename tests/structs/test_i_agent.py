@@ -18,7 +18,7 @@ def test_ire_agent_custom_initialization():
         agent_name="Custom-IRE-Agent",
         description="A custom reasoning agent",
         max_loops=3,
-        model_name="gpt-5.4",
+        model_name="gpt-5.4-mini",
         output_type="string",
     )
 
