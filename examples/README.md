@@ -352,7 +352,7 @@ This directory contains comprehensive examples demonstrating various capabilitie
 
 | Example | Description |
 |---------|-------------|
-| [OpenAI](models/openai/4o_mini_demo.py) | OpenAI models |
+| [OpenAI](models/openai/gpt_5_example.py) | OpenAI models |
 | [Claude](models/anthropic/claude_4_example.py) | Claude models |
 | [DeepSeek](models/deepseek/deepseek_r1.py) | DeepSeek models |
 | [DeepSeek Groq](models/deepseek/groq_deepseek_agent.py) | DeepSeek with Groq integration |
