@@ -27,8 +27,8 @@ def test_judges_do_not_see_earlier_runs(monkeypatch):
     )
 
     council = CouncilAsAJudge(
-        model_name="gpt-4o-mini",
-        aggregation_model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
+        aggregation_model_name="gpt-5.4-mini",
     )
     council.run("FIRST-TASK-ALPHA")
     first_run = len(requests)
@@ -50,7 +50,7 @@ def test_arun_awaits_every_judge_within_max_concurrency():
         live.pop()
         return "verdict"
 
-    council = CouncilAsAJudge(model_name="gpt-4o-mini")
+    council = CouncilAsAJudge(model_name="gpt-5.4-mini")
     council.aggregator_agent.arun = arun
     for judge in council.judge_agents.values():
         judge.arun = arun
@@ -130,8 +130,8 @@ def test_every_request_carries_the_task_once(monkeypatch, entry):
     )
 
     council = CouncilAsAJudge(
-        model_name="gpt-4o-mini",
-        aggregation_model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
+        aggregation_model_name="gpt-5.4-mini",
     )
     result = getattr(council, entry)("TASK-MARK")
     if asyncio.iscoroutine(result):

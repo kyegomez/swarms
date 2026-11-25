@@ -59,9 +59,9 @@ class _AsyncClient(_Client):
 
 # The backend's own list, fixed so the tests behave the same on litellm and RouteHub.
 BASE_MODELS = (
-    "gpt-4o",
+    "gpt-5.4",
     "claude-sonnet-4-6",
-    "openrouter/openai/gpt-4o-mini",
+    "openrouter/openai/gpt-5.4-mini",
 )
 
 
@@ -118,7 +118,7 @@ def test_available_models_include_litellm_and_openrouter():
 
     assert report["status"] == "success"
     assert report["count"] == len(report["models"])
-    assert "gpt-4o" in report["models"]
+    assert "gpt-5.4" in report["models"]
     assert "openrouter/fake-lab/alpha" in report["models"]
 
 
@@ -135,13 +135,13 @@ def test_openrouter_duplicates_of_litellm_models_are_dropped(
     monkeypatch,
 ):
     monkeypatch.setattr(
-        _Client, "data", [{"id": "openai/gpt-4o"}, {"id": "gpt-4o"}]
+        _Client, "data", [{"id": "openai/gpt-5.4"}, {"id": "gpt-5.4"}]
     )
     report = get_available_models()
 
     models = report["models"]
-    assert models.count("gpt-4o") == 1
-    assert "openrouter/gpt-4o" not in models
+    assert models.count("gpt-5.4") == 1
+    assert "openrouter/gpt-5.4" not in models
 
 
 def test_exclude_keywords_are_case_insensitive():
@@ -160,7 +160,7 @@ def test_async_report_matches_sync():
 
 
 def test_is_model_available():
-    assert is_model_available("gpt-4o")
+    assert is_model_available("gpt-5.4")
     assert is_model_available("openrouter/fake-lab/beta")
     assert not is_model_available("no-such-model")
 

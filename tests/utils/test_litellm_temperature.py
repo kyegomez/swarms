@@ -16,21 +16,21 @@ from swarms.utils.litellm_wrapper import LiteLLM
 
 def test_temperature_omitted_when_unset():
     """A default-configured wrapper must not send temperature at all."""
-    llm = LiteLLM(model_name="gpt-4")
+    llm = LiteLLM(model_name="gpt-5.4")
     params = llm._build_completion_params("hello")
     assert "temperature" not in params
 
 
 def test_explicit_temperature_still_passed():
     """An explicitly set temperature must still reach the request."""
-    llm = LiteLLM(model_name="gpt-4", temperature=0.3)
+    llm = LiteLLM(model_name="gpt-5.4", temperature=0.3)
     params = llm._build_completion_params("hello")
     assert params["temperature"] == 0.3
 
 
 def test_none_temperature_can_be_overridden_by_runtime_kwargs():
     """Runtime kwargs may still inject temperature for callers that want it."""
-    llm = LiteLLM(model_name="gpt-4")
+    llm = LiteLLM(model_name="gpt-5.4")
     params = llm._build_completion_params(
         "hello", runtime_kwargs={"temperature": 0.9}
     )

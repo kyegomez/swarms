@@ -146,7 +146,7 @@ def _no_llm_keys(request):
                 os.environ[k] = v
 
 
-# The live tests build an Agent on gpt-4o-mini, so gate on that provider's
+# The live tests build an Agent on gpt-5.4-mini, so gate on that provider's
 # key specifically. Gating on "any provider key" let them run with only a
 # Groq or Gemini key present and fail on an empty OpenAI credential.
 requires_llm = pytest.mark.skipif(
@@ -371,7 +371,7 @@ def fake_agent(
     """
     settings = dict(
         agent_name=name,
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         max_loops=1,
         persistent_memory=False,
         print_on=False,
@@ -424,7 +424,7 @@ def _agent(name="TelemetryTestAgent"):
     """A real agent for the live-LLM tests (no FakeLLM)."""
     return Agent(
         agent_name=name,
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         max_loops=1,
         persistent_memory=False,
         print_on=False,
@@ -948,7 +948,7 @@ class TestAgentUsageAndModelCalls:
 
         def run(task=None, img=None, **kw):
             llm.last_request = {
-                "model": "gpt-4o-mini",
+                "model": "gpt-5.4-mini",
                 "messages": kw.get("messages"),
                 "api_key": "sk-test-secret",
             }
@@ -999,7 +999,7 @@ class TestAgentUsageAndModelCalls:
         assert call.status.status_code.name == "OK"
         assert a["swarms.name"] == "Call-A"
         assert a["gen_ai.operation.name"] == "chat"
-        assert a["gen_ai.request.model"] == "gpt-4o-mini"
+        assert a["gen_ai.request.model"] == "gpt-5.4-mini"
         assert a["gen_ai.response.model"] == "fake-model-2026"
         assert a["gen_ai.response.finish_reasons"] == "stop"
         assert a["swarms.usage.input_tokens"] == 12
@@ -1410,7 +1410,7 @@ class TestConstructionEmitsInitSpan:
 
 # ===========================================================================
 # Real LLM runs — actually execute agents/swarms and assert the run is logged.
-# Gated on a live API key; makes real (cheap) LLM calls with gpt-4o-mini.
+# Gated on a live API key; makes real (cheap) LLM calls with gpt-5.4-mini.
 # ===========================================================================
 @requires_llm
 @pytest.mark.requires_llm_key
@@ -3370,10 +3370,10 @@ class TestDebateWithJudge:
 class TestCouncilAsAJudge:
     def _build(self):
         council = CouncilAsAJudge(
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             random_model_name=False,
-            aggregation_model_name="gpt-4o-mini",
-            judge_agent_model_name="gpt-4o-mini",
+            aggregation_model_name="gpt-5.4-mini",
+            judge_agent_model_name="gpt-5.4-mini",
         )
         for dim, agent in council.judge_agents.items():
             agent.llm = FakeLLM(reply=f"{dim} rationale")
@@ -3437,7 +3437,7 @@ class TestLLMCouncil:
         m2 = fake_agent_final("Member-2", reply="Member 2 answer")
         council = LLMCouncil(
             council_members=[m1, m2],
-            chairman_model="gpt-4o-mini",
+            chairman_model="gpt-5.4-mini",
             verbose=False,
             output_type="dict-all-except-first",
         )
@@ -3502,8 +3502,8 @@ class TestHeavySwarm:
     def _build(self):
         swarm = HeavySwarm(
             variant="default",
-            worker_model_name="gpt-4o-mini",
-            question_agent_model_name="gpt-4o-mini",
+            worker_model_name="gpt-5.4-mini",
+            question_agent_model_name="gpt-5.4-mini",
             max_loops=1,
             show_dashboard=False,
             verbose=False,
@@ -3604,8 +3604,8 @@ class TestPlannerWorkerSwarm:
         )
         swarm = PlannerWorkerSwarm(
             agents=[worker],
-            planner_model_name="gpt-4o-mini",
-            judge_model_name="gpt-4o-mini",
+            planner_model_name="gpt-5.4-mini",
+            judge_model_name="gpt-5.4-mini",
             max_loops=1,
             output_type="dict-all-except-first",
             worker_timeout=15,

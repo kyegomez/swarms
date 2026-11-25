@@ -22,7 +22,7 @@ def test_run_executes_the_task_on_the_model_the_router_picked(
             return json.dumps(
                 {
                     "rationale": "short creative task",
-                    "model": "gpt-4o-mini",
+                    "model": "gpt-5.4-mini",
                     "provider": "openai",
                     "task": "Write a haiku about rain",
                     "max_tokens": 100,
@@ -36,7 +36,7 @@ def test_run_executes_the_task_on_the_model_the_router_picked(
 
     assert ModelRouter().run("write a haiku") == "rain on the window"
     assert calls[-1] == (
-        "openai/gpt-4o-mini",
+        "openai/gpt-5.4-mini",
         "Write a haiku about rain",
     )
 
@@ -51,7 +51,7 @@ def test_run_caps_the_routed_max_tokens_at_the_routers_max_tokens(
             return json.dumps(
                 {
                     "rationale": "long report",
-                    "model": "gpt-4o-mini",
+                    "model": "gpt-5.4-mini",
                     "provider": "openai",
                     "task": task,
                     "max_tokens": picked,
@@ -81,7 +81,7 @@ def test_async_run_returns_the_output_without_blocking_the_loop(
             return json.dumps(
                 {
                     "rationale": "short task",
-                    "model": "gpt-4o-mini",
+                    "model": "gpt-5.4-mini",
                     "provider": "openai",
                     "task": task,
                     "max_tokens": 100,

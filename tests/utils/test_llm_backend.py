@@ -237,7 +237,7 @@ class TestUnknownModelWarning:
         monkeypatch.setattr(socket, "create_connection", guard)
         Agent(
             agent_name="Offline",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_tokens=4096,
             context_length=128000,
             print_on=False,

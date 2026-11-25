@@ -775,7 +775,7 @@ def test_comms_channel_reaches_the_underlying_swarm(tmp_path):
     agents = [
         Agent(
             agent_name="A",
-            model_name="gpt-4o",
+            model_name="gpt-5.4",
             max_loops=1,
             print_on=False,
             persistent_memory=False,
@@ -1469,10 +1469,10 @@ def test_council_as_judge_aggregator_receives_typed_turns():
     from swarms.structs.council_as_judge import CouncilAsAJudge
 
     council = CouncilAsAJudge(
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         random_model_name=False,
-        aggregation_model_name="gpt-4o-mini",
-        judge_agent_model_name="gpt-4o-mini",
+        aggregation_model_name="gpt-5.4-mini",
+        judge_agent_model_name="gpt-5.4-mini",
     )
     calls = []
     for agent in council.judge_agents.values():
@@ -1503,13 +1503,13 @@ def test_council_as_judge_judges_use_council_judge_model_name():
     router = SwarmRouter(
         swarm_type="CouncilAsAJudge",
         agents=create_sample_agents(),
-        council_judge_model_name="gpt-4o-mini",
+        council_judge_model_name="gpt-5.4-mini",
     )
     council = router._create_council_as_judge()
 
     assert {
         agent.model_name for agent in council.judge_agents.values()
-    } == {"gpt-4o-mini"}
+    } == {"gpt-5.4-mini"}
 
 
 def test_call_and_batch_run_do_not_send_an_absent_imgs():

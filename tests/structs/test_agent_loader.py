@@ -40,7 +40,7 @@ def create_test_markdown_file(
     content = f"""---
 name: {agent_name}
 description: Test agent for agent loader testing
-model_name: gpt-4o-mini
+model_name: gpt-5.4-mini
 temperature: 0.7
 max_loops: 1
 streaming_on: true
@@ -85,8 +85,8 @@ def create_test_yaml_file(file_path: str) -> str:
 def create_test_csv_file(file_path: str) -> str:
     """Create a test CSV file with agent definitions."""
     content = """agent_name,system_prompt,model_name,max_loops,autosave,dashboard,verbose,dynamic_temperature,saved_state_path,user_name,retry_attempts,context_length,return_step_meta,output_type,streaming
-Test-CSV-Agent-1,"You are a test agent loaded from CSV.",gpt-4o-mini,1,true,false,false,false,,default_user,3,100000,false,str,true
-Test-CSV-Agent-2,"You are another test agent loaded from CSV.",gpt-4o-mini,1,true,false,false,false,,default_user,3,100000,false,str,true
+Test-CSV-Agent-1,"You are a test agent loaded from CSV.",gpt-5.4-mini,1,true,false,false,false,,default_user,3,100000,false,str,true
+Test-CSV-Agent-2,"You are another test agent loaded from CSV.",gpt-5.4-mini,1,true,false,false,false,,default_user,3,100000,false,str,true
 """
     with open(file_path, "w", encoding="utf-8", newline="") as f:
         f.write(content)

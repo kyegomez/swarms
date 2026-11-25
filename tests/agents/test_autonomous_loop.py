@@ -59,7 +59,7 @@ def build_agent(**overrides):
     """Build a real, offline agent configured for the autonomous loop."""
     kwargs = dict(
         agent_name="AutoLoopTestAgent",
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         max_loops="auto",
         persistent_memory=False,
         context_compression=False,
@@ -635,7 +635,7 @@ class TestModelFailureMovesToTheFallbackModel:
     ):
         from swarms.schemas.agent_errors import AgentLLMError
 
-        agent = build_agent(fallback_models=["gpt-4o"])
+        agent = build_agent(fallback_models=["gpt-5.4"])
         script = [
             plan(("step1", [])),
             [
@@ -661,7 +661,7 @@ class TestModelFailureMovesToTheFallbackModel:
             calls.append(agent.model_name)
             count = calls.count(agent.model_name)
             if (
-                agent.model_name == "gpt-4o-mini"
+                agent.model_name == "gpt-5.4-mini"
                 and count > calls_before_failure
             ):
                 raise AgentLLMError("provider down")
@@ -672,7 +672,7 @@ class TestModelFailureMovesToTheFallbackModel:
         output = agent.run("test task")
 
         assert "fallback answer" in str(output)
-        assert calls.count("gpt-4o-mini") == calls_before_failure + 1
+        assert calls.count("gpt-5.4-mini") == calls_before_failure + 1
 
 
 # --------------------------------------------------------------------------

@@ -15,7 +15,7 @@ def _minimal_agents():
             agent_name="Agent1",
             agent_description="Test Agent1",
             system_prompt="You are Agent1",
-            model_name="openai/gpt-4o",
+            model_name="openai/gpt-5.4",
             max_loops=1,
             verbose=False,
             print_on=False,
@@ -24,7 +24,7 @@ def _minimal_agents():
             agent_name="Agent2",
             agent_description="Test Agent2",
             system_prompt="You are Agent2",
-            model_name="openai/gpt-4o",
+            model_name="openai/gpt-5.4",
             max_loops=1,
             verbose=False,
             print_on=False,
@@ -114,7 +114,7 @@ def test_multi_agent_router_initialization_custom_params():
     """Test MultiAgentRouter initialization with custom parameters"""
     custom_name = "custom-router"
     custom_description = "Custom description"
-    custom_model = "gpt-4"
+    custom_model = "gpt-5.4-mini"
     custom_temperature = 0.5
     custom_output_type = "json"
 

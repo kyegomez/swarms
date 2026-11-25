@@ -179,7 +179,7 @@ def agent():
     """A real, offline Agent — no fallback models configured."""
     return Agent(
         agent_name="TestAgent",
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         persistent_memory=False,
         print_on=False,
         max_loops=1,
@@ -309,7 +309,7 @@ class TestBuild:
         def make(**kwargs):
             return Agent(
                 agent_name="TestAgent",
-                model_name="gpt-4o-mini",
+                model_name="gpt-5.4-mini",
                 persistent_memory=False,
                 print_on=False,
                 max_loops=1,

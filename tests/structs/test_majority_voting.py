@@ -12,21 +12,21 @@ def test_majority_voting_basic_execution():
     geographer = Agent(
         agent_name="Geography-Expert",
         agent_description="Expert in geography and world capitals",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     historian = Agent(
         agent_name="History-Scholar",
         agent_description="Historical and cultural context specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     political_analyst = Agent(
         agent_name="Political-Analyst",
         agent_description="Political and administrative specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -50,21 +50,21 @@ def test_majority_voting_multiple_loops():
     trivia_expert = Agent(
         agent_name="Trivia-Expert",
         agent_description="General knowledge and trivia specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     research_analyst = Agent(
         agent_name="Research-Analyst",
         agent_description="Research and fact-checking specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     subject_matter_expert = Agent(
         agent_name="Subject-Matter-Expert",
         agent_description="Deep subject matter expertise specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -94,35 +94,35 @@ def test_majority_voting_business_scenario():
     market_strategist = Agent(
         agent_name="Market-Strategist",
         agent_description="Market strategy and competitive analysis specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     financial_analyst = Agent(
         agent_name="Financial-Analyst",
         agent_description="Financial modeling and ROI analysis specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     technical_architect = Agent(
         agent_name="Technical-Architect",
         agent_description="Technical feasibility and implementation specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     risk_manager = Agent(
         agent_name="Risk-Manager",
         agent_description="Risk assessment and compliance specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     operations_expert = Agent(
         agent_name="Operations-Expert",
         agent_description="Operations and implementation specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -166,7 +166,7 @@ def test_majority_voting_error_handling():
     analyst = Agent(
         agent_name="Test-Analyst",
         agent_description="Test analyst",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -193,21 +193,21 @@ def test_majority_voting_different_output_types():
     Agent(
         agent_name="Security-Expert",
         agent_description="Cybersecurity and data protection specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     Agent(
         agent_name="Compliance-Officer",
         agent_description="Regulatory compliance and legal specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     Agent(
         agent_name="Privacy-Advocate",
         agent_description="Privacy protection and data rights specialist",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -319,7 +319,7 @@ def _recording_agents(names):
         agent = Agent(
             agent_name=name,
             agent_description=f"Recording voter {name}",
-            model_name="gpt-4o",
+            model_name="gpt-5.4",
             max_loops=1,
             persistent_memory=False,
             print_on=False,

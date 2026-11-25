@@ -29,7 +29,7 @@ are monkeypatched per-test to route through a ``MockTransport``:
 
 Constructing a real ``swarms.Agent`` works fully offline (no LLM call happens
 until ``.run()``), so the ``Agent`` integration tests below build real agents
-via ``Agent(agent_name=..., model_name="gpt-4o-mini", persistent_memory=False,
+via ``Agent(agent_name=..., model_name="gpt-5.4-mini", persistent_memory=False,
 print_on=False)``. ``.run()`` is never called anywhere in this file.
 
 Run:
@@ -599,7 +599,7 @@ class TestAddPrompt:
 def make_offline_agent(**overrides):
     kwargs = dict(
         agent_name=DEFAULT_AGENT_NAME,
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         persistent_memory=False,
         print_on=False,
     )
@@ -889,7 +889,7 @@ class TestAgentIntegration:
 
         install_get_transport(monkeypatch, handler)
         agent = Agent(
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             persistent_memory=False,
             print_on=False,
             marketplace_prompt_id="ctor-prompt-id",
@@ -912,7 +912,7 @@ class TestAgentIntegration:
         install_post_transport(monkeypatch, handler)
         agent = Agent(
             agent_name="AutoPublishAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             persistent_memory=False,
             print_on=False,
             publish_to_marketplace=True,
@@ -938,7 +938,7 @@ class TestAgentIntegration:
         Agent(
             agent_name="Reviewer",
             system_prompt="You review Python code.",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             persistent_memory=False,
             print_on=False,
             publish_to_marketplace=True,
@@ -946,7 +946,7 @@ class TestAgentIntegration:
         )
 
         loaded = Agent(
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             persistent_memory=False,
             print_on=False,
             marketplace_prompt_id="round-trip",

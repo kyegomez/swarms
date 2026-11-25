@@ -951,7 +951,7 @@ def _scripted_hs_agent(name, seen, director=False):
 
     agent = Agent(
         agent_name=name,
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         max_loops=1,
         persistent_memory=False,
         print_on=False,

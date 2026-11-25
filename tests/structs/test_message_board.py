@@ -141,7 +141,7 @@ def test_a_board_is_stored_in_sqlite_and_loads_back(tmp_path):
 def agent_with_board_tools(board, name, call):
     agent = Agent(
         agent_name=name,
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=2,
         print_on=False,
         autosave=False,
