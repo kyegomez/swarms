@@ -18,6 +18,7 @@ Key Features:
 - Thread-safe execution
 """
 
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -354,9 +355,9 @@ class SelfConsistencyAgent:
         """
         Check if the specified answer is present in any of the provided responses.
 
-        This method performs a simple string matching to determine if the expected
-        answer appears in any of the generated responses. It's useful for validation
-        and evaluation purposes.
+        The answer must appear on its own, not inside a longer word or number,
+        so an answer of 4 matches "The answer is 4." but not "42" or "0.4".
+        It's useful for validation and evaluation purposes.
 
         Args:
             responses (List[str]): List of responses to check
@@ -371,20 +372,21 @@ class SelfConsistencyAgent:
             >>> found = agent.check_responses_for_answer(responses, "42")
             >>> print(found)  # True
         """
-        for response in responses:
-            if answer in response:
-                return True
+        pattern = re.compile(
+            rf"(?<![\w+-])(?<!\d[.,/]){re.escape(answer)}(?!\w)(?![.,/]\d)"
+        )
+        if any(pattern.search(response) for response in responses):
+            return True
 
         # If the answer is not found, log the absence for each response
         for response in responses:
-            if answer not in response:
-                self.conversation.add(
-                    role="User",
-                    content=f"The answer '{answer}' is not found in the response: '{response}'",
-                )
-                logger.info(
-                    f"The answer '{answer}' is not found in the response: '{response}'"
-                )
+            self.conversation.add(
+                role="User",
+                content=f"The answer '{answer}' is not found in the response: '{response}'",
+            )
+            logger.info(
+                f"The answer '{answer}' is not found in the response: '{response}'"
+            )
         return False
 
     def batched_run(

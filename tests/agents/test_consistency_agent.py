@@ -134,3 +134,32 @@ def test_caller_aggregator_votes_and_counts_only_its_own_calls():
     assert aggregator.resets == 2
     assert all(task.count("sample") == 2 for task in aggregator.tasks)
     assert agent.usage == _totals(2 * 2 + 2)
+
+
+@pytest.mark.parametrize(
+    "sample, accepted",
+    [
+        ("2 + 2 = 4.", True),
+        ("The answer is 4", True),
+        ("2 + 2 = 14", False),
+        ("The answer is 42.", False),
+        ("I get 0.4", False),
+        ("I get 4.5", False),
+        ("The answer is -4.", False),
+        ("The total is 4,000", False),
+        ("The ratio is 3/4", False),
+    ],
+)
+def test_eval_accepts_only_the_whole_answer(sample, accepted):
+    class _SampleAgent(_UsageAgent):
+        def run(self, task, *args, **kwargs):
+            return sample
+
+    agent = SelfConsistencyAgent(
+        num_samples=2, eval=True, output_type="final"
+    )
+
+    with patch("swarms.agents.consistency_agent.Agent", _SampleAgent):
+        result = agent.run("What is 2 + 2?", answer="4")
+
+    assert (result is not None) is accepted
