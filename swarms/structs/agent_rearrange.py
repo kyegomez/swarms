@@ -895,8 +895,13 @@ class AgentRearrange(SerializableMixin):
             The result from executing the task through the agent rearrange system.
             The format depends on the configured output_type.
 
+        Raises:
+            ValueError: A name in the flow is not a registered agent.
+                Raised before any agent runs.
         """
         try:
+            self.validate_flow()
+
             out = self._run(
                 task=task,
                 img=img,
@@ -1267,7 +1272,13 @@ class AgentRearrange(SerializableMixin):
 
         Not yet supported in streaming mode: max_loops greater than 1,
         and custom_tasks. Use run for those.
+
+        Raises:
+            ValueError: A name in the flow is not a registered agent.
+                Raised before any agent streams.
         """
+        self.validate_flow()
+
         # A reused instance would otherwise carry the previous task's transcript
         self._reset_conversation()
 

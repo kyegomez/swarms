@@ -1745,6 +1745,24 @@ def test_nested_swarm_streams_its_output_as_one_chunk():
     ]
 
 
+@pytest.mark.parametrize(
+    "start",
+    [lambda r: r.run("go"), lambda r: list(r.run_stream("go"))],
+    ids=["run", "run_stream"],
+)
+def test_unknown_name_in_flow_raises_before_any_step_runs(start):
+    """A misspelled name fails the run before an earlier step is paid for."""
+    swarm = _RecordingSwarm("Team")
+    rearrange = AgentRearrange(
+        agents=[swarm], flow="Team -> Reviewr", max_loops=1
+    )
+
+    with pytest.raises(ValueError, match="Reviewr"):
+        start(rearrange)
+
+    assert swarm.tasks == []
+
+
 def test_nested_swarm_without_a_name_is_rejected():
     """A swarm needs a name for the flow to reference it."""
     with pytest.raises(ValueError, match="needs a name"):
