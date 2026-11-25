@@ -23,7 +23,6 @@ Set the matching API key as an environment variable before running any example (
 
 ### DeepSeek
 - [deepseek_r1.py](deepseek/deepseek_r1.py) — DeepSeek R1 (native API)
-- [fast_r1_groq.py](deepseek/fast_r1_groq.py) — DeepSeek R1 served via Groq
 - [groq_deepseek_agent.py](deepseek/groq_deepseek_agent.py) — DeepSeek on Groq agent
 
 ### GPT-OSS
