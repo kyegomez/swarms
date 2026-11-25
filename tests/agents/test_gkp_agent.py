@@ -117,3 +117,29 @@ def test_usage_sums_generation_reasoning_and_coordination_across_runs(
         "reasoning_tokens": 0,
         "total_tokens": 12 * len(calls),
     }
+
+
+def test_reasoner_runs_only_on_knowledge_the_generator_returned(
+    monkeypatch,
+):
+    reasoner_prompts = []
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        prompt = self.short_memory.conversation_history[-1]["content"]
+        if self.agent_name.endswith("knowledge-generator"):
+            return "Knowledge 1: Fact one.\nKnowledge 2: Fact two."
+        if self.agent_name.endswith("coordinator"):
+            return "Analysis: agree.\nFinal Answer: yes"
+        reasoner_prompts.append(prompt)
+        return "Explanation: e.\nConfidence: high\nAnswer: yes"
+
+    monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
+    gkp = GKPAgent(model_name="gpt-5.4", num_knowledge_items=4)
+
+    detail = gkp.process("Is this a question?")
+
+    assert detail["knowledge_items"] == ["Fact one.", "Fact two."]
+    assert [
+        prompt.split("Knowledge: ")[1].split("\n")[0]
+        for prompt in reasoner_prompts
+    ] == ["Fact one.", "Fact two."]
