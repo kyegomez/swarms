@@ -1,5 +1,7 @@
 import os
 
+import json
+import threading
 import time
 
 import pytest
@@ -548,3 +550,70 @@ def test_concurrent_batch_run_returns_results_in_input_order():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+class _Boss:
+    """Stand-in for the boss model: hands every task to A1, optionally pausing."""
+
+    def __init__(self, gate=None):
+        self.gate = gate
+
+    def run(self, task):
+        if self.gate:
+            self.gate(task)
+        return json.dumps(
+            {
+                "handoffs": [
+                    {
+                        "reasoning": "r",
+                        "agent_name": "A1",
+                        "task": task,
+                    }
+                ]
+            }
+        )
+
+
+def _messages(result):
+    return json.dumps(result, default=str)
+
+
+def test_each_run_starts_from_an_empty_conversation():
+    router, ran = _local_router()
+    router.function_caller = _Boss()
+
+    router.route_task("first")
+    second = _messages(router.route_task("second"))
+
+    assert "second" in second
+    assert "first" not in second, second
+
+
+def test_concurrent_tasks_do_not_see_each_other():
+    slow_started, fast_done = threading.Event(), threading.Event()
+
+    def gate(task):
+        # "slow" adds its user message, then waits until "fast" has run end to end.
+        if task == "slow":
+            slow_started.set()
+            assert fast_done.wait(5), "fast never finished"
+        else:
+            assert slow_started.wait(5), "slow never started"
+
+    router, ran = _local_router()
+    router.function_caller = _Boss(gate)
+    agent = router.agents[0]
+    original_run = agent.run
+
+    def run_and_signal(task, *args, **kwargs):
+        out = original_run(task, *args, **kwargs)
+        if task == "fast":
+            fast_done.set()
+        return out
+
+    agent.run = run_and_signal
+
+    slow, fast = router.concurrent_batch_run(["slow", "fast"])
+
+    assert "fast" in _messages(fast) and "slow" not in _messages(fast)
+    assert "slow" in _messages(slow) and "fast" not in _messages(slow)
