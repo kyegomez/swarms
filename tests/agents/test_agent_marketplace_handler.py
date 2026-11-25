@@ -29,8 +29,8 @@ are monkeypatched per-test to route through a ``MockTransport``:
 
 Constructing a real ``swarms.Agent`` works fully offline (no LLM call happens
 until ``.run()``), so the ``Agent`` integration tests below build real agents
-via ``Agent(agent_name=..., model_name="gpt-5.4-mini", persistent_memory=False,
-print_on=False)``. ``.run()`` is never called anywhere in this file.
+via Agent(agent_name=..., model_name="gpt-5.4-mini", persistent_memory=False,
+print_on=False). run() is never called anywhere in this file.
 
 Run:
     cd /Users/swarms_wd/Desktop/research/swarms

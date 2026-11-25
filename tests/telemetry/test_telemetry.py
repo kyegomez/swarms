@@ -146,9 +146,7 @@ def _no_llm_keys(request):
                 os.environ[k] = v
 
 
-# The live tests build an Agent on gpt-5.4-mini, so gate on that provider's
-# key specifically. Gating on "any provider key" let them run with only a
-# Groq or Gemini key present and fail on an empty OpenAI credential.
+# The live tests run gpt-5.4-mini, so they need OpenAI's key, not any provider's.
 requires_llm = pytest.mark.skipif(
     not os.getenv("OPENAI_API_KEY"),
     reason="OPENAI_API_KEY not set — real-run tests skipped",
