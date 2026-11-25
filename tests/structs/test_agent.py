@@ -680,7 +680,7 @@ class TestLLMArgsAndHandling:
     }
 
     @pytest.mark.parametrize(
-        "model_name", ["gpt-5.4", "azure/gpt-4o"]
+        "model_name", ["gpt-5.4", "azure/gpt-5.4"]
     )
     def test_llm_args_and_tools_survive_together(self, model_name):
         """llm_args — including the api_version an Azure deployment needs —
@@ -775,7 +775,7 @@ class TestLLMArgsAndHandling:
 
         agent = Agent(
             agent_name="credential-forwarding-probe",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             llm_base_url=base_url,
             llm_api_key=api_key,
             max_loops=1,
@@ -801,7 +801,7 @@ class TestLLMArgsAndHandling:
         """
         agent = Agent(
             agent_name="credential-default-probe",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_loops=1,
             persistent_memory=False,
             print_on=False,
@@ -816,17 +816,17 @@ class TestLLMArgsAndHandling:
     ):
         monkeypatch.setattr(
             "swarms.structs.agent.set_random_models_for_agents",
-            lambda: "gpt-4.1-nano",
+            lambda: "gpt-5.4",
         )
         agent = Agent(
             agent_name="random-models-agent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             random_models_on=True,
             max_tokens=None,
         )
 
-        assert agent.model_name == "gpt-4.1-nano"
-        assert agent.llm.model_name == "gpt-4.1-nano"
+        assert agent.model_name == "gpt-5.4"
+        assert agent.llm.model_name == "gpt-5.4"
         assert agent.max_tokens == agent._default_max_tokens()
 
 
@@ -841,7 +841,7 @@ class TestConstructorWindows:
     def test_context_length_explicit_value_is_honoured(self):
         """The constructor argument used to be overwritten with 16000."""
         agent = self._agent(
-            model_name="gpt-4.1", context_length=200000
+            model_name="gpt-5.4", context_length=200000
         )
 
         assert agent.context_length == 200000
@@ -868,7 +868,7 @@ class TestConstructorWindows:
 
     def test_max_tokens_explicit_value_is_honoured(self):
         """A caller capping output was overwritten with the model's limit."""
-        agent = self._agent(model_name="gpt-4o-mini", max_tokens=500)
+        agent = self._agent(model_name="gpt-5.4-mini", max_tokens=500)
 
         assert agent.max_tokens == 500
 
@@ -2167,7 +2167,7 @@ class TestEmptyToolsList:
     def _agent(**kwargs):
         return Agent(
             agent_name="empty_tools_agent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_loops=1,
             **kwargs,
         )
@@ -2823,7 +2823,7 @@ class TestIntegerLoopRequest:
     def _agent(self, **kwargs):
         return Agent(
             agent_name="IntPathTest",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             persistent_memory=False,
             print_on=False,
             verbose=False,

@@ -675,7 +675,7 @@ def _channel_agents(names):
     for name in names:
         agent = Agent(
             agent_name=name,
-            model_name="gpt-4o",
+            model_name="gpt-5.4",
             max_loops=1,
             print_on=False,
             verbose=False,

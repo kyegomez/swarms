@@ -40,7 +40,7 @@ def test_router_init_custom():
     router = ReasoningAgentRouter(
         agent_name="custom_agent",
         description="Custom desc",
-        model_name="gpt-4",
+        model_name="gpt-5.4-mini",
         system_prompt="Custom prompt",
         max_loops=5,
         swarm_type="self-consistency",
@@ -50,11 +50,11 @@ def test_router_init_custom():
         eval=True,
         random_models_on=True,
         majority_voting_prompt="Vote prompt",
-        reasoning_model_name="claude-3",
+        reasoning_model_name="claude-sonnet-5-5",
     )
     assert router.agent_name == "custom_agent"
     assert router.description == "Custom desc"
-    assert router.model_name == "gpt-4"
+    assert router.model_name == "gpt-5.4-mini"
     assert router.max_loops == 5
     assert router.swarm_type == "self-consistency"
     assert router.num_samples == 3
@@ -63,7 +63,7 @@ def test_router_init_custom():
     assert router.eval is True
     assert router.random_models_on is True
     assert router.majority_voting_prompt == "Vote prompt"
-    assert router.reasoning_model_name == "claude-3"
+    assert router.reasoning_model_name == "claude-sonnet-5-5"
 
 
 def test_reliability_check_max_loops_zero():
@@ -127,14 +127,14 @@ def test_create_reasoning_duo():
         model_name="claude-sonnet-4-6",
         system_prompt="SP",
         max_loops=2,
-        reasoning_model_name="gpt-4o",
+        reasoning_model_name="gpt-5.4",
     )
     agent = router._create_reasoning_duo()
     assert isinstance(agent, ReasoningDuo)
     assert agent.agent_name == "rd"
     assert agent.agent_description == router.description
     assert agent.main_agent.model_name == "claude-sonnet-4-6"
-    assert agent.reasoning_agent.model_name == "gpt-4o"
+    assert agent.reasoning_agent.model_name == "gpt-5.4"
     assert agent.main_agent.system_prompt == "SP"
     assert agent.max_loops == 2
 

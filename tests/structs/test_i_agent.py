@@ -18,7 +18,7 @@ def test_ire_agent_custom_initialization():
         agent_name="Custom-IRE-Agent",
         description="A custom reasoning agent",
         max_loops=3,
-        model_name="gpt-4o",
+        model_name="gpt-5.4-mini",
         output_type="string",
     )
 
@@ -32,7 +32,7 @@ def test_ire_agent_execution():
     """Test IRE agent execution with a simple problem"""
     agent = IterativeReflectiveExpansion(
         agent_name="Test-IRE-Agent",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=2,
         output_type="dict",
     )
@@ -67,7 +67,7 @@ def test_ire_agent_workflow():
     agent = IterativeReflectiveExpansion(
         agent_name="Workflow-Test-Agent",
         description="Agent for testing complete workflow",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=2,
         output_type="dict",
     )

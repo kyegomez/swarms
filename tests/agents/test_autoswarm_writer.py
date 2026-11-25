@@ -550,7 +550,7 @@ class TestCLIAutoswarmArgs:
                 "--task",
                 "test",
                 "--model",
-                "gpt-4",
+                "gpt-5.4",
                 "-o",
                 "out.py",
             ]
@@ -567,7 +567,7 @@ class TestCLIAutoswarmArgs:
                 "--task",
                 "test",
                 "--model",
-                "gpt-4",
+                "gpt-5.4",
                 "--output",
                 "out.py",
             ]
@@ -584,7 +584,7 @@ class TestCLIAutoswarmArgs:
                 "--task",
                 "test",
                 "--model",
-                "gpt-4",
+                "gpt-5.4",
                 "--no-run",
             ]
         )
@@ -600,7 +600,7 @@ class TestCLIAutoswarmArgs:
                 "--task",
                 "test",
                 "--model",
-                "gpt-4",
+                "gpt-5.4",
                 "-d",
                 "/tmp/out",
             ]
@@ -617,7 +617,7 @@ class TestCLIAutoswarmArgs:
                 "--task",
                 "test",
                 "--model",
-                "gpt-4",
+                "gpt-5.4",
                 "--output-dir",
                 "/tmp/out",
             ]
@@ -629,7 +629,7 @@ class TestCLIAutoswarmArgs:
 
         parser = setup_argument_parser()
         args = parser.parse_args(
-            ["autoswarm", "--task", "test", "--model", "gpt-4"]
+            ["autoswarm", "--task", "test", "--model", "gpt-5.4"]
         )
         assert args.output is None
         assert args.output_dir is None
@@ -645,7 +645,7 @@ class TestCLIAutoswarmArgs:
                 "--task",
                 "do stuff",
                 "--model",
-                "gpt-4",
+                "gpt-5.4",
                 "-o",
                 "my_file.py",
                 "-d",
@@ -654,7 +654,7 @@ class TestCLIAutoswarmArgs:
             ]
         )
         assert args.task == "do stuff"
-        assert args.model == "gpt-4"
+        assert args.model == "gpt-5.4"
         assert args.output == "my_file.py"
         assert args.output_dir == "/tmp/out"
         assert args.no_run is True

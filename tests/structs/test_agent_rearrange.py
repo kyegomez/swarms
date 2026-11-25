@@ -755,7 +755,7 @@ def create_repeated_flow_agents():
             agent_name="Writer",
             agent_description="Expert in writing content",
             system_prompt="You are a writer. Write one concise sentence.",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_loops=1,
             verbose=False,
         ),
@@ -763,7 +763,7 @@ def create_repeated_flow_agents():
             agent_name="Reviewer",
             agent_description="Expert in reviewing content",
             system_prompt="You are a reviewer. Give one critique.",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_loops=1,
             verbose=False,
         ),
@@ -1303,7 +1303,7 @@ def _scripted_agent(name, seen):
     """
     agent = Agent(
         agent_name=name,
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         max_loops=1,
         persistent_memory=False,
         print_on=False,
