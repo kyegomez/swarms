@@ -442,6 +442,7 @@ class Agent:
         self._skills_prompt = ""
         self.selected_tools = selected_tools
         self.llm = llm
+        self._built_llm = None
         self.max_loops = max_loops
         self.stopping_condition = stopping_condition
         self.loop_interval = loop_interval
@@ -885,6 +886,7 @@ class Agent:
             LiteLLM: The initialized LiteLLM instance
         """
         self.llm = self.llm_manager.build(*args, **kwargs)
+        self._built_llm = self.llm
         return self.llm
 
     @property
@@ -2435,7 +2437,10 @@ Subtask Breakdown:
                     rules=self.rules,
                 )
 
-            if isinstance(self.llm, LiteLLM):
+            if (
+                self._built_llm is not None
+                and self.llm is self._built_llm
+            ):
                 self.llm_handling()
 
             self._context_compressor = (
