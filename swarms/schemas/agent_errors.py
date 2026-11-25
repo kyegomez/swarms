@@ -46,3 +46,9 @@ class AgentOutputSchemaError(AgentError, ValueError):
         super().__init__(message)
         self.raw_output = raw_output
         self.validation_error = validation_error
+
+    def __reduce__(self):
+        return (
+            type(self),
+            (self.args[0], self.raw_output, self.validation_error),
+        )
