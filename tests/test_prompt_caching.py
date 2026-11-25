@@ -331,6 +331,11 @@ def run_offline_checks():
     return c.failed == 0
 
 
+def test_offline_cache_config_checks():
+    """Fail when any offline cache_config check fails."""
+    assert run_offline_checks()
+
+
 # ---------------------------------------------------------------------------
 # 2. LIVE — run the Agent, confirm real cache activity via usage
 # ---------------------------------------------------------------------------
