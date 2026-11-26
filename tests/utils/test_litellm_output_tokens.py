@@ -34,12 +34,21 @@ def _params_sent(model_name):
 
 class TestOutputTokenKeyByModel:
     @pytest.mark.parametrize(
-        "model", ["gpt-5.4", "gpt-6-astra", "o3", "openai/o4-mini"]
+        "model",
+        [
+            "gpt-5.4",
+            "gpt-6-astra",
+            "o3",
+            "openai/o4-mini",
+            "azure/gpt-5.4",
+            "openrouter/openai/gpt-5.4",
+        ],
     )
     def test_openai_reasoning_families_get_max_completion_tokens(
         self, model
     ):
         sent = _params_sent(model)
+        assert sent["model"] == model
         assert sent["max_completion_tokens"] == 1234
         assert "max_tokens" not in sent
 
@@ -50,10 +59,18 @@ class TestOutputTokenKeyByModel:
             "claude-sonnet-5",
             "gemini/gemini-2.5-pro",
             "groq/llama-3.3-70b-versatile",
+            "anthropic/claude-sonnet-5-5",
+            "xai/grok-4-0709",
+            "deepseek/deepseek-reasoner",
+            "cerebras/llama-3.3-70b",
+            "ollama/llama3.3",
+            "openrouter/meta-llama/llama-3.3-70b-instruct",
+            "openai/meta-llama/Llama-3.3-70B-Instruct",
         ],
     )
     def test_everything_else_keeps_max_tokens(self, model):
         sent = _params_sent(model)
+        assert sent["model"] == model
         assert sent["max_tokens"] == 1234
         assert "max_completion_tokens" not in sent
 
