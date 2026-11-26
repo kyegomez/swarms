@@ -492,12 +492,22 @@ async def _discover_token_endpoint(
             )
             if pr.status_code == 200:
                 servers = pr.json().get("authorization_servers") or []
+                listed = []
                 for auth_server in servers:
                     auth_server = str(auth_server).rstrip("/")
-                    candidates.insert(
-                        0,
-                        f"{auth_server}/.well-known/oauth-authorization-server",
-                    )
+                    root = _server_origin(auth_server)
+                    path = urlparse(auth_server).path
+                    for document in (
+                        "oauth-authorization-server",
+                        "openid-configuration",
+                    ):
+                        listed.append(
+                            f"{root}/.well-known/{document}{path}"
+                        )
+                        listed.append(
+                            f"{auth_server}/.well-known/{document}"
+                        )
+                candidates = list(dict.fromkeys(listed + candidates))
         except Exception:
             pass
 
