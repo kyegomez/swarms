@@ -1329,67 +1329,29 @@ class Conversation:
 
     def truncate_memory_with_tokenizer(self):
         """
-        Truncate conversation history based on the total token count using tokenizer.
+        Truncate conversation history to fit context_length tokens.
 
-        This version is more generic, not dependent on a specific LLM model, and can work with any model that provides a counter.
-        Uses count_tokens function to calculate and truncate by message, ensuring the result is still valid content.
+        Keeps the newest messages that fit, plus the tail of the first
+        older message that does not, and drops everything before it.
 
         Returns:
             None
         """
 
-        total_tokens = 0
-        truncated_history = []
-
-        for message in self.conversation_history:
-            role = message.get("role")
-            content = message.get("content")
-
-            # Convert content to string if it's not already a string
-            if not isinstance(content, str):
-                content = str(content)
-
-            # Calculate token count for this message
-            token_count = count_tokens(
-                content, self.tokenizer_model_name
-            )
-
-            # Check if adding this message would exceed the limit
-            if total_tokens + token_count <= self.context_length:
-                # If not exceeding limit, add the full message
-                truncated_history.append(message)
-                total_tokens += token_count
-            else:
-                # Calculate remaining tokens we can include
-                remaining_tokens = self.context_length - total_tokens
-
-                # If no token space left, break the loop
-                if remaining_tokens <= 0:
-                    break
-
-                # Binary-search a prefix of this message that fits the remaining budget
-                truncated_content = self._binary_search_truncate(
-                    content,
-                    remaining_tokens,
-                    self.tokenizer_model_name,
-                )
-
-                # Create the truncated message
-                truncated_message = {
-                    "role": role,
-                    "content": truncated_content,
-                }
-
-                # Add any other fields from the original message
-                for key, value in message.items():
-                    if key not in ["role", "content"]:
-                        truncated_message[key] = value
-
-                truncated_history.append(truncated_message)
+        budget = self.context_length
+        kept = []
+        for message in reversed(self.conversation_history):
+            content = str(message.get("content"))
+            tokens = count_tokens(content, self.tokenizer_model_name)
+            if tokens > budget:
+                tail = self._binary_search_tail(content, budget)
+                if tail:
+                    kept.append({**message, "content": tail})
                 break
+            kept.append(message)
+            budget -= tokens
 
-        # Update conversation history
-        self.conversation_history = truncated_history
+        self.conversation_history = kept[::-1]
         self._str_cache = None
 
     def _binary_search_truncate(

@@ -1741,3 +1741,22 @@ if __name__ == "__main__":
     logger.success(
         "Test execution completed. Results saved to test_results.md"
     )
+
+
+def test_truncate_memory_with_tokenizer_keeps_newest(monkeypatch):
+    monkeypatch.setattr(
+        conversation_module,
+        "count_tokens",
+        lambda text, model=None: len(text.split()),
+    )
+    conv = Conversation(context_length=7, autosave=False)
+    for i in range(1, 6):
+        conv.add("user", f"message number {i}")
+
+    conv.truncate_memory_with_tokenizer()
+
+    assert [m["content"] for m in conv.conversation_history] == [
+        " 3",
+        "message number 4",
+        "message number 5",
+    ]
