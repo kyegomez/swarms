@@ -1472,6 +1472,26 @@ class TestArunNative:
             agent._handle_run_error(err)
 
 
+def test_run_stream_close_stops_the_run():
+    calls = []
+
+    def completion(**params):
+        calls.append(params)
+        # 300 chunks 10 ms apart, so the test closes it mid-response.
+        for _ in range(300):
+            yield _stream_chunk("a")
+            time.sleep(0.01)
+
+    with patch.object(litellm_wrapper, "completion", completion):
+        agent = Agent(agent_name="close", max_loops=3, print_on=False)
+        stream = agent.run_stream("hi")
+        assert next(stream) == "a"
+        stream.close()
+    assert len(calls) == 1
+    assert agent.streaming_on is False
+    assert agent.llm.stream is False
+
+
 class TestEmptyTaskGuard:
     """run() must not read stdin for an empty task when interactive=False."""
 

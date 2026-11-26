@@ -156,6 +156,13 @@ def _threadsafe_callback(
     return call
 
 
+class _StreamClosed(BaseException):
+    """Stops a run_stream run once its reader has closed the stream.
+
+    A BaseException, so the run's error handling and fallback models let it pass.
+    """
+
+
 class Agent:
     """
     Agent is the backbone to connect LLMs with tools and long term memory. Agent also provides the ability to
@@ -3232,6 +3239,8 @@ Subtask Breakdown:
         Tool-call results are fed back into the loop automatically (same as a normal
         run); the tokens from each subsequent LLM turn are also streamed through.
 
+        Closing the generator early stops the run at its next token.
+
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
@@ -3250,8 +3259,11 @@ Subtask Breakdown:
         token_queue: queue.Queue = queue.Queue()
         _DONE = object()
         _exc: list = [None]
+        closed = threading.Event()
 
         def _on_token(token):
+            if closed.is_set():
+                raise _StreamClosed
             if isinstance(token, str) and token:
                 token_queue.put(token)
             elif isinstance(token, dict):
@@ -3260,6 +3272,7 @@ Subtask Breakdown:
                     token_queue.put(t)
 
         original_streaming_on = self.streaming_on
+        original_llm_stream = getattr(self.llm, "stream", None)
         self.streaming_on = True
 
         def _run_thread():
@@ -3270,6 +3283,10 @@ Subtask Breakdown:
                     streaming_callback=_on_token,
                     **kwargs,
                 )
+            except _StreamClosed:
+                # Cut off mid-response, the model call left llm.stream on.
+                if original_llm_stream is not None:
+                    self.llm.stream = original_llm_stream
             except Exception as exc:
                 _exc[0] = exc
             finally:
@@ -3279,13 +3296,16 @@ Subtask Breakdown:
         thread = threading.Thread(target=_run_thread, daemon=True)
         thread.start()
 
-        while True:
-            item = token_queue.get()
-            if item is _DONE:
-                break
-            yield item
-
-        thread.join()
+        try:
+            while True:
+                item = token_queue.get()
+                if item is _DONE:
+                    break
+                yield item
+        finally:
+            # A reader that stops early ends the run at its next token.
+            closed.set()
+            thread.join()
 
         if _exc[0] is not None:
             raise _exc[0]
