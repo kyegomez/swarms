@@ -34,7 +34,7 @@ def run_single_agent(
         >>> result = run_single_agent(agent, "Analyze this data")
         >>> print(result)
     """
-    return agent.run(task=task, *args, **kwargs)
+    return agent.run(task, *args, **kwargs)
 
 
 async def run_agent_async(agent: AgentType, task: str) -> Any:
@@ -481,22 +481,24 @@ def get_agents_info(
         return "No agents currently available in the system."
 
     agent_info = [
-        f"Available Agents for Team: {team_name}",
-        "",
-    ]  # Empty string for line spacing
+        (
+            f"Available Agents for Team: {team_name}"
+            if team_name
+            else "Available Agents:"
+        ),
+    ]
 
     for idx, agent in enumerate(agents, 1):
         agent_info.extend(
             [
-                "\n",
+                "",
                 f"[Agent {idx}]",
                 f"Name: {agent.agent_name}",
                 f"Description: {agent.agent_description}",
                 f"Role: {agent.role}",
                 f"Model: {agent.model_name}",
                 f"Max Loops: {agent.max_loops}",
-                "\n",
             ]
         )
 
-    return "\n".join(agent_info).strip()
+    return "\n".join(agent_info)
