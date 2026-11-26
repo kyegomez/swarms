@@ -91,33 +91,6 @@ def demonstrate_truncation():
             "❌ Failure: Total token count still exceeds context length limit"
         )
 
-    # Test sentence boundary truncation
-    print("\n\nTesting sentence boundary truncation:")
-    sentence_test = Conversation(
-        context_length=15,
-        tokenizer_model_name="claude-3-opus-20240229",
-    )
-    test_text = "This is the first sentence. This is the second very long sentence that contains a lot of content. This is the third sentence."
-    print(f"Original text: '{test_text}'")
-    print(
-        f"Original token count: {count_tokens(test_text, sentence_test.tokenizer_model_name)}"
-    )
-
-    # Using binary search for truncation
-    truncated = sentence_test._binary_search_truncate(
-        test_text, 10, sentence_test.tokenizer_model_name
-    )
-    print(f"Truncated text: '{truncated}'")
-    print(
-        f"Truncated token count: {count_tokens(truncated, sentence_test.tokenizer_model_name)}"
-    )
-
-    # Check if truncated at period
-    if truncated.endswith("."):
-        print("✅ Success: Text was truncated at sentence boundary")
-    else:
-        print("Note: Text was not truncated at sentence boundary")
-
 
 if __name__ == "__main__":
     demonstrate_truncation()

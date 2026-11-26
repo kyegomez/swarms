@@ -1354,63 +1354,6 @@ class Conversation:
         self.conversation_history = kept[::-1]
         self._str_cache = None
 
-    def _binary_search_truncate(
-        self, text, target_tokens, model_name
-    ):
-        """
-        Use binary search to find the maximum text substring that fits the target token count.
-
-        Parameters:
-            text (str): Original text to truncate
-            target_tokens (int): Target token count
-            model_name (str): Model name for token counting
-
-        Returns:
-            str: Truncated text with token count not exceeding target_tokens
-        """
-
-        # If text is empty or target tokens is 0, return empty string
-        if not text or target_tokens <= 0:
-            return ""
-
-        # If original text token count is already less than or equal to target, return as is
-        original_tokens = count_tokens(text, model_name)
-        if original_tokens <= target_tokens:
-            return text
-
-        # Binary search
-        left, right = 0, len(text)
-        best_text = ""
-
-        while left <= right:
-            mid = (left + right) // 2
-            truncated = text[:mid]
-            tokens = count_tokens(truncated, model_name)
-
-            if tokens <= target_tokens:
-                # If current truncated text token count is less than or equal to target, try longer text
-                best_text = truncated
-                left = mid + 1
-            else:
-                # Otherwise try shorter text
-                right = mid - 1
-
-        # Try to truncate at sentence boundaries if possible
-        sentence_delimiters = [".", "!", "?", "\n"]
-        for delimiter in sentence_delimiters:
-            last_pos = best_text.rfind(delimiter)
-            if (
-                last_pos > len(best_text) * 0.75
-            ):  # Only truncate at sentence boundary if we don't lose too much content
-                truncated_at_sentence = best_text[: last_pos + 1]
-                if (
-                    count_tokens(truncated_at_sentence, model_name)
-                    <= target_tokens
-                ):
-                    return truncated_at_sentence
-
-        return best_text
-
     def clear(self):
         """Clear the conversation history."""
         self.conversation_history = []
