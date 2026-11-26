@@ -1679,57 +1679,46 @@ class GraphWorkflow:
         """
         Automatically set entry points to nodes with no incoming edges.
         """
-        if self.verbose:
-            logger.debug("Auto-setting entry points")
-
-        try:
-            self.entry_points = [
-                n
-                for n in self.nodes
-                if self.graph_backend.in_degree(n) == 0
-            ]
-
-            if self.verbose:
-                logger.info(
-                    f"Auto-set entry points: {self.entry_points}"
-                )
-
-            if not self.entry_points and self.nodes:
-                logger.warning(
-                    "No entry points found - all nodes have incoming edges (possible cycle)"
-                )
-
-        except Exception as e:
-            logger.exception(
-                f"Error in GraphWorkflow.auto_set_entry_points: {e}"
-            )
-            raise e
+        self._auto_set_points("entry")
 
     def auto_set_end_points(self) -> None:
         """
         Automatically set end points to nodes with no outgoing edges.
         """
+        self._auto_set_points("end")
+
+    def _auto_set_points(self, role: str) -> None:
+        """Set the entry or end points to nodes with no edges in or out.
+
+        Args:
+            role: "entry" for nodes with no incoming edges, "end" for
+                nodes with no outgoing edges.
+        """
         if self.verbose:
-            logger.debug("Auto-setting end points")
+            logger.debug(f"Auto-setting {role} points")
 
         try:
-            self.end_points = [
-                n
-                for n in self.nodes
-                if self.graph_backend.out_degree(n) == 0
-            ]
+            if role == "entry":
+                degree = self.graph_backend.in_degree
+                edges = "incoming"
+            else:
+                degree = self.graph_backend.out_degree
+                edges = "outgoing"
+
+            points = [n for n in self.nodes if degree(n) == 0]
+            setattr(self, f"{role}_points", points)
 
             if self.verbose:
-                logger.info(f"Auto-set end points: {self.end_points}")
+                logger.info(f"Auto-set {role} points: {points}")
 
-            if not self.end_points and self.nodes:
+            if not points and self.nodes:
                 logger.warning(
-                    "No end points found - all nodes have outgoing edges (possible cycle)"
+                    f"No {role} points found - all nodes have {edges} edges (possible cycle)"
                 )
 
         except Exception as e:
             logger.exception(
-                f"Error in GraphWorkflow.auto_set_end_points: {e}"
+                f"Error in GraphWorkflow.auto_set_{role}_points: {e}"
             )
             raise e
 
