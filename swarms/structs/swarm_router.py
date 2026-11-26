@@ -449,7 +449,6 @@ class SwarmRouter(SerializableMixin):
         autosave_use_timestamp: bool = True,
         director_model_name: Optional[str] = None,
         director_settings: Optional[Dict[str, Any]] = None,
-        *args,
         **kwargs,
     ):
         """Initialize the router and validate its configuration.
@@ -468,6 +467,10 @@ class SwarmRouter(SerializableMixin):
         Raises:
             SwarmRouterConfigError: If the configuration fails validation.
         """
+        if kwargs:
+            logger.warning(
+                f"SwarmRouter ignored unknown arguments: {sorted(kwargs)}"
+            )
         self.id = id or generate_id("swarm-router")
         self.name = name
         self.description = description
