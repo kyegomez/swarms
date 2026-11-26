@@ -3061,3 +3061,82 @@ def test_output_schema_returns_a_validated_model(use_arun, replies):
 
     assert len(sent) == 1
     assert sent[0]["response_format"] is _Report
+
+
+def test_closing_run_stream_stops_the_run_before_the_next_model_call():
+    agent = _patched_agent("stream-cancelled", max_loops=4)
+
+    calls = []
+    release_first = threading.Event()
+
+    def fake_call(task=None, streaming_callback=None, **kwargs):
+        calls.append(1)
+        if streaming_callback is not None:
+            streaming_callback("tok")
+        if len(calls) == 1:
+            release_first.wait(timeout=10)
+        return "done"
+
+    agent.llm_manager.call = fake_call
+
+    stream = agent.run_stream("go")
+    assert next(stream) == "tok"
+    stream.close()
+    release_first.set()
+
+    deadline = time.time() + 2
+    while time.time() < deadline:
+        if len(calls) > 1:
+            break
+        time.sleep(0.05)
+
+    assert len(calls) == 1
+
+
+def test_a_fully_consumed_run_stream_runs_every_loop():
+    agent = _patched_agent("stream-completed", max_loops=3)
+
+    calls = []
+
+    def fake_call(task=None, streaming_callback=None, **kwargs):
+        calls.append(1)
+        if streaming_callback is not None:
+            streaming_callback("tok")
+        return "done"
+
+    agent.llm_manager.call = fake_call
+
+    tokens = list(agent.run_stream("go"))
+
+    assert len(calls) == 3
+    assert tokens == ["tok"] * 3
+
+
+def test_run_after_a_cancelled_stream_is_unaffected():
+    agent = _patched_agent("stream-then-run", max_loops=4)
+
+    calls = []
+    release_first = threading.Event()
+
+    def fake_call(task=None, streaming_callback=None, **kwargs):
+        calls.append(1)
+        if streaming_callback is not None:
+            streaming_callback("tok")
+        if len(calls) == 1:
+            release_first.wait(timeout=10)
+        return "done"
+
+    agent.llm_manager.call = fake_call
+
+    stream = agent.run_stream("go")
+    next(stream)
+    stream.close()
+    release_first.set()
+
+    deadline = time.time() + 2
+    while time.time() < deadline and len(calls) == 1:
+        time.sleep(0.05)
+    assert len(calls) == 1
+
+    assert agent.run("again") is not None
+    assert len(calls) > 1

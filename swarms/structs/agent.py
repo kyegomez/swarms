@@ -45,6 +45,7 @@ from swarms.schemas.agent_errors import (
     AgentInitializationError,
     AgentLLMError,
     AgentOutputSchemaError,
+    AgentRunCancelled,
     AgentRunError,  # noqa: F401  re-exported from this module
     AgentToolExecutionError,
 )
@@ -540,6 +541,7 @@ class Agent:
         self.tool_loader: Optional[DynamicToolLoader] = None
         self._usage = empty_usage()
         self._mcp_schemas_cache: Optional[List[dict]] = None
+        self._cancel_event = threading.Event()
 
         self.think_tool = think_tool
         # A budget below 1 would silently make the phase it bounds do nothing.
@@ -2789,6 +2791,12 @@ Subtask Breakdown:
             >>> response = agent.call_llm("What is Python?", current_loop=1)
             >>> response = agent.call_llm("Describe this image", img="chart.png")
         """
+        if self._cancel_event.is_set():
+            raise AgentRunCancelled(
+                f"Agent '{self.agent_name}' was cancelled "
+                "before its next model call."
+            )
+
         task = self._apply_skills(task, kwargs)
 
         try:
@@ -3008,6 +3016,9 @@ Subtask Breakdown:
         task, streaming_callback, messages = self._prepare_run(
             task, streaming_callback, messages
         )
+
+        if self._cancel_event.is_set():
+            self._cancel_event = threading.Event()
 
         models = self.fallback_models or [self.model_name]
         try:
@@ -3232,6 +3243,8 @@ Subtask Breakdown:
         Tool-call results are fed back into the loop automatically (same as a normal
         run); the tokens from each subsequent LLM turn are also streamed through.
 
+        Closing the generator early stops the run before its next model call.
+
         Args:
             task: The prompt / task string.
             img:  Optional image path or base64 string for vision models.
@@ -3262,6 +3275,9 @@ Subtask Breakdown:
         original_streaming_on = self.streaming_on
         self.streaming_on = True
 
+        cancel_event = threading.Event()
+        self._cancel_event = cancel_event
+
         def _run_thread():
             try:
                 self.run(
@@ -3279,16 +3295,26 @@ Subtask Breakdown:
         thread = threading.Thread(target=_run_thread, daemon=True)
         thread.start()
 
-        while True:
-            item = token_queue.get()
-            if item is _DONE:
-                break
-            yield item
+        finished = False
+        try:
+            while True:
+                item = token_queue.get()
+                if item is _DONE:
+                    finished = True
+                    break
+                yield item
+        finally:
+            # Closing the generator early stops the run before
+            # its next model call; the daemon thread is left to
+            # wind down on its own.
+            if not finished:
+                cancel_event.set()
 
-        thread.join()
+        if finished:
+            thread.join()
 
-        if _exc[0] is not None:
-            raise _exc[0]
+            if _exc[0] is not None:
+                raise _exc[0]
 
     async def arun_stream(
         self,

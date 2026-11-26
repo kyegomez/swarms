@@ -4,6 +4,7 @@ from swarms.schemas.agent_errors import (
     AgentLLMError,
     AgentLLMInitializationError,
     AgentOutputSchemaError,
+    AgentRunCancelled,
     AgentRunError,
     AgentToolExecutionError,
 )

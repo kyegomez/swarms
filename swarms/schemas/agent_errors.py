@@ -16,6 +16,12 @@ class AgentRunError(AgentError):
     pass
 
 
+class AgentRunCancelled(AgentError):
+    """Exception raised when a run is cancelled before its next model call."""
+
+    pass
+
+
 class AgentLLMError(AgentError):
     """Exception raised when there is an issue with the language model (LLM). Verify the model's availability and compatibility."""
 
