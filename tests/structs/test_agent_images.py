@@ -222,6 +222,29 @@ def test_model_the_catalog_calls_text_only_still_gets_the_image():
     assert _image_urls(messages) == [DATA_URI]
 
 
+@pytest.mark.parametrize(
+    "model, base_url, sent",
+    [
+        ("gpt-4.1", None, URL),
+        ("gpt-4.1", "http://localhost:11434/v1", DATA_URI),
+        ("gpt-4.1", "http://127.0.0.1:8000/v1", DATA_URI),
+        ("ollama/llava", None, DATA_URI),
+    ],
+)
+def test_local_endpoints_get_image_urls_as_base64(
+    model, base_url, sent
+):
+    llm = litellm_wrapper.LiteLLM(model_name=model, base_url=base_url)
+    with patch.object(
+        litellm_wrapper, "_model_supports_vision", return_value=True
+    ), patch.object(
+        litellm_wrapper, "get_image_base64", return_value=DATA_URI
+    ):
+        block = llm._build_image_block(URL)
+
+    assert block["image_url"]["url"] == sent
+
+
 def _majority_voting(agents: List[Agent]) -> MajorityVoting:
     return MajorityVoting(agents=agents, max_loops=2)
 
