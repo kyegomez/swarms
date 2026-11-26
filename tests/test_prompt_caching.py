@@ -29,8 +29,6 @@ Run:
 import os
 import sys
 
-import pytest
-
 from swarms import Agent, LiteLLM
 
 ANTHROPIC_MODEL = "claude-opus-4-8"
@@ -338,9 +336,9 @@ def test_offline_cache_config_checks():
     assert run_offline_checks()
 
 
-@pytest.mark.parametrize(
-    "model, marked",
-    [
+def test_cache_markers_go_only_to_claude():
+    """Only Claude routes get cache_control markers by default."""
+    cases = [
         ("anthropic/claude-sonnet-5-5", True),
         ("openrouter/anthropic/claude-sonnet-4-6", True),
         ("gemini/gemini-2.5-pro", False),
@@ -348,13 +346,11 @@ def test_offline_cache_config_checks():
         ("deepseek/deepseek-chat", False),
         ("groq/llama-3.3-70b-versatile", False),
         ("ollama/llama3.3", False),
-    ],
-)
-def test_cache_markers_go_only_to_claude(model, marked):
-    """Only Claude routes get cache_control markers."""
-    llm = LiteLLM(model_name=model, prompt_caching=True)
-    prepared = repr(llm._prepare_messages("hi"))
-    assert ("cache_control" in prepared) is marked
+    ]
+    for model, marked in cases:
+        llm = LiteLLM(model_name=model, prompt_caching=True)
+        prepared = repr(llm._prepare_messages("hi"))
+        assert ("cache_control" in prepared) is marked, model
 
 
 # ---------------------------------------------------------------------------
