@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict, List, Union
 
 from swarms.structs.agent import Agent
@@ -73,7 +74,9 @@ async def broadcast(
     Raises:
         ValueError: If sender, agents, or task is empty.
     """
-    return _broadcast(sender, agents, task, output_type)
+    return await asyncio.to_thread(
+        _broadcast, sender, agents, task, output_type
+    )
 
 
 class Broadcast:
