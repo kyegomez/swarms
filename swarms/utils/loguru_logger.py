@@ -12,6 +12,8 @@ _CONFIGURED = False
 # Log directory and SWARMS_LOG_FILES value the current handlers were built for.
 _CONFIGURED_DIR = None
 
+_HANDLER_IDS = [0]
+
 # Ceiling for a single per-module log file before it is rolled to ".1".
 MODULE_LOG_MAX_BYTES = 10 * 1024 * 1024
 
@@ -118,6 +120,10 @@ def initialize_logger(log_folder: str = "swarms"):
     """
     Return the shared logger, configuring its handlers on first call.
 
+    Reconfiguring removes only the handlers added here before, plus
+    loguru's default stderr handler, so sinks the application added
+    itself keep receiving records.
+
     Args:
         log_folder (str): Name of the calling module. Accepted for backwards
             compatibility, but no longer used as a path: treating it as one
@@ -127,7 +133,7 @@ def initialize_logger(log_folder: str = "swarms"):
     Returns:
         logger: The logger instance.
     """
-    global _CONFIGURED, _CONFIGURED_DIR
+    global _CONFIGURED, _CONFIGURED_DIR, _HANDLER_IDS
 
     if not apply_global_logger_switch():
         return logger
@@ -146,14 +152,17 @@ def initialize_logger(log_folder: str = "swarms"):
             # WORKSPACE_DIR may be unwritable, and failing to write logs must never stop `import swarms`.
             log_dir_error = e
 
-    # Reset loguru handlers
-    logger.remove()
+    for handler_id in _HANDLER_IDS:
+        try:
+            logger.remove(handler_id)
+        except ValueError:
+            pass
 
     # diagnose prints traceback locals, which can hold keys, so only a verbose console gets it.
     verbose = os.getenv("SWARMS_VERBOSE_GLOBAL", "False").lower()
 
     # Add console logging
-    logger.add(
+    console_id = logger.add(
         sys.stdout,
         colorize=True,
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
@@ -162,13 +171,14 @@ def initialize_logger(log_folder: str = "swarms"):
         diagnose=verbose == "true",
         enqueue=True,
     )
+    _HANDLER_IDS = [console_id]
 
     if file_logging:
         # Add file logging (rotating)
         log_file_path = os.path.join(
             log_dir, "swarms_{time:YYYY-MM-DD}.log"
         )
-        logger.add(
+        file_id = logger.add(
             log_file_path,
             rotation="1 day",
             retention="10 days",
@@ -180,12 +190,13 @@ def initialize_logger(log_folder: str = "swarms"):
         )
 
         # Per-module files, routed by the emitting module, not the caller.
-        logger.add(
+        router_id = logger.add(
             _module_log_router,
             level="INFO",
             diagnose=False,
             format=LOG_FORMAT,
         )
+        _HANDLER_IDS += [file_id, router_id]
     elif log_dir_error is not None:
         logger.warning(
             f"Log directory {log_dir!r} is unavailable "
