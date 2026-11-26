@@ -769,7 +769,7 @@ result = router.run("Deep analysis: implications of AGI on global labour markets
 
 ### RoundRobinSwarm
 
-Distributes tasks to agents in a fixed rotation. Each agent handles every Nth task.
+Every agent takes a turn on the task, in a fixed order, and each agent sees the turns before it. `max_loops` sets how many times the whole roster goes around, so one `run` makes `len(agents) * max_loops` agent calls.
 
 ```python
 from swarms import Agent, RoundRobinSwarm
@@ -781,9 +781,7 @@ agents = [
 
 rr = RoundRobinSwarm(agents=agents, max_loops=1)
 
-tasks = ["Task A", "Task B", "Task C", "Task D", "Task E", "Task F"]
-for task in tasks:
-    result = rr.run(task)
+result = rr.run("Draft, critique and refine a launch announcement.")
 ```
 
 ---
@@ -815,7 +813,7 @@ result = swarm.run("Build a complete go-to-market strategy for a B2B SaaS produc
 
 ### AutoSwarmBuilder
 
-Pass a high-level description of the task — the framework automatically creates the agents, assigns roles, and runs the appropriate swarm architecture.
+Pass a high-level description of the task. With `auto_execute=True` (or `run(task, execute=True)`), the builder creates the agents, assigns roles, picks a swarm architecture and runs it.
 
 ```python
 from swarms import AutoSwarmBuilder
@@ -824,9 +822,12 @@ builder = AutoSwarmBuilder(
     name="MarketResearchSwarm",
     description="A swarm that produces comprehensive market research reports",
     max_loops=2,
+    auto_execute=True,
 )
 result = builder.run("Research the electric vehicle market and identify growth opportunities.")
 ```
+
+Without either flag, `run` only designs the swarm and returns a spec, chosen by `swarm_type`: `"return-agents"` (the default, agent specifications), `"return-swarm-router-config"` (the full router config) or `"return-agents-objects"` (built `Agent` objects that have not run).
 
 **When to use:** Rapid prototyping, when you don't know yet which structure fits, or when you want the LLM to decide.
 
