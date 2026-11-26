@@ -29,7 +29,9 @@ Run:
 import os
 import sys
 
-from swarms import Agent
+import pytest
+
+from swarms import Agent, LiteLLM
 
 ANTHROPIC_MODEL = "claude-opus-4-8"
 OPENAI_MODEL = "gpt-5.4"
@@ -334,6 +336,25 @@ def run_offline_checks():
 def test_offline_cache_config_checks():
     """Fail when any offline cache_config check fails."""
     assert run_offline_checks()
+
+
+@pytest.mark.parametrize(
+    "model, marked",
+    [
+        ("anthropic/claude-sonnet-5-5", True),
+        ("openrouter/anthropic/claude-sonnet-4-6", True),
+        ("gemini/gemini-2.5-pro", False),
+        ("xai/grok-4-0709", False),
+        ("deepseek/deepseek-chat", False),
+        ("groq/llama-3.3-70b-versatile", False),
+        ("ollama/llama3.3", False),
+    ],
+)
+def test_cache_markers_go_only_to_claude(model, marked):
+    """Only Claude routes get cache_control markers."""
+    llm = LiteLLM(model_name=model, prompt_caching=True)
+    prepared = repr(llm._prepare_messages("hi"))
+    assert ("cache_control" in prepared) is marked
 
 
 # ---------------------------------------------------------------------------
