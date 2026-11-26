@@ -8,6 +8,7 @@ real Agent and SwarmRouter objects are created with the correct parameters.
 import ast
 import os
 import tempfile
+import pytest
 
 from dotenv import load_dotenv
 
@@ -19,7 +20,6 @@ from swarms.agents.auto_generate_swarm_config import (
     _slugify,
     write_autoswarm_file,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -707,6 +707,7 @@ This creates a two-agent sequential pipeline.
     def test_full_pipeline_creates_real_objects(self):
         """Parse LLM output → write file → exec → verify real objects."""
         import yaml
+
         from swarms.agents.auto_generate_swarm_config import (
             parse_yaml_from_swarm_markdown,
             write_autoswarm_file,
@@ -776,6 +777,7 @@ This creates a two-agent sequential pipeline.
     def test_complex_config_with_many_agents(self):
         """A more complex config with 4 agents and various params."""
         import yaml
+
         from swarms.agents.auto_generate_swarm_config import (
             parse_yaml_from_swarm_markdown,
             write_autoswarm_file,
@@ -861,3 +863,114 @@ swarm_architecture:
         # Router
         assert ns["swarm"].name == "Data-Analysis-Pipeline"
         assert ns["swarm"].swarm_type == "SequentialWorkflow"
+
+
+class TestSwarmArchitectureMaxLoopsValidation:
+    """Tests for swarm_architecture.max_loops validation (#1947)."""
+
+    def test_max_loops_bool_true_raises(self):
+        config = {
+            "agents": [{"agent_name": "Solo"}],
+            "swarm_architecture": {
+                "name": "Test-Swarm",
+                "max_loops": True,
+            },
+        }
+        with pytest.raises(
+            ValueError,
+            match=r"swarm_architecture\.max_loops must be an integer, got bool: True",
+        ):
+            _generate_file(config=config)
+
+    def test_max_loops_bool_false_raises(self):
+        config = {
+            "agents": [{"agent_name": "Solo"}],
+            "swarm_architecture": {
+                "name": "Test-Swarm",
+                "max_loops": False,
+            },
+        }
+        with pytest.raises(
+            ValueError,
+            match=r"swarm_architecture\.max_loops must be an integer, got bool: False",
+        ):
+            _generate_file(config=config)
+
+    def test_max_loops_float_raises(self):
+        config = {
+            "agents": [{"agent_name": "Solo"}],
+            "swarm_architecture": {
+                "name": "Test-Swarm",
+                "max_loops": 3.5,
+            },
+        }
+        with pytest.raises(
+            ValueError,
+            match=r"swarm_architecture\.max_loops must be an integer, got float: 3\.5",
+        ):
+            _generate_file(config=config)
+
+    def test_max_loops_zero_emitted_in_router(self):
+        """Falsy 0 must not be silently dropped."""
+        config = {
+            "agents": [{"agent_name": "Solo"}],
+            "swarm_architecture": {
+                "name": "Test-Swarm",
+                "max_loops": 0,
+            },
+        }
+        _, source = _generate_file(config=config)
+        assert "max_loops=0," in source
+
+    def test_max_loops_invalid_str_raises(self):
+        config = {
+            "agents": [{"agent_name": "Solo"}],
+            "swarm_architecture": {
+                "name": "Test-Swarm",
+                "max_loops": "invalid",
+            },
+        }
+        with pytest.raises(
+            ValueError,
+            match=r"swarm_architecture\.max_loops must be an integer, got str: 'invalid'",
+        ):
+            _generate_file(config=config)
+
+    def test_max_loops_none_raises(self):
+        config = {
+            "agents": [{"agent_name": "Solo"}],
+            "swarm_architecture": {
+                "name": "Test-Swarm",
+                "max_loops": None,
+            },
+        }
+        with pytest.raises(
+            ValueError,
+            match=r"swarm_architecture\.max_loops must be an integer, got NoneType: None",
+        ):
+            _generate_file(config=config)
+
+    def test_max_loops_int_and_numeric_str(self):
+        for val, expected in [
+            (4, "max_loops=4,"),
+            ("5", "max_loops=5,"),
+        ]:
+            config = {
+                "agents": [{"agent_name": "Solo"}],
+                "swarm_architecture": {
+                    "name": "Test-Swarm",
+                    "max_loops": val,
+                },
+            }
+            _, source = _generate_file(config=config)
+            assert expected in source
+
+    def test_max_loops_omitted_from_swarm_architecture(self):
+        config = {
+            "agents": [{"agent_name": "Solo"}],
+            "swarm_architecture": {
+                "name": "Test-Swarm",
+            },
+        }
+        _, source = _generate_file(config=config)
+        assert "max_loops=" not in source
