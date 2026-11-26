@@ -19,6 +19,8 @@ from pydantic import BaseModel, Field
 from pydantic.version import VERSION as PYDANTIC_VERSION
 from typing_extensions import Annotated, Literal, get_args, get_origin
 
+from swarms.utils.docstring_parser import parse
+
 T = TypeVar("T")
 
 __all__ = (
@@ -257,7 +259,10 @@ class ToolFunction(BaseModel, defer_build=True):
 
 
 def get_parameter_json_schema(
-    k: str, v: Any, default_values: Dict[str, Any]
+    k: str,
+    v: Any,
+    default_values: Dict[str, Any],
+    param_descriptions: Dict[str, str],
 ) -> JsonSchemaValue:
     """Get a JSON schema for a parameter as defined by the OpenAI API
 
@@ -283,7 +288,7 @@ def get_parameter_json_schema(
                     f"Invalid description {retval} for parameter {k}, should be a string."
                 )
         else:
-            return k
+            return param_descriptions.get(k, k)
 
     schema = type2schema(v)
     if k in default_values:
@@ -337,6 +342,7 @@ def get_parameters(
         str, Union[Annotated[Type[Any], str], Type[Any]]
     ],
     default_values: Dict[str, Any],
+    param_descriptions: Optional[Dict[str, str]] = None,
 ) -> Parameters:
     """Get the parameters of a function as defined by the OpenAI API
 
@@ -349,7 +355,9 @@ def get_parameters(
     """
     return Parameters(
         properties={
-            k: get_parameter_json_schema(k, v, default_values)
+            k: get_parameter_json_schema(
+                k, v, default_values, param_descriptions or {}
+            )
             for k, v in param_annotations.items()
             if v is not inspect.Signature.empty
         },
@@ -425,8 +433,11 @@ def get_openai_function_schema_from_func(
         typed_signature, required
     )
 
+    docstring = parse(function.__doc__ or "")
     name = name if name else function.__name__
-    description = description if description else function.__doc__
+    description = (
+        description or docstring.description or function.__doc__
+    )
 
     if name is None:
         raise ValueError(
@@ -463,7 +474,12 @@ def get_openai_function_schema_from_func(
         )
 
     parameters = get_parameters(
-        required, param_annotations, default_values=default_values
+        required,
+        param_annotations,
+        default_values=default_values,
+        param_descriptions={
+            p.arg_name: p.description for p in docstring.params
+        },
     )
     defs = {}
     for schema in parameters.properties.values():

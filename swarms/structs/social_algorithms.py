@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
 from swarms.structs.agent import Agent
+from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
 from swarms.structs.omni_agent_types import AgentType
 from swarms.utils.loguru_logger import initialize_logger
@@ -52,9 +53,9 @@ class SocialAlgorithms:
     """
     Run an arbitrary callable that decides how a group of agents talk to each other.
 
-    The algorithm receives ``(agents, task, **kwargs)`` and may call the agents in
+    The algorithm receives (agents, task, **kwargs) and may call the agents in
     any order. Every agent call made while it runs is recorded into
-    ``self.conversation``, so the transcript is available without the algorithm
+    self.conversation, so the transcript is available without the algorithm
     having to report anything itself.
 
     Args:
@@ -63,9 +64,9 @@ class SocialAlgorithms:
         description (str): Description of what the algorithm does.
         agents (List[AgentType]): Agents that participate in the algorithm.
         social_algorithm (Callable): Callable defining the communication
-            sequence. Must accept ``(agents, task, **kwargs)``.
+            sequence. Must accept (agents, task, **kwargs).
         max_execution_time (float): Seconds allowed for execution.
-        output_type (OutputType): Format of ``final_outputs``.
+        output_type (OutputType): Format of final_outputs.
         verbose (bool): Whether to log progress.
 
     Attributes:
@@ -73,8 +74,8 @@ class SocialAlgorithms:
             across runs.
 
     Raises:
-        InvalidAlgorithmError: If ``social_algorithm`` is not callable.
-        ValueError: If no agents are given, or ``max_execution_time`` is not positive.
+        InvalidAlgorithmError: If social_algorithm is not callable.
+        ValueError: If no agents are given, or max_execution_time is not positive.
 
     Example:
         >>> def pipeline(agents, task, **kwargs):
@@ -223,9 +224,9 @@ class SocialAlgorithms:
     @contextmanager
     def _recording_agents(self):
         """
-        Route every agent's ``run`` and ``talk_to`` through the conversation log.
+        Route every agent's run and talk_to through the conversation log.
 
-        Patches the agent instances rather than the ``Agent`` class, so agents
+        Patches the agent instances rather than the Agent class, so agents
         outside this swarm and concurrent runs elsewhere are unaffected.
 
         Yields:
@@ -269,33 +270,35 @@ class SocialAlgorithms:
 
     def _recorded_run(self, agent: Agent) -> Callable:
         """
-        Build a ``run`` replacement that logs the agent's output.
+        Build a run replacement that logs the agent's final answer.
 
         Args:
             agent (Agent): The agent being wrapped, before it is patched.
 
         Returns:
-            Callable: A drop-in replacement for ``agent.run``.
+            Callable: A drop-in replacement for agent.run.
         """
         # Whatever is bound now, so an instance override still runs
         original = agent.run
 
         def run(task, *args, **kwargs):
             result = original(task, *args, **kwargs)
-            self._log_communication(agent.agent_name, result)
+            self._log_communication(
+                agent.agent_name, agent_answer(agent, result)
+            )
             return result
 
         return run
 
     def _recorded_talk_to(self, agent: Agent) -> Callable:
         """
-        Build a ``talk_to`` replacement that logs the outgoing message.
+        Build a talk_to replacement that logs the outgoing message.
 
         Args:
             agent (Agent): The agent being wrapped, before it is patched.
 
         Returns:
-            Callable: A drop-in replacement for ``agent.talk_to``.
+            Callable: A drop-in replacement for agent.talk_to.
         """
         original = agent.talk_to
 

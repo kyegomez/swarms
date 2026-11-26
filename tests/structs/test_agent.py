@@ -160,24 +160,33 @@ class TestBasicAgent:
         assert str(history[0]["content"]) == "the task"
 
     def test_save_and_load(self, basic_flow, mocked_llm, tmp_path):
-        """State written by save() comes back through load().
-
-        The only save()/load() round trip at the Agent level, and it has not
-        executed since 2025-10-21 — which is how a load() crash shipped
-        unnoticed. load() restores scalar configuration and deliberately
-        preserves live instances, so the conversation is not round-tripped.
-        """
+        """save() and load() round-trip the settings and the history."""
         file_path = str(tmp_path / "agent_state.json")
+        basic_flow.run("remember this")
         basic_flow.max_loops = 3
         basic_flow.save(file_path)
 
         assert os.path.exists(file_path)
 
-        restored = _flow("basic-flow-restored", mocked_llm, tmp_path)
+        restored = _flow(
+            "basic-flow-restored",
+            mocked_llm,
+            tmp_path,
+            system_prompt="old",
+        )
         restored.load(file_path)
+        saved = basic_flow.short_memory.conversation_history
 
         assert restored.max_loops == 3
         assert restored.agent_name == "basic-flow"
+        assert restored.short_memory.conversation_history == saved
+
+        # A state file saved before the history was written still loads.
+        with open(file_path, "w") as f:
+            json.dump({"max_loops": 2}, f)
+        restored.load(file_path)
+        assert restored.max_loops == 2
+        assert restored.short_memory.conversation_history == saved
 
     def test_concurrent_saves_of_one_agent_both_land(
         self, basic_flow, monkeypatch, tmp_path
@@ -252,10 +261,6 @@ class TestAgentFeatures:
     def test_agent_state_management(self):
         """save() writes to the caller's saved_state_path, load() restores
         scalar config, and autosave writes with no explicit call.
-
-        The conversation is deliberately not round-tripped: preserve_instances
-        keeps the target's live Conversation rather than overwriting it, so
-        asserting restored history here would pin behaviour load() disclaims.
         """
         with tempfile.TemporaryDirectory() as temp_dir:
             state_path = os.path.join(temp_dir, "agent_state.json")
@@ -675,7 +680,7 @@ class TestLLMArgsAndHandling:
     }
 
     @pytest.mark.parametrize(
-        "model_name", ["gpt-5.4", "azure/gpt-4o"]
+        "model_name", ["gpt-5.4", "azure/gpt-5.4"]
     )
     def test_llm_args_and_tools_survive_together(self, model_name):
         """llm_args — including the api_version an Azure deployment needs —
@@ -770,7 +775,7 @@ class TestLLMArgsAndHandling:
 
         agent = Agent(
             agent_name="credential-forwarding-probe",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             llm_base_url=base_url,
             llm_api_key=api_key,
             max_loops=1,
@@ -796,7 +801,7 @@ class TestLLMArgsAndHandling:
         """
         agent = Agent(
             agent_name="credential-default-probe",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_loops=1,
             persistent_memory=False,
             print_on=False,
@@ -811,17 +816,17 @@ class TestLLMArgsAndHandling:
     ):
         monkeypatch.setattr(
             "swarms.structs.agent.set_random_models_for_agents",
-            lambda: "gpt-4.1-nano",
+            lambda: "gpt-5.4",
         )
         agent = Agent(
             agent_name="random-models-agent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             random_models_on=True,
             max_tokens=None,
         )
 
-        assert agent.model_name == "gpt-4.1-nano"
-        assert agent.llm.model_name == "gpt-4.1-nano"
+        assert agent.model_name == "gpt-5.4"
+        assert agent.llm.model_name == "gpt-5.4"
         assert agent.max_tokens == agent._default_max_tokens()
 
 
@@ -836,7 +841,7 @@ class TestConstructorWindows:
     def test_context_length_explicit_value_is_honoured(self):
         """The constructor argument used to be overwritten with 16000."""
         agent = self._agent(
-            model_name="gpt-4.1", context_length=200000
+            model_name="gpt-5.4", context_length=200000
         )
 
         assert agent.context_length == 200000
@@ -863,7 +868,7 @@ class TestConstructorWindows:
 
     def test_max_tokens_explicit_value_is_honoured(self):
         """A caller capping output was overwritten with the model's limit."""
-        agent = self._agent(model_name="gpt-4o-mini", max_tokens=500)
+        agent = self._agent(model_name="gpt-5.4-mini", max_tokens=500)
 
         assert agent.max_tokens == 500
 
@@ -2162,7 +2167,7 @@ class TestEmptyToolsList:
     def _agent(**kwargs):
         return Agent(
             agent_name="empty_tools_agent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_loops=1,
             **kwargs,
         )
@@ -2818,7 +2823,7 @@ class TestIntegerLoopRequest:
     def _agent(self, **kwargs):
         return Agent(
             agent_name="IntPathTest",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             persistent_memory=False,
             print_on=False,
             verbose=False,
@@ -2952,6 +2957,27 @@ class TestIntegerLoopRequest:
         agent.run("task", messages=[{"role": "user", "content": "x"}])
 
         assert sent[1][1] == [{"role": "user", "content": "SUMMARY"}]
+
+    def test_compression_is_on_by_default_only_for_auto_loops(self):
+        cases = [
+            ({"max_loops": 1}, False),
+            ({"max_loops": 5}, False),
+            ({"max_loops": "auto"}, True),
+            ({"max_loops": 1, "dynamic_loops": True}, True),
+            ({"max_loops": 1, "context_compression": True}, True),
+            (
+                {"max_loops": "auto", "context_compression": False},
+                False,
+            ),
+        ]
+
+        for kwargs, expected in cases:
+            agent = self._agent(**kwargs)
+
+            assert agent.context_compression is expected, kwargs
+            assert (
+                agent._context_compressor is not None
+            ) is expected, kwargs
 
 
 class TestAgentOutputCleanerRemoval:

@@ -430,36 +430,6 @@ def test_random_model_is_one_its_provider_still_serves(model_name):
     assert model_id not in shut_down_or_scheduled
 
 
-@pytest.mark.skip(
-    reason="This test requires API key and makes LLM calls"
-)
-def test_auto_swarm_builder_return_agents_objects_integration():
-    """Integration test for AutoSwarmBuilder with swarm_type='return-agents-objects'.
-
-    This test requires OPENAI_API_KEY and makes actual LLM calls.
-    Run manually with: pytest -k test_auto_swarm_builder_return_agents_objects_integration -v
-    """
-    builder = AutoSwarmBuilder(
-        swarm_type="return-agents-objects",
-        model_name="gpt-5.4",
-        max_loops=1,
-        verbose=False,
-    )
-
-    agents = builder.run(
-        "Create a team of 2 data analysis agents with specific roles"
-    )
-
-    # Verify agents were created
-    assert isinstance(agents, list)
-    assert len(agents) >= 1
-    assert all(isinstance(agent, Agent) for agent in agents)
-    assert all(hasattr(agent, "agent_name") for agent in agents)
-    assert all(
-        hasattr(agent, "agent_description") for agent in agents
-    )
-
-
 def test_agent_spec_to_agent_all_fields():
     """Test that all AgentSpec fields are properly passed to Agent."""
     builder = AutoSwarmBuilder()

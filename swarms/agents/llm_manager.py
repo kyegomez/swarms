@@ -1089,7 +1089,6 @@ class LLMManager:
             ),
             title=f"🤖 Agent: {self.agent.agent_name} Loops: {current_loop}",
             style=None,  # Use random color like non-streaming approach
-            collect_chunks=True,
         )
         return "".join(content_out)
 

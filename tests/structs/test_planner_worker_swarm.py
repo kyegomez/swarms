@@ -1,5 +1,5 @@
 import types
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -88,6 +88,27 @@ def test_judge_request_forces_the_verdict_tool():
         "type": "function",
         "function": {"name": "CycleVerdict"},
     }
+
+
+def test_judge_gets_the_goal_and_each_result_once():
+    plan = {
+        "plan": "p",
+        "tasks": [{"title": "t1", "description": "d"}],
+    }
+    judge = MagicMock(usage={})
+    judge.run.return_value = "not a verdict"
+    worker = _usage_agent("Worker", 1, 1, "WORKER-RESULT")
+    swarm = PlannerWorkerSwarm(agents=[worker])
+
+    with patch(
+        "swarms.structs.planner_worker_swarm.Agent",
+        side_effect=[_usage_agent("Planner", 1, 1, plan), judge],
+    ):
+        swarm.run("TASK-MARK")
+
+    text = str(judge.run.call_args.kwargs)
+    counts = (text.count("TASK-MARK"), text.count("WORKER-RESULT"))
+    assert counts == (1, 1)
 
 
 def test_worker_pool_defaults_to_one_worker_per_agent():

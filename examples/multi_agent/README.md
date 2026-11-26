@@ -41,7 +41,7 @@ This directory contains comprehensive examples demonstrating various multi-agent
 ## Council
 - [council_judge_evaluation.py](council/council_judge_evaluation.py) - Judge evaluation system
 - [council_judge_example.py](council/council_judge_example.py) - Basic council example
-- [council_of_judges_eval.py](council/council_of_judges_eval.py) - Evaluation framework
+- [council_of_judges_eval.py](council/judges/council_of_judges_eval.py) - Evaluation framework
 
 ## Council of Judges
 - [council_judge_example.py](council_of_judges/council_judge_example.py) - Basic council of judges

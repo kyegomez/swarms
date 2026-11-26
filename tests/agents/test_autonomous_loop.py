@@ -59,7 +59,7 @@ def build_agent(**overrides):
     """Build a real, offline agent configured for the autonomous loop."""
     kwargs = dict(
         agent_name="AutoLoopTestAgent",
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         max_loops="auto",
         persistent_memory=False,
         context_compression=False,
@@ -635,7 +635,7 @@ class TestModelFailureMovesToTheFallbackModel:
     ):
         from swarms.schemas.agent_errors import AgentLLMError
 
-        agent = build_agent(fallback_models=["gpt-4o"])
+        agent = build_agent(fallback_models=["gpt-5.4"])
         script = [
             plan(("step1", [])),
             [
@@ -661,7 +661,7 @@ class TestModelFailureMovesToTheFallbackModel:
             calls.append(agent.model_name)
             count = calls.count(agent.model_name)
             if (
-                agent.model_name == "gpt-4o-mini"
+                agent.model_name == "gpt-5.4-mini"
                 and count > calls_before_failure
             ):
                 raise AgentLLMError("provider down")
@@ -672,7 +672,7 @@ class TestModelFailureMovesToTheFallbackModel:
         output = agent.run("test task")
 
         assert "fallback answer" in str(output)
-        assert calls.count("gpt-4o-mini") == calls_before_failure + 1
+        assert calls.count("gpt-5.4-mini") == calls_before_failure + 1
 
 
 # --------------------------------------------------------------------------
@@ -1396,7 +1396,7 @@ class TestGlobTool:
         os.utime(other, (3_000, 3_000))
         return first, second, other
 
-    def test_matches_recursively_and_reports_relative_paths(
+    def test_matches_recursively_and_joins_paths_onto_path(
         self, tmp_path
     ):
         self._tree(tmp_path)
@@ -1404,8 +1404,8 @@ class TestGlobTool:
         output = glob_tool(build_agent(), "*.py", str(tmp_path))
 
         assert output.splitlines() == [
-            "pkg/deep/new.py",
-            "pkg/old.py",
+            str(tmp_path / "pkg" / "deep" / "new.py"),
+            str(tmp_path / "pkg" / "old.py"),
         ]
 
     def test_newest_first(self, tmp_path):
@@ -1418,7 +1418,19 @@ class TestGlobTool:
             if line.endswith(".md") or line.endswith(".py")
         ]
 
-        assert listed[0] == "pkg/notes.md"
+        assert listed[0] == str(tmp_path / "pkg" / "notes.md")
+
+    def test_a_relative_path_result_opens_with_read_file(
+        self, tmp_path
+    ):
+        self._tree(tmp_path)
+        agent = build_agent()
+        agent._get_agent_workspace_dir = lambda: str(tmp_path)
+
+        output = glob_tool(agent, "*.py", "pkg/deep")
+
+        assert output.splitlines() == ["pkg/deep/new.py"]
+        assert read_file_tool(agent, output.splitlines()[0]) == "x"
 
     def test_no_matches_says_so_rather_than_returning_empty(
         self, tmp_path

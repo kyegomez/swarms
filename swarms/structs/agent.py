@@ -96,7 +96,7 @@ from swarms.utils.index import (
 )
 from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import empty_usage
+from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -180,6 +180,7 @@ class Agent:
         saved_state_path (str): The path to the saved state
         autosave (bool): Autosave the state
         context_length (Optional[int]): The model's input window in tokens. Defaults to 128000. None looks it up from the model.
+        context_compression (Optional[bool]): Summarise the history once it reaches 90 percent of context_length. Defaults to None, which turns it on only when max_loops is "auto".
         transforms (Optional[Union[TransformConfig, dict]]): Message transformation configuration for handling context limits
         user_name (str): The user name
         long_term_memory (BaseVectorDatabase): The long term memory
@@ -427,7 +428,7 @@ class Agent:
         marketplace_prompt_id: Optional[str] = None,
         skills_dir: Optional[str] = None,
         selected_tools: Optional[Union[str, List[str]]] = "all",
-        context_compression: bool = True,
+        context_compression: Optional[bool] = None,
         persistent_memory: bool = False,
         messages: Optional[List[Dict[str, Any]]] = None,
         description: Optional[str] = None,
@@ -598,14 +599,7 @@ class Agent:
         # Prior turns, seeded into short_memory and re-sent as context on every run.
         self.messages = messages
 
-        # Applies to auto and integer max_loops alike
         self.context_compression = context_compression
-        if self.context_compression:
-            self._context_compressor = ContextCompressor(
-                threshold=0.9
-            )
-        else:
-            self._context_compressor = None
 
         # Initialize autonomous loop tracking structures
         self.autonomous_subtasks = []  # List of subtasks from plan
@@ -656,6 +650,15 @@ class Agent:
         self._autonomous_loop: Optional[AutonomousAgentLoop] = None
 
         self.setup_config()
+
+        # Resolved after setup_config, which can switch max_loops to "auto"
+        if self.context_compression is None:
+            self.context_compression = self.max_loops == "auto"
+        self._context_compressor = (
+            ContextCompressor(threshold=0.9)
+            if self.context_compression
+            else None
+        )
 
         if self.safety_prompt_on is True:
             self.system_prompt += f"\n\n{SAFETY_PROMPT}"
@@ -1242,6 +1245,10 @@ class Agent:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
+                                    # Only this run's rows, so an earlier run's task never takes the images.
+                                    task_turn=request_start
+                                    == history_start
+                                    and isinstance(self.llm, LiteLLM),
                                 )
                             )
 
@@ -1827,6 +1834,10 @@ Subtask Breakdown:
                                 self.short_memory.to_messages(
                                     self.agent_name,
                                     request_start,
+                                    # Only this run's rows, so an earlier run's task never takes the images.
+                                    task_turn=request_start
+                                    == history_start
+                                    and isinstance(self.llm, LiteLLM),
                                 )
                             )
 
@@ -2261,8 +2272,14 @@ Subtask Breakdown:
             # Ensure directory exists
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
 
-            # First save to temporary file using SafeStateManager
-            SafeStateManager.save_state(self, temp_path)
+            # A Conversation is not a safe type, so save its messages as a list.
+            state = SafeLoaderUtils.create_state_dict(self)
+            state["short_memory"] = (
+                self.short_memory.conversation_history
+            )
+
+            with open(temp_path, "w") as f:
+                json.dump(state, f, indent=4, default=str)
 
             # If current file exists, create backup
             if os.path.exists(full_path):
@@ -2379,10 +2396,16 @@ Subtask Breakdown:
             )
 
             # Load state using SafeStateManager
-            SafeStateManager.load_state(self, resolved_path)
+            state = SafeStateManager.load_state(self, resolved_path)
 
             # Reinitialize any necessary runtime components
             self._reinitialize_after_load()
+
+            # Files saved before the history was written have none to restore.
+            history = state.get("short_memory")
+            if history is not None:
+                self.short_memory.clear()
+                self.short_memory.batch_add(history)
 
             if self.verbose:
                 self._log_state_info(resolved_path, saved=False)
@@ -3360,29 +3383,6 @@ Subtask Breakdown:
             self.run(task=task, img=img, *args, **kwargs)
             for task, img in zip(tasks, imgs)
         ]
-
-    def showcase_config(self):
-
-        # Convert all values in config_dict to concise string representations
-        config_dict = self.to_dict()
-        for key, value in config_dict.items():
-            if isinstance(value, list):
-                # Format list as a comma-separated string
-                config_dict[key] = ", ".join(
-                    str(item) for item in value
-                )
-            elif isinstance(value, dict):
-                # Format dict as key-value pairs in a single string
-                config_dict[key] = ", ".join(
-                    f"{k}: {v}" for k, v in value.items()
-                )
-            else:
-                # Ensure any non-iterable value is a string
-                config_dict[key] = str(value)
-
-        return formatter.print_table(
-            f"Agent: {self.agent_name} Configuration", config_dict
-        )
 
     def talk_to(
         self, agent: Any, task: str, img: str = None, *args, **kwargs

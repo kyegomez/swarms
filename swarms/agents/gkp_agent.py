@@ -6,6 +6,23 @@ from loguru import logger
 from swarms.agents.llm_manager import DEFAULT_MODEL_NAME
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
+from swarms.structs.usage_utils import total_usage
+
+
+def _sections(response: str, labels: List[str]) -> Dict[str, str]:
+    """Map each label, searched for after the one before it, to its text."""
+    found = []
+    for label in labels:
+        start = found[-1][0] + len(found[-1][1]) if found else 0
+        position = response.find(label, start)
+        if position != -1:
+            found.append((position, label))
+
+    ends = [position for position, _ in found[1:]] + [len(response)]
+    return {
+        label: response[position + len(label) : end].strip()
+        for (position, label), end in zip(found, ends)
+    }
 
 
 class KnowledgeGenerator:
@@ -57,6 +74,11 @@ class KnowledgeGenerator:
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage of this component's agent."""
+        return total_usage(self)
 
     def _create_knowledge_system_prompt(self) -> str:
         """
@@ -153,14 +175,10 @@ class KnowledgeGenerator:
                     p = p[len("Knowledge:") :].strip()
                 knowledge_items.append(p)
 
-        # Ensure we have the requested number of knowledge items
-        while len(knowledge_items) < self.num_knowledge_items:
+        if len(knowledge_items) < self.num_knowledge_items:
             logger.warning(
                 f"Only generated {len(knowledge_items)} knowledge items, expected {self.num_knowledge_items}"
             )
-            knowledge_items.append(
-                ""
-            )  # Add empty string as placeholder
 
         # Truncate if we have too many
         knowledge_items = knowledge_items[: self.num_knowledge_items]
@@ -214,6 +232,11 @@ class Reasoner:
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage of this component's agent."""
+        return total_usage(self)
 
     def _create_reasoning_system_prompt(self) -> str:
         """
@@ -274,39 +297,13 @@ class Reasoner:
         # Parse the response
         result = {"explanation": "", "confidence": "", "answer": ""}
 
-        if "Explanation:" in response and "Answer:" in response:
-            # Get explanation
-            explanation_start = response.find("Explanation:") + len(
-                "Explanation:"
-            )
-
-            # Find the end of explanation (which is either Confidence: or Answer:)
-            confidence_pos = response.find("Confidence:")
-            answer_pos = response.find("Answer:")
-
-            explanation_end = min(
-                pos for pos in [confidence_pos, answer_pos] if pos > 0
-            )
-            result["explanation"] = response[
-                explanation_start:explanation_end
-            ].strip()
-
-            # Get confidence if present
-            if confidence_pos > 0:
-                confidence_start = confidence_pos + len("Confidence:")
-                confidence_end = (
-                    answer_pos
-                    if answer_pos > confidence_pos
-                    else len(response)
-                )
-                result["confidence"] = response[
-                    confidence_start:confidence_end
-                ].strip()
-
-            # Get answer
-            if answer_pos > 0:
-                answer_start = answer_pos + len("Answer:")
-                result["answer"] = response[answer_start:].strip()
+        sections = _sections(
+            response, ["Explanation:", "Confidence:", "Answer:"]
+        )
+        if "Explanation:" in sections and "Answer:" in sections:
+            result["explanation"] = sections["Explanation:"]
+            result["confidence"] = sections.get("Confidence:", "")
+            result["answer"] = sections["Answer:"]
         else:
             # Fallback parsing if not properly formatted
             result["answer"] = response.strip()
@@ -378,6 +375,11 @@ class GKPAgent:
         logger.info(
             f"Initialized {self.agent_name} with model {self.model_name}"
         )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the knowledge generator, reasoner and coordinator."""
+        return total_usage(self)
 
     def _create_coordinator_system_prompt(self) -> str:
         """
@@ -501,33 +503,13 @@ class GKPAgent:
         # Parse the coordinated response
         result = {"analysis": "", "response": "", "explanation": ""}
 
-        if "Analysis:" in response and "Final Answer:" in response:
-            # Extract analysis
-            analysis_start = response.find("Analysis:") + len(
-                "Analysis:"
-            )
-            analysis_end = response.find("Final Answer:")
-            result["analysis"] = response[
-                analysis_start:analysis_end
-            ].strip()
-
-            # Extract final answer
-            answer_start = response.find("Final Answer:") + len(
-                "Final Answer:"
-            )
-
-            if "Explanation:" in response:
-                answer_end = response.find("Explanation:")
-                explanation_start = answer_end + len("Explanation:")
-
-                result["response"] = response[
-                    answer_start:answer_end
-                ].strip()
-                result["explanation"] = response[
-                    explanation_start:
-                ].strip()
-            else:
-                result["response"] = response[answer_start:].strip()
+        sections = _sections(
+            response, ["Analysis:", "Final Answer:", "Explanation:"]
+        )
+        if "Analysis:" in sections and "Final Answer:" in sections:
+            result["analysis"] = sections["Analysis:"]
+            result["response"] = sections["Final Answer:"]
+            result["explanation"] = sections.get("Explanation:", "")
         else:
             # Fallback if not properly formatted
             result["response"] = response.strip()

@@ -5,7 +5,7 @@ from typing import (
     Optional,
 )
 
-from swarms.structs.execution_utils import batched_run
+from swarms.agents.agent_judge import AgentJudge
 from swarms.agents.consistency_agent import SelfConsistencyAgent
 from swarms.agents.flexion_agent import ReflexionAgent
 from swarms.agents.gkp_agent import GKPAgent
@@ -13,8 +13,10 @@ from swarms.agents.i_agent import (
     IterativeReflectiveExpansion as IREAgent,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
+from swarms.structs.agent import Agent
+from swarms.structs.execution_utils import batched_run
+from swarms.utils.litellm_wrapper import empty_usage
 from swarms.utils.output_types import OutputType
-from swarms.agents.agent_judge import AgentJudge
 
 #: Supported agent type literals for ReasoningAgentRouter
 agent_types = Literal[
@@ -68,6 +70,8 @@ class ReasoningAgentRouter:
         random_models_on (bool): Enable random model selection for diversity.
         majority_voting_prompt (Optional[str]): Custom prompt for majority voting.
         reasoning_model_name (Optional[str]): Model for the reasoning-duo reasoning agent. Defaults to None, which runs it on model_name.
+        self_reflexion_preset_agents (bool): Passed to SelfConsistencyAgent as preset_agents, so the built-in agent votes on the samples.
+        aggregator_agent (Optional[Agent]): Your own agent that votes on the self-consistency samples. Needs self_reflexion_preset_agents=False. Defaults to None.
 
     Example:
         >>> router = ReasoningAgentRouter(swarm_type="reasoning-duo")
@@ -91,6 +95,8 @@ class ReasoningAgentRouter:
         random_models_on: bool = False,
         majority_voting_prompt: Optional[str] = None,
         reasoning_model_name: Optional[str] = None,
+        self_reflexion_preset_agents: bool = True,
+        aggregator_agent: Optional[Agent] = None,
     ):
         """
         Initialize the ReasoningAgentRouter with the specified configuration.
@@ -111,6 +117,11 @@ class ReasoningAgentRouter:
         self.random_models_on = random_models_on
         self.majority_voting_prompt = majority_voting_prompt
         self.reasoning_model_name = reasoning_model_name
+        self.self_reflexion_preset_agents = (
+            self_reflexion_preset_agents
+        )
+        self.aggregator_agent = aggregator_agent
+        self._swarm = None
 
         self.reliability_check()
 
@@ -119,11 +130,6 @@ class ReasoningAgentRouter:
         if self.max_loops == 0:
             raise ReasoningAgentInitializationError(
                 "ReasoningAgentRouter Error: Max loops must be greater than 0"
-            )
-
-        if self.model_name == "" or self.model_name is None:
-            raise ReasoningAgentInitializationError(
-                "ReasoningAgentRouter Error: Model name must be provided"
             )
 
         if self.swarm_type == "" or self.swarm_type is None:
@@ -183,12 +189,12 @@ class ReasoningAgentRouter:
             description=self.description,
             model_name=self.model_name,
             system_prompt=self.system_prompt,
-            max_loops=self.max_loops,
             num_samples=self.num_samples,
             output_type=self.output_type,
             eval=self.eval,
-            random_models_on=self.random_models_on,
             majority_voting_prompt=self.majority_voting_prompt,
+            preset_agents=self.self_reflexion_preset_agents,
+            aggregator_agent=self.aggregator_agent,
         )
 
     def _create_ire_agent(self):
@@ -271,6 +277,20 @@ class ReasoningAgentRouter:
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
             )
 
+    @property
+    def usage(self) -> dict:
+        """Token usage of the swarm the latest run built.
+
+        Each run builds a new swarm, so this covers only the latest run.
+
+        Returns:
+            That swarm's usage, or zeros before the first run.
+        """
+        if self._swarm is None:
+            return empty_usage()
+
+        return self._swarm.usage
+
     def run(self, task: str, *args, **kwargs):
         """
         Execute the reasoning process of the selected swarm on a given task.
@@ -285,11 +305,12 @@ class ReasoningAgentRouter:
         """
         try:
             swarm = self.select_swarm()
+            self._swarm = swarm
 
             if self.swarm_type == "ReflexionAgent":
-                return swarm.run(tasks=[task], *args, **kwargs)
+                return swarm.run([task], *args, **kwargs)
             else:
-                return swarm.run(task=task, *args, **kwargs)
+                return swarm.run(task, *args, **kwargs)
         except Exception as e:
             raise ReasoningAgentExecutorError(
                 f"ReasoningAgentRouter Error: {e} Traceback: {traceback.format_exc()} If the error persists, please check the agent's configuration and try again. If you would like support book a call with our team at https://cal.com/swarms"
@@ -307,4 +328,6 @@ class ReasoningAgentRouter:
         Returns:
             A list of reasoning process results for each task.
         """
-        return batched_run(self.run, tasks)
+        return batched_run(
+            lambda task: self.run(task, *args, **kwargs), tasks
+        )

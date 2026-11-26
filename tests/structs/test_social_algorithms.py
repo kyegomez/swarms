@@ -214,6 +214,38 @@ class TestConversationRecording:
 
         assert _roles(swarm).count("Researcher") == 3
 
+    def test_a_repeat_call_records_the_answer_not_the_transcript(
+        self, monkeypatch, tmp_path
+    ):
+        from swarms.utils.litellm_wrapper import LiteLLM
+
+        monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))
+        replies = iter(["R1", "A1", "R2", "A2"])
+        monkeypatch.setattr(
+            LiteLLM, "run", lambda self, *a, **k: next(replies)
+        )
+
+        def two_rounds(agents, task, **kwargs):
+            for _ in range(2):
+                for agent in agents:
+                    task = agent.run(task)
+            return task
+
+        swarm = SocialAlgorithms(
+            agents=[
+                Agent(agent_name=name, print_on=False, max_loops=1)
+                for name in ("Researcher", "Analyst")
+            ],
+            social_algorithm=two_rounds,
+        )
+
+        result = swarm.run("TOPIC")
+
+        assert [
+            message["content"]
+            for message in result.communication_history[1:5]
+        ] == ["R1", "A1", "R2", "A2"]
+
     def test_conversation_accumulates_across_runs(self):
         swarm = _swarm(_pipeline)
 

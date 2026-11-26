@@ -26,7 +26,7 @@ from swarms.utils.litellm_wrapper import empty_usage
 def _make_agent(
     history: str = "Turn 1\nTurn 2",
     context_length: int = 1000,
-    model_name: str = "claude-sonnet-4-5",
+    model_name: str = "claude-sonnet-5-5",
     agent_name: str = "TestAgent",
     tokens: int = 10,
 ):
@@ -74,12 +74,12 @@ class TestInit:
     def test_custom_values_stored(self):
         cc = ContextCompressor(
             threshold=0.75,
-            summarizer_model="gpt-4o",
+            summarizer_model="gpt-5.4",
             summarizer_temperature=0.5,
             summarizer_max_tokens=2000,
         )
         assert cc.threshold == 0.75
-        assert cc.summarizer_model == "gpt-4o"
+        assert cc.summarizer_model == "gpt-5.4"
         assert cc.summarizer_temperature == 0.5
         assert cc.summarizer_max_tokens == 2000
 
@@ -168,8 +168,8 @@ class TestSummarize:
             cc._summarize(agent, "some history")
 
     def test_uses_summarizer_model_over_agent_model(self):
-        cc = ContextCompressor(summarizer_model="gpt-4o")
-        agent = _make_agent(model_name="claude-sonnet-4-5")
+        cc = ContextCompressor(summarizer_model="gpt-5.4")
+        agent = _make_agent(model_name="claude-sonnet-5-5")
         resp = _make_completion_response("summary text")
         with patch(
             "swarms.agents.context_compressor.completion",
@@ -178,11 +178,11 @@ class TestSummarize:
             cc._summarize(agent, "history")
         mock_comp.assert_called_once()
         _, kwargs = mock_comp.call_args
-        assert kwargs["model"] == "gpt-4o"
+        assert kwargs["model"] == "gpt-5.4"
 
     def test_falls_back_to_agent_model_name(self):
         cc = ContextCompressor()
-        agent = _make_agent(model_name="claude-sonnet-4-5")
+        agent = _make_agent(model_name="claude-sonnet-5-5")
         resp = _make_completion_response("summary")
         with patch(
             "swarms.agents.context_compressor.completion",
@@ -190,7 +190,7 @@ class TestSummarize:
         ) as mock_comp:
             cc._summarize(agent, "history")
         _, kwargs = mock_comp.call_args
-        assert kwargs["model"] == "claude-sonnet-4-5"
+        assert kwargs["model"] == "claude-sonnet-5-5"
 
     def test_sends_the_agents_endpoint_and_key_with_its_model(self):
         cc = ContextCompressor()
@@ -207,7 +207,7 @@ class TestSummarize:
         assert kwargs["api_key"] == "sk-local"
 
     def test_a_separate_summarizer_model_keeps_its_own_endpoint(self):
-        cc = ContextCompressor(summarizer_model="gpt-4o")
+        cc = ContextCompressor(summarizer_model="gpt-5.4")
         agent = _make_agent(model_name="openai/local-model")
         agent.llm_base_url = "http://localhost:8000/v1"
         agent.llm_api_key = "sk-local"
@@ -222,7 +222,7 @@ class TestSummarize:
 
     def test_passes_temperature_and_max_tokens(self):
         cc = ContextCompressor(
-            summarizer_model="gpt-4o",
+            summarizer_model="gpt-5.4",
             summarizer_temperature=0.3,
             summarizer_max_tokens=1500,
         )
@@ -238,7 +238,7 @@ class TestSummarize:
         assert kwargs["max_tokens"] == 1500
 
     def test_messages_structure(self):
-        cc = ContextCompressor(summarizer_model="gpt-4o")
+        cc = ContextCompressor(summarizer_model="gpt-5.4")
         agent = _make_agent()
         history = "turn 1\nturn 2"
         resp = _make_completion_response()
@@ -257,7 +257,7 @@ class TestSummarize:
         )
 
     def test_returns_response_content_unchanged(self):
-        cc = ContextCompressor(summarizer_model="gpt-4o")
+        cc = ContextCompressor(summarizer_model="gpt-5.4")
         agent = _make_agent()
         expected = "My compressed summary."
         resp = _make_completion_response(expected)
@@ -269,7 +269,7 @@ class TestSummarize:
         assert result == expected
 
     def test_adds_summary_call_to_agent_usage(self):
-        cc = ContextCompressor(summarizer_model="gpt-4o")
+        cc = ContextCompressor(summarizer_model="gpt-5.4")
         agent = Agent.__new__(Agent)
         agent._usage = empty_usage()
         resp = _make_completion_response()
@@ -414,7 +414,7 @@ class TestIntegration:
         agent = SimpleNamespace(
             short_memory=conv,
             context_length=10000,
-            model_name="claude-sonnet-4-5",
+            model_name="claude-sonnet-5-5",
             agent_name="IntegrationAgent",
         )
 
@@ -468,7 +468,7 @@ class TestIntegration:
         agent = SimpleNamespace(
             short_memory=conv,
             context_length=10,
-            model_name="claude-sonnet-4-5",
+            model_name="claude-sonnet-5-5",
             agent_name="EmptySummaryAgent",
         )
         with patch(

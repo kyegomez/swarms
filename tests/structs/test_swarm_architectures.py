@@ -6,7 +6,6 @@ from swarms.structs.one_to_one import one_to_one
 from swarms.structs.swarming_architectures import (
     circular_swarm,
     grid_swarm,
-    pyramid_swarm,
 )
 
 
@@ -55,28 +54,6 @@ def test_grid_swarm():
 
     assert isinstance(result, list)
     assert len(result) > 0
-
-
-def test_pyramid_swarm():
-    """Test pyramid swarm hierarchical structure"""
-    agents = create_test_agents(6)
-    tasks = [
-        "Top task",
-        "Middle task 1",
-        "Middle task 2",
-        "Bottom task 1",
-        "Bottom task 2",
-        "Bottom task 3",
-    ]
-
-    result = pyramid_swarm(agents, tasks)
-
-    assert isinstance(result, list)
-    assert len(result) > 0
-
-    for log in result:
-        assert "role" in log
-        assert "content" in log
 
 
 def test_one_to_one():

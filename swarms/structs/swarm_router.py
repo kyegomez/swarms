@@ -196,8 +196,32 @@ def _msg_agents_ignored(swarm_type: str) -> str:
 
 # Swarm types that build their own agents, and the settings that pick their models
 _OWN_AGENT_MODEL_SETTINGS = {
-    "HeavySwarm": "heavy_swarm_question_agent_model_name and heavy_swarm_worker_model_name",
-    "CouncilAsAJudge": "council_judge_model_name",
+    "HeavySwarm": "model_name, heavy_swarm_question_agent_model_name and heavy_swarm_worker_model_name",
+    "CouncilAsAJudge": "model_name and council_judge_model_name",
+}
+
+
+_INTERNAL_MODEL_PARAMS: Dict[str, Dict[str, Optional[str]]] = {
+    "MultiAgentRouter": {"model": None},
+    "MajorityVoting": {"consensus_agent_model_name": None},
+    "PlannerWorkerSwarm": {
+        "planner_model_name": None,
+        "judge_model_name": None,
+    },
+    "HierarchicalSwarm": {
+        "director_model_name": "director_model_name",
+        "feedback_director_model_name": None,
+        "judge_agent_model_name": None,
+    },
+    "CouncilAsAJudge": {
+        "model_name": "council_judge_model_name",
+        "aggregation_model_name": None,
+    },
+    "HeavySwarm": {
+        "question_agent_model_name": "heavy_swarm_question_agent_model_name",
+        "worker_model_name": "heavy_swarm_worker_model_name",
+    },
+    "LLMCouncil": {"chairman_model": "chairman_model"},
 }
 
 
@@ -324,6 +348,13 @@ class SwarmRouter(SerializableMixin):
             about every other agent at start of run. Defaults to ``False``.
         conversation (Any, optional): Pre-existing conversation object to seed
             the swarm with.
+        model_name (str, optional): Model for the agents a swarm type
+            builds for itself: the MultiAgentRouter router, MajorityVoting
+            consensus agent, PlannerWorkerSwarm planner and judge,
+            HierarchicalSwarm directors and judge, CouncilAsAJudge judges
+            and aggregator, HeavySwarm question agent and workers, and
+            LLMCouncil chairman. The per-type settings below win over it,
+            and with neither set each structure keeps its own default.
         heavy_swarm_question_agent_model_name (str, optional): Model for the
             ``HeavySwarm`` question agent.
         heavy_swarm_worker_model_name (str, optional): Model for ``HeavySwarm``
@@ -347,7 +378,7 @@ class SwarmRouter(SerializableMixin):
             workers.
         chairman_model (str, optional): Chairman model for ``LLMCouncil``.
         director_model_name (str, optional): Model name for the director agent
-            when ``swarm_type="HierarchicalSwarm"``. Defaults to ``"gpt-5.4"``.
+            when ``swarm_type="HierarchicalSwarm"``.
         director_settings (Optional[Dict[str, Any]], optional): Additional
             ``Agent`` keyword arguments forwarded to the ``HierarchicalSwarm``
             director (e.g. ``system_prompt``, ``temperature``, ``top_p``).
@@ -404,18 +435,19 @@ class SwarmRouter(SerializableMixin):
         list_all_agents: bool = False,
         conversation: Any = None,
         channel: Optional[CommsChannel] = None,
-        heavy_swarm_question_agent_model_name: str = "gpt-5.4",
-        heavy_swarm_worker_model_name: str = "gpt-5.4",
+        model_name: Optional[str] = None,
+        heavy_swarm_question_agent_model_name: Optional[str] = None,
+        heavy_swarm_worker_model_name: Optional[str] = None,
         heavy_swarm_swarm_show_output: bool = True,
         heavy_swarm_variant: SwarmVariant = "default",
         heavy_swarm_max_loops: int = 1,
         heavy_swarm_timeout: int = 900,
-        council_judge_model_name: str = "gpt-5.4",  # Add missing model_name attribute
+        council_judge_model_name: Optional[str] = None,
         verbose: bool = False,
         worker_tools: List[Callable] = None,
-        chairman_model: str = "gpt-5.1",
+        chairman_model: Optional[str] = None,
         autosave_use_timestamp: bool = True,
-        director_model_name: str = "gpt-5.4",
+        director_model_name: Optional[str] = None,
         director_settings: Optional[Dict[str, Any]] = None,
         *args,
         **kwargs,
@@ -451,6 +483,7 @@ class SwarmRouter(SerializableMixin):
         self.list_all_agents = list_all_agents
         self.conversation = conversation
         self.channel = channel
+        self.model_name = model_name
         self.heavy_swarm_question_agent_model_name = (
             heavy_swarm_question_agent_model_name
         )
@@ -718,8 +751,6 @@ class SwarmRouter(SerializableMixin):
             name=self.name,
             description=self.description,
             output_type=self.output_type,
-            question_agent_model_name=self.heavy_swarm_question_agent_model_name,
-            worker_model_name=self.heavy_swarm_worker_model_name,
             agent_prints_on=self.heavy_swarm_swarm_show_output,
             worker_tools=self.worker_tools,
             show_dashboard=False,
@@ -727,6 +758,7 @@ class SwarmRouter(SerializableMixin):
             max_loops=self.heavy_swarm_max_loops,
             timeout=self.heavy_swarm_timeout,
             verbose=self.verbose,
+            **self._internal_model_kwargs("HeavySwarm"),
         )
 
     def _create_llm_council(self, *args, **kwargs):
@@ -737,7 +769,7 @@ class SwarmRouter(SerializableMixin):
             council_members=self.agents if self.agents else None,
             output_type=self.output_type,
             verbose=self.verbose,
-            chairman_model=self.chairman_model,
+            **self._internal_model_kwargs("LLMCouncil"),
         )
 
     def _create_debate_with_judge(self, *args, **kwargs):
@@ -768,8 +800,8 @@ class SwarmRouter(SerializableMixin):
         return CouncilAsAJudge(
             name=self.name,
             description=self.description,
-            model_name=self.council_judge_model_name,
             output_type=self.output_type,
+            **self._internal_model_kwargs("CouncilAsAJudge"),
         )
 
     def _create_hierarchical_swarm(self, *args, **kwargs):
@@ -777,9 +809,9 @@ class SwarmRouter(SerializableMixin):
         return HierarchicalSwarm(
             *args,
             **self._base_kwargs(
-                director_model_name=self.director_model_name,
                 director_settings=self.director_settings,
                 channel=self.channel,
+                **self._internal_model_kwargs("HierarchicalSwarm"),
             ),
             **kwargs,
         )
@@ -802,7 +834,10 @@ class SwarmRouter(SerializableMixin):
         """Create a ``MajorityVoting`` swarm from the configured agents."""
         return MajorityVoting(
             *args,
-            **self._base_kwargs(channel=self.channel),
+            **self._base_kwargs(
+                channel=self.channel,
+                **self._internal_model_kwargs("MajorityVoting"),
+            ),
             **kwargs,
         )
 
@@ -825,6 +860,7 @@ class SwarmRouter(SerializableMixin):
             description=self.description,
             agents=self.agents,
             output_type=self.output_type,
+            **self._internal_model_kwargs("MultiAgentRouter"),
         )
 
     def _collab_preamble(self) -> Optional[str]:
@@ -898,10 +934,25 @@ class SwarmRouter(SerializableMixin):
         return PlannerWorkerSwarm(
             *args,
             **self._base_kwargs(
-                verbose=self.verbose, channel=self.channel
+                verbose=self.verbose,
+                channel=self.channel,
+                **self._internal_model_kwargs("PlannerWorkerSwarm"),
             ),
             **kwargs,
         )
+
+    def _internal_model_kwargs(
+        self, swarm_type: str
+    ) -> Dict[str, str]:
+        """Models for the agents a swarm type builds, omitting unset ones."""
+        models = {
+            param: (override and getattr(self, override))
+            or self.model_name
+            for param, override in _INTERNAL_MODEL_PARAMS[
+                swarm_type
+            ].items()
+        }
+        return {p: m for p, m in models.items() if m is not None}
 
     def _compute_swarm_cache_key(
         self, swarm_type: Optional[str] = None
@@ -925,6 +976,7 @@ class SwarmRouter(SerializableMixin):
             self.output_type,
             self.rearrange_flow,
             self.verbose,
+            self.model_name,
             self.chairman_model,
             self.heavy_swarm_question_agent_model_name,
             self.heavy_swarm_worker_model_name,
@@ -957,7 +1009,7 @@ class SwarmRouter(SerializableMixin):
 
         The task is accepted for call-site compatibility but is not part of the
         cache key and is not passed to the factory. Runtime inputs such as
-        ``task``, ``tasks``, and ``img`` are forwarded later by :meth:`_run`.
+        ``task`` and ``img`` are forwarded later by :meth:`_run`.
 
         Args:
             task (str, optional): Runtime task associated with the creation
@@ -1029,18 +1081,14 @@ class SwarmRouter(SerializableMixin):
     def _run(
         self,
         task: Optional[str] = None,
-        tasks: Optional[List[str]] = None,
         img: Optional[str] = None,
         *args,
         **kwargs,
     ) -> Any:
-        """Run the selected swarm with a single task, task list, or image.
+        """Run the selected swarm with a single task and optional image.
 
         Args:
-            task (str, optional): Single task passed to ``swarm.run`` as
-                ``task`` when ``tasks`` is not provided.
-            tasks (List[str], optional): Batch-style task list passed to
-                ``swarm.run`` as ``tasks``.
+            task (str, optional): Single task passed to swarm.run.
             img (str, optional): Image path, URL, or encoded image data passed
                 to ``swarm.run`` as ``img``.
             *args: Positional arguments forwarded while creating the swarm.
@@ -1054,12 +1102,7 @@ class SwarmRouter(SerializableMixin):
                 type, primary and fallbacks alike, fails.
             Exception: Without fallbacks, whatever the swarm raised.
         """
-        run_kwargs = {}
-
-        if tasks is not None:
-            run_kwargs["tasks"] = tasks
-        else:
-            run_kwargs["task"] = task
+        run_kwargs = {"task": task}
 
         if img is not None:
             run_kwargs["img"] = img
@@ -1101,7 +1144,6 @@ class SwarmRouter(SerializableMixin):
             execution_result=result,
             execution_metadata={
                 "task": task if task else None,
-                "tasks": tasks if tasks else None,
                 "status": "completed",
                 "swarm_type": self.active_swarm_type,
                 "fallback_attempts": [
@@ -1118,14 +1160,13 @@ class SwarmRouter(SerializableMixin):
 
     @trace_run(
         "SwarmRouter.run",
-        input_params=("task", "tasks", "img"),
+        input_params=("task", "img"),
         usage=lambda router: router.usage,
     )
     def run(
         self,
         task: Optional[str] = None,
         img: Optional[str] = None,
-        tasks: Optional[List[str]] = None,
         *args,
         **kwargs,
     ) -> Any:
@@ -1139,8 +1180,6 @@ class SwarmRouter(SerializableMixin):
             task (str, optional): Single task to execute.
             img (str, optional): Image path, URL, or encoded image data to pass
                 to the underlying swarm.
-            tasks (List[str], optional): Task list to pass to swarm types that
-                accept ``tasks``.
             *args: Positional arguments forwarded while creating the swarm.
             **kwargs: Keyword arguments forwarded to the underlying
                 ``swarm.run`` call.
@@ -1160,7 +1199,6 @@ class SwarmRouter(SerializableMixin):
             return self._run(
                 task=task,
                 img=img,
-                tasks=tasks,
                 *args,
                 **kwargs,
             )

@@ -377,6 +377,31 @@ def test_second_run_does_not_resend_the_first(monkeypatch):
     assert requests[-1].count("SECONDTASK") == 1
 
 
+def test_members_rank_without_their_own_answer(monkeypatch):
+    from swarms.utils.litellm_wrapper import LiteLLM
+
+    ranking_histories = []
+
+    def fake_run(self, task=None, *args, messages=None, **kwargs):
+        request = str(messages) + str(task)
+        if "You are evaluating responses" in request:
+            ranking_histories.append(messages or [])
+        return "Use Postgres."
+
+    monkeypatch.setattr(LiteLLM, "run", fake_run)
+    members = [
+        Agent(agent_name=name, model_name="gpt-5.4", print_on=False)
+        for name in ("Member-A", "Member-B")
+    ]
+    council = LLMCouncil(council_members=members, verbose=False)
+
+    council.run("Pick a database.")
+
+    assert len(ranking_histories) == 2
+    for history in ranking_histories:
+        assert [m for m in history if m["role"] == "assistant"] == []
+
+
 def test_default_members_reach_their_own_providers_api():
     import litellm
 

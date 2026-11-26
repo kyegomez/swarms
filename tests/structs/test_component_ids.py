@@ -29,7 +29,7 @@ def _agent(name: str = "IdTest") -> Agent:
     """An offline agent — constructed only, never run."""
     return Agent(
         agent_name=name,
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         max_loops=1,
         persistent_memory=False,
         print_on=False,
@@ -144,7 +144,7 @@ def test_agent_explicit_id():
         Agent(
             id="fixed-agent-id",
             agent_name="Explicit",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             persistent_memory=False,
             print_on=False,
         ).id

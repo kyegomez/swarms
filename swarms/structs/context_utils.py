@@ -23,6 +23,8 @@ a structure can reset it per task without this module tracking anything.
 
 from typing import Any, Dict, List, Optional
 
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY
+
 NO_NEW_MESSAGES = (
     "No new messages since your last turn. Continue from your own "
     "previous response."
@@ -59,13 +61,14 @@ def messages_for(
         conversation: A :class:`~swarms.structs.conversation.Conversation`.
 
     Returns:
-        Chat-completions messages, oldest first. Structure bookkeeping
-        (``system`` rows such as team rosters) is omitted - it belongs in a
-        system prompt, not in the conversation body.
+        Chat-completions messages, oldest first. The first user turn is
+        marked as the task turn, where an agent puts images. Structure
+        bookkeeping (system rows such as team rosters) is omitted - it
+        belongs in a system prompt, not in the conversation body.
 
     Example:
         >>> messages_for("Writer", conversation)
-        [{'role': 'user', 'content': 'draft it'},
+        [{'role': 'user', 'content': 'draft it', 'swarms_task_turn': True},
          {'role': 'assistant', 'content': 'here is a draft'},
          {'role': 'user', 'content': 'Editor: needs a stronger opening'}]
     """
@@ -73,7 +76,8 @@ def messages_for(
         getattr(conversation, "conversation_history", None) or []
     )
 
-    messages: List[Dict[str, str]] = []
+    messages: List[Dict[str, Any]] = []
+    task_marked = False
     for message in history:
         if not isinstance(message, dict):
             continue
@@ -93,7 +97,13 @@ def messages_for(
             continue
 
         if role_key in _USER_ROLES:
-            messages.append({"role": "user", "content": content})
+            turn: Dict[str, Any] = {
+                "role": "user",
+                "content": content,
+            }
+            if not task_marked:
+                turn[TASK_TURN_KEY] = task_marked = True
+            messages.append(turn)
         else:
             messages.append(
                 {"role": "user", "content": f"{role}: {content}"}

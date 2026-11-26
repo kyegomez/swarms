@@ -8,6 +8,7 @@ from swarms.structs.context_utils import (
     messages_for,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.usage_utils import total_usage
 from swarms.utils.generate_id import generate_id
 
 # Prompt functions.
@@ -218,6 +219,11 @@ class AgentJudge:
         )
 
         self.reliability_check()
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the judge's calls."""
+        return total_usage(self)
 
     def reliability_check(self):
         if self.max_loops == 0 or self.max_loops is None:

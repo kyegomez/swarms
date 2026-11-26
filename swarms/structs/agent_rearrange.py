@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import copy
 from concurrent.futures import as_completed
 from typing import Any, Dict, List, Optional, get_args
@@ -216,10 +217,9 @@ class AgentRearrange(SerializableMixin):
         self.channel = channel
         # Seeds team awareness itself, seeding here too doubled the system message
 
+        self.reliability_check()
         claim_agents(self.agents, channel, self.name)
         self._reset_conversation()
-
-        self.reliability_check()
 
         self.workspace = WorkspaceManager(
             self,
@@ -241,11 +241,16 @@ class AgentRearrange(SerializableMixin):
         if self.agents is None or len(self.agents) == 0:
             raise ValueError("Agents list cannot be None or empty")
 
+        self._require_unique_agent_names()
+
         if self.max_loops == 0:
             raise ValueError("max_loops cannot be 0")
 
         if self.flow is None or self.flow == "":
             raise ValueError("flow cannot be None or empty")
+
+        if not all(self.steps):
+            raise ValueError(f"flow {self.flow!r} has an empty step")
 
         if self.output_type is None or self.output_type == "":
             raise ValueError("output_type cannot be None or empty")
@@ -255,6 +260,36 @@ class AgentRearrange(SerializableMixin):
                 f"output_type must be one of "
                 f"{sorted(_VALID_OUTPUT_TYPES)}; got {self.output_type!r}"
             )
+
+    def _require_unique_agent_names(self) -> None:
+        """Reject two different members that share a name.
+
+        Steps run by name, so a repeated name would run only the first
+        member for every step that names it. The same member listed
+        twice is allowed.
+
+        Raises:
+            ValueError: Two different members have the same name.
+        """
+        owners: Dict[str, Any] = {}
+
+        for member in self.agents:
+            # Each nested swarm gets a new wrapper, so compare what was passed
+            source = (
+                member.swarm
+                if isinstance(member, _SwarmMember)
+                else member
+            )
+
+            if (
+                owners.setdefault(member.agent_name, source)
+                is not source
+            ):
+                raise ValueError(
+                    f"Two different agents are named '{member.agent_name}'. "
+                    "AgentRearrange runs each step by name, so only the "
+                    "first of them would run. Give each one its own name."
+                )
 
     def set_custom_flow(self, flow: str):
         """
@@ -832,7 +867,7 @@ class AgentRearrange(SerializableMixin):
 
     @trace_run(
         "AgentRearrange.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task", "img"),
     )
     def run(
         self,
@@ -1278,9 +1313,11 @@ class AgentRearrange(SerializableMixin):
         q: _queue.Queue = _queue.Queue()
         DONE = object()
         exc_holder: List[Optional[Exception]] = [None]
+        consumer: List[asyncio.Task] = []
 
         def runner():
             async def consume():
+                consumer.append(asyncio.current_task())
                 async for evt in self.arun_stream(
                     task=task,
                     img=img,
@@ -1291,6 +1328,8 @@ class AgentRearrange(SerializableMixin):
 
             try:
                 asyncio.run(consume())
+            except asyncio.CancelledError:
+                pass
             except Exception as e:  # noqa: BLE001
                 exc_holder[0] = e
             finally:
@@ -1298,11 +1337,19 @@ class AgentRearrange(SerializableMixin):
 
         t = threading.Thread(target=runner, daemon=True)
         t.start()
-        while True:
-            item = q.get()
-            if item is DONE:
-                break
-            yield item
+        finished = False
+        try:
+            while True:
+                item = q.get()
+                if item is DONE:
+                    finished = True
+                    break
+                yield item
+        finally:
+            if not finished:
+                run = consumer[0]
+                with contextlib.suppress(RuntimeError):
+                    run.get_loop().call_soon_threadsafe(run.cancel)
         t.join()
         if exc_holder[0] is not None:
             raise exc_holder[0]

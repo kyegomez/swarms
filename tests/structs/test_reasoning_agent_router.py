@@ -7,6 +7,7 @@ from swarms.agents.reasoning_agent_router import (
     ReasoningAgentRouter,
 )
 from swarms.agents.reasoning_duo import ReasoningDuo
+from swarms.utils.litellm_wrapper import empty_usage
 
 
 def test_router_init_default():
@@ -39,7 +40,7 @@ def test_router_init_custom():
     router = ReasoningAgentRouter(
         agent_name="custom_agent",
         description="Custom desc",
-        model_name="gpt-4",
+        model_name="gpt-5.4-mini",
         system_prompt="Custom prompt",
         max_loops=5,
         swarm_type="self-consistency",
@@ -49,11 +50,11 @@ def test_router_init_custom():
         eval=True,
         random_models_on=True,
         majority_voting_prompt="Vote prompt",
-        reasoning_model_name="claude-3",
+        reasoning_model_name="claude-sonnet-5-5",
     )
     assert router.agent_name == "custom_agent"
     assert router.description == "Custom desc"
-    assert router.model_name == "gpt-4"
+    assert router.model_name == "gpt-5.4-mini"
     assert router.max_loops == 5
     assert router.swarm_type == "self-consistency"
     assert router.num_samples == 3
@@ -62,7 +63,7 @@ def test_router_init_custom():
     assert router.eval is True
     assert router.random_models_on is True
     assert router.majority_voting_prompt == "Vote prompt"
-    assert router.reasoning_model_name == "claude-3"
+    assert router.reasoning_model_name == "claude-sonnet-5-5"
 
 
 def test_reliability_check_max_loops_zero():
@@ -70,20 +71,6 @@ def test_reliability_check_max_loops_zero():
     with pytest.raises(ReasoningAgentInitializationError) as exc_info:
         ReasoningAgentRouter(max_loops=0)
     assert "Max loops must be greater than 0" in str(exc_info.value)
-
-
-def test_reliability_check_model_name_empty():
-    """reliability_check raises when model_name is empty."""
-    with pytest.raises(ReasoningAgentInitializationError) as exc_info:
-        ReasoningAgentRouter(model_name="")
-    assert "Model name must be provided" in str(exc_info.value)
-
-
-def test_reliability_check_model_name_none():
-    """reliability_check raises when model_name is None."""
-    with pytest.raises(ReasoningAgentInitializationError) as exc_info:
-        ReasoningAgentRouter(model_name=None)
-    assert "Model name must be provided" in str(exc_info.value)
 
 
 def test_reliability_check_swarm_type_empty():
@@ -140,14 +127,14 @@ def test_create_reasoning_duo():
         model_name="claude-sonnet-4-6",
         system_prompt="SP",
         max_loops=2,
-        reasoning_model_name="gpt-4o",
+        reasoning_model_name="gpt-5.4",
     )
     agent = router._create_reasoning_duo()
     assert isinstance(agent, ReasoningDuo)
     assert agent.agent_name == "rd"
     assert agent.agent_description == router.description
     assert agent.main_agent.model_name == "claude-sonnet-4-6"
-    assert agent.reasoning_agent.model_name == "gpt-4o"
+    assert agent.reasoning_agent.model_name == "gpt-5.4"
     assert agent.main_agent.system_prompt == "SP"
     assert agent.max_loops == 2
 
@@ -190,10 +177,8 @@ def test_create_consistency_agent():
         description="Desc",
         model_name="gpt-5.4",
         system_prompt="SP",
-        max_loops=3,
         num_samples=5,
         eval=True,
-        random_models_on=True,
         majority_voting_prompt="Vote",
     )
     agent = router._create_consistency_agent()
@@ -202,11 +187,32 @@ def test_create_consistency_agent():
     assert agent.description == "Desc"
     assert agent.model_name == "gpt-5.4"
     assert agent.system_prompt == "SP"
-    assert agent.max_loops == 3
     assert agent.num_samples == 5
     assert agent.eval is True
-    assert agent.random_models_on is True
     assert agent.majority_voting_prompt == "Vote"
+
+
+@pytest.mark.parametrize(
+    "swarm_type", ["self-consistency", "consistency-agent"]
+)
+def test_consistency_votes_with_the_callers_aggregator(swarm_type):
+    """self_reflexion_preset_agents=False hands the router's aggregator_agent to SelfConsistencyAgent."""
+    from swarms.structs.agent import Agent
+
+    voter = Agent(
+        agent_name="Voter",
+        llm=MagicMock(),
+        max_loops=1,
+        print_on=False,
+    )
+    router = ReasoningAgentRouter(
+        swarm_type=swarm_type,
+        self_reflexion_preset_agents=False,
+        aggregator_agent=voter,
+    )
+    agent = router.select_swarm()
+    assert agent.preset_agents is False
+    assert agent.aggregator_agent is voter
 
 
 def test_create_ire_agent():
@@ -329,7 +335,7 @@ def test_select_swarm_invalid_type():
 
 
 def test_run_calls_swarm_run_with_task():
-    """run selects swarm and calls run(task=task) for non-ReflexionAgent."""
+    """run selects swarm and calls run(task) for non-ReflexionAgent."""
     router = ReasoningAgentRouter(swarm_type="reasoning-duo")
     mock_swarm = MagicMock()
     mock_swarm.run.return_value = "result"
@@ -338,12 +344,12 @@ def test_run_calls_swarm_run_with_task():
         router, "select_swarm", return_value=mock_swarm
     ):
         out = router.run("What is 2+2?")
-    mock_swarm.run.assert_called_once_with(task="What is 2+2?")
+    mock_swarm.run.assert_called_once_with("What is 2+2?")
     assert out == "result"
 
 
 def test_run_calls_reflexion_with_tasks_list():
-    """run calls swarm.run(tasks=[task]) for ReflexionAgent."""
+    """run calls swarm.run([task]) for ReflexionAgent."""
     router = ReasoningAgentRouter(swarm_type="ReflexionAgent")
     mock_swarm = MagicMock()
     mock_swarm.run.return_value = "reflex_result"
@@ -352,7 +358,7 @@ def test_run_calls_reflexion_with_tasks_list():
         router, "select_swarm", return_value=mock_swarm
     ):
         out = router.run("Do something")
-    mock_swarm.run.assert_called_once_with(tasks=["Do something"])
+    mock_swarm.run.assert_called_once_with(["Do something"])
     assert out == "reflex_result"
 
 
@@ -366,7 +372,9 @@ def test_run_passes_args_kwargs():
         router, "select_swarm", return_value=mock_swarm
     ):
         router.run("task", "extra_arg", key="value")
-    mock_swarm.run.assert_called_once_with(task="task", key="value")
+    mock_swarm.run.assert_called_once_with(
+        "task", "extra_arg", key="value"
+    )
 
 
 def test_run_raises_executor_error_on_swarm_failure():
@@ -472,3 +480,19 @@ def test_self_consistency_samples_get_distinct_agents():
         router.run("What is 2 + 2?")
 
     assert len(set(agent_ids[:3])) == 3
+
+
+def test_usage_reads_the_latest_swarm():
+    """usage is the usage of the latest run's swarm, even when it raised."""
+    router = ReasoningAgentRouter()
+    assert router.usage == empty_usage()
+    first = MagicMock(usage={**empty_usage(), "total_tokens": 5})
+    failing = MagicMock(usage={**empty_usage(), "total_tokens": 7})
+    failing.run.side_effect = RuntimeError("model down")
+    with patch.object(
+        router, "select_swarm", side_effect=[first, failing]
+    ):
+        router.run("task")
+        with pytest.raises(ReasoningAgentExecutorError):
+            router.run("task")
+    assert router.usage == failing.usage

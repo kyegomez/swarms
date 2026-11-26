@@ -18,6 +18,7 @@ from typing import (
 
 from swarms.structs.comms_channel import CommsChannel
 from swarms.utils.litellm_tokenizer import count_tokens
+from swarms.utils.litellm_wrapper import TASK_TURN_KEY
 
 if TYPE_CHECKING:
     from swarms.structs.agent import Agent
@@ -662,6 +663,7 @@ class Conversation:
         agent_name: Optional[str] = None,
         start: int = 0,
         prefix: Sequence[Dict[str, Any]] = (),
+        task_turn: bool = False,
     ) -> List[Dict[str, Any]]:
         """Build a chat request body from the history.
 
@@ -669,6 +671,7 @@ class Conversation:
             agent_name (Optional[str]): The role whose rows become assistant turns.
             start (int): Index of the first row to include.
             prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
+            task_turn (bool): Keep the mark on the user's task turn, so the model wrapper puts images there. Defaults to False.
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
@@ -707,6 +710,7 @@ class Conversation:
                             "name",
                             "tool_calls",
                             "tool_call_id",
+                            *((TASK_TURN_KEY,) if task_turn else ()),
                         )
                         if key in fields
                     }
@@ -896,11 +900,20 @@ class Conversation:
                     )
 
     def import_conversation(self, filename: str):
-        """Import a conversation history from a file.
+        """Import a conversation history from a JSON export.
 
         Args:
             filename (str): Filename to import from.
+
+        Raises:
+            ValueError: If filename does not end in .json, since
+                export_conversation writes any other name as text.
         """
+        if not str(filename).endswith(".json"):
+            raise ValueError(
+                f"Cannot import {filename}: a text export can't be "
+                "read back. Export to a .json filename instead."
+            )
         self.load_from_json(filename)
 
     def count_messages_by_role(self):
@@ -1322,125 +1335,30 @@ class Conversation:
 
     def truncate_memory_with_tokenizer(self):
         """
-        Truncate conversation history based on the total token count using tokenizer.
+        Truncate conversation history to fit context_length tokens.
 
-        This version is more generic, not dependent on a specific LLM model, and can work with any model that provides a counter.
-        Uses count_tokens function to calculate and truncate by message, ensuring the result is still valid content.
+        Keeps the newest messages that fit, plus the tail of the first
+        older message that does not, and drops everything before it.
 
         Returns:
             None
         """
 
-        total_tokens = 0
-        truncated_history = []
-
-        for message in self.conversation_history:
-            role = message.get("role")
-            content = message.get("content")
-
-            # Convert content to string if it's not already a string
-            if not isinstance(content, str):
-                content = str(content)
-
-            # Calculate token count for this message
-            token_count = count_tokens(
-                content, self.tokenizer_model_name
-            )
-
-            # Check if adding this message would exceed the limit
-            if total_tokens + token_count <= self.context_length:
-                # If not exceeding limit, add the full message
-                truncated_history.append(message)
-                total_tokens += token_count
-            else:
-                # Calculate remaining tokens we can include
-                remaining_tokens = self.context_length - total_tokens
-
-                # If no token space left, break the loop
-                if remaining_tokens <= 0:
-                    break
-
-                # Binary-search a prefix of this message that fits the remaining budget
-                truncated_content = self._binary_search_truncate(
-                    content,
-                    remaining_tokens,
-                    self.tokenizer_model_name,
-                )
-
-                # Create the truncated message
-                truncated_message = {
-                    "role": role,
-                    "content": truncated_content,
-                }
-
-                # Add any other fields from the original message
-                for key, value in message.items():
-                    if key not in ["role", "content"]:
-                        truncated_message[key] = value
-
-                truncated_history.append(truncated_message)
+        budget = self.context_length
+        kept = []
+        for message in reversed(self.conversation_history):
+            content = str(message.get("content"))
+            tokens = count_tokens(content, self.tokenizer_model_name)
+            if tokens > budget:
+                tail = self._binary_search_tail(content, budget)
+                if tail:
+                    kept.append({**message, "content": tail})
                 break
+            kept.append(message)
+            budget -= tokens
 
-        # Update conversation history
-        self.conversation_history = truncated_history
+        self.conversation_history = kept[::-1]
         self._str_cache = None
-
-    def _binary_search_truncate(
-        self, text, target_tokens, model_name
-    ):
-        """
-        Use binary search to find the maximum text substring that fits the target token count.
-
-        Parameters:
-            text (str): Original text to truncate
-            target_tokens (int): Target token count
-            model_name (str): Model name for token counting
-
-        Returns:
-            str: Truncated text with token count not exceeding target_tokens
-        """
-
-        # If text is empty or target tokens is 0, return empty string
-        if not text or target_tokens <= 0:
-            return ""
-
-        # If original text token count is already less than or equal to target, return as is
-        original_tokens = count_tokens(text, model_name)
-        if original_tokens <= target_tokens:
-            return text
-
-        # Binary search
-        left, right = 0, len(text)
-        best_text = ""
-
-        while left <= right:
-            mid = (left + right) // 2
-            truncated = text[:mid]
-            tokens = count_tokens(truncated, model_name)
-
-            if tokens <= target_tokens:
-                # If current truncated text token count is less than or equal to target, try longer text
-                best_text = truncated
-                left = mid + 1
-            else:
-                # Otherwise try shorter text
-                right = mid - 1
-
-        # Try to truncate at sentence boundaries if possible
-        sentence_delimiters = [".", "!", "?", "\n"]
-        for delimiter in sentence_delimiters:
-            last_pos = best_text.rfind(delimiter)
-            if (
-                last_pos > len(best_text) * 0.75
-            ):  # Only truncate at sentence boundary if we don't lose too much content
-                truncated_at_sentence = best_text[: last_pos + 1]
-                if (
-                    count_tokens(truncated_at_sentence, model_name)
-                    <= target_tokens
-                ):
-                    return truncated_at_sentence
-
-        return best_text
 
     def clear(self):
         """Clear the conversation history."""

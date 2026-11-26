@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from loguru import logger
 
@@ -12,6 +12,7 @@ from swarms.structs.context_utils import (
     split_last_turn,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.usage_utils import total_usage
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
@@ -44,8 +45,8 @@ class ReasoningDuo:
         output_type: OutputType = "dict-all-except-first",
         reasoning_model_name: Optional[str] = None,
         max_loops: int = 1,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ):
         self.id = id or generate_id("reasoning-duo")
         self.agent_name = agent_name
@@ -85,15 +86,15 @@ class ReasoningDuo:
 
     def _run_agent(
         self,
-        agent,
+        agent: Agent,
         task: Optional[str] = None,
         img: Optional[str] = None,
     ) -> str:
         """Run one agent on the shared conversation and record its answer.
 
         The conversation is delivered as typed chat turns, so each agent reads
-        its own prior output as ``assistant`` and its partner's as a labelled
-        ``user`` turn instead of one flattened block.
+        its own prior output as assistant and its partner's as a labelled
+        user turn instead of one flattened block.
 
         Args:
             agent: The agent to run.
@@ -116,7 +117,7 @@ class ReasoningDuo:
         self.conversation.add(role=agent.agent_name, content=answer)
         return answer
 
-    def step(self, task: str, img: Optional[str] = None):
+    def step(self, task: str, img: Optional[str] = None) -> None:
         """
         Executes one step of reasoning and main agent processing.
 
@@ -127,7 +128,7 @@ class ReasoningDuo:
         self._run_agent(self.reasoning_agent, task, img=img)
         self._run_agent(self.main_agent, img=img)
 
-    def run(self, task: str, img: Optional[str] = None):
+    def run(self, task: str, img: Optional[str] = None) -> Any:
         """
         Executes the reasoning and main agents on the provided task.
 
@@ -164,19 +165,24 @@ class ReasoningDuo:
 
     def batched_run(
         self, tasks: List[str], imgs: Optional[List[str]] = None
-    ):
+    ) -> List[Any]:
         """
         Executes the run method for a list of tasks.
 
         Args:
             tasks (list[str]): A list of tasks to be processed.
             imgs (Optional[List[str]]): One image per task, paired by
-                position. Must be the same length as ``tasks``.
+                position. Must be the same length as tasks.
 
         Returns:
             list: A list of outputs from the main agent for each task.
 
         Raises:
-            ValueError: If ``imgs`` is given and is not one per task.
+            ValueError: If imgs is given and is not one per task.
         """
         return batched_run(self.run, tasks, imgs=imgs)
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over the reasoning and main agents."""
+        return total_usage(self.reasoning_agent, self.main_agent)

@@ -102,7 +102,6 @@ class RoundRobinSwarm(SerializableMixin):
         agents (List[Agent]): List of agents in the swarm.
         verbose (bool): Flag to enable verbose mode.
         max_loops (int): Maximum number of loops to run.
-        index (int): Current index of the agent being executed.
         output_type (OutputType): Type of output format.
         conversation (Conversation): Conversation history for the swarm.
 
@@ -132,7 +131,6 @@ class RoundRobinSwarm(SerializableMixin):
         self.agents = agents
         self.verbose = verbose
         self.max_loops = max_loops
-        self.index = 0
         self.output_type = output_type
 
         # Initialize conversation for tracking agent interactions
@@ -192,7 +190,7 @@ class RoundRobinSwarm(SerializableMixin):
 
     @trace_run(
         "RoundRobinSwarm.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task",),
     )
     def run(
         self, task: str, *args, **kwargs
@@ -236,8 +234,6 @@ class RoundRobinSwarm(SerializableMixin):
                 )
 
                 for i, current_agent in enumerate(self.agents):
-                    self.index = (loop * n) + i
-
                     prev_name = (
                         self.agents[i - 1].agent_name
                         if i > 0

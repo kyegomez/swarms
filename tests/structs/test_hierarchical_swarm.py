@@ -584,6 +584,40 @@ def test_step_skips_feedback_on_final_loop(monkeypatch):
     assert feedback_calls == [["done"]]
 
 
+def test_feedback_skips_a_failed_workers_earlier_output():
+    orders = {
+        "orders": [
+            {"agent_name": "A", "task": "t"},
+            {"agent_name": "B", "task": "t"},
+        ],
+    }
+    swarm = make_recovery_swarm(
+        StubAgent("Director", [orders, orders, {"orders": []}]),
+        [
+            StubAgent("A", ["a-loop1", "a-loop2"]),
+            StubAgent(
+                "B",
+                [
+                    "b-loop1",
+                    RuntimeError("down"),
+                    RuntimeError("down"),
+                ],
+            ),
+        ],
+        max_loops=3,
+        max_reassignment_attempts=0,
+    )
+    swarm.director_feedback_on = True
+    seen = []
+    swarm.feedback_director = lambda outputs: seen.append(
+        swarm._format_worker_responses(outputs)
+    )
+
+    swarm.run("task")
+
+    assert seen == ["A: a-loop1\n\nB: b-loop1", "A: a-loop2"]
+
+
 def test_step_returns_immediately_when_director_has_no_orders(
     monkeypatch,
 ):
@@ -917,7 +951,7 @@ def _scripted_hs_agent(name, seen, director=False):
 
     agent = Agent(
         agent_name=name,
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         max_loops=1,
         persistent_memory=False,
         print_on=False,
@@ -1021,6 +1055,34 @@ class TestHierarchicalContextManagement:
         assert (
             own[0]["role"] == "assistant"
         ), f"own output arrived as {own[0]['role']!r}, not 'assistant'"
+
+    def test_a_worker_is_not_sent_the_directors_orders(self):
+        _, seen = self._run_two_loops()
+        worker_calls = [m for name, m in seen if name == "W1"]
+
+        assert worker_calls, "the worker never ran"
+        for messages in worker_calls:
+            assert not any(
+                str(m["content"]).startswith("Director: ")
+                for m in messages
+            ), messages
+
+    def test_the_director_gets_the_task_and_each_output_once(self):
+        _, seen = self._run_two_loops()
+        director_calls = [
+            " ".join(str(m.get("content")) for m in messages)
+            for name, messages in seen
+            if name == "Director"
+        ]
+
+        assert len(director_calls) == 2
+        assert [
+            c.count("Build something.") for c in director_calls
+        ] == [
+            1,
+            1,
+        ]
+        assert director_calls[1].count("[W1-out]") == 1
 
     def test_the_director_tool_call_is_stored_readably(self):
         """

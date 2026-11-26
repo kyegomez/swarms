@@ -106,49 +106,4 @@ def grid_swarm(
     return history_output_formatter(conversation, output_type)
 
 
-# Pyramid Swarm: Agents are arranged in a pyramid structure
-def pyramid_swarm(
-    agents: AgentListType,
-    tasks: List[str],
-    output_type: OutputType = "dict",
-) -> Union[Dict[str, Any], List[str]]:
-    """
-    Implements a pyramid swarm where agents are arranged in a pyramid structure.
-
-    Args:
-        agents (AgentListType): A list of Agent objects to participate in the swarm.
-        tasks (List[str]): A list of tasks to be processed by the agents.
-        output_type (OutputType, optional): The format of the output. Defaults to "dict".
-
-    Returns:
-        Union[Dict[str, Any], List[str]]: The formatted output of the swarm's processing.
-            If output_type is "dict", returns a dictionary containing the conversation history.
-            If output_type is "list", returns a list of responses.
-
-    Raises:
-        ValueError: If agents or tasks lists are empty.
-    """
-    if not agents or not tasks:
-        raise ValueError("Agents and tasks lists cannot be empty.")
-
-    conversation = Conversation()
-
-    levels = int(
-        (-1 + (1 + 8 * len(agents)) ** 0.5) / 2
-    )  # Number of levels in the pyramid
-
-    for i in range(levels):
-        for j in range(i + 1):
-            if tasks:
-                task = tasks.pop(0)
-                agent_index = int(i * (i + 1) / 2 + j)
-                response = agents[agent_index].run(task)
-                conversation.add(
-                    role=agents[agent_index].agent_name,
-                    content=response,
-                )
-
-    return history_output_formatter(conversation, output_type)
-
-
 # One-to-One Communication between two agents

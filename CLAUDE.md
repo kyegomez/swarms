@@ -144,7 +144,7 @@ print(result)
 | `streaming_on` | bool | `False` | Stream tokens to stdout |
 | `interactive` | bool | `False` | REPL mode — prompt user for input each loop |
 | `context_length` | int | `128000` | Token budget; triggers compression at 90 %. `None` looks up the model's input window |
-| `context_compression` | bool | `True` | Auto-summarise when near context limit (v12) |
+| `context_compression` | bool \| None | `None` | Auto-summarise when near context limit (v12). `None` turns it on only for `max_loops="auto"` |
 | `persistent_memory` | bool | `False` | Read/write MEMORY.md across restarts (v12); opt in explicitly |
 | `temperature` | float or None | `None` | Sampling temperature; omitted from requests when unset |
 | `max_tokens` | int | `16384` | Max tokens per LLM call. `None` looks up the model's own output limit |
@@ -243,16 +243,17 @@ agent = Agent(
 )
 ```
 
-### `context_compression=True` (default)
+### `context_compression` (on by default only for `max_loops="auto"`)
 
-`ContextCompressor` fires automatically when token usage crosses 90 % of `context_length`. It summarises and rewrites `MEMORY.md` in place so long sessions never hit the context wall.
+`ContextCompressor` fires automatically when token usage crosses 90 % of `context_length`. It summarises and rewrites `MEMORY.md` in place so long sessions never hit the context wall. The default, `None`, turns it on when `max_loops="auto"` and leaves it off for integer `max_loops`. Pass `True` or `False` to choose either way.
 
 ```python
 agent = Agent(
     agent_name="LongSession",
     model_name="gpt-5.4",
+    max_loops=10,
     context_length=32000,
-    context_compression=True,   # default
+    context_compression=True,   # integer max_loops needs it turned on
 )
 ```
 
@@ -768,7 +769,7 @@ result = router.run("Deep analysis: implications of AGI on global labour markets
 
 ### RoundRobinSwarm
 
-Distributes tasks to agents in a fixed rotation. Each agent handles every Nth task.
+Every agent takes a turn on the task, in a fixed order, and each agent sees the turns before it. `max_loops` sets how many times the whole roster goes around, so one `run` makes `len(agents) * max_loops` agent calls.
 
 ```python
 from swarms import Agent, RoundRobinSwarm
@@ -780,9 +781,7 @@ agents = [
 
 rr = RoundRobinSwarm(agents=agents, max_loops=1)
 
-tasks = ["Task A", "Task B", "Task C", "Task D", "Task E", "Task F"]
-for task in tasks:
-    result = rr.run(task)
+result = rr.run("Draft, critique and refine a launch announcement.")
 ```
 
 ---
@@ -814,7 +813,7 @@ result = swarm.run("Build a complete go-to-market strategy for a B2B SaaS produc
 
 ### AutoSwarmBuilder
 
-Pass a high-level description of the task — the framework automatically creates the agents, assigns roles, and runs the appropriate swarm architecture.
+Pass a high-level description of the task. With `auto_execute=True` (or `run(task, execute=True)`), the builder creates the agents, assigns roles, picks a swarm architecture and runs it.
 
 ```python
 from swarms import AutoSwarmBuilder
@@ -823,9 +822,12 @@ builder = AutoSwarmBuilder(
     name="MarketResearchSwarm",
     description="A swarm that produces comprehensive market research reports",
     max_loops=2,
+    auto_execute=True,
 )
 result = builder.run("Research the electric vehicle market and identify growth opportunities.")
 ```
+
+Without either flag, `run` only designs the swarm and returns a spec, chosen by `swarm_type`: `"return-agents"` (the default, agent specifications), `"return-swarm-router-config"` (the full router config) or `"return-agents-objects"` (built `Agent` objects that have not run).
 
 **When to use:** Rapid prototyping, when you don't know yet which structure fits, or when you want the LLM to decide.
 
@@ -1140,16 +1142,20 @@ These markers are also what labels a PR or issue `ai-generated`, so never strip 
 
 ---
 
-## Contributing: Update the framework docs (required)
+## Contributing: Update the framework docs (required, non-negotiable)
 
-The docs site lives in a separate repo, [The-Swarm-Corporation/swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs). Every change to the framework that users can see must come with a matching docs update there:
+The docs site lives in a separate repo, [The-Swarm-Corporation/swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs). **Every PR that affects a public-facing parameter or method, or that could make any page of the docs wrong or incomplete, must come with its own PR to swarms-framework-docs.** This is non-negotiable: a framework PR without its docs PR will not be merged.
 
+It applies to every one of these:
+
+- **New methods and parameters:** every new public method, function or parameter, however small.
 - **New features:** a new class, structure, function or module gets its own page, or a section on the page it belongs to.
 - **Input parameters:** an added, removed or renamed parameter, or a changed default.
 - **Output:** a changed return value, return type or output format.
+- **Behaviour:** a change in what a documented method does, raises or sends to the model.
 - **Removals and renames:** delete or rename the page, and add a redirect in `docs.json` so old links still work.
 
-Open the docs PR alongside the framework PR and link each from the other. If the docs can't change until the framework PR merges, open a docs issue that links the framework PR instead, and link that issue from the framework PR. Changes users can't see, such as tests or a refactor that keeps the same API, need no docs update.
+Open the docs PR at the same time as the framework PR and link each from the other. If the docs must wait for the framework PR to merge, still open the docs PR now; it is held until the framework PR merges. A docs issue in place of a PR does not count. Only changes users cannot see, such as tests, comments, or a refactor that keeps the same API and behaviour, need no docs PR, and the framework PR should say so.
 
 The docs are a Mintlify site: pages are `.mdx` files and the navigation is in `docs.json`. Run `mint broken-links` and `mint validate` in the docs repo before opening the PR.
 
@@ -1280,7 +1286,7 @@ from swarms import Agent
 
 **Don't use `streaming_on=True` and `streaming_callback` together on the same agent** — `streaming_on` streams to stdout; `streaming_callback` streams to your function. Pick one.
 
-**Don't set `context_compression=False` on very long autonomous sessions** — without compression the agent will eventually hit the context limit and raise an error.
+**Don't set `context_compression=False` on very long autonomous sessions** — without compression the agent will eventually hit the context limit and raise an error. It is on by default for `max_loops="auto"`; a long integer-loop run needs `context_compression=True`.
 
 **For long-running autonomous agents in production**, always set:
 ```python

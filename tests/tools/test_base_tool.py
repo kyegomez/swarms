@@ -117,6 +117,16 @@ def test_func_to_dict_resolves_nested_model_refs():
     assert params["$defs"]["LineItem"]["required"] == ["sku", "qty"]
 
 
+def test_convert_tool_into_openai_schema_uses_docstring_sections():
+    tool = BaseTool(tools=[add_numbers])
+    function = tool.convert_tool_into_openai_schema()["functions"][0]
+    properties = function["parameters"]["properties"]
+
+    assert function["description"] == "Add two numbers."
+    assert properties["a"]["description"] == "First number."
+    assert properties["b"]["description"] == "Second number."
+
+
 def add_numbers(a: int, b: int) -> int:
     """Add two numbers.
 

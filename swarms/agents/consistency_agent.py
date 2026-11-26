@@ -16,62 +16,34 @@ Key Features:
 - Evaluation mode for answer validation
 - Configurable output formats
 - Thread-safe execution
-
-Author: Swarms Team
-License: MIT
 """
 
+import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Optional, Union, Dict, Any
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 
-from swarms.structs.execution_utils import batched_run
+from swarms.prompts.self_consistency_prompts import (
+    CONSISTENCY_SYSTEM_PROMPT,
+    majority_voting_prompt,
+)
 from swarms.structs.agent import Agent
 from swarms.structs.conversation import Conversation
-from swarms.utils.output_types import OutputType
+from swarms.structs.execution_utils import batched_run
 from swarms.utils.any_to_str import any_to_str
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
 )
-
-# System prompt for the reasoning agent that generates individual responses
-CONSISTENCY_SYSTEM_PROMPT = """
-You are a reasoning agent designed for complex problem-solving and decision-making. Your objective is to provide clear and reliable responses through structured reasoning. Begin by thoroughly understanding the problem, rephrasing it for clarity, and identifying key components. Develop a logical plan that breaks the problem into manageable steps, detailing your approach and any assumptions made. Validate your information with reliable sources and assess the accuracy of your calculations. Explore multiple solutions, weighing their pros and cons, and maintain transparency by documenting your reasoning process, uncertainties, and biases. Summarize your findings in a concise final answer that reflects your thorough analysis, ensuring it is well-organized and accessible. Adapt your reasoning to the context of the problem, integrating new information as needed, and implement error-handling strategies to address any issues that arise. Finally, reflect on your reasoning process to identify areas for improvement and ensure consistency across all reasoning paths.
-"""
-
-# Detailed prompt for the majority voting aggregation agent
-majority_voting_prompt = """
-Engage in a comprehensive and exhaustive majority voting analysis of the following conversation, ensuring a deep and thoughtful examination of the responses provided by each agent. This analysis should not only summarize the responses but also critically engage with the content, context, and implications of each agent's input.
-
-Please adhere to the following detailed guidelines:
-
-1. **Identification of Dominant Responses:**
-   - Identify the most prevalent answer or recommendation across all agents. Provide a thorough rationale for its dominance, including an exploration of the factors that may have contributed to its acceptance among the agents. Discuss the context in which this consensus emerged and any relevant historical or theoretical frameworks that support this conclusion.
-
-2. **Exploration of Disparities:**
-   - Delve into any significant disparities or contrasting viewpoints between agents. Explore the underlying reasons for these differences, considering aspects such as differing methodologies, assumptions, or interpretations of the task at hand. Analyze how these contrasting perspectives may reflect broader debates within the field and what implications they hold for the overall understanding of the topic.
-
-3. **Consensus and Disagreement Analysis:**
-   - Highlight key areas of consensus and disagreement among the agents. Discuss the implications of these findings on the overall argument, including how consensus can strengthen certain claims while disagreement may indicate areas of uncertainty or contention. Provide examples from the conversation to illustrate these points and consider how they might influence future discussions or research directions.
-
-4. **Critical Evaluation of Majority Opinion:**
-   - Critically evaluate the strength of the majority opinion, considering factors such as the reasoning behind it and its mathematical validity if applicable. Assess whether the majority opinion is well-supported by evidence and logical reasoning, and discuss any potential weaknesses or oversights that may undermine its credibility. 
-
-5. **Insights from Minority Viewpoints:**
-   - Note any unique insights from minority viewpoints, assessing their potential contributions to a more nuanced understanding of the topic. Discuss how these minority perspectives can enrich the conversation and provide alternative angles that may have been overlooked by the majority. Consider the value of dissent in academic discourse and how it can lead to more robust conclusions.
-
-6. **Synthesis of Recommendations:**
-   - Provide a final synthesized recommendation based on the majority consensus, ensuring that it reflects a thorough consideration of all perspectives and is grounded in sound reasoning. This recommendation should not only summarize the majority view but also integrate insights from minority opinions, creating a comprehensive and balanced conclusion that acknowledges the complexity of the discussion.
-
-Throughout your analysis, focus on uncovering clear patterns while being attentive to the subtleties and complexities inherent in the responses. Pay particular attention to the nuances of mathematical contexts where algorithmic thinking may be required, ensuring that your examination is both rigorous and accessible to a diverse audience.
-"""
+from swarms.utils.litellm_wrapper import empty_usage
+from swarms.utils.output_types import OutputType
 
 
 def aggregation_agent(
     responses: List[str],
     prompt: str = majority_voting_prompt,
     model_name: str = "gpt-5.4",
+    on_usage: Optional[Callable[[dict], None]] = None,
 ) -> str:
     """
     Aggregates a list of responses into a single final answer using an AI-powered aggregation agent.
@@ -86,6 +58,8 @@ def aggregation_agent(
                                Defaults to the majority_voting_prompt.
         model_name (str, optional): Model to use for aggregation.
                                    Defaults to "gpt-5.4".
+        on_usage (Optional[Callable[[dict], None]], optional): Called with
+                                   the aggregation agent's usage after it runs.
 
     Returns:
         str: The aggregated final answer
@@ -108,6 +82,9 @@ def aggregation_agent(
 
     final_answer = agent.run(task)
 
+    if on_usage is not None:
+        on_usage(agent.usage)
+
     return final_answer
 
 
@@ -120,35 +97,47 @@ class SelfConsistencyAgent:
     research paper "Self-Consistency Improves Chain of Thought Reasoning in Language Models"
     by Wang et al. (2022).
 
-    Key Features:
-    - Concurrent generation of multiple independent responses
-    - Majority voting aggregation with detailed analysis
-    - Evaluation mode for answer validation
-    - Configurable output formats
-    - Thread-safe execution
-
-    The self-consistency technique works by:
-    1. Generating multiple independent reasoning paths for the same problem
-    2. Analyzing the consistency and agreement among these paths
-    3. Aggregating the results using majority voting or consensus building
-    4. Producing a final answer that reflects the most reliable consensus
-
-    This approach helps mitigate issues like:
-    - Random errors in individual reasoning paths
-    - Biases in single reasoning approaches
-    - Inconsistencies in complex problem-solving
-
     Reference:
         Wang, Y., Dong, W., Han, J., & Wang, W. (2022). Self-Consistency Improves Chain of
         Thought Reasoning in Language Models. arXiv preprint arXiv:2203.07870.
         https://arxiv.org/abs/2203.07870
+
+    Args:
+        name (str, optional): Name of the agent. Defaults to "Self-Consistency-Agent".
+        description (str, optional): Description of the agent's purpose.
+                                    Defaults to "An agent that uses self consistency to generate a final answer.".
+        model_name (str, optional): The underlying language model to use.
+                                    Defaults to "gpt-5.4".
+        system_prompt (str, optional): System prompt for the reasoning agent.
+                                        Defaults to CONSISTENCY_SYSTEM_PROMPT.
+        num_samples (int, optional): Number of independent responses to generate.
+                                    Defaults to 5.
+        majority_voting_prompt (Optional[str], optional): Custom prompt for majority voting.
+                                                        Defaults to None.
+        eval (bool, optional): Enable evaluation mode for answer validation.
+                                Defaults to False.
+        output_type (OutputType, optional): Format of the output.
+                                            Defaults to "dict".
+        aggregator_agent (Optional[Agent], optional): Your own agent that votes on the
+                                            samples and writes the final answer. Its
+                                            conversation is reset before each vote, and
+                                            majority_voting_prompt is not used. Needs
+                                            preset_agents=False. Defaults to None.
+        preset_agents (bool, optional): Use the built-in majority voting agent. Set it to
+                                            False to vote with aggregator_agent instead.
+                                            Defaults to True.
+        **kwargs: Additional keyword arguments passed to the base Agent class.
+
+    Note:
+        The num_samples parameter determines how many independent reasoning paths
+        will be generated. Higher values generally lead to more reliable results
+        but increase computational cost and time.
 
     Example:
         >>> agent = SelfConsistencyAgent(
         ...     name="Math-Reasoning-Agent",
         ...     model_name="gpt-5.4",
         ...     num_samples=5,
-        ...     max_loops=1
         ... )
         >>> result = agent.run("What is the 40th prime number?")
         >>> print(result)
@@ -161,59 +150,65 @@ class SelfConsistencyAgent:
         model_name: str = "gpt-5.4",
         system_prompt: str = CONSISTENCY_SYSTEM_PROMPT,
         num_samples: int = 5,
-        max_loops: int = 1,
         majority_voting_prompt: Optional[
             str
         ] = majority_voting_prompt,
         eval: bool = False,
         output_type: OutputType = "dict",
-        random_models_on: bool = False,
+        aggregator_agent: Optional[Agent] = None,
+        preset_agents: bool = True,
         *args,
         **kwargs,
     ):
-        """
-        Initialize the SelfConsistencyAgent.
-
-        Args:
-            name (str, optional): Name of the agent. Defaults to "Self-Consistency-Agent".
-            description (str, optional): Description of the agent's purpose.
-                                       Defaults to "An agent that uses self consistency to generate a final answer.".
-            model_name (str, optional): The underlying language model to use.
-                                       Defaults to "gpt-5.4".
-            system_prompt (str, optional): System prompt for the reasoning agent.
-                                         Defaults to CONSISTENCY_SYSTEM_PROMPT.
-            num_samples (int, optional): Number of independent responses to generate.
-                                       Defaults to 5.
-            max_loops (int, optional): Maximum number of reasoning loops per sample.
-                                     Defaults to 1.
-            majority_voting_prompt (Optional[str], optional): Custom prompt for majority voting.
-                                                            Defaults to None.
-            eval (bool, optional): Enable evaluation mode for answer validation.
-                                 Defaults to False.
-            output_type (OutputType, optional): Format of the output.
-                                              Defaults to "dict".
-            random_models_on (bool, optional): Enable random model selection for diversity.
-                                             Defaults to False.
-            **kwargs: Additional keyword arguments passed to the base Agent class.
-
-        Note:
-            The num_samples parameter determines how many independent reasoning paths
-            will be generated. Higher values generally lead to more reliable results
-            but increase computational cost and time.
-        """
         self.name = name
         self.description = description
         self.model_name = model_name
         self.num_samples = num_samples
-        self.max_loops = max_loops
         self.majority_voting_prompt = majority_voting_prompt
         self.eval = eval
         self.output_type = output_type
         self.system_prompt = system_prompt
-        self.random_models_on = random_models_on
+        self.aggregator_agent = aggregator_agent
+        self.preset_agents = preset_agents
         self.conversation = Conversation()
         self.args = args
         self.kwargs = kwargs
+        self._usage = empty_usage()
+
+        self.reliability_check()
+
+    def reliability_check(self) -> None:
+        """Reject a configuration the agent cannot run.
+
+        Raises:
+            ValueError: When num_samples is 0, or when preset_agents
+                and aggregator_agent do not agree.
+        """
+        if self.num_samples == 0:
+            raise ValueError(
+                "SelfConsistencyAgent: num_samples must be greater than 0"
+            )
+
+        if self.preset_agents and self.aggregator_agent is not None:
+            raise ValueError(
+                "SelfConsistencyAgent: set preset_agents=False to "
+                "vote with your own aggregator_agent"
+            )
+
+        if not self.preset_agents and self.aggregator_agent is None:
+            raise ValueError(
+                "SelfConsistencyAgent: preset_agents=False needs an "
+                "aggregator_agent to vote on the samples"
+            )
+
+    @property
+    def usage(self) -> dict:
+        """Provider token usage summed over every sample and aggregation agent this instance has run."""
+        return dict(self._usage)
+
+    def _add_usage(self, call_usage: dict) -> None:
+        for key in self._usage:
+            self._usage[key] += call_usage.get(key, 0)
 
     def run(
         self,
@@ -260,18 +255,23 @@ class SelfConsistencyAgent:
 
         # Generate multiple independent responses concurrently
         with ThreadPoolExecutor() as executor:
+            agents = [
+                self._create_reasoning_agent()
+                for _ in range(self.num_samples)
+            ]
             futures = {
                 executor.submit(
-                    self._create_reasoning_agent().run,
+                    agent.run,
                     task=task,
                     img=img,
                     *args,
                     **kwargs,
-                ): i
-                for i in range(self.num_samples)
+                ): agent
+                for agent in agents
             }
             for future in as_completed(futures):
                 response = future.result()
+                self._add_usage(futures[future].usage)
                 responses.append(response)
 
         self.conversation.add(role=self.name, content=responses)
@@ -289,13 +289,7 @@ class SelfConsistencyAgent:
                     )
                     return None
 
-        # Aggregate responses using AI-powered aggregation
-        final_answer = aggregation_agent(
-            responses,
-            prompt=self.majority_voting_prompt
-            or majority_voting_prompt,
-            model_name=self.model_name,
-        )
+        final_answer = self._aggregate(responses)
 
         self.conversation.add(
             role="Majority Voting Agent", content=final_answer
@@ -304,6 +298,40 @@ class SelfConsistencyAgent:
         return history_output_formatter(
             self.conversation, self.output_type
         )
+
+    def _aggregate(self, responses: List[str]) -> str:
+        """Vote on the sample responses and return the final answer.
+
+        Args:
+            responses: The answers the sample agents gave.
+
+        Returns:
+            The final answer from the preset voting agent or from
+            aggregator_agent.
+        """
+        if self.preset_agents:
+            return aggregation_agent(
+                responses,
+                prompt=self.majority_voting_prompt
+                or majority_voting_prompt,
+                model_name=self.model_name,
+                on_usage=self._add_usage,
+            )
+
+        agent = self.aggregator_agent
+        before = agent.usage
+
+        # A fresh conversation, so an earlier vote is not in this one
+        agent.reset()
+        final_answer = agent.run(any_to_str(responses))
+
+        # The caller's agent keeps a lifetime total, so count only this vote
+        after = agent.usage
+        self._add_usage(
+            {key: after[key] - before.get(key, 0) for key in after}
+        )
+
+        return final_answer
 
     def _create_reasoning_agent(self) -> Agent:
         """
@@ -317,8 +345,6 @@ class SelfConsistencyAgent:
             description=self.description,
             model_name=self.model_name,
             system_prompt=self.system_prompt,
-            max_loops=self.max_loops,
-            random_models_on=self.random_models_on,
             output_type="str-all-except-first",
             **self.kwargs,
         )
@@ -329,9 +355,9 @@ class SelfConsistencyAgent:
         """
         Check if the specified answer is present in any of the provided responses.
 
-        This method performs a simple string matching to determine if the expected
-        answer appears in any of the generated responses. It's useful for validation
-        and evaluation purposes.
+        The answer must appear on its own, not inside a longer word or number,
+        so an answer of 4 matches "The answer is 4." but not "42" or "0.4".
+        It's useful for validation and evaluation purposes.
 
         Args:
             responses (List[str]): List of responses to check
@@ -346,20 +372,21 @@ class SelfConsistencyAgent:
             >>> found = agent.check_responses_for_answer(responses, "42")
             >>> print(found)  # True
         """
-        for response in responses:
-            if answer in response:
-                return True
+        pattern = re.compile(
+            rf"(?<![\w+-])(?<!\d[.,/]){re.escape(answer)}(?!\w)(?![.,/]\d)"
+        )
+        if any(pattern.search(response) for response in responses):
+            return True
 
         # If the answer is not found, log the absence for each response
         for response in responses:
-            if answer not in response:
-                self.conversation.add(
-                    role="User",
-                    content=f"The answer '{answer}' is not found in the response: '{response}'",
-                )
-                logger.info(
-                    f"The answer '{answer}' is not found in the response: '{response}'"
-                )
+            self.conversation.add(
+                role="User",
+                content=f"The answer '{answer}' is not found in the response: '{response}'",
+            )
+            logger.info(
+                f"The answer '{answer}' is not found in the response: '{response}'"
+            )
         return False
 
     def batched_run(

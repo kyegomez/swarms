@@ -9,21 +9,21 @@ def test_batched_grid_workflow_basic_execution():
     research_agent = Agent(
         agent_name="Research-Analyst",
         agent_description="Agent specializing in research and data collection",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     analysis_agent = Agent(
         agent_name="Data-Analyst",
         agent_description="Agent specializing in data analysis",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     reporting_agent = Agent(
         agent_name="Report-Writer",
         agent_description="Agent specializing in report writing",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -56,14 +56,14 @@ def test_batched_grid_workflow_multiple_loops():
     agent1 = Agent(
         agent_name="Iteration-Agent-1",
         agent_description="Agent for iterative task processing",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     agent2 = Agent(
         agent_name="Iteration-Agent-2",
         agent_description="Agent for iterative task refinement",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -93,7 +93,7 @@ def test_batched_grid_workflow_single_agent_single_task():
     agent = Agent(
         agent_name="Solo-Agent",
         agent_description="Single agent for solo task execution",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -118,7 +118,7 @@ def test_batched_grid_workflow_four_agents():
         Agent(
             agent_name=f"Grid-Agent-{i+1}",
             agent_description=f"Agent {i+1} for grid execution pattern",
-            model_name="gpt-4o",
+            model_name="gpt-5.4",
             max_loops=1,
         )
         for i in range(4)
@@ -151,7 +151,7 @@ def test_batched_grid_workflow_max_loops_validation():
     agent = Agent(
         agent_name="Validation-Agent",
         agent_description="Agent for validation testing",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -183,14 +183,14 @@ def test_batched_grid_workflow_step_method():
     agent1 = Agent(
         agent_name="Step-Agent-1",
         agent_description="First agent for step testing",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     agent2 = Agent(
         agent_name="Step-Agent-2",
         agent_description="Second agent for step testing",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -219,21 +219,21 @@ def test_batched_grid_workflow_with_complex_tasks():
     financial_agent = Agent(
         agent_name="Financial-Analyst",
         agent_description="Expert in financial analysis and forecasting",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     technical_agent = Agent(
         agent_name="Technical-Expert",
         agent_description="Expert in technical analysis and evaluation",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     strategic_agent = Agent(
         agent_name="Strategic-Planner",
         agent_description="Expert in strategic planning and execution",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -269,7 +269,7 @@ def test_batched_grid_workflow_default_parameters():
     agent = Agent(
         agent_name="Default-Test-Agent",
         agent_description="Agent for testing default parameters",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -291,7 +291,7 @@ def test_batched_grid_workflow_custom_id_and_name():
     agent = Agent(
         agent_name="Custom-Agent",
         agent_description="Agent for custom parameter testing",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -319,7 +319,7 @@ def test_batched_grid_workflow_large_scale():
         Agent(
             agent_name=f"Scale-Agent-{i+1}",
             agent_description=f"Agent {i+1} for scalability testing",
-            model_name="gpt-4o",
+            model_name="gpt-5.4",
             max_loops=1,
         )
         for i in range(6)
@@ -353,14 +353,14 @@ def test_batched_grid_workflow_sequential_runs():
     agent1 = Agent(
         agent_name="Sequential-Agent-1",
         agent_description="Agent for sequential execution testing",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     agent2 = Agent(
         agent_name="Sequential-Agent-2",
         agent_description="Agent for sequential execution testing",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -397,21 +397,21 @@ def test_batched_grid_workflow_specialized_agents():
     seo_agent = Agent(
         agent_name="SEO-Specialist",
         agent_description="Expert in search engine optimization and content strategy",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     content_agent = Agent(
         agent_name="Content-Creator",
         agent_description="Expert in content creation and copywriting",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
     social_media_agent = Agent(
         agent_name="Social-Media-Manager",
         agent_description="Expert in social media marketing and engagement",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -441,7 +441,7 @@ def test_batched_grid_workflow_max_loops_ten():
     agent = Agent(
         agent_name="Ten-Loop-Agent",
         agent_description="Agent for testing 10 execution loops",
-        model_name="gpt-4o",
+        model_name="gpt-5.4",
         max_loops=1,
     )
 
@@ -467,7 +467,7 @@ def test_batched_grid_workflow_output_consistency():
         Agent(
             agent_name=f"Consistency-Agent-{i+1}",
             agent_description=f"Agent {i+1} for output consistency testing",
-            model_name="gpt-4o",
+            model_name="gpt-5.4",
             max_loops=1,
         )
         for i in range(3)

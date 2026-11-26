@@ -6,10 +6,8 @@ reasoning_agent_router = SelfConsistencyAgent(
     description="A reasoning agent that can answer questions and help with tasks.",
     model_name="gpt-5.4",
     system_prompt="You are a helpful assistant that can answer questions and help with tasks.",
-    max_loops=1,
     num_samples=3,  # Generate 3 independent responses
     eval=False,  # Disable evaluation mode
-    random_models_on=False,  # Disable random model selection
     majority_voting_prompt=None,  # Use default majority voting prompt
 )
 

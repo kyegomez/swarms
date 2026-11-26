@@ -1,3 +1,4 @@
+import asyncio
 import threading
 import time
 from typing import List, Optional
@@ -311,6 +312,15 @@ def test_invalid_output_type_raises_at_init():
             output_type="dictt",  # typo
             verbose=False,
         )
+
+
+def test_invalid_flow_raises_at_init():
+    """A stray arrow fails at construction; a trailing comma is fine."""
+    agents = [_make_agent("A"), _make_agent("B")]
+    for flow in ("A -> B ->", "-> A"):
+        with pytest.raises(ValueError, match="empty step"):
+            AgentRearrange(agents=agents, flow=flow)
+    AgentRearrange(agents=agents, flow="A -> B, ")
 
 
 def test_set_custom_flow_validates_immediately():
@@ -745,7 +755,7 @@ def create_repeated_flow_agents():
             agent_name="Writer",
             agent_description="Expert in writing content",
             system_prompt="You are a writer. Write one concise sentence.",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_loops=1,
             verbose=False,
         ),
@@ -753,7 +763,7 @@ def create_repeated_flow_agents():
             agent_name="Reviewer",
             agent_description="Expert in reviewing content",
             system_prompt="You are a reviewer. Give one critique.",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_loops=1,
             verbose=False,
         ),
@@ -1293,7 +1303,7 @@ def _scripted_agent(name, seen):
     """
     agent = Agent(
         agent_name=name,
-        model_name="gpt-4o-mini",
+        model_name="gpt-5.4-mini",
         max_loops=1,
         persistent_memory=False,
         print_on=False,
@@ -1739,3 +1749,45 @@ def test_nested_swarm_without_a_name_is_rejected():
     """A swarm needs a name for the flow to reference it."""
     with pytest.raises(ValueError, match="needs a name"):
         AgentRearrange(agents=[_RecordingSwarm("")], flow="x")
+
+
+def test_two_different_members_with_one_name_are_rejected():
+    """Two members sharing a name raise; one member listed twice is fine."""
+    writer, team = _make_agent("Writer"), _RecordingSwarm("Team")
+    with pytest.raises(ValueError, match="'Writer'"):
+        AgentRearrange(
+            agents=[writer, _make_agent("Writer")],
+            flow="Writer -> Writer",
+            channel=MagicMock(),
+        )
+    assert writer.channel is not None
+    AgentRearrange(
+        agents=[writer, writer, team, team], flow="Writer -> Team"
+    )
+
+
+class _HangingStreamer:
+    def __init__(self, name):
+        self.agent_name = name
+        self.cancelled = threading.Event()
+
+    async def arun_stream(self, task=None, messages=None, **kwargs):
+        yield f"{self.agent_name}-token"
+        try:
+            await asyncio.sleep(30)
+        except asyncio.CancelledError:
+            self.cancelled.set()
+            raise
+
+
+def test_closing_run_stream_cancels_the_agent_still_streaming():
+    """A consumer that stops reading stops the agent it no longer reads."""
+    first, second = _HangingStreamer("A"), _HangingStreamer("B")
+    stream = AgentRearrange(
+        agents=[first, second], flow="A -> B"
+    ).run_stream("go")
+
+    next(stream)
+    stream.close()
+
+    assert first.cancelled.wait(5)

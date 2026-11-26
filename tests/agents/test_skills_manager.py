@@ -364,6 +364,12 @@ class TestDynamicLoading:
         # metadata is only overwritten when something is found.
         assert manager.metadata == []
 
+    def test_shared_stopwords_alone_select_nothing(self, manager):
+        prompt = manager._dynamic_prompt(
+            "Write a poem about the sea and the moon for the team."
+        )
+        assert prompt == ""
+
     def test_loader_built_lazily(self, manager):
         assert manager.dynamic_loader is None
         manager.prompt_for_task("extract text from a pdf document")
@@ -492,7 +498,7 @@ class TestAgentIntegration:
 
         agent = Agent(
             agent_name="SkillsWiringAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             skills_dir=str(skills_root),
             persistent_memory=False,
             print_on=False,
@@ -506,7 +512,7 @@ class TestAgentIntegration:
 
         agent = Agent(
             agent_name="SkillsGetterAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             skills_dir=str(skills_root),
             persistent_memory=False,
             print_on=False,
@@ -521,7 +527,7 @@ class TestAgentIntegration:
 
         agent = Agent(
             agent_name="SkillsSetterAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             persistent_memory=False,
             print_on=False,
         )
@@ -537,7 +543,7 @@ class TestAgentIntegration:
 
         agent = Agent(
             agent_name="SkillsMetaGetterAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             skills_dir=str(skills_root),
             persistent_memory=False,
             print_on=False,
@@ -552,7 +558,7 @@ class TestAgentIntegration:
 
         agent = Agent(
             agent_name="SkillsMetaSetterAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             persistent_memory=False,
             print_on=False,
         )
@@ -568,7 +574,7 @@ class TestAgentIntegration:
 
         agent = Agent(
             agent_name="SkillsPromptAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             skills_dir=str(skills_root),
             persistent_memory=False,
             print_on=False,
@@ -589,7 +595,7 @@ class TestAgentIntegration:
 
         agent = Agent(
             agent_name="SkillsPromptDynamicAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             skills_dir=str(skills_root),
             persistent_memory=False,
             print_on=False,
@@ -610,7 +616,7 @@ class TestAgentIntegration:
 
         agent = Agent(
             agent_name="SkillsReplaceAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             skills_dir=str(skills_root),
             persistent_memory=False,
             print_on=False,
@@ -667,7 +673,7 @@ class TestSkillsReachTheModel:
 
         return Agent(
             agent_name="SkillsRequestAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             skills_dir=str(skills_root),
             max_loops=1,
             persistent_memory=False,
@@ -726,7 +732,7 @@ class TestSkillsReachTheModel:
 
         agent = Agent(
             agent_name="NoSkillsRequestAgent",
-            model_name="gpt-4o-mini",
+            model_name="gpt-5.4-mini",
             max_loops=1,
             persistent_memory=False,
             print_on=False,

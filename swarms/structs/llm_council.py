@@ -178,7 +178,7 @@ class LLMCouncil:
 
     @trace_run(
         "LLMCouncil.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task",),
     )
     def run(self, task: str):
         """
@@ -256,6 +256,7 @@ class LLMCouncil:
             )
 
         # Every member ranks all responses, concurrently
+        reset_agents(self.council_members)
         evaluation_tasks = [
             get_evaluation_prompt(
                 task, anonymous_responses, member.agent_name

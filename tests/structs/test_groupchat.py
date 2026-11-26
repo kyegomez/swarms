@@ -28,6 +28,7 @@ from swarms.structs.groupchat import (
     RESPOND_TOOL,
     _extract_args,
 )
+from swarms.utils.litellm_wrapper import LiteLLM
 
 # --------------------------------------------------------------------------
 # helpers
@@ -410,6 +411,31 @@ class TestScheduling:
             log.mock_calls
         )
 
+    def test_score_only_bids_ask_only_the_winner_for_a_reply(self):
+        class ToolAgent(ScriptedAgent):
+            def __init__(self, name, bids):
+                super().__init__(name, bids)
+                self.llm = LiteLLM(
+                    model_name="gpt-4o-mini",
+                    tools_list_dictionary=[RESPOND_TOOL],
+                )
+                self.asked = []
+
+            def run(self, task=None, *args, **kwargs):
+                tool = self.llm.tools_list_dictionary[0]["function"]
+                self.asked.append(tool["parameters"]["required"])
+                return super().run(task, *args, **kwargs)
+
+        winner = ToolAgent("A", [(0.9, ""), (0.0, "full reply")])
+        other = ToolAgent("B", [(0.6, "")])
+        chat = make_chat([winner, other], score_only_bids=True)
+        chat.run("topic")
+
+        bid, floor = ["score"], ["score", "message"]
+        assert contents(chat) == ["topic", "full reply"]
+        assert winner.asked == [bid, floor, bid]
+        assert winner.llm.tools_list_dictionary == [RESPOND_TOOL]
+
 
 # --------------------------------------------------------------------------
 # run() surface — return value, batching, streaming
@@ -492,7 +518,30 @@ class TestGroupChatSilenceBias:
         )
         assert "AgentA" in formatted
         assert "AgentB, AgentC" in formatted
-        assert "Initial question" in formatted
+
+    def test_each_bid_carries_the_latest_message_once(self):
+        """The latest message is already the last turn, so the prompt does not quote it."""
+        requests = []
+
+        class RecordingAgent(ScriptedAgent):
+            def run(self, task=None, *args, **kwargs):
+                requests.append(task + json.dumps(kwargs["messages"]))
+                return super().run(task, *args, **kwargs)
+
+        chat = make_chat(
+            [
+                RecordingAgent("A", [(0.9, "first-reply-9c2e")]),
+                RecordingAgent("B"),
+            ],
+            max_loops=3,
+        )
+        chat.run("task-marker-7f3a")
+
+        task_counts = [r.count("task-marker-7f3a") for r in requests]
+        reply_counts = [r.count("first-reply-9c2e") for r in requests]
+
+        assert task_counts == [1, 1, 1, 1]
+        assert reply_counts == [0, 0, 1, 1]
 
     def test_prompt_does_not_contain_hardcoded_silence_threshold(
         self,

@@ -57,3 +57,52 @@ def test_each_call_sees_only_its_own_prompt(monkeypatch):
     assert len(requests) == 12
     for name, prompts in requests:
         assert len(prompts) == 1, f"{name} also saw {prompts[:-1]}"
+
+
+def test_usage_sums_every_agent_call_across_runs(monkeypatch):
+    calls = []
+
+    def fake_call_llm(self, task=None, *args, **kwargs):
+        calls.append(self.agent_name)
+        self._add_usage(
+            {
+                "input_tokens": 10,
+                "output_tokens": 2,
+                "total_tokens": 12,
+            }
+        )
+        if self.agent_name.endswith("evaluator"):
+            return "Final score: 3"
+        return "text"
+
+    monkeypatch.setattr(Agent, "call_llm", fake_call_llm)
+    agent = ReflexionAgent(
+        agent_name="rx", model_name="gpt-5.4", max_loops=2
+    )
+    assert agent.usage == {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 0,
+    }
+
+    agent.run(["What is 2+2?"])
+    first = len(calls)
+    assert {name.rsplit("-", 1)[-1] for name in calls} == {
+        "actor",
+        "evaluator",
+        "reflector",
+    }
+    assert agent.usage["input_tokens"] == 10 * first
+
+    agent.run(["What is 3+3?"])
+
+    assert len(calls) > first
+    assert agent.usage == {
+        "input_tokens": 10 * len(calls),
+        "output_tokens": 2 * len(calls),
+        "cached_tokens": 0,
+        "reasoning_tokens": 0,
+        "total_tokens": 12 * len(calls),
+    }

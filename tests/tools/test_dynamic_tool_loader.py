@@ -267,7 +267,7 @@ def script(agent, monkeypatch, responses):
 
 def build(**kwargs):
     kwargs.setdefault("agent_name", "DynIntegration")
-    kwargs.setdefault("model_name", "gpt-4o-mini")
+    kwargs.setdefault("model_name", "gpt-5.4-mini")
     kwargs.setdefault("persistent_memory", False)
     kwargs.setdefault("context_compression", False)
     kwargs.setdefault("print_on", False)

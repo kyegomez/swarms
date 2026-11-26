@@ -757,7 +757,7 @@ Thank you for contributing to swarms. Your work is extremely appreciated and rec
 
 ## Join Swarms
 
-Our mission is to advance humanity by building the infrastructure that powers the agent economy. We’re actively recruiting talented individuals across multiple roles to accelerate this vision. Join our team to help build, maintain, and scale the Swarms Python package, Swarms Marketplace, and our growing suite of products.
+Our mission is to build and scale collective superintelligence (CSI). We believe that multi-agent collaboration at scale will be vastly more intelligent than AGI and ASI. We’re actively recruiting talented individuals across multiple roles to accelerate this vision. Join our team to help build, maintain, and scale the Swarms Python package, Swarms Marketplace, and our growing suite of products.
 
 - **Check Open roles:** [swarms.ai/hiring](https://swarms.ai/hiring)
 

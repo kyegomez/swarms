@@ -399,7 +399,7 @@ class CouncilAsAJudge:
 
     @trace_run(
         "CouncilAsAJudge.run",
-        input_params=("task", "tasks", "img", "imgs"),
+        input_params=("task",),
     )
     def run(self, task: str) -> None:
         """

@@ -38,6 +38,22 @@ Tool Output:
 """
 
 
+def bind_tool_to_agent(tool: Any, agent_name: str) -> Any:
+    """Give a tool that acts as its agent, such as a MessageBoard tool, the agent's name.
+
+    Args:
+        tool: A tool callable. One with a bind_agent hook is bound.
+        agent_name: The name of the agent that holds the tool.
+
+    Returns:
+        Any: The bound tool, or the tool unchanged when it has no hook.
+    """
+    bind_agent = getattr(tool, "bind_agent", None)
+    if callable(bind_agent):
+        return bind_agent(agent_name)
+    return tool
+
+
 def _name(tool_call: Any) -> Optional[str]:
     """Function name of a tool call dict, else None."""
     if isinstance(tool_call, dict):
@@ -78,6 +94,11 @@ class ToolManager:
             BaseTool: The executor, also stored on agent.tool_struct.
         """
         agent = self.agent
+        if agent.tools:
+            agent.tools = [
+                bind_tool_to_agent(tool, agent.agent_name)
+                for tool in agent.tools
+            ]
         agent.tool_struct = BaseTool(
             tools=agent.tools, verbose=agent.verbose
         )

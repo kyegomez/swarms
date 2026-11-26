@@ -23,7 +23,6 @@ Set the matching API key as an environment variable before running any example (
 
 ### DeepSeek
 - [deepseek_r1.py](deepseek/deepseek_r1.py) — DeepSeek R1 (native API)
-- [fast_r1_groq.py](deepseek/fast_r1_groq.py) — DeepSeek R1 served via Groq
 - [groq_deepseek_agent.py](deepseek/groq_deepseek_agent.py) — DeepSeek on Groq agent
 
 ### GPT-OSS
@@ -53,7 +52,6 @@ Set the matching API key as an environment variable before running any example (
 ### OpenAI
 - [gpt_5_example.py](openai/gpt_5_example.py) — GPT-5 integration
 - [5.4_openai.py](openai/5.4_openai.py) — GPT-5.4 via Swarms client
-- [4o_mini_demo.py](openai/4o_mini_demo.py) — GPT-4o mini demo
 - [concurrent_gpt5.py](openai/concurrent_gpt5.py) — Concurrent GPT-5 processing
 - [example_o3.py](openai/example_o3.py) — o3 reasoning example
 - [o3_agent.py](openai/o3_agent.py) — o3 reasoning agent

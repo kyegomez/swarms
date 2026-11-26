@@ -1678,8 +1678,13 @@ def test_export_conversation_writes_the_named_json_file(tmp_path):
     conv.export_conversation(str(target))
 
     fresh = Conversation(conversations_dir=str(tmp_path))
-    fresh.import_conversation(str(target))
+    fresh.import_conversation(target)
     assert fresh.conversation_history == conv.conversation_history
+
+    text_export = tmp_path / "backup.txt"
+    conv.export_conversation(str(text_export))
+    with pytest.raises(ValueError, match="text export"):
+        fresh.import_conversation(str(text_export))
 
 
 class TestCommsChannelMirror:
@@ -1743,3 +1748,22 @@ def test_load_missing_file_raises(method, tmp_path):
     conv = Conversation()
     with pytest.raises(FileNotFoundError):
         getattr(conv, method)(str(tmp_path / "does_not_exist.json"))
+
+
+def test_truncate_memory_with_tokenizer_keeps_newest(monkeypatch):
+    monkeypatch.setattr(
+        conversation_module,
+        "count_tokens",
+        lambda text, model=None: len(text.split()),
+    )
+    conv = Conversation(context_length=7, autosave=False)
+    for i in range(1, 6):
+        conv.add("user", f"message number {i}")
+
+    conv.truncate_memory_with_tokenizer()
+
+    assert [m["content"] for m in conv.conversation_history] == [
+        " 3",
+        "message number 4",
+        "message number 5",
+    ]
