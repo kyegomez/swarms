@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import pytest
 
@@ -52,6 +53,31 @@ def test_broadcast_accepts_nested_receiver_lists():
 def test_broadcast_rejects_empty_receivers():
     with pytest.raises(ValueError):
         asyncio.run(broadcast(EchoAgent("S"), [], "news"))
+
+
+def test_broadcast_does_not_block_the_event_loop():
+    class SlowAgent(EchoAgent):
+        def run(self, *args, **kwargs):
+            time.sleep(0.3)
+            return super().run(*args, **kwargs)
+
+    async def main():
+        ticks = []
+
+        async def heartbeat():
+            while True:
+                ticks.append(None)
+                await asyncio.sleep(0.01)
+
+        beat = asyncio.create_task(heartbeat())
+        await asyncio.sleep(0)
+        await broadcast(
+            SlowAgent("Sender"), [SlowAgent("R1")], "news"
+        )
+        beat.cancel()
+        return len(ticks)
+
+    assert asyncio.run(main()) > 10
 
 
 def test_broadcast_class_runs_synchronously():
