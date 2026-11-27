@@ -25,6 +25,7 @@ def auto_chat_agent(
         model_name=model_name,
         dynamic_context_window=True,
         max_loops="auto",
+        print_on=True,
     )
 
     current_task = task
