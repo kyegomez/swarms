@@ -2614,6 +2614,62 @@ class TestLLMFailureRaises:
         ]
         assert len(task_turns) == 1
 
+    @pytest.mark.parametrize("use_arun", [False, True])
+    def test_a_streamed_plan_falls_back_and_is_stored_as_text(
+        self, use_arun
+    ):
+        calls = []
+
+        def completion(**params):
+            calls.append(params["model"])
+            if params["model"] == "gpt-5.4":
+                raise RuntimeError("gpt-5.4 is down")
+            prompt = str(params["messages"][-1]["content"])
+            planning = "step-by-step plan" in prompt
+            text = "the plan" if planning else "the answer"
+            return iter([_stream_chunk(text)])
+
+        async def acompletion(**params):
+            chunks = completion(**params)
+
+            async def stream():
+                for chunk in chunks:
+                    yield chunk
+
+            return stream()
+
+        agent = self._agent(
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"],
+            plan_enabled=True,
+            streaming_on=True,
+        )
+        tokens = []
+        with (
+            patch.object(litellm_wrapper, "completion", completion),
+            patch.object(litellm_wrapper, "acompletion", acompletion),
+        ):
+            if use_arun:
+                asyncio.run(
+                    agent.arun(
+                        self.TASK, streaming_callback=tokens.append
+                    )
+                )
+            else:
+                agent.run(self.TASK, streaming_callback=tokens.append)
+
+        assert calls == [
+            "gpt-5.4",
+            "claude-sonnet-4-6",
+            "claude-sonnet-4-6",
+        ]
+        replies = [
+            m["content"]
+            for m in agent.short_memory.conversation_history
+            if m["role"] == "FallbackAgent"
+        ]
+        assert replies == ["the plan", "the answer"]
+        assert tokens == ["the answer"]
+
     def test_fallback_request_keeps_the_callers_messages(self):
         agent = self._agent(
             fallback_models=["gpt-5.4", "claude-sonnet-4-6"]

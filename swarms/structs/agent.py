@@ -2042,7 +2042,7 @@ Subtask Breakdown:
             None: The plan is stored in memory rather than returned
 
         Raises:
-            Exception: If planning fails, the original exception is re-raised
+            AgentLLMError: If the model call fails, chained to the provider's error.
         """
         try:
             # Get the current conversation history
@@ -2059,7 +2059,8 @@ Subtask Breakdown:
                 )
 
             # Generate the plan using the LLM
-            plan = self.llm.run(task=planning_prompt, *args, **kwargs)
+            plan = self.call_llm(planning_prompt, *args, **kwargs)
+            self.llm_manager.stream_mid_line = False
 
             # Store the generated plan in short-term memory
             self.short_memory.add(role=self.agent_name, content=plan)
@@ -2082,7 +2083,7 @@ Subtask Breakdown:
             **kwargs: Passed through to the model call.
 
         Raises:
-            Exception: If planning fails, the original exception is re-raised.
+            AgentLLMError: If the model call fails, chained to the provider's error.
         """
         try:
             history = self.short_memory.get_str()
@@ -2093,14 +2094,10 @@ Subtask Breakdown:
             )
             planning_prompt = f"{history}\n\n{prompt}\n\nTask: {task}"
 
-            if hasattr(self.llm, "arun"):
-                plan = await self.llm.arun(
-                    planning_prompt, *args, **kwargs
-                )
-            else:
-                plan = await asyncio.to_thread(
-                    self.llm.run, planning_prompt, *args, **kwargs
-                )
+            plan = await self.acall_llm(
+                planning_prompt, *args, **kwargs
+            )
+            self.llm_manager.stream_mid_line = False
             self.short_memory.add(role=self.agent_name, content=plan)
         except Exception as error:
             logger.error(
