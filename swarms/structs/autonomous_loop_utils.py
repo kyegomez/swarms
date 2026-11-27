@@ -31,7 +31,7 @@ import re as _re
 import subprocess
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -157,6 +157,41 @@ def get_summary_prompt() -> str:
         "Use the `complete_task` tool with: task_id, summary, success (true/false), results (optional), and lessons_learned (optional).\n"
         "Be concise, well-organized, and thorough—this is the user's final deliverable."
     )
+
+
+MAX_CUT_OFF_NOTICES = 2
+
+
+def get_cut_off_notice(
+    max_tokens: Optional[int], attempt: int, draft_shown: bool = True
+) -> str:
+    """
+    Get the notice sent after a reply was cut off at the output limit.
+
+    The word budget starts at a quarter of the output limit and halves on each
+    further attempt, so the resend fits with room to spare.
+
+    Args:
+        max_tokens: The output limit of one model reply, or None if unknown.
+        attempt: How many cut-off notices were already sent for this call.
+        draft_shown: Whether the cut-off reply stays in the messages the model sees.
+
+    Returns:
+        str: The notice asking for a compact resend.
+    """
+    limit = max_tokens or 16384
+    words = max(100, int(limit * 0.75 / (4 * 2**attempt)))
+    notice = (
+        "Your last reply was cut off at the output limit, so none of its "
+        "tool calls were run. Resend them, with no other text, and keep "
+        f"the whole reply under {words} words."
+    )
+    if draft_shown:
+        notice += (
+            " If your cut-off draft is shown above, condense it; "
+            "otherwise write a compact version."
+        )
+    return notice
 
 
 def get_autonomous_planning_tools() -> List[Dict[str, Any]]:
