@@ -1247,6 +1247,23 @@ def test_final_output_is_the_last_answer_not_a_loop_marker(
     assert "--- Loop" not in swarm.conversation.get_str()
 
 
+def test_a_failed_loop_is_written_to_the_output():
+    order = OrderBatch(
+        orders=[HierarchicalOrder(agent_name="Worker", task="Do it")]
+    )
+    director = StubAgent(
+        "Director", [order, RuntimeError("director down"), order]
+    )
+    swarm = make_recovery_swarm(
+        director, [StubAgent("Worker", ["a1", "a3"])], max_loops=3
+    )
+
+    output = str(swarm.run("task"))
+
+    assert "[LOOP FAILED] Loop 2 of 3" in output
+    assert "director down" in output
+
+
 class RecordingAgent(StubAgent):
     """A StubAgent that keeps what each call was given."""
 
