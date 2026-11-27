@@ -750,6 +750,20 @@ def test_add_multiple_returns_one_result_per_message():
     assert len(added) == 2
 
 
+def test_add_multiple_messages_autosaves_once(tmp_path):
+    conv = Conversation(
+        autosave=True,
+        save_filepath=str(tmp_path / "conversation.json"),
+        conversations_dir=str(tmp_path),
+    )
+    saves = []
+    conv.save_as_json = lambda force=True: saves.append(force)
+    conv.add_multiple_messages(
+        ["user", "assistant", "user"], ["Hello", "Hi there", "Bye"]
+    )
+    assert len(saves) == 1
+
+
 def test_add_multiple_does_not_depend_on_the_cpu_count(monkeypatch):
     """A machine reporting fewer than four CPUs can still add messages.
 
