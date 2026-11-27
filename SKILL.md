@@ -504,7 +504,6 @@ swarm = HeavySwarm(
     question_agent_model_name="gpt-5.4",
     worker_model_name="gpt-5.4",
     max_loops=1,
-    timeout=900,
     show_dashboard=True,
     worker_tools=[search_web],
 )
