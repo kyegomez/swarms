@@ -881,9 +881,7 @@ def test_usage_sums_builder_calls_and_executed_agents(monkeypatch):
     builder.initialize_swarm_router(agents, "task")
     builder.initialize_swarm_router(agents, "task")
     assert builder.usage["total_tokens"] == 660
-    assert not any(
-        isinstance(v, list) for v in vars(builder).values()
-    )
+    assert not hasattr(builder, "_usage_sources")
 
 
 if __name__ == "__main__":

@@ -12,15 +12,12 @@ def _is_usage(value: Any) -> bool:
 def add_usage(
     total: dict, source: Any, since: Optional[dict] = None
 ) -> None:
-    """
-    Add what a source spent to a running usage total.
+    """Add what a source spent to a running usage total.
 
     Args:
         total: The running total, changed in place.
-        source: A usage dict, or an agent, model client or
-            structure with usage.
-        since: The source's usage before the run, when it had
-            already spent tokens.
+        source: A usage dict, or an object with a usage dict.
+        since: The source's usage before the run.
     """
     usage = source
     if not isinstance(source, dict):

@@ -2,7 +2,7 @@ import json
 import re
 import traceback
 from functools import partial
-from typing import Any, List, Optional, Type, get_args
+from typing import Any, Callable, List, Optional, Type, get_args
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -347,10 +347,25 @@ class AutoSwarmBuilder:
             system_prompt=self.system_prompt,
             response_format=config,
             max_tokens=self.max_tokens,
-            usage_hook=partial(add_usage, self._usage),
             **self.additional_llm_args,
         )
+        llm.usage_hook = partial(self._add_boss_usage, llm.usage_hook)
         return llm
+
+    def _add_boss_usage(
+        self,
+        caller_hook: Optional[Callable[[dict], None]],
+        call_usage: dict,
+    ) -> None:
+        """Count one boss LLM call, then pass it to the caller's hook.
+
+        Args:
+            caller_hook: The usage_hook from additional_llm_args.
+            call_usage: The call's token usage.
+        """
+        add_usage(self._usage, call_usage)
+        if caller_hook is not None:
+            caller_hook(call_usage)
 
     @property
     def usage(self) -> dict:
