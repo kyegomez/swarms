@@ -360,10 +360,6 @@ class ConcurrentWorkflow:
             )
             return result
         finally:
-
-            def display(*args, **kwargs):
-                return None
-
             if self.show_dashboard:
                 formatter.stop_dashboard()
 
@@ -398,10 +394,9 @@ class ConcurrentWorkflow:
         self.conversation.add(role="User", content=task)
         run_agent = run_agent or self._run_agent_with_streaming
 
-        executor = ContextThreadPoolExecutor(
+        with ContextThreadPoolExecutor(
             max_workers=self._resolve_max_workers()
-        )
-        try:
+        ) as executor:
             futures = [
                 executor.submit(
                     run_agent,
@@ -415,8 +410,13 @@ class ConcurrentWorkflow:
             ]
 
             if self.on_error == "raise":
-                for future in as_completed(futures):
-                    future.result()
+                try:
+                    for future in as_completed(futures):
+                        future.result()
+                finally:
+                    # Queued agents are dropped; the pool still waits for running ones.
+                    for future in futures:
+                        future.cancel()
 
             for future, agent in zip(futures, self.agents):
                 try:
@@ -424,8 +424,6 @@ class ConcurrentWorkflow:
                 except Exception as error:
                     outcome = error
                 self._record_outcome(agent, outcome)
-        finally:
-            executor.shutdown(wait=False, cancel_futures=True)
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
