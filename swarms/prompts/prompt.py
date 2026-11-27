@@ -157,12 +157,25 @@ class Prompt(BaseModel):
         return self.content
 
     def add_tools(self, tools: List[Callable]) -> str:
-        tools_prompt = BaseTool(
+        """
+        Appends the OpenAI function schema of the tools to the prompt.
+
+        The change is recorded like any other edit, so it is kept in
+        the edit history, can be rolled back and is autosaved.
+
+        Args:
+            tools (List[Callable]): Documented, type-hinted functions.
+
+        Returns:
+            str: The updated prompt content.
+        """
+        schema = BaseTool(
             tools=tools, tool_system_prompt=None
         ).convert_tool_into_openai_schema()
-        self.content += "\n"
-        self.content += "\n"
-        self.content += tools_prompt
+        self.edit_prompt(
+            f"{self.content}\n\n{json.dumps(schema, indent=2)}"
+        )
+        return self.content
 
     def _autosave(self) -> None:
         """
