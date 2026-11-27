@@ -20,6 +20,7 @@ Example:
 """
 
 import inspect
+from types import SimpleNamespace
 from typing import (
     Any,
     Dict,
@@ -92,8 +93,9 @@ def _resolve_hints(cls: type) -> Dict[str, Any]:
 
     ``get_type_hints`` evaluates string annotations, which raises if a name is
     not importable at runtime (a ``TYPE_CHECKING``-only import, for instance).
-    Falling back to the raw ``__annotations__`` keeps the rest of the signature
-    usable instead of failing the whole model.
+    Each hint is then resolved on its own and the ones that still fail are
+    typed Any, so the rest of the signature stays usable instead of failing
+    the whole model.
 
     Args:
         cls (type): The class whose ``__init__`` hints to resolve.
@@ -101,13 +103,26 @@ def _resolve_hints(cls: type) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: Parameter name to resolved type.
     """
+    init = cls.__init__
     try:
-        return get_type_hints(cls.__init__)
+        return get_type_hints(init)
     except Exception as e:
         logger.debug(
-            f"Falling back to raw annotations for {cls.__name__}: {e}"
+            f"Resolving hints one by one for {cls.__name__}: {e}"
         )
-        return dict(getattr(cls.__init__, "__annotations__", {}))
+
+    hints: Dict[str, Any] = {}
+    for name, annotation in getattr(
+        init, "__annotations__", {}
+    ).items():
+        holder = SimpleNamespace(
+            __annotations__={name: annotation}, __wrapped__=init
+        )
+        try:
+            hints.update(get_type_hints(holder))
+        except Exception:
+            hints[name] = Any
+    return hints
 
 
 def _field_for(
