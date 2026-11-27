@@ -2,33 +2,25 @@ from typing import Union, Dict, List, Tuple, Any
 
 
 def any_to_str(data: Union[str, Dict, List, Tuple, Any]) -> str:
-    """Convert any input data type to a nicely formatted string.
-
-    This function handles conversion of various Python data types into a clean string representation.
-    It recursively processes nested data structures and handles None values gracefully.
+    """Format a value as text, recursively formatting nested containers.
 
     Args:
-        data: Input data of any type to convert to string. Can be:
-            - Dictionary
-            - List/Tuple
-            - String
-            - None
-            - Any other type that can be converted via str()
+        data: The value to format.
 
     Returns:
-        str: A formatted string representation of the input data.
-            - Dictionaries are formatted as "key: value" pairs separated by commas
-            - Lists/tuples are comma-separated
-            - None returns empty string
-            - Other types are converted using str()
+        A string with one key-value pair per line for dictionaries,
+        comma-separated items in brackets for lists or parentheses for
+        tuples, and double quotes around strings. None becomes "None".
+        Other values are converted with str().
 
     Examples:
-        >>> any_to_str({'a': 1, 'b': 2})
-        'a: 1, b: 2'
+        >>> print(any_to_str({'a': 1, 'b': 2}))
+        a: 1
+        b: 2
         >>> any_to_str([1, 2, 3])
-        '1, 2, 3'
+        '[1, 2, 3]'
         >>> any_to_str(None)
-        ''
+        'None'
     """
     try:
         if isinstance(data, dict):
