@@ -150,8 +150,7 @@ class MessageBoard:
                 self.inbox[name][:limit],
                 self.inbox[name][limit:],
             )
-            if not self.inbox[name]:
-                self.pending[name] = False
+            self.pending[name] = bool(self.inbox[name])
             return batch
 
     def unread_counts(self, name: str) -> Dict[str, int]:
@@ -314,6 +313,7 @@ class _Member:
     tool_calls: int = 0
     calls_seen: int = 0
     out_of_budget: bool = False
+    final_turn: bool = False
     lock: threading.Lock = field(default_factory=threading.Lock)
 
 
@@ -551,6 +551,7 @@ class SelfOrganizingSwarm:
             final_prompt: User message requesting a #### answer.
         """
         try:
+            member.final_turn = True
             member.agent.max_loops = 1
             member.agent.run(final_prompt)
         except Exception as e:
@@ -580,17 +581,21 @@ class SelfOrganizingSwarm:
             answer = _final_answer(text)
 
             # Lenient in the final phase: take the last non-empty line.
-            if (
-                ep.phase == "final"
-                and answer is None
-                and text.strip()
-            ):
+            if member.final_turn and answer is None and text.strip():
                 answer = text.strip().splitlines()[-1]
 
             if answer is not None:
                 ep.submit(member.name, answer)
                 return True
             if ep.phase != "work":
+                return True
+
+            if (
+                self.max_tokens_per_agent
+                and _output_tokens(member.agent)
+                >= self.max_tokens_per_agent
+            ):
+                member.out_of_budget = True
                 return True
 
             with member.lock:
@@ -601,14 +606,6 @@ class SelfOrganizingSwarm:
             if not (
                 made_call or (isinstance(response, list) and response)
             ):
-                return True
-
-            if (
-                self.max_tokens_per_agent
-                and _output_tokens(member.agent)
-                >= self.max_tokens_per_agent
-            ):
-                member.out_of_budget = True
                 return True
 
             ep.check_deadline()

@@ -12,6 +12,7 @@ from swarms.structs.self_organize import (
     MessageBoard,
     SelfOrganizingSwarm,
     _Episode,
+    _Member,
     _final_answer,
     _output_tokens,
 )
@@ -203,6 +204,45 @@ def test_episode_quiet_when_everyone_idle():
 
     ep.board.pending["a"] = True
     assert ep.quiet() is False
+
+
+def test_message_board_renotifies_mail_left_after_a_full_read(board):
+    for i in range(17):
+        board.post("a", "b", f"fact {i}")
+    board.notification("b")
+
+    assert len(board.read("b")) == 16
+    assert json.loads(board.notification("b"))[
+        "unread_by_sender"
+    ] == {"a": 1}
+
+
+def test_work_reply_after_the_deadline_is_not_a_final_answer():
+    swarm = make_swarm()
+    ep = _Episode(["a", "b"], None, True, 5.0, False)
+    member = _Member("a")
+    stop = swarm._make_stop(ep, member)
+    ep.phase = "final"
+
+    assert stop("Still checking case 3 of 5.") is True
+    assert ep.answers == {}
+
+    member.agent = SimpleNamespace(
+        max_loops=5, run=lambda task: stop("It works out to\n42")
+    )
+    swarm._ask_final(member, "Submit your final answer now.")
+    assert ep.answers == {"a": "42"}
+
+
+def test_allowance_is_checked_on_a_turn_without_a_tool_call():
+    swarm = make_swarm(max_tokens_per_agent=100)
+    ep = _Episode(["a", "b"], None, True, 5.0, False)
+    member = _Member(
+        "a", agent=SimpleNamespace(usage={"output_tokens": 150})
+    )
+
+    assert swarm._make_stop(ep, member)("Noted.") is True
+    assert member.out_of_budget is True
 
 
 def test_rejects_zero_agents():
