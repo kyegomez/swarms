@@ -43,23 +43,24 @@ COLORS = {
 }
 
 
+PROVIDER_API_KEYS = (
+    ("OPENAI_API_KEY", "OpenAI"),
+    ("ANTHROPIC_API_KEY", "Anthropic"),
+    ("GROQ_API_KEY", "Groq"),
+    ("GOOGLE_API_KEY", "Google"),
+    ("COHERE_API_KEY", "Cohere"),
+    ("MISTRAL_API_KEY", "Mistral"),
+    ("TOGETHER_API_KEY", "Together AI"),
+    ("XAI_API_KEY", "xAI"),
+    ("OPENROUTER_API_KEY", "OpenRouter"),
+)
+
+
 def _detect_active_provider() -> str:
     """Return a label for the active AI provider(s), like Claude Code's model line."""
-    detected = []
-    if os.getenv("OPENAI_API_KEY"):
-        detected.append("OpenAI")
-    if os.getenv("ANTHROPIC_API_KEY"):
-        detected.append("Anthropic")
-    if os.getenv("GROQ_API_KEY"):
-        detected.append("Groq")
-    if os.getenv("GOOGLE_API_KEY"):
-        detected.append("Google")
-    if os.getenv("COHERE_API_KEY"):
-        detected.append("Cohere")
-    if os.getenv("MISTRAL_API_KEY"):
-        detected.append("Mistral")
-    if os.getenv("TOGETHER_API_KEY"):
-        detected.append("Together AI")
+    detected = [
+        label for name, label in PROVIDER_API_KEYS if os.getenv(name)
+    ]
 
     if not detected:
         return (
@@ -257,10 +258,7 @@ def check_api_keys() -> Tuple[bool, str, str]:
         Tuple containing (success, status_icon, message)
     """
     api_keys = {
-        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY"),
-        "ANTHROPIC_API_KEY": os.getenv("ANTHROPIC_API_KEY"),
-        "GOOGLE_API_KEY": os.getenv("GOOGLE_API_KEY"),
-        "COHERE_API_KEY": os.getenv("COHERE_API_KEY"),
+        name: os.getenv(name) for name, _ in PROVIDER_API_KEYS
     }
 
     # At least one key must be present and non-empty
