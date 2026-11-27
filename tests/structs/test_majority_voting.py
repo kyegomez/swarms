@@ -519,3 +519,29 @@ def test_consensus_agent_defaults_and_kwargs_passthrough(
     )
     for attr, value in expected.items():
         assert getattr(mv.consensus_agent, attr) == value
+
+
+@pytest.mark.parametrize("use_arun", [False, True])
+def test_conversation_kwargs_apply_to_every_run(use_arun):
+    agents, calls = _recording_agents(["Voter-A", "Voter-B"])
+    mv = MajorityVoting(agents=agents, rules="Answer in French.")
+    _record(mv.consensus_agent, calls)
+    for agent in [*mv.agents, mv.consensus_agent]:
+        run = agent.run
+
+        async def arun(task=None, *args, _run=run, **kwargs):
+            return _run(task=task, **kwargs)
+
+        agent.arun = arun
+
+    for task in ("first", "second"):
+        calls.clear()
+        if use_arun:
+            asyncio.run(mv.arun(task))
+        else:
+            mv.run(task)
+        assert len(calls) == 3
+        for call in calls:
+            assert "Answer in French." in [
+                m["content"] for m in call["messages"]
+            ] + [call["task"]]
