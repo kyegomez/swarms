@@ -648,3 +648,23 @@ def test_default_aggregator_model_is_not_retired():
         .default
     )
     assert default == "claude-sonnet-5-5"
+
+
+def test_aggegrator_args_override_the_default_aggregator_settings():
+    agents, _ = _recording_agents(["W1", "W2"])
+
+    moa = MixtureOfAgents(
+        agents=agents,
+        aggegrator_args={
+            "agent_name": "Judge",
+            "max_loops": 2,
+            "output_type": "all",
+            "temperature": 0.2,
+        },
+    )
+
+    aggregator = moa.aggregator_agent
+    assert aggregator.agent_name == "Judge"
+    assert aggregator.max_loops == 2
+    assert aggregator.output_type == "all"
+    assert aggregator.temperature == 0.2
