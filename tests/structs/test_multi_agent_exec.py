@@ -10,6 +10,7 @@ from swarms.structs.multi_agent_exec import (
     get_agents_info,
     run_agents_concurrently,
     run_agents_concurrently_async,
+    run_agents_concurrently_multiprocess,
     run_agents_with_different_tasks,
     run_single_agent,
 )
@@ -48,6 +49,19 @@ def test_run_agents_concurrently_async_awaits_arun_within_the_bound(
 
     assert results == [f"a{i}:t" for i in range(5)]
     assert gauge["peak"] == peak
+
+
+def test_run_agents_concurrently_multiprocess_inside_a_running_loop():
+    gauge = {"active": 0, "peak": 0}
+    agents = [AsyncAgent(f"a{i}", gauge) for i in range(5)]
+
+    async def caller():
+        return run_agents_concurrently_multiprocess(
+            agents, "t", batch_size=2
+        )
+
+    assert asyncio.run(caller()) == [f"a{i}:t" for i in range(5)]
+    assert gauge["peak"] == 2
 
 
 def test_default_pool_has_one_thread_per_agent():
