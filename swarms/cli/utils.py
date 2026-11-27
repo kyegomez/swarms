@@ -5,7 +5,9 @@ This module contains helper functions for display, validation, and formatting
 used throughout the CLI application.
 """
 
+import importlib.metadata
 import os
+import re
 import sys
 import webbrowser
 from pathlib import Path
@@ -209,8 +211,6 @@ def check_swarms_version(verbose: bool = False) -> str:
         str: Current version string
     """
     try:
-        import importlib.metadata
-
         current_version = importlib.metadata.version("swarms")
     except Exception as e:
         if verbose:
@@ -299,19 +299,20 @@ def check_swarms_api_key() -> Tuple[bool, str, str]:
 
 def check_dependencies() -> Tuple[bool, str, str]:
     """
-    Check if key dependencies are available.
+    Check that every package swarms requires is installed.
 
     Returns:
         Tuple containing (success, status_icon, message)
     """
-    required_deps = ["torch", "transformers", "litellm", "rich"]
     missing_deps = []
-
-    for dep in required_deps:
+    for requirement in importlib.metadata.requires("swarms"):
+        if "extra ==" in requirement:
+            continue
+        name = re.split(r"[\s;<>=!~\[(]", requirement, maxsplit=1)[0]
         try:
-            __import__(dep)
-        except ImportError:
-            missing_deps.append(dep)
+            importlib.metadata.version(name)
+        except importlib.metadata.PackageNotFoundError:
+            missing_deps.append(name)
 
     if not missing_deps:
         return True, "✓", "All required dependencies available"
