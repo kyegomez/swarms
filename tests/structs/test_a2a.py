@@ -1,3 +1,5 @@
+import json
+
 from httpx import MockTransport, Response
 from pytest import mark, raises
 from starlette.applications import Starlette
@@ -109,6 +111,26 @@ def test_server_card_and_health_stay_public_under_a_mount():
 def test_server_missing_version_header_is_version_not_supported():
     reply = SERVER.post("/a2a", json=BODY, headers={"x-api-key": "k"})
     assert reply.json()["error"]["code"] == -32009
+
+
+@mark.parametrize(
+    "raw, code",
+    [
+        (b"", -32700),
+        (b'{"jsonrpc": "2.0", "id": 7', -32700),
+        (b"\xff\xfe{", -32700),
+        (b'{"jsonrpc": "2.0", "id": NaN}', -32700),
+        (b"[" * 100_000 + b"]" * 100_000, -32700),
+        (json.dumps([BODY]).encode(), -32600),
+        (b'"SendMessage"', -32600),
+        (b"null", -32600),
+    ],
+)
+def test_server_malformed_body_gets_a_json_rpc_error(raw, code):
+    headers = {"a2a-version": "1.0", "x-api-key": "k"}
+    reply = SERVER.post("/a2a", content=raw, headers=headers)
+    assert (reply.status_code, reply.json()["id"]) == (200, None)
+    assert reply.json()["error"]["code"] == code
 
 
 def test_server_init_options_override_the_defaults():
