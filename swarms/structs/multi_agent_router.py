@@ -352,6 +352,41 @@ class MultiAgentRouter:
 
         # return agent_responses
 
+    def _parse_boss_reply(self, reply: Optional[str]) -> dict:
+        """Parse the boss model's routing reply.
+
+        Args:
+            reply: The raw text the boss model returned.
+
+        Returns:
+            The decoded reply, with a non-empty handoffs list.
+
+        Raises:
+            ValueError: If the reply is not JSON or has no handoffs, naming the router, the boss model and the start of the reply.
+        """
+
+        def reply_error(problem: str) -> ValueError:
+            return ValueError(
+                f"MultiAgentRouter {self.name!r}: the boss model "
+                f"{self.model!r} returned a reply that {problem}. "
+                f"Reply starts: {str(reply)[:200]!r}"
+            )
+
+        try:
+            parsed = json.loads(reply)
+        except (TypeError, ValueError) as error:
+            raise reply_error(f"is not JSON ({error})") from error
+
+        handoffs = (
+            parsed.get("handoffs")
+            if isinstance(parsed, dict)
+            else None
+        )
+        if not isinstance(handoffs, list) or not handoffs:
+            raise reply_error("has no handoffs")
+
+        return parsed
+
     def route_task(self, task: str) -> dict:
         """
         Routes a task to the appropriate agent and returns their response.
@@ -366,9 +401,9 @@ class MultiAgentRouter:
             self.conversation.add(role="user", content=task)
 
             # Get boss decision using function calling
-            boss_response_str = self.function_caller.run(task)
-
-            boss_response_str = json.loads(boss_response_str)
+            boss_response_str = self._parse_boss_reply(
+                self.function_caller.run(task)
+            )
 
             if self.print_on:
                 formatter.print_panel(
