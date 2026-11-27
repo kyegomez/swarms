@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import threading
 from types import SimpleNamespace
 
 import pytest
@@ -65,6 +66,20 @@ def test_arun_awaits_every_judge_within_max_concurrency():
 
     assert report == "verdict"
     assert max(peak) == 2
+
+
+@pytest.mark.parametrize("cpu_count", [1, None])
+def test_every_judge_runs_at_once_on_a_small_host(
+    monkeypatch, cpu_count
+):
+    monkeypatch.setattr("os.cpu_count", lambda: cpu_count)
+    council = CouncilAsAJudge(model_name="gpt-5.4-mini")
+    barrier = threading.Barrier(len(council.judge_agents), timeout=5)
+    for judge in council.judge_agents.values():
+        judge.run = lambda *a, **k: (barrier.wait(), "verdict")[1]
+    council.aggregator_agent.run = lambda *a, **k: "report"
+
+    assert council.run("T") == "report"
 
 
 @pytest.mark.parametrize("entry", ["run", "arun"])

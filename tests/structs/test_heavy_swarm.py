@@ -12,6 +12,7 @@ Covers:
 """
 
 import os
+import threading
 
 import pytest
 from dotenv import load_dotenv
@@ -42,7 +43,6 @@ from swarms.prompts.heavy_swarm_prompts import (
 )
 from swarms.structs.heavy_swarm import HeavySwarm
 from swarms.structs.swarm_router import SwarmRouter
-from swarms.utils.get_cpu_cores import max_workers_95_percent
 
 load_dotenv()
 
@@ -827,16 +827,20 @@ class TestUsage:
         self, monkeypatch, show_dashboard
     ):
         monkeypatch.setattr("os.cpu_count", lambda: 1)
-        max_workers_95_percent.cache_clear()
         self._fake_question_llm(monkeypatch)
         swarm = self._swarm()
-        max_workers_95_percent.cache_clear()
-        assert swarm.max_workers == 1
         swarm.show_dashboard = show_dashboard
         self._stub_agents(swarm)
+        barrier = threading.Barrier(4, timeout=5)
+        for agent in list(swarm.agents.values())[:4]:
+            agent.run = lambda *a, _run=agent.run, **k: (
+                barrier.wait(),
+                _run(*a, **k),
+            )[1]
 
         swarm.run("task")
 
+        assert not barrier.broken
         assert swarm.usage["input_tokens"] == 30 + 100 * 5
 
 
