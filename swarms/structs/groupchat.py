@@ -50,6 +50,7 @@ Example:
 
 import ast
 import asyncio
+import contextvars
 import json
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -72,11 +73,7 @@ from swarms.utils.history_output_formatter import (
 from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.telemetry.otel import (
-    ContextThreadPoolExecutor,
-    capture_init,
-    trace_run,
-)
+from swarms.telemetry.otel import capture_init, trace_run
 from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="groupchat")
@@ -652,8 +649,10 @@ class GroupChat(SerializableMixin):
         except RuntimeError:
             return asyncio.run(chat)
 
-        with ContextThreadPoolExecutor(max_workers=1) as executor:
-            return executor.submit(asyncio.run, chat).result()
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            return executor.submit(
+                contextvars.copy_context().run, asyncio.run, chat
+            ).result()
 
     def run_batch(self, tasks: List[str]) -> List[Any]:
         """Run the groupchat in batch mode.
