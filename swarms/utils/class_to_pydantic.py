@@ -19,6 +19,7 @@ Example:
     AgentSchema(agent_name="Analyst", system_prompt="...", model_name="gpt-5.4")
 """
 
+import copy
 import inspect
 from typing import (
     Any,
@@ -132,7 +133,7 @@ def _field_for(
     if isinstance(default, _MUTABLE_TYPES):
         # Bind by value so each model instance gets its own copy.
         return annotation, Field(
-            default_factory=lambda d=default: type(d)(d),
+            default_factory=lambda d=default: copy.copy(d),
             description=description,
         )
 
