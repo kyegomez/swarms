@@ -368,8 +368,6 @@ class SwarmRouter(SerializableMixin):
             to ``"default"``.
         heavy_swarm_max_loops (int, optional): Iteration count for ``HeavySwarm``
             multi-loop refinement. Defaults to ``1``.
-        heavy_swarm_timeout (int, optional): Per-worker wall-clock cap (seconds)
-            for ``HeavySwarm``. Defaults to ``900``.
         council_judge_model_name (str, optional): Judge model for
             ``CouncilAsAJudge``.
         verbose (bool, optional): Emit info/debug logs (reliability check,
@@ -441,7 +439,6 @@ class SwarmRouter(SerializableMixin):
         heavy_swarm_swarm_show_output: bool = True,
         heavy_swarm_variant: SwarmVariant = "default",
         heavy_swarm_max_loops: int = 1,
-        heavy_swarm_timeout: int = 900,
         council_judge_model_name: Optional[str] = None,
         verbose: bool = False,
         worker_tools: List[Callable] = None,
@@ -501,7 +498,6 @@ class SwarmRouter(SerializableMixin):
         )
         self.heavy_swarm_variant = heavy_swarm_variant
         self.heavy_swarm_max_loops = heavy_swarm_max_loops
-        self.heavy_swarm_timeout = heavy_swarm_timeout
         self.chairman_model = chairman_model
         self.autosave_use_timestamp = autosave_use_timestamp
         self.director_model_name = director_model_name
@@ -759,7 +755,6 @@ class SwarmRouter(SerializableMixin):
             show_dashboard=False,
             variant=self.heavy_swarm_variant,
             max_loops=self.heavy_swarm_max_loops,
-            timeout=self.heavy_swarm_timeout,
             verbose=self.verbose,
             **self._internal_model_kwargs("HeavySwarm"),
         )
@@ -986,7 +981,6 @@ class SwarmRouter(SerializableMixin):
             self.heavy_swarm_swarm_show_output,
             self.heavy_swarm_variant,
             self.heavy_swarm_max_loops,
-            self.heavy_swarm_timeout,
             self.council_judge_model_name,
             self.multi_agent_collab_prompt,
             self.list_all_agents,
