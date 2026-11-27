@@ -1301,10 +1301,9 @@ def handle_llm_council(args: argparse.Namespace) -> None:
 
 def run_heavy_swarm(
     task: str,
-    loops_per_agent: int = 1,
+    max_loops: int = 1,
     question_agent_model_name: str = DEFAULT_HEAVY_SWARM_MODEL,
     worker_model_name: str = DEFAULT_HEAVY_SWARM_MODEL,
-    random_loops_per_agent: bool = False,
     verbose: bool = False,
 ) -> Optional[Any]:
     """
@@ -1315,14 +1314,12 @@ def run_heavy_swarm(
 
     Args:
         task: The task or query for the HeavySwarm to process. Must be non-empty.
-        loops_per_agent: Number of execution loops each agent should perform.
-            Defaults to 1. Higher values allow more iterative refinement.
+        max_loops: Number of refinement loops the swarm performs, each one
+            seeing the previous loop's results. Defaults to 1.
         question_agent_model_name: Model name for the question generation agent.
             Defaults to "gpt-5.4".
         worker_model_name: Model name for specialized worker agents that process
             the questions. Defaults to "gpt-5.4".
-        random_loops_per_agent: If True, enables random number of loops per agent
-            in the range 1-10. Defaults to False.
         verbose: Whether to show verbose output during execution. Defaults to False.
 
     Returns:
@@ -1355,10 +1352,9 @@ def run_heavy_swarm(
                 description="Creating HeavySwarm with specialized agents...",
             )
             swarm = HeavySwarm(
-                loops_per_agent=loops_per_agent,
+                max_loops=max_loops,
                 question_agent_model_name=question_agent_model_name,
                 worker_model_name=worker_model_name,
-                random_loops_per_agent=random_loops_per_agent,
                 verbose=verbose,
             )
 
@@ -1405,11 +1401,10 @@ def handle_heavy_swarm(args: argparse.Namespace) -> None:
     Args:
         args: Parsed command line arguments containing:
             - task: Required task for HeavySwarm to process
-            - loops_per_agent: Number of loops per agent (default: 1)
+            - loops_per_agent: Number of refinement loops (default: 1)
             - question_agent_model_name: Model for question generation
                 (default: "gpt-5.4")
             - worker_model_name: Model for worker agents (default: "gpt-5.4")
-            - random_loops_per_agent: Enable random loops (1-10 range)
             - verbose: Optional boolean flag for verbose output
 
     Exits:
@@ -1427,10 +1422,9 @@ def handle_heavy_swarm(args: argparse.Namespace) -> None:
         exit(1)
     run_heavy_swarm(
         task=args.task,
-        loops_per_agent=args.loops_per_agent,
+        max_loops=args.loops_per_agent,
         question_agent_model_name=args.question_agent_model_name,
         worker_model_name=args.worker_model_name,
-        random_loops_per_agent=args.random_loops_per_agent,
         verbose=args.verbose,
     )
 
