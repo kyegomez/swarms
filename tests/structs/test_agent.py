@@ -188,6 +188,34 @@ class TestBasicAgent:
         assert restored.max_loops == 2
         assert restored.short_memory.conversation_history == saved
 
+    def test_load_rebuilds_the_model_client(self, tmp_path):
+        file_path = str(tmp_path / "agent_state.json")
+        _flow(
+            "saved",
+            None,
+            tmp_path,
+            model_name="gpt-4o-mini",
+            temperature=0.1,
+            max_tokens=512,
+            context_compression=True,
+        ).save(file_path)
+
+        restored = _flow("restored", None, tmp_path)
+        assert restored._context_compressor is None
+        restored.load(file_path)
+
+        assert restored.llm.model_name == "gpt-4o-mini"
+        assert restored.llm.temperature == 0.1
+        assert restored.llm.max_tokens == 512
+        assert restored._context_compressor is not None
+
+        callers_llm = litellm_wrapper.LiteLLM(
+            model_name="claude-sonnet-4-6"
+        )
+        with_callers_llm = _flow("callers", callers_llm, tmp_path)
+        with_callers_llm.load(file_path)
+        assert with_callers_llm.llm is callers_llm
+
     def test_concurrent_saves_of_one_agent_both_land(
         self, basic_flow, monkeypatch, tmp_path
     ):
