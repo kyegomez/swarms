@@ -41,10 +41,10 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.litellm_wrapper import empty_usage
 
 DEFAULT_COUNCIL_MODELS: List[str] = [
-    "gpt-5.1",
+    "gpt-6-luna",
     "gemini/gemini-3.5-flash-lite",
-    "anthropic/claude-sonnet-5-5",
-    "xai/grok-4-1-fast-reasoning",
+    "anthropic/claude-haiku-5-5",
+    "xai/grok-4.3",
 ]
 
 
@@ -84,9 +84,9 @@ class LLMCouncil:
         Args:
             council_members: List of Agent instances representing council members.
                            If None, creates a default council of four members:
-                           GPT (gpt-5.1), Gemini (gemini/gemini-3.5-flash-lite),
-                           Claude (anthropic/claude-sonnet-5-5) and Grok
-                           (xai/grok-4-1-fast-reasoning).
+                           GPT (gpt-6-luna), Gemini (gemini/gemini-3.5-flash-lite),
+                           Claude (anthropic/claude-haiku-5-5) and Grok
+                           (xai/grok-4.3).
             chairman_model: Model name for the Chairman agent that synthesizes responses.
             verbose: Whether to log progress through each stage.
             output_type: Format for the output. Options: "list", "dict", "string", "final", "json", "yaml", etc.
