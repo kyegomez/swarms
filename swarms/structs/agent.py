@@ -2478,43 +2478,6 @@ Subtask Breakdown:
         except Exception as e:
             logger.error(f"Error logging state info: {e}")
 
-    def get_saveable_state(self) -> Dict[str, Any]:
-        """
-        Get a dictionary of all saveable state values.
-        Useful for debugging or manual state inspection.
-
-        Returns:
-            Dict[str, Any]: Dictionary of saveable values
-        """
-        return SafeLoaderUtils.create_state_dict(self)
-
-    def get_preserved_instances(self) -> Dict[str, Any]:
-        """
-        Get a dictionary of all preserved class instances.
-        Useful for debugging or manual state inspection.
-
-        Returns:
-            Dict[str, Any]: Dictionary of preserved instances
-        """
-        return SafeLoaderUtils.preserve_instances(self)
-
-    def save_to_yaml(self, file_path: str) -> None:
-        """
-        Save the agent to a YAML file
-
-        Args:
-            file_path (str): The path to the YAML file
-        """
-        import yaml
-
-        try:
-            logger.info(f"Saving agent to YAML file: {file_path}")
-            with open(file_path, "w") as f:
-                yaml.dump(self.to_dict(), f)
-        except Exception as error:
-            logger.error(f"Error saving agent to YAML: {error}")
-            raise error
-
     def get_llm_parameters(self):
         return self.llm_manager.get_parameters()
 
@@ -2715,28 +2678,6 @@ Subtask Breakdown:
 
         return (
             f"Model saved to {agent_workspace}/{self.agent_name}.json"
-        )
-
-    def model_dump_yaml(self):
-        """
-        Save the agent model configuration to YAML in the agent-specific workspace directory.
-
-        Returns:
-            str: Message indicating where the file was saved.
-        """
-        agent_workspace = self._get_agent_workspace_dir()
-        logger.info(
-            f"Saving {self.agent_name} model to YAML in the {agent_workspace} directory"
-        )
-
-        create_file_in_folder(
-            agent_workspace,
-            f"{self.agent_name}.yaml",
-            str(self.to_yaml()),
-        )
-
-        return (
-            f"Model saved to {agent_workspace}/{self.agent_name}.yaml"
         )
 
     def _stream_with_tool_collection(
