@@ -1,6 +1,6 @@
 import asyncio
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent, reset_agents
@@ -409,6 +409,15 @@ class ConcurrentWorkflow:
                 for agent in self.agents
             ]
 
+            if self.on_error == "raise":
+                try:
+                    for future in as_completed(futures):
+                        future.result()
+                finally:
+                    # Queued agents are dropped; the pool still waits for running ones.
+                    for future in futures:
+                        future.cancel()
+
             for future, agent in zip(futures, self.agents):
                 try:
                     outcome = future.result()
@@ -515,10 +524,17 @@ class ConcurrentWorkflow:
                     agent, task, img, imgs, streaming_callback
                 )
 
-        outcomes = await asyncio.gather(
-            *(run_agent(agent) for agent in self.agents),
-            return_exceptions=True,
-        )
+        tasks = [
+            asyncio.ensure_future(run_agent(agent))
+            for agent in self.agents
+        ]
+        try:
+            outcomes = await asyncio.gather(
+                *tasks, return_exceptions=self.on_error != "raise"
+            )
+        finally:
+            for pending in tasks:
+                pending.cancel()
 
         for agent, outcome in zip(self.agents, outcomes):
             self._record_outcome(agent, outcome)

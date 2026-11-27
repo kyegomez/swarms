@@ -783,5 +783,68 @@ def test_concurrent_workflow_awaits_agents_on_the_callers_thread(
     assert calls["peak"] == peak
 
 
+class _RecordingAgent(_EchoAgent):
+    """Echo agent that raises when named Fail and records every other run."""
+
+    def __init__(self, agent_name: str, ran: list):
+        super().__init__(agent_name)
+        self.ran = ran
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        if self.agent_name == "Fail":
+            raise RuntimeError("boom")
+        self.ran.append(self.agent_name)
+        time.sleep(0.2)
+        return super().run(task, img=img, imgs=imgs, **kwargs)
+
+
+class _BlockingLLMAgent(Agent):
+    """Agent whose model call fails at once when named Fail and takes five seconds otherwise."""
+
+    async def acall_llm(self, *args, **kwargs) -> str:
+        if self.agent_name == "Fail":
+            raise RuntimeError("boom")
+        await asyncio.sleep(5)
+        return "too late"
+
+
+def test_concurrent_workflow_on_error_raise_cancels_agents_on_the_event_loop():
+    """A failure under on_error raise reaches the caller without waiting for a slow agent."""
+    agents = [
+        _BlockingLLMAgent(
+            agent_name=name,
+            model_name="gpt-5.4-mini",
+            max_loops=1,
+            print_on=False,
+        )
+        for name in ("Slow", "Fail")
+    ]
+    workflow = ConcurrentWorkflow(agents=agents, on_error="raise")
+    assert workflow._runs_on_event_loop()
+
+    started = time.perf_counter()
+    with pytest.raises(RuntimeError, match="boom"):
+        workflow.run("go")
+
+    assert time.perf_counter() - started < 2
+
+
+def test_concurrent_workflow_on_error_raise_drops_queued_agents_on_threads():
+    """A failure under on_error raise never starts an agent still waiting for a thread."""
+    ran = []
+    agents = [
+        _RecordingAgent(name, ran)
+        for name in ("Fail", "Next", "Queued")
+    ]
+    workflow = ConcurrentWorkflow(
+        agents=agents, on_error="raise", max_workers=1
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        workflow.run("go")
+
+    assert "Queued" not in ran
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
