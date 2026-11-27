@@ -877,6 +877,14 @@ def test_usage_sums_builder_calls_and_executed_agents(monkeypatch):
         "total_tokens": 220,
     }
 
+    agents = builder.create_agents_from_specs(minimal_router_config())
+    builder.initialize_swarm_router(agents, "task")
+    builder.initialize_swarm_router(agents, "task")
+    assert builder.usage["total_tokens"] == 660
+    assert not any(
+        isinstance(v, list) for v in vars(builder).values()
+    )
+
 
 if __name__ == "__main__":
     run_all_tests()

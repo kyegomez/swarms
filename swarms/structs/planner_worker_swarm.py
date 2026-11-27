@@ -39,7 +39,7 @@ from swarms.telemetry.otel import (
     capture_init,
     trace_run,
 )
-from swarms.structs.usage_utils import total_usage
+from swarms.structs.usage_utils import add_usage, total_usage
 
 
 class TaskQueue:
@@ -758,7 +758,7 @@ class PlannerWorkerSwarm:
         try:
             raw_output = planner.run(task=task, img=img)
         finally:
-            self._keep_usage(planner)
+            add_usage(self._single_use_usage, planner)
 
         spec = self._parse_structured_output(
             raw_output, PlannerTaskSpec
@@ -812,19 +812,6 @@ class PlannerWorkerSwarm:
 
         return added_tasks
 
-    def _keep_usage(self, agent: Agent) -> None:
-        """
-        Add a single-use agent's usage to the swarm total.
-
-        Args:
-            agent: The planner or judge that just ran.
-        """
-        for key, value in (
-            getattr(agent, "usage", None) or {}
-        ).items():
-            if key in self._single_use_usage:
-                self._single_use_usage[key] += value
-
     def _run_judge(self, img: Optional[str] = None) -> CycleVerdict:
         """Run the judge agent to evaluate cycle results."""
         schema = BaseTool().base_model_to_dict(CycleVerdict)
@@ -867,7 +854,7 @@ class PlannerWorkerSwarm:
                 ),
             )
         finally:
-            self._keep_usage(judge)
+            add_usage(self._single_use_usage, judge)
 
         try:
             verdict = self._parse_structured_output(
