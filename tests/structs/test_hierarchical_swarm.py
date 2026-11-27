@@ -1442,6 +1442,7 @@ def test_planner_worker_swarm_run_starts_with_an_empty_task_queue():
     worker = StubAgent("Worker", ["haiku", "fixed"])
     worker.short_memory_init = lambda: None
     swarm = PlannerWorkerSwarm(agents=[worker])
+    swarm.judge_final_cycle = True
     swarm._create_planner_agent = lambda name="Planner": planner
     judged = []
 
