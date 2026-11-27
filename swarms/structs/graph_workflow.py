@@ -1307,16 +1307,8 @@ class GraphWorkflow:
             )
             raise e
 
-    def _attach_edge(self, edge: Edge) -> Edge:
-        """
-        Register one edge, after checking both endpoints exist.
-
-        The four public edge builders differ only in which pairs they generate;
-        this is the part they all shared verbatim.
-
-        Raises:
-            ValueError: If either endpoint is not a node in this workflow.
-        """
+    def _validate_edge_endpoints(self, edge: Edge) -> None:
+        """Raise ValueError if either endpoint is missing."""
         for role, node_id in (
             ("Source", edge.source),
             ("Target", edge.target),
@@ -1326,11 +1318,12 @@ class GraphWorkflow:
                 logger.error(error_msg)
                 raise ValueError(error_msg)
 
+    def _attach_edge(self, edge: Edge) -> None:
+        """Register an edge whose endpoints were already validated."""
         self.edges.append(edge)
         self.graph_backend.add_edge(
             edge.source, edge.target, **(edge.metadata or {})
         )
-        return edge
 
     def _add_edge_pairs(
         self,
@@ -1338,14 +1331,17 @@ class GraphWorkflow:
         kind: str,
         **kwargs: Any,
     ) -> List[Edge]:
-        """Attach one edge per ``(source, target)`` pair, invalidating the
-        compilation cache once at the end rather than per edge."""
+        """Validate the whole batch before attaching any edges."""
         created = [
-            self._attach_edge(
-                Edge.from_nodes(source, target, **kwargs)
-            )
+            Edge.from_nodes(source, target, **kwargs)
             for source, target in pairs
         ]
+        for edge in created:
+            self._validate_edge_endpoints(edge)
+
+        for edge in created:
+            self._attach_edge(edge)
+
         self._invalidate_compilation()
         if self.verbose:
             logger.success(f"Added {len(created)} {kind} edges")
@@ -1381,6 +1377,7 @@ class GraphWorkflow:
                         f"Creating and adding edge: {edge.source} -> {edge.target}"
                     )
 
+            self._validate_edge_endpoints(edge)
             self._attach_edge(edge)
             self._invalidate_compilation()
 
