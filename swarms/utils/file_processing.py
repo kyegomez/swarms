@@ -103,9 +103,11 @@ def create_file_in_folder(
 
 def zip_folders(
     folder1_path: str, folder2_path: str, zip_file_path: str
-):
+) -> None:
     """
     Zip two folders into a single zip file.
+
+    If the folder names collide, append _2 to the second archive entry.
 
     Args:
         folder1_path (str): Path to the first folder.
@@ -125,12 +127,12 @@ def zip_folders(
                     temp_dir, os.path.basename(folder1_path)
                 ),
             )
-            shutil.copytree(
-                folder2_path,
-                os.path.join(
-                    temp_dir, os.path.basename(folder2_path)
-                ),
+            second_destination = os.path.join(
+                temp_dir, os.path.basename(folder2_path)
             )
+            if os.path.exists(second_destination):
+                second_destination += "_2"
+            shutil.copytree(folder2_path, second_destination)
             # Create a zip file that contains the temporary directory
             shutil.make_archive(zip_file_path, "zip", temp_dir)
     except Exception as e:
