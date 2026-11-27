@@ -201,12 +201,13 @@ class LLMCouncil:
         "LLMCouncil.run",
         input_params=("task",),
     )
-    def run(self, task: str):
+    def run(self, task: str, img: Optional[str] = None):
         """
         Execute the full LLM Council workflow.
 
         Args:
             task: The user's task to process.
+            img: Image the members answer about and the chairman sees. Ranking compares the written answers only.
 
         Returns:
             Formatted output based on output_type, containing conversation history
@@ -234,6 +235,7 @@ class LLMCouncil:
         results_dict = run_agents_concurrently(
             self.council_members,
             task=task,
+            img=img,
             return_agent_output_dict=True,
         )
         _raise_member_failure(results_dict.values())
@@ -309,7 +311,9 @@ class LLMCouncil:
             task, original_responses, evaluations, id_to_member
         )
 
-        final_response = self.chairman.run(task=synthesis_prompt)
+        final_response = self.chairman.run(
+            task=synthesis_prompt, img=img
+        )
 
         # Add chairman's final response to conversation
         self.conversation.add(role="Chairman", content=final_response)

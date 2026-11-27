@@ -329,6 +329,7 @@ class GroupChat(SerializableMixin):
         sender: str,
         message: str,
         floor: bool = False,
+        img: Optional[str] = None,
     ) -> Tuple[float, str]:
         """Ask one agent whether it wants to respond to a message.
 
@@ -365,6 +366,7 @@ class GroupChat(SerializableMixin):
             # Typed turns let the agent tell its own prior speech from a peer's.
             tool_output = agent.run(
                 task=prompt,
+                img=img,
                 messages=messages_for(
                     agent.agent_name, self.conversation
                 ),
@@ -459,7 +461,7 @@ class GroupChat(SerializableMixin):
         streaming_callback(sender, "", True)
 
     async def _collect_bids(
-        self, sender: str, message: str
+        self, sender: str, message: str, img: Optional[str] = None
     ) -> List[Tuple[Agent, float, str]]:
         """Ask every agent, concurrently, for a speaking bid this turn.
 
@@ -473,7 +475,7 @@ class GroupChat(SerializableMixin):
         results = await asyncio.gather(
             *(
                 asyncio.to_thread(
-                    self._decide_sync, agent, sender, message
+                    self._decide_sync, agent, sender, message, img=img
                 )
                 for agent in self.agents
             )
@@ -523,6 +525,7 @@ class GroupChat(SerializableMixin):
         streaming_callback: Optional[
             Callable[[str, str, bool], None]
         ] = None,
+        img: Optional[str] = None,
     ) -> Any:
         """Run the turn-based groupchat and return formatted history.
 
@@ -537,6 +540,7 @@ class GroupChat(SerializableMixin):
                 callback. Each posted message — the initial user task and every
                 speaker's reply — is streamed to it token-by-token, with an
                 ``is_final=True`` sentinel marking the end of each turn.
+            img: Optional image every agent sees with the task.
 
         Returns:
             Conversation history formatted according to ``self.output_type``.
@@ -566,7 +570,9 @@ class GroupChat(SerializableMixin):
         message_count = 1  # the user task counts as the first message
 
         while message_count < self.max_loops:
-            bids = await self._collect_bids(last_sender, last_message)
+            bids = await self._collect_bids(
+                last_sender, last_message, img=img
+            )
 
             selection = self._select_speaker(bids, set(recent))
             if selection is None:
@@ -598,6 +604,7 @@ class GroupChat(SerializableMixin):
                     last_sender,
                     last_message,
                     True,
+                    img=img,
                 )
                 if not reply:
                     logger.warning(
@@ -625,6 +632,7 @@ class GroupChat(SerializableMixin):
         streaming_callback: Optional[
             Callable[[str, str, bool], None]
         ] = None,
+        img: Optional[str] = None,
     ) -> Any:
         """Synchronously run the groupchat until a lull or ``max_loops``.
 
@@ -635,13 +643,14 @@ class GroupChat(SerializableMixin):
                 chunks, with ``is_final=True`` marking the end of a speaker's
                 turn. Matches the streaming signature used across the framework
                 (``ConcurrentWorkflow``, ``HierarchicalSwarm``, etc.).
+            img: Optional image every agent sees with the task.
 
         Returns:
             Formatted conversation output from ``_run_async``.
         """
         return asyncio.run(
             self._run_async(
-                task, streaming_callback=streaming_callback
+                task, streaming_callback=streaming_callback, img=img
             )
         )
 

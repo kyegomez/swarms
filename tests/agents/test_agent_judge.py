@@ -48,7 +48,7 @@ def test_context_does_not_compound_across_loops(monkeypatch):
     judge, calls = _judge(monkeypatch, max_loops=3)
     judge.run(task="rate this answer")
 
-    # call_llm receives the whole transcript: prior turns plus the instruction, appended last.
+    # Each loop adds its prompt and the verdict after the evaluation prompt, which stays first.
     priors = [
         [m["content"] for m in call["messages"][:-1]]
         for call in calls
@@ -59,7 +59,7 @@ def test_context_does_not_compound_across_loops(monkeypatch):
         assert (
             later[: len(earlier)] == earlier
         ), f"loop context was rebuilt rather than extended: {priors}"
-        assert len(later) == len(earlier) + 1
+        assert len(later) == len(earlier) + 2
 
 
 def test_the_conversation_is_not_flattened_into_the_task(monkeypatch):

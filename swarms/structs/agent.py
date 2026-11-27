@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import inspect
 import json
 import os
@@ -96,7 +97,11 @@ from swarms.utils.index import (
 )
 from swarms.utils import llm_backend
 from swarms.utils.litellm_tokenizer import count_tokens
-from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
+from swarms.utils.litellm_wrapper import (
+    TASK_TURN_KEY,
+    LiteLLM,
+    empty_usage,
+)
 from swarms.utils.output_types import OutputType
 from swarms.utils.workspace_manager import WorkspaceManager
 from swarms.utils.workspace_utils import get_workspace_dir
@@ -114,6 +119,27 @@ def _model_info(model_name: str) -> Dict[str, Any]:
 ToolUsageType = Union[BaseModel, Dict[str, Any]]
 
 DEFAULT_AGENT_DESCRIPTION = "An autonomous agent that can perform tasks and learn from experience powered by Swarms"
+
+
+def _image_key(
+    img: Optional[str], imgs: Optional[List[str]]
+) -> Optional[str]:
+    """Fingerprint the images given to one run.
+
+    Args:
+        img: One image, or None.
+        imgs: Several images, or None.
+
+    Returns:
+        A short hash of the images in order, or None when there are none.
+    """
+    images = ([img] if img else []) + list(imgs or [])
+    if not images:
+        return None
+
+    return hashlib.sha256(
+        "\0".join(str(image) for image in images).encode()
+    ).hexdigest()[:16]
 
 
 def reset_agents(agents: Iterable[Any]) -> None:
@@ -934,6 +960,60 @@ class Agent:
         if self.preset_stopping_token:
             self.stopping_token = "<DONE>"
 
+    def _add_task_turn(
+        self, task: Optional[str], image_key: Optional[str]
+    ) -> None:
+        """Add the task to the history, marked when it brings new images.
+
+        Images seen on an earlier run keep that run's task turn, so the
+        request prefix that holds them repeats and the provider can cache it.
+
+        Args:
+            task: The task for this run.
+            image_key: Fingerprint of this run's images, or None.
+        """
+        first_seen = image_key is not None and not any(
+            (row.get("metadata") or {}).get(TASK_TURN_KEY)
+            == image_key
+            for row in self.short_memory.conversation_history
+        )
+
+        self.short_memory.add(
+            role=self.user_name,
+            content=task,
+            metadata=(
+                {TASK_TURN_KEY: image_key} if first_seen else None
+            ),
+        )
+
+    def _request_messages(
+        self,
+        request_start: int,
+        history_start: int,
+        image_key: Optional[str],
+    ) -> List[Dict[str, Any]]:
+        """Build one loop's request body from the history.
+
+        Args:
+            request_start: Index of the first history row to send.
+            history_start: History length when this run began.
+            image_key: Fingerprint of this run's images, or None.
+
+        Returns:
+            Chat messages, with the task turn marked for a LiteLLM model.
+        """
+        if not isinstance(self.llm, LiteLLM):
+            task_turn = False
+        elif image_key is not None:
+            task_turn = image_key
+        else:
+            # Only this run's rows, so an earlier run's task never takes the images.
+            task_turn = request_start == history_start
+
+        return self.short_memory.to_messages(
+            self.agent_name, request_start, task_turn=task_turn
+        )
+
     def check_model_supports_utilities(
         self, img: Optional[str] = None
     ) -> bool:
@@ -1169,6 +1249,10 @@ class Agent:
             ... )
         """
         history_start = len(self.short_memory.conversation_history)
+        # A caller's messages carry their own task turn.
+        image_key = (
+            _image_key(img, imgs) if messages is None else None
+        )
         try:
             if messages:
                 self.short_memory.add_messages(messages)
@@ -1177,7 +1261,7 @@ class Agent:
 
             self.check_model_supports_utilities(img=img)
 
-            self.short_memory.add(role=self.user_name, content=task)
+            self._add_task_turn(task, image_key)
 
             if self.plan_enabled is True:
                 self.plan(task)
@@ -1249,13 +1333,10 @@ class Agent:
                         llm_kwargs = dict(kwargs)
                         if self.transforms is None:
                             llm_kwargs["messages"] = (
-                                self.short_memory.to_messages(
-                                    self.agent_name,
+                                self._request_messages(
                                     request_start,
-                                    # Only this run's rows, so an earlier run's task never takes the images.
-                                    task_turn=request_start
-                                    == history_start
-                                    and isinstance(self.llm, LiteLLM),
+                                    history_start,
+                                    image_key,
                                 )
                             )
 
@@ -1760,6 +1841,10 @@ Subtask Breakdown:
             AgentLLMError: If the model call fails. arun then tries the next fallback model.
         """
         history_start = len(self.short_memory.conversation_history)
+        # A caller's messages carry their own task turn.
+        image_key = (
+            _image_key(img, imgs) if messages is None else None
+        )
         try:
             if messages:
                 self.short_memory.add_messages(messages)
@@ -1771,7 +1856,7 @@ Subtask Breakdown:
 
             self.check_model_supports_utilities(img=img)
 
-            self.short_memory.add(role=self.user_name, content=task)
+            self._add_task_turn(task, image_key)
 
             if self.plan_enabled is True:
                 await self.aplan(task)
@@ -1838,13 +1923,10 @@ Subtask Breakdown:
                         llm_kwargs = dict(kwargs)
                         if self.transforms is None:
                             llm_kwargs["messages"] = (
-                                self.short_memory.to_messages(
-                                    self.agent_name,
+                                self._request_messages(
                                     request_start,
-                                    # Only this run's rows, so an earlier run's task never takes the images.
-                                    task_turn=request_start
-                                    == history_start
-                                    and isinstance(self.llm, LiteLLM),
+                                    history_start,
+                                    image_key,
                                 )
                             )
 

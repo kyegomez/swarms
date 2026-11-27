@@ -663,7 +663,7 @@ class Conversation:
         agent_name: Optional[str] = None,
         start: int = 0,
         prefix: Sequence[Dict[str, Any]] = (),
-        task_turn: bool = False,
+        task_turn: Union[bool, str] = False,
     ) -> List[Dict[str, Any]]:
         """Build a chat request body from the history.
 
@@ -671,11 +671,20 @@ class Conversation:
             agent_name (Optional[str]): The role whose rows become assistant turns.
             start (int): Index of the first row to include.
             prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
-            task_turn (bool): Keep the mark on the user's task turn, so the model wrapper puts images there. Defaults to False.
+            task_turn (Union[bool, str]): Keep the task-turn mark, so the model wrapper puts images there. True keeps every mark, a string keeps only marks with that value, and False drops them. Defaults to False.
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
         """
+
+        def keeps_mark(row: Dict[str, Any]) -> bool:
+            mark = {**(row.get("metadata") or {}), **row}.get(
+                TASK_TURN_KEY
+            )
+            if not mark or not task_turn:
+                return False
+            return task_turn is True or mark == task_turn
+
         messages = []
         for row in [*prefix, *self.conversation_history[start:]]:
             role, content = row.get("role"), row.get("content")
@@ -701,34 +710,33 @@ class Conversation:
             elif role in ("system", "user", "assistant", "tool"):
                 # Rows already in chat form, such as a caller's messages, pass through as given.
                 fields = {**(row.get("metadata") or {}), **row}
-                messages.append(
-                    {
-                        key: fields[key]
-                        for key in (
-                            "role",
-                            "content",
-                            "name",
-                            "tool_calls",
-                            "tool_call_id",
-                            *((TASK_TURN_KEY,) if task_turn else ()),
-                        )
-                        if key in fields
-                    }
-                )
+                message = {
+                    key: fields[key]
+                    for key in (
+                        "role",
+                        "content",
+                        "name",
+                        "tool_calls",
+                        "tool_call_id",
+                    )
+                    if key in fields
+                }
+                if keeps_mark(row):
+                    message[TASK_TURN_KEY] = True
+                messages.append(message)
             elif content is not None and role not in (
                 "System",
                 "Tool Executor",
             ):
-                messages.append(
-                    {
-                        "role": (
-                            "assistant"
-                            if role == agent_name
-                            else "user"
-                        ),
-                        "content": str(content),
-                    }
-                )
+                message = {
+                    "role": (
+                        "assistant" if role == agent_name else "user"
+                    ),
+                    "content": str(content),
+                }
+                if message["role"] == "user" and keeps_mark(row):
+                    message[TASK_TURN_KEY] = True
+                messages.append(message)
         return messages
 
     def record_assistant(

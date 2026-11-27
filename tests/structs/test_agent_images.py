@@ -20,9 +20,13 @@ import swarms.utils.litellm_wrapper as litellm_wrapper
 from swarms import (
     Agent,
     AgentRearrange,
+    DebateWithJudge,
     GraphWorkflow,
+    GroupChat,
     MajorityVoting,
+    SwarmRouter,
 )
+from swarms.agents.agent_judge import AgentJudge
 
 
 load_dotenv()
@@ -205,6 +209,46 @@ def test_image_joins_the_newest_turn_after_prior_messages():
     assert _image_urls(messages[-1:]) == [URL]
 
 
+@pytest.mark.parametrize(
+    "second_image, image_turn", [(URL, 0), (DATA_URI, 2)]
+)
+def test_rerun_keeps_an_image_on_the_turn_it_came_with(
+    second_image, image_turn
+):
+    agent = _agent()
+
+    _, messages = _requests(
+        lambda: (
+            agent.run(TASK, img=URL),
+            agent.run("And now?", img=second_image),
+        )
+    )
+
+    assert _image_urls(messages) == [second_image]
+    assert isinstance(messages[image_turn]["content"], list)
+
+
+@pytest.mark.parametrize(
+    "swarm_type",
+    ["GroupChat", "DebateWithJudge", "LLMCouncil", "CouncilAsAJudge"],
+)
+def test_swarm_router_passes_the_image_to_every_swarm_type(
+    swarm_type,
+):
+    agents = [_agent() for _ in range(3)]
+    for name, agent in zip(("A", "B", "C"), agents):
+        agent.agent_name = name
+    router = SwarmRouter(
+        agents=agents, swarm_type=swarm_type, model_name="gpt-4.1"
+    )
+
+    requests = _requests(lambda: router.run(TASK, img=URL))
+
+    assert any(
+        _image_urls(messages) == [URL] for messages in requests
+    )
+
+
 def test_image_is_not_written_into_the_conversation():
     agent = _agent()
 
@@ -266,8 +310,32 @@ def _graph_workflow(agents: List[Agent]) -> GraphWorkflow:
     return workflow
 
 
+def _agent_judge(agents: List[Agent]) -> AgentJudge:
+    return AgentJudge(model_name="gpt-4.1", max_loops=3)
+
+
+def _debate_with_judge(agents: List[Agent]) -> DebateWithJudge:
+    judge = _agent()
+    judge.agent_name = "Judge"
+    return DebateWithJudge(
+        agents=[*agents, judge], max_loops=2, verbose=False
+    )
+
+
+def _group_chat(agents: List[Agent]) -> GroupChat:
+    return GroupChat(agents=agents, max_loops=3)
+
+
 @pytest.mark.parametrize(
-    "build", [_majority_voting, _agent_rearrange, _graph_workflow]
+    "build",
+    [
+        _majority_voting,
+        _agent_rearrange,
+        _graph_workflow,
+        _agent_judge,
+        _debate_with_judge,
+        _group_chat,
+    ],
 )
 def test_structures_send_the_image_on_the_task_turn(build):
     """The image rides on the task, ahead of the turns that change, so it stays cacheable."""

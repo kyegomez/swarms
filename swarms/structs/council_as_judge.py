@@ -335,6 +335,7 @@ class CouncilAsAJudge:
         dim: str,
         agent: Agent,
         task: str,
+        img: Optional[str] = None,
     ) -> Tuple[str, str]:
         """
         Evaluate a single dimension of the task response.
@@ -343,6 +344,7 @@ class CouncilAsAJudge:
             dim (str): Dimension to evaluate
             agent (Agent): Judge agent for this dimension
             task (str): Task containing the response to evaluate
+            img (Optional[str]): Image the judge sees with the task
 
         Returns:
             Tuple[str, str]: Tuple of (dimension name, evaluation result)
@@ -352,7 +354,7 @@ class CouncilAsAJudge:
         """
         try:
             result = agent.run(
-                build_judge_prompt(dim, task), messages=[]
+                build_judge_prompt(dim, task), img=img, messages=[]
             )
 
             self.conversation.add(
@@ -370,12 +372,13 @@ class CouncilAsAJudge:
         "CouncilAsAJudge.run",
         input_params=("task",),
     )
-    def run(self, task: str) -> None:
+    def run(self, task: str, img: Optional[str] = None) -> None:
         """
         Run the evaluation process using ThreadPoolExecutor.
 
         Args:
             task (str): Task containing the response to evaluate
+            img (Optional[str]): Image every judge and the aggregator see with the task
 
         Raises:
             EvaluationError: If evaluation process fails
@@ -406,6 +409,7 @@ class CouncilAsAJudge:
                         dim,
                         agent,
                         task,
+                        img,
                     ): dim
                     for dim, agent, _ in tasks
                 }
@@ -429,7 +433,7 @@ class CouncilAsAJudge:
                 )
             )
             final_report = self.aggregator_agent.run(
-                task=aggregation_task, messages=prior
+                task=aggregation_task, img=img, messages=prior
             )
 
             self.conversation.add(
@@ -448,13 +452,17 @@ class CouncilAsAJudge:
             )
 
     async def arun(
-        self, task: str, max_concurrency: Optional[int] = None
+        self,
+        task: str,
+        max_concurrency: Optional[int] = None,
+        img: Optional[str] = None,
     ):
         """
         Run the evaluation on the event loop, awaiting each judge's arun.
 
         Args:
             task (str): Task containing the response to evaluate
+            img (Optional[str]): Image every judge and the aggregator see with the task
             max_concurrency (Optional[int]): Most judges evaluating at
                 once. Defaults to None, which runs every judge at once.
 
@@ -473,7 +481,7 @@ class CouncilAsAJudge:
             async with semaphore:
                 try:
                     return agent.agent_name, await agent.arun(
-                        prompt, messages=[]
+                        prompt, img=img, messages=[]
                     )
                 except Exception as e:
                     raise DimensionEvaluationError(
@@ -497,7 +505,7 @@ class CouncilAsAJudge:
                 messages_for(aggregator.agent_name, self.conversation)
             )
             final_report = await aggregator.arun(
-                task=aggregation_task, messages=prior
+                task=aggregation_task, img=img, messages=prior
             )
             self.conversation.add(
                 role=aggregator.agent_name, content=final_report
