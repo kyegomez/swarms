@@ -178,13 +178,6 @@ class MajorityVoting:
         capture_init(self)
 
     def _new_conversation(self) -> Conversation:
-        """Build a fresh conversation with the caller's settings.
-
-        Returns:
-            Conversation: Built from the extra arguments given to
-                ``__init__``, so settings such as ``rules`` apply to
-                every run.
-        """
         return Conversation(
             time_enabled=False,
             channel=self.channel,
