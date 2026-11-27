@@ -87,3 +87,26 @@ def test_compression_keeps_conversation_system_rows(
     result = MessageTransforms(config).transform_messages(messages)
 
     assert result.messages == expected
+
+
+def test_long_history_just_over_max_tokens_loses_one_message(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        transforms,
+        "count_tokens",
+        lambda text, model=None, default_encoder=None: len(
+            text.split()
+        ),
+    )
+    messages = [
+        {"role": "user", "content": f"turn {i}"} for i in range(60)
+    ]
+
+    result = MessageTransforms(
+        TransformConfig(enabled=True, max_tokens=119)
+    ).transform_messages(messages)
+
+    assert result.compressed_message_count == 59
+    assert result.messages[0] == messages[0]
+    assert result.messages[-1] == messages[-1]
