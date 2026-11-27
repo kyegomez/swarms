@@ -11,7 +11,10 @@ Tests core functionalities of the LLM Council including:
 import pytest
 from loguru import logger
 from dotenv import load_dotenv
-from swarms.structs.llm_council import LLMCouncil
+from swarms.structs.llm_council import (
+    DEFAULT_COUNCIL_MODELS,
+    LLMCouncil,
+)
 from swarms.structs.agent import Agent
 
 load_dotenv()
@@ -422,18 +425,21 @@ def test_default_members_reach_their_own_providers_api():
     }
 
 
-def test_default_claude_member_sends_no_temperature():
+def test_default_agents_send_no_temperature():
     council = LLMCouncil(verbose=False)
-    claude = next(
-        member
+    agents = [*council.council_members, council.chairman]
+
+    for agent in agents:
+        params = agent.llm._build_completion_params(
+            "Pick a database."
+        )
+        assert "temperature" not in params
+
+    models = {
+        member.agent_name: member.model_name
         for member in council.council_members
-        if member.agent_name == "Claude-Councilor"
-    )
-
-    params = claude.llm._build_completion_params("Pick a database.")
-
-    assert params["model"] == "anthropic/claude-sonnet-5-5"
-    assert "temperature" not in params
+    }
+    assert models["Claude-Councilor"] == "anthropic/claude-sonnet-5-5"
 
 
 @pytest.mark.parametrize(
@@ -466,6 +472,43 @@ def test_member_failure_raises_before_the_chairman(failing_call):
         council.run("Pick a database.")
     assert len(calls) == failing_call
     assert chairman_tasks == []
+
+
+@pytest.mark.parametrize(
+    "council_models,expected",
+    [
+        (None, DEFAULT_COUNCIL_MODELS),
+        (
+            [
+                "gpt-5.4",
+                "gemini/gemini-2.5-pro",
+                "anthropic/claude-sonnet-4-6",
+                "xai/grok-4",
+            ],
+            [
+                "gpt-5.4",
+                "gemini/gemini-2.5-pro",
+                "anthropic/claude-sonnet-4-6",
+                "xai/grok-4",
+            ],
+        ),
+    ],
+    ids=["default", "custom"],
+)
+def test_council_models_sets_preset_agent_models(
+    council_models, expected
+):
+    council = LLMCouncil(council_models=council_models, verbose=False)
+
+    assert [
+        member.model_name for member in council.council_members
+    ] == expected
+
+
+@pytest.mark.parametrize("bad_models", [[], ["gpt-5.4"], ["a"] * 5])
+def test_council_models_rejects_wrong_length(bad_models):
+    with pytest.raises(ValueError, match="council_models"):
+        LLMCouncil(council_models=bad_models, verbose=False)
 
 
 if __name__ == "__main__":

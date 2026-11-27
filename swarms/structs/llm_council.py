@@ -24,21 +24,28 @@ from swarms.prompts.llm_council_prompts import (
     get_grok_councilor_prompt,
     get_synthesis_prompt,
 )
-from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
+from swarms.structs.execution_utils import batched_run
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
     run_agents_concurrently,
 )
+from swarms.telemetry.otel import capture_init, trace_run
+from swarms.utils.generate_id import generate_id
 from swarms.utils.history_output_formatter import (
     HistoryOutputType,
     history_output_formatter,
 )
-from swarms.telemetry.otel import capture_init, trace_run
-from swarms.utils.generate_id import generate_id
 from swarms.utils.litellm_wrapper import empty_usage
+
+DEFAULT_COUNCIL_MODELS: List[str] = [
+    "gpt-5.1",
+    "gemini/gemini-3.5-flash-lite",
+    "anthropic/claude-sonnet-5-5",
+    "xai/grok-4-1-fast-reasoning",
+]
 
 
 def _raise_member_failure(results) -> None:
@@ -69,6 +76,7 @@ class LLMCouncil:
         chairman_model: str = "gpt-5.1",
         verbose: bool = True,
         output_type: HistoryOutputType = "dict-all-except-first",
+        council_models: Optional[List[str]] = None,
     ):
         """
         Initialize the LLM Council.
@@ -82,16 +90,23 @@ class LLMCouncil:
             chairman_model: Model name for the Chairman agent that synthesizes responses.
             verbose: Whether to log progress through each stage.
             output_type: Format for the output. Options: "list", "dict", "string", "final", "json", "yaml", etc.
+            council_models: Optional list of four model names overriding
+                DEFAULT_COUNCIL_MODELS for the preset GPT, Gemini, Claude,
+                and Grok councilors when council_members is None.
         """
         self.id = id or generate_id("llm-council")
         self.name = name
         self.description = description
         self.verbose = verbose
         self.output_type = output_type
+        self.council_models = council_models
+        self.chairman_model = chairman_model
 
         # Create default council members if none provided
         if council_members is None:
-            self.council_members = self._create_default_council()
+            self.council_members = self._create_default_council(
+                council_models
+            )
         else:
             self.council_members = council_members
 
@@ -103,7 +118,6 @@ class LLMCouncil:
             model_name=chairman_model,
             max_loops=1,
             verbose=verbose,
-            temperature=0.7,
         )
 
         self.conversation = Conversation(
@@ -121,40 +135,52 @@ class LLMCouncil:
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
 
-    def _create_default_council(self) -> List[Agent]:
-        """
-        Create default council members with specialized prompts and models.
+    def _create_default_council(
+        self, model_names: Optional[List[str]] = None
+    ) -> List[Agent]:
+        """Create default council members with specialized prompts and models.
+
+        Args:
+            model_names: Optional list of four model names for GPT, Gemini,
+                Claude, and Grok councilors. Defaults to DEFAULT_COUNCIL_MODELS.
 
         Returns:
             List of Agent instances configured as council members.
         """
+        models = (
+            list(DEFAULT_COUNCIL_MODELS)
+            if model_names is None
+            else list(model_names)
+        )
+        if len(models) != len(DEFAULT_COUNCIL_MODELS):
+            raise ValueError(
+                f"council_models must contain {len(DEFAULT_COUNCIL_MODELS)} "
+                f"model names (GPT, Gemini, Claude, Grok), got {len(models)}"
+            )
 
         gpt_agent = Agent(
             agent_name="GPT-Councilor",
             agent_description="Analytical and comprehensive AI councilor specializing in deep analysis and thorough responses",
             system_prompt=get_gpt_councilor_prompt(),
-            model_name="gpt-5.1",
+            model_name=models[0],
             max_loops=1,
             verbose=False,
-            temperature=0.7,
         )
 
         gemini_agent = Agent(
             agent_name="Gemini-Councilor",
             agent_description="Concise and well-processed AI councilor specializing in clear, structured responses",
             system_prompt=get_gemini_councilor_prompt(),
-            # Without the gemini/ prefix LiteLLM sends this to Vertex AI.
-            model_name="gemini/gemini-3.5-flash-lite",
+            model_name=models[1],
             max_loops=1,
             verbose=False,
-            temperature=0.7,
         )
 
         claude_agent = Agent(
             agent_name="Claude-Councilor",
             agent_description="Thoughtful and balanced AI councilor specializing in nuanced and well-reasoned responses",
             system_prompt=get_claude_councilor_prompt(),
-            model_name="anthropic/claude-sonnet-5-5",
+            model_name=models[2],
             max_loops=1,
             verbose=False,
             top_p=None,
@@ -164,15 +190,12 @@ class LLMCouncil:
             agent_name="Grok-Councilor",
             agent_description="Creative and innovative AI councilor specializing in unique perspectives and creative solutions",
             system_prompt=get_grok_councilor_prompt(),
-            model_name="xai/grok-4-1-fast-reasoning",
+            model_name=models[3],
             max_loops=1,
             verbose=False,
-            temperature=0.8,
         )
 
-        members = [gpt_agent, gemini_agent, claude_agent, grok_agent]
-
-        return members
+        return [gpt_agent, gemini_agent, claude_agent, grok_agent]
 
     @trace_run(
         "LLMCouncil.run",
