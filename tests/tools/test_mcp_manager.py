@@ -34,6 +34,7 @@ from swarms.tools.mcp_manager import (
     MCPInMemoryTokenStorage,
     MCPManager,
     _describe_exception,
+    _discover_token_endpoint,
     _mcp_is_v2,
     _OAuthCallbackServer,
     _resolve_secret,
@@ -1214,6 +1215,51 @@ class TestOAuthPlumbing:
             server.shutdown()
             server.server_close()
         assert "/.well-known/oauth-authorization-server" in requested
+
+    def test_discovery_reads_openid_configuration_of_listed_server(
+        self,
+    ):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
+        port = _free_port()
+        base = f"http://127.0.0.1:{port}"
+        documents = {
+            "/.well-known/oauth-protected-resource": {
+                "authorization_servers": [f"{base}/tenant/v2.0"]
+            },
+            "/tenant/v2.0/.well-known/openid-configuration": {
+                "token_endpoint": f"{base}/tenant/token"
+            },
+        }
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                if self.path not in documents:
+                    self.send_error(404)
+                    return
+                body = json.dumps(documents[self.path]).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        server = HTTPServer(("127.0.0.1", port), Handler)
+        threading.Thread(
+            target=server.serve_forever, daemon=True
+        ).start()
+        try:
+            endpoint = run_async(
+                _discover_token_endpoint(f"{base}/mcp", 5)
+            )
+        finally:
+            server.shutdown()
+            server.server_close()
+        assert endpoint == f"{base}/tenant/token"
 
 
 ########################################################
