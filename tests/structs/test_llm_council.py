@@ -439,7 +439,7 @@ def test_default_agents_send_no_temperature():
         member.agent_name: member.model_name
         for member in council.council_members
     }
-    assert models["Claude-Councilor"] == "anthropic/claude-sonnet-5-5"
+    assert models["Claude-Councilor"] == "anthropic/claude-haiku-5-5"
 
 
 @pytest.mark.parametrize(
