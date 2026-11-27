@@ -238,7 +238,8 @@ class CouncilAsAJudge:
             description (str): Description of the council's purpose
             model_name (str): Name of the model to use for evaluations
             output_type (str): Type of output to return
-            cache_size (int): Size of the LRU cache for prompts
+            cache_size (int): Unused. The prompt builders keep their
+                own module-level cache of 128 entries.
             max_workers (int): Maximum number of worker threads for parallel execution
             random_model_name (bool): Whether to use random model names
             max_loops (int): Maximum number of loops for agents
@@ -278,38 +279,6 @@ class CouncilAsAJudge:
 
         if self.random_model_name:
             self.model_name = set_random_models_for_agents()
-
-        self.concurrent_setup()
-
-    def concurrent_setup(self):
-
-        # Configure caching
-        self._configure_caching(self.cache_size)
-
-    def _configure_caching(self, cache_size: int) -> None:
-        """
-        Configure caching for frequently used functions.
-
-        Args:
-            cache_size (int): Size of the LRU cache
-        """
-        # Update cache sizes for cached functions
-        judge_system_prompt.cache_info = (
-            lambda: None
-        )  # Reset cache info
-        build_judge_prompt.cache_info = lambda: None
-        aggregator_system_prompt.cache_info = lambda: None
-
-        # Set new cache sizes
-        judge_system_prompt.__wrapped__.__wrapped__ = lru_cache(
-            maxsize=cache_size
-        )(judge_system_prompt.__wrapped__)
-        build_judge_prompt.__wrapped__.__wrapped__ = lru_cache(
-            maxsize=cache_size
-        )(build_judge_prompt.__wrapped__)
-        aggregator_system_prompt.__wrapped__.__wrapped__ = lru_cache(
-            maxsize=cache_size
-        )(aggregator_system_prompt.__wrapped__)
 
     def _create_judges(self) -> Dict[str, Agent]:
         """

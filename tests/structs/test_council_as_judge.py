@@ -1,10 +1,16 @@
 import asyncio
+import inspect
 from types import SimpleNamespace
 
 import pytest
 
 import swarms.utils.litellm_wrapper as litellm_wrapper
-from swarms.structs.council_as_judge import CouncilAsAJudge
+from swarms.structs.council_as_judge import (
+    CouncilAsAJudge,
+    aggregator_system_prompt,
+    build_judge_prompt,
+    judge_system_prompt,
+)
 
 
 def test_judges_do_not_see_earlier_runs(monkeypatch):
@@ -138,3 +144,15 @@ def test_every_request_carries_the_task_once(monkeypatch, entry):
         asyncio.run(result)
 
     assert counts == [1] * (len(council.judge_agents) + 1)
+
+
+def test_construction_leaves_the_prompt_builders_intact():
+    CouncilAsAJudge(cache_size=4)
+
+    for builder in (
+        judge_system_prompt,
+        build_judge_prompt,
+        aggregator_system_prompt,
+    ):
+        assert builder.cache_info().maxsize == 128
+        inspect.signature(builder)
