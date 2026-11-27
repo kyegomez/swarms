@@ -51,6 +51,7 @@ Example:
 import ast
 import asyncio
 import json
+import math
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, List, Optional, Tuple
@@ -189,6 +190,8 @@ def _extract_args(tool_output: Any) -> Tuple[float, str]:
     try:
         score = float(args.get("score", 0.0))
     except (TypeError, ValueError):
+        score = 0.0
+    if not math.isfinite(score):
         score = 0.0
     message = str(args.get("message", "")).strip()
     return max(0.0, min(1.0, score)), message

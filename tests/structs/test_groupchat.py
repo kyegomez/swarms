@@ -161,6 +161,8 @@ class TestExtractArgs:
     def test_score_is_clamped_into_range(self):
         assert _extract_args(respond_call(1.7, "m"))[0] == 1.0
         assert _extract_args(respond_call(-0.5, "m"))[0] == 0.0
+        for score in (float("nan"), float("inf"), float("-inf")):
+            assert _extract_args(respond_call(score, "m"))[0] == 0.0
 
     def test_non_numeric_score_defaults_to_zero(self):
         call = {
