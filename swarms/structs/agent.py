@@ -2673,9 +2673,11 @@ Subtask Breakdown:
         dict_copy = self.__dict__.copy()
         dict_copy.pop("llm", None)
 
+        # Credentials must not leak into saved configs, JSON, or YAML
         return {
             attr_name: self._serialize_attr(attr_name, attr_value)
             for attr_name, attr_value in dict_copy.items()
+            if not SafeLoaderUtils.is_secret_name(attr_name)
         }
 
     def to_json(self, indent: int = 4, *args, **kwargs):
