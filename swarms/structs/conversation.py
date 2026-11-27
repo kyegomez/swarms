@@ -1600,10 +1600,14 @@ class Conversation:
 
     def return_dict_final(self):
         """Return the final message as a dictionary."""
+        if not self.conversation_history:
+            return {}
         return self.conversation_history[-1]
 
     def return_list_final(self):
         """Return the final message as a list."""
+        if not self.conversation_history:
+            return []
         return [
             self.conversation_history[-1]["content"],
         ]
