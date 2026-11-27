@@ -50,6 +50,7 @@ Example:
 
 import ast
 import asyncio
+import contextvars
 import json
 import math
 from collections import deque
@@ -636,14 +637,25 @@ class GroupChat(SerializableMixin):
                 turn. Matches the streaming signature used across the framework
                 (``ConcurrentWorkflow``, ``HierarchicalSwarm``, etc.).
 
+        Works when called from inside a running event loop, such as a
+        Jupyter cell or an async web handler: the chat then runs on its
+        own loop in a worker thread and this call blocks until it ends.
+
         Returns:
             Formatted conversation output from ``_run_async``.
         """
-        return asyncio.run(
-            self._run_async(
-                task, streaming_callback=streaming_callback
-            )
+        chat = self._run_async(
+            task, streaming_callback=streaming_callback
         )
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(chat)
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            return executor.submit(
+                contextvars.copy_context().run, asyncio.run, chat
+            ).result()
 
     def run_batch(self, tasks: List[str]) -> List[Any]:
         """Run the groupchat in batch mode.
