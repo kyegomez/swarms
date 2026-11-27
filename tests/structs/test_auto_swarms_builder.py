@@ -863,7 +863,9 @@ def test_usage_sums_builder_calls_and_executed_agents(monkeypatch):
         litellm_wrapper, "completion", fake_completion
     )
 
+    hook_calls = []
     builder = AutoSwarmBuilder()
+    builder.additional_llm_args["usage_hook"] = hook_calls.append
     builder.run("some task", execute=True)
 
     builder_calls = [c for c in calls if "response_format" in c]
@@ -882,6 +884,7 @@ def test_usage_sums_builder_calls_and_executed_agents(monkeypatch):
     builder.initialize_swarm_router(agents, "task")
     assert builder.usage["total_tokens"] == 660
     assert not hasattr(builder, "_usage_sources")
+    assert len(hook_calls) == 3
 
 
 if __name__ == "__main__":
