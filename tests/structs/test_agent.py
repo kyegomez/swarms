@@ -2081,6 +2081,9 @@ class TestConcurrentExecutionPool:
             barrier.wait()
             return "ok"
 
+        def wait_unless_sender(self, *a, **kw):
+            return "sent" if self is agent else wait()
+
         with patch("os.cpu_count", return_value=1):
             with patch.object(Agent, "run", side_effect=wait):
                 assert (
@@ -2089,7 +2092,12 @@ class TestConcurrentExecutionPool:
                     )
                     == ["ok"] * 4
                 )
-            with patch.object(Agent, "talk_to", side_effect=wait):
+            with patch.object(
+                Agent,
+                "run",
+                autospec=True,
+                side_effect=wait_unless_sender,
+            ):
                 assert (
                     Agent.talk_to_multiple_agents(agent, others, "hi")
                     == ["ok"] * 4
@@ -2105,38 +2113,46 @@ class TestConcurrentExecutionPool:
             with pytest.raises(RuntimeError, match="boom"):
                 Agent.run_concurrent_tasks(agent, ["t1"])
 
-    def test_talk_to_multiple_agents_returns_one_entry_per_agent(
-        self,
-    ):
+    def test_talk_to_multiple_agents_runs_itself_once(self):
+        """It ran its own task once per receiver, concurrently on one
+        short_memory, so every receiver got a different transcript."""
         agent = self._agent()
         others = [self._agent("B"), self._agent("C")]
         with patch.object(
             Agent,
-            "talk_to",
-            side_effect=lambda other, task, *a, **kw: f"to:{other.agent_name}",
-        ):
+            "run",
+            autospec=True,
+            side_effect=lambda self, task, *a, **kw: f"{self.agent_name}<{task}>",
+        ) as run:
             outputs = Agent.talk_to_multiple_agents(
                 agent, others, "hi"
             )
 
-        assert outputs == ["to:B", "to:C"]
+        runners = [call.args[0] for call in run.call_args_list]
+        assert runners.count(agent) == 1
+        assert outputs == [
+            "B<From A: Message: A<A: hi>>",
+            "C<From A: Message: A<A: hi>>",
+        ]
 
     def test_talk_to_multiple_agents_isolates_a_failing_agent(self):
         """One bad conversation contributes None; the others still return."""
         agent = self._agent()
         others = [self._agent("B"), self._agent("C")]
 
-        def talk(other, task, *a, **kw):
-            if other.agent_name == "B":
+        def run(self, task, *a, **kw):
+            if self.agent_name == "B":
                 raise RuntimeError("dead")
-            return f"to:{other.agent_name}"
+            return self.agent_name
 
-        with patch.object(Agent, "talk_to", side_effect=talk):
+        with patch.object(
+            Agent, "run", autospec=True, side_effect=run
+        ):
             outputs = Agent.talk_to_multiple_agents(
                 agent, others, "hi"
             )
 
-        assert outputs == [None, "to:C"]
+        assert outputs == [None, "C"]
 
     def test_pool_is_shut_down_after_each_call(self):
         """Call-scoped, so a reused agent must not leak a pool per call."""
