@@ -565,6 +565,8 @@ class PlannerWorkerSwarm:
         output_type: Output format for the final result.
         autosave: Whether to save conversation history.
         verbose: Enable verbose logging.
+        judge_final_cycle: Also judge cycle max_loops. No later cycle
+            uses that verdict, so it is off by default.
     """
 
     def __init__(
@@ -584,6 +586,7 @@ class PlannerWorkerSwarm:
         verbose: bool = False,
         channel: Optional[CommsChannel] = None,
         *args,
+        judge_final_cycle: bool = False,
         **kwargs,
     ):
         self.name = name
@@ -606,6 +609,7 @@ class PlannerWorkerSwarm:
         )
         self.swarm_workspace_dir = self.workspace.dir
         self.verbose = verbose
+        self.judge_final_cycle = judge_final_cycle
 
         # Internal state
         self.task_queue = TaskQueue()
@@ -985,6 +989,11 @@ class PlannerWorkerSwarm:
                 f"Progress: {status['progress']}, "
                 f"Status: {status['status_counts']}"
             )
+
+            # No later cycle reads the last verdict.
+            is_final_cycle = cycle == self.max_loops - 1
+            if is_final_cycle and not self.judge_final_cycle:
+                break
 
             # Phase 3: Judge evaluation
             verdict = self._run_judge(img=img)

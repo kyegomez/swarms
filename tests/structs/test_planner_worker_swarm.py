@@ -28,7 +28,7 @@ def _usage_agent(name, input_tokens, output_tokens, output="ok"):
 def test_usage_counts_the_single_use_planner_and_judge():
     """The planner and judge are built per call, and their usage still counts."""
     swarm = PlannerWorkerSwarm(
-        agents=[_usage_agent("Worker", 1, 1)], max_loops=1
+        agents=[_usage_agent("Worker", 1, 1)], judge_final_cycle=True
     )
     single_use = iter(
         [
@@ -98,7 +98,9 @@ def test_judge_gets_the_goal_and_each_result_once():
     judge = MagicMock(usage={})
     judge.run.return_value = "not a verdict"
     worker = _usage_agent("Worker", 1, 1, "WORKER-RESULT")
-    swarm = PlannerWorkerSwarm(agents=[worker])
+    swarm = PlannerWorkerSwarm(
+        agents=[worker], judge_final_cycle=True
+    )
 
     with patch(
         "swarms.structs.planner_worker_swarm.Agent",
@@ -109,6 +111,25 @@ def test_judge_gets_the_goal_and_each_result_once():
     text = str(judge.run.call_args.kwargs)
     counts = (text.count("TASK-MARK"), text.count("WORKER-RESULT"))
     assert counts == (1, 1)
+
+
+@pytest.mark.parametrize("max_loops", [1, 2])
+def test_judge_skips_the_last_cycle_by_default(max_loops):
+    """No later cycle reads the last verdict, so the judge is not asked."""
+    agent = MagicMock(usage={})
+    agent.run.return_value = {"plan": "p", "tasks": []}
+    swarm = PlannerWorkerSwarm(
+        agents=[_usage_agent("Worker", 1, 1)], max_loops=max_loops
+    )
+
+    with patch(
+        "swarms.structs.planner_worker_swarm.Agent",
+        return_value=agent,
+    ) as built:
+        swarm.run("goal")
+
+    names = [c.kwargs["agent_name"] for c in built.call_args_list]
+    assert names.count("CycleJudge") == max_loops - 1
 
 
 def test_worker_pool_defaults_to_one_worker_per_agent():
