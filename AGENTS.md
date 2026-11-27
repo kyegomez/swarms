@@ -36,6 +36,7 @@ print(agent.run("Summarise the current state of LLM research."))
 
 - Commit, PR and issue titles use WARP: `[TYPE][Function/FileName][Short description]`.
 - Disclose AI authorship: a co-author trailer on commits and a "Generated with" line naming the agent and model on PRs and issues.
+- Tag and categorize every PR when you open it. Set one category label from the WARP `TYPE`: `FIX` is `bug`, `FEAT` is `enhancement`, `PERF` is `performance`, `REFACTOR` and `CHORE` are `tech-debt`, `DOCS` is `documentation`, `TEST` is `tests` (`gh pr create --label bug`). Workflows add the area label (`structs`, `agents`, `tools`, ...) and `ai-generated`; check all three are present and never remove them.
 - Format with `black --line-length 70` and lint with `ruff check .`.
 - Write clean, readable code: a docstring on every public class, function and method (a short phrase, then `Args` and `Returns`), type hints on every parameter and return value, and blank lines between methods and between the steps inside a function.
 - Never use backticks in a docstring, anywhere in the repo. Write names as plain words: no single or double backticks and no Sphinx roles such as `` :meth:`close` ``.
