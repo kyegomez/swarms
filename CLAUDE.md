@@ -1142,6 +1142,49 @@ These markers are also what labels a PR or issue `ai-generated`, so never strip 
 
 ---
 
+## Contributing: Tag and categorize every PR (required)
+
+Every PR must carry labels that say what kind of change it is and which part of the framework it touches. An unlabelled PR cannot be filtered or triaged, so label it when you open it, not later.
+
+A PR needs one label from each of these three groups:
+
+| Group | Labels | Who applies it |
+|---|---|---|
+| Category | `bug`, `enhancement`, `performance`, `tech-debt`, `documentation`, `tests` | You, when you open the PR |
+| Area | `structs`, `agents`, `tools`, `utils`, `prompts`, `telemetry`, `memory`, `models`, `artifacts` | The Labeler workflow, from the changed paths in `.github/labeler.yml` |
+| Authorship | `ai-generated` | The Label AI-generated workflow, from the disclosure line in the body |
+
+Pick the category from the WARP `TYPE` in the title:
+
+| WARP `TYPE` | Category label |
+|---|---|
+| `FIX` | `bug` |
+| `FEAT` | `enhancement` |
+| `PERF` | `performance` |
+| `REFACTOR`, `CHORE` | `tech-debt` |
+| `DOCS` | `documentation` |
+| `TEST` | `tests` |
+
+Pass the category when you create the PR:
+
+```bash
+gh pr create --title '[FIX][Agent._run][Raise AgentLLMError after retry exhaustion]' --label bug
+```
+
+After the PR is open, check that all three groups are present and add any that are missing:
+
+```bash
+gh pr view <number> --json labels --jq '.labels[].name'
+gh pr edit <number> --add-label structs
+```
+
+- **Use existing labels only.** Do not create a new label for one PR; list them with `gh label list`.
+- **One category per PR.** A PR that needs two is doing two things and should be split.
+- **Never remove a label a workflow added**, and never remove `ai-generated`.
+- **No permission to label:** a fork contributor without triage rights cannot set labels. Put `Category: <label>` as the first line of the PR body so a maintainer can apply it.
+
+---
+
 ## Contributing: Update the framework docs (required, non-negotiable)
 
 The docs site lives in a separate repo, [The-Swarm-Corporation/swarms-framework-docs](https://github.com/The-Swarm-Corporation/swarms-framework-docs). **Every PR that affects a public-facing parameter or method, or that could make any page of the docs wrong or incomplete, must come with its own PR to swarms-framework-docs.** This is non-negotiable: a framework PR without its docs PR will not be merged.
