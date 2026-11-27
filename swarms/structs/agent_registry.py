@@ -208,17 +208,12 @@ class AgentRegistry:
             KeyError: If the agent_name does not exist in the registry.
         """
         with self.lock:
-            try:
-                agent = find_agent_by_name(
-                    list(self.agents.values()), agent_name
+            if agent_name not in self.agents:
+                logger.error(
+                    f"Agent with name {agent_name} does not exist."
                 )
-                logger.info(
-                    f"Agent {agent_name} retrieved successfully."
-                )
-                return agent
-            except (TypeError, ValueError) as e:
-                logger.error(f"Error: {e}")
-                raise KeyError(agent_name) from e
+                raise KeyError(agent_name)
+            return self.agents[agent_name]
 
     def list_agents(self) -> List[str]:
         """
