@@ -1,6 +1,6 @@
 import asyncio
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, List, Optional, Union
 
 from swarms.structs.agent import Agent, reset_agents
@@ -394,9 +394,10 @@ class ConcurrentWorkflow:
         self.conversation.add(role="User", content=task)
         run_agent = run_agent or self._run_agent_with_streaming
 
-        with ContextThreadPoolExecutor(
+        executor = ContextThreadPoolExecutor(
             max_workers=self._resolve_max_workers()
-        ) as executor:
+        )
+        try:
             futures = [
                 executor.submit(
                     run_agent,
@@ -409,12 +410,18 @@ class ConcurrentWorkflow:
                 for agent in self.agents
             ]
 
+            if self.on_error == "raise":
+                for future in as_completed(futures):
+                    future.result()
+
             for future, agent in zip(futures, self.agents):
                 try:
                     outcome = future.result()
                 except Exception as error:
                     outcome = error
                 self._record_outcome(agent, outcome)
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
 
         return history_output_formatter(
             conversation=self.conversation, type=self.output_type
@@ -515,10 +522,17 @@ class ConcurrentWorkflow:
                     agent, task, img, imgs, streaming_callback
                 )
 
-        outcomes = await asyncio.gather(
-            *(run_agent(agent) for agent in self.agents),
-            return_exceptions=True,
-        )
+        tasks = [
+            asyncio.ensure_future(run_agent(agent))
+            for agent in self.agents
+        ]
+        try:
+            outcomes = await asyncio.gather(
+                *tasks, return_exceptions=self.on_error != "raise"
+            )
+        finally:
+            for pending in tasks:
+                pending.cancel()
 
         for agent, outcome in zip(self.agents, outcomes):
             self._record_outcome(agent, outcome)

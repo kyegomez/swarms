@@ -783,5 +783,57 @@ def test_concurrent_workflow_awaits_agents_on_the_callers_thread(
     assert calls["peak"] == peak
 
 
+class _BlockingAgent(_EchoAgent):
+    def __init__(self, agent_name: str, release: threading.Event):
+        super().__init__(agent_name)
+        self.release = release
+
+    def run(self, task: str, img=None, imgs=None, **kwargs) -> str:
+        if self.agent_name == "Fail":
+            raise RuntimeError("boom")
+        self.release.wait(5)
+        return super().run(task, img=img, imgs=imgs, **kwargs)
+
+
+class _BlockingLLMAgent(Agent):
+    async def acall_llm(self, *args, **kwargs):
+        if self.agent_name == "Fail":
+            raise RuntimeError("boom")
+        await asyncio.sleep(5)
+        return "too late"
+
+
+@pytest.mark.parametrize("on_event_loop", [False, True])
+def test_concurrent_workflow_on_error_raise_does_not_wait_for_other_agents(
+    on_event_loop,
+):
+    release = threading.Event()
+    if on_event_loop:
+        agents = [
+            _BlockingLLMAgent(
+                agent_name=name,
+                model_name="gpt-4o-mini",
+                max_loops=1,
+                print_on=False,
+            )
+            for name in ("Slow", "Fail")
+        ]
+    else:
+        agents = [
+            _BlockingAgent("Slow", release),
+            _BlockingAgent("Fail", release),
+        ]
+    workflow = ConcurrentWorkflow(agents=agents, on_error="raise")
+    assert workflow._runs_on_event_loop() is on_event_loop
+
+    started = time.perf_counter()
+    try:
+        with pytest.raises(RuntimeError, match="boom"):
+            workflow.run("go")
+        assert time.perf_counter() - started < 2
+    finally:
+        release.set()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
