@@ -149,4 +149,4 @@ class TestHttpChannel:
             m["agent_name"] for m in HttpChannel(url).messages()
         ] == [researcher.user_name, "Researcher", "Writer"]
         sent = [m["content"] for m in writer.requests[0]]
-        assert "Growth was 31%." in sent
+        assert "Researcher: Growth was 31%." in sent
