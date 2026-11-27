@@ -360,6 +360,10 @@ class ConcurrentWorkflow:
             )
             return result
         finally:
+
+            def display(*args, **kwargs):
+                return None
+
             if self.show_dashboard:
                 formatter.stop_dashboard()
 
