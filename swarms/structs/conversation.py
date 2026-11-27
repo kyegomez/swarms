@@ -229,10 +229,16 @@ class Conversation:
             self.add("System", self.system_prompt)
 
         if self.rules is not None:
-            self.add(self.user or "User", self.rules)
+            self.add(
+                self.user or "User", self.rules, category="rules"
+            )
 
         if self.custom_rules_prompt is not None:
-            self.add(self.user or "User", self.custom_rules_prompt)
+            self.add(
+                self.user or "User",
+                self.custom_rules_prompt,
+                category="rules",
+            )
 
     def _autosave(self):
         """Automatically save the conversation if autosave is enabled."""
@@ -329,6 +335,7 @@ class Conversation:
                     {
                         "role": self.user or "User",
                         "content": self.rules,
+                        "category": "rules",
                     }
                 )
             if self.custom_rules_prompt is not None:
@@ -336,6 +343,7 @@ class Conversation:
                     {
                         "role": self.user or "User",
                         "content": self.custom_rules_prompt,
+                        "category": "rules",
                     }
                 )
         finally:
@@ -669,15 +677,24 @@ class Conversation:
 
         Args:
             agent_name (Optional[str]): The role whose rows become assistant turns.
-            start (int): Index of the first row to include.
+            start (int): Index of the first row to include. Earlier rules rows are sent first.
             prefix (Sequence[Dict[str, Any]]): Rows sent ahead of the history from start.
             task_turn (bool): Keep the mark on the user's task turn, so the model wrapper puts images there. Defaults to False.
 
         Returns:
             List[Dict[str, Any]]: Chat messages, each tool call followed by its result.
         """
+        rules = [
+            row
+            for row in self.conversation_history[:start]
+            if row.get("category") == "rules"
+        ]
         messages = []
-        for row in [*prefix, *self.conversation_history[start:]]:
+        for row in [
+            *rules,
+            *prefix,
+            *self.conversation_history[start:],
+        ]:
             role, content = row.get("role"), row.get("content")
             if "tool_results" in row:
                 messages.append(
