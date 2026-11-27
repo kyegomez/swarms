@@ -3507,7 +3507,6 @@ class TestHeavySwarm:
             verbose=False,
             agent_prints_on=False,
             output_type="dict-all-except-first",
-            timeout=15,
         )
         for key, agent in swarm.agents.items():
             agent.llm = FakeLLM(reply=f"{key} agent output")
