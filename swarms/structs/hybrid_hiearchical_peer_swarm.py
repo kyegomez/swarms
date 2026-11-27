@@ -1,7 +1,8 @@
 import copy
+import threading
 from typing import List
 from swarms.structs.execution_utils import run_concurrently
-from swarms.structs.agent import Agent
+from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import get_swarms_info
 from swarms.structs.swarm_router import SwarmRouter
@@ -132,6 +133,8 @@ class HybridHierarchicalClusterSwarm:
             max_loops=1,
             output_type="final",
         )
+        # batched_run's copies share the router, so route one task at a time
+        self._router_lock = threading.Lock()
 
     def run(self, task: str, *args, **kwargs):
         """
@@ -152,7 +155,10 @@ class HybridHierarchicalClusterSwarm:
         self.conversation = Conversation()
         self.conversation.add(role="User", content=task)
 
-        response = self.router_agent.run(task=task)
+        with self._router_lock:
+            # Route on this task alone, not on earlier tasks and routes
+            reset_agents([self.router_agent])
+            response = self.router_agent.run(task=task)
 
         if isinstance(response, str):
             response = str_to_dict(response)
