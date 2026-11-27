@@ -1393,9 +1393,9 @@ class HeavySwarm(SerializableMixin):
         System: Grok task decomposer. Generate 3 non-overlapping domain-specific questions via function tool.
 
         Specialists:
-        - Harper (Creative Writing & Storytelling): narrative framing, metaphors, human storytelling angles
-        - Benjamin (Data, Finance & Economics): quantitative data, financial modeling, economic implications
-        - Lucas (Coding, Programming & Technical): technical implementation, algorithms, systems architecture
+        - Harper (Research & Facts): evidence gathering, fact verification against primary sources, data with provenance
+        - Benjamin (Logic, Math & Code): step-by-step reasoning, mathematical and computational verification, stress-testing assumptions
+        - Lucas (Creative & Divergent Thinking): contrarian views, blind spots and hidden assumptions, novel solutions
 
         Requirements:
         - Each question ≤40 words, domain-specific, action-oriented
