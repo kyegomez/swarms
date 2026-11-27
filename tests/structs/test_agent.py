@@ -1697,6 +1697,39 @@ class TestInteractiveFollowUp:
             "content": "What is the capital of Peru?",
         }
 
+    @pytest.mark.parametrize("use_arun", [False, True])
+    def test_no_prompt_after_the_last_loop(self, use_arun):
+        agent = _patched_agent(
+            "InteractiveAgent",
+            model_name="gpt-5.4",
+            max_loops=2,
+            interactive=True,
+        )
+
+        def fake_call_llm(task=None, *args, **kwargs):
+            return "ok"
+
+        async def fake_acall_llm(task=None, *args, **kwargs):
+            return "ok"
+
+        agent.call_llm = fake_call_llm
+        agent.acall_llm = fake_acall_llm
+        prompts = []
+        with patch(
+            "swarms.structs.agent.formatter.console.input",
+            lambda *a, **k: prompts.append(1) or "follow-up",
+        ):
+            if use_arun:
+                asyncio.run(agent.arun("Name a prime number."))
+            else:
+                agent.run("Name a prime number.")
+
+        assert len(prompts) == 1
+        assert (
+            agent.short_memory.conversation_history[-1]["content"]
+            == "ok"
+        )
+
 
 class TestToolFailureIsNotAnLLMError:
     """#1924: a tool that exhausted its own retries raised into the generation
