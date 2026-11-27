@@ -548,7 +548,9 @@ def test_graph_workflow_checkpoint_writes_and_resumes(tmp_path):
     a3 = make_agent("CP-Gamma")
 
     cp_dir = str(tmp_path / "checkpoints")
-    wf = GraphWorkflow(name="CP-Test", checkpoint_dir=cp_dir)
+    wf = GraphWorkflow(
+        name="CP-Test", checkpoint_dir=cp_dir, max_loops=2
+    )
     wf.add_nodes([a1, a2, a3])
     wf.add_edge("CP-Alpha", "CP-Beta")
     wf.add_edge("CP-Beta", "CP-Gamma")
@@ -556,18 +558,19 @@ def test_graph_workflow_checkpoint_writes_and_resumes(tmp_path):
 
     TASK = "checkpoint test task"
 
-    # First run — all three agents execute, three checkpoint files written
+    # First run: both loops execute every agent and write their own files
     results = wf.run(TASK)
     assert results["CP-Alpha"] == "output-CP-Alpha"
     assert results["CP-Beta"] == "output-CP-Beta"
     assert results["CP-Gamma"] == "output-CP-Gamma"
+    assert [a.run.call_count for a in (a1, a2, a3)] == [2, 2, 2]
 
     task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
-    cp_files = list(tmp_path.glob("checkpoints/*.json"))
-    assert len(cp_files) == 3
-    assert any(f"{task_key}_layer_0" in f.name for f in cp_files)
-    assert any(f"{task_key}_layer_1" in f.name for f in cp_files)
-    assert any(f"{task_key}_layer_2" in f.name for f in cp_files)
+    assert {f.name for f in tmp_path.glob("checkpoints/*.json")} == {
+        f"{task_key}_loop_{loop}_layer_{layer}.json"
+        for loop in range(2)
+        for layer in range(3)
+    }
 
     # Reset call counts, then run again — all layers should be skipped
     a1.run.reset_mock()
@@ -607,7 +610,9 @@ def test_graph_workflow_checkpoint_partial_resume(tmp_path):
 
     # Delete the last layer's checkpoint to simulate a crash after layer 2
     task_key = hashlib.sha256(TASK.encode("utf-8")).hexdigest()[:16]
-    (tmp_path / "checkpoints" / f"{task_key}_layer_2.json").unlink()
+    (
+        tmp_path / "checkpoints" / f"{task_key}_loop_0_layer_2.json"
+    ).unlink()
 
     a1.run.reset_mock()
     a2.run.reset_mock()
