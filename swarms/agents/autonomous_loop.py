@@ -54,6 +54,7 @@ from swarms.structs.conversation import Conversation
 from swarms.tools.dynamic_tool_loader import SEARCH_TOOL_NAME
 from swarms.utils.formatter import formatter
 from swarms.utils.index import exists, format_data_structure
+from swarms.utils.litellm_wrapper import ModelRefusalError
 
 
 def _format_tool_error(function_name: str, error: Exception) -> str:
@@ -614,6 +615,8 @@ class AutonomousAgentLoop:
                         break
 
                 except Exception as e:
+                    if isinstance(e.__cause__, ModelRefusalError):
+                        raise
                     if self.agent.verbose:
                         logger.error(
                             f"Error in planning phase (attempt {planning_attempts}): {e}"
@@ -1236,6 +1239,8 @@ class AutonomousAgentLoop:
                         raise
 
                     except Exception as e:
+                        if isinstance(e.__cause__, ModelRefusalError):
+                            raise
                         if self.agent.verbose:
                             logger.error(
                                 f"Error in subtask execution loop: {e}"
