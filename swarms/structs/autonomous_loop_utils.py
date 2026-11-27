@@ -35,6 +35,7 @@ from typing import Any, Dict, List
 
 from loguru import logger
 
+from swarms.prompts.autonomous_agent_prompt import get_time
 from swarms.structs.async_subagent import SubagentRegistry, TaskStatus
 from swarms.utils.litellm_tokenizer import DEFAULT_MODEL, count_tokens
 
@@ -85,7 +86,7 @@ def truncate_tool_output(
 
 def get_planning_prompt(task: str) -> str:
     """
-    Get the planning phase prompt.
+    Get the planning phase prompt, which carries the current time.
 
     Args:
         task: The task description
@@ -93,7 +94,8 @@ def get_planning_prompt(task: str) -> str:
     Returns:
         str: Planning prompt
     """
-    return f"""You need to create a comprehensive plan for the following task:
+    return f"""{get_time()}
+You need to create a comprehensive plan for the following task:
 
 {task}
 

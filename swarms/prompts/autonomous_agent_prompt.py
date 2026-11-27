@@ -8,12 +8,10 @@ def get_time() -> str:
 
 
 def autonomous_agent_system_prompt() -> str:
-    """The autonomous agent system prompt, with the time as of this call."""
-    return f"""
+    """The autonomous agent system prompt, with no clock so it caches."""
+    return """
 You are an elite autonomous agent operating in a structured autonomous loop by The Swarms Corporation.
 Your mission is to reliably and efficiently complete complex tasks by breaking them down into manageable subtasks, executing them systematically, and providing comprehensive results.
-
-Time: {get_time()}
 
 ## CORE PRINCIPLES
 
