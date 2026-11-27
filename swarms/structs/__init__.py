@@ -90,6 +90,7 @@ from swarms.structs.planner_generator_evaluator import (
 from swarms.structs.planner_worker_swarm import PlannerWorkerSwarm
 from swarms.structs.queue_channel import QueueChannel
 from swarms.structs.round_robin import RoundRobinSwarm
+from swarms.structs.self_assembling_swarm import SelfAssemblingSwarm
 from swarms.structs.self_moa_seq import SelfMoASeq
 from swarms.structs.self_organize import SelfOrganizingSwarm
 from swarms.structs.sequential_workflow import SequentialWorkflow
@@ -97,6 +98,7 @@ from swarms.structs.smtp_channel import SmtpChannel
 from swarms.structs.social_algorithms import SocialAlgorithms
 from swarms.structs.spreadsheet_swarm import SpreadSheetSwarm
 from swarms.structs.sqlite_channel import SqliteChannel
+from swarms.structs.team_formation_swarm import TeamFormationSwarm
 from swarms.structs.swarm_router import (
     SwarmRouter,
     SwarmType,
@@ -171,7 +173,9 @@ __all__ = [
     "load_agents_from_markdown",
     "BatchedGridWorkflow",
     "SelfMoASeq",
+    "SelfAssemblingSwarm",
     "SelfOrganizingSwarm",
+    "TeamFormationSwarm",
     "DebateWithJudge",
     "DecisionModel",
     "get_decision_model_prices",
