@@ -11,11 +11,15 @@ Two things let you control and observe that:
     max_consecutive_errors   stop a job that is failing *every* time, instead
                              of retrying forever. Omit it to never give up.
                              When the budget is exhausted the job stops AND
-                             run() raises, so a dead schedule is never mistaken
-                             for a healthy one.
+                             run() raises CronJobExecutionError, so a dead
+                             schedule is never mistaken for a healthy one.
 
     get_execution_stats()    poll from another thread while the job runs, to
                              see successes, failures and the last error.
+
+Note: run() also raises CronJobExecutionError if initial scheduling fails
+(for instance if no interval was provided). Check the error message or job stats
+to distinguish initial scheduling failures from an exhausted error budget.
 
 This example runs a deliberately flaky agent so you can watch both.
 """
@@ -76,9 +80,12 @@ if __name__ == "__main__":
     try:
         job.run("Fetch the latest reading.")
     except CronJobExecutionError as e:
-        # Only reached if max_consecutive_errors was exhausted. A clean stop()
-        # returns normally instead.
-        print(f"\nJob gave up: {e}")
+        # Reached if scheduling failed or if max_consecutive_errors was exhausted.
+        # A clean stop() returns normally instead.
+        if job._stopped_due_to_error:
+            print(f"\nJob gave up after reaching error budget: {e}")
+        else:
+            print(f"\nScheduling/Execution error: {e}")
     else:
         stats = job.get_execution_stats()
         print(

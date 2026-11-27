@@ -312,10 +312,11 @@ class CronJob:
             schedule.Job: The scheduled job, returned once the schedule stops.
 
         Raises:
-            CronJobConfigError: If no agent or interval was configured.
-            CronJobExecutionError: If scheduling failed, or if the job gave up
-                after exhausting ``max_consecutive_errors``. The message names
-                the failure count and the last error.
+            CronJobExecutionError: If scheduling failed (for instance if no interval
+                was configured during initialization), or if the job stopped after
+                exhausting ``max_consecutive_errors``. Check the error message to
+                distinguish scheduling failure from an exhausted error budget (which
+                includes failure counts and the last error).
 
         Example:
             >>> job = CronJob(agent=agent, interval="30seconds")
