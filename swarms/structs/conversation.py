@@ -590,7 +590,12 @@ class Conversation:
     def add_multiple_messages(
         self, roles: List[str], contents: List[Union[str, dict, list]]
     ):
-        return self.add_multiple(roles, contents)
+        added = self.add_multiple(roles, contents)
+
+        if self.autosave:
+            self._autosave()
+
+        return added
 
     def add_multiple(
         self,
@@ -604,22 +609,17 @@ class Conversation:
             contents (List[Union[str, dict, list, any]]): One content per role.
 
         Returns:
-            list: The added messages, in the order given.
+            list: The result of each :meth:`add`, in the order given.
         """
         if len(roles) != len(contents):
             raise ValueError(
                 "Number of roles and contents must match."
             )
 
-        added = [
-            self.add_in_memory(role=role, content=content)
+        return [
+            self.add(role, content)
             for role, content in zip(roles, contents)
         ]
-
-        if self.autosave:
-            self._autosave()
-
-        return added
 
     def add_messages(self, messages: List[Dict[str, Any]]):
         """Add chat-format messages to the conversation history, in order.
@@ -1107,12 +1107,11 @@ class Conversation:
 
             # Save with proper formatting
             with open(self.save_filepath, "w", encoding="utf-8") as f:
-                f.write(
-                    json.dumps(
-                        self.conversation_history,
-                        indent=4,
-                        default=str,
-                    )
+                json.dump(
+                    self.conversation_history,
+                    f,
+                    indent=4,
+                    default=str,
                 )
 
             logger.info(f"Conversation saved to {self.save_filepath}")

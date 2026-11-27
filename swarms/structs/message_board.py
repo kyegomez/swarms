@@ -349,11 +349,17 @@ class MessageBoard:
             KeyError: If the board has no thread with this id.
         """
         with self._lock, self._conn:
-            self._thread_row(thread_id)
+            current = self._thread_row(thread_id)["labels"]
+
+            for key, value in labels.items():
+                if value is None:
+                    current.pop(key, None)
+                else:
+                    current[key] = value
+
             self._conn.execute(
-                "UPDATE board_threads "
-                "SET labels = json_patch(labels, ?) WHERE id = ?",
-                (json.dumps(labels), thread_id),
+                "UPDATE board_threads SET labels = ? WHERE id = ?",
+                (json.dumps(current), thread_id),
             )
 
     def channel(self, thread_id: str) -> BoardThreadChannel:

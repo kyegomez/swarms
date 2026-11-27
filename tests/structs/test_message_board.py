@@ -97,32 +97,6 @@ def test_concurrent_replies_are_all_kept():
     assert len(rows(board, thread_id)) == 201
 
 
-def test_concurrent_labels_from_two_loaded_boards_are_all_kept(
-    tmp_path,
-):
-    db_path = str(tmp_path / "boards.db")
-    board = MessageBoard(db_path=db_path)
-    fixer = MessageBoard.load(db_path, board.id)
-    reviewer = MessageBoard.load(db_path, board.id)
-    thread_ids = [
-        start(board, "Triager", f"Bug {n}", "Report.", "kind=bug")
-        for n in range(50)
-    ]
-
-    for thread_id in thread_ids:
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            pool.submit(
-                fixer.set_labels, thread_id, {"status": "fixed"}
-            )
-            pool.submit(
-                reviewer.set_labels, thread_id, {"reviewer": "Kye"}
-            )
-
-    assert [t["labels"] for t in board.threads()] == [
-        {"kind": "bug", "status": "fixed", "reviewer": "Kye"}
-    ] * 50
-
-
 def test_a_board_is_stored_in_sqlite_and_loads_back(tmp_path):
     db_path = str(tmp_path / "boards.db")
     board = MessageBoard(

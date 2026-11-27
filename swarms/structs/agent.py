@@ -1337,12 +1337,6 @@ class Agent:
                     )
                     break
 
-                if (
-                    self.max_loops != "auto"
-                    and loop_count >= self.max_loops
-                ):
-                    break
-
                 if self.interactive:
 
                     # logger.info("Interactive mode enabled.")
@@ -1929,12 +1923,6 @@ Subtask Breakdown:
                         f"Agent '{self.agent_name}' stopping function condition met. "
                         f"Loop: {loop_count}, Response length: {len(str(response)) if response else 0}"
                     )
-                    break
-
-                if (
-                    self.max_loops != "auto"
-                    and loop_count >= self.max_loops
-                ):
                     break
 
                 if self.interactive:

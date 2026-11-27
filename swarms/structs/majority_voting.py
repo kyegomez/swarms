@@ -155,9 +155,12 @@ class MajorityVoting:
         self.consensus_agent_prompt = consensus_agent_prompt
 
         self.channel = channel
-        self._conversation_args = args
-        self._conversation_kwargs = kwargs
-        self.conversation = self._new_conversation()
+        self.conversation = Conversation(
+            time_enabled=False,
+            channel=channel,
+            *args,
+            **kwargs,
+        )
 
         self.consensus_agent = default_consensus_agent(
             name=consensus_agent_name,
@@ -176,14 +179,6 @@ class MajorityVoting:
 
         # Capture the full __init__ configuration if telemetry is enabled.
         capture_init(self)
-
-    def _new_conversation(self) -> Conversation:
-        return Conversation(
-            time_enabled=False,
-            channel=self.channel,
-            *self._conversation_args,
-            **self._conversation_kwargs,
-        )
 
     def reliability_check(self):
 
@@ -304,7 +299,9 @@ class MajorityVoting:
         """
 
         # A reused instance would otherwise carry the previous task's votes
-        self.conversation = self._new_conversation()
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
 
         self.conversation.add(
             role="user",
@@ -449,7 +446,9 @@ class MajorityVoting:
                 result = await agent.arun(task=turn, messages=prior)
             return agent_answer(agent, fallback=result)
 
-        self.conversation = self._new_conversation()
+        self.conversation = Conversation(
+            time_enabled=False, channel=self.channel
+        )
         self.conversation.add(role="user", content=task)
 
         for _ in range(self.max_loops):

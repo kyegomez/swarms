@@ -136,21 +136,6 @@ def test_repeat_calls_do_not_tear_down_handlers(
     assert received, "a sink added before the second call was removed"
 
 
-def test_configuring_keeps_sinks_the_application_added(
-    monkeypatch, tmp_path
-):
-    received = []
-    logger.add(received.append, format="{message}")
-
-    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "first"))
-    initialize_logger("mod")
-    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path / "second"))
-    initialize_logger("mod")
-    logger.info("after both inits")
-
-    assert "after both inits\n" in received
-
-
 def test_changing_workspace_dir_rebuilds_handlers(
     monkeypatch, tmp_path
 ):

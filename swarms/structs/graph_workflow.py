@@ -1936,13 +1936,11 @@ class GraphWorkflow:
         would not survive a process restart."""
         return hashlib.sha256(task.encode("utf-8")).hexdigest()[:16]
 
-    def _checkpoint_path(
-        self, task_key: str, loop: int, layer_idx: int
-    ) -> Path:
-        """Where one layer's checkpoint for one loop lives."""
+    def _checkpoint_path(self, task_key: str, layer_idx: int) -> Path:
+        """Where one layer's checkpoint lives."""
         return (
             Path(self.checkpoint_dir)
-            / f"{task_key}_loop_{loop}_layer_{layer_idx}.json"
+            / f"{task_key}_layer_{layer_idx}.json"
         )
 
     @staticmethod
@@ -2118,7 +2116,7 @@ class GraphWorkflow:
                         entry[0] for entry in layer
                     ):
                         checkpoint_path = self._checkpoint_path(
-                            task_key, loop, layer_idx
+                            task_key, layer_idx
                         )
                         if checkpoint_path.exists():
                             try:
@@ -2451,7 +2449,7 @@ class GraphWorkflow:
                                 parents=True, exist_ok=True
                             )
                             checkpoint_path = self._checkpoint_path(
-                                task_key, loop, layer_idx
+                                task_key, layer_idx
                             )
                             layer_outputs = {
                                 entry[0]: prev_outputs[entry[0]]
@@ -2925,8 +2923,9 @@ class GraphWorkflow:
         if not cp_dir.exists():
             return 0
         task_key = self._task_key(task)
+        prefix = f"{task_key}_layer_"
         deleted = 0
-        for cp_file in cp_dir.glob(f"{task_key}_loop_*_layer_*.json"):
+        for cp_file in cp_dir.glob(f"{prefix}*.json"):
             try:
                 cp_file.unlink()
                 deleted += 1

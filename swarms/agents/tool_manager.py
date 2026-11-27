@@ -268,10 +268,6 @@ class ToolManager:
 
         # Keep registered handoff and MCP schemas; drop deferred user tools and tool_search, which schemas() re-adds.
         dropped = set(loader.deferred_names) | {SEARCH_TOOL_NAME}
-        previous = agent.tool_loader
-        if previous is not None:
-            dropped |= set(previous.deferred_names)
-            dropped |= set(previous.loaded_names)
         preserved = [
             schema
             for schema in agent.tools_list_dictionary or []

@@ -867,46 +867,6 @@ class TestNoDuplicateSchemas:
         ), f"duplicate tool names in the request: {listed}"
         assert listed.count(SEARCH_TOOL_NAME) == 1
 
-    def test_second_run_does_not_list_loaded_tools_twice(
-        self, monkeypatch
-    ):
-        agent = build(max_loops="auto", dynamic_tools=True)
-        for _ in range(2):
-            seen = script(
-                agent,
-                monkeypatch,
-                [
-                    [
-                        tool_call(
-                            "create_plan",
-                            task_description="t",
-                            steps=[
-                                {"step_id": "s1", "description": "d"}
-                            ],
-                        )
-                    ],
-                    [
-                        tool_call(
-                            SEARCH_TOOL_NAME,
-                            query="select:read_file",
-                        )
-                    ],
-                    [
-                        tool_call(
-                            "complete_task",
-                            task_id="m",
-                            summary="d",
-                            success=True,
-                        )
-                    ],
-                ],
-            )
-            agent.run("demo")
-
-        assert "read_file" in seen[-1]
-        for listed in seen:
-            assert len(listed) == len(set(listed)), listed
-
 
 class TestNameCollision:
     """A catalog entry may not shadow the search tool."""

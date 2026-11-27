@@ -235,13 +235,9 @@ class MultiAgentRouter:
             None: The conversation is mutated in place.
 
         Raises:
-            ValueError: If the boss selected no agent, or an agent name
-                that is not registered with this router.
+            ValueError: If the boss selected an agent name that is not
+                registered with this router.
         """
-        if not boss_response_str["handoffs"]:
-            raise ValueError(
-                "The boss selected no agent for this task"
-            )
 
         handoff_agent_name = boss_response_str["handoffs"][0][
             "agent_name"
