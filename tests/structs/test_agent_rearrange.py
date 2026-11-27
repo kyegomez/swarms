@@ -221,6 +221,40 @@ def test_add_agents():
     assert len(agent_rearrange.agents) == 3
 
 
+def test_an_added_agent_posts_to_the_owner_channel_once(tmp_path):
+    from swarms.structs.file_channel import FileChannel
+
+    channel = FileChannel(tmp_path / "run.md")
+
+    def make(name):
+        agent = Agent(
+            agent_name=name,
+            model_name="gpt-4o",
+            max_loops=1,
+            print_on=False,
+            autosave=False,
+            channel=channel,
+        )
+        agent.call_llm = lambda *args, **kwargs: f"{name}-answer"
+        return agent
+
+    flow = AgentRearrange(
+        agents=[make("Writer")],
+        flow="Writer -> Editor",
+        channel=channel,
+    )
+    flow.add_agents([make("Editor")])
+    flow.run("Draft a note.")
+
+    assert [
+        (m["agent_name"], m["content"]) for m in channel.messages()
+    ] == [
+        ("User", "Draft a note."),
+        ("Writer", "Writer-answer"),
+        ("Editor", "Editor-answer"),
+    ]
+
+
 # ============================================================================
 # Flow Validation Tests
 # ============================================================================
