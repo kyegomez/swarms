@@ -560,6 +560,30 @@ def test_save_to_csv_appends(temp_workspace):
         assert rows[2]["Task"] == "Task 2"
 
 
+def test_save_to_csv_writes_non_ascii_results(temp_workspace):
+    """A result with non-ASCII text is saved as UTF-8 and reads back as written."""
+    agent = Agent(
+        agent_name="test_agent",
+        system_prompt="Test prompt",
+        model_name="gpt-5.4",
+        max_loops=1,
+    )
+
+    swarm = SpreadSheetSwarm(agents=[agent])
+
+    swarm._track_output("test_agent", "总结任务", "完成 ✅ 你好世界")
+    swarm._save_to_csv()
+
+    with open(
+        swarm.save_file_path, newline="", encoding="utf-8"
+    ) as f:
+        rows = list(csv.DictReader(f))
+
+    assert len(rows) == 1
+    assert rows[0]["Task"] == "总结任务"
+    assert rows[0]["Result"] == "完成 ✅ 你好世界"
+
+
 def test_export_to_json_structure(temp_workspace):
     """Test that JSON export contains expected structure."""
     agent = Agent(
