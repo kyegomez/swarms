@@ -604,7 +604,7 @@ class Conversation:
             contents (List[Union[str, dict, list, any]]): One content per role.
 
         Returns:
-            list: The result of each :meth:`add`, in the order given.
+            list: The added messages, in the order given.
         """
         if len(roles) != len(contents):
             raise ValueError(
