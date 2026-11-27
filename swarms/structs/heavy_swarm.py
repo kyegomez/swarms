@@ -66,7 +66,6 @@ class HeavySwarm(SerializableMixin):
             name (str): Name identifier for the swarm instance
             description (str): Description of the swarm's purpose
             agents (Dict[str, Agent]): Dictionary of specialized agent instances (created internally)
-            timeout (int): Maximum execution time per agent in seconds
             question_agent_model_name (str): Model name for question generation
             worker_model_name (str): Model name for specialized worker agents
             verbose (bool): Enable detailed logging output
@@ -107,7 +106,6 @@ class HeavySwarm(SerializableMixin):
             "A swarm of agents that can analyze a task and generate "
             "specialized questions for each agent role"
         ),
-        timeout: int = 900,
         question_agent_model_name: str = "gpt-5.4",
         worker_model_name: str = "gpt-5.4",
         verbose: bool = False,
@@ -125,7 +123,6 @@ class HeavySwarm(SerializableMixin):
             name (str, optional): Identifier name for the swarm instance. Defaults to "HeavySwarm".
             description (str, optional): Description of the swarm's purpose and capabilities.
                 Defaults to standard description.
-            timeout (int, optional): Maximum execution time per agent in seconds. Defaults to 300.
             question_agent_model_name (str, optional): Language model for
                 question generation. Defaults to "gpt-5.4".
             worker_model_name (str, optional): Language model for specialized
@@ -161,7 +158,6 @@ class HeavySwarm(SerializableMixin):
         """
         self.name = name
         self.description = description
-        self.timeout = timeout
         self.question_agent_model_name = question_agent_model_name
         self.worker_model_name = worker_model_name
         self.verbose = verbose
@@ -194,12 +190,12 @@ class HeavySwarm(SerializableMixin):
         Display comprehensive swarm configuration information in a rich dashboard format.
 
         This method creates and displays a professionally styled information table containing
-        all key swarm configuration parameters including models, timeouts, and operational
+        all key swarm configuration parameters including models and operational
         settings. The display uses Swarms-inspired styling with red headers and borders.
 
         The dashboard includes:
         - Swarm identification (name, description)
-        - Execution parameters (timeout, loops per agent)
+        - Execution parameters (loops per agent)
         - Model configurations (question and worker models)
         - Performance settings (max workers, aggregation strategy)
 
@@ -216,7 +212,6 @@ class HeavySwarm(SerializableMixin):
         self.dashboard.show_config(
             name=self.name,
             description=self.description,
-            timeout=self.timeout,
             question_model=self.question_agent_model_name,
             worker_model=self.worker_model_name,
             max_workers=self.max_workers,
@@ -612,13 +607,13 @@ class HeavySwarm(SerializableMixin):
 
         This method provides the core agent execution functionality using concurrent.futures
         for true parallel processing. It executes the four specialized agents simultaneously
-        to maximize efficiency while providing basic error handling and timeout management.
+        to maximize efficiency while providing basic error handling.
 
         The execution process:
         1. Prepare agent tasks with their respective specialized questions
         2. Submit all tasks to ThreadPoolExecutor for parallel execution
         3. Collect results as agents complete their work
-        4. Handle timeouts and exceptions gracefully
+        4. Handle exceptions gracefully
         5. Log results to conversation history
 
         Args:
@@ -641,7 +636,7 @@ class HeavySwarm(SerializableMixin):
         Note:
             This method uses ThreadPoolExecutor with max_workers limit for parallel execution.
             Each agent runs independently and results are collected as they complete.
-            Timeout and exception handling ensure robustness even if individual agents fail.
+            Exception handling ensures robustness even if individual agents fail.
         """
 
         # Define agent execution tasks
@@ -749,18 +744,8 @@ class HeavySwarm(SerializableMixin):
             ):
                 agent_type = future_to_agent[future]
                 try:
-                    agent_name, result = future.result(
-                        timeout=self.timeout
-                    )
+                    agent_name, result = future.result()
                     results[agent_name.lower()] = result
-                except concurrent.futures.TimeoutError:
-                    self._log(
-                        "ERROR",
-                        f"⏰ Timeout for {agent_type} Agent after {self.timeout}s",
-                    )
-                    results[agent_type.lower()] = (
-                        f"Timeout after {self.timeout} seconds"
-                    )
                 except Exception as e:
                     self._log(
                         "ERROR",
@@ -1098,9 +1083,7 @@ class HeavySwarm(SerializableMixin):
                 ):
                     agent_key = future_to_agent[future]
                     try:
-                        agent_name, result = future.result(
-                            timeout=self.timeout
-                        )
+                        agent_name, result = future.result()
                         results[
                             agent_name.lower()
                             .replace("🔍 ", "")
@@ -1108,11 +1091,6 @@ class HeavySwarm(SerializableMixin):
                             .replace("⚡ ", "")
                             .replace("✅ ", "")
                         ] = result
-                    except concurrent.futures.TimeoutError:
-                        tracker.timeout(agent_key, agent_key)
-                        results[agent_key] = (
-                            f"Timeout after {self.timeout} seconds"
-                        )
                     except Exception as e:
                         tracker.error(agent_key, agent_key)
                         results[agent_key] = f"Exception: {str(e)}"

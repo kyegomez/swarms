@@ -80,13 +80,6 @@ class AgentProgressTracker:
             "••••••••••••••••••••••••••••••••",
         )
 
-    def timeout(self, key: str, display_name: str) -> None:
-        self._update(
-            key,
-            f"[bold red]{display_name}[/bold red]: ⏰ TIMEOUT! "
-            "••••••••••••••••••••••••••••••••",
-        )
-
 
 class HeavySwarmDashboard:
     """Encapsulates every Rich-rendered surface used by HeavySwarm."""
@@ -99,7 +92,6 @@ class HeavySwarmDashboard:
         *,
         name: str,
         description: str,
-        timeout: int,
         question_model: str,
         worker_model: str,
         max_workers: int,
@@ -114,7 +106,6 @@ class HeavySwarmDashboard:
 
         info_table.add_row("Swarm Name", name)
         info_table.add_row("Description", description)
-        info_table.add_row("Timeout", f"{timeout}s")
         info_table.add_row("Question Model", question_model)
         info_table.add_row("Worker Model", worker_model)
         info_table.add_row("Max Workers", str(max_workers))

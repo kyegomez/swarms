@@ -16,7 +16,6 @@ swarm = HeavySwarm(
     variant="medium",
     show_dashboard=True,
     loops_per_agent=2,
-    timeout=600,
 )
 
 result = swarm.run(
