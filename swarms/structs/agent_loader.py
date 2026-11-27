@@ -432,7 +432,14 @@ class AgentLoader:
 
         swarm_config = config.get("swarm_architecture")
         router = (
-            SwarmRouter(agents=agents, **swarm_config)
+            SwarmRouter(
+                agents=agents,
+                **{
+                    k: v
+                    for k, v in swarm_config.items()
+                    if k != "task"
+                },
+            )
             if swarm_config
             else None
         )

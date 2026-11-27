@@ -960,6 +960,18 @@ def test_collab_prompt_warns_when_the_swarm_type_cannot_deliver_it():
     )
 
 
+def test_router_warns_about_unknown_constructor_arguments():
+    agents, _ = _collab_recording_agents(["A", "B"])
+
+    with patch("swarms.structs.swarm_router.logger.warning") as warn:
+        router = SwarmRouter(agents=agents, swarm_typ="GroupChat")
+
+    assert router.swarm_type == "SequentialWorkflow"
+    assert "ignored unknown arguments: ['swarm_typ']" in str(
+        warn.call_args_list
+    )
+
+
 def test_list_all_agents_does_not_crash_at_construction():
     """The swarm is built lazily, so setup() must not reach for it.
 
