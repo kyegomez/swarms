@@ -1743,6 +1743,15 @@ if __name__ == "__main__":
     )
 
 
+@pytest.mark.parametrize(
+    "method", ["load_from_json", "load_from_yaml"]
+)
+def test_load_missing_file_raises(method, tmp_path):
+    conv = Conversation()
+    with pytest.raises(FileNotFoundError):
+        getattr(conv, method)(str(tmp_path / "does_not_exist.json"))
+
+
 def test_truncate_memory_with_tokenizer_keeps_newest(monkeypatch):
     monkeypatch.setattr(
         conversation_module,
