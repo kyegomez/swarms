@@ -1492,6 +1492,29 @@ def test_run_stream_close_stops_the_run():
     assert agent.llm.stream is False
 
 
+def test_run_stream_close_returns_while_the_run_is_silent():
+    """Closing the stream does not wait for a run that sends no further token."""
+    release = threading.Event()
+
+    def completion(**params):
+        yield _stream_chunk("a")
+        release.wait(10)
+
+    with patch.object(litellm_wrapper, "completion", completion):
+        agent = Agent(
+            agent_name="silent", max_loops=1, print_on=False
+        )
+        stream = agent.run_stream("hi")
+        assert next(stream) == "a"
+
+        started = time.perf_counter()
+        stream.close()
+        waited = time.perf_counter() - started
+        release.set()
+
+    assert waited < 3
+
+
 class TestEmptyTaskGuard:
     """run() must not read stdin for an empty task when interactive=False."""
 

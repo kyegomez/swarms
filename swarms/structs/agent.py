@@ -3303,9 +3303,9 @@ Subtask Breakdown:
                     break
                 yield item
         finally:
-            # A reader that stops early ends the run at its next token.
+            # Bounded, so a run that sends no further token cannot hang the reader.
             closed.set()
-            thread.join()
+            thread.join(timeout=0.5)
 
         if _exc[0] is not None:
             raise _exc[0]
