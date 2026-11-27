@@ -875,6 +875,11 @@ class GraphWorkflow:
             )
 
         self.channel = channel
+        claim_agents(
+            [node.agent for node in self.nodes.values()],
+            channel,
+            self.name,
+        )
         self.conversation = Conversation(channel=channel)
 
         # Rebuild the graph from nodes and edges if provided
