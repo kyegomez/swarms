@@ -2135,6 +2135,9 @@ Subtask Breakdown:
                 and re-raised rather than swallowed, so a caller never receives
                 None in place of results.
         """
+        # One clone per task, so no task sees another's turns.
+        clones = [self.clone() for _ in tasks]
+
         try:
             logger.info(f"Running concurrent tasks: {tasks}")
             # Call-scoped pool, as in heavy_swarm: no idle threads per agent.
@@ -2143,9 +2146,9 @@ Subtask Breakdown:
             ) as executor:
                 futures = [
                     executor.submit(
-                        self.run, *args, task=task, **kwargs
+                        clone.run, *args, task=task, **kwargs
                     )
-                    for task in tasks
+                    for clone, task in zip(clones, tasks)
                 ]
                 results = [future.result() for future in futures]
             logger.info(f"Completed tasks: {results}")
@@ -2153,6 +2156,10 @@ Subtask Breakdown:
         except Exception as error:
             logger.error(f"Error running concurrent tasks: {error}")
             raise
+        finally:
+            # The clones are discarded, so their usage is kept here.
+            for clone in clones:
+                self._add_usage(clone.usage)
 
     def _default_context_length(self) -> int:
         """
@@ -2557,6 +2564,78 @@ Subtask Breakdown:
         self.subtask_status = {}
         self.plan_created = False
         self.think_call_count = 0
+
+    def clone(self) -> "Agent":
+        """Build a copy with the same configuration and a fresh conversation.
+
+        Returns:
+            Agent: The new agent, with its own id, client and state file.
+        """
+        params = dict(
+            inspect.signature(type(self).__init__).parameters
+        )
+        if any(p.kind is p.VAR_KEYWORD for p in params.values()):
+            # A subclass forwards its other keywords to Agent.
+            params = {
+                **inspect.signature(Agent.__init__).parameters,
+                **params,
+            }
+
+        config = {
+            name: getattr(self, name)
+            for name, param in params.items()
+            if name not in ("self", "id", "saved_state_path")
+            and param.kind
+            not in (param.VAR_POSITIONAL, param.VAR_KEYWORD)
+            and hasattr(self, name)
+        }
+        own_llm = isinstance(config.get("llm"), LiteLLM)
+        if own_llm:
+            config.pop("llm")
+        config["tools_list_dictionary"] = list(
+            self.tools_list_dictionary or []
+        )
+
+        clone = type(self)(**config)
+
+        # __init__ appends its prompts and tool schemas a second time.
+        clone._restore_built_state(self)
+        if own_llm:
+            clone.llm_handling()
+
+        return clone
+
+    def _restore_built_state(self, source: "Agent") -> None:
+        """Take the finished system prompt and tool schemas from another agent.
+
+        Args:
+            source: The agent whose built values replace this agent's.
+        """
+        memory = self.short_memory
+        sent_prompt = source.short_memory.system_prompt
+        system_rows = [
+            row
+            for row in memory.conversation_history
+            if row["role"] == "System"
+            and row["content"] == memory.system_prompt
+        ]
+
+        for row in system_rows[:1]:
+            if sent_prompt:
+                row["content"] = sent_prompt
+            else:
+                memory.conversation_history.remove(row)
+
+        memory.system_prompt = sent_prompt
+        memory._str_cache = None
+        self.system_prompt = source.system_prompt
+
+        schemas = list(source.tools_list_dictionary or [])
+        if isinstance(self.tools_list_dictionary, list):
+            # In place: a conversation row holds this same list.
+            self.tools_list_dictionary[:] = schemas
+        else:
+            self.tools_list_dictionary = schemas
 
     def send_agent_message(
         self, agent_name: str, message: str, *args, **kwargs
