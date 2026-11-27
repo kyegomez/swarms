@@ -1307,30 +1307,34 @@ class GraphWorkflow:
             )
             raise e
 
-    def _attach_edge(self, edge: Edge) -> Edge:
+    def _attach_edges(self, edges: List[Edge]) -> List[Edge]:
         """
-        Register one edge, after checking both endpoints exist.
+        Register edges, after checking every endpoint of every edge exists.
 
         The four public edge builders differ only in which pairs they generate;
-        this is the part they all shared verbatim.
+        this is the part they all shared verbatim. Nothing is registered unless
+        all edges are valid, so a bad pair cannot leave earlier ones attached
+        behind a stale compiled plan.
 
         Raises:
-            ValueError: If either endpoint is not a node in this workflow.
+            ValueError: If any endpoint is not a node in this workflow.
         """
-        for role, node_id in (
-            ("Source", edge.source),
-            ("Target", edge.target),
-        ):
-            if node_id not in self.nodes:
-                error_msg = f"{role} node '{node_id}' does not exist in GraphWorkflow"
-                logger.error(error_msg)
-                raise ValueError(error_msg)
+        for edge in edges:
+            for role, node_id in (
+                ("Source", edge.source),
+                ("Target", edge.target),
+            ):
+                if node_id not in self.nodes:
+                    error_msg = f"{role} node '{node_id}' does not exist in GraphWorkflow"
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
 
-        self.edges.append(edge)
-        self.graph_backend.add_edge(
-            edge.source, edge.target, **(edge.metadata or {})
-        )
-        return edge
+        for edge in edges:
+            self.edges.append(edge)
+            self.graph_backend.add_edge(
+                edge.source, edge.target, **(edge.metadata or {})
+            )
+        return edges
 
     def _add_edge_pairs(
         self,
@@ -1340,12 +1344,12 @@ class GraphWorkflow:
     ) -> List[Edge]:
         """Attach one edge per ``(source, target)`` pair, invalidating the
         compilation cache once at the end rather than per edge."""
-        created = [
-            self._attach_edge(
+        created = self._attach_edges(
+            [
                 Edge.from_nodes(source, target, **kwargs)
-            )
-            for source, target in pairs
-        ]
+                for source, target in pairs
+            ]
+        )
         self._invalidate_compilation()
         if self.verbose:
             logger.success(f"Added {len(created)} {kind} edges")
@@ -1381,7 +1385,7 @@ class GraphWorkflow:
                         f"Creating and adding edge: {edge.source} -> {edge.target}"
                     )
 
-            self._attach_edge(edge)
+            self._attach_edges([edge])
             self._invalidate_compilation()
 
             if self.verbose:
