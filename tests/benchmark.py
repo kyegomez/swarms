@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import importlib
+import json
 import operator
 import os
 import statistics
@@ -46,6 +47,8 @@ def main() -> None:
     parser.add_argument("--agents", type=int, default=100)
     parser.add_argument("--delay", type=float, default=0.2)
     parser.add_argument("--repeat", type=int, default=5)
+    parser.add_argument("--frameworks", default=",".join(FRAMEWORKS))
+    parser.add_argument("--out", default=None)
     args = parser.parse_args()
     os.environ.setdefault("SWARMS_TELEMETRY_ON", "False")
     os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
@@ -53,17 +56,32 @@ def main() -> None:
     os.environ.setdefault("AGNO_TELEMETRY", "false")
     os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
 
+    names = args.frameworks.split(",")
     columns = []
-    for name in FRAMEWORKS:
+    for name in names:
         with ProcessPoolExecutor(1) as pool:
             try:
                 column = pool.submit(measure, name, args).result()
             except ModuleNotFoundError:
-                column = [(r, "not installed") for r, _ in columns[0]]
+                column = [
+                    (row, "not installed")
+                    for row in row_labels(args.agents)
+                ]
             columns.append(column)
 
-    print(f"| benchmark | {' | '.join(FRAMEWORKS)} |")
-    print("|---" * (len(FRAMEWORKS) + 1) + "|")
+    if args.out:
+        with open(args.out, "w") as handle:
+            json.dump(
+                {
+                    name: dict(column)
+                    for name, column in zip(names, columns)
+                },
+                handle,
+                indent=1,
+            )
+
+    print(f"| benchmark | {' | '.join(names)} |")
+    print("|---" * (len(names) + 1) + "|")
     for cells in zip(*columns):
         values = " | ".join(str(value) for _, value in cells)
         print(f"| {cells[0][0]} | {values} |")
@@ -98,20 +116,41 @@ def measure(name: str, args: argparse.Namespace) -> list:
     build_ms = timed(build) * 1000 / args.agents
     wall = median(run)
 
-    rows = [
-        ("cold import (s)", import_s),
-        ("construction per agent, workflow included (ms)", build_ms),
-        ("memory per agent, workflow included (KB)", agent_kb),
-        (f"{args.agents}-agent fan-out wall (s)", wall),
-        ("fan-out wall minus model delay (s)", wall - args.delay),
-        ("fan-out peak memory, agents included (MB)", peak_mb),
-        ("fan-out peak threads", max(threads)),
-        (
-            "model calls per fan-out",
-            len(threads) // (args.repeat + 1),
-        ),
+    values = [
+        import_s,
+        build_ms,
+        agent_kb,
+        wall,
+        wall - args.delay,
+        peak_mb,
+        max(threads),
+        len(threads) // (args.repeat + 1),
     ]
-    return [(row, round(value, 3)) for row, value in rows]
+    return [
+        (row, round(value, 3))
+        for row, value in zip(row_labels(args.agents), values)
+    ]
+
+
+def row_labels(agents: int) -> list:
+    """Name the rows every column reports, in order.
+
+    Args:
+        agents: How many agents the fan-out runs.
+
+    Returns:
+        The row labels.
+    """
+    return [
+        "cold import (s)",
+        "construction per agent, workflow included (ms)",
+        "memory per agent, workflow included (KB)",
+        f"{agents}-agent fan-out wall (s)",
+        "fan-out wall minus model delay (s)",
+        "fan-out peak memory, agents included (MB)",
+        "fan-out peak threads",
+        "model calls per fan-out",
+    ]
 
 
 def swarms_fanout(model: StubModel, agents: int) -> Callable:
