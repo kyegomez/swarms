@@ -2737,6 +2737,64 @@ class TestLLMFailureRaises:
 
         assert calls == ["gpt-5.4"]
 
+    def test_autonomous_fallback_starts_from_clean_history(self):
+        agent = Agent(
+            agent_name="FallbackAgent",
+            max_loops="auto",
+            max_planning_attempts=1,
+            print_on=False,
+            persistent_memory=False,
+            fallback_models=["gpt-5.4", "claude-sonnet-4-6"],
+        )
+
+        def tool_call(name, **arguments):
+            return [
+                {
+                    "id": f"call-{name}",
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "arguments": json.dumps(arguments),
+                    },
+                }
+            ]
+
+        replies = [
+            tool_call(
+                "create_plan",
+                task_description="add",
+                steps=[{"step_id": "s1", "description": "add"}],
+            ),
+            tool_call(
+                "subtask_done",
+                task_id="s1",
+                summary="4",
+                success=True,
+            ),
+            tool_call(
+                "complete_task",
+                task_id="main",
+                summary="4",
+                success=True,
+            ),
+        ]
+
+        def fake_call_llm(*args, **kwargs):
+            if agent.model_name == "gpt-5.4":
+                raise AgentLLMError("gpt-5.4 is down")
+            return replies.pop(0)
+
+        agent.call_llm = fake_call_llm
+        agent.run(self.TASK)
+
+        assert agent.model_name == "claude-sonnet-4-6"
+        task_turns = [
+            m
+            for m in agent.short_memory.conversation_history
+            if m["content"] == self.TASK
+        ]
+        assert len(task_turns) == 1
+
     @pytest.mark.parametrize(
         "kwargs, expected",
         [
