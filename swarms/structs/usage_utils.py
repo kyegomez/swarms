@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from swarms.utils.litellm_wrapper import empty_usage
 
@@ -7,6 +7,24 @@ _USAGE_KEYS = empty_usage().keys()
 
 def _is_usage(value: Any) -> bool:
     return isinstance(value, dict) and value.keys() == _USAGE_KEYS
+
+
+def add_usage(
+    total: dict, source: Any, since: Optional[dict] = None
+) -> None:
+    """Add what a source spent to a running usage total.
+
+    Args:
+        total: The running total, changed in place.
+        source: A usage dict, or an object with a usage dict.
+        since: The source's usage before the run.
+    """
+    usage = source
+    if not isinstance(source, dict):
+        usage = getattr(source, "usage", None) or {}
+    since = since or {}
+    for key in total:
+        total[key] += usage.get(key, 0) - since.get(key, 0)
 
 
 def total_usage(*roots: Any) -> dict:

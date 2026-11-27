@@ -1,7 +1,8 @@
 import json
 import re
 import traceback
-from typing import Any, List, Optional, Type, get_args
+from functools import partial
+from typing import Any, Callable, List, Optional, Type, get_args
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -9,9 +10,9 @@ from pydantic import BaseModel, Field, ValidationError
 
 from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent
-from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import get_agents_info
 from swarms.structs.swarm_router import SwarmRouter, SwarmType
+from swarms.structs.usage_utils import add_usage
 from swarms.utils.litellm_wrapper import LiteLLM, empty_usage
 from swarms.telemetry.otel import capture_init, trace_run
 
@@ -297,8 +298,7 @@ class AutoSwarmBuilder:
         self.max_agents = None
         self.max_json_repair_attempts = 1
         self.auto_execute = auto_execute
-        self.conversation = Conversation()
-        self._usage_sources = []
+        self._usage = empty_usage()
 
         self.reliability_check()
 
@@ -349,8 +349,23 @@ class AutoSwarmBuilder:
             max_tokens=self.max_tokens,
             **self.additional_llm_args,
         )
-        self._usage_sources.append(llm)
+        llm.usage_hook = partial(self._add_boss_usage, llm.usage_hook)
         return llm
+
+    def _add_boss_usage(
+        self,
+        caller_hook: Optional[Callable[[dict], None]],
+        call_usage: dict,
+    ) -> None:
+        """Count one boss LLM call, then pass it to the caller's hook.
+
+        Args:
+            caller_hook: The usage_hook from additional_llm_args.
+            call_usage: The call's token usage.
+        """
+        add_usage(self._usage, call_usage)
+        if caller_hook is not None:
+            caller_hook(call_usage)
 
     @property
     def usage(self) -> dict:
@@ -361,18 +376,7 @@ class AutoSwarmBuilder:
         ``output_tokens``, ``cached_tokens``, ``reasoning_tokens``,
         ``total_tokens``.
         """
-        sources = {}
-        for source in self._usage_sources:
-            if isinstance(source, SwarmRouter):
-                for agent in source._usage_agents():
-                    sources.setdefault(id(agent), agent)
-            else:
-                sources.setdefault(id(source), source)
-        total = empty_usage()
-        for source in sources.values():
-            for key, value in source.usage.items():
-                total[key] += value
-        return total
+        return dict(self._usage)
 
     @staticmethod
     def _parse_llm_json(raw: Any) -> dict:
@@ -649,9 +653,11 @@ class AutoSwarmBuilder:
             agents=agents,
             output_type="dict",
         )
-        self._usage_sources.append(swarm_router)
 
-        output = swarm_router.run(task)
+        try:
+            output = swarm_router.run(task)
+        finally:
+            add_usage(self._usage, swarm_router)
 
         return {
             "name": config.name,
@@ -730,10 +736,13 @@ class AutoSwarmBuilder:
                 agents=agents,
                 output_type="dict",
             )
-            self._usage_sources.append(swarm_router)
+            spent_before = swarm_router.usage
 
             logger.info("Starting swarm router execution")
-            return swarm_router.run(task)
+            try:
+                return swarm_router.run(task)
+            finally:
+                add_usage(self._usage, swarm_router, spent_before)
         except Exception as e:
             logger.error(
                 f"Error in swarm router initialization/execution: {str(e)}",
