@@ -1147,7 +1147,7 @@ class Conversation:
             # Save with proper formatting
             with open(self.save_filepath, "w", encoding="utf-8") as f:
                 yaml.dump(
-                    self.conversation_history,
+                    json.loads(self.to_json()),
                     f,
                     indent=4,
                     default_flow_style=False,
@@ -1362,20 +1362,27 @@ class Conversation:
     def to_json(self):
         """Convert the conversation history to a JSON string.
 
+        Tuples become lists. Other values JSON cannot hold, such as dates
+        or Pydantic models, are written as their str(), as save_as_json
+        does.
+
         Returns:
             str: The conversation history as a JSON string.
         """
-        return json.dumps(self.conversation_history)
+        return json.dumps(self.conversation_history, default=str)
 
     def to_yaml(self):
         """Convert the conversation history to a YAML string.
+
+        Built from to_json, so the output is plain YAML that yaml.safe_load
+        and load_from_yaml can read back, with no Python-specific tags.
 
         Returns:
             str: The conversation history as a YAML string.
         """
         import yaml
 
-        return yaml.dump(self.conversation_history)
+        return yaml.safe_dump(json.loads(self.to_json()))
 
     def to_list(self):
         """Convert the conversation history to a list.
@@ -1478,7 +1485,9 @@ class Conversation:
             str: The conversation messages formatted as a JSON string.
         """
         return json.dumps(
-            self.return_messages_as_dictionary(), indent=4
+            self.return_messages_as_dictionary(),
+            indent=4,
+            default=str,
         )
 
     def get_final_message(self):

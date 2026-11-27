@@ -1687,6 +1687,28 @@ def test_export_conversation_writes_the_named_json_file(tmp_path):
         fresh.import_conversation(str(text_export))
 
 
+def test_non_json_content_serialises_and_reloads_from_yaml(tmp_path):
+    import yaml
+
+    path = tmp_path / "chat.yaml"
+    conv = Conversation(export_method="yaml", save_filepath=str(path))
+    conv.add(
+        "Scheduler",
+        {"slot": ("10:00", 30), "on": datetime(2026, 1, 2)},
+    )
+    expected = {"slot": ["10:00", 30], "on": "2026-01-02 00:00:00"}
+
+    assert json.loads(conv.to_json())[0]["content"] == expected
+    assert json.loads(conv.return_json())[0]["content"] == expected
+    assert yaml.safe_load(conv.to_yaml())[0]["content"] == expected
+
+    conv.export()
+    reloaded = Conversation(
+        export_method="yaml", save_filepath=str(path)
+    )
+    assert reloaded.conversation_history[0]["content"] == expected
+
+
 class TestCommsChannelMirror:
     def test_adds_are_posted_and_system_rows_are_not(self, tmp_path):
         from swarms.structs.file_channel import FileChannel
