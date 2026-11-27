@@ -19,7 +19,6 @@ from swarms.structs.serialization import SerializableMixin
 from swarms.tools.tool_choice import forced_tool_choice
 from swarms.tools.tool_type import tool_type
 from swarms.utils.formatter import formatter
-from swarms.utils.get_cpu_cores import max_workers_95_percent
 from swarms.utils.heavy_swarm_dashboard import HeavySwarmDashboard
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -70,7 +69,7 @@ class HeavySwarm(SerializableMixin):
             question_agent_model_name (str): Model name for question generation
             worker_model_name (str): Model name for specialized worker agents
             verbose (bool): Enable detailed logging output
-            max_workers (int): Maximum number of concurrent worker threads
+            max_workers (Optional[int]): Most workers run at once, or None for all
             show_dashboard (bool): Enable rich dashboard with progress visualization
             agent_prints_on (bool): Enable individual agent output printing
             max_loops (int): Maximum number of execution loops for iterative refinement
@@ -117,6 +116,7 @@ class HeavySwarm(SerializableMixin):
         worker_tools: Optional[tool_type] = None,
         max_loops: Optional[int] = 1,
         variant: SwarmVariant = "default",
+        max_workers: Optional[int] = None,
     ) -> None:
         """
         Initialize the HeavySwarm with configuration parameters.
@@ -148,6 +148,9 @@ class HeavySwarm(SerializableMixin):
                 ``"medium"`` gives 4 Grok agents (Captain + Harper / Benjamin /
                 Lucas), and ``"heavy"`` gives 16 agents (Grok + 15 domain
                 specialists). Defaults to ``"default"``.
+            max_workers (int, optional): Most worker agents to run at
+                once, to stay under a rate limit. Defaults to None, which
+                runs every worker at once.
 
         Raises:
             ValueError: If required model names are None or ``variant`` is unknown.
@@ -165,7 +168,7 @@ class HeavySwarm(SerializableMixin):
         self.question_agent_model_name = question_agent_model_name
         self.worker_model_name = worker_model_name
         self.verbose = verbose
-        self.max_workers = max_workers_95_percent()
+        self.max_workers = max_workers
         self.show_dashboard = show_dashboard
         self.agent_prints_on = agent_prints_on
         self.output_type = output_type
@@ -219,7 +222,7 @@ class HeavySwarm(SerializableMixin):
             timeout=self.timeout,
             question_model=self.question_agent_model_name,
             worker_model=self.worker_model_name,
-            max_workers=self.max_workers,
+            max_workers=self.max_workers or "one per worker",
         )
 
     def reliability_check(self):
@@ -735,7 +738,7 @@ class HeavySwarm(SerializableMixin):
         # Execute agents in parallel using ThreadPoolExecutor
         results = {}
         with ContextThreadPoolExecutor(
-            max_workers=self.max_workers
+            max_workers=self.max_workers or len(agent_tasks)
         ) as executor:
             # Submit all agent tasks
             future_to_agent = {
@@ -1082,7 +1085,7 @@ class HeavySwarm(SerializableMixin):
 
             # Execute agents in parallel
             with ContextThreadPoolExecutor(
-                max_workers=self.max_workers
+                max_workers=self.max_workers or len(agent_tasks)
             ) as executor:
                 # Submit all agent tasks
                 future_to_agent = {

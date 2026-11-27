@@ -1,5 +1,4 @@
 import asyncio
-import os
 from concurrent.futures import as_completed
 from functools import lru_cache
 from typing import Dict, Optional, Tuple
@@ -213,7 +212,7 @@ class CouncilAsAJudge:
         judge_agents (Dict[str, Agent]): Dictionary of dimension-specific judge agents
         aggregator_agent (Agent): Agent responsible for aggregating evaluations
         conversation (Conversation): Conversation history tracker
-        max_workers (int): Maximum number of worker threads for parallel execution
+        max_workers (int): Judges that run at once
     """
 
     def __init__(
@@ -228,6 +227,7 @@ class CouncilAsAJudge:
         max_loops: int = 1,
         aggregation_model_name: str = "gpt-5.4",
         judge_agent_model_name: Optional[str] = None,
+        max_workers: Optional[int] = None,
     ):
         """
         Initialize the CouncilAsAJudge.
@@ -240,10 +240,12 @@ class CouncilAsAJudge:
             output_type (str): Type of output to return
             cache_size (int): Unused. The prompt builders keep their
                 own module-level cache of 128 entries.
-            max_workers (int): Maximum number of worker threads for parallel execution
             random_model_name (bool): Whether to use random model names
             max_loops (int): Maximum number of loops for agents
             aggregation_model_name (str): Model name for the aggregator agent
+            max_workers (Optional[int]): Most judges to run at once, to
+                stay under a rate limit. Defaults to None, which runs every
+                judge at once.
         """
         self.id = id or generate_id("council-as-judge")
         self.name = name
@@ -255,7 +257,7 @@ class CouncilAsAJudge:
         self.max_loops = max_loops
         self.aggregation_model_name = aggregation_model_name
         self.judge_agent_model_name = judge_agent_model_name
-        self.max_workers = max(1, int(os.cpu_count() * 0.75))
+        self.max_workers = max_workers or len(EVAL_DIMENSIONS)
 
         self.reliability_check()
 
