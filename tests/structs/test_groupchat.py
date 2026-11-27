@@ -14,6 +14,7 @@ repr — the string form an agent with the default ``output_type`` hands
 back, which is exactly the case that previously went silent.
 """
 
+import asyncio
 import json
 import threading
 from unittest.mock import MagicMock
@@ -463,6 +464,19 @@ class TestRunSurface:
         assert isinstance(result, str)
         assert "hello again" in result
         assert "hello" in contents(chat)
+
+    def test_run_works_inside_a_running_event_loop(self):
+        chat = make_chat(
+            [ScriptedAgent("A", [(0.9, "hello")]), ScriptedAgent("B")]
+        )
+
+        async def handler():
+            return chat.run("topic")
+
+        result = asyncio.run(handler())
+
+        assert isinstance(result, str)
+        assert contents(chat) == ["topic", "hello"]
 
     def test_run_batch_returns_one_result_per_task(self):
         chat = make_chat([ScriptedAgent("A"), ScriptedAgent("B")])

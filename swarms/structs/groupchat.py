@@ -72,7 +72,11 @@ from swarms.utils.history_output_formatter import (
 from swarms.tools.tool_choice import forced_tool_choice
 from swarms.utils.litellm_wrapper import LiteLLM
 from swarms.utils.loguru_logger import initialize_logger
-from swarms.telemetry.otel import capture_init, trace_run
+from swarms.telemetry.otel import (
+    ContextThreadPoolExecutor,
+    capture_init,
+    trace_run,
+)
 from swarms.structs.usage_utils import total_usage
 
 logger = initialize_logger(log_folder="groupchat")
@@ -633,14 +637,23 @@ class GroupChat(SerializableMixin):
                 turn. Matches the streaming signature used across the framework
                 (``ConcurrentWorkflow``, ``HierarchicalSwarm``, etc.).
 
+        Works when called from inside a running event loop, such as a
+        Jupyter cell or an async web handler: the chat then runs on its
+        own loop in a worker thread and this call blocks until it ends.
+
         Returns:
             Formatted conversation output from ``_run_async``.
         """
-        return asyncio.run(
-            self._run_async(
-                task, streaming_callback=streaming_callback
-            )
+        chat = self._run_async(
+            task, streaming_callback=streaming_callback
         )
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(chat)
+
+        with ContextThreadPoolExecutor(max_workers=1) as executor:
+            return executor.submit(asyncio.run, chat).result()
 
     def run_batch(self, tasks: List[str]) -> List[Any]:
         """Run the groupchat in batch mode.
