@@ -1100,6 +1100,14 @@ class TestHierarchicalContextManagement:
             c.startswith("[{'id'") for c in director_messages
         ), "the director's tool call was stored as a Python repr"
 
+    def test_the_director_gets_its_dispatched_orders_back(self):
+        _, seen = self._run_two_loops()
+        second = [m for name, m in seen if name == "Director"][1]
+        results = [
+            m["content"] for m in second if m["role"] == "tool"
+        ]
+        assert results == ["Dispatched: W1: do part 1"]
+
     def test_the_conversation_starts_clean(self):
         from swarms import HierarchicalSwarm
 
