@@ -469,6 +469,17 @@ def test_skip_null_tasks_actually_skips_on_the_single_path():
     assert ran == [], f"the agent ran despite a null task: {ran}"
 
 
+def test_a_boss_reply_with_no_handoffs_raises_a_clear_error():
+    """An empty handoffs list used to raise a bare IndexError."""
+    router, _ = _local_router()
+    router.function_caller = SimpleNamespace(
+        run=lambda task: '{"handoffs": []}'
+    )
+
+    with pytest.raises(ValueError, match="selected no agent"):
+        router.route_task("x")
+
+
 def test_a_handoff_without_a_task_key_falls_back_to_the_original():
     """HandOffsResponse.task is Optional, so the key may be absent."""
     router, ran = _local_router()
@@ -528,17 +539,6 @@ def test_an_unknown_agent_raises_before_any_agent_runs():
         )
 
     assert ran == [], f"an agent ran before validation failed: {ran}"
-
-
-def test_a_boss_reply_with_no_handoffs_raises_a_clear_error():
-    """An empty handoffs list used to raise a bare IndexError."""
-    router, _ = _local_router()
-    router.function_caller = SimpleNamespace(
-        run=lambda task: '{"handoffs": []}'
-    )
-
-    with pytest.raises(ValueError, match="selected no agent"):
-        router.route_task("x")
 
 
 def test_concurrent_batch_run_returns_results_in_input_order():
