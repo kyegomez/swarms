@@ -666,6 +666,8 @@ class TestCLIUtils:
             "COHERE_API_KEY",
             "MISTRAL_API_KEY",
             "TOGETHER_API_KEY",
+            "XAI_API_KEY",
+            "OPENROUTER_API_KEY",
         ):
             monkeypatch.delenv(key, raising=False)
         result = _detect_active_provider()
@@ -690,12 +692,46 @@ class TestCLIUtils:
             "COHERE_API_KEY",
             "MISTRAL_API_KEY",
             "TOGETHER_API_KEY",
+            "XAI_API_KEY",
+            "OPENROUTER_API_KEY",
         ):
             monkeypatch.delenv(key, raising=False)
         monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
         monkeypatch.setenv("ANTHROPIC_API_KEY", "ant-test")
         result = _detect_active_provider()
         assert "+1 more" in result
+
+    @pytest.mark.parametrize(
+        "env_var",
+        [
+            "OPENAI_API_KEY",
+            "ANTHROPIC_API_KEY",
+            "GOOGLE_API_KEY",
+            "GROQ_API_KEY",
+            "MISTRAL_API_KEY",
+            "TOGETHER_API_KEY",
+            "COHERE_API_KEY",
+            "XAI_API_KEY",
+            "OPENROUTER_API_KEY",
+        ],
+    )
+    def test_setup_check_accepts_every_init_provider(
+        self, monkeypatch, env_var
+    ):
+        import os
+
+        from swarms.cli.utils import (
+            _detect_active_provider,
+            check_api_keys,
+        )
+
+        for key in list(os.environ):
+            if key.endswith("_API_KEY"):
+                monkeypatch.delenv(key)
+        monkeypatch.setenv(env_var, "test-key")
+
+        assert check_api_keys()[0]
+        assert "No API key" not in _detect_active_provider()
 
     @pytest.mark.parametrize(
         "key, expected", [("sk-swarms", "is set"), ("", "Not set")]
@@ -738,6 +774,8 @@ class TestShowAsciiArt:
             "COHERE_API_KEY",
             "MISTRAL_API_KEY",
             "TOGETHER_API_KEY",
+            "XAI_API_KEY",
+            "OPENROUTER_API_KEY",
         ):
             monkeypatch.delenv(key, raising=False)
         recorder = Console(record=True, width=120, file=io.StringIO())
