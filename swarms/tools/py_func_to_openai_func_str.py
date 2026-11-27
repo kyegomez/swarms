@@ -1,3 +1,4 @@
+import enum
 import functools
 import inspect
 from logging import getLogger
@@ -293,6 +294,15 @@ def get_parameter_json_schema(
     schema = type2schema(v)
     if k in default_values:
         dv = default_values[k]
+        if isinstance(dv, enum.Enum):
+            dv = dv.value
+        else:
+            try:
+                from pydantic_core import to_jsonable_python
+
+                dv = to_jsonable_python(dv)
+            except Exception:
+                pass
         schema["default"] = dv
 
     schema["description"] = type2description(k, v)
