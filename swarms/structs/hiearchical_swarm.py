@@ -1252,6 +1252,8 @@ class HierarchicalSwarm:
         swarm.conversation = Conversation(
             time_enabled=False, channel=self.channel
         )
+        swarm.workspace = copy.copy(self.workspace)
+        swarm.workspace.owner = swarm
         swarm.director = self._copy_member(self.director)
         swarm.agents = [
             self._copy_member(agent) for agent in self.agents
