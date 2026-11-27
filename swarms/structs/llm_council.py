@@ -75,8 +75,10 @@ class LLMCouncil:
 
         Args:
             council_members: List of Agent instances representing council members.
-                           If None, creates default council with GPT-5.1, Gemini 3 Pro,
-                           Claude Sonnet 4.5, and Grok-4.
+                           If None, creates a default council of four members:
+                           GPT (gpt-5.1), Gemini (gemini-3.5-flash-lite),
+                           Claude (claude-sonnet-5-5) and Grok
+                           (grok-4-1-fast-reasoning).
             chairman_model: Model name for the Chairman agent that synthesizes responses.
             verbose: Whether to log progress through each stage.
             output_type: Format for the output. Options: "list", "dict", "string", "final", "json", "yaml", etc.
@@ -127,9 +129,8 @@ class LLMCouncil:
             List of Agent instances configured as council members.
         """
 
-        # GPT-5.1 Agent - Analytical and comprehensive
         gpt_agent = Agent(
-            agent_name="GPT-5.1-Councilor",
+            agent_name="GPT-Councilor",
             agent_description="Analytical and comprehensive AI councilor specializing in deep analysis and thorough responses",
             system_prompt=get_gpt_councilor_prompt(),
             model_name="gpt-5.1",
@@ -138,9 +139,8 @@ class LLMCouncil:
             temperature=0.7,
         )
 
-        # Gemini 3 Pro Agent - Concise and processed
         gemini_agent = Agent(
-            agent_name="Gemini-3-Pro-Councilor",
+            agent_name="Gemini-Councilor",
             agent_description="Concise and well-processed AI councilor specializing in clear, structured responses",
             system_prompt=get_gemini_councilor_prompt(),
             # Without the gemini/ prefix LiteLLM sends this to Vertex AI.
@@ -150,9 +150,8 @@ class LLMCouncil:
             temperature=0.7,
         )
 
-        # Claude Sonnet 4.5 Agent - Balanced and thoughtful
         claude_agent = Agent(
-            agent_name="Claude-Sonnet-4.5-Councilor",
+            agent_name="Claude-Councilor",
             agent_description="Thoughtful and balanced AI councilor specializing in nuanced and well-reasoned responses",
             system_prompt=get_claude_councilor_prompt(),
             model_name="anthropic/claude-sonnet-5-5",
@@ -161,12 +160,11 @@ class LLMCouncil:
             top_p=None,
         )
 
-        # Grok-4 Agent - Creative and innovative
         grok_agent = Agent(
-            agent_name="Grok-4-Councilor",
+            agent_name="Grok-Councilor",
             agent_description="Creative and innovative AI councilor specializing in unique perspectives and creative solutions",
             system_prompt=get_grok_councilor_prompt(),
-            model_name="xai/grok-4-1-fast-reasoning",  # Using available model as proxy for Grok-4
+            model_name="xai/grok-4-1-fast-reasoning",
             max_loops=1,
             verbose=False,
             temperature=0.8,
@@ -219,14 +217,8 @@ class LLMCouncil:
 
         # Map results to member names
         original_responses = {
-            member.agent_name: response
-            for member, response in zip(
-                self.council_members,
-                [
-                    results_dict.get(member.agent_name, "")
-                    for member in self.council_members
-                ],
-            )
+            member.agent_name: results_dict.get(member.agent_name, "")
+            for member in self.council_members
         }
 
         # Add each council member's response to conversation

@@ -51,7 +51,7 @@ print(result)
 With `verbose=True`, the council logs one line per stage through `loguru`:
 
 ```
-[LLM Council] Initialized with 4 members: GPT-5.1-Councilor, Gemini-3-Pro-Councilor, Claude-Sonnet-4.5-Councilor, Grok-4-Councilor
+[LLM Council] Initialized with 4 members: GPT-Councilor, Gemini-Councilor, Claude-Councilor, Grok-Councilor
 [LLM Council] Collecting responses from 4 members
 [LLM Council] Members ranking the anonymized responses
 [LLM Council] Chairman synthesizing the final answer
@@ -70,7 +70,7 @@ python examples/multi_agent/council/llm_council/medical_diagnosis_council.py
 
 ## Key Features
 
-- **Multiple Perspectives**: Each council member (GPT-5.1, Gemini, Claude, Grok) provides unique insights
+- **Multiple Perspectives**: Each council member (GPT, Gemini, Claude, Grok) provides unique insights
 - **Peer Review**: Members evaluate and rank each other's responses anonymously
 - **Synthesis**: Chairman combines the best elements from all responses
 - **Transparency**: See both individual responses and evaluation rankings
@@ -78,10 +78,10 @@ python examples/multi_agent/council/llm_council/medical_diagnosis_council.py
 ## Council Members
 
 The default council consists of:
-- **GPT-5.1-Councilor**: Analytical and comprehensive
-- **Gemini-3-Pro-Councilor**: Concise and well-processed
-- **Claude-Sonnet-4.5-Councilor**: Thoughtful and balanced
-- **Grok-4-Councilor**: Creative and innovative
+- **GPT-Councilor**: Analytical and comprehensive
+- **Gemini-Councilor**: Concise and well-processed
+- **Claude-Councilor**: Thoughtful and balanced
+- **Grok-Councilor**: Creative and innovative
 
 ## Customization
 
