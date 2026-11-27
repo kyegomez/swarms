@@ -224,6 +224,45 @@ class TestConstructorValidation:
 
         assert agent_a.tools_list_dictionary == [RESPOND_TOOL]
 
+    def test_auto_equip_keeps_a_caller_supplied_llm(
+        self, monkeypatch
+    ):
+        sent = []
+
+        def completion(**params):
+            sent.append(params)
+            return litellm.completion(
+                **params, mock_response="Just text."
+            )
+
+        monkeypatch.setattr(
+            "swarms.utils.litellm_wrapper.completion", completion
+        )
+        agents = [
+            Agent(
+                agent_name=name,
+                llm=LiteLLM(
+                    model_name="groq/llama-3.3-70b-versatile",
+                    base_url="https://api.groq.com/openai/v1",
+                ),
+                tools_list_dictionary=tools,
+                max_loops=1,
+                print_on=False,
+            )
+            for name, tools in (("A", None), ("B", [RESPOND_TOOL]))
+        ]
+        GroupChat(agents=agents).run("topic")
+
+        assert len(sent) == 2
+        for params in sent:
+            assert params["model"] == "groq/llama-3.3-70b-versatile"
+            assert params["base_url"] == (
+                "https://api.groq.com/openai/v1"
+            )
+            assert params["tools"][-1]["function"]["name"] == (
+                "respond"
+            )
+
 
 # --------------------------------------------------------------------------
 # scheduling — one speaker per turn, lull, cap, recency

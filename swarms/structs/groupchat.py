@@ -295,25 +295,35 @@ class GroupChat(SerializableMixin):
         """Inject ``RESPOND_TOOL`` into agents that do not already carry it.
 
         Without the ``respond`` tool an agent's speaking decision can never be
-        parsed, so it would sit silent for the whole chat. The agent's LLM
-        client bakes ``tools_list_dictionary`` in at construction time, so
-        after appending the schema the client is rebuilt via
-        ``llm_handling()``.
+        parsed, so it would sit silent for the whole chat. The schema is
+        also appended to the agent's LiteLLM client whenever that client's
+        own tool list lacks it, since the client sends only its own list.
+        The client is not rebuilt, so an llm the caller passed in keeps its
+        model, endpoint and key.
         """
-        for agent in self.agents:
-            tools = agent.tools_list_dictionary or []
-            if any(
+
+        def has_respond(tools: List[dict]) -> bool:
+            return any(
                 tool.get("function", {}).get("name") == "respond"
                 for tool in tools
                 if isinstance(tool, dict)
-            ):
-                continue
-            agent.tools_list_dictionary = [*tools, RESPOND_TOOL]
-            agent.llm = agent.llm_handling()
-            self._log(
-                "info",
-                f"Injected respond tool into {agent.agent_name}",
             )
+
+        for agent in self.agents:
+            tools = agent.tools_list_dictionary or []
+            if not has_respond(tools):
+                agent.tools_list_dictionary = [*tools, RESPOND_TOOL]
+                self._log(
+                    "info",
+                    f"Injected respond tool into {agent.agent_name}",
+                )
+            if isinstance(getattr(agent, "llm", None), LiteLLM):
+                llm_tools = agent.llm.tools_list_dictionary or []
+                if not has_respond(llm_tools):
+                    agent.llm.tools_list_dictionary = [
+                        *llm_tools,
+                        RESPOND_TOOL,
+                    ]
 
     def _other_agents(self, exclude: str) -> str:
         """Return a comma-separated list of peers visible to one agent."""
