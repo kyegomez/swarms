@@ -5,8 +5,10 @@ All network calls (litellm.completion) are mocked.  Only the integration
 test at the bottom touches the filesystem, using pytest's tmp_path fixture.
 """
 
+import asyncio
+import threading
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -587,3 +589,25 @@ class TestUsageRatioReusesMessageCounts:
         )
         messages = len(conv.conversation_history)
         assert exact <= estimate <= exact + messages
+
+
+def test_arun_awaits_the_summary_call_on_the_event_loop():
+    agent = Agent(context_length=50, print_on=False)
+    agent.short_memory.add(role="user", content="word " * 400)
+    agent.llm.arun = AsyncMock(return_value="done")
+    threads = []
+
+    def summary_call(**kwargs):
+        threads.append(threading.current_thread().name)
+        return _make_completion_response("summary")
+
+    with patch(
+        "swarms.agents.context_compressor.completion", summary_call
+    ), patch(
+        "swarms.agents.context_compressor.acompletion",
+        AsyncMock(side_effect=summary_call),
+        create=True,
+    ):
+        asyncio.run(agent.arun("task"))
+
+    assert threads == [threading.main_thread().name]
