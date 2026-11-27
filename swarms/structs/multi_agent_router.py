@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from swarms.structs.conversation import Conversation
 from swarms.structs.ma_blocks import find_agent_by_name
+from swarms.structs.ma_utils import check_duplicate_agent_names
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
     history_output_formatter,
@@ -162,6 +163,7 @@ class MultiAgentRouter:
         self.system_prompt = system_prompt
         self.skip_null_tasks = skip_null_tasks
         self.agents = list(agents) if agents else []
+        check_duplicate_agent_names(self.agents, allow_repeats=True)
         self.conversation = Conversation()
 
         router_system_prompt = ""

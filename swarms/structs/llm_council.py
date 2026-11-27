@@ -28,6 +28,7 @@ from swarms.structs.execution_utils import batched_run
 from swarms.structs.agent import Agent, reset_agents
 from swarms.structs.context_utils import agent_answer
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_utils import check_duplicate_agent_names
 from swarms.structs.multi_agent_exec import (
     batched_grid_agent_execution,
     run_agents_concurrently,
@@ -92,6 +93,8 @@ class LLMCouncil:
             self.council_members = self._create_default_council()
         else:
             self.council_members = council_members
+
+        check_duplicate_agent_names(self.council_members)
 
         # Create Chairman agent
         self.chairman = Agent(

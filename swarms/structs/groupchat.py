@@ -64,6 +64,7 @@ from swarms.structs.comms_channel import (
     claim_agents,
 )
 from swarms.structs.conversation import Conversation
+from swarms.structs.ma_utils import check_duplicate_agent_names
 from swarms.structs.serialization import SerializableMixin
 from swarms.utils.formatter import formatter
 from swarms.utils.history_output_formatter import (
@@ -258,7 +259,8 @@ class GroupChat(SerializableMixin):
                 the winner writes a reply, at one extra call per turn.
 
         Raises:
-            ValueError: If fewer than two agents are provided.
+            ValueError: If fewer than two agents are provided, or two
+                agents share a name.
         """
         self.name = name
         self.description = description
@@ -272,15 +274,17 @@ class GroupChat(SerializableMixin):
         self.auto_equip = auto_equip
         self.score_only_bids = score_only_bids
 
+        # agents may be None, the documented error is ValueError not TypeError
+        if self.agents is None or len(self.agents) < 2:
+            raise ValueError("GroupChat requires at least 2 agents.")
+
+        check_duplicate_agent_names(self.agents)
+
         self.channel = channel
         claim_agents(self.agents, channel, self.name)
         self.conversation = Conversation(
             time_enabled=False, channel=channel
         )
-
-        # agents may be None, the documented error is ValueError not TypeError
-        if self.agents is None or len(self.agents) < 2:
-            raise ValueError("GroupChat requires at least 2 agents.")
 
         if self.auto_equip:
             self._ensure_respond_tool()

@@ -227,7 +227,6 @@ class SequentialWorkflow:
         """
         if self.agents:
             agent_names = []
-            owners = {}
             for agent in self.agents:
                 try:
                     # Try to get agent_name, fallback to name if not available
@@ -235,16 +234,6 @@ class SequentialWorkflow:
                         getattr(agent, "agent_name", None)
                         or agent.name
                     )
-                    if (
-                        owners.setdefault(agent_name, agent)
-                        is not agent
-                    ):
-                        raise ValueError(
-                            f"Two different agents are named '{agent_name}'. "
-                            "SequentialWorkflow runs each step by name, so "
-                            "only the first of them would run. Give each "
-                            "one its own name."
-                        )
                     agent_names.append(agent_name)
                 except AttributeError:
                     logger.warning(

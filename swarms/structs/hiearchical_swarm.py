@@ -42,7 +42,10 @@ from swarms.structs.execution_utils import batched_run
 from swarms.structs.hierarchical_order_parser import (
     parse_orders as _parse_orders,
 )
-from swarms.structs.ma_utils import list_all_agents
+from swarms.structs.ma_utils import (
+    check_duplicate_agent_names,
+    list_all_agents,
+)
 from swarms.structs.omni_agent_types import AgentListType
 from swarms.telemetry.otel import (
     ContextThreadPoolExecutor,
@@ -378,6 +381,8 @@ class HierarchicalSwarm:
             raise ValueError(
                 "No agents found in the swarm. At least one agent must be provided to create a hierarchical swarm."
             )
+
+        check_duplicate_agent_names(self.agents, allow_repeats=True)
 
         if self.max_loops <= 0:
             raise ValueError(
