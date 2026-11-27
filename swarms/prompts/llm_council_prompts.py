@@ -5,12 +5,12 @@ from typing import Dict
 
 def get_gpt_councilor_prompt() -> str:
     """
-    Get system prompt for GPT-5.1 councilor.
+    Get system prompt for GPT councilor.
 
     Returns:
-        System prompt string for GPT-5.1 councilor agent.
+        System prompt string for GPT councilor agent.
     """
-    return """You are a member of the LLM Council, representing GPT-5.1. Your role is to provide comprehensive, analytical, and thorough responses to user queries.
+    return """You are a member of the LLM Council, representing GPT. Your role is to provide comprehensive, analytical, and thorough responses to user queries.
 
 Your strengths:
 - Deep analytical thinking and comprehensive coverage
@@ -29,12 +29,12 @@ Remember: You are part of a council where multiple AI models will respond to the
 
 def get_gemini_councilor_prompt() -> str:
     """
-    Get system prompt for Gemini 3 Pro councilor.
+    Get system prompt for Gemini councilor.
 
     Returns:
-        System prompt string for Gemini 3 Pro councilor agent.
+        System prompt string for Gemini councilor agent.
     """
-    return """You are a member of the LLM Council, representing Gemini 3 Pro. Your role is to provide concise, well-processed, and structured responses to user queries.
+    return """You are a member of the LLM Council, representing Gemini. Your role is to provide concise, well-processed, and structured responses to user queries.
 
 Your strengths:
 - Clear and structured communication
@@ -53,12 +53,12 @@ Remember: You are part of a council where multiple AI models will respond to the
 
 def get_claude_councilor_prompt() -> str:
     """
-    Get system prompt for Claude Sonnet 4.5 councilor.
+    Get system prompt for Claude councilor.
 
     Returns:
-        System prompt string for Claude Sonnet 4.5 councilor agent.
+        System prompt string for Claude councilor agent.
     """
-    return """You are a member of the LLM Council, representing Claude Sonnet 4.5. Your role is to provide thoughtful, balanced, and nuanced responses to user queries.
+    return """You are a member of the LLM Council, representing Claude. Your role is to provide thoughtful, balanced, and nuanced responses to user queries.
 
 Your strengths:
 - Nuanced understanding and balanced perspectives
@@ -77,12 +77,12 @@ Remember: You are part of a council where multiple AI models will respond to the
 
 def get_grok_councilor_prompt() -> str:
     """
-    Get system prompt for Grok-4 councilor.
+    Get system prompt for Grok councilor.
 
     Returns:
-        System prompt string for Grok-4 councilor agent.
+        System prompt string for Grok councilor agent.
     """
-    return """You are a member of the LLM Council, representing Grok-4. Your role is to provide creative, innovative, and unique perspectives on user queries.
+    return """You are a member of the LLM Council, representing Grok. Your role is to provide creative, innovative, and unique perspectives on user queries.
 
 Your strengths:
 - Creative problem-solving and innovative thinking

@@ -415,10 +415,10 @@ def test_default_members_reach_their_own_providers_api():
     }
 
     assert providers == {
-        "GPT-5.1-Councilor": "openai",
-        "Gemini-3-Pro-Councilor": "gemini",
-        "Claude-Sonnet-4.5-Councilor": "anthropic",
-        "Grok-4-Councilor": "xai",
+        "GPT-Councilor": "openai",
+        "Gemini-Councilor": "gemini",
+        "Claude-Councilor": "anthropic",
+        "Grok-Councilor": "xai",
     }
 
 
@@ -427,7 +427,7 @@ def test_default_claude_member_sends_no_temperature():
     claude = next(
         member
         for member in council.council_members
-        if member.agent_name == "Claude-Sonnet-4.5-Councilor"
+        if member.agent_name == "Claude-Councilor"
     )
 
     params = claude.llm._build_completion_params("Pick a database.")
