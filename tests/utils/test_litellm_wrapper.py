@@ -621,7 +621,7 @@ def test_prepare_messages_attaches_images_to_prebuilt_body():
             {"role": "assistant", "content": "ok"},
         ],
     )
-    assert messages[-1] == {"role": "assistant", "content": "ok"}
+    assert messages[-1] == {"role": "user", "content": "Continue."}
     assert messages[1]["content"][-1] == {
         "type": "text",
         "text": SIMPLE_TASK,
@@ -698,3 +698,11 @@ def test_images_go_on_the_marked_turn_ahead_of_its_text(
     assert ("cache_control" in task_turn["content"][0]) is (
         prompt_caching
     )
+
+
+def test_prepare_messages_adds_the_continue_turn_after_caching():
+    llm = LiteLLM(model_name="claude-sonnet-4-6", prompt_caching=True)
+    body = [{"role": "assistant", "content": "ok"}]
+    messages = llm._prepare_messages(messages=body)
+    assert "cache_control" in str(messages[-2])
+    assert messages[-1] == {"role": "user", "content": "Continue."}

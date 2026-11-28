@@ -721,6 +721,11 @@ class LiteLLM:
                 self._attach_images(prepared, images, task_turn)
             if self.prompt_caching and prepared:
                 self._apply_prompt_caching(prepared)
+            # Gemini 3.5+ rejects a final model turn; added after caching so the next loop reuses the cache.
+            if prepared and prepared[-1].get("role") == "assistant":
+                prepared.append(
+                    {"role": "user", "content": "Continue."}
+                )
             return prepared
 
         messages = base
