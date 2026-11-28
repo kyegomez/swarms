@@ -530,34 +530,6 @@ def handle_run_agents(args: argparse.Namespace) -> None:
             str(e) + "\n\nPlease check your agents.yaml file format.",
         )
         sys.exit(1)
-    except Exception as e:
-        # Enhanced error handling
-        error_msg = str(e)
-        if "context_length_exceeded" in error_msg:
-            show_error(
-                "Context Length Error",
-                "The model's context length was exceeded. Try:\n"
-                "1. Reducing max_tokens in your YAML config\n"
-                "2. Reducing context_length in your YAML config\n"
-                "3. Using a model with larger context window",
-            )
-        elif "api_key" in error_msg.lower():
-            show_error(
-                "API Key Error",
-                "There seems to be an issue with the API key. Please:\n"
-                "1. Check if your API key is set correctly\n"
-                "2. Verify the API key is valid\n"
-                "3. Run 'swarms get-api-key' to get a new key",
-            )
-        else:
-            show_error(
-                "Execution Error",
-                f"An unexpected error occurred: {error_msg}\n"
-                "1. Check your YAML configuration\n"
-                "2. Verify your API keys are set\n"
-                "3. Check network connectivity",
-            )
-        sys.exit(1)
 
 
 def load_markdown_agents(
@@ -690,15 +662,6 @@ def load_markdown_agents(
             "System prompt content here...",
         )
         sys.exit(1)
-    except Exception as e:
-        show_error(
-            "Execution Error",
-            f"An unexpected error occurred: {str(e)}\n"
-            "1. Check your markdown file format\n"
-            "2. Verify your API keys are set\n"
-            "3. Check network connectivity",
-        )
-        sys.exit(1)
 
 
 def handle_load_markdown(args: argparse.Namespace) -> None:
@@ -779,88 +742,75 @@ def create_swarm_agent(
         for better user experience. Agent information is shown in a formatted
         table upon successful creation.
     """
-    try:
-        console.print(f"[white]Creating custom agent: {name}[/white]")
+    console.print(f"[white]Creating custom agent: {name}[/white]")
 
-        # Create progress display
-        progress = Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
+    # Create progress display
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    )
+
+    with progress:
+        # Add initial task
+        init_task = progress.add_task(
+            "Initializing agent...", total=None
         )
 
-        with progress:
-            # Add initial task
-            init_task = progress.add_task(
-                "Initializing agent...", total=None
-            )
-
-            # Create agent
-            progress.update(
-                init_task,
-                description="Creating agent with specified parameters...",
-            )
-
-            # Build agent configuration
-            agent_config = {
-                "agent_name": name,
-                "agent_description": description,
-                "system_prompt": system_prompt,
-                "model_name": model_name,
-                **kwargs,
-            }
-
-            # Remove None values to use defaults
-            agent_config = {
-                k: v for k, v in agent_config.items() if v is not None
-            }
-
-            agent = Agent(**agent_config)
-
-            # Update progress
-            progress.update(
-                init_task,
-                description="Agent created successfully!",
-            )
-
-            # Only run the agent if a task is provided
-            if task:
-                progress.update(
-                    init_task,
-                    description=f"Running task: {task[:50]}...",
-                )
-
-                result = agent.run(task)
-
-                # Update progress on completion
-                progress.update(
-                    init_task,
-                    description="Task completed!",
-                    completed=True,
-                )
-
-                return _print_result(
-                    result,
-                    label=f"Agent '{name}'",
-                    title="Agent Execution Results",
-                    success=f"Agent '{name}' completed the task successfully!",
-                    body=f"[bold]Agent Name:[/bold] {name}\n"
-                    f"[bold]Model:[/bold] {model_name}\n"
-                    f"[bold]Task:[/bold] {task}\n"
-                    f"[bold]Result:[/bold]\n{result}",
-                )
-
-    except Exception as e:
-        show_error(
-            "Agent Creation Error",
-            f"Failed to create or run agent: {str(e)}\n\n"
-            "Please check:\n"
-            "1. Your API keys are set correctly\n"
-            "2. The model name is valid\n"
-            "3. All required parameters are provided\n"
-            "4. Your system prompt is properly formatted",
+        # Create agent
+        progress.update(
+            init_task,
+            description="Creating agent with specified parameters...",
         )
-        sys.exit(1)
+
+        # Build agent configuration
+        agent_config = {
+            "agent_name": name,
+            "agent_description": description,
+            "system_prompt": system_prompt,
+            "model_name": model_name,
+            **kwargs,
+        }
+
+        # Remove None values to use defaults
+        agent_config = {
+            k: v for k, v in agent_config.items() if v is not None
+        }
+
+        agent = Agent(**agent_config)
+
+        # Update progress
+        progress.update(
+            init_task,
+            description="Agent created successfully!",
+        )
+
+        # Only run the agent if a task is provided
+        if task:
+            progress.update(
+                init_task,
+                description=f"Running task: {task[:50]}...",
+            )
+
+            result = agent.run(task)
+
+            # Update progress on completion
+            progress.update(
+                init_task,
+                description="Task completed!",
+                completed=True,
+            )
+
+            return _print_result(
+                result,
+                label=f"Agent '{name}'",
+                title="Agent Execution Results",
+                success=f"Agent '{name}' completed the task successfully!",
+                body=f"[bold]Agent Name:[/bold] {name}\n"
+                f"[bold]Model:[/bold] {model_name}\n"
+                f"[bold]Task:[/bold] {task}\n"
+                f"[bold]Result:[/bold]\n{result}",
+            )
 
 
 def handle_agent(args: argparse.Namespace) -> None:
@@ -1003,54 +953,41 @@ def handle_chat(args: argparse.Namespace) -> Optional[Agent]:
         continuous interaction. If no initial task is provided, the agent
         will prompt for input interactively.
     """
-    try:
-        # Get parameters with defaults - handle None values
-        name = getattr(args, "name", None) or "Swarms Agent"
-        description = (
-            getattr(args, "description", None)
-            or "A Swarms agent that can chat with the user."
-        )
-        system_prompt = getattr(args, "system_prompt", None)
-        model_name = getattr(args, "model_name", None) or "gpt-5.1"
-        task = getattr(args, "task", None)
+    # Get parameters with defaults - handle None values
+    name = getattr(args, "name", None) or "Swarms Agent"
+    description = (
+        getattr(args, "description", None)
+        or "A Swarms agent that can chat with the user."
+    )
+    system_prompt = getattr(args, "system_prompt", None)
+    model_name = getattr(args, "model_name", None) or "gpt-5.1"
+    task = getattr(args, "task", None)
 
-        console.print(
-            f"\n[bold white]{name}[/bold white]  [dim white]({model_name})[/dim white]"
-        )
-        console.print(
-            "[dim white]  Switch model: [/dim white][white]swarms chat --model-name gpt-5.4[/white]"
-            "[dim white]  ·  other options: claude-opus-4-6, gpt-4o, gemini/gemini-2.0-flash[/dim white]\n"
-        )
+    console.print(
+        f"\n[bold white]{name}[/bold white]  [dim white]({model_name})[/dim white]"
+    )
+    console.print(
+        "[dim white]  Switch model: [/dim white][white]swarms chat --model-name gpt-5.4[/white]"
+        "[dim white]  ·  other options: claude-opus-4-6, gpt-4o, gemini/gemini-2.0-flash[/dim white]\n"
+    )
 
-        # Create and run the chat agent (no progress spinner to avoid blocking input)
-        result = auto_chat_agent(
-            name=name,
-            description=description,
-            system_prompt=system_prompt,
-            model_name=model_name,
-            task=task,
-        )
+    # Create and run the chat agent (no progress spinner to avoid blocking input)
+    result = auto_chat_agent(
+        name=name,
+        description=description,
+        system_prompt=system_prompt,
+        model_name=model_name,
+        task=task,
+    )
 
-        if result:
-            console.print(
-                "\n[bold white]✓ Chat session completed![/bold white]"
-            )
-            return result
-        else:
-            console.print("[white]⚠ Chat session ended.[/white]")
-            return None
-
-    except Exception as e:
+    if result:
         console.print(
-            f"\n[bold red]Chat Agent Error:[/bold red] {str(e)}"
+            "\n[bold white]✓ Chat session completed![/bold white]"
         )
-        console.print(
-            "[white]Please check:\n"
-            "1. Your API keys are set correctly\n"
-            "2. You have network connectivity\n"
-            "3. All parameters are properly formatted[/white]"
-        )
-        sys.exit(1)
+        return result
+    else:
+        console.print("[white]⚠ Chat session ended.[/white]")
+        return None
 
 
 def run_autoswarm(
@@ -1082,81 +1019,53 @@ def run_autoswarm(
         write_autoswarm_file,
     )
 
-    try:
-        console.print(
-            "[white]Initializing autoswarm configuration...[/white]"
+    console.print(
+        "[white]Initializing autoswarm configuration...[/white]"
+    )
+
+    # Validate inputs
+    if not task or task.strip() == "":
+        raise SwarmCLIError("Task cannot be empty")
+
+    if not model or model.strip() == "":
+        raise SwarmCLIError("Model name cannot be empty")
+
+    # Step 1: Generate the config dict via LLM
+    console.print(f"[white]Generating swarm for task: {task}[/white]")
+    config = generate_swarm_config(
+        task=task,
+        model_name=model,
+    )
+
+    if not config:
+        raise SwarmCLIError("Failed to generate swarm configuration")
+
+    agents_count = len(config.get("agents", []))
+    console.print("[white]✓ Swarm configuration generated[/white]")
+    console.print(
+        f"[white]✓ Parsed {agents_count} agents from config[/white]"
+    )
+
+    # Step 2: Write the Python file (always)
+    written_path = write_autoswarm_file(
+        config=config,
+        task=task,
+        output_path=output_path,
+        output_dir=output_dir,
+    )
+    console.print(f"[white]✓ Written to: {written_path}[/white]")
+
+    # Step 3: Optionally run the swarm
+    if not no_run:
+        import yaml
+
+        console.print("[white]Running swarm...[/white]")
+        yaml_string = yaml.dump(config, default_flow_style=False)
+        AgentLoader().load_agents_from_yaml(
+            yaml_string=yaml_string,
+            return_type="run_swarm",
         )
-
-        # Validate inputs
-        if not task or task.strip() == "":
-            raise SwarmCLIError("Task cannot be empty")
-
-        if not model or model.strip() == "":
-            raise SwarmCLIError("Model name cannot be empty")
-
-        # Step 1: Generate the config dict via LLM
-        console.print(
-            f"[white]Generating swarm for task: {task}[/white]"
-        )
-        config = generate_swarm_config(
-            task=task,
-            model_name=model,
-        )
-
-        if not config:
-            raise SwarmCLIError(
-                "Failed to generate swarm configuration"
-            )
-
-        agents_count = len(config.get("agents", []))
-        console.print(
-            "[white]✓ Swarm configuration generated[/white]"
-        )
-        console.print(
-            f"[white]✓ Parsed {agents_count} agents from config[/white]"
-        )
-
-        # Step 2: Write the Python file (always)
-        written_path = write_autoswarm_file(
-            config=config,
-            task=task,
-            output_path=output_path,
-            output_dir=output_dir,
-        )
-        console.print(f"[white]✓ Written to: {written_path}[/white]")
-
-        # Step 3: Optionally run the swarm
-        if not no_run:
-            import yaml
-
-            console.print("[white]Running swarm...[/white]")
-            yaml_string = yaml.dump(config, default_flow_style=False)
-            AgentLoader().load_agents_from_yaml(
-                yaml_string=yaml_string,
-                return_type="run_swarm",
-            )
-            console.print(
-                "[white]✓ Swarm executed successfully![/white]"
-            )
-
-    except Exception as e:
-        if "No YAML content found" in str(e):
-            show_error(
-                "Failed to generate YAML configuration",
-                "This might be due to an API key issue or invalid model configuration.\n"
-                + "1. Check if your OpenAI API key is set correctly\n"
-                + "2. Verify the model name is valid\n"
-                + "3. Try running with --model gpt-4",
-            )
-        else:
-            show_error(
-                f"Error during autoswarm execution: {str(e)}",
-                "For debugging, try:\n"
-                + "1. Check your API keys are set correctly\n"
-                + "2. Verify your network connection\n"
-                + "3. Try a different model",
-            )
-        sys.exit(1)
+        console.print("[white]✓ Swarm executed successfully![/white]")
 
 
 def handle_autoswarm(args: argparse.Namespace) -> None:
@@ -1215,61 +1124,49 @@ def run_llm_council(task: str, verbose: bool = True) -> Optional[Any]:
         Exception: If LLM Council initialization or execution fails. Errors are
             displayed with formatted messages and troubleshooting tips.
     """
-    try:
-        console.print("[white]🏛️  Initializing LLM Council...[/white]")
+    console.print("[white]🏛️  Initializing LLM Council...[/white]")
 
-        # Create progress display
-        progress = Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
+    # Create progress display
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    )
+
+    with progress:
+        # Add initial task
+        init_task = progress.add_task(
+            "Initializing council...", total=None
         )
 
-        with progress:
-            # Add initial task
-            init_task = progress.add_task(
-                "Initializing council...", total=None
-            )
+        # Create LLM Council
+        progress.update(
+            init_task,
+            description="Creating LLM Council with default members...",
+        )
+        council = LLMCouncil(verbose=verbose)
 
-            # Create LLM Council
-            progress.update(
-                init_task,
-                description="Creating LLM Council with default members...",
-            )
-            council = LLMCouncil(verbose=verbose)
-
-            # Update progress
-            progress.update(
-                init_task,
-                description="Council initialized! Processing task...",
-            )
-
-            # Run the council
-            result = council.run(task=task)
-
-            # Update progress on completion
-            progress.update(
-                init_task,
-                description="Task completed!",
-                completed=True,
-            )
-
-        return _print_result(
-            result,
-            label="LLM Council",
-            title="LLM Council Final Response",
+        # Update progress
+        progress.update(
+            init_task,
+            description="Council initialized! Processing task...",
         )
 
-    except Exception as e:
-        show_error(
-            "LLM Council Error",
-            f"Failed to run LLM Council: {str(e)}\n\n"
-            "Please check:\n"
-            "1. Your API keys are set correctly\n"
-            "2. You have network connectivity\n"
-            "3. The task is properly formatted",
+        # Run the council
+        result = council.run(task=task)
+
+        # Update progress on completion
+        progress.update(
+            init_task,
+            description="Task completed!",
+            completed=True,
         )
-        sys.exit(1)
+
+    return _print_result(
+        result,
+        label="LLM Council",
+        title="LLM Council Final Response",
+    )
 
 
 def handle_llm_council(args: argparse.Namespace) -> None:
@@ -1333,67 +1230,55 @@ def run_heavy_swarm(
         Exception: If HeavySwarm initialization or execution fails. Errors are
             displayed with formatted messages and troubleshooting tips.
     """
-    try:
-        console.print("[white]🚀 Initializing HeavySwarm...[/white]")
+    console.print("[white]🚀 Initializing HeavySwarm...[/white]")
 
-        # Create progress display
-        progress = Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
+    # Create progress display
+    progress = Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    )
+
+    with progress:
+        # Add initial task
+        init_task = progress.add_task(
+            "Initializing swarm...", total=None
         )
 
-        with progress:
-            # Add initial task
-            init_task = progress.add_task(
-                "Initializing swarm...", total=None
-            )
-
-            # Create HeavySwarm
-            progress.update(
-                init_task,
-                description="Creating HeavySwarm with specialized agents...",
-            )
-            swarm = HeavySwarm(
-                loops_per_agent=loops_per_agent,
-                question_agent_model_name=question_agent_model_name,
-                worker_model_name=worker_model_name,
-                random_loops_per_agent=random_loops_per_agent,
-                verbose=verbose,
-            )
-
-            # Update progress
-            progress.update(
-                init_task,
-                description="Swarm initialized! Processing task...",
-            )
-
-            # Run the swarm
-            result = swarm.run(task=task)
-
-            # Update progress on completion
-            progress.update(
-                init_task,
-                description="Task completed!",
-                completed=True,
-            )
-
-        return _print_result(
-            result,
-            label="HeavySwarm",
-            title="HeavySwarm Final Response",
+        # Create HeavySwarm
+        progress.update(
+            init_task,
+            description="Creating HeavySwarm with specialized agents...",
+        )
+        swarm = HeavySwarm(
+            loops_per_agent=loops_per_agent,
+            question_agent_model_name=question_agent_model_name,
+            worker_model_name=worker_model_name,
+            random_loops_per_agent=random_loops_per_agent,
+            verbose=verbose,
         )
 
-    except Exception as e:
-        show_error(
-            "HeavySwarm Error",
-            f"Failed to run HeavySwarm: {str(e)}\n\n"
-            "Please check:\n"
-            "1. Your API keys are set correctly\n"
-            "2. You have network connectivity\n"
-            "3. The task is properly formatted",
+        # Update progress
+        progress.update(
+            init_task,
+            description="Swarm initialized! Processing task...",
         )
-        sys.exit(1)
+
+        # Run the swarm
+        result = swarm.run(task=task)
+
+        # Update progress on completion
+        progress.update(
+            init_task,
+            description="Task completed!",
+            completed=True,
+        )
+
+    return _print_result(
+        result,
+        label="HeavySwarm",
+        title="HeavySwarm Final Response",
+    )
 
 
 def handle_heavy_swarm(args: argparse.Namespace) -> None:
