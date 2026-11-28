@@ -24,11 +24,11 @@ import pytest
 from swarms import Agent
 from swarms.structs.groupchat import (
     GroupChat,
+    GroupChatNoReplyError,
     RESPOND_CHOICE,
     RESPOND_TOOL,
     _extract_args,
 )
-from swarms.utils.litellm_wrapper import LiteLLM
 
 # --------------------------------------------------------------------------
 # helpers
@@ -294,6 +294,20 @@ class TestScheduling:
         assert all(agent.calls == 1 for agent in agents)
 
     def test_a_lull_ends_the_chat(self):
+        agents = [
+            ScriptedAgent("A", [(0.8, "first")]),
+            ScriptedAgent("B", [(0.1, "")]),
+        ]
+        chat = make_chat(agents, threshold=0.5)
+        chat.run("anything to add?")
+
+        # A answers once, then every scripted bid runs out and the turn-2
+        # lull ends the chat.
+        assert roles(chat) == ["User", "A"]
+
+    def test_first_turn_below_threshold_still_answers(self):
+        # Every bid is valid but under the bar: the first turn is not a
+        # lull, so the best reply takes the floor anyway (#3557).
         quiet = [
             ScriptedAgent("A", [(0.2, "murmur")]),
             ScriptedAgent("B", [(0.1, "whisper")]),
@@ -301,7 +315,8 @@ class TestScheduling:
         chat = make_chat(quiet, threshold=0.5)
         chat.run("anything to add?")
 
-        assert roles(chat) == ["User"]
+        assert roles(chat) == ["User", "A"]
+        assert contents(chat)[1] == "murmur"
 
     def test_an_empty_message_never_posts(self):
         chat = make_chat(
@@ -310,9 +325,22 @@ class TestScheduling:
                 ScriptedAgent("B", [(0.98, "")]),
             ]
         )
-        chat.run("topic")
+        with pytest.raises(GroupChatNoReplyError):
+            chat.run("topic")
 
         assert roles(chat) == ["User"]
+
+    def test_a_run_with_no_reply_raises_instead_of_silencing(self):
+        # Zero posted replies must not look like a success to callers such
+        # as the SwarmRouter fallback chain (#3558).
+        chat = make_chat(
+            [
+                ScriptedAgent("A", [(0.4, "")]),
+                ScriptedAgent("B", [(0.3, "")]),
+            ]
+        )
+        with pytest.raises(GroupChatNoReplyError, match="single agent reply"):
+            chat.run("topic")
 
     def test_max_loops_caps_total_messages(self):
         chatty = [
@@ -412,31 +440,6 @@ class TestScheduling:
         assert "B bid 0.00, returned: 'Just text.'" in str(
             log.mock_calls
         )
-
-    def test_score_only_bids_ask_only_the_winner_for_a_reply(self):
-        class ToolAgent(ScriptedAgent):
-            def __init__(self, name, bids):
-                super().__init__(name, bids)
-                self.llm = LiteLLM(
-                    model_name="gpt-4o-mini",
-                    tools_list_dictionary=[RESPOND_TOOL],
-                )
-                self.asked = []
-
-            def run(self, task=None, *args, **kwargs):
-                tool = self.llm.tools_list_dictionary[0]["function"]
-                self.asked.append(tool["parameters"]["required"])
-                return super().run(task, *args, **kwargs)
-
-        winner = ToolAgent("A", [(0.9, ""), (0.0, "full reply")])
-        other = ToolAgent("B", [(0.6, "")])
-        chat = make_chat([winner, other], score_only_bids=True)
-        chat.run("topic")
-
-        bid, floor = ["score"], ["score", "message"]
-        assert contents(chat) == ["topic", "full reply"]
-        assert winner.asked == [bid, floor, bid]
-        assert winner.llm.tools_list_dictionary == [RESPOND_TOOL]
 
 
 # --------------------------------------------------------------------------
