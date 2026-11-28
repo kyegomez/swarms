@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from swarms.utils.formatter import Formatter
@@ -184,6 +186,25 @@ def test_director_panel_does_not_parse_markup_in_a_task():
     )
 
     assert "[scalability]" in output
+
+
+@pytest.mark.parametrize(
+    "md, kwargs, border",
+    [
+        (False, {"style": "green"}, "green"),
+        (False, {}, "bold red"),
+        (True, {}, "bold blue"),
+    ],
+)
+def test_print_panel_border_style(md, kwargs, border):
+    formatter = Formatter(md=md)
+    with patch(
+        "swarms.utils.formatter.choose_random_color",
+        return_value="red",
+    ), patch.object(formatter.console, "print") as show:
+        formatter.print_panel("x", **kwargs)
+
+    assert show.call_args.args[0].border_style == border
 
 
 def test_streaming_panel_raises_a_stream_error_after_showing_it():
