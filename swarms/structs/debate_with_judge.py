@@ -87,7 +87,7 @@ class DebateWithJudge:
         agents: Optional[List[Agent]] = None,
         preset_agents: bool = True,
         max_loops: int = 3,
-        output_type: str = "str-all-except-first",
+        output_type: str = "str",
         verbose: bool = True,
         model_name: str = "gpt-5.4",
     ):
@@ -108,7 +108,7 @@ class DebateWithJudge:
                 automatically. Used when no agents are provided. Defaults to False.
             max_loops (int): Maximum number of debate loops to execute. Defaults to 3.
             output_type (str): Format for the output conversation history.
-                Defaults to "str-all-except-first".
+                Defaults to "str", each line named by its speaker.
             verbose (bool): Whether to enable verbose logging. Defaults to True.
             model_name (str): The model name to use for preset agents.
                 Defaults to "gpt-5.4".
