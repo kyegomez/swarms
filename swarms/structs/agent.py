@@ -202,7 +202,7 @@ class Agent:
         custom_exit_command (str): The custom exit command
         tool_schema (ToolUsageType): The tool schema
         output_type (agent_output_type): The output type. Supported: 'str', 'string', 'list', 'json', 'dict', 'yaml'.
-        output_schema (Optional[Type[BaseModel]]): A Pydantic model sent to the provider as response_format. run and arun then return a validated instance of it instead of output_type's format, or raise AgentOutputSchemaError. Not supported with max_loops="auto". Defaults to None.
+        output_schema (Optional[Type[BaseModel]]): A Pydantic model sent to the provider as response_format, or as one forced tool call for a model that has tool calls but no structured output. run and arun then return a validated instance of it instead of output_type's format, or raise AgentOutputSchemaError. Not supported with max_loops="auto". Defaults to None.
         list_base_models (List[BaseModel]): The list of base models
         rules (str): The rules
         planning_prompt (str): The planning prompt
@@ -3213,6 +3213,10 @@ Subtask Breakdown:
         if self.output_schema is None:
             return output
         raw = agent_answer(self, "")
+        history = self.short_memory.conversation_history
+        calls = history[-1].get("tool_calls") if history else None
+        if calls and self.llm_manager.output_schema_tool():
+            raw = calls[0]["function"]["arguments"]
         try:
             return self.output_schema.model_validate_json(raw)
         except ValidationError as error:
