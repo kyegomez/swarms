@@ -11,7 +11,6 @@ from swarms.utils.history_output_formatter import (
 from swarms.utils.index import (
     exists,
     format_data_structure,
-    format_dict_to_string,
 )
 from swarms.utils.litellm_tokenizer import count_tokens
 from swarms.utils.litellm_wrapper import (
@@ -37,7 +36,6 @@ __all__ = [
     "LiteLLMException",
     "exists",
     "format_data_structure",
-    "format_dict_to_string",
     "initialize_logger",
     "WorkspaceManager",
 ]
