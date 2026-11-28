@@ -479,6 +479,24 @@ class TestHelpers:
         assert out.endswith("…[truncated]")
         assert len(out) <= MAX_PAYLOAD_CHARS + len("…[truncated]")
 
+    def test_truncate_scrubs_a_secret_the_cut_splits(
+        self, monkeypatch
+    ):
+        monkeypatch.setenv("DEMO_SECRET", "open sesame " * 2000)
+        monkeypatch.setenv("DEMO_KEY", "alpha beta gamma delta")
+        monkeypatch.setenv("DEMO_TOKEN", "delta" + "Z" * 10)
+        url = f"https://demo-user:{'q' * MAX_PAYLOAD_CHARS}@host/"
+        pad = "y" * (MAX_PAYLOAD_CHARS - 26)
+        nested = f"{pad} alpha beta gamma delta{'Z' * 10}"
+        for text in (
+            "note: " + "open sesame " * 2000,
+            "see " + url,
+            nested,
+        ):
+            out = _truncate(text)
+            for leak in ("sesame", "demo-user", "alpha"):
+                assert leak not in out
+
     def test_init_config_only_constructor_params(self):
         class Thing:
             def __init__(self, alpha=1, beta="b"):
@@ -769,8 +787,8 @@ class TestTraceRun:
         assert hasattr(Comp.run, "__wrapped__")
 
     def test_records_full_conversation(self, spans):
-        """A conversation getter records every message, untruncated."""
-        long_reply = "x" * (otel.MAX_PAYLOAD_CHARS + 100)
+        """A conversation getter records every message."""
+        long_reply = "x" * 1000
 
         class Comp:
             def __init__(self):
@@ -825,8 +843,8 @@ class TestTraceRun:
         assert "swarms.conversation" not in a
 
     def test_records_every_argument(self, spans):
-        """Every argument, defaults included, is recorded in full with secrets redacted."""
-        long_task = "t" * (otel.MAX_PAYLOAD_CHARS + 100)
+        """Every argument, defaults included, is recorded with secrets redacted."""
+        long_task = "t" * 1000
 
         class Comp:
             @trace_run("Comp.args")
@@ -1075,18 +1093,15 @@ class TestAgentConversation:
         assert set(inputs) == expected - {"self"}
         assert inputs["task"] == "argument task"
 
-    def test_long_history_is_not_truncated(self, spans):
-        """A history past the payload cap is recorded in full."""
+    def test_long_history_is_truncated(self, spans):
+        """A history past the payload cap is cut to it."""
         agent = fake_agent("Conv-Long", reply="y" * 5000)
         for i in range(5):
             agent.run(f"task {i}")
 
         last = _all_by_name(spans, "Agent.run")[-1]
         raw = _attrs(last)["swarms.conversation"]
-        assert len(raw) > otel.MAX_PAYLOAD_CHARS
-        recorded = json.loads(raw)
-        assert "task 4" in [m["content"] for m in recorded]
-        assert "y" * 5000 in recorded[-1]["content"]
+        assert raw.endswith("…[truncated]") and '"task 0"' in raw
 
     def test_failed_run_records_the_history(self, spans):
         """A failed run records the history the agent keeps, plus its task."""
@@ -1112,7 +1127,7 @@ class TestAgentConversation:
     ):
         """Every agent in a workflow exports its own full history over OTLP."""
         telem, received, _ = otlp_collector
-        writer = fake_agent("Hist-Writer", reply="draft" * 5000)
+        writer = fake_agent("Hist-Writer", reply="draft" * 500)
         editor = fake_agent("Hist-Editor", reply="edited draft")
         SequentialWorkflow(
             agents=[writer, editor], max_loops=1, autosave=False
@@ -1135,7 +1150,6 @@ class TestAgentConversation:
                 (m["role"], m["content"])
                 for m in agent.short_memory.conversation_history
             ]
-        assert len(exported["Hist-Writer"]) > otel.MAX_PAYLOAD_CHARS
 
     def test_exports_are_zstd_compressed(self, otlp_collector):
         """Spans leave zstd-compressed and arrive intact at a fraction of the size."""
@@ -1916,19 +1930,16 @@ class TestBrokenBackendNeverBreaksRun:
 # 5. Payload bounds and config serialization
 # ===========================================================================
 class TestPayloadBoundsAndConfig:
-    def test_huge_input_task_is_truncated_but_output_is_whole(
-        self, spans
-    ):
-        """The single task attribute keeps its cap; the output is recorded in full."""
+    def test_huge_input_task_and_output_are_truncated(self, spans):
+        """The task attribute and the output both keep the cap."""
         huge = "z" * (MAX_PAYLOAD_CHARS + 500)
         agent = fake_agent("Huge-Output", reply=huge)
-        returned = agent.run(task=huge)
+        agent.run(task=huge)
 
         run_span = _by_name_all(spans, "Agent.run")[-1]
         a = _attrs(run_span)
 
-        assert a["swarms.output"] == returned
-        assert len(a["swarms.output"]) > MAX_PAYLOAD_CHARS
+        assert a["swarms.output"].endswith("…[truncated]")
         assert a["swarms.input.task"].endswith("…[truncated]")
         assert len(a["swarms.input.task"]) <= MAX_PAYLOAD_CHARS + len(
             "…[truncated]"

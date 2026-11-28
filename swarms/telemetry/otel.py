@@ -132,10 +132,20 @@ def _truncate(value: Any, limit: int = MAX_PAYLOAD_CHARS) -> str:
             :data:`MAX_PAYLOAD_CHARS`.
 
     Returns:
-        str: ``value`` as a string with credentials removed, truncated with an
-        ``"…[truncated]"`` marker when it exceeds ``limit``.
+        str: The value as a string with credentials removed. Past the limit it
+        is cut at the last space before it and ends with "…[truncated]".
     """
-    text = _scrub(value if isinstance(value, str) else str(value))
+    text = value if isinstance(value, str) else str(value)
+
+    if len(text) > limit:
+        cut = _cut_outside_env_values(text, limit)
+        # No scrub pattern matches a space, so this drops any secret the cut split.
+        return (
+            _scrub(text[:cut])[:limit].rpartition(" ")[0]
+            + "…[truncated]"
+        )
+
+    text = _scrub(text)
     if len(text) > limit:
         return text[:limit] + "…[truncated]"
     return text
@@ -228,6 +238,35 @@ def _secret_env_values() -> List[str]:
         if _SECRET_ENV.search(name) and len(value.strip()) >= 8
     }
     return sorted(values, key=len, reverse=True)
+
+
+def _cut_outside_env_values(text: str, cut: int) -> int:
+    """Move a cut back to the start of any credential env value it splits.
+
+    Env values can hold spaces, so dropping the word a cut splits misses them.
+
+    Args:
+        text (str): The text to cut.
+        cut (int): Where the text would be cut.
+
+    Returns:
+        int: The latest cut at or before it that splits no such value.
+    """
+    secrets = _secret_env_values()
+    moved = True
+
+    while moved:
+        moved = False
+        for secret in secrets:
+            start = text.find(
+                secret,
+                max(cut - len(secret) + 1, 0),
+                cut + len(secret) - 1,
+            )
+            if start != -1:
+                cut, moved = start, True
+
+    return cut
 
 
 def _scrub(text: str) -> str:
@@ -483,10 +522,10 @@ class _SpanHandle:
             pass
 
     def record_output(self, result: Any) -> None:
-        """Attach the operation's full output and mark the span successful.
+        """Attach the operation's output and mark the span successful.
 
         Args:
-            result (Any): The operation result; stringified, without truncation.
+            result (Any): The operation result; stringified and truncated.
 
         Returns:
             None
@@ -495,10 +534,7 @@ class _SpanHandle:
             return
         try:
             self._span.set_attribute(
-                "swarms.output",
-                _scrub(
-                    result if isinstance(result, str) else str(result)
-                ),
+                "swarms.output", _truncate(result)
             )
         except Exception:
             pass
@@ -541,11 +577,12 @@ class _SpanHandle:
             pass
 
     def record_json(self, key: str, value: Any) -> None:
-        """Attach a value to the span as JSON, without truncation, with credential keys redacted.
+        """Attach a value to the span as truncated JSON, with credential keys redacted.
 
         Args:
             key (str): Attribute name.
-            value (Any): The value to record.
+            value (Any): The value to record. JSON longer than
+                MAX_PAYLOAD_CHARS is cut and no longer parses.
 
         Returns:
             None
@@ -556,13 +593,14 @@ class _SpanHandle:
             import json
 
             self._span.set_attribute(
-                key, _scrub(json.dumps(_sanitize(value), default=str))
+                key,
+                _truncate(json.dumps(_sanitize(value), default=str)),
             )
         except Exception:
             pass
 
     def record_inputs(self, arguments: Dict[str, Any]) -> None:
-        """Attach every argument of the call to the span as JSON, without truncation.
+        """Attach every argument of the call to the span as truncated JSON.
 
         Args:
             arguments (Dict[str, Any]): Argument names mapped to their values.
@@ -573,7 +611,7 @@ class _SpanHandle:
         self.record_json("swarms.inputs", arguments)
 
     def record_conversation(self, messages: Any) -> None:
-        """Attach the full conversation history to the span as JSON, without truncation.
+        """Attach the conversation history to the span as truncated JSON.
 
         Args:
             messages (Any): The conversation messages, one dict per message.
@@ -1225,7 +1263,7 @@ def trace_run(
             capture as ``swarms.input.<name>`` attributes. Defaults to
             ``("task",)``.
         conversation (Optional[Callable[[Any], Any]]): Returns the instance's
-            conversation messages, recorded in full as swarms.conversation after
+            conversation messages, recorded as swarms.conversation after
             every call, whether it succeeds or fails. Defaults to None, which
             reads the conversation kept in short_memory or conversation.
         usage (Optional[Callable[[Any], Dict[str, Any]]]): Returns the instance's
