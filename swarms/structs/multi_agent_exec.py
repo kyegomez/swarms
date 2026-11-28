@@ -231,22 +231,24 @@ def run_agents_concurrently_multiprocess(
         >>> results = run_agents_concurrently_multiprocess(agents, "Analyze data", batch_size=2)
         >>> print(f"Processed {len(results)} agents")
     """
-    results = []
 
-    # Use a dedicated event loop to ensure compatibility across contexts.
-    loop = asyncio.new_event_loop()
-    try:
-        # Process agents in batches to avoid overwhelming system resources
+    async def _run_batches() -> List[Any]:
+        results = []
         for i in range(0, len(agents), batch_size):
-            batch = agents[i : i + batch_size]
-            batch_results = loop.run_until_complete(
-                run_agents_concurrently_async(batch, task)
+            results.extend(
+                await run_agents_concurrently_async(
+                    agents[i : i + batch_size], task
+                )
             )
-            results.extend(batch_results)
-    finally:
-        loop.close()
+        return results
 
-    return results
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(_run_batches())
+
+    with ContextThreadPoolExecutor(max_workers=1) as executor:
+        return executor.submit(asyncio.run, _run_batches()).result()
 
 
 def batched_grid_agent_execution(
